@@ -71,7 +71,7 @@ class _NaviPaneState extends State<NaviPane>
 
   static const _kFoldedSideBarWidth = 80.0;
 
-  static const _kSideBarWidth = 256.0;
+  static const _kSideBarWidth = 150.0;
 
   static const _kTopBarHeight = 48.0;
 

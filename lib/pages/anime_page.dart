@@ -3,9 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kostori/network/girigirilove_network/ggl_models.dart';
+import 'package:kostori/pages/player/video_player.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/foundation/stack.dart' as stack;
 import 'package:kostori/pages/show_image_page.dart';
+import 'package:kostori/pages/watch/anime_watch_page.dart';
+import 'package:kostori/tools/tag_translation.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'dart:math' as math;
@@ -15,7 +19,6 @@ import '../base.dart';
 import '../components/comment.dart';
 import '../components/components.dart';
 import '../foundation/app.dart';
-// import '../foundation/def.dart';
 import '../foundation/history.dart';
 import '../foundation/image_loader/cached_image.dart';
 import '../foundation/image_loader/stream_image_provider.dart';
@@ -55,8 +58,7 @@ class AnimePage extends StatelessWidget {
 }
 
 class _AnimePageImpl extends BaseAnimePage<AnimeInfoData> {
-  const _AnimePageImpl(
-      {required this.sourceKey, required this.id, this.animeCover});
+  _AnimePageImpl({required this.sourceKey, required this.id, this.animeCover});
 
   @override
   final String sourceKey;
@@ -88,34 +90,6 @@ class _AnimePageImpl extends BaseAnimePage<AnimeInfoData> {
       // var downloadedAnime = await DownloadManager().getAnimeOrNull(downloadId);
       // downloaded.addAll(downloadedAnime!.downloadedEps);
     }
-    // else {
-    //   if (eps == null) {
-    //     DownloadManager().addCustomDownload(data!, [0]);
-    //     App.globalBack();
-    //     showToast(message: "已加入下载");
-    //     return;
-    //   }
-    // }
-    // if (UiMode.m1(App.globalContext!)) {
-    //   showModalBottomSheet(
-    //       context: App.globalContext!,
-    //       builder: (context) {
-    //         return SelectDownloadChapter(eps, (selectedEps) {
-    //           DownloadManager().addCustomDownload(data!, selectedEps);
-    //           App.globalBack();
-    //           showToast(message: "已加入下载");
-    //         }, downloaded);
-    //       });
-    // } else {
-    //   showSideBar(
-    //       App.globalContext!,
-    //       SelectDownloadChapter(eps, (selectedEps) {
-    //         DownloadManager().addCustomDownload(data!, selectedEps);
-    //         App.globalBack();
-    //         showToast(message: "已加入下载");
-    //       }, downloaded),
-    //       useSurfaceTintColor: true);
-    // }
   }
 
   @override
@@ -126,8 +100,8 @@ class _AnimePageImpl extends BaseAnimePage<AnimeInfoData> {
         (ep) async {
           await History.findOrCreate(data!);
           // App.globalTo(
-          //   () => AnimeReadingPage(
-          //     CustomReadingData(
+          //   () => AnimeWatchPage(
+          //     CustomWatchingData(
           //       data!.target,
           //       data!.title,
           //       AnimeSource.find(sourceKey)!,
@@ -150,8 +124,10 @@ class _AnimePageImpl extends BaseAnimePage<AnimeInfoData> {
 
   @override
   Future<Res<AnimeInfoData>> loadData() async {
+    // print(AnimeSource);
     if (animeSource == null) throw "Anime Source Not Found";
     var res = await animeSource!.loadAnimeInfo!(id);
+    // print(res);
     return res;
   }
 
@@ -607,6 +583,7 @@ class AnimePageLogic<T extends Object> extends StateController {
       Future<bool> Function(T) loadFavorite, String Function() getId) async {
     var [res, _] = await Future.wait(
         [loadData(), Future.delayed(const Duration(milliseconds: 300))]);
+    // print('res: $res');
     if (res.error) {
       if (res.errorMessage == "Exit") {
         return;
@@ -639,7 +616,7 @@ class AnimePageLogic<T extends Object> extends StateController {
 abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
   /// anime info page, show anime's detailed information,
   /// and allow user to download or read anime.
-  const BaseAnimePage({super.key});
+  BaseAnimePage({super.key});
 
   AnimePageLogic<T> get _logic =>
       StateController.find<AnimePageLogic<T>>(tag: tag);
@@ -676,19 +653,9 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
 
   void read(History? history);
 
-  void download();
+  // void download();
 
   void openFavoritePanel();
-
-  ActionFunc? get openComments => null;
-
-  String? get commentsCount => null;
-
-  ActionFunc? get onLike => null;
-
-  bool get isLiked => false;
-
-  String? get likeCount => null;
 
   /// display uploader info
   Card? get uploaderInfo;
@@ -758,6 +725,10 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
 
   String get sourceKey;
 
+  // 主页面
+  final GlobalKey<VideoPlayerWidgetState> videoPlayerKey =
+      GlobalKey<VideoPlayerWidgetState>();
+
   void scrollListener() {
     try {
       var logic = _logic;
@@ -793,6 +764,7 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
           builder: (logic) {
             _logic.width = constraints.maxWidth;
             _logic.height = constraints.maxHeight;
+
             if (logic.loading) {
               logic.get(loadData, loadFavorite, () => id);
               return buildLoading(context);
@@ -803,23 +775,41 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
               );
             } else {
               _logic.thumbnailsData ??= thumbnailsCreator;
-              logic.controller.removeListener(scrollListener);
-              logic.controller.addListener(scrollListener);
-              return SmoothCustomScrollView(
-                controller: logic.controller,
-                slivers: [
-                  buildTitle(logic),
-                  buildAnimeInfo(logic, context),
-                  buildTags(logic, context),
-                  ...buildEpisodeInfo(context),
-                  ...buildIntroduction(context),
-                  ...buildThumbnails(context),
-                  ...buildRecommendation(context),
-                  SliverPadding(
-                    padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).padding.bottom),
-                  )
-                ],
+              // logic.controller.removeListener(scrollListener);
+              // logic.controller.addListener(scrollListener);
+
+              return FutureBuilder<History>(
+                future: History.findOrCreate(_logic.data! as HistoryMixin),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return buildLoading(context); // 或者其他加载指示器
+                  } else if (snapshot.hasError) {
+                    return NetworkError(
+                      message: snapshot.error.toString(),
+                      retry: logic.refresh_,
+                    );
+                  } else {
+                    var historyEp = snapshot.data!;
+                    return SmoothCustomScrollView(
+                      controller: logic.controller,
+                      slivers: [
+                        buildTitle(logic),
+                        AnimeWatchPage.gglAnime(
+                            logic.data as GglAnimeInfo, historyEp.ep ?? 1),
+                        buildAnimeInfo(logic, context),
+                        buildTags(logic, context),
+                        ...buildIntroduction(context),
+                        ...buildEpisodeInfo(context),
+                        ...buildThumbnails(context),
+                        ...buildRecommendation(context),
+                        SliverPadding(
+                          padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).padding.bottom),
+                        )
+                      ],
+                    );
+                  }
+                },
               );
             }
           },
@@ -847,14 +837,13 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
             SizedBox(
               width: 100,
               child: Row(
-                children: [
-                  const SizedBox(
+                children: const [
+                  SizedBox(
                     width: 18,
                   ),
                   Text(
                     "信息",
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 18),
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
                   )
                 ],
               ),
@@ -940,60 +929,64 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
 
   Widget buildAnimeInfo(AnimePageLogic<T> logic, BuildContext context,
       [bool sliver = true]) {
+    // 使用 LayoutBuilder 来获取父组件的约束信息
     var body = LayoutBuilder(builder: (context, constrains) {
+      // 获取最大宽度
       var width = constrains.maxWidth;
+
       return Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min, // 列的大小根据内容最小化
         children: [
+          const Divider(),
           SizedBox(
-            width: double.infinity,
+            width: double.infinity, // 宽度填充父容器
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start, // 子组件从顶部对齐
               children: [
-                const SizedBox(
-                  width: 8,
-                ),
-                buildCover(context, logic, 136, 102),
-                const SizedBox(
-                  width: 12,
-                ),
+                const SizedBox(width: 8), // 给第一个子组件添加间距
+                buildCover(context, logic, 136, 102), // 构建封面图，参数为上下文、逻辑及宽高
+                const SizedBox(width: 12), // 给封面与后续组件添加间距
                 Expanded(
+                  // 使这一列扩展以填充可用空间
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start, // 子组件从左侧对齐
                     children: [
                       SizedBox(
-                        width: double.infinity,
-                        child: SelectableText(title?.trim() ?? "",
-                            style: const TextStyle(fontSize: 18)),
+                        width: double.infinity, // 宽度填充父容器
+                        child: SelectableText(
+                          title?.trim() ?? "", // 显示标题，如果为空则使用空字符串
+                          style: const TextStyle(fontSize: 18), // 字体大小为18
+                        ),
                       ),
-                      const SizedBox(
-                        height: 8,
-                      ),
-                      if (subTitle != null)
+                      const SizedBox(height: 8), // 标题与子标题之间的间距
+                      if (subTitle != null) // 如果子标题存在，则显示
                         SizedBox(
                           width: double.infinity,
-                          child: SelectableText(subTitle!,
-                              style: const TextStyle(fontSize: 14)),
+                          child: SelectableText(
+                            subTitle!, // 显示子标题
+                            style: const TextStyle(fontSize: 14), // 字体大小为14
+                          ),
                         ),
-                      if (subTitle != null)
-                        const SizedBox(
-                          height: 8,
-                        ),
+                      if (subTitle != null) // 如果子标题存在，则添加间距
+                        const SizedBox(height: 8),
                       SizedBox(
                         width: double.infinity,
-                        child:
-                            Text(source, style: const TextStyle(fontSize: 12)),
-                      ),
-                      if (pages != null)
-                        const SizedBox(
-                          height: 8,
+                        child: Text(
+                          source,
+                          style: const TextStyle(fontSize: 12), // 来源字体大小为12
                         ),
-                      if (pages != null)
+                      ),
+                      if (pages != null) // 如果页数存在，则添加间距
+                        const SizedBox(height: 8),
+                      if (pages != null) // 如果页数存在，则显示
                         SizedBox(
                           width: double.infinity,
-                          child: Text("${pages}P",
-                              style: const TextStyle(fontSize: 12)),
+                          child: Text(
+                            "${pages}P", // 显示页数和单位
+                            style: const TextStyle(fontSize: 12), // 字体大小为12
+                          ),
                         ),
+                      // 如果宽度大于等于500，显示操作按钮
                       if (width >= 500)
                         buildActions(logic, context, false).paddingTop(12),
                     ],
@@ -1001,7 +994,8 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
                 )
               ],
             ),
-          ).paddingHorizontal(10).paddingBottom(12),
+          ).paddingHorizontal(10).paddingBottom(12), // 给整个行添加水平和底部的间距
+          // 如果宽度小于500，显示操作按钮
           if (width < 500)
             buildActions(logic, context, true).paddingHorizontal(12),
         ],
@@ -1151,12 +1145,12 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
             elevation: 0,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-              // child: enableTranslationToCN
-              //     ? (title
-              //         ? label(text.translateTagsCategoryToCN)
-              //         : label(TagsTranslation.translationTagWithNamespace(
-              //             text, key)))
-              //     : label(text),
+              child: enableTranslationToCN
+                  ? (title
+                      ? label(text.translateTagsCategoryToCN)
+                      : label(TagsTranslation.translationTagWithNamespace(
+                          text, key)))
+                  : label(text),
             ),
           ),
         ),
@@ -1235,7 +1229,7 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
                 Share.share(text);
               }),
               buildItem(
-                  favorite ? "已收藏" : "收藏",
+                  favorite ? "已追番" : "追番",
                   favorite
                       ? Icons.collections_bookmark
                       : Icons.collections_bookmark_outlined,
@@ -1244,67 +1238,11 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
                 if (LocalFavoritesManager().folderNames.contains(folder)) {
                   LocalFavoritesManager()
                       .addAnime(folder, toLocalFavoriteItem());
-                  showToast(message: "已收藏");
+                  showToast(message: "已追番");
                 }
               }),
-              if (width >= 500) buildItem("下载", Icons.download, download),
-              if (onLike != null)
-                buildItem(likeCount ?? "喜欢",
-                    isLiked ? Icons.favorite : Icons.favorite_border, onLike!),
-              if (openComments != null)
-                buildItem(commentsCount ?? "评论", Icons.comment, openComments!),
               if (searchSimilar != null)
                 buildItem("相似", Icons.search, searchSimilar!),
-              // if (downloadManager.isExists(downloadedId))
-              //   Flyout(
-              //     enableTap: true,
-              //     navigator: App.navigatorKey.currentState!,
-              //     withInkWell: true,
-              //     borderRadius: 8,
-              //     flyoutBuilder: (context) => FlyoutContent(
-              //       title: "是否删除下载",
-              //       actions: [
-              //         TextButton(
-              //           onPressed: () async {
-              //             Navigator.of(context).pop();
-              //             await downloadManager.delete([downloadedId]);
-              //             showToast(message: "已删除");
-              //             logic.update();
-              //           },
-              //           child: Text("删除"),
-              //         ),
-              //         TextButton(
-              //           onPressed: () {
-              //             Navigator.of(context).pop();
-              //           },
-              //           child: Text("取消"),
-              //         ),
-              //       ],
-              //     ),
-              //     child: SizedBox(
-              //       height: 72,
-              //       width: 64,
-              //       child: Column(
-              //         children: [
-              //           const SizedBox(
-              //             height: 12,
-              //           ),
-              //           Icon(
-              //             Icons.delete_outline,
-              //             size: 24,
-              //             color: Theme.of(context).colorScheme.primary,
-              //           ),
-              //           const SizedBox(
-              //             height: 8,
-              //           ),
-              //           Text(
-              //             "删除下载",
-              //             style: const TextStyle(fontSize: 12),
-              //           )
-              //         ],
-              //       ),
-              //     ),
-              //   ),
             ],
           ),
           if (width < 500)
@@ -1312,12 +1250,6 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
               height: 48,
               child: Row(
                 children: [
-                  Expanded(
-                    child: FilledButton.tonal(
-                      onPressed: download,
-                      child: Text("下载"),
-                    ),
-                  ),
                   const SizedBox(
                     width: 16,
                   ),
@@ -1345,14 +1277,13 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
           SizedBox(
               width: 100,
               child: Row(
-                children: [
-                  const SizedBox(
+                children: const [
+                  SizedBox(
                     width: 18,
                   ),
                   Text(
                     "信息",
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 18),
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
                   )
                 ],
               )),
@@ -1417,7 +1348,7 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
           Text(
-            "章节",
+            "集",
             style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
           ),
           const Spacer(),
@@ -1442,7 +1373,7 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
     int length = eps!.eps.length;
 
     if (!_logic.showFullEps) {
-      length = math.min(length, 20);
+      length = math.min(length, 24);
     }
 
     yield SliverPadding(
@@ -1454,6 +1385,7 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
           }
           bool visited =
               (_logic.history?.readEpisode ?? const {}).contains(i + 1);
+
           return Padding(
             padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
             child: InkWell(
@@ -1488,7 +1420,7 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
       ),
     );
 
-    if (eps!.eps.length > 20 && !_logic.showFullEps) {
+    if (eps!.eps.length > 24 && !_logic.showFullEps) {
       yield SliverToBoxAdapter(
         child: Align(
           alignment: Alignment.center,
@@ -1520,14 +1452,13 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
         child: SizedBox(
           width: 100,
           child: Row(
-            children: [
-              const SizedBox(
+            children: const [
+              SizedBox(
                 width: 18,
               ),
               Text(
                 "简介",
-                style:
-                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
               )
             ],
           ),
@@ -1569,14 +1500,13 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
         child: SizedBox(
           width: 100,
           child: Row(
-            children: [
-              const SizedBox(
+            children: const [
+              SizedBox(
                 width: 18,
               ),
               Text(
                 "预览",
-                style:
-                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
               )
             ],
           ),
@@ -1652,14 +1582,13 @@ abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
         child: SizedBox(
             width: 100,
             child: Row(
-              children: [
-                const SizedBox(
+              children: const [
+                SizedBox(
                   width: 18,
                 ),
                 Text(
                   "相关推荐",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w500, fontSize: 18),
+                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
                 )
               ],
             )),

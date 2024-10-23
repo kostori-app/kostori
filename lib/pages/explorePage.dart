@@ -31,31 +31,18 @@ class _ExplorepageState extends State<Explorepage>
   @override
   void initState() {
     // 打印原始设置
-    print("原始设置: ${appdata.appSettings.explorePages}");
+    // print("原始设置: ${appdata.appSettings.explorePages}");
 
     // 获取 pages
     pages = appdata.appSettings.explorePages;
-
-    // 打印获取的 pages
-    // print("打印获取的 pages: $pages");
 
     var all = AnimeSource.sources
         .map((e) => e.explorePages)
         .expand((e) => e.map((e) => e.title))
         .toList();
 
-    // print("打印所有可用的 explorePages: $all");
-    // print("打印筛选前的: $pages");
-
     pages = pages.where((e) => all.contains(e)).toList();
 
-    // print("打印筛选后的: $pages");
-
-    // print("条件判断: pages.isEmpty -> ${pages.isEmpty}");
-    // print(
-    //     "条件判断: explorePages.isNotEmpty -> ${appdata.appSettings.explorePages.isNotEmpty}");
-    // print(
-    //     "条件判断: pages.isEmpty && explorePages.isNotEmpty -> ${pages.isEmpty && appdata.appSettings.explorePages.isNotEmpty}");
     if (pages.isEmpty && appdata.appSettings.explorePages.isNotEmpty) {
       if (appdata.appSettings.explorePages.first.isNum) {
         // is odd data, update
@@ -69,9 +56,6 @@ class _ExplorepageState extends State<Explorepage>
       length: pages.length,
       vsync: this,
     );
-
-    // print("打印最终的 pages: $pages");
-    // print("打印最终的 controller 的长度: ${controller.length}");
 
     super.initState();
   }
@@ -104,8 +88,13 @@ class _ExplorepageState extends State<Explorepage>
   }
 
   /// 构建页面的主体内容
-  Widget buildBody(String i) =>
-      _SingleExplorePage(i, key: Key(i)); // 返回一个包含单个探索页面的 Widget
+  // Widget buildBody(String i) =>
+  //     _SingleExplorePage(i, key: Key(i)); // 返回一个包含单个探索页面的 Widget
+
+  Widget buildBody(String i) {
+    // print("构建主体 with i: $i"); // 打印传入的参数 i
+    return _SingleExplorePage(i, key: Key(i));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -230,6 +219,7 @@ class _SingleExplorePageState extends StateWithController<_SingleExplorePage> {
         if (d.title == widget.title) {
           data = d; // 找到页面数据
           animeSourceKey = source.key; // 存储来源关键字
+          // print(data);
           return;
         }
       }
@@ -239,10 +229,12 @@ class _SingleExplorePageState extends StateWithController<_SingleExplorePage> {
 
   @override
   Widget build(BuildContext context) {
+    // print("loadPage is ${data.loadPage != null ? 'not null' : 'null'}");
     // 根据页面类型构建相应的组件
     if (data.loadMultiPart != null) {
       return buildMultiPart(); // 构建多部分页面
     } else if (data.loadPage != null) {
+      // print('构建动漫页');
       return buildAnimeList(); // 构建动漫列表页面
     } else if (data.loadMixed != null) {
       return _MixedExplorePage(
@@ -265,13 +257,24 @@ class _SingleExplorePageState extends StateWithController<_SingleExplorePage> {
   }
 
   // 构建动漫列表
-  Widget buildAnimeList() =>
-      _AnimeList(data.loadPage!, tag.toString(), animeSourceKey);
+  // Widget buildAnimeList() =>
+  //     _AnimeList(data.loadPage!, tag.toString(), animeSourceKey);
+
+  Widget buildAnimeList() {
+    // print("Calling buildAnimeList...");
+    // print("loadPage is ${data.loadPage != null ? 'not null' : 'null'}");
+    // print("Tag: ${tag.toString()}");
+    // print("AnimeSourceKey: $animeSourceKey");
+
+    return _AnimeList(data.loadPage!, tag.toString(), animeSourceKey);
+  }
 
   // 加载数据
   void load() async {
     var res = await data.loadMultiPart!(); // 异步加载多部分数据
     loading = false; // 设置加载状态为 false
+    // print("Result from loadMultiPart: ${res.data}");
+    // print("Error Message: ${res.errorMessage}");
     if (mounted) {
       setState(() {
         if (res.error) {
@@ -303,6 +306,7 @@ class _SingleExplorePageState extends StateWithController<_SingleExplorePage> {
 
   // 构建页面
   Widget buildPage() {
+    print("Building page..."); // 打印构建页面的消息
     return SmoothCustomScrollView(
       slivers: _buildPage().toList(), // 使用构建的 slivers 列表
     );
@@ -310,7 +314,9 @@ class _SingleExplorePageState extends StateWithController<_SingleExplorePage> {
 
   // 生成页面的 slivers
   Iterable<Widget> _buildPage() sync* {
+    print("Generating slivers..."); // 打印生成 slivers 的消息
     for (var part in parts!) {
+      print("Processing part: $part"); // 打印当前处理的 part
       yield* _buildExplorePagePart(part, animeSourceKey); // 迭代生成每个部分
     }
   }
@@ -350,8 +356,12 @@ class _AnimeList extends AnimesPage<BaseAnime> {
 
   // 获取动漫数据的方法，使用 builder 进行数据请求
   @override
-  Future<Res<List<BaseAnime>>> getAnimes(int i) {
-    return builder(i); // 调用 builder 函数获取第 i 页的数据
+  Future<Res<List<BaseAnime>>> getAnimes(int i) async {
+    // return builder(i); // 调用 builder 函数获取第 i 页的数据
+    // print("Fetching anime data for page: $i");
+    var result = await builder(i);
+    // print("Result from builder: $result");
+    return result;
   }
 
   @override
@@ -506,9 +516,15 @@ Iterable<Widget> _buildExplorePagePart(
   /// 构建动画内容的 Widget。
   ///
   /// [part] 是包含动画列表的 ExplorePagePart 对象。
+  // Widget buildAnimes(ExplorePagePart part) {
+  //   return SliverGridAnimes(
+  //       animes: part.animes, sourceKey: sourceKey); // 返回动画网格
+  // }
+
   Widget buildAnimes(ExplorePagePart part) {
-    return SliverGridAnimes(
-        animes: part.animes, sourceKey: sourceKey); // 返回动画网格
+    // print("Animes: ${part.animes}");
+    // print("SourceKey: $sourceKey");
+    return SliverGridAnimes(animes: part.animes, sourceKey: sourceKey);
   }
 
   // 构建标题并生成 Widget

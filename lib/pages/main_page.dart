@@ -15,36 +15,6 @@ import '../foundation/app_page_route.dart';
 import '../network/webdav.dart';
 import 'category_page.dart';
 
-// class MainPage extends StatefulWidget {
-//   const MainPage({Key? key}) : super(key: key);
-//   static NaviObserver? _observer;
-//   static GlobalKey<NavigatorState>? _navigatorKey;
-//   static void to(Widget Function() widget,
-//       {bool preventDuplicate = false}) async {
-//     while (_navigatorKey == null) {
-//       await Future.delayed(const Duration(milliseconds: 100));
-//     }
-//     if (preventDuplicate) {
-//       var page = widget();
-//       if ("/${page.runtimeType}" == _observer?.routes.last.toString()) return;
-//     }
-//     App.to(_navigatorKey!.currentContext!, widget);
-//   }
-//
-//   final String title;
-//   static canPop() =>
-//       Navigator.of(_navigatorKey?.currentContext ?? App.globalContext!)
-//           .canPop();
-//
-//   static void back() {
-//     if (canPop()) {
-//       _navigatorKey?.currentState?.pop();
-//     }
-//   }
-//
-//   @override
-//   State<MainPage> createState() => _MyHomePageState();
-// }
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
 
@@ -79,7 +49,6 @@ class MainPageState extends State<MainPage> {
     notifications.requestPermission();
     notifications.cancelAll();
     _observer = NaviObserver();
-    // super.initState();
 
     if (appdata.firstUse[3] == "0") {
       appdata.firstUse[3] = "1";

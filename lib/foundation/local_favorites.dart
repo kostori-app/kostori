@@ -7,6 +7,8 @@ import 'package:sqlite3/sqlite3.dart';
 import 'dart:io';
 import '../base.dart';
 import '../network/base_anime.dart';
+import '../network/girigirilove_network/ggl_image.dart';
+import '../network/girigirilove_network/ggl_models.dart';
 import '../network/webdav.dart';
 import '../pages/favorites/main_favorites_page.dart';
 import 'app.dart';
@@ -24,17 +26,17 @@ final class FavoriteType {
 
   const FavoriteType(this.key);
 
-  static FavoriteType get picacg => const FavoriteType(0);
+  static FavoriteType get girigililove => const FavoriteType(0);
 
-  static FavoriteType get ehentai => const FavoriteType(1);
-
-  static FavoriteType get jm => const FavoriteType(2);
-
-  static FavoriteType get hitomi => const FavoriteType(3);
-
-  static FavoriteType get htManga => const FavoriteType(4);
-
-  static FavoriteType get nhentai => const FavoriteType(6);
+  // static FavoriteType get ehentai => const FavoriteType(1);
+  //
+  // static FavoriteType get jm => const FavoriteType(2);
+  //
+  // static FavoriteType get hitomi => const FavoriteType(3);
+  //
+  // static FavoriteType get htManga => const FavoriteType(4);
+  //
+  // static FavoriteType get nhentai => const FavoriteType(6);
 
   // AnimeType get animeType {
   //   if (key >= 0 && key <= 6) {
@@ -135,13 +137,13 @@ class FavoriteItem {
   //       target = anime.link,
   //       coverPath = anime.coverPath;
   //
-  // FavoriteItem.fromJmAnime(JmAnimeBrief anime)
-  //     : name = anime.name,
-  //       author = anime.author,
-  //       type = FavoriteType.jm,
-  //       tags = [],
-  //       target = anime.id,
-  //       coverPath = getJmCoverUrl(anime.id);
+  FavoriteItem.fromGglAnime(GglAnimeBrief anime)
+      : name = anime.name,
+        author = anime.subName,
+        type = FavoriteType.girigililove,
+        tags = [],
+        target = anime.id,
+        coverPath = getGglCoverUrl(anime.dataSrc);
   //
   // FavoriteItem.fromHitomi(HitomiAnimeBrief anime)
   //     : name = anime.name,

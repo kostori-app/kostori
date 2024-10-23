@@ -251,8 +251,8 @@ abstract class AnimeTile extends StatelessWidget {
     var history = appdata.settings[73] == '1'
         ? HistoryManager().findSync(animeID!)
         : null;
-    if (history?.page == 0) {
-      history!.page = 1;
+    if (history?.nowPlaying == 0) {
+      history!.nowPlaying = 1;
     }
 
     if (!isFavorite && history == null) {
@@ -881,6 +881,36 @@ Widget buildAnimeTile(BuildContext context, BaseAnime item, String sourceKey,
     return CustomAnimeTile(item as CustomAnime,
         addonMenuOptions: addonMenuOptions);
   }
+}
+
+/// return the first blocked keyword, or null if not blocked
+String? isBlocked(BaseAnime item) {
+  for (var word in appdata.blockingKeyword) {
+    if (item.title.contains(word)) {
+      return word;
+    }
+    if (item.subTitle.contains(word)) {
+      return word;
+    }
+    if (item.description.contains(word)) {
+      return word;
+    }
+    for (var tag in item.tags) {
+      if (tag == word) {
+        return word;
+      }
+      if (tag.contains(':')) {
+        tag = tag.split(':')[1];
+        if (tag == word) {
+          return word;
+        }
+      }
+      // if (item.enableTagsTranslation && tag.translateTagsToCN == word) {
+      //   return word;
+      // }
+    }
+  }
+  return null;
 }
 
 // class _BlockingPane extends StatefulWidget {

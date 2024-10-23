@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'dart:collection';
-// import 'dart:convert';
 import 'dart:io';
 
-// import 'package:kostori/foundation/state_controller.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import '../anime_source/anime_source.dart';
 import '../network/webdav.dart';
 import 'app.dart';
 import 'log.dart';
@@ -21,33 +20,25 @@ abstract mixin class HistoryMixin {
 
   String get target;
 
-  Object? get maxPage => null;
+  Object? get playbackTime => null;
 
   HistoryType get historyType;
 }
 
 final class HistoryType {
-  static HistoryType get picacg => const HistoryType(0);
-
-  static HistoryType get ehentai => const HistoryType(1);
-
-  static HistoryType get jmAnime => const HistoryType(2);
-
-  static HistoryType get hitomi => const HistoryType(3);
-
-  static HistoryType get htmanga => const HistoryType(4);
-
-  static HistoryType get nhentai => const HistoryType(5);
+  static HistoryType get gglAnime => const HistoryType(0);
 
   final int value;
 
-  // String get name {
-  //   if (value >= 0 && value <= 5) {
-  //     return ["picacg", "ehentai", "jm", "hitomi", "htmanga", "nhentai"][value];
-  //   } else {
-  //     return AnimeSource.fromIntKey(value)?.name ?? "Unknown";
-  //   }
-  // }
+  String get name {
+    if (value >= 0 && value <= 5) {
+      return [
+        "girigirilove",
+      ][value];
+    } else {
+      return AnimeSource.fromIntKey(value)?.name ?? "Unknown";
+    }
+  }
 
   const HistoryType(this.value);
 
@@ -58,13 +49,13 @@ final class HistoryType {
   @override
   int get hashCode => value.hashCode;
 
-  // AnimeSource? get comicSource {
-  //   if (value >= 0 && value <= 5) {
-  //     return AnimeSource.find(name);
-  //   } else {
-  //     return AnimeSource.fromIntKey(value);
-  //   }
-  // }
+  AnimeSource? get animeSource {
+    if (value >= 0 && value <= 5) {
+      return AnimeSource.find(name);
+    } else {
+      return AnimeSource.fromIntKey(value);
+    }
+  }
 }
 
 base class History extends LinkedListEntry<History> {
@@ -81,22 +72,22 @@ base class History extends LinkedListEntry<History> {
   /// 标记为0表示没有阅读位置记录
   int ep;
 
-  int page;
+  int nowPlaying;
 
   String target;
 
   Set<int> readEpisode;
 
-  int? maxPage;
+  int? playbackTime;
 
   History(this.type, this.time, this.title, this.subtitle, this.cover, this.ep,
-      this.page, this.target,
-      [this.readEpisode = const <int>{}, this.maxPage]);
+      this.nowPlaying, this.target,
+      [this.readEpisode = const <int>{}, this.playbackTime]);
 
   History.fromModel(
       {required HistoryMixin model,
       required this.ep,
-      required this.page,
+      required this.nowPlaying,
       this.readEpisode = const <int>{},
       DateTime? time})
       : type = model.historyType,
@@ -113,10 +104,10 @@ base class History extends LinkedListEntry<History> {
         "subtitle": subtitle,
         "cover": cover,
         "ep": ep,
-        "page": page,
+        "nowPlaying": nowPlaying,
         "target": target,
         "readEpisode": readEpisode.toList(),
-        "max_page": maxPage
+        "playbackTime": playbackTime
       };
 
   History.fromMap(Map<String, dynamic> map)
@@ -126,15 +117,15 @@ base class History extends LinkedListEntry<History> {
         subtitle = map["subtitle"],
         cover = map["cover"],
         ep = map["ep"],
-        page = map["page"],
+        nowPlaying = map["nowPlaying"],
         target = map["target"],
         readEpisode = Set<int>.from(
             (map["readEpisode"] as List<dynamic>?)?.toSet() ?? const <int>{}),
-        maxPage = map["max_page"];
+        playbackTime = map["playbackTime"];
 
   @override
   String toString() {
-    return 'NewHistory{type: $type, time: $time, title: $title, subtitle: $subtitle, cover: $cover, ep: $ep, page: $page, target: $target}';
+    return 'NewHistory{type: $type, time: $time, title: $title, subtitle: $subtitle, cover: $cover, ep: $ep, nowPlaying: $nowPlaying, target: $target}';
   }
 
   History.fromRow(Row row)
@@ -144,24 +135,24 @@ base class History extends LinkedListEntry<History> {
         subtitle = row["subtitle"],
         cover = row["cover"],
         ep = row["ep"],
-        page = row["page"],
+        nowPlaying = row["nowPlaying"],
         target = row["target"],
         readEpisode = Set<int>.from((row["readEpisode"] as String)
             .split(',')
             .where((element) => element != "")
             .map((e) => int.parse(e))),
-        maxPage = row["max_page"];
+        playbackTime = row["playbackTime"];
 
   static Future<History> findOrCreate(
     HistoryMixin model, {
     int ep = 0,
-    int page = 0,
+    int nowPlaying = 0,
   }) async {
     var history = await HistoryManager().find(model.target);
     if (history != null) {
       return history;
     }
-    history = History.fromModel(model: model, ep: ep, page: page);
+    history = History.fromModel(model: model, ep: ep, nowPlaying: nowPlaying);
     HistoryManager().addHistory(history);
     return history;
   }
@@ -171,7 +162,7 @@ base class History extends LinkedListEntry<History> {
     if (history != null) {
       return history;
     }
-    history = History.fromModel(model: model, ep: 0, page: 0);
+    history = History.fromModel(model: model, ep: 0, nowPlaying: 0);
     HistoryManager().addHistory(history);
     return history;
   }
@@ -235,9 +226,9 @@ class HistoryManager {
           time int,
           type int,
           ep int,
-          page int,
+          nowPlaying int,
           readEpisode text,
-          max_page int
+          playbackTime int
         );
       """);
 
@@ -245,21 +236,12 @@ class HistoryManager {
     var res = _db.select("""
       PRAGMA table_info(history);
     """);
-    if (res.every((row) => row["name"] != "max_page")) {
+    if (res.every((row) => row["name"] != "playbackTime")) {
       _db.execute("""
         alter table history
-        add column max_page int;
+        add column playbackTime int;
       """);
     }
-
-    // 迁移早期版本的数据
-    // var file = File("${App.dataPath}/history.json");
-    // if (file.existsSync()) {
-    //   readDataFromJson(jsonDecode(file.readAsStringSync()));
-    //   file.deleteSync();
-    // }
-    //
-    // ImageFavoriteManager.init();
   }
 
   void readDataFromJson(List<dynamic> json) {
@@ -288,7 +270,7 @@ class HistoryManager {
     """, [newItem.target]);
     if (res.isEmpty) {
       _db.execute("""
-        insert into history (target, title, subtitle, cover, time, type, ep, page, readEpisode, max_page)
+        insert into history (target, title, subtitle, cover, time, type, ep, nowPlaying, readEpisode, playbackTime)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       """, [
         newItem.target,
@@ -298,9 +280,9 @@ class HistoryManager {
         newItem.time.millisecondsSinceEpoch,
         newItem.type.value,
         newItem.ep,
-        newItem.page,
+        newItem.nowPlaying,
         newItem.readEpisode.join(','),
-        newItem.maxPage
+        newItem.playbackTime
       ]);
     } else {
       _db.execute("""
@@ -318,13 +300,13 @@ class HistoryManager {
       [bool updateMePage = true]) async {
     _db.execute("""
         update history
-        set time = ${DateTime.now().millisecondsSinceEpoch}, ep = ?, page = ?, readEpisode = ?, max_page = ?
+        set time = ${DateTime.now().millisecondsSinceEpoch}, ep = ?, nowPlaying = ?, readEpisode = ?, playbackTime = ?
         where target == ?;
     """, [
       history.ep,
-      history.page,
+      history.nowPlaying,
       history.readEpisode.join(','),
-      history.maxPage,
+      history.playbackTime,
       history.target
     ]);
     if (updateMePage) {

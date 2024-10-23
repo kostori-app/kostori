@@ -11,7 +11,7 @@ abstract class BaseAnime {
 
   String get description;
 
-  bool get enableTagsTranslation => false;
+  // bool get enableTagsTranslation => false;
 
   const BaseAnime();
 }

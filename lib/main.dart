@@ -6,9 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/pages/welcome_page.dart';
 import 'package:kostori/tools/mouse_listener.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 import 'components/components.dart';
 import 'foundation/log.dart';
@@ -36,6 +39,8 @@ void main(List<String> args) {
     };
     notFirstUse = appdata.firstUse[3] == "1";
     setNetworkProxy();
+    MediaKit.ensureInitialized();
+    await Hive.initFlutter();
     runApp(const MyApp());
     if (App.isDesktop) {
       await windowManager.ensureInitialized();

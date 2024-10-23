@@ -198,9 +198,9 @@ abstract class AnimesPage<T extends BaseAnime> extends StatelessWidget {
               List<T> animes = [];
               if (appdata.appSettings.fullyHideBlockedWorks) {
                 for (var anime in logic.animes!) {
-                  // if (isBlocked(comic) == null) {
-                  //   Animes.add(comic);
-                  // }
+                  if (isBlocked(anime) == null) {
+                    animes.add(anime);
+                  }
                 }
               } else {
                 animes = logic.animes!;

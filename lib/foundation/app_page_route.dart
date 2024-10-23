@@ -4,8 +4,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 
-import 'app.dart';
-
 const double _kBackGestureWidth = 20.0;
 const int _kMaxDroppedSwipePageForwardAnimationTime = 800;
 const int _kMaxPageBackAnimationTime = 300;

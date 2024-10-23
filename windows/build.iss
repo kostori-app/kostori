@@ -55,7 +55,13 @@ Source: "{#RootPath}\build\windows\x64\runner\Release\url_launcher_windows_plugi
 Source: "{#RootPath}\build\windows\x64\runner\Release\zip_flutter.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#RootPath}\build\windows\x64\runner\Release\screen_retriever_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#RootPath}\build\windows\x64\runner\Release\window_manager_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RootPath}\build\windows\x64\runner\Release\media_kit_video_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RootPath}\build\windows\x64\runner\Release\screen_brightness_windows_plugin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RootPath}\build\windows\x64\runner\Release\libEGL.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RootPath}\build\windows\x64\runner\Release\libmpv-2.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#RootPath}\build\windows\x64\runner\Release\libGLESv2.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#RootPath}\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
+
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
