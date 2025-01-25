@@ -1,5 +1,44 @@
+/*
+Kostori JavaScript Library
+
+This library provides a set of APIs for interacting with the Kostori app.
+*/
+
+function setTimeout(callback, delay) {
+    sendMessage({
+        method: 'delay',
+        time: delay,
+    }).then(callback);
+}
+
 /// encode, decode, hash, decrypt
 let Convert = {
+    /**
+     * @param str {string}
+     * @returns {ArrayBuffer}
+     */
+    encodeUtf8: (str) => {
+        return sendMessage({
+            method: "convert",
+            type: "utf8",
+            value: str,
+            isEncode: true
+        });
+    },
+
+    /**
+     * @param value {ArrayBuffer}
+     * @returns {string}
+     */
+    decodeUtf8: (value) => {
+        return sendMessage({
+            method: "convert",
+            type: "utf8",
+            value: value,
+            isEncode: false
+        });
+    },
+
     /**
      * @param {ArrayBuffer} value
      * @returns {string}
@@ -75,6 +114,41 @@ let Convert = {
             type: "sha512",
             value: value,
             isEncode: true
+        });
+    },
+
+    /**
+     * @param key {ArrayBuffer}
+     * @param value {ArrayBuffer}
+     * @param hash {string} - md5, sha1, sha256, sha512
+     * @returns {ArrayBuffer}
+     */
+    hmac: (key, value, hash) => {
+        return sendMessage({
+            method: "convert",
+            type: "hmac",
+            value: value,
+            key: key,
+            hash: hash,
+            isEncode: true
+        });
+    },
+
+    /**
+     * @param key {ArrayBuffer}
+     * @param value {ArrayBuffer}
+     * @param hash {string} - md5, sha1, sha256, sha512
+     * @returns {string} - hex string
+     */
+    hmacString: (key, value, hash) => {
+        return sendMessage({
+            method: "convert",
+            type: "hmac",
+            value: value,
+            key: key,
+            hash: hash,
+            isEncode: true,
+            isString: true
         });
     },
 
@@ -157,12 +231,67 @@ let Convert = {
             key: key,
             isEncode: false
         });
-    }
+    },
+    /** Encode bytes to hex string
+     * @param bytes {ArrayBuffer}
+     * @return {string}
+     */
+    hexEncode: (bytes) => {
+        const hexDigits = '0123456789abcdef';
+        const view = new Uint8Array(bytes);
+        let charCodes = new Uint8Array(view.length * 2);
+        let j = 0;
+
+        for (let i = 0; i < view.length; i++) {
+            let byte = view[i];
+            charCodes[j++] = hexDigits.charCodeAt((byte >> 4) & 0xF);
+            charCodes[j++] = hexDigits.charCodeAt(byte & 0xF);
+        }
+
+        return String.fromCharCode(...charCodes);
+    },
 }
 
+/**
+ * create a time-based uuid
+ *
+ * Note: the engine will generate a new uuid every time it is called
+ *
+ * To get the same uuid, please save it to the local storage
+ *
+ * @returns {string}
+ */
+function createUuid() {
+    return sendMessage({
+        method: "uuid"
+    });
+}
+
+/**
+ * Generate a random integer between min and max
+ * @param min {number}
+ * @param max {number}
+ * @returns {number}
+ */
 function randomInt(min, max) {
     return sendMessage({
         method: 'random',
+        type: 'int',
+        min: min,
+        max: max
+    });
+}
+
+/**
+ * Generate a random double between min and max
+ * @param min {number}
+ * @param max {number}
+ * @returns {number}
+ */
+function randomDouble(min, max) {
+    return sendMessage({
+        method: 'random',
+        type: 'double',
         min: min,
         max: max
     });
@@ -171,7 +300,8 @@ function randomInt(min, max) {
 class _Timer {
     delay = 0;
 
-    callback = () => { };
+    callback = () => {
+    };
 
     status = false;
 
@@ -204,11 +334,17 @@ function setInterval(callback, delay) {
     return timer;
 }
 
-function Cookie(name, value) {
-    let obj = {};
-    obj.name = name;
-    obj.value = value;
-    return obj;
+/**
+ * Create a cookie object.
+ * @param name {string}
+ * @param value {string}
+ * @param domain {string}
+ * @constructor
+ */
+function Cookie({name, value, domain}) {
+    this.name = name;
+    this.value = value;
+    this.domain = domain;
 }
 
 /**
@@ -222,7 +358,7 @@ let Network = {
      * @param {string} url - The URL to send the request to.
      * @param {Object} headers - The headers to include in the request.
      * @param data - The data to send with the request.
-     * @returns {Promise<ArrayBuffer>} The response from the request.
+     * @returns {Promise<{status: number, headers: {}, body: ArrayBuffer}>} The response from the request.
      */
     async fetchBytes(method, url, headers, data) {
         let result = await sendMessage({
@@ -247,7 +383,7 @@ let Network = {
      * @param {string} url - The URL to send the request to.
      * @param {Object} headers - The headers to include in the request.
      * @param data - The data to send with the request.
-     * @returns {Promise<Object>} The response from the request.
+     * @returns {Promise<{status: number, headers: {}, body: string}>} The response from the request.
      */
     async sendRequest(method, url, headers, data) {
         let result = await sendMessage({
@@ -269,7 +405,7 @@ let Network = {
      * Sends an HTTP GET request.
      * @param {string} url - The URL to send the request to.
      * @param {Object} headers - The headers to include in the request.
-     * @returns {Promise<Object>} The response from the request.
+     * @returns {Promise<{status: number, headers: {}, body: string}>} The response from the request.
      */
     async get(url, headers) {
         return this.sendRequest('GET', url, headers);
@@ -280,7 +416,7 @@ let Network = {
      * @param {string} url - The URL to send the request to.
      * @param {Object} headers - The headers to include in the request.
      * @param data - The data to send with the request.
-     * @returns {Promise<Object>} The response from the request.
+     * @returns {Promise<{status: number, headers: {}, body: string}>} The response from the request.
      */
     async post(url, headers, data) {
         return this.sendRequest('POST', url, headers, data);
@@ -291,7 +427,7 @@ let Network = {
      * @param {string} url - The URL to send the request to.
      * @param {Object} headers - The headers to include in the request.
      * @param data - The data to send with the request.
-     * @returns {Promise<Object>} The response from the request.
+     * @returns {Promise<{status: number, headers: {}, body: string}>} The response from the request.
      */
     async put(url, headers, data) {
         return this.sendRequest('PUT', url, headers, data);
@@ -302,7 +438,7 @@ let Network = {
      * @param {string} url - The URL to send the request to.
      * @param {Object} headers - The headers to include in the request.
      * @param data - The data to send with the request.
-     * @returns {Promise<Object>} The response from the request.
+     * @returns {Promise<{status: number, headers: {}, body: string}>} The response from the request.
      */
     async patch(url, headers, data) {
         return this.sendRequest('PATCH', url, headers, data);
@@ -312,7 +448,7 @@ let Network = {
      * Sends an HTTP DELETE request.
      * @param {string} url - The URL to send the request to.
      * @param {Object} headers - The headers to include in the request.
-     * @returns {Promise<Object>} The response from the request.
+     * @returns {Promise<{status: number, headers: {}, body: string}>} The response from the request.
      */
     async delete(url, headers) {
         return this.sendRequest('DELETE', url, headers);
@@ -359,6 +495,37 @@ let Network = {
 };
 
 /**
+ * [fetch] function for sending HTTP requests. Same api as the browser fetch.
+ * @param url {string}
+ * @param options {{method: string, headers: Object, body: any}}
+ * @returns {Promise<{ok: boolean, status: number, statusText: string, headers: {}, arrayBuffer: (function(): Promise<ArrayBuffer>), text: (function(): Promise<string>), json: (function(): Promise<any>)}>}
+ * @since 1.2.0
+ */
+async function fetch(url, options) {
+    let method = 'GET';
+    let headers = {};
+    let data = null;
+
+    if (options) {
+        method = options.method || method;
+        headers = options.headers || headers;
+        data = options.body || data;
+    }
+
+    let result = await Network.fetchBytes(method, url, headers, data);
+
+    return {
+        ok: result.status >= 200 && result.status < 300,
+        status: result.status,
+        statusText: '',
+        headers: result.headers,
+        arrayBuffer: async () => result.body,
+        text: async () => Convert.decodeUtf8(result.body),
+        json: async () => JSON.parse(Convert.decodeUtf8(result.body)),
+    }
+}
+
+/**
  * HtmlDocument class for parsing HTML and querying elements.
  */
 class HtmlDocument {
@@ -384,7 +551,7 @@ class HtmlDocument {
     /**
      * Query a single element from the HTML document.
      * @param {string} query - The query string.
-     * @returns {HtmlDom} The first matching element.
+     * @returns {HtmlElement | null} The first matching element.
      */
     querySelector(query) {
         let k = sendMessage({
@@ -393,14 +560,14 @@ class HtmlDocument {
             key: this.key,
             query: query
         })
-        if(!k) return null;
-        return new HtmlDom(k);
+        if (k == null) return null;
+        return new HtmlElement(k, this.key);
     }
 
     /**
      * Query all matching elements from the HTML document.
      * @param {string} query - The query string.
-     * @returns {HtmlDom[]} An array of matching elements.
+     * @returns {HtmlElement[]} An array of matching elements.
      */
     querySelectorAll(query) {
         let ks = sendMessage({
@@ -409,22 +576,54 @@ class HtmlDocument {
             key: this.key,
             query: query
         })
-        return ks.map(k => new HtmlDom(k));
+        return ks.map(k => new HtmlElement(k, this.key));
+    }
+
+    /**
+     * Dispose the HTML document.
+     * This should be called when the document is no longer needed.
+     */
+    dispose() {
+        sendMessage({
+            method: "html",
+            function: "dispose",
+            key: this.key
+        })
+    }
+
+    /**
+     * Get the element by its id.
+     * @param id {string}
+     * @returns {HtmlElement|null}
+     */
+    getElementById(id) {
+        let k = sendMessage({
+            method: "html",
+            function: "getElementById",
+            key: this.key,
+            id: id
+        })
+        if (k == null) return null;
+        return new HtmlElement(k, this.key);
     }
 }
 
 /**
  * HtmlDom class for interacting with HTML elements.
  */
-class HtmlDom {
+class HtmlElement {
     key = 0;
+
+    doc = 0;
 
     /**
      * Constructor for HtmlDom.
      * @param {number} k - The key of the element.
+     * @param {number} doc - The key of the document.
      */
-    constructor(k) {
+    constructor(k, doc) {
         this.key = k;
+        this.doc = doc;
     }
 
     /**
@@ -435,7 +634,8 @@ class HtmlDom {
         return sendMessage({
             method: "html",
             function: "getText",
-            key: this.key
+            key: this.key,
+            doc: this.doc,
         })
     }
 
@@ -447,52 +647,219 @@ class HtmlDom {
         return sendMessage({
             method: "html",
             function: "getAttributes",
-            key: this.key
+            key: this.key,
+            doc: this.doc,
         })
     }
 
     /**
      * Query a single element from the current element.
      * @param {string} query - The query string.
-     * @returns {HtmlDom} The first matching element.
+     * @returns {HtmlElement} The first matching element.
      */
     querySelector(query) {
         let k = sendMessage({
             method: "html",
             function: "dom_querySelector",
             key: this.key,
-            query: query
+            query: query,
+            doc: this.doc,
         })
-        if(!k) return null;
-        return new HtmlDom(k);
+        if (k == null) return null;
+        return new HtmlElement(k, this.doc);
     }
 
     /**
      * Query all matching elements from the current element.
      * @param {string} query - The query string.
-     * @returns {HtmlDom[]} An array of matching elements.
+     * @returns {HtmlElement[]} An array of matching elements.
      */
     querySelectorAll(query) {
         let ks = sendMessage({
             method: "html",
             function: "dom_querySelectorAll",
             key: this.key,
-            query: query
+            query: query,
+            doc: this.doc,
         })
-        return ks.map(k => new HtmlDom(k));
+        return ks.map(k => new HtmlElement(k, this.doc));
     }
 
     /**
      * Get the children of the current element.
-     * @returns {HtmlDom[]} An array of child elements.
+     * @returns {HtmlElement[]} An array of child elements.
      */
     get children() {
         let ks = sendMessage({
             method: "html",
             function: "getChildren",
-            key: this.key
+            key: this.key,
+            doc: this.doc,
         })
-        return ks.map(k => new HtmlDom(k));
+        return ks.map(k => new HtmlElement(k, this.doc));
+    }
+
+    /**
+     * Get the nodes of the current element.
+     * @returns {HtmlNode[]} An array of nodes.
+     */
+    get nodes() {
+        let ks = sendMessage({
+            method: "html",
+            function: "getNodes",
+            key: this.key,
+            doc: this.doc,
+        })
+        return ks.map(k => new HtmlNode(k, this.doc));
+    }
+
+    /**
+     * Get inner HTML of the element.
+     * @returns {string} The inner HTML.
+     */
+    get innerHTML() {
+        return sendMessage({
+            method: "html",
+            function: "getInnerHTML",
+            key: this.key,
+            doc: this.doc,
+        })
+    }
+
+    /**
+     * Get parent element of the element. If the element has no parent, return null.
+     * @returns {HtmlElement|null}
+     */
+    get parent() {
+        let k = sendMessage({
+            method: "html",
+            function: "getParent",
+            key: this.key,
+            doc: this.doc,
+        })
+        if (k == null) return null;
+        return new HtmlElement(k, this.doc);
+    }
+
+    /**
+     * Get class names of the element.
+     * @returns {string[]} An array of class names.
+     */
+    get classNames() {
+        return sendMessage({
+            method: "html",
+            function: "getClassNames",
+            key: this.key,
+            doc: this.doc,
+        })
+    }
+
+    /**
+     * Get id of the element.
+     * @returns {string | null} The id of the element.
+     */
+    get id() {
+        return sendMessage({
+            method: "html",
+            function: "getId",
+            key: this.key,
+            doc: this.doc,
+        })
+    }
+
+    /**
+     * Get local name of the element.
+     * @returns {string} The tag name of the element.
+     */
+    get localName() {
+        return sendMessage({
+            method: "html",
+            function: "getLocalName",
+            key: this.key,
+            doc: this.doc,
+        })
+    }
+
+    /**
+     * Get the previous sibling element of the element. If the element has no previous sibling, return null.
+     * @returns {HtmlElement|null}
+     */
+    get previousElementSibling() {
+        let k = sendMessage({
+            method: "html",
+            function: "getPreviousSibling",
+            key: this.key,
+            doc: this.doc,
+        })
+        if (k == null) return null;
+        return new HtmlElement(k, this.doc);
+    }
+
+    /**
+     * Get the next sibling element of the element. If the element has no next sibling, return null.
+     * @returns {HtmlElement|null}
+     */
+    get nextElementSibling() {
+        let k = sendMessage({
+            method: "html",
+            function: "getNextSibling",
+            key: this.key,
+            doc: this.doc,
+        })
+        if (k == null) return null;
+        return new HtmlElement(k, this.doc);
+    }
+}
+
+class HtmlNode {
+    key = 0;
+
+    doc = 0;
+
+    constructor(k, doc) {
+        this.key = k;
+        this.doc = doc;
+    }
+
+    /**
+     * Get the text content of the node.
+     * @returns {string} The text content.
+     */
+    get text() {
+        return sendMessage({
+            method: "html",
+            function: "node_text",
+            key: this.key,
+            doc: this.doc,
+        })
+    }
+
+    /**
+     * Get the type of the node.
+     * @returns {string} The type of the node. ("text", "element", "comment", "document", "unknown")
+     */
+    get type() {
+        return sendMessage({
+            method: "html",
+            function: "node_type",
+            key: this.key,
+            doc: this.doc,
+        })
+    }
+
+    /**
+     * Convert the node to an HtmlElement. If the node is not an element, return null.
+     * @returns {HtmlElement|null}
+     */
+    toElement() {
+        let k = sendMessage({
+            method: "html",
+            function: "node_toElement",
+            key: this.key,
+            doc: this.doc,
+        })
+        if (k == null) return null;
+        return new HtmlElement(k, this.doc);
     }
 }
 
@@ -517,6 +884,155 @@ let console = {
     },
 };
 
+/**
+ * Create a anime object
+ * @param id {string}
+ * @param title {string}
+ * @param subtitle {string}
+ * @param subTitle {string} - equal to subtitle
+ * @param cover {string}
+ * @param tags {string[]}
+ * @param description {string}
+ * @param maxPage {number?}
+ * @param language {string?}
+ * @param favoriteId {string?} - Only set this field if the anime is from favorites page
+ * @param stars {number?} - 0-5, double
+ * @constructor
+ */
+function Anime({id, title, subtitle, subTitle, cover, tags, description, maxPage, language, favoriteId, stars}) {
+    this.id = id;
+    this.title = title;
+    this.subtitle = subtitle;
+    this.subTitle = subTitle;
+    this.cover = cover;
+    this.tags = tags;
+    this.description = description;
+    this.maxPage = maxPage;
+    this.language = language;
+    this.favoriteId = favoriteId;
+    this.stars = stars;
+}
+
+/**
+ * Create a anime details object
+ * @param title {string}
+ * @param subtitle {string}
+ * @param subTitle {string} - equal to subtitle
+ * @param cover {string}
+ * @param description {string?}
+ * @param tags {Map<string, string[]> | {} | null | undefined}
+ * @param chapters {Map<string, string> | {} | null | undefined} - key: chapter id, value: chapter title
+ * @param isFavorite {boolean | null | undefined} - favorite status. If the anime source supports multiple folders, this field should be null
+ * @param subId {string?} - a param which is passed to comments api
+ * @param thumbnails {string[]?} - for multiple page thumbnails, set this to null, and use `loadThumbnails` api to load thumbnails
+ * @param recommend {anime[]?} - related animes
+ * @param commentCount {number?}
+ * @param likesCount {number?}
+ * @param isLiked {boolean?}
+ * @param uploader {string?}
+ * @param updateTime {string?}
+ * @param uploadTime {string?}
+ * @param url {string?}
+ * @param stars {number?} - 0-5, double
+ * @param maxPage {number?}
+ * @param comments {Comment[]?}- `since 1.0.7` App will display comments in the details page.
+ * @constructor
+ */
+function AnimeDetails({
+                          title,
+                          subtitle,
+                          subTitle,
+                          cover,
+                          description,
+                          tags,
+                          episode,
+                          isFavorite,
+                          subId,
+                          thumbnails,
+                          recommend,
+                          commentCount,
+                          likesCount,
+                          isLiked,
+                          uploader,
+                          updateTime,
+                          uploadTime,
+                          url,
+                          stars,
+                          maxPage
+                      }) {
+    this.title = title;
+    this.subtitle = subtitle ?? subTitle;
+    this.cover = cover;
+    this.description = description;
+    this.tags = tags;
+    this.episode = episode;
+    this.isFavorite = isFavorite;
+    this.subId = subId;
+    this.thumbnails = thumbnails;
+    this.recommend = recommend;
+    this.commentCount = commentCount;
+    this.likesCount = likesCount;
+    this.isLiked = isLiked;
+    this.uploader = uploader;
+    this.updateTime = updateTime;
+    this.uploadTime = uploadTime;
+    this.url = url;
+    this.stars = stars;
+    this.maxPage = maxPage;
+}
+
+/**
+ * Create a comment object
+ * @param userName {string}
+ * @param avatar {string?}
+ * @param content {string}
+ * @param time {string?}
+ * @param replyCount {number?}
+ * @param id {string?}
+ * @param isLiked {boolean?}
+ * @param score {number?}
+ * @param voteStatus {number?} - 1: upvote, -1: downvote, 0: none
+ * @constructor
+ */
+function Comment({userName, avatar, content, time, replyCount, id, isLiked, score, voteStatus}) {
+    this.userName = userName;
+    this.avatar = avatar;
+    this.content = content;
+    this.time = time;
+    this.replyCount = replyCount;
+    this.id = id;
+    this.isLiked = isLiked;
+    this.score = score;
+    this.voteStatus = voteStatus;
+}
+
+/**
+ * Create image loading config
+ * @param url {string?}
+ * @param method {string?} - http method, uppercase
+ * @param data {any} - request data, may be null
+ * @param headers {Object?} - request headers
+ * @param onResponse {((ArrayBuffer) => ArrayBuffer)?} - modify response data
+ * @param modifyImage {string?}
+ *  A js script string.
+ *  The script will be executed in a new Isolate.
+ *  A function named `modifyImage` should be defined in the script, which receives an [Image] as the only argument, and returns an [Image]..
+ * @param onLoadFailed {(() => ImageLoadingConfig)?} - called when the image loading failed
+ * @constructor
+ * @since 1.0.5
+ *
+ * To keep the compatibility with the old version, do not use the constructor. Consider creating a new object with the properties directly.
+ */
+function ImageLoadingConfig({url, method, data, headers, onResponse, modifyImage, onLoadFailed}) {
+    this.url = url;
+    this.method = method;
+    this.data = data;
+    this.headers = headers;
+    this.onResponse = onResponse;
+    this.modifyImage = modifyImage;
+    this.onLoadFailed = onLoadFailed;
+}
+
 class AnimeSource {
     name = ""
 
@@ -538,6 +1054,19 @@ class AnimeSource {
             method: 'load_data',
             key: this.key,
             data_key: dataKey
+        })
+    }
+
+    /**
+     * load a setting with its key
+     * @param key {string}
+     * @returns {any}
+     */
+    loadSetting(key) {
+        return sendMessage({
+            method: 'load_setting',
+            key: this.key,
+            setting_key: key
         })
     }
 
@@ -567,7 +1096,175 @@ class AnimeSource {
         })
     }
 
-    init() { }
+    /**
+     *
+     * @returns {boolean}
+     */
+    get isLogged() {
+        return sendMessage({
+            method: 'isLogged',
+            key: this.key,
+        });
+    }
+
+    init() {
+    }
 
     static sources = {}
+}
+
+/// A reference to dart object.
+/// The api can only be used in the anime.onImageLoad.modifyImage function
+class Image {
+    key = 0;
+
+    constructor(key) {
+        this.key = key;
+    }
+
+    /**
+     * Copy the specified range of the image
+     * @param x
+     * @param y
+     * @param width
+     * @param height
+     * @returns {Image|null}
+     */
+    copyRange(x, y, width, height) {
+        let key = sendMessage({
+            method: "image",
+            function: "copyRange",
+            key: this.key,
+            x: x,
+            y: y,
+            width: width,
+            height: height
+        })
+        if (key == null) return null;
+        return new Image(key);
+    }
+
+    /**
+     * Copy the image and rotate 90 degrees
+     * @returns {Image|null}
+     */
+    copyAndRotate90() {
+        let key = sendMessage({
+            method: "image",
+            function: "copyAndRotate90",
+            key: this.key
+        })
+        if (key == null) return null;
+        return new Image(key);
+    }
+
+    /**
+     * fill [image] to this image at (x, y)
+     * @param x
+     * @param y
+     * @param image
+     */
+    fillImageAt(x, y, image) {
+        sendMessage({
+            method: "image",
+            function: "fillImageAt",
+            key: this.key,
+            x: x,
+            y: y,
+            image: image.key
+        })
+    }
+
+    /**
+     * fill [image] with range(srcX, srcY, width, height) to this image at (x, y)
+     * @param x
+     * @param y
+     * @param image
+     * @param srcX
+     * @param srcY
+     * @param width
+     * @param height
+     */
+    fillImageRangeAt(x, y, image, srcX, srcY, width, height) {
+        sendMessage({
+            method: "image",
+            function: "fillImageRangeAt",
+            key: this.key,
+            x: x,
+            y: y,
+            image: image.key,
+            srcX: srcX,
+            srcY: srcY,
+            width: width,
+            height: height
+        })
+    }
+
+    get width() {
+        return sendMessage({
+            method: "image",
+            function: "getWidth",
+            key: this.key
+        })
+    }
+
+    get height() {
+        return sendMessage({
+            method: "image",
+            function: "getHeight",
+            key: this.key
+        })
+    }
+
+    static empty(width, height) {
+        let key = sendMessage({
+            method: "image",
+            function: "emptyImage",
+            width: width,
+            height: height
+        })
+        return new Image(key);
+    }
+}
+
+let UI = {
+    /**
+     * Show a message
+     * @param message {string}
+     */
+    showMessage: (message) => {
+        sendMessage({
+            method: 'UI',
+            function: 'showMessage',
+            message: message,
+        })
+    },
+
+    /**
+     * Show a dialog. Any action will close the dialog.
+     * @param title {string}
+     * @param content {string}
+     * @param actions {{text:string, callback: () => void}[]}
+     */
+    showDialog: (title, content, actions) => {
+        sendMessage({
+            method: 'UI',
+            function: 'showDialog',
+            title: title,
+            content: content,
+            actions: actions,
+        })
+    },
+
+    /**
+     * Open [url] in external browser
+     * @param url {string}
+     */
+    launchUrl: (url) => {
+        sendMessage({
+            method: 'UI',
+            function: 'launchUrl',
+            url: url,
+        })
+    },
 }

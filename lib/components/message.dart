@@ -1,10 +1,11 @@
 part of "components.dart";
 
-void hideAllMessages() {
-  _OverlayWidgetState.removeAll();
-}
-
-void showToast({required String message, Widget? icon, Widget? trailing}) {
+void showToast({
+  required String message,
+  required BuildContext context,
+  Widget? icon,
+  Widget? trailing,
+}) {
   var newEntry = OverlayEntry(
       builder: (context) => _ToastOverlay(
             message: message,
@@ -12,9 +13,11 @@ void showToast({required String message, Widget? icon, Widget? trailing}) {
             trailing: trailing,
           ));
 
-  _OverlayWidgetState.addOverlay(newEntry);
+  var state = context.findAncestorStateOfType<OverlayWidgetState>();
 
-  Timer(const Duration(seconds: 2), () => _OverlayWidgetState.remove(newEntry));
+  state?.addOverlay(newEntry);
+
+  Timer(const Duration(seconds: 2), () => state?.remove(newEntry));
 }
 
 class _ToastOverlay extends StatelessWidget {
@@ -35,24 +38,30 @@ class _ToastOverlay extends StatelessWidget {
       child: Align(
         alignment: Alignment.bottomCenter,
         child: Material(
-          color: Theme.of(context).colorScheme.surface,
-          surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-          borderRadius: BorderRadius.circular(12),
+          color: Theme.of(context).colorScheme.inverseSurface,
+          borderRadius: BorderRadius.circular(8),
           elevation: 2,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) icon!.paddingRight(8),
-                Text(
-                  message,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w500),
-                  maxLines: 3,
-                ),
-                if (trailing != null) trailing!.paddingLeft(8)
-              ],
+          textStyle:
+              ts.withColor(Theme.of(context).colorScheme.onInverseSurface),
+          child: IconTheme(
+            data: IconThemeData(
+                color: Theme.of(context).colorScheme.onInverseSurface),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) icon!.paddingRight(8),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w500),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (trailing != null) trailing!.paddingLeft(8)
+                ],
+              ),
             ),
           ),
         ),
@@ -66,34 +75,29 @@ class OverlayWidget extends StatefulWidget {
 
   final Widget child;
 
-  static void addOverlay(OverlayEntry entry) =>
-      _OverlayWidgetState.addOverlay(entry);
-
-  static void removeAll() => _OverlayWidgetState.removeAll();
-
   @override
-  State<OverlayWidget> createState() => _OverlayWidgetState();
+  State<OverlayWidget> createState() => OverlayWidgetState();
 }
 
-class _OverlayWidgetState extends State<OverlayWidget> {
-  static var overlayKey = GlobalKey<OverlayState>();
+class OverlayWidgetState extends State<OverlayWidget> {
+  final overlayKey = GlobalKey<OverlayState>();
 
-  static var entries = <OverlayEntry>[];
+  var entries = <OverlayEntry>[];
 
-  static void addOverlay(OverlayEntry entry) {
+  void addOverlay(OverlayEntry entry) {
     if (overlayKey.currentState != null) {
       overlayKey.currentState!.insert(entry);
       entries.add(entry);
     }
   }
 
-  static void remove(OverlayEntry entry) {
+  void remove(OverlayEntry entry) {
     if (entries.remove(entry)) {
       entry.remove();
     }
   }
 
-  static void removeAll() {
+  void removeAll() {
     for (var entry in entries) {
       entry.remove();
     }
@@ -111,33 +115,47 @@ class _OverlayWidgetState extends State<OverlayWidget> {
 
 void showDialogMessage(BuildContext context, String title, String message) {
   showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-            title: Text(title),
-            content: Text(message),
-            actions: [
-              TextButton(onPressed: () => App.back(context), child: Text("了解"))
-            ],
-          ));
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: context.pop,
+          child: Text("OK".tl),
+        )
+      ],
+    ),
+  );
 }
 
-void showConfirmDialog(BuildContext context, String title, String content,
-    void Function() onConfirm) {
-  showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-            title: Text(title),
-            content: Text(content),
-            actions: [
-              TextButton(onPressed: () => App.back(context), child: Text("取消")),
-              TextButton(
-                  onPressed: () {
-                    App.back(context);
-                    onConfirm();
-                  },
-                  child: Text("确认")),
-            ],
-          ));
+Future<void> showConfirmDialog({
+  required BuildContext context,
+  required String title,
+  required String content,
+  required void Function() onConfirm,
+  String confirmText = "Confirm",
+  Color? btnColor,
+}) {
+  return showDialog(
+    context: context,
+    builder: (context) => ContentDialog(
+      title: title,
+      content: Text(content).paddingHorizontal(16).paddingVertical(8),
+      actions: [
+        FilledButton(
+          onPressed: () {
+            context.pop();
+            onConfirm();
+          },
+          style: FilledButton.styleFrom(
+            backgroundColor: btnColor,
+          ),
+          child: Text(confirmText.tl),
+        ),
+      ],
+    ),
+  );
 }
 
 class LoadingDialogController {
@@ -195,7 +213,7 @@ LoadingDialogController showLoadingDialog(BuildContext context,
                         controller.close();
                         onCancel?.call();
                       },
-                      child: Text(cancelButtonText))
+                      child: Text(cancelButtonText.tl))
               ],
             ),
           ),
@@ -218,6 +236,7 @@ class ContentDialog extends StatelessWidget {
     super.key,
     required this.title,
     required this.content,
+    this.dismissible = true,
     this.actions = const [],
   });
 
@@ -227,12 +246,19 @@ class ContentDialog extends StatelessWidget {
 
   final List<Widget> actions;
 
+  final bool dismissible;
+
   @override
   Widget build(BuildContext context) {
     var content = Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Appbar(
+          leading: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: dismissible ? context.pop : null,
+          ),
           title: Text(title),
           backgroundColor: Colors.transparent,
         ),
@@ -246,23 +272,124 @@ class ContentDialog extends StatelessWidget {
       ],
     );
     return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: context.brightness == Brightness.dark
+            ? BorderSide(color: context.colorScheme.outlineVariant)
+            : BorderSide.none,
+      ),
       insetPadding: context.width < 400
           ? const EdgeInsets.symmetric(horizontal: 4)
           : const EdgeInsets.symmetric(horizontal: 16),
-      child: IntrinsicWidth(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: 600,
-            minWidth: math.min(400, context.width - 16),
-          ),
-          child: MediaQuery.removePadding(
-            removeTop: true,
-            removeBottom: true,
-            context: context,
-            child: content,
+      elevation: 2,
+      shadowColor: context.colorScheme.shadow,
+      backgroundColor: context.colorScheme.surface,
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.topCenter,
+        child: IntrinsicWidth(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 600,
+              minWidth: math.min(400, context.width - 16),
+            ),
+            child: MediaQuery.removePadding(
+              removeTop: true,
+              removeBottom: true,
+              context: context,
+              child: content,
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+Future<void> showInputDialog({
+  required BuildContext context,
+  required String title,
+  String? hintText,
+  required FutureOr<Object?> Function(String) onConfirm,
+  String? initialValue,
+  String confirmText = "Confirm",
+  String cancelText = "Cancel",
+  RegExp? inputValidator,
+}) {
+  var controller = TextEditingController(text: initialValue);
+  bool isLoading = false;
+  String? error;
+
+  return showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return ContentDialog(
+            title: title,
+            content: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: hintText,
+                border: const OutlineInputBorder(),
+                errorText: error,
+              ),
+            ).paddingHorizontal(12),
+            actions: [
+              Button.filled(
+                isLoading: isLoading,
+                onPressed: () async {
+                  if (inputValidator != null &&
+                      !inputValidator.hasMatch(controller.text)) {
+                    setState(() => error = "Invalid input");
+                    return;
+                  }
+                  var futureOr = onConfirm(controller.text);
+                  Object? result;
+                  if (futureOr is Future) {
+                    setState(() => isLoading = true);
+                    result = await futureOr;
+                    setState(() => isLoading = false);
+                  } else {
+                    result = futureOr;
+                  }
+                  if (result == null) {
+                    if (context.mounted) {
+                      context.pop();
+                    }
+                  } else {
+                    setState(() => error = result.toString());
+                  }
+                },
+                child: Text(confirmText.tl),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+void showInfoDialog({
+  required BuildContext context,
+  required String title,
+  required String content,
+  String confirmText = "OK",
+}) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return ContentDialog(
+        title: title,
+        content: Text(content).paddingHorizontal(16).paddingVertical(8),
+        actions: [
+          Button.filled(
+            onPressed: context.pop,
+            child: Text(confirmText.tl),
+          ),
+        ],
+      );
+    },
+  );
 }

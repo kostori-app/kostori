@@ -1,8 +1,4 @@
-import 'package:flutter/material.dart';
-
-import '../components/components.dart';
-import 'app.dart';
-import 'app_page_route.dart';
+import 'package:flutter/widgets.dart';
 
 extension WidgetExtension on Widget {
   Widget padding(EdgeInsetsGeometry padding) {
@@ -65,10 +61,6 @@ extension WidgetExtension on Widget {
         padding: EdgeInsets.symmetric(horizontal: padding), sliver: this);
   }
 
-  Widget toSliver() {
-    return SliverToBoxAdapter(child: this);
-  }
-
   Widget fixWidth(double width) {
     return SizedBox(width: width, child: this);
   }
@@ -76,45 +68,9 @@ extension WidgetExtension on Widget {
   Widget fixHeight(double height) {
     return SizedBox(height: height, child: this);
   }
-}
 
-extension ContextExt on BuildContext {
-  EdgeInsets get padding => MediaQuery.of(this).padding;
-
-  double get width => MediaQuery.of(this).size.width;
-
-  double get height => MediaQuery.of(this).size.height;
-
-  EdgeInsets get viewInsets => MediaQuery.of(this).viewInsets;
-
-  ColorScheme get colorScheme => Theme.of(this).colorScheme;
-
-  Brightness get brightness => Theme.of(this).brightness;
-
-  Future<T?> to<T>(Widget Function() builder) {
-    return Navigator.of(this)
-        .push<T>(AppPageRoute<T>(builder: (context) => builder()));
-  }
-
-  void off(Widget Function() builder) {
-    Navigator.of(this)
-        .pushReplacement(AppPageRoute(builder: (context) => builder()));
-  }
-
-  void pop() {
-    if (Navigator.of(this).canPop()) {
-      return Navigator.of(this).pop();
-    } else {
-      App.navigatorKey.currentState!.pop();
-    }
-  }
-
-  void showMessage({required String message, Widget? icon, Widget? trailing}) {
-    showToast(message: message, icon: icon, trailing: trailing);
-  }
-
-  void hideMessages() {
-    hideAllMessages();
+  Widget toSliver() {
+    return SliverToBoxAdapter(child: this);
   }
 }
 
@@ -158,7 +114,11 @@ extension StyledText on TextStyle {
 
   TextStyle get s40 => copyWith(fontSize: 40);
 
-  TextStyle withHeight(double value) => copyWith(height: value);
-
   TextStyle withColor(Color? color) => copyWith(color: color);
+}
+
+extension ColorExt on Color {
+  Color toOpacity(double opacity) {
+    return withValues(alpha: opacity);
+  }
 }

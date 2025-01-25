@@ -1,18 +1,23 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
 import 'package:flutter/services.dart';
-import 'package:dio_http2_adapter/dio_http2_adapter.dart';
-import '../base.dart';
-import '../foundation/app.dart';
-import '../foundation/log.dart';
-import 'http_client.dart';
+import 'package:rhttp/rhttp.dart' as rhttp;
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/network/cache.dart';
+import 'package:kostori/network/cloudflare.dart';
+import 'package:kostori/network/cookie_jar.dart';
+
+export 'package:dio/dio.dart';
 
 class MyLogInterceptor implements Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    LogManager.addLog(LogLevel.error, "Network",
+    Log.error("Network",
         "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}");
     switch (err.type) {
       case DioExceptionType.badResponse:
@@ -78,7 +83,7 @@ class MyLogInterceptor implements Interceptor {
     } else {
       content = response.data.toString();
     }
-    LogManager.addLog(
+    Log.addLog(
         (response.statusCode != null && response.statusCode! < 400)
             ? LogLevel.info
             : LogLevel.error,
@@ -90,6 +95,11 @@ class MyLogInterceptor implements Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    Log.info(
+        "Network",
+        "${options.method} ${options.uri}\n"
+            "headers:\n${options.headers}\n"
+            "data:\n${options.data}");
     options.connectTimeout = const Duration(seconds: 15);
     options.receiveTimeout = const Duration(seconds: 15);
     options.sendTimeout = const Duration(seconds: 15);
@@ -97,154 +107,196 @@ class MyLogInterceptor implements Interceptor {
   }
 }
 
-class AppHttpAdapter implements HttpClientAdapter {
-  HttpClientAdapter? adapter;
+class AppDio with DioMixin {
+  String? _proxy = proxy;
 
-  final bool http2;
-
-  AppHttpAdapter(this.http2);
-
-  static Future<HttpClientAdapter> createAdapter(bool http2) async {
-    return http2
-        ? Http2Adapter(
-            ConnectionManager(
-              idleTimeout: const Duration(seconds: 15),
-              onClientCreate: (_, config) {
-                if (proxyHttpOverrides?.proxyStr != null &&
-                    appdata.settings[58] != "1") {
-                  config.proxy =
-                      Uri.parse('http://${proxyHttpOverrides?.proxyStr}');
-                }
-              },
-            ),
-          )
-        : IOHttpClientAdapter();
+  AppDio([BaseOptions? options]) {
+    this.options = options ?? BaseOptions();
+    httpClientAdapter = RHttpAdapter(rhttp.ClientSettings(
+      proxySettings: proxy == null
+          ? const rhttp.ProxySettings.noProxy()
+          : rhttp.ProxySettings.proxy(proxy!),
+    ));
+    interceptors.add(CookieManagerSql(SingleInstanceCookieJar.instance!));
+    interceptors.add(NetworkCacheManager());
+    interceptors.add(CloudflareInterceptor());
+    interceptors.add(MyLogInterceptor());
   }
 
-  @override
-  void close({bool force = false}) {
-    adapter?.close(force: force);
-  }
+  static String? proxy;
 
-  /// 直接使用ip访问绕过sni
-  bool changeHost(RequestOptions options) {
-    var config = const JsonDecoder()
-        .convert(File("${App.dataPath}/rule.json").readAsStringSync());
-    if ((config["sni"] ?? []).contains(options.uri.host) &&
-        (config["rule"] ?? {})[options.uri.host] != null) {
-      options.path = options.path
-          .replaceFirst(options.uri.host, config["rule"][options.uri.host]!);
-      return true;
+  static Future<String?> getProxy() async {
+    if ((appdata.settings['proxy'] as String).removeAllBlank == "direct") {
+      return null;
     }
-    return false;
-  }
+    if (appdata.settings['proxy'] != "system") return appdata.settings['proxy'];
 
-  @override
-  Future<ResponseBody> fetch(RequestOptions o, Stream<Uint8List>? requestStream,
-      Future<void>? cancelFuture) async {
-    adapter ??= await createAdapter(http2);
-    int retry = 0;
-    while (true) {
+    String res;
+    if (!App.isLinux) {
+      const channel = MethodChannel("kostori/method_channel");
       try {
-        var res = await fetchOnce(o, requestStream, cancelFuture);
-        return res;
+        res = await channel.invokeMethod("getProxy");
       } catch (e) {
-        if (e is DioException) {
-          if (e.response?.statusCode != null) {
-            var code = e.response!.statusCode!;
-            if (code >= 400 && code < 500) {
-              rethrow;
-            }
-          }
-        }
-        LogManager.addLog(LogLevel.error, "Network",
-            "${o.method} ${o.path}\n$e\nRetrying...");
-        retry++;
-        if (retry == 2) {
-          rethrow;
-        }
-        await Future.delayed(const Duration(seconds: 1));
+        return null;
       }
-    }
-  }
-
-  Future<ResponseBody> fetchOnce(RequestOptions o,
-      Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
-    var options = o.copyWith();
-    LogManager.addLog(LogLevel.info, "Network",
-        "${options.method} ${options.path}\nheaders:\n${options.headers.toString()}\ndata:${options.data}");
-    if (appdata.settings[58] == "0") {
-      return checkCookie(
-          await adapter!.fetch(options, requestStream, cancelFuture));
-    }
-    if (!changeHost(options)) {
-      return checkCookie(
-          await adapter!.fetch(options, requestStream, cancelFuture));
-    }
-    if (options.headers["host"] == null && options.headers["Host"] == null) {
-      options.headers["host"] = options.uri.host;
-    }
-    options.followRedirects = false;
-    var res = await adapter!.fetch(options, requestStream, cancelFuture);
-    while (res.statusCode < 400 && res.statusCode > 300) {
-      var location = res.headers["location"]!.first;
-      if (location.contains("http") && Uri.tryParse(location) != null) {
-        if (Uri.parse(location).host != o.uri.host) {
-          options.path = location;
-          changeHost(options);
-          res = await adapter!.fetch(options, requestStream, cancelFuture);
-        } else {
-          location = Uri.parse(location).path;
-          options.path = options.path.contains("https://")
-              ? "https://${options.uri.host}$location"
-              : "http://${options.uri.host}$location";
-          res = await adapter!.fetch(options, requestStream, cancelFuture);
-        }
-      } else {
-        options.path = options.path.contains("https://")
-            ? "https://${options.uri.host}$location"
-            : "http://${options.uri.host}$location";
-        res = await adapter!.fetch(options, requestStream, cancelFuture);
-      }
-    }
-    return checkCookie(res);
-  }
-
-  /// 检查cookie是否合法, 去除无效cookie
-  ResponseBody checkCookie(ResponseBody res) {
-    if (res.headers["set-cookie"] == null) {
-      return res;
-    }
-
-    var cookies = <String>[];
-
-    var invalid = <String>[];
-
-    for (var cookie in res.headers["set-cookie"]!) {
-      try {
-        Cookie.fromSetCookieValue(cookie);
-        cookies.add(cookie);
-      } catch (e) {
-        invalid.add(cookie);
-      }
-    }
-
-    if (cookies.isNotEmpty) {
-      res.headers["set-cookie"] = cookies;
     } else {
-      res.headers.remove("set-cookie");
+      res = "No Proxy";
+    }
+    if (res == "No Proxy") return null;
+
+    if (res.contains(";")) {
+      var proxies = res.split(";");
+      for (String proxy in proxies) {
+        proxy = proxy.removeAllBlank;
+        if (proxy.startsWith('https=')) {
+          return proxy.substring(6);
+        }
+      }
     }
 
-    if (invalid.isNotEmpty) {
-      res.headers["invalid-cookie"] = invalid;
+    final RegExp regex = RegExp(
+      r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$',
+      caseSensitive: false,
+      multiLine: false,
+    );
+    if (!regex.hasMatch(res)) {
+      return null;
     }
 
     return res;
   }
+
+  static final Map<String, bool> _requests = {};
+
+  @override
+  Future<Response<T>> request<T>(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    CancelToken? cancelToken,
+    Options? options,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    if (options?.headers?['prevent-parallel'] == 'true') {
+      while (_requests.containsKey(path)) {
+        await Future.delayed(const Duration(milliseconds: 20));
+      }
+      _requests[path] = true;
+      options!.headers!.remove('prevent-parallel');
+    }
+    proxy = await getProxy();
+    if (_proxy != proxy) {
+      Log.info("Network", "Proxy changed to $proxy");
+      _proxy = proxy;
+      httpClientAdapter = RHttpAdapter(rhttp.ClientSettings(
+        proxySettings: proxy == null
+            ? const rhttp.ProxySettings.noProxy()
+            : rhttp.ProxySettings.proxy(proxy!),
+      ));
+    }
+    try {
+      return super.request<T>(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        cancelToken: cancelToken,
+        options: options,
+        onSendProgress: onSendProgress,
+        onReceiveProgress: onReceiveProgress,
+      );
+    } finally {
+      if (_requests.containsKey(path)) {
+        _requests.remove(path);
+      }
+    }
+  }
 }
 
-Dio logDio([BaseOptions? options, bool http2 = false]) {
-  var dio = Dio(options)..interceptors.add(MyLogInterceptor());
-  dio.httpClientAdapter = AppHttpAdapter(http2);
-  return dio;
+class RHttpAdapter implements HttpClientAdapter {
+  rhttp.ClientSettings settings;
+
+  static Map<String, List<String>> _getOverrides() {
+    if (!appdata.settings['enableDnsOverrides'] == true) {
+      return {};
+    }
+    var config = appdata.settings["dnsOverrides"];
+    var result = <String, List<String>>{};
+    if (config is Map) {
+      for (var entry in config.entries) {
+        if (entry.key is String && entry.value is String) {
+          result[entry.key] = [entry.value];
+        }
+      }
+    }
+    return result;
+  }
+
+  RHttpAdapter([this.settings = const rhttp.ClientSettings()]) {
+    settings = settings.copyWith(
+      redirectSettings: const rhttp.RedirectSettings.limited(5),
+      timeoutSettings: const rhttp.TimeoutSettings(
+        connectTimeout: Duration(seconds: 15),
+        keepAliveTimeout: Duration(seconds: 60),
+        keepAlivePing: Duration(seconds: 30),
+      ),
+      throwOnStatusCode: false,
+      dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
+      tlsSettings: rhttp.TlsSettings(
+        sni: appdata.settings['sni'] != false,
+      ),
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    var res = await rhttp.Rhttp.request(
+      method: switch (options.method) {
+        'GET' => rhttp.HttpMethod.get,
+        'POST' => rhttp.HttpMethod.post,
+        'PUT' => rhttp.HttpMethod.put,
+        'PATCH' => rhttp.HttpMethod.patch,
+        'DELETE' => rhttp.HttpMethod.delete,
+        'HEAD' => rhttp.HttpMethod.head,
+        'OPTIONS' => rhttp.HttpMethod.options,
+        'TRACE' => rhttp.HttpMethod.trace,
+        'CONNECT' => rhttp.HttpMethod.connect,
+        _ => throw ArgumentError('Unsupported method: ${options.method}'),
+      },
+      url: options.uri.toString(),
+      settings: settings,
+      expectBody: rhttp.HttpExpectBody.stream,
+      body: requestStream == null ? null : rhttp.HttpBody.stream(requestStream),
+      headers: rhttp.HttpHeaders.rawMap(
+        Map.fromEntries(
+          options.headers.entries.map(
+            (e) => MapEntry(e.key, e.value.toString().trim()),
+          ),
+        ),
+      ),
+    );
+    if (res is! rhttp.HttpStreamResponse) {
+      throw Exception("Invalid response type: ${res.runtimeType}");
+    }
+    var headers = <String, List<String>>{};
+    for (var entry in res.headers) {
+      var key = entry.$1.toLowerCase();
+      headers[key] ??= [];
+      headers[key]!.add(entry.$2);
+    }
+    return ResponseBody(
+      res.body,
+      res.statusCode,
+      statusMessage: null,
+      isRedirect: false,
+      headers: headers,
+    );
+  }
 }

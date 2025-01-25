@@ -1,11 +1,8 @@
 import "package:flutter/material.dart";
 import "package:kostori/foundation/app.dart";
-
-import "../anime_source/anime_source.dart";
-import "../components/components.dart";
-import "../components/select.dart";
-import "../network/base_anime.dart";
-import "../network/res.dart";
+import "package:kostori/utils/translations.dart";
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 
 class CategoryAnimesPage extends StatefulWidget {
   const CategoryAnimesPage({
@@ -29,9 +26,10 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
   late final CategoryAnimesData data;
   late final List<CategoryAnimesOptions> options;
   late List<String> optionsValue;
+  late String sourceKey;
 
   void findData() {
-    for (final source in AnimeSource.sources) {
+    for (final source in AnimeSource.all()) {
       if (source.categoryData?.key == widget.categoryKey) {
         data = source.categoryAnimesData!;
         options = data.options.where((element) {
@@ -43,6 +41,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
           return true;
         }).toList();
         optionsValue = options.map((e) => e.options.keys.first).toList();
+        sourceKey = source.key;
         return;
       }
     }
@@ -57,27 +56,22 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
 
   @override
   Widget build(BuildContext context) {
+    var topPadding = context.padding.top + 56.0;
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: Appbar(
         title: Text(widget.category),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _CategoryAnimesList(
-              key: ValueKey(
-                  "${widget.category} with ${widget.param} and $optionsValue"),
-              loader: data.load,
-              category: widget.category,
-              options: optionsValue,
-              param: widget.param,
-              header: buildOptions(),
-              sourceKey: AnimeSource.sources
-                  .firstWhere((e) => e.categoryData?.key == widget.categoryKey)
-                  .key,
-            ),
-          ),
-        ],
+      body: AnimeList(
+        key: Key(widget.category + optionsValue.toString()),
+        errorLeading: SizedBox(height: topPadding),
+        leadingSliver: buildOptions().paddingTop(topPadding).toSliver(),
+        loadPage: (i) => data.load(
+          widget.category,
+          widget.param,
+          optionsValue,
+          i,
+        ),
       ),
     );
   }
@@ -85,7 +79,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
   Widget buildOptionItem(
       String text, String value, int group, BuildContext context) {
     return OptionChip(
-      text: text,
+      text: text.ts(sourceKey),
       isSelected: value == optionsValue[group],
       onTap: () {
         if (value == optionsValue[group]) return;
@@ -105,7 +99,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
         children: [
           for (var option in optionList.options.entries)
             buildOptionItem(
-              option.value,
+              option.value.tl,
               option.key,
               options.indexOf(optionList),
               context,
@@ -116,49 +110,10 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
         children.add(const SizedBox(height: 8));
       }
     }
-    return SliverToBoxAdapter(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [...children, const Divider()],
-      ).paddingLeft(8).paddingRight(8),
-    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [...children, const Divider()],
+    ).paddingLeft(8).paddingRight(8);
   }
-}
-
-class _CategoryAnimesList extends AnimesPage<BaseAnime> {
-  const _CategoryAnimesList({
-    super.key,
-    required this.loader,
-    required this.category,
-    required this.options,
-    this.param,
-    required this.header,
-    required this.sourceKey,
-  });
-
-  final CategoryAnimesLoader loader;
-
-  final String category;
-
-  final List<String> options;
-
-  final String? param;
-
-  @override
-  final String sourceKey;
-
-  @override
-  final Widget header;
-
-  @override
-  Future<Res<List<BaseAnime>>> getAnimes(int i) async {
-    return await loader(category, param, options, i);
-  }
-
-  @override
-  String? get tag => "$category with $param and $options";
-
-  @override
-  String? get title => null;
 }

@@ -2,306 +2,276 @@ import 'dart:async';
 
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/adapters.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:kostori/pages/auth_page.dart';
-import 'package:kostori/pages/welcome_page.dart';
-import 'package:kostori/tools/mouse_listener.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 import 'components/components.dart';
+import 'foundation/appdata.dart';
 import 'foundation/log.dart';
 import 'init.dart';
-import 'network/http_client.dart';
-import 'network/webdav.dart';
 import 'pages/main_page.dart';
-import 'package:kostori/base.dart';
 import 'components/window_frame.dart';
 import 'foundation/app.dart';
-import 'foundation/app_page_route.dart';
-
-bool notFirstUse = false;
 
 void main(List<String> args) {
+  MediaKit.ensureInitialized();
   if (runWebViewTitleBarWidget(args)) {
     return;
   }
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    await init();
-    FlutterError.onError = (details) {
-      LogManager.addLog(LogLevel.error, "Unhandled Exception",
-          "${details.exception}\n${details.stack}");
-    };
-    notFirstUse = appdata.firstUse[3] == "1";
-    setNetworkProxy();
-    MediaKit.ensureInitialized();
-    await Hive.initFlutter();
-    runApp(const MyApp());
-    if (App.isDesktop) {
-      await windowManager.ensureInitialized();
-      windowManager.waitUntilReadyToShow().then((_) async {
-        await windowManager.setTitleBarStyle(
-          TitleBarStyle.hidden,
-          windowButtonVisibility: App.isMacOS,
-        );
-        if (App.isLinux) {
-          await windowManager.setBackgroundColor(Colors.transparent);
-        }
-        await windowManager.setMinimumSize(const Size(500, 600));
-        if (!App.isLinux) {
-          // https://github.com/leanflutter/window_manager/issues/460
-          var placement = await WindowPlacement.loadFromFile();
-          await placement.applyToWindow();
-          await windowManager.show();
-          WindowPlacement.loop();
-        }
-      });
-    }
-  }, (error, stack) {
-    LogManager.addLog(LogLevel.error, "Unhandled Exception", "$error\n$stack");
+  overrideIO(() {
+    runZonedGuarded(() async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await init();
+      runApp(const MyApp());
+      if (App.isDesktop) {
+        await windowManager.ensureInitialized();
+        windowManager.waitUntilReadyToShow().then((_) async {
+          await windowManager.setTitleBarStyle(
+            TitleBarStyle.hidden,
+            windowButtonVisibility: App.isMacOS,
+          );
+          if (App.isLinux) {
+            await windowManager.setBackgroundColor(Colors.transparent);
+          }
+          await windowManager.setMinimumSize(const Size(500, 600));
+          if (!App.isLinux) {
+            // https://github.com/leanflutter/window_manager/issues/460
+            var placement = await WindowPlacement.loadFromFile();
+            await placement.applyToWindow();
+            await windowManager.show();
+            WindowPlacement.loop();
+          }
+        });
+      }
+    }, (error, stack) {
+      Log.error("Unhandled Exception", error, stack);
+    });
   });
 }
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  static void Function()? updater;
-
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  DateTime time = DateTime.fromMillisecondsSinceEpoch(0);
-
-  bool forceRebuild = false;
-
-  OverlayEntry? hideContentOverlay;
-
-  void hideContent() {
-    if (hideContentOverlay != null) return;
-    hideContentOverlay = OverlayEntry(
-        builder: (context) => Container(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.width,
-              color: Theme.of(context).colorScheme.surface,
-            ));
-    OverlayWidget.addOverlay(hideContentOverlay!);
-  }
-
-  void showContent() {
-    hideContentOverlay = null;
-    OverlayWidget.removeAll();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    bool enableAuth = appdata.settings[13] == "1";
-    if (App.isAndroid && appdata.settings[38] == "1") {
-      try {
-        FlutterDisplayMode.setHighRefreshRate();
-      } catch (e) {
-        // ignore
-      }
-    }
-    setNetworkProxy();
-    scheduleMicrotask(() {
-      if (state == AppLifecycleState.hidden && enableAuth) {
-        if (!AuthPage.lock && appdata.settings[13] == "1") {
-          AuthPage.initial = false;
-          AuthPage.lock = true;
-          App.to(App.globalContext!, () => const AuthPage());
-        }
-      }
-
-      if (state == AppLifecycleState.inactive && enableAuth) {
-        hideContent();
-      } else if (state == AppLifecycleState.resumed) {
-        showContent();
-        // Future.delayed(const Duration(milliseconds: 200), checkClipboard);
-      }
-
-      if (DateTime.now().millisecondsSinceEpoch - time.millisecondsSinceEpoch >
-          7200000) {
-        Webdav.syncData();
-        time = DateTime.now();
-      }
-    });
-  }
-
   @override
   void initState() {
-    MyApp.updater = () => setState(
-          () {
-            updateBrightness();
-            forceRebuild = true;
-          },
-        );
-    time = DateTime.now();
-    // TagsTranslation.readData();
-    if (App.isAndroid && appdata.settings[38] == "1") {
-      try {
-        FlutterDisplayMode.setHighRefreshRate();
-      } finally {}
-    }
-    listenMouseSideButtonToBack();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    App.registerForceRebuild(forceRebuild);
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     WidgetsBinding.instance.addObserver(this);
-    notifications.init();
-    if (appdata.settings[12] == "1") {
-      // blockScreenshot();
-    }
-    PaintingBinding.instance.imageCache.maximumSizeBytes = 200 * 1024 * 1024;
     super.initState();
   }
 
+  bool isAuthPageActive = false;
+
+  OverlayEntry? hideContentOverlay;
+
   @override
-  void didChangeDependencies() {
-    updateBrightness();
-    super.didChangeDependencies();
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!App.isMobile || !appdata.settings['authorizationRequired']) {
+      return;
+    }
+    if (state == AppLifecycleState.inactive && hideContentOverlay == null) {
+      hideContentOverlay = OverlayEntry(
+        builder: (context) {
+          return Positioned.fill(
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: App.rootContext.colorScheme.surface,
+            ),
+          );
+        },
+      );
+      Overlay.of(App.rootContext).insert(hideContentOverlay!);
+    } else if (hideContentOverlay != null &&
+        state == AppLifecycleState.resumed) {
+      hideContentOverlay!.remove();
+      hideContentOverlay = null;
+    }
+    if (state == AppLifecycleState.hidden &&
+        !isAuthPageActive &&
+        !IO.isSelectingFiles) {
+      isAuthPageActive = true;
+      App.rootContext.to(
+        () => AuthPage(
+          onSuccessfulAuth: () {
+            App.rootContext.pop();
+            isAuthPageActive = false;
+          },
+        ),
+      );
+    }
+    super.didChangeAppLifecycleState(state);
   }
 
-  late SystemUiOverlayStyle systemUiStyle;
+  void forceRebuild() {
+    void rebuild(Element el) {
+      el.markNeedsBuild();
+      el.visitChildren(rebuild);
+    }
 
-  void updateBrightness() {
-    var mode = appdata.appSettings.darkMode;
-    final Brightness brightness = switch (mode) {
-      1 => Brightness.light,
-      2 => Brightness.dark,
-      _ => View.of(context).platformDispatcher.platformBrightness,
+    (context as Element).visitChildren(rebuild);
+    setState(() {});
+  }
+
+  Color translateColorSetting() {
+    return switch (appdata.settings['color']) {
+      'red' => Colors.red,
+      'pink' => Colors.pink,
+      'purple' => Colors.purple,
+      'green' => Colors.green,
+      'orange' => Colors.orange,
+      'blue' => Colors.blue,
+      'yellow' => Colors.yellow,
+      'cyan' => Colors.cyan,
+      _ => Colors.blue,
     };
-    if (brightness == Brightness.light) {
-      systemUiStyle = const SystemUiOverlayStyle(
-          systemNavigationBarColor: Colors.transparent,
-          statusBarColor: Colors.transparent,
-          statusBarBrightness: Brightness.dark,
-          statusBarIconBrightness: Brightness.dark,
-          systemNavigationBarIconBrightness: Brightness.dark,
-          systemNavigationBarContrastEnforced: false);
-    } else {
-      systemUiStyle = const SystemUiOverlayStyle(
-          systemNavigationBarColor: Colors.transparent,
-          statusBarColor: Colors.transparent,
-          statusBarBrightness: Brightness.light,
-          statusBarIconBrightness: Brightness.light,
-          systemNavigationBarIconBrightness: Brightness.light,
-          systemNavigationBarContrastEnforced: false);
-    }
-  }
-
-  @override
-  void didChangePlatformBrightness() {
-    setState(() {
-      updateBrightness();
-    });
-  }
-
-  (ColorScheme, ColorScheme) _generateColorSchemes(
-      ColorScheme? light, ColorScheme? dark) {
-    Color? color;
-    if (int.parse(appdata.settings[27]) != 0) {
-      color = colors[int.parse(appdata.settings[27]) - 1];
-    } else {
-      color = light?.primary ?? Colors.blueAccent;
-    }
-    light = ColorScheme.fromSeed(seedColor: color);
-    dark = ColorScheme.fromSeed(seedColor: color, brightness: Brightness.dark);
-    if (appdata.settings[32] == "1") {
-      // light mode
-      dark = light;
-    } else if (appdata.settings[32] == "2") {
-      // dark mode
-      light = dark;
-    }
-    return (light, dark);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (forceRebuild) {
-      forceRebuild = false;
-      void rebuild(Element el) {
-        el.markNeedsBuild();
-        el.visitChildren(rebuild);
+    Widget home;
+    if (appdata.settings['authorizationRequired']) {
+      home = AuthPage(
+        onSuccessfulAuth: () {
+          App.rootContext.toReplacement(() => const MainPage());
+        },
+      );
+    } else {
+      home = const MainPage();
+    }
+    return DynamicColorBuilder(builder: (light, dark) {
+      Color? primary, secondary, tertiary;
+      if (appdata.settings['color'] != 'system' ||
+          light == null ||
+          dark == null) {
+        primary = translateColorSetting();
+      } else {
+        primary = light.primary;
+        secondary = light.secondary;
+        tertiary = light.tertiary;
       }
+      return MaterialApp(
+          home: home,
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: SeedColorScheme.fromSeeds(
+              primaryKey: primary,
+              secondaryKey: secondary,
+              tertiaryKey: tertiary,
+              tones: FlexTones.vividBackground(Brightness.light),
+            ),
+          ),
+          darkTheme: ThemeData(
+            colorScheme: SeedColorScheme.fromSeeds(
+              primaryKey: primary,
+              secondaryKey: secondary,
+              tertiaryKey: tertiary,
+              brightness: Brightness.dark,
+              tones: FlexTones.vividBackground(Brightness.dark),
+            ),
+          ),
+          navigatorKey: App.rootNavigatorKey,
+          navigatorObservers: [FlutterSmartDialog.observer],
+          themeMode: switch (appdata.settings['theme_mode']) {
+            'light' => ThemeMode.light,
+            'dark' => ThemeMode.dark,
+            _ => ThemeMode.system
+          },
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          locale: () {
+            var lang = appdata.settings['language'];
+            if (lang == 'system') {
+              return null;
+            }
+            return switch (lang) {
+              'zh-CN' => const Locale('zh', 'CN'),
+              'zh-TW' => const Locale('zh', 'TW'),
+              'en-US' => const Locale('en'),
+              _ => null
+            };
+          }(),
+          supportedLocales: const [
+            Locale('en'),
+            Locale('zh', 'CN'),
+            Locale('zh', 'TW'),
+          ],
+          builder: FlutterSmartDialog.init(
+            builder: (context, widget) {
+              ErrorWidget.builder = (details) {
+                Log.error("Unhandled Exception",
+                    "${details.exception}\n${details.stack}");
+                return Material(
+                  child: Center(
+                    child: Text(details.exception.toString()),
+                  ),
+                );
+              };
+              if (widget != null) {
+                widget = OverlayWidget(widget);
+                if (App.isDesktop) {
+                  widget = Shortcuts(
+                    shortcuts: {
+                      LogicalKeySet(LogicalKeyboardKey.escape):
+                          VoidCallbackIntent(
+                        App.pop,
+                      ),
+                    },
+                    child: MouseBackDetector(
+                      onTapDown: App.pop,
+                      child: WindowFrame(widget),
+                    ),
+                  );
+                }
+                return _SystemUiProvider(Material(
+                  child: widget,
+                ));
+              }
+              throw ('widget is null');
+            },
+          ));
+    });
+  }
+}
 
-      (context as Element).visitChildren(rebuild);
+class _SystemUiProvider extends StatelessWidget {
+  const _SystemUiProvider(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    var brightness = Theme.of(context).brightness;
+    SystemUiOverlayStyle systemUiStyle;
+    if (brightness == Brightness.light) {
+      systemUiStyle = SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      );
+    } else {
+      systemUiStyle = SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      );
     }
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: systemUiStyle,
-      child: DynamicColorBuilder(builder: (light, dark) {
-        var (lightColor, darkColor) = _generateColorSchemes(light, dark);
-        return MaterialApp(
-          title: 'kostori',
-          debugShowCheckedModeBanner: false,
-          navigatorKey: App.navigatorKey,
-          theme: ThemeData(
-            colorScheme: lightColor,
-            useMaterial3: true,
-            fontFamily: App.isWindows ? "font" : "",
-          ),
-          darkTheme: ThemeData(
-            colorScheme: darkColor,
-            useMaterial3: true,
-            fontFamily: App.isWindows ? "font" : "",
-          ),
-          onGenerateRoute: (settings) => AppPageRoute(
-            builder: (context) => notFirstUse
-                ? (appdata.settings[13] == "1"
-                    ? const AuthPage()
-                    : const MainPage())
-                : const WelcomePage(),
-          ),
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('zh', 'CN'),
-            Locale('zh', 'TW'),
-            Locale('en', 'US')
-          ],
-          builder: (context, widget) {
-            ErrorWidget.builder = (details) {
-              LogManager.addLog(LogLevel.error, "Unhandled Exception",
-                  "${details.exception}\n${details.stack}");
-              return Material(
-                child: Center(
-                  child: Text(details.exception.toString()),
-                ),
-              );
-            };
-            if (widget != null) {
-              widget = OverlayWidget(widget);
-              if (App.isDesktop) {
-                widget = Shortcuts(
-                  shortcuts: {
-                    LogicalKeySet(LogicalKeyboardKey.escape):
-                        VoidCallbackIntent(
-                      () {
-                        if (App.canPop) {
-                          App.globalBack();
-                        } else {
-                          App.mainNavigatorKey?.currentContext?.pop();
-                        }
-                      },
-                    ),
-                  },
-                  child: WindowFrame(widget),
-                );
-              }
-              return widget;
-            }
-            throw ('widget is null');
-          },
-        );
-      }),
+      child: child,
     );
   }
 }

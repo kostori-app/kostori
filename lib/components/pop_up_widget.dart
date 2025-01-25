@@ -22,8 +22,17 @@ class PopUpWidget<T> extends PopupRoute<T> {
     Widget body = PopupIndicatorWidget(
       child: Container(
         decoration: showPopUp
-            ? const BoxDecoration(
+            ? BoxDecoration(
                 borderRadius: BorderRadius.all(Radius.circular(12)),
+                boxShadow: context.brightness == ui.Brightness.dark
+                    ? [
+                        BoxShadow(
+                          color: Colors.white.withAlpha(50),
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               )
             : null,
         clipBehavior: showPopUp ? Clip.antiAlias : Clip.none,
@@ -38,6 +47,15 @@ class PopUpWidget<T> extends PopupRoute<T> {
         ),
       ),
     );
+    if (App.isIOS) {
+      body = IOSBackGestureDetector(
+        enabledCallback: () => true,
+        gestureWidth: 20.0,
+        onStartPopGesture: () =>
+            IOSBackGestureController(controller!, navigator!),
+        child: body,
+      );
+    }
     if (showPopUp) {
       return MediaQuery.removePadding(
         removeTop: true,
@@ -58,7 +76,8 @@ class PopUpWidget<T> extends PopupRoute<T> {
       Animation<double> secondaryAnimation, Widget child) {
     return FadeTransition(
       opacity: animation.drive(
-          Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.ease))),
+        Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.ease)),
+      ),
       child: child,
     );
   }
@@ -76,13 +95,14 @@ class PopupIndicatorWidget extends InheritedWidget {
 }
 
 Future<T> showPopUpWidget<T>(BuildContext context, Widget widget) async {
-  return await Navigator.of(context).push(PopUpWidget(widget));
+  return await Navigator.of(context, rootNavigator: true)
+      .push(PopUpWidget(widget));
 }
 
 class PopUpWidgetScaffold extends StatefulWidget {
   const PopUpWidgetScaffold(
-      {required this.title, required this.body, this.tailing, Key? key})
-      : super(key: key);
+      {required this.title, required this.body, this.tailing, super.key});
+
   final Widget body;
   final List<Widget>? tailing;
   final String title;
@@ -114,12 +134,12 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
                   width: 8,
                 ),
                 Tooltip(
-                  message: "返回",
+                  message: "Back".tl,
                   child: IconButton(
-                      icon: const Icon(Icons.arrow_back_sharp),
-                      onPressed: () => Navigator.of(context).canPop()
-                          ? Navigator.of(context).pop()
-                          : App.globalBack()),
+                    icon: const Icon(Icons.arrow_back_ios_new),
+                    onPressed: () =>
+                        context.canPop() ? context.pop() : App.pop(),
+                  ),
                 ),
                 const SizedBox(
                   width: 16,
@@ -137,6 +157,9 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
           ),
           NotificationListener<ScrollNotification>(
             onNotification: (notifications) {
+              if (notifications.metrics.axisDirection != AxisDirection.down) {
+                return false;
+              }
               if (notifications.metrics.pixels ==
                       notifications.metrics.minScrollExtent &&
                   !top) {

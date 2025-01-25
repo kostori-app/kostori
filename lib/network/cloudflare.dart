@@ -1,12 +1,12 @@
 import 'dart:io' as io;
 
 import 'package:dio/dio.dart';
-
-import '../base.dart';
-import '../components/components.dart';
-import '../foundation/app.dart';
-import '../pages/webview.dart';
-import 'cookie_jar.dart';
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/pages/webview.dart';
+import 'package:kostori/network/cookie_jar.dart';
 
 class CloudflareException implements DioException {
   final String url;
@@ -58,7 +58,7 @@ class CloudflareInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (options.headers['cookie'].toString().contains('cf_clearance')) {
-      options.headers['user-agent'] = appdata.implicitData[3];
+      options.headers['user-agent'] = appdata.implicitData['ua'] ?? webUA;
     }
     handler.next(options);
   }
@@ -113,7 +113,9 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
     );
   }
 
-  if (App.isDesktop && (await DesktopWebview.isAvailable())) {
+  // windows version of package `flutter_inappwebview` cannot get some cookies
+  // Using DesktopWebview instead
+  if (App.isLinux || App.isWindows) {
     var webview = DesktopWebview(
       initialUrl: url,
       onTitleChange: (title, controller) async {
@@ -122,7 +124,7 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
         if (res == 'false') {
           var ua = controller.userAgent;
           if (ua != null) {
-            appdata.implicitData[3] = ua;
+            appdata.implicitData['ua'] = ua;
             appdata.writeImplicitData();
           }
           var cookiesMap = await controller.getCookies(url);
@@ -136,42 +138,128 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       },
     );
     webview.open();
-  } else if (App.isMobile) {
-    await App.globalTo(
+  } else {
+    await App.rootContext.to(
       () => AppWebview(
         initialUrl: url,
         singlePage: true,
-        onTitleChange: (title, controller) async {
+        onLoadStop: (controller) async {
           var res = await controller.platform.evaluateJavascript(
               source:
                   "document.head.innerHTML.includes('#challenge-success-text')");
           if (res == false) {
             var ua = await controller.getUA();
             if (ua != null) {
-              appdata.implicitData[3] = ua;
+              appdata.implicitData['ua'] = ua;
               appdata.writeImplicitData();
             }
-            var cookiesMap = await controller.getCookies(url) ?? {};
-            if (cookiesMap['cf_clearance'] == null) {
+            var cookies = await controller.getCookies(url) ?? [];
+            if (cookies.firstWhereOrNull(
+                    (element) => element.name == 'cf_clearance') ==
+                null) {
               return;
             }
-            saveCookies(cookiesMap);
-            App.globalBack();
+            SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
+            App.rootPop();
           }
         },
         onStarted: (controller) async {
           var ua = await controller.getUA();
           if (ua != null) {
-            appdata.implicitData[3] = ua;
+            appdata.implicitData['ua'] = ua;
             appdata.writeImplicitData();
           }
-          var cookiesMap = await controller.getCookies(url) ?? {};
-          saveCookies(cookiesMap);
+          var cookies = await controller.getCookies(url) ?? [];
+          SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
         },
       ),
     );
     onFinished();
+  }
+}
+
+void passCloudflareed(String e, void Function() onFinished) async {
+  var url = e;
+  var uri = Uri.parse(url);
+
+  void saveCookies(Map<String, String> cookies) {
+    var domain = uri.host;
+    var splits = domain.split('.');
+    if (splits.length > 1) {
+      domain = ".${splits[splits.length - 2]}.${splits[splits.length - 1]}";
+    }
+    SingleInstanceCookieJar.instance!.saveFromResponse(
+      uri,
+      List<io.Cookie>.generate(cookies.length, (index) {
+        var cookie = io.Cookie(
+            cookies.keys.elementAt(index), cookies.values.elementAt(index));
+        cookie.domain = domain;
+        return cookie;
+      }),
+    );
+  }
+
+  // windows version of package `flutter_inappwebview` cannot get some cookies
+  // Using DesktopWebview instead
+  if (App.isLinux || App.isWindows) {
+    var webview = DesktopWebview(
+      initialUrl: url,
+      onTitleChange: (title, controller) async {
+        var res = await controller.evaluateJavascript(
+            "document.head.innerHTML.includes('#challenge-success-text')");
+        if (res == 'false') {
+          var ua = controller.userAgent;
+          if (ua != null) {
+            appdata.implicitData['ua'] = ua;
+            appdata.writeImplicitData();
+          }
+          var cookiesMap = await controller.getCookies(url);
+          if (cookiesMap['cf_clearance'] == null) {
+            return;
+          }
+          saveCookies(cookiesMap);
+          controller.close();
+          onFinished();
+        }
+      },
+    );
+    webview.open();
   } else {
-    showToast(message: "当前设备不支持");
+    await App.rootContext.to(
+      () => AppWebview(
+        initialUrl: url,
+        singlePage: true,
+        onLoadStop: (controller) async {
+          var res = await controller.platform.evaluateJavascript(
+              source:
+                  "document.head.innerHTML.includes('#challenge-success-text')");
+          if (res == false) {
+            var ua = await controller.getUA();
+            if (ua != null) {
+              appdata.implicitData['ua'] = ua;
+              appdata.writeImplicitData();
+            }
+            var cookies = await controller.getCookies(url) ?? [];
+            if (cookies.firstWhereOrNull(
+                    (element) => element.name == 'cf_clearance') ==
+                null) {
+              return;
+            }
+            SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
+            App.rootPop();
+          }
+        },
+        onStarted: (controller) async {
+          var ua = await controller.getUA();
+          if (ua != null) {
+            appdata.implicitData['ua'] = ua;
+            appdata.writeImplicitData();
+          }
+          var cookies = await controller.getCookies(url) ?? [];
+          SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
+        },
+      ),
+    );
+    onFinished();
   }
 }

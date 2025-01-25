@@ -1,667 +1,606 @@
-import 'dart:collection';
-import 'dart:convert';
-import 'dart:io';
+import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-import 'package:kostori/tools/io_extensions.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sqlite3/sqlite3.dart';
+import 'package:flutter/widgets.dart' show ChangeNotifier;
+import 'package:kostori/utils/io.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/local.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/res.dart';
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/file_type.dart';
+import 'package:kostori/network/images.dart';
 
-import '../anime_source/anime_source.dart';
-import '../base.dart';
-import '../foundation/app.dart';
-import '../foundation/log.dart';
-import '../tools/io_tools.dart';
-import 'download_model.dart';
+abstract class DownloadTask with ChangeNotifier {
+  /// 0-1
+  double get progress;
 
-typedef DownloadingCallback = void Function();
+  bool get isComplete;
 
-class DownloadManager with _DownloadDb implements Listenable {
-  static DownloadManager? cache;
+  bool get isError;
 
-  factory DownloadManager() => cache ?? (cache = DownloadManager._create());
+  bool get isPaused;
 
-  DownloadManager._create();
+  /// bytes per second
+  int get speed;
 
-  ///下载目录
+  void cancel();
+
+  void pause();
+
+  void resume();
+
+  String get title;
+
+  String? get cover;
+
+  String get message;
+
+  /// root path for the anime. If null, the task is not scheduled.
   String? path;
 
-  ///下载队列
-  var downloading = Queue<DownloadingItem>();
+  /// convert current state to json, which can be used to restore the task
+  Map<String, dynamic> toJson();
 
-  ///是否正在下载
-  bool isDownloading = false;
+  LocalAnime toLocalAnime();
 
-  ///是否出现了错误
-  bool _error = false;
+  String get id;
 
-  ///是否出现了错误
-  bool get error => _error;
+  AnimeType get animeType;
 
-  ///是否初始化
-  bool _runInit = false;
-
-  @override
-  Database? _db;
-
-  final List<VoidCallback> _listeners = [];
-
-  @override
-  void addListener(VoidCallback listener) {
-    _listeners.add(listener);
-  }
-
-  @override
-  void removeListener(VoidCallback listener) {
-    _listeners.remove(listener);
-  }
-
-  void notifyListeners() {
-    for (var listener in _listeners) {
-      listener();
+  static DownloadTask? fromJson(Map<String, dynamic> json) {
+    switch (json["type"]) {
+      case "ImagesDownloadTask":
+        return ImagesDownloadTask.fromJson(json);
+      default:
+        return null;
     }
   }
+}
 
-  ///获取下载目录
-  Future<void> _getPath() async {
-    if (appdata.settings[22] == "") {
-      final appPath = await getApplicationSupportDirectory();
-      path = "${appPath.path}/download";
-    } else {
-      path = appdata.settings[22];
-    }
-    if (App.isIOS) {
-      if (path!.startsWith('/var/mobile/Containers/Data/Application/')) {
-        if (!Directory(path!).existsSync()) {
-          final appPath = await getApplicationSupportDirectory();
-          path = "${appPath.path}/download";
+class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
+  final AnimeSource source;
+
+  final String animeId;
+
+  /// anime details. If null, the anime details will be fetched from the source.
+  AnimeDetails? anime;
+
+  /// episode to download. If null, all episode will be downloaded.
+  final List<String>? episode;
+
+  @override
+  String get id => animeId;
+
+  @override
+  AnimeType get animeType => AnimeType(source.key.hashCode);
+
+  String? animeTitle;
+
+  ImagesDownloadTask({
+    required this.source,
+    required this.animeId,
+    this.anime,
+    this.episode,
+    this.animeTitle,
+  });
+
+  @override
+  void cancel() {
+    _isRunning = false;
+    LocalManager().removeTask(this);
+    var local = LocalManager().find(id, animeType);
+    if (path != null) {
+      if (local == null) {
+        Directory(path!).deleteIgnoreError(recursive: true);
+      } else if (episode != null) {
+        for (var c in episode!) {
+          var dir = Directory(FilePath.join(path!, c));
+          if (dir.existsSync()) {
+            dir.deleteSync(recursive: true);
+          }
         }
       }
     }
-    var dir = Directory(path!);
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    if (App.isAndroid) {
-      var file = File("$path/.nomedia");
-      if (!file.existsSync()) {
-        await file.create();
-      }
-    }
   }
 
-  ///更换下载目录
-  Future<String> updatePath(String newPath, {bool transform = true}) async {
-    if (transform) {
-      var source = Directory(path!);
-      final appPath = await getApplicationSupportDirectory();
-      var destination = Directory(
-        newPath == "" ? "${appPath.path}${pathSep}download" : newPath,
-      );
-      try {
-        await copyDirectory(source, destination);
-        for (var i in source.listSync()) {
-          await i.delete(recursive: true);
-        }
-      } catch (e) {
-        return e.toString();
-      }
-    }
+  @override
+  String? get cover => _cover;
 
-    _runInit = false;
-    _db!.dispose();
-    downloading.clear();
-    await init();
-    return "ok";
-  }
+  @override
+  bool get isComplete => _totalCount == _downloadedCount;
 
-  ///读取数据, 获取未完成的下载和已下载的漫画ID
-  // Future<void> _getInfo() async {
-  //   //读取数据
-  //   var file = File("$path${pathSep}newDownload.json");
-  //   if (!file.existsSync()) {
-  //     await _saveInfo();
-  //   } else {
-  //     try {
-  //       var json = const JsonDecoder().convert(file.readAsStringSync());
-  //       for (var item in json["downloading"]) {
-  //         downloading.add(
-  //             downloadingItemFromMap(item, _onFinish, _onError, _saveInfo));
-  //       }
-  //     } catch (e, s) {
-  //       LogManager.addLog(LogLevel.error, "IO",
-  //           "Failed to read downloaded information\n$e\n$s");
-  //       file.deleteSync();
-  //       await _saveInfo();
-  //     }
-  //   }
-  // }
+  @override
+  String get message => _message;
 
-  // Future<void> _initDb() async {
-  //   var oldData = <String, DownloadedItem>{};
-  //   if (!File("$path/download.db").existsSync()) {
-  //     for (var entry in Directory(path!).listSync()) {
-  //       if (entry is Directory) {
-  //         var infoFile = File("${entry.path}/info.json");
-  //         if (infoFile.existsSync()) {
-  //           var id = entry.name;
-  //           var json = infoFile.readAsStringSync();
-  //           var time = infoFile.lastModifiedSync();
-  //           var comic = _getAnimeFromJson(id, json, time);
-  //           if (comic != null) {
-  //             infoFile.delete();
-  //             var directory = comic.name;
-  //             int i = -1;
-  //             while (entry is Directory) {
-  //               try {
-  //                 entry = entry.renameX(directory);
-  //                 break;
-  //               } catch (e) {
-  //                 i++;
-  //                 if (i > 20) {
-  //                   // it seems that the error is unrelated to the directory name
-  //                   Log.error("IO",
-  //                       "Failed to rename directory: Trying rename ${entry.name} to ${comic.name}\n$e");
-  //                   break;
-  //                 }
-  //                 directory = comic.name + i.toString();
-  //               }
-  //             }
-  //             oldData[entry.name] = comic;
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  //   _db = sqlite3.open("$path/download.db");
-  //   _createTable();
-  //   for (var entry in oldData.entries) {
-  //     _addToDb(entry.value, entry.key);
-  //   }
-  // }
-
-  ///初始化下载管理器
-  Future<void> init() async {
-    if (_runInit) return;
-    _runInit = true;
-    await _getPath();
-    // await _getInfo();
-    // await _initDb();
-  }
-
-  ///储存当前的下载队列信息, 每完成一张图片的下载调用一次
-  Future<void> _saveInfo() async {
-    notifyListeners();
-    var data = <String, dynamic>{};
-    data["downloading"] = <Map<String, dynamic>>[];
-    for (var item in downloading) {
-      data["downloading"].add(item.toMap());
-    }
-    var file = File("$path${pathSep}newDownload.json");
-    await file.writeAsString(const JsonEncoder().convert(data));
-  }
-
-  /// move comic to first
-  void moveToFirst(DownloadingItem item) {
-    if (downloading.first == item) {
+  @override
+  void pause() {
+    if (isPaused) {
       return;
     }
-    pause();
-    downloading.remove(item);
-    downloading.addFirst(item);
-    // start();
-  }
-
-  String generateId(String source, String id) {
-    var comicSource = AnimeSource.find(source)!;
-    if (comicSource.matchBriefIdReg != null) {
-      id = RegExp(comicSource.matchBriefIdReg!).firstMatch(id)!.group(1)!;
+    _isRunning = false;
+    _message = "Paused";
+    _currentSpeed = 0;
+    var shouldMove = <int>[];
+    for (var entry in tasks.entries) {
+      if (!entry.value.isComplete) {
+        entry.value.cancel();
+        shouldMove.add(entry.key);
+      }
     }
-    id = "$source-$id";
-    return id;
-  }
-
-  ///当一个下载任务完成时, 调用此函数
-  // void _onFinish() async {
-  //   var task = downloading.removeFirst();
-  //   _addToDb(await task.toDownloadedItem(), task.directory!);
-  //   await _saveInfo();
-  //   StateController.findOrNull<DownloadPageLogic>()?.refresh();
-  //   if (downloading.isNotEmpty) {
-  //     //清除已完成的任务, 开始下一个任务
-  //     downloading.first.start();
-  //   } else {
-  //     //标记状态为未在下载
-  //     isDownloading = false;
-  //     notifications.endProgress();
-  //   }
-  // }
-
-  ///暂停下载
-  void pause() {
-    isDownloading = false;
-    downloading.first.pause();
-  }
-
-  ///出现错误时调用此函数
-  void _onError() {
-    pause();
-    _error = true;
-    notifications.sendNotification("下载出错", "点击查看详情");
+    for (var i in shouldMove) {
+      tasks.remove(i);
+    }
+    stopRecorder();
     notifyListeners();
   }
 
-  ///开始或继续下载
-  // void start() {
-  //   _error = false;
-  //   if (isDownloading) return;
-  //   downloading.first.start();
-  //   isDownloading = true;
-  // }
+  @override
+  double get progress => _totalCount == 0 ? 0 : _downloadedCount / _totalCount;
 
-  ///取消指定的下载
-  // void cancel(String id) {
-  //   var index = 0;
-  //   for (var i in downloading) {
-  //     if (i.id == id) break;
-  //     index++;
-  //   }
-  //
-  //   if (index == 0) {
-  //     _error = false;
-  //     downloading.first.stop();
-  //     downloading.removeFirst();
-  //   } else {
-  //     downloading.removeWhere((element) => element.id == id);
-  //   }
-  //
-  //   notifyListeners();
-  //
-  //   if (downloading.isEmpty) {
-  //     isDownloading = false;
-  //     notifications.endProgress();
-  //   } else {
-  //     downloading.first.start();
-  //   }
-  //   _saveInfo();
-  // }
+  bool _isRunning = false;
 
-  // Future<DownloadedItem?> getAnimeOrNull(String id) async {
-  //   return _getAnimeWithDb(id);
-  // }
+  bool _isError = false;
 
-  ///删除已下载的漫画
-  Future<void> delete(List<String> ids) async {
-    for (var id in ids) {
-      _deleteFromDb(id);
-      var comic = Directory("$path/${getDirectory(id)}");
-      try {
-        comic.delete(recursive: true);
-      } catch (e) {
-        if (e is PathNotFoundException) {
-          //忽略
+  String _message = "Fetching anime info...";
+
+  String? _cover;
+
+  Map<String, List<String>>? _images;
+
+  int _downloadedCount = 0;
+
+  int _totalCount = 0;
+
+  int _index = 0;
+
+  int _episode = 0;
+
+  var tasks = <int, _ImageDownloadWrapper>{};
+
+  int get _maxConcurrentTasks =>
+      (appdata.settings["downloadThreads"] as num).toInt();
+
+  void _scheduleTasks() {
+    var images = _images![_images!.keys.elementAt(_episode)]!;
+    var downloading = 0;
+    for (var i = _index; i < images.length; i++) {
+      if (downloading >= _maxConcurrentTasks) {
+        return;
+      }
+      if (tasks[i] != null) {
+        if (!tasks[i]!.isComplete) {
+          downloading++;
+        }
+        if (tasks[i]!.error == null) {
+          continue;
+        }
+      }
+      Directory saveTo;
+      if (anime!.episode != null) {
+        saveTo = Directory(FilePath.join(
+          path!,
+          anime!.episode!.keys.elementAt(_episode),
+        ));
+        if (!saveTo.existsSync()) {
+          saveTo.createSync();
+        }
+      } else {
+        saveTo = Directory(path!);
+      }
+      var task = _ImageDownloadWrapper(
+        this,
+        _images!.keys.elementAt(_episode),
+        images[i],
+        saveTo,
+        i,
+      );
+      tasks[i] = task;
+      task.wait().then((task) {
+        if (task.isComplete) {
+          _scheduleTasks();
+        }
+      });
+      downloading++;
+    }
+  }
+
+  @override
+  void resume() async {
+    if (_isRunning) return;
+    _isError = false;
+    _message = "Resuming...";
+    _isRunning = true;
+    notifyListeners();
+    runRecorder();
+
+    if (anime == null) {
+      var res = await runWithRetry(() async {
+        var r = await source.loadAnimeInfo!(animeId);
+        if (r.error) {
+          throw r.errorMessage!;
         } else {
-          rethrow;
+          return r.data;
+        }
+      });
+      if (!_isRunning) {
+        return;
+      }
+      if (res.error) {
+        _setError("Error: ${res.errorMessage}");
+        return;
+      } else {
+        anime = res.data;
+      }
+    }
+
+    if (path == null) {
+      var dir = await LocalManager().findValidDirectory(
+        animeId,
+        animeType,
+        anime!.title,
+      );
+      if (!(await dir.exists())) {
+        try {
+          await dir.create();
+        } catch (e) {
+          _setError("Error: $e");
+          return;
+        }
+      }
+      path = dir.path;
+    }
+
+    await LocalManager().saveCurrentDownloadingTasks();
+
+    if (cover == null) {
+      var res = await runWithRetry(() async {
+        Uint8List? data;
+        await for (var progress
+            in ImageDownloader.loadThumbnail(anime!.cover, source.key)) {
+          if (progress.imageBytes != null) {
+            data = progress.imageBytes;
+          }
+        }
+        if (data == null) {
+          throw "Failed to download cover";
+        }
+        var fileType = detectFileType(data);
+        var file = File(FilePath.join(path!, "cover${fileType.ext}"));
+        file.writeAsBytesSync(data);
+        return file.path;
+      });
+      if (res.error) {
+        _setError("Error: ${res.errorMessage}");
+        return;
+      } else {
+        _cover = res.data;
+        notifyListeners();
+      }
+      await LocalManager().saveCurrentDownloadingTasks();
+    }
+
+    // if (_images == null) {
+    //   if (anime!.episode == null) {
+    //     var res = await runWithRetry(() async {
+    //       var r = await source.loadAnimePages!(animeId, null);
+    //       if (r.error) {
+    //         throw r.errorMessage!;
+    //       } else {
+    //         return r.data;
+    //       }
+    //     });
+    //     if (!_isRunning) {
+    //       return;
+    //     }
+    //     if (res.error) {
+    //       _setError("Error: ${res.errorMessage}");
+    //       return;
+    //     } else {
+    //       _images = {'': res.data};
+    //       _totalCount = _images!['']!.length;
+    //     }
+    //   } else {
+    //     _images = {};
+    //     _totalCount = 0;
+    //     for (var i in anime!.episode!.keys) {
+    //       if (episode != null && !episode!.contains(i)) {
+    //         continue;
+    //       }
+    //       if (_images![i] != null) {
+    //         _totalCount += _images![i]!.length;
+    //         continue;
+    //       }
+    //       var res = await runWithRetry(() async {
+    //         var r = await source.loadAnimePages!(animeId, i);
+    //         if (r.error) {
+    //           throw r.errorMessage!;
+    //         } else {
+    //           return r.data;
+    //         }
+    //       });
+    //       if (!_isRunning) {
+    //         return;
+    //       }
+    //       if (res.error) {
+    //         _setError("Error: ${res.errorMessage}");
+    //         return;
+    //       } else {
+    //         _images![i] = res.data;
+    //         _totalCount += _images![i]!.length;
+    //       }
+    //     }
+    //   }
+    //   _message = "$_downloadedCount/$_totalCount";
+    //   notifyListeners();
+    //   await LocalManager().saveCurrentDownloadingTasks();
+    // }
+
+    while (_episode < _images!.length) {
+      var images = _images![_images!.keys.elementAt(_episode)]!;
+      tasks.clear();
+      while (_index < images.length) {
+        _scheduleTasks();
+        var task = tasks[_index]!;
+        await task.wait();
+        if (isPaused) {
+          return;
+        }
+        if (task.error != null) {
+          _setError("Error: ${task.error}");
+          return;
+        }
+        _index++;
+        _downloadedCount++;
+        _message = "$_downloadedCount/$_totalCount";
+        await LocalManager().saveCurrentDownloadingTasks();
+      }
+      _index = 0;
+      _episode++;
+    }
+
+    LocalManager().completeTask(this);
+    stopRecorder();
+  }
+
+  @override
+  void onNextSecond(Timer t) {
+    notifyListeners();
+    super.onNextSecond(t);
+  }
+
+  void _setError(String message) {
+    _isRunning = false;
+    _isError = true;
+    _message = message;
+    notifyListeners();
+    stopRecorder();
+    Log.error("Download", message);
+  }
+
+  @override
+  int get speed => currentSpeed;
+
+  @override
+  String get title => anime?.title ?? animeTitle ?? "Loading...";
+
+  @override
+  Map<String, dynamic> toJson() {
+    return {
+      "type": "ImagesDownloadTask",
+      "source": source.key,
+      "animeId": animeId,
+      "anime": anime?.toJson(),
+      "episode": episode,
+      "path": path,
+      "cover": cover,
+      "images": _images,
+      "downloadedCount": _downloadedCount,
+      "totalCount": _totalCount,
+      "index": _index,
+      "chapter": _episode,
+    };
+  }
+
+  static ImagesDownloadTask? fromJson(Map<String, dynamic> json) {
+    if (json["type"] != "ImagesDownloadTask") {
+      return null;
+    }
+
+    Map<String, List<String>>? images;
+    if (json["images"] != null) {
+      images = {};
+      for (var entry in json["images"].entries) {
+        images[entry.key] = List<String>.from(entry.value);
+      }
+    }
+
+    return ImagesDownloadTask(
+      source: AnimeSource.find(json["source"])!,
+      animeId: json["animeId"],
+      anime:
+          json["anime"] == null ? null : AnimeDetails.fromJson(json["anime"]),
+      episode: ListOrNull.from(json["episode"]),
+    )
+      ..path = json["path"]
+      .._cover = json["cover"]
+      .._images = images
+      .._downloadedCount = json["downloadedCount"]
+      .._totalCount = json["totalCount"]
+      .._index = json["index"]
+      .._episode = json["chapter"];
+  }
+
+  @override
+  bool get isError => _isError;
+
+  @override
+  bool get isPaused => !_isRunning;
+
+  @override
+  LocalAnime toLocalAnime() {
+    return LocalAnime(
+      id: anime!.id,
+      title: title,
+      subtitle: anime!.subTitle ?? '',
+      tags: anime!.tags.entries.expand((e) {
+        return e.value.map((v) => "${e.key}:$v");
+      }).toList(),
+      directory: Directory(path!).name,
+      episode: anime!.episode,
+      cover: File(_cover!).uri.pathSegments.last,
+      animeType: AnimeType(source.key.hashCode),
+      downloadedChapters: episode ?? [],
+      createdAt: DateTime.now(),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (other is ImagesDownloadTask) {
+      return other.animeId == animeId && other.source.key == source.key;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode => Object.hash(animeId, source.key);
+}
+
+Future<Res<T>> runWithRetry<T>(Future<T> Function() task,
+    {int retry = 3}) async {
+  for (var i = 0; i < retry; i++) {
+    try {
+      return Res(await task());
+    } catch (e) {
+      if (i == retry - 1) {
+        return Res.error(e.toString());
+      }
+    }
+  }
+  throw UnimplementedError();
+}
+
+class _ImageDownloadWrapper {
+  final ImagesDownloadTask task;
+
+  final String chapter;
+
+  final int index;
+
+  final String image;
+
+  final Directory saveTo;
+
+  _ImageDownloadWrapper(
+    this.task,
+    this.chapter,
+    this.image,
+    this.saveTo,
+    this.index,
+  ) {
+    start();
+  }
+
+  bool isComplete = false;
+
+  String? error;
+
+  bool isCancelled = false;
+
+  void cancel() {
+    isCancelled = true;
+  }
+
+  var completers = <Completer<_ImageDownloadWrapper>>[];
+
+  var retry = 3;
+
+  void start() async {
+    int lastBytes = 0;
+    try {
+      await for (var p in ImageDownloader.loadAnimeImage(
+          image, task.source.key, task.animeId, chapter)) {
+        if (isCancelled) {
+          return;
+        }
+        task.onData(p.currentBytes - lastBytes);
+        lastBytes = p.currentBytes;
+        if (p.imageBytes != null) {
+          var fileType = detectFileType(p.imageBytes!);
+          var file = saveTo.joinFile("$index${fileType.ext}");
+          await file.writeAsBytes(p.imageBytes!);
+          isComplete = true;
+          for (var c in completers) {
+            c.complete(this);
+          }
+          completers.clear();
+        }
+      }
+    } catch (e, s) {
+      if (isCancelled) {
+        return;
+      }
+      Log.error("Download", e.toString(), s);
+      retry--;
+      if (retry > 0) {
+        start();
+        return;
+      }
+      error = e.toString();
+      for (var c in completers) {
+        if (!c.isCompleted) {
+          c.complete(this);
         }
       }
     }
   }
 
-  /// return error message when error, or null if success.
-  Future<String?> deleteEpisode(DownloadedItem comic, int ep) async {
-    try {
-      if (comic.downloadedEps.length == 1) {
-        return "Delete Error: only one downloaded episode";
-      }
-      if (Directory("$path/${getDirectory(comic.id)}/${ep + 1}").existsSync()) {
-        Directory("$path/${getDirectory(comic.id)}/${ep + 1}")
-            .deleteSync(recursive: true);
-      }
-      var size = Directory("$path/${getDirectory(comic.id)}").getMBSizeSync();
-      comic.downloadedEps.remove(ep);
-      comic.comicSize = size;
-      _addToDb(comic, comic.directory ?? getDirectory(comic.id));
-      return null;
-    } catch (e, s) {
-      LogManager.addLog(LogLevel.error, "IO", "$e/n$s");
-      return e.toString();
+  Future<_ImageDownloadWrapper> wait() {
+    if (isComplete) {
+      return Future.value(this);
     }
-  }
-
-  /// 获取漫画章节的长度, 适用于有章节的漫画
-  Future<int> getEpLength(String id, int ep) async {
-    var directory = Directory("$path/${getDirectory(id)}/$ep");
-    var files = directory.list();
-    return files.length;
-  }
-
-  /// 获取漫画的长度, 适用于无章节的漫画
-  Future<int> getAnimeLength(String id) async {
-    var directory = Directory("$path/${getDirectory(id)}");
-    var files = directory.list();
-    return await files.length - 1;
-  }
-
-  ///获取图片, 对于无章节的漫画, ep参数为0
-  File getImage(String id, int ep, int index) {
-    String downloadPath;
-    if (ep == 0) {
-      downloadPath = "$path/${getDirectory(id)}/";
-    } else {
-      downloadPath = "$path/${getDirectory(id)}/$ep/";
-    }
-    for (var file in Directory(downloadPath).listSync()) {
-      if (file.uri.pathSegments.last.replaceFirst(RegExp(r"\..+"), "") ==
-          index.toString()) {
-        return file as File;
-      }
-    }
-    throw Exception("File not found");
-  }
-
-  Future<File> getImageAsync(String id, int ep, int index) async {
-    String downloadPath;
-    if (ep == 0) {
-      downloadPath = "$path/${getDirectory(id)}/";
-    } else {
-      downloadPath = "$path/${getDirectory(id)}/$ep/";
-    }
-    var fileName = _downloadedFileName["$id$ep$index"];
-    if (fileName != null) {
-      return File(downloadPath + fileName);
-    }
-    // await for (var file in Directory(downloadPath).list()) {
-    //   var i = file.uri.pathSegments.last.replaceFirst(RegExp(r"\..+"), "");
-    //   if (i.isNum) {
-    //     if (_downloadedFileName.length > 2000) {
-    //       _downloadedFileName.remove(_downloadedFileName.keys.first);
-    //     }
-    //     _downloadedFileName["$id$ep$i"] = file.name;
-    //   }
-    // }
-    if (_downloadedFileName["$id$ep$index"] == null) {
-      throw Exception("File not found");
-    }
-    return File(downloadPath + _downloadedFileName["$id$ep$index"]!);
-  }
-
-  static final _downloadedFileName = <String, String>{};
-
-  ///获取封面, 所有漫画源通用
-  File getCover(String id) {
-    return File("$path/${getDirectory(id)}/cover.jpg");
+    var c = Completer<_ImageDownloadWrapper>();
+    completers.add(c);
+    return c.future;
   }
 }
 
-// DownloadingItem downloadingItemFromMap(
-//     Map<String, dynamic> map,
-//     void Function() whenFinish,
-//     void Function() whenError,
-//     Future<void> Function() updateInfo) {
-//   switch (map["type"]) {
-//     case 0:
-//       return PicDownloadingItem.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     case 1:
-//       return EhDownloadingItem.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     case 2:
-//       return JmDownloadingItem.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     case 3:
-//       return HitomiDownloadingItem.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     case 4:
-//       return DownloadingHtAnime.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     case 5:
-//       return NhentaiDownloadingItem.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     case 6:
-//       return CustomDownloadingItem.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     case 7:
-//       return FavoriteDownloading.fromMap(
-//           map, whenFinish, whenError, updateInfo, map["id"]);
-//     default:
-//       throw UnimplementedError();
-//   }
-// }
+abstract mixin class _TransferSpeedMixin {
+  int _bytesSinceLastSecond = 0;
 
-extension AddDownloadExt on DownloadManager {
-  ///添加哔咔漫画下载
-  // void addPicDownload(AnimeItem comic, List<int> downloadEps) {
-  //   downloading.addLast(PicDownloadingItem(
-  //       comic, downloadEps, _onFinish, _onError, _saveInfo, comic.id));
-  //   _saveInfo();
-  //   if (!isDownloading) {
-  //     downloading.first.start();
-  //     isDownloading = true;
-  //   }
-  // }
+  int _currentSpeed = 0;
 
-  ///添加E-Hentai下载
-  // void addEhDownload(Gallery gallery, [int type = 0]) {
-  //   final id = getGalleryId(gallery.link);
-  //   downloading.addLast(
-  //       EhDownloadingItem(gallery, _onFinish, _onError, _saveInfo, id, type));
-  //   _saveInfo();
-  //   if (!isDownloading) {
-  //     downloading.first.start();
-  //     isDownloading = true;
-  //   }
-  // }
+  int get currentSpeed => _currentSpeed;
 
-  ///添加禁漫下载
-  // void addJmDownload(JmAnimeInfo comic, List<int> downloadEps) {
-  //   downloading.addLast(JmDownloadingItem(
-  //       comic, downloadEps, _onFinish, _onError, _saveInfo, "jm${comic.id}"));
-  //   _saveInfo();
-  //   if (!isDownloading) {
-  //     downloading.first.start();
-  //     isDownloading = true;
-  //   }
-  // }
+  Timer? timer;
 
-  ///添加Hitomi下载
-  // void addHitomiDownload(HitomiAnime comic, String cover, String link) {
-  //   final id = "hitomi${comic.id}";
-  //   downloading.addLast(HitomiDownloadingItem(
-  //       comic, cover, link, _onFinish, _onError, _saveInfo, id));
-  //   _saveInfo();
-  //   if (!isDownloading) {
-  //     downloading.first.start();
-  //     isDownloading = true;
-  //   }
-  // }
-
-  ///添加绅士漫画下载
-  // void addHtDownload(HtAnimeInfo comic) {
-  //   final id = "Ht${comic.id}";
-  //   downloading
-  //       .addLast(DownloadingHtAnime(comic, _onFinish, _onError, _saveInfo, id));
-  //   _saveInfo();
-  //   if (!isDownloading) {
-  //     downloading.first.start();
-  //     isDownloading = true;
-  //   }
-  // }
-
-  // void addNhentaiDownload(NhentaiAnime comic) {
-  //   final id = "nhentai${comic.id}";
-  //   downloading.addLast(
-  //       NhentaiDownloadingItem(comic, _onFinish, _onError, _saveInfo, id));
-  //   _saveInfo();
-  //   if (!isDownloading) {
-  //     downloading.first.start();
-  //     isDownloading = true;
-  //   }
-  // }
-
-  // void addCustomDownload(AnimeInfoData comic, List<int> downloadEps) {
-  //   var id = generateId(comic.sourceKey, comic.comicId);
-  //   downloading.addLast(CustomDownloadingItem(
-  //       comic, downloadEps, _onFinish, _onError, _saveInfo, id));
-  //   _saveInfo();
-  //   if (!isDownloading) {
-  //     downloading.first.start();
-  //     isDownloading = true;
-  //   }
-  // }
-
-//   void addFavoriteDownload(FavoriteItem comic) {
-//     var id = switch (comic.type.key) {
-//       0 => comic.target,
-//       1 => getGalleryId(comic.target),
-//       2 => "jm${comic.target}",
-//       3 => "hitomi${RegExp(r"\d+(?=\.html)").firstMatch(comic.target)![0]!}",
-//       4 => "Ht${comic.target}",
-//       6 => "nhentai${comic.target}",
-//       _ => generateId(comic.type.comicSource.key, comic.target)
-//     };
-//     downloading.addLast(
-//         FavoriteDownloading(comic, _onFinish, _onError, _saveInfo, id));
-//     _saveInfo();
-//     if (!isDownloading) {
-//       downloading.first.start();
-//       isDownloading = true;
-//     }
-//   }
-}
-
-// DownloadedItem? _getAnimeFromJson(String id, String json, DateTime time,
-//     [String? directory]) {
-//   DownloadedItem comic;
-//   try {
-//     if (id.contains('-')) {
-//       comic = CustomDownloadedItem.fromJson(jsonDecode(json));
-//     } else if (id.startsWith("jm")) {
-//       comic = DownloadedJmAnime.fromMap(jsonDecode(json));
-//     } else if (id.startsWith("hitomi")) {
-//       comic = DownloadedHitomiAnime.fromMap(jsonDecode(json));
-//     } else if (id.startsWith("nhentai")) {
-//       comic = NhentaiDownloadedAnime.fromJson(jsonDecode(json));
-//     } else if (id.startsWith("Ht")) {
-//       comic = DownloadedHtAnime.fromJson(jsonDecode(json));
-//     } else if (id.isNum) {
-//       comic = DownloadedGallery.fromJson(jsonDecode(json));
-//     } else {
-//       comic = DownloadedAnime.fromJson(jsonDecode(json));
-//     }
-//     comic.time = time;
-//     comic.directory = directory;
-//     return comic;
-//   } catch (e, s) {
-//     LogManager.addLog(
-//         LogLevel.error, "IO", "Failed to get a downloaded comic info:\n$e\n$s");
-//     return null;
-//   }
-// }
-
-abstract mixin class _DownloadDb {
-  Database? get _db;
-
-  void _createTable() {
-    _db!.execute('''
-      create table if not exists download (
-        id text primary key,
-        title text,
-        subtitle text,
-        time int,
-        directory text,
-        size int,
-        json text
-      )
-    ''');
-  }
-
-  void _addToDb(DownloadedItem item, String directory, [DateTime? time]) {
-    _db!.execute('''
-      insert or replace into download
-      values (?,?,?,?,?,?,?)
-    ''', [
-      item.id,
-      item.name,
-      item.subTitle,
-      (time ?? DateTime.now()).millisecondsSinceEpoch,
-      directory,
-      item.comicSize,
-      jsonEncode(item.toJson()),
-    ]);
-  }
-
-  bool isExists(String id) {
-    var result = _db!.select('''
-      select id from download
-      where id = ?
-    ''', [id]);
-    return result.isNotEmpty;
-  }
-
-  void _deleteFromDb(String id) {
-    _db!.execute('''
-      delete from download
-      where id = ?
-    ''', [id]);
-  }
-
-  // DownloadedItem? _getAnimeWithDb(String id) {
-  //   var result = _db!.select('''
-  //     select * from download
-  //     where id = ?
-  //   ''', [id]);
-  //   if (result.isEmpty) return null;
-  //   var data = result.first;
-  //   return _getAnimeFromJson(
-  //     data['id'],
-  //     data['json'],
-  //     DateTime.fromMillisecondsSinceEpoch(data['time']),
-  //     data['directory'],
-  //   );
-  // }
-
-  int get total {
-    var result = _db!.select('''
-      select count(*) from download
-    ''');
-    return result.first['count(*)'];
-  }
-
-  /// order: time, title, subtitle, size
-  // List<DownloadedItem> getAll(
-  //     [String order = 'time', String direction = 'desc']) {
-  //   var result = _db!.select('''
-  //     select * from download
-  //     order by $order $direction
-  //   ''');
-  //   return result
-  //       .map(
-  //         (e) => _getAnimeFromJson(e['id'], e['json'],
-  //             DateTime.fromMillisecondsSinceEpoch(e['time']), e['directory'])!,
-  //       )
-  //       .toList();
-  // }
-
-  static final _cache = <String, String>{};
-
-  String getDirectory(String id) {
-    var directory = _cache[id];
-    if (directory == null) {
-      var result = _db!.select('''
-      select directory from download
-      where id = ?
-    ''', [id]);
-      directory = result.first['directory'];
-      directory = _findAccurateDirectory(directory!);
-      if (_cache.length > 50) {
-        _cache.remove(_cache.keys.first);
-      }
-      _cache[id] = directory;
+  void onData(int length) {
+    if (timer == null) return;
+    if (length < 0) {
+      return;
     }
-    return directory;
+    _bytesSinceLastSecond += length;
   }
 
-  String _findAccurateDirectory(String directory) {
-    return sanitizeFileName(directory);
+  void onNextSecond(Timer t) {
+    _currentSpeed = _bytesSinceLastSecond;
+    _bytesSinceLastSecond = 0;
+  }
+
+  void runRecorder() {
+    if (timer != null) {
+      timer!.cancel();
+    }
+    _bytesSinceLastSecond = 0;
+    timer = Timer.periodic(const Duration(seconds: 1), onNextSecond);
+  }
+
+  void stopRecorder() {
+    timer?.cancel();
+    timer = null;
+    _currentSpeed = 0;
+    _bytesSinceLastSecond = 0;
   }
 }

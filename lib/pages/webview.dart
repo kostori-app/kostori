@@ -1,23 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' as io;
 
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:kostori/tools/extensions.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/network/app_dio.dart';
+
 import 'package:url_launcher/url_launcher_string.dart';
-
-import '../components/components.dart';
-import '../foundation/app.dart';
-import '../foundation/ui_mode.dart';
-import '../network/http_client.dart';
-
 export 'package:flutter_inappwebview/flutter_inappwebview.dart'
     show WebUri, URLRequest;
 
 extension WebviewExtension on InAppWebViewController {
-  Future<Map<String, String>?> getCookies(String url) async {
+  Future<List<io.Cookie>?> getCookies(String url) async {
     if (url.contains("https://")) {
       url.replaceAll("https://", "");
     }
@@ -26,9 +27,11 @@ extension WebviewExtension on InAppWebViewController {
     }
     CookieManager cookieManager = CookieManager.instance();
     final cookies = await cookieManager.getCookies(url: WebUri(url));
-    Map<String, String> res = {};
+    var res = <io.Cookie>[];
     for (var cookie in cookies) {
-      res[cookie.name] = cookie.value;
+      var c = io.Cookie(cookie.name, cookie.value);
+      c.domain = cookie.domain;
+      res.add(c);
     }
     return res;
   }
@@ -51,6 +54,7 @@ class AppWebview extends StatefulWidget {
       this.onNavigation,
       this.singlePage = false,
       this.onStarted,
+      this.onLoadStop,
       super.key});
 
   final String initialUrl;
@@ -58,11 +62,16 @@ class AppWebview extends StatefulWidget {
   final void Function(String title, InAppWebViewController controller)?
       onTitleChange;
 
-  final bool Function(String url)? onNavigation;
+  final bool Function(String url, InAppWebViewController controller)?
+      onNavigation;
 
   final void Function(InAppWebViewController controller)? onStarted;
 
+  final void Function(InAppWebViewController controller)? onLoadStop;
+
   final bool singlePage;
+
+  static WebViewEnvironment? webViewEnvironment;
 
   @override
   State<AppWebview> createState() => _AppWebviewState();
@@ -75,45 +84,113 @@ class _AppWebviewState extends State<AppWebview> {
 
   double _progress = 0;
 
+  late var future = _createWebviewEnvironment();
+
+  Future<WebViewEnvironment> _createWebviewEnvironment() async {
+    var proxy = appdata.settings['proxy'].toString();
+    if (proxy != "system" && proxy != "direct") {
+      var proxyAvailable = await WebViewFeature.isFeatureSupported(
+          WebViewFeature.PROXY_OVERRIDE);
+      if (proxyAvailable) {
+        ProxyController proxyController = ProxyController.instance();
+        await proxyController.clearProxyOverride();
+        if (!proxy.contains("://")) {
+          proxy = "http://$proxy";
+        }
+        await proxyController.setProxyOverride(
+          settings: ProxySettings(
+            proxyRules: [ProxyRule(url: proxy)],
+          ),
+        );
+      }
+    }
+    return WebViewEnvironment.create(
+      settings: WebViewEnvironmentSettings(
+        userDataFolder: "${App.dataPath}\\webview",
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    bool useCustomAppBar = !UiMode.m1(context) && !widget.singlePage;
-
     final actions = [
       Tooltip(
         message: "More",
         child: IconButton(
           icon: const Icon(Icons.more_horiz),
           onPressed: () {
-            showMenu(
-                context: context,
-                position: RelativeRect.fromLTRB(
-                    MediaQuery.of(context).size.width,
-                    0,
-                    MediaQuery.of(context).size.width,
-                    0),
-                items: [
-                  PopupMenuItem(
-                    child: Text("在浏览器中打开"),
-                    onTap: () async =>
-                        launchUrlString((await controller?.getUrl())!.path),
-                  ),
-                  PopupMenuItem(
-                    child: Text("复制链接"),
-                    onTap: () async => Clipboard.setData(ClipboardData(
-                        text: (await controller?.getUrl())!.path)),
-                  ),
-                  PopupMenuItem(
-                    child: Text("重新加载"),
-                    onTap: () => controller?.reload(),
-                  ),
-                ]);
+            showMenuX(
+              context,
+              Offset(context.width, context.padding.top),
+              [
+                MenuEntry(
+                  icon: Icons.open_in_browser,
+                  text: "Open in browser".tl,
+                  onClick: () async =>
+                      launchUrlString((await controller?.getUrl())!.toString()),
+                ),
+                MenuEntry(
+                  icon: Icons.copy,
+                  text: "Copy link".tl,
+                  onClick: () async => Clipboard.setData(ClipboardData(
+                      text: (await controller?.getUrl())!.toString())),
+                ),
+                MenuEntry(
+                  icon: Icons.refresh,
+                  text: "Reload".tl,
+                  onClick: () => controller?.reload(),
+                ),
+              ],
+            );
           },
         ),
       )
     ];
 
-    Widget body = InAppWebView(
+    Widget body = (App.isWindows && AppWebview.webViewEnvironment == null)
+        ? FutureBuilder(
+            future: future,
+            builder: (context, e) {
+              if (e.error != null) {
+                return Center(child: Text("Error: ${e.error}"));
+              }
+              if (e.data == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              AppWebview.webViewEnvironment = e.data;
+              return createWebviewWithEnvironment(
+                  AppWebview.webViewEnvironment);
+            },
+          )
+        : createWebviewWithEnvironment(AppWebview.webViewEnvironment);
+
+    body = Stack(
+      children: [
+        Positioned.fill(child: body),
+        if (_progress < 1.0)
+          const Positioned.fill(
+              child: Center(child: CircularProgressIndicator()))
+      ],
+    );
+
+    return Scaffold(
+        appBar: Appbar(
+          title: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          actions: actions,
+        ),
+        body: body);
+  }
+
+  Widget createWebviewWithEnvironment(WebViewEnvironment? e) {
+    return InAppWebView(
+      webViewEnvironment: e,
+      initialSettings: InAppWebViewSettings(
+        isInspectable: true,
+      ),
       initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
       onTitleChanged: (c, t) {
         if (mounted) {
@@ -125,7 +202,8 @@ class _AppWebviewState extends State<AppWebview> {
       },
       shouldOverrideUrlLoading: (c, r) async {
         var res =
-            widget.onNavigation?.call(r.request.url?.toString() ?? "") ?? false;
+            widget.onNavigation?.call(r.request.url?.toString() ?? "", c) ??
+                false;
         if (res) {
           return NavigationActionPolicy.CANCEL;
         } else {
@@ -136,6 +214,9 @@ class _AppWebviewState extends State<AppWebview> {
         controller = c;
         widget.onStarted?.call(c);
       },
+      onLoadStop: (c, r) {
+        widget.onLoadStop?.call(c);
+      },
       onProgressChanged: (c, p) {
         if (mounted) {
           setState(() {
@@ -144,44 +225,6 @@ class _AppWebviewState extends State<AppWebview> {
         }
       },
     );
-
-    body = Stack(
-      children: [
-        Positioned.fill(child: body),
-        if (_progress < 1.0)
-          const Positioned.fill(
-              child: Center(child: CircularProgressIndicator()))
-      ],
-    );
-
-    if (useCustomAppBar) {
-      body = Column(
-        children: [
-          Appbar(
-            title: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            actions: actions,
-          ),
-          Expanded(child: body)
-        ],
-      );
-    }
-
-    return Scaffold(
-        appBar: !useCustomAppBar
-            ? AppBar(
-                title: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                actions: actions,
-              )
-            : null,
-        body: body);
   }
 }
 
@@ -257,7 +300,7 @@ class DesktopWebview {
       useWindowPositionAndSize: true,
       userDataFolderWindows: "${App.dataPath}\\webview",
       title: "webview",
-      proxy: proxyHttpOverrides?.proxyStr,
+      proxy: AppDio.proxy,
     ));
     _webview!.addOnWebMessageReceivedCallback(onMessage);
     _webview!.setOnNavigation((s) => onNavigation?.call(s, this));

@@ -1,1971 +1,2579 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:kostori/network/girigirilove_network/ggl_models.dart';
-import 'package:kostori/pages/player/video_player.dart';
-import 'package:kostori/pages/search_result_page.dart';
-import 'package:kostori/foundation/stack.dart' as stack;
-import 'package:kostori/pages/show_image_page.dart';
-import 'package:kostori/pages/watch/anime_watch_page.dart';
-import 'package:kostori/tools/tag_translation.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:kostori/pages/line_chart_page.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/foundation/local.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/res.dart';
+import 'package:kostori/pages/category_animes_page.dart';
+import 'package:kostori/pages/favorites/favorites_page.dart';
+import 'package:kostori/pages/search_result_page.dart';
+import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/utils/io.dart';
+import 'package:kostori/utils/tag_translation.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sliver_tools/sliver_tools.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
-import '../anime_source/anime_source.dart';
-import '../base.dart';
-import '../components/comment.dart';
-import '../components/components.dart';
-import '../foundation/app.dart';
-import '../foundation/history.dart';
-import '../foundation/image_loader/cached_image.dart';
-import '../foundation/image_loader/stream_image_provider.dart';
-import '../foundation/image_manager.dart';
-import '../foundation/local_favorites.dart';
-import '../foundation/log.dart';
-import '../foundation/ui_mode.dart';
-import '../network/download.dart';
-import '../network/res.dart';
+import 'bangumi/bangumi.dart';
+import 'bangumi/bangumi_item.dart';
+import 'bangumi/bottom_info.dart';
 
-class AnimePage extends StatelessWidget {
+class AnimePage extends StatefulWidget {
   const AnimePage({
     super.key,
-    required this.sourceKey,
     required this.id,
+    required this.sourceKey,
     this.cover,
+    this.title,
   });
 
-  final String sourceKey;
-
   final String id;
+
+  final String sourceKey;
 
   final String? cover;
 
+  final String? title;
+
   @override
-  Widget build(BuildContext context) {
-    var animeSource = AnimeSource.find(sourceKey);
-    if (animeSource?.animePageBuilder != null) {
-      return animeSource!.animePageBuilder!(context, id, cover);
-    }
-    return _AnimePageImpl(
-      sourceKey: sourceKey,
-      id: id,
-      animeCover: cover,
-    );
-  }
+  State<AnimePage> createState() => _AnimePageState();
 }
 
-class _AnimePageImpl extends BaseAnimePage<AnimeInfoData> {
-  _AnimePageImpl({required this.sourceKey, required this.id, this.animeCover});
-
-  @override
-  final String sourceKey;
-
-  @override
-  final String id;
-
-  final String? animeCover;
-
-  @override
-  String? get cover => animeCover ?? data?.cover;
-
-  @override
-  void download() async {
-    final downloadId = DownloadManager().generateId(sourceKey, id);
-    final eps = data!.chapters?.values.toList();
-    for (var i in DownloadManager().downloading) {
-      if (i.id == downloadId) {
-        showToast(message: "下载中");
-        return;
-      }
-    }
-    var downloaded = <int>[];
-    if (DownloadManager().isExists(downloadId)) {
-      if (eps == null) {
-        showToast(message: "已下载");
-        return;
-      }
-      // var downloadedAnime = await DownloadManager().getAnimeOrNull(downloadId);
-      // downloaded.addAll(downloadedAnime!.downloadedEps);
-    }
-  }
-
-  @override
-  EpsData? get eps {
-    if (data!.chapters != null && data!.chapters!.isNotEmpty) {
-      return EpsData(
-        data!.chapters!.values.toList(),
-        (ep) async {
-          await History.findOrCreate(data!);
-          // App.globalTo(
-          //   () => AnimeWatchPage(
-          //     CustomWatchingData(
-          //       data!.target,
-          //       data!.title,
-          //       AnimeSource.find(sourceKey)!,
-          //       data!.chapters,
-          //     ),
-          //     0,
-          //     ep + 1,
-          //   ),
-          // );
-        },
-      );
-    }
-    return null;
-  }
-
-  @override
-  String? get introduction => data!.description;
-
-  AnimeSource? get animeSource => AnimeSource.find(sourceKey);
-
-  @override
-  Future<Res<AnimeInfoData>> loadData() async {
-    // print(AnimeSource);
-    if (animeSource == null) throw "Anime Source Not Found";
-    var res = await animeSource!.loadAnimeInfo!(id);
-    // print(res);
-    return res;
-  }
-
-  @override
-  Future<bool> loadFavorite(AnimeInfoData data) async {
-    return data.isFavorite ?? false;
-  }
-
-  @override
-  int? get pages => null;
-
-  @override
-  void read(History? history) async {
-    history = await History.createIfNull(history, data!);
-    // App.globalTo(
-    //   () => AnimeReadingPage(
-    //     CustomReadingData(
-    //       data!.target,
-    //       data!.title,
-    //       AnimeSource.find(sourceKey)!,
-    //       data!.chapters,
-    //     ),
-    //     history!.page,
-    //     history.ep,
-    //   ),
-    // );
-  }
-
-  @override
-  Widget? recommendationBuilder(AnimeInfoData data) {
-    if (data.suggestions == null) return null;
-
-    return SliverGridAnimes(animes: data.suggestions!, sourceKey: sourceKey);
-  }
-
-  @override
-  String get source => animeSource!.name;
-
-  @override
-  String get tag => "$key anime page with id: $id";
-
-  @override
-  Map<String, List<String>>? get tags => data!.tags;
-
-  @override
-  void tapOnTag(String tag, String key) {
-    context.to(
-      () => SearchResultPage(
-        keyword: tag,
-        options: const [],
-        sourceKey: sourceKey,
-      ),
-    );
-  }
-
-  @override
-  ThumbnailsData? get thumbnailsCreator {
-    if (data!.thumbnails == null && data!.thumbnailLoader == null) return null;
-
-    return ThumbnailsData(
-        data!.thumbnails ?? [],
-        (page) =>
-            data!.thumbnailLoader?.call(id, page) ??
-            Future.value(const Res.error("")),
-        data!.thumbnailMaxPage);
-  }
-
-  @override
-  Widget thumbnailImageBuilder(int index, String imageUrl) {
-    return Image(
-      image: StreamImageProvider(
-          () => ImageManager().getCustomThumbnail(imageUrl, sourceKey),
-          imageUrl),
-      fit: BoxFit.contain,
-      errorBuilder: (context, s, d) => const Icon(Icons.error),
-    );
-  }
-
-  @override
-  String? get title => data?.title;
-
-  // @override
-  // FavoriteItem toLocalFavoriteItem() {
-  //   var tags = <String>[];
-  //   data!.tags.forEach((key, value) => tags.addAll(value));
-  //   return FavoriteItem.fromBaseAnime(CustomAnime(data!.title,
-  //       data!.subTitle ?? "", data!.cover, id, tags, "", sourceKey));
-  // }
-
-  @override
-  Card? get uploaderInfo => null;
-
-  @override
-  bool? get favoriteOnPlatformInitial => data?.isFavorite;
-
-  AnimePageLogic<AnimeInfoData> get logic =>
-      StateController.find<AnimePageLogic<AnimeInfoData>>(tag: tag);
-
-  @override
-  void openFavoritePanel() {
-    favoriteAnime(FavoriteAnimeWidget(
-      havePlatformFavorite:
-          animeSource!.favoriteData != null && animeSource!.isLogin,
-      needLoadFolderData: animeSource!.favoriteData?.multiFolder ?? false,
-      folders: {
-        if (!(animeSource!.favoriteData?.multiFolder ?? false))
-          '0': animeSource!.name
-      },
-      foldersLoader: animeSource?.favoriteData?.loadFolders == null
-          ? null
-          : () => animeSource!.favoriteData!.loadFolders!(data!.animeId),
-      initialFolder:
-          (animeSource!.favoriteData?.multiFolder ?? false) ? null : '0',
-      localFavoriteItem: toLocalFavoriteItem(),
-      setFavorite: (b) {
-        if (favorite != b) {
-          favorite = b;
-          update();
-        }
-      },
-      favoriteOnPlatform: logic.favoriteOnPlatform,
-      selectFolderCallback: (folder, type) async {
-        if (type == 1) {
-          LocalFavoritesManager().addAnime(folder, toLocalFavoriteItem());
-          return const Res(true);
-        } else {
-          var res = await animeSource!.favoriteData!.addOrDelFavorite!(
-              id, folder, true);
-          if (!animeSource!.favoriteData!.multiFolder && res.success) {
-            logic.favoriteOnPlatform = true;
-            update();
-          }
-          return res;
-        }
-      },
-      cancelPlatformFavorite: () async {
-        var res =
-            await animeSource!.favoriteData!.addOrDelFavorite!(id, '0', false);
-        if (res.success) {
-          logic.favoriteOnPlatform = false;
-        }
-        return res;
-      },
-      cancelPlatformFavoriteWithFolder: (folder) {
-        return animeSource!.favoriteData!.addOrDelFavorite!(id, folder, false);
-      },
-    ));
-  }
-
-  @override
-  // TODO: implement downloadedId
-  String get downloadedId => throw UnimplementedError();
-
-  @override
-  FavoriteItem toLocalFavoriteItem() {
-    // TODO: implement toLocalFavoriteItem
-    throw UnimplementedError();
-  }
-
-  // @override
-  // ActionFunc? get openComments => animeSource!.commentsLoader != null
-  //     ? () {
-  //         showSideBar(App.globalContext!,
-  //             _CommentsPage(data: data!, source: animeSource!),
-  //             title: "评论");
-  //       }
-  //     : null;
-
-  // @override
-  // String get downloadedId => downloadManager.generateId(animeSource!.key, id);
-}
-
-class _CommentsPage extends StatefulWidget {
-  const _CommentsPage({required this.data, required this.source, this.replyId});
-
-  final AnimeInfoData data;
-
-  final AnimeSource source;
-
-  final String? replyId;
-
-  @override
-  State<_CommentsPage> createState() => _CommentsPageState();
-}
-
-class _CommentsPageState extends State<_CommentsPage> {
-  bool _loading = true;
-  List<Comment>? _comments;
-  String? _error;
-  int _page = 1;
-  int? maxPage;
-  var controller = TextEditingController();
-  bool sending = false;
-
-  void firstLoad() async {
-    var res = await widget.source.commentsLoader!(
-        widget.data.animeId, widget.data.subId, 1, widget.replyId);
-    if (res.error) {
-      setState(() {
-        _error = res.errorMessage;
-        _loading = false;
-      });
-    } else {
-      setState(() {
-        _comments = res.data;
-        _loading = false;
-        maxPage = res.subData;
-      });
-    }
-  }
-
-  void loadMore() async {
-    var res = await widget.source.commentsLoader!(
-        widget.data.animeId, widget.data.subId, _page + 1, widget.replyId);
-    if (res.error) {
-      showToast(message: res.errorMessage ?? "Unknown Error");
-    } else {
-      setState(() {
-        _comments!.addAll(res.data);
-        _page++;
-        if (maxPage == null && res.data.isEmpty) {
-          maxPage = _page;
-        }
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) {
-      firstLoad();
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    } else if (_error != null) {
-      return NetworkError(
-        message: _error!,
-        retry: () {
-          setState(() {
-            _loading = true;
-          });
-        },
-        withAppbar: false,
-      );
-    } else {
-      return Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              primary: false,
-              padding: EdgeInsets.zero,
-              itemCount: _comments!.length + 1,
-              itemBuilder: (context, index) {
-                if (index == _comments!.length) {
-                  if (_page < (maxPage ?? _page + 1)) {
-                    loadMore();
-                    return const ListLoadingIndicator();
-                  } else {
-                    return const SizedBox();
-                  }
-                }
-
-                bool enableReply = _comments![index].replyCount != null;
-
-                return CommentTile(
-                  leading: _comments![index].avatar == null
-                      ? null
-                      : Container(
-                          width: 40,
-                          height: 40,
-                          clipBehavior: Clip.antiAlias,
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .secondaryContainer),
-                          child: AnimatedImage(
-                            image: StreamImageProvider(
-                              () => ImageManager().getCustomThumbnail(
-                                _comments![index].avatar!,
-                                widget.data.sourceKey,
-                              ),
-                              _comments![index].avatar!,
-                            ),
-                          ),
-                        ),
-                  avatarUrl: null,
-                  name: _comments![index].userName,
-                  time: _comments![index].time,
-                  content: _comments![index].content,
-                  comments: _comments![index].replyCount,
-                  onTap: enableReply
-                      ? () {
-                          showSideBar(
-                            context,
-                            _CommentsPage(
-                              data: widget.data,
-                              source: widget.source,
-                              replyId: _comments![index].id,
-                            ),
-                            title: "回复",
-                          );
-                        }
-                      : null,
-                );
-              },
-            ),
-          ),
-          buildBottom(context)
-        ],
-      );
-    }
-  }
-
-  Widget buildBottom(BuildContext context) {
-    if (widget.source.sendCommentFunc == null) {
-      return const SizedBox(
-        height: 0,
-      );
-    }
-    return Container(
-      decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(16))),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
-        child: Material(
-          child: Container(
-            decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surfaceContainerHighest
-                    .withAlpha(160),
-                borderRadius: const BorderRadius.all(Radius.circular(30))),
-            child: Row(
-              children: [
-                Expanded(
-                    child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-                  child: TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                        border: InputBorder.none,
-                        isCollapsed: true,
-                        hintText: "评论"),
-                    minLines: 1,
-                    maxLines: 5,
-                  ),
-                )),
-                sending
-                    ? const Padding(
-                        padding: EdgeInsets.all(8.5),
-                        child: SizedBox(
-                          width: 23,
-                          height: 23,
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    : IconButton(
-                        onPressed: () async {
-                          if (controller.text.isEmpty) {
-                            return;
-                          }
-                          setState(() {
-                            sending = true;
-                          });
-                          var b = await widget.source.sendCommentFunc!(
-                              widget.data.animeId,
-                              widget.data.subId,
-                              controller.text,
-                              widget.replyId);
-                          if (!b.error) {
-                            controller.text = "";
-                            setState(() {
-                              sending = false;
-                              _loading = true;
-                              _comments?.clear();
-                              _page = 1;
-                              maxPage = null;
-                            });
-                          } else {
-                            showToast(message: b.errorMessage ?? "Error");
-                            setState(() {
-                              sending = false;
-                            });
-                          }
-                        },
-                        icon: Icon(
-                          Icons.send,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      )
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class EpsData {
-  /// episodes text
-  final List<String> eps;
-
-  /// callback when a episode button is tapped
-  final void Function(int) onTap;
-
-  /// anime episode data
-  const EpsData(this.eps, this.onTap);
-}
-
-class ThumbnailsData {
-  List<String> thumbnails;
-  int current = 1;
-  final int maxPage;
-  final Future<Res<List<String>>> Function(int page) load;
-
-  Future<void> get(void Function() update) async {
-    if (current >= maxPage) {
-      return;
-    }
-    var res = await load(current + 1);
-    if (res.success) {
-      thumbnails.addAll(res.data);
-      current++;
-      update();
-    } else {
-      Log.error("Network", "Failed to load thumbnails: ${res.errorMessage}");
-    }
-  }
-
-  ThumbnailsData(this.thumbnails, this.load, this.maxPage);
-}
-
-class AnimePageLogic<T extends Object> extends StateController {
-  bool loading = true;
-  T? data;
-  String? message;
+class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
+    with _AnimePageActions {
   bool showAppbarTitle = false;
-  ScrollController controller = ScrollController();
-  ThumbnailsData? thumbnailsData;
-  double? width;
-  double? height;
-  bool favorite = false;
-  History? history;
-  bool reverseEpsOrder = false;
-  bool showFullEps = false;
-  int colorIndex = 0;
-  bool? favoriteOnPlatform;
 
-  void get(Future<Res<T>> Function() loadData,
-      Future<bool> Function(T) loadFavorite, String Function() getId) async {
-    var [res, _] = await Future.wait(
-        [loadData(), Future.delayed(const Duration(milliseconds: 300))]);
-    // print('res: $res');
-    if (res.error) {
-      if (res.errorMessage == "Exit") {
-        return;
-      }
-      message = res.errorMessage;
-    } else {
-      data = res.data;
-      favorite = await loadFavorite(res.data);
-    }
-    loading = false;
-    history = await HistoryManager().find(getId());
-    update();
-  }
+  var scrollController = ScrollController();
 
-  void refresh_() {
-    data = null;
-    message = null;
-    loading = true;
-    update();
-  }
+  bool isDownloaded = false;
 
-  updateHistory(History? newHistory) {
-    if (newHistory != null) {
+  void updateHistory() async {
+    var newHistory = await HistoryManager()
+        .find(widget.id, AnimeType(widget.sourceKey.hashCode));
+    if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||
+        newHistory?.lastWatchTime != history?.lastWatchTime) {
       history = newHistory;
       update();
+      if (history?.bangumiId == null) {
+        updateBangumiId();
+      }
     }
   }
-}
-
-abstract class BaseAnimePage<T extends Object> extends StatelessWidget {
-  /// anime info page, show anime's detailed information,
-  /// and allow user to download or read anime.
-  BaseAnimePage({super.key});
-
-  AnimePageLogic<T> get _logic =>
-      StateController.find<AnimePageLogic<T>>(tag: tag);
-
-  /// title
-  String? get title;
-
-  /// tags
-  Map<String, List<String>>? get tags;
-
-  /// load anime data
-  Future<Res<T>> loadData();
-
-  /// get anime data
-  @nonVirtual
-  T? get data => _logic.data;
-
-  /// Used by StateController.
-  ///
-  /// This should be a unique identifier,
-  /// to prevent loading same data when user open more than one anime page.
-  String get tag;
-
-  /// anime total page
-  ///
-  /// when not null, it will be display at the end of the title.
-  int? get pages;
-
-  /// link to anime cover.
-  String? get cover;
-
-  /// callback when user tap on a tag
-  void tapOnTag(String tag, String key);
-
-  void read(History? history);
-
-  // void download();
-
-  void openFavoritePanel();
-
-  /// display uploader info
-  Card? get uploaderInfo;
-
-  /// episodes information
-  EpsData? get eps;
-
-  /// anime introduction
-  String? get introduction;
-
-  /// create thumbnails data
-  ThumbnailsData? get thumbnailsCreator;
-
-  @nonVirtual
-  ThumbnailsData? get thumbnails => _logic.thumbnailsData;
-
-  Widget? recommendationBuilder(T data);
-
-  /// update widget state
-  @nonVirtual
-  void update() => _logic.update();
-
-  /// get context
-  BuildContext get context => App.mainNavigatorKey!.currentContext!;
-
-  /// interface for building more info widget
-  Widget? get buildMoreInfo => null;
-
-  /// translation tags to CN
-  bool get enableTranslationToCN => false;
-
-  String? get subTitle => null;
-
-  Map<String, String> get headers => {};
-
-  @nonVirtual
-  bool get favorite => _logic.favorite;
-
-  @nonVirtual
-  set favorite(bool f) => _logic.favorite = f;
-
-  Future<bool> loadFavorite(T data);
-
-  /// used for history
-  String get id;
-
-  /// url linked to this anime
-  String? get url => null;
-
-  /// callback when a thumbnail is tapped
-  void onThumbnailTapped(int index) {}
-
-  ActionFunc? get searchSimilar => null;
-
-  Widget thumbnailImageBuilder(int index, String imageUrl) =>
-      _thumbnailImageBuilder(index);
-
-  /// The source of this anime, displayed at the beginning of the [title],
-  /// can be translated into the user's language.
-  String get source;
-
-  FavoriteItem toLocalFavoriteItem();
-
-  bool? get favoriteOnPlatformInitial => null;
-
-  String get downloadedId;
-
-  String get sourceKey;
-
-  // 主页面
-  final GlobalKey<VideoPlayerWidgetState> videoPlayerKey =
-      GlobalKey<VideoPlayerWidgetState>();
-
-  void scrollListener() {
-    try {
-      var logic = _logic;
-      bool temp = logic.showAppbarTitle;
-      if (!logic.controller.hasClients) {
-        return;
-      }
-      logic.showAppbarTitle = logic.controller.position.pixels > 136;
-      if (temp != logic.showAppbarTitle) {
-        logic.update();
-      }
-    } catch (e) {
-      return;
-    }
-  }
-
-  static stack.Stack<AnimePageLogic> tagsStack = stack.Stack<AnimePageLogic>();
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      return Scaffold(
-        body: StateBuilder<AnimePageLogic<T>>(
-          tag: tag,
-          init: AnimePageLogic<T>(),
-          initState: (logic) {
-            tagsStack.push(_logic);
-            _logic.favoriteOnPlatform = favoriteOnPlatformInitial;
-          },
-          dispose: (logic) {
-            tagsStack.pop();
-          },
-          builder: (logic) {
-            _logic.width = constraints.maxWidth;
-            _logic.height = constraints.maxHeight;
-
-            if (logic.loading) {
-              logic.get(loadData, loadFavorite, () => id);
-              return buildLoading(context);
-            } else if (logic.message != null) {
-              return NetworkError(
-                message: logic.message!,
-                retry: logic.refresh_,
-              );
-            } else {
-              _logic.thumbnailsData ??= thumbnailsCreator;
-              // logic.controller.removeListener(scrollListener);
-              // logic.controller.addListener(scrollListener);
-
-              return FutureBuilder<History>(
-                future: History.findOrCreate(_logic.data! as HistoryMixin),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return buildLoading(context); // 或者其他加载指示器
-                  } else if (snapshot.hasError) {
-                    return NetworkError(
-                      message: snapshot.error.toString(),
-                      retry: logic.refresh_,
-                    );
-                  } else {
-                    var historyEp = snapshot.data!;
-                    return SmoothCustomScrollView(
-                      controller: logic.controller,
-                      slivers: [
-                        buildTitle(logic),
-                        AnimeWatchPage.gglAnime(
-                            logic.data as GglAnimeInfo, historyEp.ep ?? 1),
-                        buildAnimeInfo(logic, context),
-                        buildTags(logic, context),
-                        ...buildIntroduction(context),
-                        ...buildEpisodeInfo(context),
-                        ...buildThumbnails(context),
-                        ...buildRecommendation(context),
-                        SliverPadding(
-                          padding: EdgeInsets.only(
-                              bottom: MediaQuery.of(context).padding.bottom),
-                        )
-                      ],
-                    );
-                  }
-                },
-              );
-            }
-          },
-        ),
-      );
-    });
-  }
-
-  Widget buildLoading(BuildContext context) {
-    return Shimmer(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        colorOpacity: 0.5,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 56,
-              child: const BackButton().toAlign(Alignment.centerLeft),
-            ).paddingLeft(8),
-            SizedBox(
-              width: double.infinity,
-              child: buildAnimeInfo(_logic, context, false),
-            ),
-            const Divider(),
-            SizedBox(
-              width: 100,
-              child: Row(
-                children: const [
-                  SizedBox(
-                    width: 18,
-                  ),
-                  Text(
-                    "信息",
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-                  )
-                ],
-              ),
-            ).paddingBottom(8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List.generate(
-                8,
-                (index) => Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-                  child: Container(
-                    width: double.infinity,
-                    height: 32,
-                    constraints: const BoxConstraints(maxWidth: 400),
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest
-                          .withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            )
-          ],
-        )).paddingTop(MediaQuery.of(context).padding.top);
-  }
-
-  Widget buildTitle(AnimePageLogic<T> logic) {
-    return SliverAppbar(
-      title: AnimatedOpacity(
-        opacity: logic.showAppbarTitle ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 200),
-        child: Text(title!),
-      ),
-      actions: [
-        IconButton(
-            onPressed: showMoreActions, icon: const Icon(Icons.more_horiz))
-      ],
+  Widget buildLoading() {
+    return _AnimePageLoadingPlaceHolder(
+      cover: widget.cover,
+      title: widget.title,
+      sourceKey: widget.sourceKey,
+      aid: widget.id,
     );
   }
-
-  void showMoreActions() {
-    final width = MediaQuery.of(context).size.width;
-    showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(width, 0, 0, 0),
-      items: [
-        PopupMenuItem(
-          child: Text("复制标题"),
-          onTap: () {
-            var text = title!;
-            if (url != null) {
-              text += ":$url";
-            }
-            Clipboard.setData(ClipboardData(text: text));
-            showToast(message: "已复制", icon: const Icon(Icons.check));
-          },
-        ),
-        if (url != null)
-          PopupMenuItem(
-            child: Text("复制链接"),
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: url!));
-              showToast(message: "已复制", icon: const Icon(Icons.check));
-            },
-          ),
-        PopupMenuItem(
-          child: Text("分享"),
-          onTap: () {
-            var text = title!;
-            if (url != null) {
-              text += ":$url";
-            }
-            Share.share(text);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget buildAnimeInfo(AnimePageLogic<T> logic, BuildContext context,
-      [bool sliver = true]) {
-    // 使用 LayoutBuilder 来获取父组件的约束信息
-    var body = LayoutBuilder(builder: (context, constrains) {
-      // 获取最大宽度
-      var width = constrains.maxWidth;
-
-      return Column(
-        mainAxisSize: MainAxisSize.min, // 列的大小根据内容最小化
-        children: [
-          const Divider(),
-          SizedBox(
-            width: double.infinity, // 宽度填充父容器
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start, // 子组件从顶部对齐
-              children: [
-                const SizedBox(width: 8), // 给第一个子组件添加间距
-                buildCover(context, logic, 136, 102), // 构建封面图，参数为上下文、逻辑及宽高
-                const SizedBox(width: 12), // 给封面与后续组件添加间距
-                Expanded(
-                  // 使这一列扩展以填充可用空间
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, // 子组件从左侧对齐
-                    children: [
-                      SizedBox(
-                        width: double.infinity, // 宽度填充父容器
-                        child: SelectableText(
-                          title?.trim() ?? "", // 显示标题，如果为空则使用空字符串
-                          style: const TextStyle(fontSize: 18), // 字体大小为18
-                        ),
-                      ),
-                      const SizedBox(height: 8), // 标题与子标题之间的间距
-                      if (subTitle != null) // 如果子标题存在，则显示
-                        SizedBox(
-                          width: double.infinity,
-                          child: SelectableText(
-                            subTitle!, // 显示子标题
-                            style: const TextStyle(fontSize: 14), // 字体大小为14
-                          ),
-                        ),
-                      if (subTitle != null) // 如果子标题存在，则添加间距
-                        const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: Text(
-                          source,
-                          style: const TextStyle(fontSize: 12), // 来源字体大小为12
-                        ),
-                      ),
-                      if (pages != null) // 如果页数存在，则添加间距
-                        const SizedBox(height: 8),
-                      if (pages != null) // 如果页数存在，则显示
-                        SizedBox(
-                          width: double.infinity,
-                          child: Text(
-                            "${pages}P", // 显示页数和单位
-                            style: const TextStyle(fontSize: 12), // 字体大小为12
-                          ),
-                        ),
-                      // 如果宽度大于等于500，显示操作按钮
-                      if (width >= 500)
-                        buildActions(logic, context, false).paddingTop(12),
-                    ],
-                  ),
-                )
-              ],
-            ),
-          ).paddingHorizontal(10).paddingBottom(12), // 给整个行添加水平和底部的间距
-          // 如果宽度小于500，显示操作按钮
-          if (width < 500)
-            buildActions(logic, context, true).paddingHorizontal(12),
-        ],
-      );
-    });
-
-    if (sliver == true) {
-      return SliverToBoxAdapter(
-        child: body,
-      );
-    }
-
-    return body;
-  }
-
-  Widget buildCover(
-      BuildContext context, AnimePageLogic logic, double height, double width) {
-    if (cover == null) {
-      return Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-      );
-    }
-
-    if (headers["host"] == null && headers["Host"] == null) {
-      headers["host"] = Uri.parse(cover!).host;
-    }
-    ImageProvider image = StreamImageProvider(
-        () => ImageManager().getCustomThumbnail(cover!, sourceKey), cover!);
-    return GestureDetector(
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primaryContainer,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Hero(
-          tag: "image$tag",
-          child: Image(
-            image: image,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
-      onTap: () =>
-          App.globalTo(() => ShowImagePageWithHero(cover!, "image$tag")),
-    );
-  }
-
-  Widget buildInfoCard(String text, BuildContext context,
-      {bool title = false, String key = "key"}) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    if (text == "") {
-      text = "未知";
-    }
-
-    List<PopupMenuEntry<dynamic>> buildPopMenus() {
-      return [
-        PopupMenuItem(
-          child: Text("复制"),
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: (text)));
-            showToast(message: "已复制");
-          },
-        ),
-        if (!title)
-          PopupMenuItem(
-            child: Text("屏蔽"),
-            onTap: () {
-              appdata.blockingKeyword.add(text);
-              appdata.writeData();
-            },
-          ),
-        if (!title)
-          PopupMenuItem(
-            child: Text("收藏"),
-            onTap: () {
-              var res = source;
-              if (source == "EHentai") {
-                res += ":$key";
-              }
-              if (source == "Nhentai" && key == "Artists") {
-                res += ":Artist";
-              }
-              if (text.contains(" ")) {
-                res += ":\"$text\"";
-              } else {
-                res += ":$text";
-              }
-              appdata.favoriteTags.add(res);
-              appdata.writeHistory();
-            },
-          )
-      ];
-    }
-
-    Widget label(String text) =>
-        Text(text, style: const TextStyle(fontSize: 13));
-
-    if (title) {
-      _logic.colorIndex++;
-    }
-
-    return GestureDetector(
-      onLongPressStart: (details) {
-        showMenu(
-            context: App.globalContext!,
-            position: RelativeRect.fromLTRB(
-                details.globalPosition.dx,
-                details.globalPosition.dy,
-                details.globalPosition.dx,
-                details.globalPosition.dy),
-            items: buildPopMenus());
-      },
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(4, 4, 4, 4),
-        child: InkWell(
-          borderRadius: const BorderRadius.all(Radius.circular(12)),
-          onTap: title ? null : () => tapOnTag(text, key),
-          onSecondaryTapDown: (details) {
-            showMenu(
-                context: App.globalContext!,
-                position: RelativeRect.fromLTRB(
-                    details.globalPosition.dx,
-                    details.globalPosition.dy,
-                    details.globalPosition.dx,
-                    details.globalPosition.dy),
-                items: buildPopMenus());
-          },
-          child: Card(
-            margin: EdgeInsets.zero,
-            color: title
-                ? colors[_logic.colorIndex % colors.length]
-                    .shade100
-                    .withOpacity(0.6)
-                : ElevationOverlay.applySurfaceTint(
-                    colorScheme.surface, colorScheme.surfaceTint, 3),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-              child: enableTranslationToCN
-                  ? (title
-                      ? label(text.translateTagsCategoryToCN)
-                      : label(TagsTranslation.translationTagWithNamespace(
-                          text, key)))
-                  : label(text),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget buildActions(AnimePageLogic logic, BuildContext context, bool center) {
-    if (logic.loading) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .surfaceContainerHighest
-              .withOpacity(0.4),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        height: 72,
-        width: double.infinity,
-      );
-    }
-
-    Widget buildItem(String title, IconData icon, VoidCallback onTap,
-        [VoidCallback? onLongPress]) {
-      return InkWell(
-        onTap: onTap,
-        onLongPress: onLongPress,
-        borderRadius: const BorderRadius.all(Radius.circular(8)),
-        child: SizedBox(
-          height: 72,
-          width: 64,
-          child: Column(
-            children: [
-              const SizedBox(
-                height: 12,
-              ),
-              Icon(
-                icon,
-                size: 24,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(
-                height: 8,
-              ),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 12),
-              )
-            ],
-          ),
-        ),
-      );
-    }
-
-    final width = MediaQuery.of(context).size.width;
-
-    return SizedBox(
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: UiMode.m1(context)
-            ? CrossAxisAlignment.center
-            : CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: center ? WrapAlignment.center : WrapAlignment.start,
-            children: [
-              if (logic.history != null && width >= 500)
-                buildItem("继续阅读", Icons.menu_book, () => read(logic.history)),
-              if (width >= 500 || (width < 500 && logic.history != null))
-                buildItem("从头开始", Icons.not_started_outlined, () => read(null)),
-              buildItem("分享", Icons.share, () {
-                var text = title!;
-                if (url != null) {
-                  text += ":$url";
-                }
-                Share.share(text);
-              }),
-              buildItem(
-                  favorite ? "已追番" : "追番",
-                  favorite
-                      ? Icons.collections_bookmark
-                      : Icons.collections_bookmark_outlined,
-                  openFavoritePanel, () {
-                var folder = appdata.settings[51];
-                if (LocalFavoritesManager().folderNames.contains(folder)) {
-                  LocalFavoritesManager()
-                      .addAnime(folder, toLocalFavoriteItem());
-                  showToast(message: "已追番");
-                }
-              }),
-              if (searchSimilar != null)
-                buildItem("相似", Icons.search, searchSimilar!),
-            ],
-          ),
-          if (width < 500)
-            SizedBox(
-              height: 48,
-              child: Row(
-                children: [
-                  const SizedBox(
-                    width: 16,
-                  ),
-                  Expanded(
-                    child: FilledButton.tonal(
-                      onPressed: () => read(_logic.history),
-                      child: Text("阅读"),
-                    ),
-                  ),
-                ],
-              ),
-            ).paddingHorizontal(8)
-        ],
-      ),
-    );
-  }
-
-  Widget buildTags(AnimePageLogic logic, BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(),
-          SizedBox(
-              width: 100,
-              child: Row(
-                children: const [
-                  SizedBox(
-                    width: 18,
-                  ),
-                  Text(
-                    "信息",
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-                  )
-                ],
-              )),
-          const SizedBox(
-            height: 12,
-          ),
-          ...buildInfoCards(logic, context)
-        ],
-      ),
-    );
-  }
-
-  Iterable<Widget> buildInfoCards(
-      AnimePageLogic logic, BuildContext context) sync* {
-    if (buildMoreInfo != null) {
-      yield Padding(
-        padding: const EdgeInsets.fromLTRB(18, 8, 30, 8),
-        child: buildMoreInfo!,
-      );
-    }
-
-    _logic.colorIndex = 0;
-
-    for (var key in tags!.keys) {
-      yield Padding(
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-        child: Wrap(
-          children: [
-            buildInfoCard(key, context, title: true),
-            for (var tag in tags![key]!) buildInfoCard(tag, context, key: key)
-          ],
-        ),
-      );
-    }
-
-    if (uploaderInfo != null) {
-      yield Padding(
-        padding: const EdgeInsets.fromLTRB(18, 4, 18, 4),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 420,
-            ),
-            child: uploaderInfo,
-          ),
-        ),
-      );
-    }
-  }
-
-  Iterable<Widget> buildEpisodeInfo(BuildContext context) sync* {
-    final colorScheme = Theme.of(context).colorScheme;
-    if (eps == null) return;
-
-    yield const SliverToBoxAdapter(
-      child: Divider(),
-    );
-
-    yield SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-          Text(
-            "集",
-            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-          ),
-          const Spacer(),
-          Tooltip(
-            message: "排序",
-            child: IconButton(
-              icon: Icon(_logic.reverseEpsOrder
-                  ? Icons.vertical_align_top
-                  : Icons.vertical_align_bottom_outlined),
-              onPressed: () {
-                _logic.reverseEpsOrder = !_logic.reverseEpsOrder;
-                _logic.update();
-              },
-            ),
-          )
-        ]),
-      ),
-    );
-
-    yield const SliverPadding(padding: EdgeInsets.all(6));
-
-    int length = eps!.eps.length;
-
-    if (!_logic.showFullEps) {
-      length = math.min(length, 24);
-    }
-
-    yield SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      sliver: SliverGrid(
-        delegate: SliverChildBuilderDelegate(childCount: length, (context, i) {
-          if (_logic.reverseEpsOrder) {
-            i = eps!.eps.length - i - 1;
-          }
-          bool visited =
-              (_logic.history?.readEpisode ?? const {}).contains(i + 1);
-
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-            child: InkWell(
-              borderRadius: const BorderRadius.all(Radius.circular(16)),
-              child: Material(
-                elevation: 5,
-                color: colorScheme.surface,
-                surfaceTintColor: colorScheme.surfaceTint,
-                borderRadius: const BorderRadius.all(Radius.circular(12)),
-                shadowColor: Colors.transparent,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Center(
-                    child: Text(
-                      eps!.eps[i],
-                      maxLines: 1,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: visited ? colorScheme.outline : null),
-                    ),
-                  ),
-                ),
-              ),
-              onTap: () => eps!.onTap(i),
-            ),
-          );
-        }),
-        gridDelegate: const SliverGridDelegateWithFixedHeight(
-            maxCrossAxisExtent: 200, itemHeight: 48),
-      ),
-    );
-
-    if (eps!.eps.length > 24 && !_logic.showFullEps) {
-      yield SliverToBoxAdapter(
-        child: Align(
-          alignment: Alignment.center,
-          child: FilledButton.tonal(
-            style: ButtonStyle(
-              shape: WidgetStateProperty.all(const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(8)))),
-            ),
-            onPressed: () {
-              _logic.showFullEps = true;
-              _logic.update();
-            },
-            child: Text("${"显示全部"} (${eps!.eps.length})"),
-          ).paddingTop(12),
-        ),
-      );
-    }
-  }
-
-  List<Widget> buildIntroduction(BuildContext context) {
-    if (introduction == null) return [];
-
-    return [
-      const SliverPadding(padding: EdgeInsets.all(5)),
-      const SliverToBoxAdapter(
-        child: Divider(),
-      ),
-      SliverToBoxAdapter(
-        child: SizedBox(
-          width: 100,
-          child: Row(
-            children: const [
-              SizedBox(
-                width: 18,
-              ),
-              Text(
-                "简介",
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-              )
-            ],
-          ),
-        ),
-      ),
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-          child: SelectableText(introduction!),
-        ),
-      ),
-      const SliverPadding(padding: EdgeInsets.all(5)),
-    ];
-  }
-
-  Widget _thumbnailImageBuilder(int index) {
-    return Image(
-      image:
-          CachedImageProvider(thumbnails!.thumbnails[index], headers: headers),
-      fit: BoxFit.contain,
-      errorBuilder: (context, s, d) => const Icon(Icons.error),
-    );
-  }
-
-  List<Widget> buildThumbnails(BuildContext context) {
-    if (thumbnails == null ||
-        (thumbnails!.thumbnails.isEmpty &&
-            !tag.contains("Hitomi") &&
-            !tag.contains("Eh"))) return [];
-    if (thumbnails!.thumbnails.isEmpty) {
-      thumbnails!.get(update);
-    }
-    return [
-      const SliverPadding(padding: EdgeInsets.all(5)),
-      const SliverToBoxAdapter(
-        child: Divider(),
-      ),
-      SliverToBoxAdapter(
-        child: SizedBox(
-          width: 100,
-          child: Row(
-            children: const [
-              SizedBox(
-                width: 18,
-              ),
-              Text(
-                "预览",
-                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-              )
-            ],
-          ),
-        ),
-      ),
-      const SliverPadding(padding: EdgeInsets.all(5)),
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        sliver: SliverGrid(
-          delegate: SliverChildBuilderDelegate(
-              childCount: thumbnails!.thumbnails.length, (context, index) {
-            if (index == thumbnails!.thumbnails.length - 1) {
-              thumbnails!.get(update);
-            }
-            return Padding(
-              padding: UiMode.m1(context)
-                  ? const EdgeInsets.all(4)
-                  : const EdgeInsets.all(8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                      child: InkWell(
-                    onTap: () => onThumbnailTapped(index),
-                    borderRadius: const BorderRadius.all(Radius.circular(16)),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(16)),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outline,
-                        ),
-                      ),
-                      width: double.infinity,
-                      height: double.infinity,
-                      child: ClipRRect(
-                        borderRadius:
-                            const BorderRadius.all(Radius.circular(16)),
-                        child: thumbnailImageBuilder(
-                            index, thumbnails!.thumbnails[index]),
-                      ),
-                    ),
-                  )),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  Text((index + 1).toString()),
-                ],
-              ),
-            );
-          }),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 200,
-            childAspectRatio: 0.65,
-          ),
-        ),
-      ),
-      if (thumbnails!.current < thumbnails!.maxPage)
-        const SliverToBoxAdapter(
-          child: ListLoadingIndicator(),
-        ),
-    ];
-  }
-
-  List<Widget> buildRecommendation(BuildContext context) {
-    var recommendation = recommendationBuilder(_logic.data!);
-    if (recommendation == null) return [];
-    return [
-      const SliverToBoxAdapter(
-        child: Divider(),
-      ),
-      SliverToBoxAdapter(
-        child: SizedBox(
-            width: 100,
-            child: Row(
-              children: const [
-                SizedBox(
-                  width: 18,
-                ),
-                Text(
-                  "相关推荐",
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-                )
-              ],
-            )),
-      ),
-      const SliverPadding(padding: EdgeInsets.all(5)),
-      recommendation,
-    ];
-  }
-
-  void favoriteAnime(FavoriteAnimeWidget widget) {
-    if (UiMode.m1(context)) {
-      showModalBottomSheet(context: context, builder: (context) => widget);
-    } else {
-      showSideBar(
-        App.globalContext!,
-        widget,
-        title: "收藏漫画",
-        useSurfaceTintColor: true,
-      );
-    }
-  }
-}
-
-class FavoriteAnimeWidget extends StatefulWidget {
-  const FavoriteAnimeWidget(
-      {required this.havePlatformFavorite,
-      required this.needLoadFolderData,
-      required this.localFavoriteItem,
-      this.folders = const {},
-      this.foldersLoader,
-      this.selectFolderCallback,
-      this.initialFolder,
-      this.favoriteOnPlatform = false,
-      this.cancelPlatformFavorite,
-      this.cancelPlatformFavoriteWithFolder,
-      required this.setFavorite,
-      super.key});
-
-  /// whether this platform has favorites feather
-  final bool havePlatformFavorite;
-
-  /// need load folder data before show folders
-  final bool needLoadFolderData;
-
-  /// initial folders, default is empty
-  ///
-  /// key - folder's name, value - folders id(used by callback)
-  final Map<String, String> folders;
-
-  /// load folders method
-  final Future<Res<Map<String, String>>> Function()? foldersLoader;
-
-  /// callback when user choose a folder
-  ///
-  /// type=0: platform, type=1:local
-  final FutureOr<Res<bool>> Function(String id, int type)? selectFolderCallback;
-
-  /// initial selected folder id
-  final String? initialFolder;
-
-  /// whether this anime have been added to platform's favorite folder
-  /// if this is null, it is required to send a request to check it
-  final bool? favoriteOnPlatform;
-
-  /// identifier for the anime
-  final FavoriteItem localFavoriteItem;
-
-  final Future<Res<bool>> Function()? cancelPlatformFavorite;
-
-  final Future<Res<bool>> Function(String folder)?
-      cancelPlatformFavoriteWithFolder;
-
-  final void Function(bool favorite) setFavorite;
-
-  @override
-  State<FavoriteAnimeWidget> createState() => _FavoriteAnimeWidgetState();
-}
-
-class _FavoriteAnimeWidgetState extends State<FavoriteAnimeWidget> {
-  late List<String> selected;
-  late int page = 0;
-
-  /// network folders
-  late Map<String, String> folders;
-
-  /// network folders that have been added to favorite
-  var favoritedFolders = <String>[];
-  bool loadedData = false;
-  List<String> addedFolders = [];
-  bool isAdding = false;
 
   @override
   void initState() {
-    LocalFavoritesManager()
-        .find(widget.localFavoriteItem.target, widget.localFavoriteItem.type)
-        .then((folder) {
-      Future.microtask(() => setState(() => addedFolders = folder));
-    });
-    selected = widget.initialFolder != null ? [widget.initialFolder!] : [];
-    if (!widget.havePlatformFavorite) {
-      page = 1;
+    scrollController.addListener(onScroll);
+    HistoryManager().addListener(updateHistory);
+
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(onScroll);
+    HistoryManager().removeListener(updateHistory);
+    super.dispose();
+  }
+
+  @override
+  void update() {
+    setState(() {});
+  }
+
+  @override
+  AnimeDetails get anime => data!;
+
+  Future<void> updateBangumiId() async {
+    var res = await Bangumi.bangumiGetSearch(anime.title);
+    // 如果列表为空，返回 null
+    if (res.isEmpty) {
+      return;
+    } else {
+      // 返回第一个BangumiItem的id
+      history?.bangumiId = res.first.id; // 假设 BangumiItem 有一个 id 属性
+      HistoryManager().addHistory(history!);
     }
-    folders = widget.folders;
+  }
+
+  void onScroll() {
+    if (scrollController.offset > 250) {
+      if (!showAppbarTitle) {
+        setState(() {
+          showAppbarTitle = true;
+        });
+      }
+    } else {
+      if (showAppbarTitle) {
+        setState(() {
+          showAppbarTitle = false;
+        });
+      }
+    }
+  }
+
+  var isFirst = true;
+
+  @override
+  Widget buildContent(BuildContext context, AnimeDetails data) {
+    return Stack(
+      children: [
+        // 主内容 SmoothCustomScrollView
+        Positioned.fill(
+          child: SmoothCustomScrollView(
+            controller: scrollController,
+            slivers: [
+              SliverPadding(padding: EdgeInsets.only(top: 28)),
+              Watcher(
+                type: anime.animeType,
+                wid: anime.id,
+                name: anime.title,
+                episode: anime.episode,
+                anime: anime,
+                history: History.fromModel(
+                  model: anime,
+                  lastWatchEpisode: history?.lastWatchEpisode ?? 1,
+                  lastWatchTime: history?.lastWatchTime ?? 0,
+                  lastRoad: history?.lastRoad ?? 0,
+                  allEpisode: anime.episode!.length,
+                  bangumiId: history?.bangumiId,
+                ),
+              ),
+              ...buildTitle(),
+              buildDescription(),
+              buildInfo(),
+              buildEpisodes(),
+              buildRecommend(),
+              SliverPadding(
+                  padding: EdgeInsets.only(bottom: context.padding.bottom)),
+            ],
+          ),
+        ),
+        AnimatedPositioned(
+          duration: const Duration(milliseconds: 300),
+          top: showAppbarTitle ? 0 : -(40 + context.padding.top),
+          left: 0,
+          right: 0,
+          height: 40 + context.padding.top,
+          child: buildTop(),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Future<Res<AnimeDetails>> loadData() async {
+    if (widget.sourceKey == 'local') {
+      var localAnime = LocalManager().find(widget.id, AnimeType.local);
+      if (localAnime == null) {
+        return const Res.error('Local anime not found');
+      }
+      if (isFirst) {
+        Future.microtask(() {
+          App.mainNavigatorKey!.currentContext!.pop();
+        });
+        isFirst = false;
+      }
+      await Future.delayed(const Duration(milliseconds: 200));
+      return const Res.error('Local anime');
+    }
+    var animeSource = AnimeSource.find(widget.sourceKey);
+    if (animeSource == null) {
+      return const Res.error('Anime source not found');
+    }
+    isAddToLocalFav = LocalFavoritesManager().isExist(
+      widget.id,
+      AnimeType(widget.sourceKey.hashCode),
+    );
+    history = await HistoryManager()
+        .find(widget.id, AnimeType(widget.sourceKey.hashCode));
+    return animeSource.loadAnimeInfo!(widget.id);
+  }
+
+  @override
+  Future<void> onDataLoaded() async {
+    isLiked = anime.isLiked ?? false;
+    isFavorite = anime.isFavorite ?? false;
+    if (anime.episode == null) {
+      isDownloaded = LocalManager().isDownloaded(
+        anime.id,
+        anime.animeType,
+        0,
+      );
+    }
+  }
+
+  Widget buildTop() {
+    return BlurEffect(
+      child: Container(
+        padding: EdgeInsets.only(top: context.padding.top),
+        decoration: BoxDecoration(
+          color: context.colorScheme.surface.toOpacity(0.82),
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.grey.toOpacity(0.5),
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 8),
+            Tooltip(
+              message: "Back".tl,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new),
+                onPressed: () => Navigator.maybePop(context),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                anime.title,
+                style: ts.s18,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Iterable<Widget> buildTitle() sync* {
+    yield const SliverPadding(padding: EdgeInsets.only(top: 8));
+
+    yield Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(width: 16),
+        Material(
+          color: Colors.transparent, // 背景透明，保持原样
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8), // 匹配 Container 的圆角
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    contentPadding: EdgeInsets.all(0), // 移除默认的内边距，避免影响布局
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min, // 使内容大小适应图片和文本
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(20), // 给图片加上padding，防止超出边框
+                          child: InteractiveViewer(
+                            panEnabled: true,
+                            // 启用平移
+                            boundaryMargin: EdgeInsets.all(20),
+                            // 设置边界，避免拖动过远
+                            minScale: 0.1,
+                            // 设置最小缩放比例
+                            maxScale: 8.0,
+                            // 设置最大缩放比例
+                            clipBehavior: Clip.hardEdge,
+                            // 防止超出边框，裁剪超出部分
+                            child: Image.network(
+                              anime.cover, // 图片 URL
+                              fit: BoxFit.contain, // 确保完整显示图片
+                              height: App.isDesktop
+                                  ? MediaQuery.of(context).size.height * 0.7
+                                  : MediaQuery.of(context).size.height *
+                                      0.45, // 设置高度
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Text(
+                            anime.title,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.of(context).pop(), // 关闭 dialog
+                        child: Text("Close".tl),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: context.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              height: 144,
+              width: 144 * 0.72,
+              clipBehavior: Clip.antiAlias,
+              child: AnimatedImage(
+                image: CachedImageProvider(
+                  anime.cover,
+                  sourceKey: anime.sourceKey,
+                ),
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  var context = App.mainNavigatorKey!.currentContext!;
+
+                  context.to(() => SearchResultPage(
+                        text: anime.title,
+                        sourceKey: animeSource.key,
+                        options: const [],
+                      ));
+                },
+                onLongPress: () {
+                  // 将文本复制到剪贴板
+                  Clipboard.setData(ClipboardData(text: anime.title));
+                  // 显示一个提示消息
+                  SmartDialog.showNotify(
+                      msg: '已复制到剪贴板.', notifyType: NotifyType.success);
+                },
+                child: Text(
+                  anime.title,
+                  style: ts.s18,
+                ),
+              ),
+              if (anime.subTitle != null)
+                SelectableText(anime.subTitle!, style: ts.s14)
+                    .paddingVertical(4),
+              Text(
+                (AnimeSource.find(anime.sourceKey)?.name) ?? '',
+                style: ts.s12,
+              ),
+              const SizedBox(height: 58),
+              SizedBox(
+                  child: Column(children: [
+                Wrap(
+                  children: [
+                    ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 0),
+                      children: [
+                        _ActionButton(
+                          icon: const Icon(Icons.star_border),
+                          activeIcon: const Icon(Icons.star),
+                          isActive: isFavorite || isAddToLocalFav,
+                          text: 'Favorite'.tl,
+                          onPressed: openFavPanel,
+                          onLongPressed: quickFavorite,
+                          iconColor: context.useTextColor(Colors.purple),
+                        ),
+                        _ActionButton(
+                          icon: const Icon(Icons.share),
+                          text: 'Share'.tl,
+                          onPressed: share,
+                          iconColor: context.useTextColor(Colors.blue),
+                        ),
+                        _ActionButton(
+                          icon: ClipOval(
+                            child: Image.asset(
+                              "assets/bgm.png",
+                              width: 20,
+                              height: 20,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          text: 'Bangumi'.tl,
+                          onPressed: () async {
+                            bangumiBottomInfo(context);
+                          },
+                          iconColor: context.useTextColor(Colors.blue),
+                        ),
+                        if (anime.url != null)
+                          _ActionButton(
+                            icon: const Icon(Icons.open_in_browser),
+                            text: 'Open in Browser'.tl,
+                            onPressed: () => launchUrlString(anime.url!),
+                            iconColor: context.useTextColor(Colors.blueGrey),
+                          ),
+                      ],
+                    ).fixHeight(48),
+                    // const Divider(),
+                  ],
+                )
+              ]))
+            ],
+          ),
+        ),
+        const Divider(),
+      ],
+    ).toSliver();
+  }
+
+  Widget buildDescription() {
+    if (anime.description == null || anime.description!.trim().isEmpty) {
+      return const SliverPadding(padding: EdgeInsets.zero);
+    }
+    return SliverToBoxAdapter(
+      child: Column(
+        children: [
+          ListTile(
+            title: Text("Description".tl),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SelectableText(anime.description!).fixWidth(double.infinity),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+        ],
+      ),
+    );
+  }
+
+  Widget buildInfo() {
+    if (anime.tags.isEmpty &&
+        anime.uploader == null &&
+        anime.uploadTime == null &&
+        anime.uploadTime == null) {
+      return const SliverPadding(padding: EdgeInsets.zero);
+    }
+
+    int i = 0;
+
+    Widget buildTag({
+      required String text,
+      VoidCallback? onTap,
+      bool isTitle = false,
+    }) {
+      Color color;
+      if (isTitle) {
+        const colors = [
+          Colors.blue,
+          Colors.cyan,
+          Colors.red,
+          Colors.pink,
+          Colors.purple,
+          Colors.indigo,
+          Colors.teal,
+          Colors.green,
+          Colors.lime,
+          Colors.yellow,
+        ];
+        color = context.useBackgroundColor(colors[(i++) % (colors.length)]);
+      } else {
+        color = context.colorScheme.surfaceContainerLow;
+      }
+
+      final borderRadius = BorderRadius.circular(12);
+
+      const padding = EdgeInsets.symmetric(horizontal: 16, vertical: 6);
+
+      if (onTap != null) {
+        return Material(
+          color: color,
+          borderRadius: borderRadius,
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: onTap,
+            onLongPress: () {
+              Clipboard.setData(ClipboardData(text: text));
+              context.showMessage(message: "Copied".tl);
+            },
+            onSecondaryTapDown: (details) {
+              showMenuX(context, details.globalPosition, [
+                MenuEntry(
+                  icon: Icons.remove_red_eye,
+                  text: "View".tl,
+                  onClick: onTap,
+                ),
+                MenuEntry(
+                  icon: Icons.copy,
+                  text: "Copy".tl,
+                  onClick: () {
+                    Clipboard.setData(ClipboardData(text: text));
+                    context.showMessage(message: "Copied".tl);
+                  },
+                ),
+              ]);
+            },
+            child: Text(text).padding(padding),
+          ),
+        );
+      } else {
+        return Container(
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: borderRadius,
+          ),
+          child: Text(text).padding(padding),
+        );
+      }
+    }
+
+    Widget buildWrap({required List<Widget> children}) {
+      return Wrap(
+        runSpacing: 8,
+        spacing: 8,
+        children: children,
+      ).paddingHorizontal(16).paddingBottom(8);
+    }
+
+    bool enableTranslation =
+        App.locale.languageCode == 'zh' && animeSource.enableTagsTranslate;
+
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            title: Text("Information".tl),
+          ),
+          if (anime.stars != null)
+            Row(
+              children: [
+                StarRating(
+                  value: anime.stars!,
+                  size: 24,
+                  // onTap: starRating,
+                ),
+                const SizedBox(width: 8),
+                Text(anime.stars!.toStringAsFixed(2)),
+              ],
+            ).paddingLeft(16).paddingVertical(8),
+          for (var e in anime.tags.entries)
+            buildWrap(
+              children: [
+                if (e.value.isNotEmpty)
+                  buildTag(text: e.key.ts(animeSource.key), isTitle: true),
+                for (var tag in e.value)
+                  buildTag(
+                    text: enableTranslation
+                        ? TagsTranslation.translationTagWithNamespace(
+                            tag,
+                            e.key.toLowerCase(),
+                          )
+                        : tag,
+                    onTap: () => onTapTag(tag, e.key),
+                  ),
+              ],
+            ),
+          if (anime.uploader != null)
+            buildWrap(
+              children: [
+                buildTag(text: 'Uploader'.tl, isTitle: true),
+                buildTag(text: anime.uploader!),
+              ],
+            ),
+          if (anime.uploadTime != null)
+            buildWrap(
+              children: [
+                buildTag(text: 'Upload Time'.tl, isTitle: true),
+                buildTag(text: anime.uploadTime!),
+              ],
+            ),
+          if (anime.updateTime != null)
+            buildWrap(
+              children: [
+                buildTag(text: 'Update Time'.tl, isTitle: true),
+                buildTag(text: anime.updateTime!),
+              ],
+            ),
+          const SizedBox(height: 12),
+          const Divider(),
+        ],
+      ),
+    );
+  }
+
+  Widget buildEpisodes() {
+    if (anime.episode == null) {
+      return const SliverPadding(padding: EdgeInsets.zero);
+    }
+    return const _AnimeEpisodes();
+  }
+
+  Widget buildRecommend() {
+    if (anime.recommend == null || anime.recommend!.isEmpty) {
+      return const SliverPadding(padding: EdgeInsets.zero);
+    }
+    return SliverMainAxisGroup(slivers: [
+      SliverToBoxAdapter(
+        child: ListTile(
+          title: Text("Related".tl),
+        ),
+      ),
+      SliverGridAnimes(animes: anime.recommend!),
+    ]);
+  }
+}
+
+abstract mixin class _AnimePageActions {
+  void update();
+
+  AnimeDetails get anime;
+
+  AnimeSource get animeSource => AnimeSource.find(anime.sourceKey)!;
+
+  History? history;
+
+  bool isLiking = false;
+
+  bool isLiked = false;
+
+  void likeOrUnlike() async {
+    if (isLiking) return;
+    isLiking = true;
+    update();
+    var res = await animeSource.likeOrUnlikeAnime!(anime.id, isLiked);
+    if (res.error) {
+      App.rootContext.showMessage(message: res.errorMessage!);
+    } else {
+      isLiked = !isLiked;
+    }
+    isLiking = false;
+    update();
+  }
+
+  bool isAddToLocalFav = false;
+
+  bool isFavorite = false;
+
+  FavoriteItem _toFavoriteItem() {
+    var tags = <String>[];
+    for (var e in anime.tags.entries) {
+      tags.addAll(e.value.map((tag) => '${e.key}:$tag'));
+    }
+    return FavoriteItem(
+      id: anime.id,
+      name: anime.title,
+      coverPath: anime.cover,
+      author: anime.subTitle ?? anime.uploader ?? '',
+      type: anime.animeType,
+      tags: tags,
+    );
+  }
+
+  void openFavPanel() {
+    showSideBar(
+      App.rootContext,
+      _FavoritePanel(
+        cid: anime.id,
+        type: anime.animeType,
+        isFavorite: isFavorite,
+        onFavorite: (local, network) {
+          isFavorite = network ?? isFavorite;
+          isAddToLocalFav = local ?? isAddToLocalFav;
+          update();
+        },
+        favoriteItem: _toFavoriteItem(),
+      ),
+    );
+  }
+
+  void quickFavorite() {
+    var folder = appdata.settings['quickFavorite'];
+    if (folder is! String) {
+      return;
+    }
+    LocalFavoritesManager().addAnime(
+      folder,
+      _toFavoriteItem(),
+    );
+    isAddToLocalFav = true;
+    update();
+    App.rootContext.showMessage(message: "Added".tl);
+  }
+
+  Future<void> bangumiBottomInfo(BuildContext context) async {
+    var bangumiId = history!.bangumiId;
+    showModalBottomSheet(
+      isScrollControlled: true,
+      enableDrag: false,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
+        maxWidth: (App.isDesktop)
+            ? MediaQuery.of(context).size.width * 9 / 16 // 设置最大宽度
+            : MediaQuery.of(context).size.width,
+      ),
+      clipBehavior: Clip.antiAlias,
+      context: context,
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 自定义顶部区域
+            Container(
+              padding:
+                  EdgeInsets.only(left: 20, top: 12, right: 20, bottom: 12),
+              height: 60, // 自定义顶部区域高度
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(20)), // 圆角效果
+              ),
+              child: Row(children: [
+                const Image(
+                  image: AssetImage("assets/app_icon.png"),
+                  filterQuality: FilterQuality.medium,
+                ),
+                Spacer(),
+                ElevatedButton(
+                  onPressed: () async {
+                    bangumiBottomInfoSelect(context);
+                  }, // 按钮点击事件
+                  child: Text('Match Bangumi ID'.tl), // 按钮文本
+                ),
+              ]),
+            ),
+            // 下面是 BottomInfo 内容
+            Expanded(
+                child: BottomInfo(
+              bangumiId: bangumiId,
+            )),
+          ],
+        );
+      },
+    );
+  }
+
+  // 显示 BottomSheet，并允许选择一个项目
+  Future<void> bangumiBottomInfoSelect(BuildContext context) async {
+    var res = await Bangumi.bangumiGetSearch(anime.title);
+
+    // 如果 res 是 null 或者数据不正确，显示检索失败提示
+    if (res.isEmpty) {
+      SmartDialog.showNotify(
+        msg: '检索失败，请稍后再试（一直捅 API 会出问题）...',
+        notifyType: NotifyType.error,
+      );
+      return; // 如果数据无效，直接返回，不继续执行后续代码
+    }
+
+    // 显示 BottomSheet
+    final selectedItem = await showModalBottomSheet<BangumiItem>(
+      isScrollControlled: true,
+      enableDrag: false,
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
+        maxWidth: (App.isDesktop)
+            ? MediaQuery.of(context).size.width * 9 / 16 // 设置最大宽度
+            : MediaQuery.of(context).size.width,
+      ),
+      clipBehavior: Clip.antiAlias,
+      context: context,
+      builder: (context) {
+        // 使用 StatefulBuilder 实现搜索框和动态搜索功能
+        return StatefulBuilder(
+          builder: (context, setState) {
+            // 更新搜索结果的函数
+            Future<void> fetchSearchResults(String query) async {
+              if (query.isEmpty) {
+                // 如果搜索框为空，则默认展示初始数据
+                res = await Bangumi.bangumiGetSearch(anime.title);
+              } else {
+                // 否则根据用户输入重新搜索
+                res = await Bangumi.bangumiGetSearch(query);
+              }
+
+              // 如果搜索结果为空，提示用户
+              if (res.isEmpty) {
+                SmartDialog.showNotify(
+                  msg: '未找到相关结果，请尝试其他关键字',
+                  notifyType: NotifyType.warning,
+                );
+              }
+
+              // 更新状态
+              setState(() {});
+            }
+
+            return SingleChildScrollView(
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 搜索框部分
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          labelText: '搜索',
+                          hintText: '请输入关键字进行搜索',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                          ),
+                        ),
+                        onSubmitted: (query) {
+                          fetchSearchResults(query); // 用户提交时重新搜索
+                        },
+                      ),
+                    ),
+                    // 搜索结果列表
+                    if (res.isNotEmpty)
+                      ...res.map((item) {
+                        return InkWell(
+                          onTap: () {
+                            Navigator.pop(context, item); // 返回选中的项
+                          },
+                          splashColor: Theme.of(context)
+                              .colorScheme
+                              .secondaryContainer
+                              .toOpacity(0.72),
+                          highlightColor: Theme.of(context)
+                              .colorScheme
+                              .secondaryContainer
+                              .toOpacity(0.72),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                vertical: 8.0, horizontal: 12.0),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                double height = constraints.maxWidth *
+                                    (App.isDesktop
+                                        ? (constraints.maxWidth > 1024
+                                            ? 6 / 16
+                                            : 10 / 16)
+                                        : 10 / 16);
+                                double width = height * 0.72;
+
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        item.images['large']!,
+                                        width: width,
+                                        height: height,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    SizedBox(width: 12.0),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Bangumi ID: ${item.id}',
+                                            style: TextStyle(
+                                              fontSize: 18.0,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            item.nameCn,
+                                            style: TextStyle(
+                                              fontSize: 18.0,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            item.name,
+                                            style: TextStyle(
+                                              fontSize: 14.0,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      })
+                    else
+                      Center(
+                        child: Text(
+                          '暂无搜索结果',
+                          style: TextStyle(fontSize: 16.0, color: Colors.grey),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    // 如果用户选择了某个项，执行相关操作
+    if (selectedItem != null) {
+      await handleSelection(context, selectedItem);
+    }
+  }
+
+  // 处理选择后的操作
+  Future<void> handleSelection(BuildContext context, BangumiItem item) async {
+    // 模拟延迟操作，可以替换成其他操作（如网络请求等）
+    // await Future.delayed(Duration(seconds: 1));
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Determine the binding: @a ?'.tlParams({
+            "a": item.name,
+          })),
+          content: Text(item.airDate),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                try {
+                  if (history != null) {
+                    history!.bangumiId = item.id;
+                    HistoryManager().addHistory(history!);
+                    WatcherState.currentState!.bangumiId = item.id;
+                    BottomInfoState.currentState?.upDate(item.id);
+                  }
+                } catch (e) {
+                  Log.addLog(LogLevel.error, "绑定bangumiId", "$e");
+                }
+
+                SmartDialog.showToast('绑定bangumiId成功');
+                Navigator.pop(context);
+              },
+              child: Text('Ok'.tl),
+            ),
+            TextButton(
+              onPressed: () => {Navigator.pop(context)},
+              child: Text('Close'.tl),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> share() async {
+    shareImage();
+  }
+
+  final GlobalKey _repaintKey = GlobalKey();
+
+  void shareImage() {
+    showPopUpWidget(
+      App.rootContext,
+      StatefulBuilder(builder: (context, setState) {
+        if (history!.bangumiId == null) {
+          return PopUpWidgetScaffold(
+            title: anime.title,
+            body: Column(
+              children: [
+                RepaintBoundary(
+                  key: _repaintKey,
+                  child: Padding(
+                    padding:
+                        EdgeInsets.only(bottom: context.padding.bottom + 16),
+                    child: Container(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      child: Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(width: 16),
+                                //封面
+                                Material(
+                                  color: Colors.transparent,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color:
+                                          context.colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    height: 256,
+                                    width: 256 * 0.72,
+                                    clipBehavior: Clip.antiAlias,
+                                    child: AnimatedImage(
+                                      image: CachedImageProvider(
+                                        anime.cover,
+                                        sourceKey: anime.sourceKey,
+                                      ),
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        //标题
+                                        Text(
+                                          anime.title,
+                                          style: ts.s20,
+                                        ),
+                                        if (anime.subTitle != null)
+                                          SelectableText(anime.subTitle!,
+                                              style: ts.s14),
+                                        //源名称
+                                        Text(
+                                          (AnimeSource.find(anime.sourceKey)
+                                                  ?.name) ??
+                                              '',
+                                          style: ts.s12,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        if (history?.bangumiId == null)
+                                          Text(
+                                            anime.tags.entries.map((entry) {
+                                              // 对每个键值对，创建一个字符串表示形式
+                                              return '${entry.key}: ${entry.value.join(', ')}';
+                                            }).join('\n'), // 用换行符分隔每个键值对
+                                            style: ts.s12,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const Divider(),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '简介',
+                            style: ts.s18,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 16),
+                            child: SelectableText(anime.description!)
+                                .fixWidth(double.infinity),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Spacer(), // 使用 Spacer 将按钮区域移至弹出框外
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Spacer(),
+                      FilledButton(
+                        onPressed: () {
+                          _captureAndSave();
+                          App.rootContext.pop();
+                        },
+                        child: Text('Share'.tl),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return FutureBuilder<BangumiItem?>(
+          future: Bangumi.getBangumiInfoByID(history!.bangumiId as int),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return PopUpWidgetScaffold(
+                title: anime.title,
+                body:
+                    Center(child: CircularProgressIndicator()), // Loading state
+              );
+            } else if (snapshot.hasError) {
+              return PopUpWidgetScaffold(
+                title: anime.title,
+                body: Center(
+                    child: Text('Error: ${snapshot.error}')), // Error state
+              );
+            } else if (!snapshot.hasData) {
+              return PopUpWidgetScaffold(
+                title: anime.title,
+                body: Center(child: Text('No data available')), // No data state
+              );
+            }
+
+            final bangumiItem = snapshot.data; // Successfully loaded data
+
+            return PopUpWidgetScaffold(
+              title: anime.title,
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    RepaintBoundary(
+                      key: _repaintKey,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                            bottom: context.padding.bottom + 16),
+                        child: Container(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          child: Column(
+                            children: [
+                              Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                    double height = constraints.maxWidth / 2;
+                                    double width = height * 0.72;
+                                    return Container(
+                                      width: constraints.maxWidth,
+                                      height: height,
+                                      padding: EdgeInsets.all(2),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(width: 16),
+                                          //封面
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: context.colorScheme
+                                                    .primaryContainer,
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              height: height,
+                                              width: width,
+                                              clipBehavior: Clip.antiAlias,
+                                              child: AnimatedImage(
+                                                image: CachedImageProvider(
+                                                  anime.cover,
+                                                  sourceKey: anime.sourceKey,
+                                                ),
+                                                width: double.infinity,
+                                                height: double.infinity,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 16),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  //标题
+                                                  Text(
+                                                    anime.title,
+                                                    style: TextStyle(
+                                                        fontSize: 20,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
+                                                  if (history?.bangumiId !=
+                                                          null &&
+                                                      bangumiItem != null)
+                                                    Text(bangumiItem.name,
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                        )),
+                                                  //源名称
+                                                  Text(
+                                                    (AnimeSource.find(
+                                                                anime.sourceKey)
+                                                            ?.name) ??
+                                                        '',
+                                                    style: ts.s12,
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  if (history?.bangumiId !=
+                                                          null &&
+                                                      bangumiItem != null)
+                                                    Container(
+                                                      padding:
+                                                          EdgeInsets.all(8.0),
+                                                      decoration: BoxDecoration(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(16.0),
+                                                        border: Border.all(
+                                                          color: Theme.of(
+                                                                  context)
+                                                              .colorScheme
+                                                              .secondaryContainer
+                                                              .toOpacity(0.72),
+                                                          width: 2.0,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                          bangumiItem.airDate),
+                                                    ),
+                                                  SizedBox(height: 12.0),
+                                                  if (history?.bangumiId !=
+                                                          null &&
+                                                      bangumiItem != null)
+                                                    Text(
+                                                        '预定全 ${bangumiItem.totalEpisodes} 话',
+                                                        style: TextStyle(
+                                                          fontSize: 14.0,
+                                                        )),
+                                                  Spacer(),
+                                                  if (history?.bangumiId !=
+                                                          null &&
+                                                      bangumiItem != null)
+                                                    Align(
+                                                      alignment:
+                                                          Alignment.bottomRight,
+                                                      child: Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .end,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            '${bangumiItem.score}',
+                                                            style: TextStyle(
+                                                              fontSize: 32.0,
+                                                            ),
+                                                          ),
+                                                          SizedBox(
+                                                            width: 5,
+                                                          ),
+                                                          Container(
+                                                            padding:
+                                                                EdgeInsets.all(
+                                                                    2.0),
+                                                            // 可选，设置内边距
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              borderRadius:
+                                                                  BorderRadius
+                                                                      .circular(
+                                                                          8),
+                                                              // 设置圆角半径
+                                                              border:
+                                                                  Border.all(
+                                                                color: Theme.of(
+                                                                        context)
+                                                                    .colorScheme
+                                                                    .secondaryContainer
+                                                                    .toOpacity(
+                                                                        0.72),
+                                                                width:
+                                                                    2.0, // 设置边框宽度
+                                                              ),
+                                                            ),
+                                                            child: Text(
+                                                              Utils.getRatingLabel(
+                                                                  bangumiItem
+                                                                      .score),
+                                                            ),
+                                                          ),
+                                                          SizedBox(
+                                                            width: 4,
+                                                          ),
+                                                          Column(
+                                                            crossAxisAlignment:
+                                                                CrossAxisAlignment
+                                                                    .end, // 右对齐
+                                                            children: [
+                                                              RatingBarIndicator(
+                                                                itemCount: 5,
+                                                                rating: bangumiItem
+                                                                        .score
+                                                                        .toDouble() /
+                                                                    2,
+                                                                itemBuilder: (context,
+                                                                        index) =>
+                                                                    const Icon(
+                                                                  Icons
+                                                                      .star_rounded,
+                                                                ),
+                                                                itemSize: 20.0,
+                                                              ),
+                                                              Text(
+                                                                '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        12),
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  })),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16, horizontal: 16),
+                                  child: Align(
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                            '${bangumiItem.collection?['doing']} 在看',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                            )),
+                                        Text(' / '),
+                                        Text(
+                                            '${bangumiItem.collection?['collect']} 看过',
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .error)),
+                                        Text(' / '),
+                                        Text(
+                                            '${bangumiItem.collection?['wish']} 想看',
+                                            style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.blueAccent)),
+                                        Text(' / '),
+                                        Text(
+                                            '${bangumiItem.collection?['on_hold']} 搁置',
+                                            style: TextStyle(fontSize: 12)),
+                                        Text(' / '),
+                                        Text(
+                                            '${bangumiItem.collection?['dropped']} 抛弃',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            )),
+                                        Text(' / '),
+                                        Text(
+                                            '${bangumiItem.collection!['doing']! + bangumiItem.collection!['collect']! + bangumiItem.collection!['wish']! + bangumiItem.collection!['on_hold']! + bangumiItem.collection!['dropped']!} 总计数',
+                                            style: TextStyle(fontSize: 12)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              Text(
+                                '简介',
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 16, horizontal: 16),
+                                child: SelectableText(anime.description!)
+                                    .fixWidth(double.infinity),
+                              ),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                SizedBox(
+                                  height: 12,
+                                ),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                Text(
+                                  '标签',
+                                  style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                SizedBox(
+                                  height: 12,
+                                ),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                Wrap(
+                                    spacing: 8.0,
+                                    runSpacing: App.isDesktop ? 8 : 0,
+                                    children: List<Widget>.generate(
+                                        bangumiItem.tags.length, (int index) {
+                                      return Chip(
+                                        label: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                                '${bangumiItem.tags[index].name} '),
+                                            Text(
+                                              '${bangumiItem.tags[index].count}',
+                                              style: TextStyle(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList()),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                SizedBox(
+                                  height: 12,
+                                ),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                Text(
+                                  '评分统计图',
+                                  style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                SizedBox(
+                                  height: 12,
+                                ),
+                              if (history?.bangumiId != null &&
+                                  bangumiItem != null)
+                                LineChatPage(
+                                  bangumiItem: bangumiItem,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    // Spacer(), // 使用 Spacer 将按钮区域移至弹出框外
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Spacer(),
+                          FilledButton(
+                            onPressed: () {
+                              _captureAndSave();
+                              App.rootContext.pop();
+                            },
+                            child: Text('Share'.tl),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  // 截取图像并保存
+  Future<void> _captureAndSave() async {
+    try {
+      RenderRepaintBoundary boundary = _repaintKey.currentContext
+          ?.findRenderObject() as RenderRepaintBoundary;
+
+      // 获取截图数据
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      Uint8List uint8List = byteData!.buffer.asUint8List();
+
+      // 保存文件
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/popup_image.png');
+      await file.writeAsBytes(uint8List);
+      //     // 使用 shareFile 函数分享文件
+      Uint8List data = await file.readAsBytes();
+      Share.shareFile(data: data, filename: 'image.jpg', mime: 'image/jpeg');
+      Log.addLog(LogLevel.info, '截图保存', file.path);
+    } catch (e) {
+      Log.addLog(LogLevel.error, '截图失败', '$e');
+    }
+  }
+
+  /// read the anime
+  ///
+  /// [ep] the episode number, start from 1
+  ///
+  /// [page] the page number, start from 1
+  void watch([int? ep, int? road]) {
+    WatcherState.currentState!.loadInfo(ep!, road!); // 传递集数
+  }
+
+  void onTapTag(String tag, String namespace) {
+    var config = animeSource.handleClickTagEvent?.call(namespace, tag) ??
+        {
+          'action': 'search',
+          'keyword': tag,
+        };
+    var context = App.mainNavigatorKey!.currentContext!;
+    if (config['action'] == 'search') {
+      context.to(() => SearchResultPage(
+            text: config['keyword'] ?? '',
+            sourceKey: animeSource.key,
+            options: const [],
+          ));
+    } else if (config['action'] == 'category') {
+      context.to(
+        () => CategoryAnimesPage(
+          category: config['keyword'] ?? '',
+          categoryKey: animeSource.categoryData!.key,
+          param: config['param'],
+        ),
+      );
+    }
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.text,
+    required this.onPressed,
+    this.onLongPressed,
+    this.activeIcon,
+    this.isActive,
+    this.isLoading,
+    this.iconColor,
+  });
+
+  final Widget icon;
+
+  final Widget? activeIcon;
+
+  final bool? isActive;
+
+  final String text;
+
+  final void Function() onPressed;
+
+  final bool? isLoading;
+
+  final Color? iconColor;
+
+  final void Function()? onLongPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: context.colorScheme.outlineVariant,
+          width: 0.6,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          if (!(isLoading ?? false)) {
+            onPressed();
+          }
+        },
+        onLongPress: onLongPressed,
+        borderRadius: BorderRadius.circular(18),
+        child: IconTheme.merge(
+          data: IconThemeData(size: 20, color: iconColor),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isLoading ?? false)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 1.8),
+                )
+              else
+                (isActive ?? false) ? (activeIcon ?? icon) : icon,
+              const SizedBox(width: 8),
+              Text(text),
+            ],
+          ).paddingHorizontal(16),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimeEpisodes extends StatefulWidget {
+  const _AnimeEpisodes();
+
+  @override
+  State<_AnimeEpisodes> createState() => _AnimeEpisodesState();
+}
+
+class _AnimeEpisodesState extends State<_AnimeEpisodes> {
+  late _AnimePageState state;
+
+  // 当前播放列表的索引，默认为0
+  int playList = 0;
+  Map<String, String> currentEps = {};
+  int length = 0;
+  bool reverse = false;
+  bool showAll = false;
+
+  @override
+  void didChangeDependencies() {
+    state = context.findAncestorStateOfType<_AnimePageState>()!;
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 获取所有播放列表（例如，ep1, ep2, ep3...）
+    state.anime.episode?.keys.toList();
+    final episodeValues = state.anime.episode?.values.elementAt(playList);
+
+    currentEps = episodeValues!;
+    length = currentEps.length;
+
+    if (!showAll) {
+      length = math.min(length, 24); // 限制显示的集数
+    }
+
+    int currentLength = length;
+
+    return SliverMainAxisGroup(
+      slivers: [
+        // 显示标题和切换顺序的按钮
+        SliverToBoxAdapter(
+          child: ListTile(
+            title: Row(
+              children: [
+                Text("Episodes".tl),
+                const SizedBox(width: 5),
+                SizedBox(
+                  height: 34,
+                  child: TextButton(
+                    style: ButtonStyle(
+                      padding: WidgetStateProperty.all(EdgeInsets.zero),
+                    ),
+                    onPressed: () {
+                      SmartDialog.show(
+                          useAnimation: false,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('播放列表'),
+                              content: StatefulBuilder(builder:
+                                  (BuildContext context,
+                                      StateSetter innerSetState) {
+                                return Wrap(
+                                  spacing: 8,
+                                  runSpacing: 2,
+                                  children: [
+                                    for (int i = 0;
+                                        i < state.anime.episode!.keys.length;
+                                        i++) ...<Widget>[
+                                      if (i == playList) ...<Widget>[
+                                        FilledButton(
+                                          onPressed: () {
+                                            SmartDialog.dismiss();
+                                            setState(() {
+                                              playList = i;
+                                            });
+                                          },
+                                          child: Text(state.anime.episode!.keys
+                                              .elementAt(i)),
+                                        ),
+                                      ] else ...[
+                                        FilledButton.tonal(
+                                          onPressed: () {
+                                            SmartDialog.dismiss();
+                                            setState(() {
+                                              playList = i;
+                                            });
+                                          },
+                                          child: Text(state.anime.episode!.keys
+                                              .elementAt(i)),
+                                        ),
+                                      ]
+                                    ]
+                                  ],
+                                );
+                              }),
+                            );
+                          });
+                    },
+                    child: Text(
+                      state.anime.episode!.keys.elementAt(playList),
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ),
+                ),
+                Spacer(),
+              ],
+            ),
+            trailing: Tooltip(
+              message: "Order".tl,
+              child: IconButton(
+                icon: Icon(reverse
+                    ? Icons.vertical_align_top
+                    : Icons.vertical_align_bottom_outlined),
+                onPressed: () {
+                  setState(() {
+                    reverse = !reverse; // 切换顺序
+                  });
+                },
+              ),
+            ),
+          ),
+        ),
+
+        // 显示播放列表内容的网格
+        SliverGrid(
+          key: ValueKey(playList),
+          delegate: SliverChildBuilderDelegate(
+            childCount: currentLength, // 使用更新后的 length
+            (context, i) {
+              if (i >= currentEps.length) {
+                return Container(); // 防止越界
+              }
+
+              if (reverse) {
+                i = currentEps.length - i - 1; // 反向排序
+              }
+
+              var key = currentEps.keys.elementAt(i); // 获取集数名称
+              var value = currentEps[key]!; // 获取集数内容
+              bool visited =
+                  (state.history?.watchEpisode ?? const {}).contains(i + 1);
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                child: Material(
+                  color: context.colorScheme.surfaceContainer,
+                  borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  child: InkWell(
+                    onTap: () => state.watch(i + 1, playList),
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      child: Center(
+                        child: Text(
+                          value,
+                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: visited ? context.colorScheme.outline : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          gridDelegate: const SliverGridDelegateWithFixedHeight(
+              maxCrossAxisExtent: 200, itemHeight: 48),
+        ),
+
+        // 显示更多按钮
+        if (currentEps.length > 24 && !showAll)
+          SliverToBoxAdapter(
+            child: Align(
+              alignment: Alignment.center,
+              child: FilledButton.tonal(
+                style: ButtonStyle(
+                  shape: WidgetStateProperty.all(const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                  )),
+                ),
+                onPressed: () {
+                  setState(() {
+                    showAll = true; // 显示更多集数
+                  });
+                },
+                child: Text("${"Show all".tl} (${currentEps.length})"),
+              ).paddingTop(12),
+            ),
+          ),
+
+        const SliverToBoxAdapter(child: Divider()), // 添加分割线
+      ],
+    );
+  }
+}
+
+class _FavoritePanel extends StatefulWidget {
+  const _FavoritePanel({
+    required this.cid,
+    required this.type,
+    required this.isFavorite,
+    required this.onFavorite,
+    required this.favoriteItem,
+  });
+
+  final String cid;
+
+  final AnimeType type;
+
+  /// whether the anime is in the network favorite list
+  ///
+  /// if null, the anime source does not support favorite or support multiple favorite lists
+  final bool? isFavorite;
+
+  final void Function(bool?, bool?) onFavorite;
+
+  final FavoriteItem favoriteItem;
+
+  @override
+  State<_FavoritePanel> createState() => _FavoritePanelState();
+}
+
+class _FavoritePanelState extends State<_FavoritePanel> {
+  late AnimeSource animeSource;
+
+  @override
+  void initState() {
+    animeSource = widget.type.animeSource!;
+    localFolders = LocalFavoritesManager().folderNames;
+    added = LocalFavoritesManager().find(widget.cid, widget.type);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    assert(widget.havePlatformFavorite || page != 0);
+    var hasNetwork = animeSource.favoriteData != null && animeSource.isLogged;
+    return Scaffold(
+      appBar: Appbar(
+        title: Text("Favorite".tl),
+      ),
+      body: DefaultTabController(
+        length: hasNetwork ? 2 : 1,
+        child: Column(
+          children: [
+            TabBar(tabs: [
+              Tab(text: "Local".tl),
+              if (hasNetwork) Tab(text: "Network".tl),
+            ]),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  buildLocal(),
+                  if (hasNetwork) buildNetwork(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    Widget buildFolder(String name, String id, int p) {
-      bool isSelected = selected.contains(id);
-      return InkWell(
-        onTap: () => setState(() {
-          page = p;
-          if (isSelected) {
-            selected.remove(id);
-            return;
-          }
-          if (p == 0) {
-            selected.clear();
-            selected.add(id);
-          } else {
-            selected.add(id);
-          }
-        }),
-        child: SizedBox(
-          height: App.isDesktop ? 42 : 48,
-          width: double.infinity,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+  late List<String> localFolders;
+
+  late List<String> added;
+
+  var selectedLocalFolders = <String>{};
+
+  Widget buildLocal() {
+    var isRemove = selectedLocalFolders.isNotEmpty &&
+        added.contains(selectedLocalFolders.first);
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            itemCount: localFolders.length + 1,
+            itemBuilder: (context, index) {
+              if (index == localFolders.length) {
+                return SizedBox(
+                  height: 36,
+                  child: Center(
+                    child: TextButton(
+                      onPressed: () {
+                        newFolder().then((v) {
+                          setState(() {
+                            localFolders = LocalFavoritesManager().folderNames;
+                          });
+                        });
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add, size: 20),
+                          const SizedBox(width: 4),
+                          Text("New Folder".tl)
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              var folder = localFolders[index];
+              var disabled = false;
+              if (selectedLocalFolders.isNotEmpty) {
+                if (added.contains(folder) &&
+                    !added.contains(selectedLocalFolders.first)) {
+                  disabled = true;
+                } else if (!added.contains(folder) &&
+                    added.contains(selectedLocalFolders.first)) {
+                  disabled = true;
+                }
+              }
+              return CheckboxListTile(
+                title: Row(
+                  children: [
+                    Text(folder),
+                    const SizedBox(width: 8),
+                    if (added.contains(folder))
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text("Added".tl, style: ts.s12),
+                      ),
+                  ],
+                ),
+                value: selectedLocalFolders.contains(folder),
+                onChanged: disabled
+                    ? null
+                    : (v) {
+                        setState(() {
+                          if (v!) {
+                            selectedLocalFolders.add(folder);
+                          } else {
+                            selectedLocalFolders.remove(folder);
+                          }
+                        });
+                      },
+              );
+            },
+          ),
+        ),
+        Center(
+          child: FilledButton(
+            onPressed: () {
+              if (selectedLocalFolders.isEmpty) {
+                return;
+              }
+              if (isRemove) {
+                for (var folder in selectedLocalFolders) {
+                  LocalFavoritesManager()
+                      .deleteAnimeWithId(folder, widget.cid, widget.type);
+                }
+                widget.onFavorite(false, null);
+              } else {
+                for (var folder in selectedLocalFolders) {
+                  LocalFavoritesManager().addAnime(folder, widget.favoriteItem);
+                }
+                widget.onFavorite(true, null);
+              }
+              context.pop();
+            },
+            child: isRemove ? Text("Remove".tl) : Text("Add".tl),
+          ).paddingVertical(8),
+        ),
+      ],
+    );
+  }
+
+  Widget buildNetwork() {
+    return _NetworkFavorites(
+      cid: widget.cid,
+      animeSource: animeSource,
+      isFavorite: widget.isFavorite,
+      onFavorite: (network) {
+        widget.onFavorite(null, network);
+      },
+    );
+  }
+}
+
+class _NetworkFavorites extends StatefulWidget {
+  const _NetworkFavorites({
+    required this.cid,
+    required this.animeSource,
+    required this.isFavorite,
+    required this.onFavorite,
+  });
+
+  final String cid;
+
+  final AnimeSource animeSource;
+
+  final bool? isFavorite;
+
+  final void Function(bool) onFavorite;
+
+  @override
+  State<_NetworkFavorites> createState() => _NetworkFavoritesState();
+}
+
+class _NetworkFavoritesState extends State<_NetworkFavorites> {
+  @override
+  Widget build(BuildContext context) {
+    bool isMultiFolder = widget.animeSource.favoriteData!.loadFolders != null;
+
+    return isMultiFolder ? buildMultiFolder() : buildSingleFolder();
+  }
+
+  bool isLoading = false;
+
+  Widget buildSingleFolder() {
+    var isFavorite = widget.isFavorite ?? false;
+    return Column(
+      children: [
+        Expanded(
+          child: Center(
+            child: Text(isFavorite ? "Added to favorites".tl : "Not added".tl),
+          ),
+        ),
+        Center(
+          child: Button.filled(
+            isLoading: isLoading,
+            onPressed: () async {
+              setState(() {
+                isLoading = true;
+              });
+
+              var res = await widget.animeSource.favoriteData!
+                  .addOrDelFavorite!(widget.cid, '', !isFavorite, null);
+              if (res.success) {
+                widget.onFavorite(!isFavorite);
+                context.pop();
+                App.rootContext.showMessage(
+                    message: isFavorite ? "Removed".tl : "Added".tl);
+              } else {
+                setState(() {
+                  isLoading = false;
+                });
+                context.showMessage(message: res.errorMessage!);
+              }
+            },
+            child: isFavorite ? Text("Remove".tl) : Text("Add".tl),
+          ).paddingVertical(8),
+        ),
+      ],
+    );
+  }
+
+  Map<String, String>? folders;
+
+  var addedFolders = <String>{};
+
+  var isLoadingFolders = true;
+
+  // for network favorites, only one selection is allowed
+  String? selected;
+
+  void loadFolders() async {
+    var res = await widget.animeSource.favoriteData!.loadFolders!(widget.cid);
+    if (res.error) {
+      context.showMessage(message: res.errorMessage!);
+    } else {
+      folders = res.data;
+      if (res.subData is List) {
+        addedFolders = List<String>.from(res.subData).toSet();
+      }
+      setState(() {
+        isLoadingFolders = false;
+      });
+    }
+  }
+
+  Widget buildMultiFolder() {
+    if (isLoadingFolders) {
+      loadFolders();
+      return const Center(child: CircularProgressIndicator());
+    } else {
+      return Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: folders!.length,
+              itemBuilder: (context, index) {
+                var name = folders!.values.elementAt(index);
+                var id = folders!.keys.elementAt(index);
+                return CheckboxListTile(
+                  title: Row(
+                    children: [
+                      Text(name),
+                      const SizedBox(width: 8),
+                      if (addedFolders.contains(id))
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text("Added".tl, style: ts.s12),
+                        ),
+                    ],
+                  ),
+                  value: selected == id,
+                  onChanged: (v) {
+                    setState(() {
+                      selected = id;
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          Center(
+            child: Button.filled(
+              isLoading: isLoading,
+              onPressed: () async {
+                if (selected == null) {
+                  return;
+                }
+                setState(() {
+                  isLoading = true;
+                });
+                var res =
+                    await widget.animeSource.favoriteData!.addOrDelFavorite!(
+                  widget.cid,
+                  selected!,
+                  !addedFolders.contains(selected!),
+                  null,
+                );
+                if (res.success) {
+                  context.showMessage(message: "Success".tl);
+                  context.pop();
+                } else {
+                  context.showMessage(message: res.errorMessage!);
+                  setState(() {
+                    isLoading = false;
+                  });
+                }
+              },
+              child: selected != null && addedFolders.contains(selected!)
+                  ? Text("Remove".tl)
+                  : Text("Add".tl),
+            ).paddingVertical(8),
+          ),
+        ],
+      );
+    }
+  }
+}
+
+class _SelectDownloadChapter extends StatefulWidget {
+  const _SelectDownloadChapter(this.eps, this.finishSelect, this.downloadedEps);
+
+  final List<String> eps;
+  final void Function(List<int>) finishSelect;
+  final List<int> downloadedEps;
+
+  @override
+  State<_SelectDownloadChapter> createState() => _SelectDownloadChapterState();
+}
+
+class _SelectDownloadChapterState extends State<_SelectDownloadChapter> {
+  List<int> selected = [];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: Appbar(
+        title: Text("Download".tl),
+        backgroundColor: context.colorScheme.surfaceContainerLow,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              itemCount: widget.eps.length,
+              itemBuilder: (context, i) {
+                return CheckboxListTile(
+                    title: Text(widget.eps[i]),
+                    value: selected.contains(i) ||
+                        widget.downloadedEps.contains(i),
+                    onChanged: widget.downloadedEps.contains(i)
+                        ? null
+                        : (v) {
+                            setState(() {
+                              if (selected.contains(i)) {
+                                selected.remove(i);
+                              } else {
+                                selected.add(i);
+                              }
+                            });
+                          });
+              },
+            ),
+          ),
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: context.colorScheme.outlineVariant,
+                ),
+              ),
+            ),
             child: Row(
               children: [
-                Icon(
-                  isSelected ? Icons.folder : Icons.folder_outlined,
-                  size: App.isDesktop ? 24 : 28,
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-                const SizedBox(
-                  width: 12,
-                ),
-                Text(name),
-                if ((addedFolders.contains(name) && p == 1) ||
-                    (favoritedFolders.contains(id) && p == 0))
-                  const SizedBox(
-                    width: 12,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextButton(
+                    onPressed: () {
+                      var res = <int>[];
+                      for (int i = 0; i < widget.eps.length; i++) {
+                        if (!widget.downloadedEps.contains(i)) {
+                          res.add(i);
+                        }
+                      }
+                      widget.finishSelect(res);
+                      context.pop();
+                    },
+                    child: Text("Download All".tl),
                   ),
-                if ((addedFolders.contains(name) && p == 1) ||
-                    (favoritedFolders.contains(id) && p == 0))
-                  Container(
-                    height: 30,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.tertiaryContainer,
-                      borderRadius: const BorderRadius.all(Radius.circular(16)),
-                    ),
-                    child: Center(
-                      child: Text("已收藏"),
-                    ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: selected.isEmpty
+                        ? null
+                        : () {
+                            widget.finishSelect(selected);
+                            context.pop();
+                          },
+                    child: Text("Download Selected".tl),
                   ),
-                const Spacer(),
-                // if (isSelected) const AnimatedCheckIcon()
+                ),
+                const SizedBox(width: 16),
+              ],
+            ),
+          ),
+          SizedBox(height: MediaQuery.of(context).padding.bottom),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommentsPart extends StatefulWidget {
+  const _CommentsPart({
+    required this.comments,
+    required this.showMore,
+  });
+
+  final List<Comment> comments;
+
+  final void Function() showMore;
+
+  @override
+  State<_CommentsPart> createState() => _CommentsPartState();
+}
+
+class _CommentsPartState extends State<_CommentsPart> {
+  final scrollController = ScrollController();
+
+  late List<Comment> comments;
+
+  @override
+  void initState() {
+    comments = widget.comments;
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiSliver(
+      children: [
+        SliverToBoxAdapter(
+          child: ListTile(
+            title: Text("Comments".tl),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () {
+                    scrollController.animateTo(
+                      scrollController.position.pixels - 340,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.ease,
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () {
+                    scrollController.animateTo(
+                      scrollController.position.pixels + 340,
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.ease,
+                    );
+                  },
+                ),
               ],
             ),
           ),
         ),
-      );
-    }
-
-    Widget button = Button.filled(
-      isLoading: isAdding,
-      child: Text("收藏"),
-      onPressed: () async {
-        if (selected.isNotEmpty) {
-          setState(() {
-            isAdding = true;
-          });
-          Res<bool> res = const Res(true);
-          for (var id in selected) {
-            if (addedFolders.contains(id)) {
-              continue;
-            }
-            res = await widget.selectFolderCallback!.call(id, page);
-          }
-          if (res.success) {
-            widget.setFavorite(true);
-            if (context.mounted) {
-              context.pop();
-            }
-            showToast(message: "成功添加收藏");
-          } else {
-            setState(() {
-              isAdding = false;
-            });
-            showToast(message: res.errorMessage!);
-          }
-        }
-      },
-    );
-
-    Widget platform = SingleChildScrollView(
-      child: Column(
-        children: List.generate(
-            folders.length,
-            (index) => buildFolder(folders.values.elementAt(index),
-                folders.keys.elementAt(index), 0)),
-      ),
-    );
-
-    if (widget.favoriteOnPlatform == true) {
-      platform = Center(
-        child: Text("已收藏"),
-      );
-      if (page == 0) {
-        button = Button.filled(
-          isLoading: isAdding,
-          onPressed: () async {
-            setState(() {
-              isAdding = true;
-            });
-            var res = await widget.cancelPlatformFavorite!.call();
-            if (res.success) {
-              if (addedFolders.isEmpty) {
-                widget.setFavorite(false);
-              }
-              showToast(message: "取消收藏成功");
-              if (context.mounted) {
-                context.pop();
-              }
-            } else {
-              setState(() {
-                isAdding = false;
-              });
-              showToast(message: res.errorMessage!);
-            }
-          },
-          child: Text("取消收藏"),
-        );
-      }
-    }
-
-    if (page == 1 &&
-        selected.isNotEmpty &&
-        selected.every((e) => addedFolders.contains(e))) {
-      button = Button.filled(
-        onPressed: () {
-          context.hideMessages();
-          App.globalBack();
-          if (addedFolders.length == 1 &&
-              widget.favoriteOnPlatform == false &&
-              favoritedFolders.isEmpty) {
-            widget.setFavorite(false);
-          }
-          for (var id in selected) {
-            LocalFavoritesManager().deleteAnime(
-              id,
-              widget.localFavoriteItem,
-            );
-          }
-        },
-        child: Text("取消收藏"),
-      );
-    } else if (widget.havePlatformFavorite &&
-        widget.needLoadFolderData &&
-        !loadedData) {
-      widget.foldersLoader!.call().then((res) {
-        if (res.error) {
-          showToast(message: res.errorMessage ?? "Error");
-        } else {
-          setState(() {
-            loadedData = true;
-            folders = res.data;
-            favoritedFolders = res.subData ?? [];
-          });
-        }
-      });
-      platform = const Center(
-        child: CircularProgressIndicator(),
-      );
-    } else if (page == 0 &&
-        selected.length == 1 &&
-        favoritedFolders.contains(selected[0])) {
-      button = Button.filled(
-        onPressed: () async {
-          var res = await widget.cancelPlatformFavoriteWithFolder!(selected[0]);
-          if (res.success) {
-            showToast(message: "取消收藏成功");
-            if (context.mounted) {
-              context.pop();
-            }
-          } else {
-            showToast(message: res.errorMessage!);
-          }
-        },
-        child: Text("取消收藏"),
-      );
-    }
-
-    Widget local;
-
-    var localFolders = LocalFavoritesManager().folderNames;
-
-    var children = List.generate(localFolders.length,
-        (index) => buildFolder(localFolders[index], localFolders[index], 1));
-    // children.add(SizedBox(
-    //   height: 56,
-    //   width: double.infinity,
-    //   child: Center(
-    //     child: TextButton(
-    //       child: Row(
-    //         mainAxisSize: MainAxisSize.min,
-    //         children: [
-    //           Text("新建"),
-    //           const SizedBox(
-    //             width: 4,
-    //           ),
-    //           const Icon(Icons.add),
-    //         ],
-    //       ),
-    //       onPressed: () => showDialog(
-    //               context: App.globalContext!,
-    //               builder: (_) => const CreateFolderDialog())
-    //           .then((value) => setState(() {})),
-    //     ),
-    //   ),
-    // ));
-    local = SingleChildScrollView(
-      child: Column(
-        children: children,
-      ),
-    );
-
-    return DefaultTabController(
-        length: widget.havePlatformFavorite ? 2 : 1,
-        child: Column(
-          children: [
-            TabBar(
-              onTap: (i) {
-                setState(() {
-                  selected.clear();
-                  if (i == 0 && widget.initialFolder != null) {
-                    selected.add(widget.initialFolder!);
-                  }
-                  page = i;
-                  if (!widget.havePlatformFavorite) {
-                    page = 1;
-                  }
-                });
-              },
-              tabs: [
-                if (widget.havePlatformFavorite)
-                  Tab(
-                    text: "网络",
+        SliverToBoxAdapter(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 184,
+                child: MediaQuery.removePadding(
+                  removeTop: true,
+                  context: context,
+                  child: ListView.builder(
+                    controller: scrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: comments.length,
+                    itemBuilder: (context, index) {
+                      return _CommentWidget(comment: comments[index]);
+                    },
                   ),
-                Tab(
-                  text: "本地",
+                ),
+              ),
+              const SizedBox(height: 8),
+              _ActionButton(
+                icon: const Icon(Icons.comment),
+                text: "View more".tl,
+                onPressed: widget.showMore,
+                iconColor: context.useTextColor(Colors.green),
+              ).fixHeight(48).paddingRight(8).toAlign(Alignment.centerRight),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+        const SliverToBoxAdapter(
+          child: Divider(),
+        ),
+      ],
+    );
+  }
+}
+
+class _CommentWidget extends StatelessWidget {
+  const _CommentWidget({required this.comment});
+
+  final Comment comment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 0, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      width: 324,
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              if (comment.avatar != null)
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: context.colorScheme.surfaceContainer,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image(
+                    image: CachedImageProvider(comment.avatar!),
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                  ),
+                ).paddingRight(8),
+              Text(comment.userName, style: ts.bold),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Expanded(
+          //   child: RichCommentContent(text: comment.content).fixWidth(324),
+          // ),
+          const SizedBox(height: 4),
+          if (comment.time != null)
+            Text(comment.time!, style: ts.s12).toAlign(Alignment.centerLeft),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnimePageLoadingPlaceHolder extends StatelessWidget {
+  const _AnimePageLoadingPlaceHolder({
+    this.cover,
+    this.title,
+    required this.sourceKey,
+    required this.aid,
+  });
+
+  final String? cover;
+
+  final String? title;
+
+  final String sourceKey;
+
+  final String aid;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget buildContainer(double? width, double? height,
+        {Color? color, double? radius}) {
+      return Container(
+        height: height,
+        width: width,
+        decoration: BoxDecoration(
+          color: color ?? context.colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(radius ?? 4),
+        ),
+      );
+    }
+
+    return Shimmer(
+      color: context.isDarkMode ? Colors.grey.shade700 : Colors.white,
+      child: Column(
+        children: [
+          Appbar(title: Text(""), backgroundColor: context.colorScheme.surface),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(width: 16),
+              buildImage(context),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (title != null)
+                      Text(title ?? "", style: ts.s18)
+                    else
+                      buildContainer(200, 25),
+                    const SizedBox(height: 8),
+                    buildContainer(80, 20),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (context.width < changePoint)
+            Row(
+              children: [
+                Expanded(
+                  child: buildContainer(null, 36, radius: 18),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: buildContainer(null, 36, radius: 18),
                 ),
               ],
+            ).paddingHorizontal(16),
+          const Divider(),
+          const SizedBox(height: 8),
+          Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+            ).fixHeight(24).fixWidth(24),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget buildImage(BuildContext context) {
+    Widget child;
+    if (cover != null) {
+      child = AnimatedImage(
+        image: CachedImageProvider(
+          cover!,
+          sourceKey: sourceKey,
+          aid: aid,
+        ),
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } else {
+      child = const SizedBox();
+    }
+
+    return Hero(
+      tag: "cover$aid$sourceKey",
+      child: Container(
+        decoration: BoxDecoration(
+          color: context.colorScheme.primaryContainer,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: context.colorScheme.outlineVariant,
+              blurRadius: 1,
+              offset: const Offset(0, 1),
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  if (widget.havePlatformFavorite) platform,
-                  local,
-                ],
-              ),
-            ),
-            SizedBox(
-              height: 60,
-              child: Center(
-                child: button,
-              ),
-            ),
-            SizedBox(
-              height: MediaQuery.of(context).padding.bottom,
-            )
           ],
-        ));
+        ),
+        height: 144,
+        width: 144 * 0.72,
+        clipBehavior: Clip.antiAlias,
+        child: child,
+      ),
+    );
   }
 }

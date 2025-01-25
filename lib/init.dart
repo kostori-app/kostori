@@ -1,216 +1,54 @@
-import 'dart:io' as io;
-
-import 'package:app_links/app_links.dart';
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:kostori/tools/app_links.dart';
-import 'package:kostori/tools/cache_auto_clear.dart';
-import 'package:kostori/tools/io_extensions.dart';
-import 'package:kostori/tools/io_tools.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:workmanager/workmanager.dart';
-import 'anime_source/anime_source.dart';
-import 'base.dart';
-
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_saf/flutter_saf.dart';
+import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/pages/bangumi/bangumi.dart';
+import 'package:kostori/utils/app_links.dart';
+import 'package:kostori/utils/tag_translation.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:rhttp/rhttp.dart';
+import 'foundation/anime_source/anime_source.dart';
 import 'foundation/app.dart';
+import 'foundation/appdata.dart';
 import 'foundation/cache_manager.dart';
+import 'foundation/favorites.dart';
 import 'foundation/history.dart';
 import 'foundation/js_engine.dart';
-import 'foundation/local_favorites.dart';
+import 'foundation/local.dart';
 import 'foundation/log.dart';
 import 'network/cookie_jar.dart';
-import 'network/http_proxy.dart';
+
+extension _FutureInit<T> on Future<T> {
+  /// Prevent unhandled exception
+  ///
+  /// A unhandled exception occurred in init() will cause the app to crash.
+  Future<void> wait() async {
+    try {
+      await this;
+    } catch (e, s) {
+      Log.error("init", "$e\n$s");
+    }
+  }
+}
 
 Future<void> init() async {
-  try {
-    await App.init();
-    io.File? logFile = io.File("${App.dataPath}/log.txt");
-    if (App.isAndroid) {
-      var externalDirectory = await getExternalStorageDirectory();
-      if (externalDirectory != null) {
-        logFile = io.File("${externalDirectory.path}/log.txt");
-      }
-    }
-    if (App.isIOS) {
-      logFile = null;
-    }
-    if (logFile?.existsSync() ?? false) {
-      await logFile?.delete();
-    }
-    LogManager.logFile = logFile;
-    LogManager.addLog(LogLevel.info, "App Status", "Start initialization.");
-    await appdata.readData();
-    SingleInstanceCookieJar("${App.dataPath}/cookies.db");
-    HttpProxyServer.createConfigFile();
-    if (appdata.settings[58] == "1") {
-      HttpProxyServer.startServer();
-    }
-    startClearCache();
-    if (App.isAndroid) {
-      final appLinks = AppLinks();
-      appLinks.allUriLinkStream.listen((uri) {
-        handleAppLinks(uri);
-      });
-    }
-    // if (App.isMobile) {
-    //   Workmanager().initialize(
-    //     onStart,
-    //   );
-    // }
-    await checkDownloadPath();
-    await _checkOldData();
-
-    await JsEngine().init();
-
-    await AnimeSource.init();
-
-    await Future.wait([
-      // downloadManager.init(),
-      // NhentaiNetwork().init(),
-      // JmNetwork().init(),
-      LocalFavoritesManager().init(),
-      HistoryManager().init(),
-      // AppTranslation.init(),
-    ]);
-    CacheManager().setLimitSize(appdata.appSettings.cacheLimit);
-  } catch (e, s) {
-    LogManager.addLog(
-        LogLevel.error, "Init", "App initialization failed!\n$e$s");
+  await Rhttp.init();
+  await SAFTaskWorker().init().wait();
+  await AppTranslation.init().wait();
+  await appdata.init().wait();
+  await App.init().wait();
+  await HistoryManager().init().wait();
+  await BangumiManager().init().wait();
+  await TagsTranslation.readData().wait();
+  await LocalFavoritesManager().init().wait();
+  SingleInstanceCookieJar("${App.dataPath}/cookie.db");
+  await JsEngine().init().wait();
+  await AnimeSource.init().wait();
+  await LocalManager().init().wait();
+  CacheManager().setLimitSize(appdata.settings['cacheSize']);
+  if (App.isAndroid) {
+    handleLinks();
   }
+  FlutterError.onError = (details) {
+    Log.error("Unhandled Exception", "${details.exception}\n${details.stack}");
+  };
 }
-
-Future<void> _checkOldData() async {
-  try {
-    if (int.parse(appdata.settings[17]) >= 4) {
-      appdata.settings[17] = '0';
-    }
-    if (int.parse(appdata.settings[40]) > 40) {
-      appdata.settings[40] = '40';
-    }
-    appdata.blockingKeyword.removeWhere((value) => value.isEmpty);
-
-    if (io.Directory("${App.dataPath}/anime_source/cookies/").existsSync() ||
-        io.Directory("${App.dataPath}/eh_cookies").existsSync() ||
-        io.Directory("${App.dataPath}/anime_source/cookies").existsSync()) {
-      // cookies, old version use package cookie_jar
-      final cookieJars = [
-        PersistCookieJar(storage: FileStorage("${App.dataPath}/cookies")),
-        PersistCookieJar(storage: FileStorage("${App.dataPath}/eh_cookies")),
-        PersistCookieJar(
-            storage: FileStorage("${App.dataPath}/anime_source/cookies/"))
-      ];
-      var cookies = <io.Cookie>[];
-      for (var cookie in (await cookieJars[0]
-          .loadForRequest(Uri.parse("https://nhentai.net")))) {
-        cookie.domain ??= ".nhentai.net";
-        cookies.add(cookie);
-      }
-      for (var cookie in (await cookieJars[1]
-          .loadForRequest(Uri.parse("https://e-hentai.org")))) {
-        cookie.domain ??= ".e-hentai.org";
-        cookies.add(cookie);
-      }
-      for (var cookie in (await cookieJars[1]
-          .loadForRequest(Uri.parse("https://exhentai.org")))) {
-        cookie.domain ??= ".exhentai.org";
-        cookies.add(cookie);
-      }
-      try {
-        for (var file in io.Directory("${App.dataPath}/anime_source/cookies/")
-            .listSync()) {
-          var domain = file.path.split("/").last;
-          if (domain == '.domains' || domain == '.index') {
-            continue;
-          }
-          if (domain.startsWith('.')) {
-            domain = domain.substring(1);
-          }
-          for (var cookie in (await cookieJars[2]
-              .loadForRequest(Uri.parse("https://$domain")))) {
-            cookie.domain ??= ".$domain";
-            cookies.add(cookie);
-          }
-        }
-      } finally {}
-      if (io.Directory("${App.dataPath}/cookies").existsSync()) {
-        io.Directory("${App.dataPath}/cookies").deleteSync(recursive: true);
-      }
-      if (io.Directory("${App.dataPath}/eh_cookies").existsSync()) {
-        io.Directory("${App.dataPath}/eh_cookies").deleteSync(recursive: true);
-      }
-      if (io.Directory("${App.dataPath}/anime_source/cookies").existsSync()) {
-        io.Directory("${App.dataPath}/anime_source/cookies")
-            .deleteSync(recursive: true);
-      }
-    }
-
-    if (io.File("${App.dataPath}/cache.json").existsSync()) {
-      io.File("${App.dataPath}/cache.json").deleteIgnoreError();
-    }
-    if (io.Directory("${App.cachePath}/imageCache").existsSync()) {
-      io.Directory("${App.cachePath}/imageCache")
-          .deleteIgnoreError(recursive: true);
-    }
-    if (io.Directory("${App.cachePath}/cachedNetwork").existsSync()) {
-      io.Directory("${App.cachePath}/cachedNetwork")
-          .deleteIgnoreError(recursive: true);
-    }
-    // await _checkAccountData();
-  } catch (e, s) {
-    LogManager.addLog(LogLevel.error, "Init", "Check old data failed!\n$e$s");
-  }
-}
-
-// Future<void> _checkAccountData() async {
-//   var s = await SharedPreferences.getInstance();
-//   if (s.getString('picacgAccount') != null) {
-//     var account = s.getString('picacgAccount');
-//     var pwd = s.getString('picacgPassword');
-//     var token = s.getString('token');
-//     picacg.data['account'] = [account, pwd];
-//     picacg.data['token'] = token;
-//     picacg.data['user'] = Profile(
-//       s.getString("userId") ?? "",
-//       s.getString("userAvatar") ?? '',
-//       s.getString("userEmail") ?? "",
-//       s.getInt("userExp") ?? 0,
-//       s.getInt("userLevel") ?? 0,
-//       s.getString("userName") ?? "",
-//       s.getString("userTitle") ?? "",
-//       false,
-//       '',
-//       '',
-//     ).toJson();
-//     picacg.data['appChannel'] = s.getString("appChannel") ?? "3";
-//     picacg.data['imageQuality'] = s.getString('image') ?? "original";
-//     await picacg.saveData();
-//     await s.remove('picacgAccount');
-//   }
-//   if(s.getString("jmName") != null) {
-//     var account = s.getString('jmName');
-//     var pwd = s.getString('jmPwd');
-//     jm.data['account'] = [account, pwd];
-//     jm.data['name'] = account;
-//     await s.remove("jmName");
-//     await jm.saveData();
-//   }
-//   if(s.getString("ehAccount") != null) {
-//     ehentai.data['account'] = 'ok';
-//     ehentai.data['name'] = s.getString("ehAccount")!;
-//     await s.remove("ehAccount");
-//     await ehentai.saveData();
-//   }
-//   if(s.getString('htName') != null) {
-//     var account = s.getString('htName');
-//     var pwd = s.getString('htPwd');
-//     htManga.data['account'] = [account, pwd];
-//     htManga.data['name'] = account;
-//     await s.remove('htName');
-//     await htManga.saveData();
-//   }
-//   NhentaiNetwork().init();
-//   if(NhentaiNetwork().logged) {
-//     nhentai.data['account'] = 'ok';
-//     await nhentai.saveData();
-//   }
-// }

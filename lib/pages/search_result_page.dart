@@ -1,398 +1,189 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/state_controller.dart';
+import 'package:kostori/pages/search_page.dart';
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/tag_translation.dart';
+import 'package:kostori/utils/translations.dart';
 
-import '../anime_source/anime_source.dart';
-import '../base.dart';
-import '../components/components.dart';
-import '../network/base_anime.dart';
-import '../network/res.dart';
-
-class _SearchPageAnimeList extends AnimesPage<BaseAnime> {
-  const _SearchPageAnimeList({
-    super.key,
-    required this.keyword,
-    required this.options,
-    required this.header,
-    required this.sourceKey,
-  });
-
-  final String keyword;
-
-  final List<String> options;
-
-  @override
-  final String sourceKey;
-
-  @override
-  final Widget header;
-
-  @override
-  Future<Res<List<BaseAnime>>> getAnimes(int i) async {
-    var loader = AnimeSource.find(sourceKey)!.searchPageData!.loadPage!;
-    return await loader(keyword, i, options);
-  }
-
-  @override
-  String? get tag => "$sourceKey search page with $keyword";
-
-  @override
-  String? get title => null;
-}
-
-class SearchResultPage extends StatelessWidget {
+class SearchResultPage extends StatefulWidget {
   const SearchResultPage({
     super.key,
-    required this.keyword,
-    this.options = const [],
+    required this.text,
     required this.sourceKey,
+    this.options,
   });
 
-  final String keyword;
-
-  final List<String> options;
+  final String text;
 
   final String sourceKey;
 
-  @override
-  Widget build(BuildContext context) {
-    var animeSource = AnimeSource.find(sourceKey)!;
-    var options = this.options;
-    if (animeSource.searchPageData?.searchOptions != null) {
-      var searchOptions = animeSource.searchPageData!.searchOptions!;
-      if (searchOptions.length != options.length) {
-        options = searchOptions.map((e) => e.defaultValue).toList();
-      }
-    }
-    if (animeSource.searchPageData?.overrideSearchResultBuilder != null) {
-      return animeSource.searchPageData!.overrideSearchResultBuilder!(
-        keyword,
-        options,
-      );
-    } else {
-      return _SearchResultPage(
-        keyword: keyword,
-        options: options,
-        sourceKey: sourceKey,
-      );
-    }
-  }
-}
-
-class _SearchResultPage extends StatefulWidget {
-  const _SearchResultPage({
-    required this.keyword,
-    required this.options,
-    required this.sourceKey,
-  });
-
-  final String keyword;
-
-  final List<String> options;
-
-  final String sourceKey;
+  final List<String>? options;
 
   @override
-  State<_SearchResultPage> createState() => _SearchResultPageState();
+  State<SearchResultPage> createState() => _SearchResultPageState();
 }
 
-class _SearchResultPageState extends State<_SearchResultPage> {
-  var controller = TextEditingController();
-  bool _showFab = true;
-  late String keyword = widget.keyword;
+class _SearchResultPageState extends State<SearchResultPage> {
+  late SearchBarController controller;
+
+  late String sourceKey;
+
+  late List<String> options;
+
+  late String text;
 
   OverlayEntry? get suggestionOverlay => suggestionsController.entry;
-  late _SuggestionsController suggestionsController;
-  late var sourceKey = widget.sourceKey;
-  late var options = widget.options;
 
-  @override
-  void initState() {
-    controller.text = keyword.trim();
-    if (!keyword.contains('language') &&
-        AnimeSource.find(sourceKey)?.searchPageData?.enableLanguageFilter ==
-            true) {
-      var lang = int.tryParse(appdata.settings[69]) ?? 0;
-      if (lang != 0) {
-        keyword += " language:${["chinese", "english", "japanese"][lang - 1]}";
+  late _SuggestionsController suggestionsController;
+
+  void search([String? text]) {
+    if (text != null) {
+      if (suggestionsController.entry != null) {
+        suggestionsController.remove();
       }
+      setState(() {
+        this.text = text;
+      });
+      appdata.addSearchHistory(text);
+      controller.currentText = text;
     }
-    suggestionsController = _SuggestionsController(controller);
-    super.initState();
+  }
+
+  void onChanged(String s) {
+    if (!AnimeSource.find(sourceKey)!.enableTagsSuggestions) {
+      return;
+    }
+    suggestionsController.findSuggestions();
+    if (suggestionOverlay != null) {
+      if (suggestionsController.suggestions.isEmpty) {
+        suggestionsController.remove();
+      } else {
+        suggestionsController.updateWidget();
+      }
+    } else if (suggestionsController.suggestions.isNotEmpty) {
+      suggestionsController.entry = OverlayEntry(
+        builder: (context) {
+          return Positioned(
+            top: context.padding.top + 56,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Material(
+              child: _Suggestions(
+                controller: suggestionsController,
+              ),
+            ),
+          );
+        },
+      );
+      Overlay.of(context).insert(suggestionOverlay!);
+    }
   }
 
   @override
   void dispose() {
-    if (suggestionOverlay != null) {
+    Future.microtask(() {
       suggestionsController.remove();
-    }
+    });
     super.dispose();
   }
 
-  void onChanged(String s) {
-    // suggestionsController.findSuggestions();
-    // if (suggestionOverlay != null) {
-    //   if (suggestionsController.suggestions.isEmpty) {
-    //     suggestionsController.remove();
-    //   } else {
-    //     suggestionsController.updateWidget();
-    //   }
-    // } else if (suggestionsController.suggestions.isNotEmpty) {
-    //   suggestionsController.entry = OverlayEntry(
-    //     builder: (context) {
-    //       return Positioned(
-    //         top: context.padding.top + 56 + 16,
-    //         left: 0,
-    //         right: 0,
-    //         bottom: 0,
-    //         child: Material(
-    //           child: _Suggestions(
-    //             controller: suggestionsController,
-    //           ),
-    //         ),
-    //       );
-    //     },
-    //   );
-    //   Overlay.of(context).insert(suggestionOverlay!);
-    // }
+  @override
+  void initState() {
+    controller = SearchBarController(
+      currentText: widget.text,
+      onSearch: search,
+    );
+    sourceKey = widget.sourceKey;
+    options = widget.options ?? const [];
+    validateOptions();
+    text = widget.text;
+    appdata.addSearchHistory(text);
+    suggestionsController = _SuggestionsController(controller);
+    super.initState();
   }
 
-  void update() {
-    if (controller.text != keyword) {
-      setState(() {
-        keyword = controller.text;
-      });
+  void validateOptions() {
+    var source = AnimeSource.find(sourceKey);
+    if (source == null) {
+      return;
+    }
+    var searchOptions = source.searchPageData!.searchOptions;
+    if (searchOptions == null) {
+      return;
+    }
+    if (options.length != searchOptions.length) {
+      options = searchOptions.map((e) => e.defaultValue).toList();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget trailing;
-    if (context.width < 400) {
-      trailing = Button.icon(
-        icon: const Icon(Icons.more_horiz),
-        onPressed: more,
-      );
-    } else {
-      trailing = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Button.icon(
-            icon: const Icon(Icons.dataset_outlined),
-            onPressed: changeSource,
-          ),
-          const SizedBox(
-            width: 4,
-          ),
-          Button.icon(
-            icon: const Icon(Icons.tune),
-            onPressed: showSearchOptions,
-          ),
-        ],
-      );
-    }
+    var source = AnimeSource.find(sourceKey);
+    return AnimeList(
+      key: Key(text + options.toString() + sourceKey),
+      errorLeading: AppSearchBar(
+        controller: controller,
+        action: buildAction(),
+      ),
+      leadingSliver: SliverSearchBar(
+        controller: controller,
+        onChanged: onChanged,
+        action: buildAction(),
+      ),
+      loadPage: source!.searchPageData!.loadPage == null
+          ? null
+          : (i) {
+              return source.searchPageData!.loadPage!(
+                text,
+                i,
+                options,
+              );
+            },
+      loadNext: source.searchPageData!.loadNext == null
+          ? null
+          : (i) {
+              return source.searchPageData!.loadNext!(
+                text,
+                i,
+                options,
+              );
+            },
+    );
+  }
 
-    return Scaffold(
-      floatingActionButton: _showFab
-          ? FloatingActionButton(
-              child: const Icon(Icons.search),
-              onPressed: () {
-                var s = controller.text;
-                setState(() {
-                  keyword = s;
-                });
-              },
-            )
-          : null,
-      body: NotificationListener<ScrollUpdateNotification>(
-        onNotification: (notification) {
-          if (suggestionsController.entry != null) {
+  Widget buildAction() {
+    return Tooltip(
+      message: "Settings".tl,
+      child: IconButton(
+        icon: const Icon(Icons.tune),
+        onPressed: () async {
+          if (suggestionOverlay != null) {
             suggestionsController.remove();
           }
-          final ScrollDirection direction = notification.scrollDelta! < 0
-              ? ScrollDirection.forward
-              : ScrollDirection.reverse;
-          var showFab = _showFab;
-          if (direction == ScrollDirection.reverse) {
-            _showFab = false;
-          } else if (direction == ScrollDirection.forward) {
-            _showFab = true;
-          }
-          if (_showFab == showFab) return true;
-          setState(() {});
-          return false;
-        },
-        child: _SearchPageAnimeList(
-          keyword: keyword,
-          sourceKey: sourceKey,
-          key: Key(keyword + options.toString() + sourceKey),
-          header: SliverPersistentHeader(
-            pinned: _showFab && SmoothScrollProvider.isMouseScroll,
-            floating: !SmoothScrollProvider.isMouseScroll,
-            delegate: _SliverAppBarDelegate(
-              minHeight: 60,
-              maxHeight: 60,
-              child: FloatingSearchBar(
-                onSearch: (s) {
-                  if (s == keyword) return;
-                  setState(() {
-                    keyword = s;
-                  });
-                },
-                controller: controller,
-                onChanged: onChanged,
-                trailing: trailing,
-              ),
-            ),
-          ),
-          options: options,
-        ),
-      ),
-    );
-  }
 
-  void more() {
-    showMenu(
-      context: context,
-      elevation: 2,
-      color: context.colorScheme.surface,
-      position: RelativeRect.fromLTRB(
-        MediaQuery.of(context).size.width - 48,
-        56,
-        0,
-        0,
-      ),
-      items: [
-        PopupMenuItem(
-          value: 0,
-          child: Text("切换源"),
-        ),
-        PopupMenuItem(
-          value: 1,
-          child: Text("搜索选项"),
-        ),
-      ],
-    ).then((value) {
-      if (value == 0) {
-        changeSource();
-      } else if (value == 1) {
-        showSearchOptions();
-      }
-    });
-  }
-
-  void changeSource() {
-    var sources = AnimeSource.sources.where((e) => e.searchPageData != null);
-    String? sourceKey = this.sourceKey;
-    showDialog(
-      useSafeArea: false,
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(builder: (context, setState) {
-          return ContentDialog(
-            title: "切换源",
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var source in sources)
-                  RadioListTile<String>(
-                    title: Text(source.name),
-                    value: source.key,
-                    groupValue: sourceKey,
-                    onChanged: (value) {
-                      setState(() {
-                        sourceKey = value;
-                      });
-                    },
-                  )
-              ],
-            ),
-            actions: [
-              Button.filled(
-                child: Text("确认"),
-                onPressed: () {
-                  if (sourceKey != null) {
-                    context.pop();
-                    var searchData =
-                        AnimeSource.find(sourceKey!)!.searchPageData!;
-                    options = (searchData.searchOptions ?? [])
-                        .map((e) => e.defaultValue)
-                        .toList();
-                    if (searchData.overrideSearchResultBuilder != null) {
-                      this.context.off(() {
-                        return SearchResultPage(
-                          keyword: keyword,
-                          options: options,
-                          sourceKey: sourceKey!,
-                        );
-                      });
-                    } else {
-                      this.setState(() {
-                        this.sourceKey = sourceKey!;
-                      });
-                    }
-                  }
-                },
-              )
-            ],
+          await showDialog(
+            context: context,
+            useRootNavigator: true,
+            builder: (context) {
+              return _SearchSettingsDialog(state: this);
+            },
           );
-        });
-      },
-    );
-  }
-
-  void showSearchOptions() {
-    showDialog(
-      context: context,
-      useSafeArea: false,
-      builder: (context) => _SearchOptions(
-        current: options,
-        sourceKey: sourceKey,
-        onChanged: (options) {
-          setState(() {
-            this.options = options;
-          });
+          setState(() {});
         },
       ),
     );
-  }
-}
-
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(
-      {required this.child, required this.maxHeight, required this.minHeight});
-
-  final double minHeight;
-  final double maxHeight;
-  final Widget child;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return SizedBox.expand(
-      child: child,
-    );
-  }
-
-  @override
-  double get maxExtent => minHeight;
-
-  @override
-  double get minExtent => max(maxHeight, minHeight);
-
-  @override
-  bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
-    return maxHeight != oldDelegate.maxExtent ||
-        minHeight != oldDelegate.minExtent;
   }
 }
 
 class _SuggestionsController {
   _SuggestionsState? _state;
 
-  final TextEditingController controller;
+  final SearchBarController controller;
 
   OverlayEntry? entry;
 
@@ -405,51 +196,51 @@ class _SuggestionsController {
     entry = null;
   }
 
-  // var suggestions = <Pair<String, TranslationType>>[];
+  var suggestions = <Pair<String, TranslationType>>[];
 
-  // void findSuggestions() {
-  //   var text = controller.text.split(" ").last;
-  //   var suggestions = this.suggestions;
-  //
-  //   suggestions.clear();
-  //
-  //   bool check(String text, String key, String value) {
-  //     if (text.removeAllBlank == "") {
-  //       return false;
-  //     }
-  //     if (key.length >= text.length && key.substring(0, text.length) == text ||
-  //         (key.contains(" ") &&
-  //             key.split(" ").last.length >= text.length &&
-  //             key.split(" ").last.substring(0, text.length) == text)) {
-  //       return true;
-  //     } else if (value.length >= text.length && value.contains(text)) {
-  //       return true;
-  //     }
-  //     return false;
-  //   }
-  //
-  //   void find(Map<String, String> map, TranslationType type) {
-  //     for (var element in map.entries) {
-  //       if (suggestions.length > 200) {
-  //         break;
-  //       }
-  //       if (check(text, element.key, element.value)) {
-  //         suggestions.add(Pair(element.key, type));
-  //       }
-  //     }
-  //   }
-  //
-  //   find(TagsTranslation.femaleTags, TranslationType.female);
-  //   find(TagsTranslation.maleTags, TranslationType.male);
-  //   find(TagsTranslation.parodyTags, TranslationType.parody);
-  //   find(TagsTranslation.characterTranslations, TranslationType.character);
-  //   find(TagsTranslation.otherTags, TranslationType.other);
-  //   find(TagsTranslation.mixedTags, TranslationType.mixed);
-  //   find(TagsTranslation.languageTranslations, TranslationType.language);
-  //   find(TagsTranslation.artistTags, TranslationType.artist);
-  //   find(TagsTranslation.groupTags, TranslationType.group);
-  //   find(TagsTranslation.cosplayerTags, TranslationType.cosplayer);
-  // }
+  void findSuggestions() {
+    var text = controller.text.split(" ").last;
+    var suggestions = this.suggestions;
+
+    suggestions.clear();
+
+    bool check(String text, String key, String value) {
+      if (text.removeAllBlank == "") {
+        return false;
+      }
+      if (key.length >= text.length && key.substring(0, text.length) == text ||
+          (key.contains(" ") &&
+              key.split(" ").last.length >= text.length &&
+              key.split(" ").last.substring(0, text.length) == text)) {
+        return true;
+      } else if (value.length >= text.length && value.contains(text)) {
+        return true;
+      }
+      return false;
+    }
+
+    void find(Map<String, String> map, TranslationType type) {
+      for (var element in map.entries) {
+        if (suggestions.length > 200) {
+          break;
+        }
+        if (check(text, element.key, element.value)) {
+          suggestions.add(Pair(element.key, type));
+        }
+      }
+    }
+
+    find(TagsTranslation.femaleTags, TranslationType.female);
+    find(TagsTranslation.maleTags, TranslationType.male);
+    find(TagsTranslation.parodyTags, TranslationType.parody);
+    find(TagsTranslation.characterTranslations, TranslationType.character);
+    find(TagsTranslation.otherTags, TranslationType.other);
+    find(TagsTranslation.mixedTags, TranslationType.mixed);
+    find(TagsTranslation.languageTranslations, TranslationType.language);
+    find(TagsTranslation.artistTags, TranslationType.artist);
+    find(TagsTranslation.groupTags, TranslationType.group);
+    find(TagsTranslation.cosplayerTags, TranslationType.cosplayer);
+  }
 
   _SuggestionsController(this.controller);
 }
@@ -489,90 +280,75 @@ class _SuggestionsState extends State<_Suggestions> {
   }
 
   Widget buildSuggestions(BuildContext context) {
-    // bool showMethod = MediaQuery.of(context).size.width < 600;
-    // bool showTranslation = App.locale.languageCode == "zh";
+    bool showMethod = MediaQuery.of(context).size.width < 600;
+    bool showTranslation = App.locale.languageCode == "zh";
 
-    // Widget buildItem(Pair<String, TranslationType> value) {
-    //   var subTitle = TagsTranslation.translationTagWithNamespace(
-    //       value.left, value.right.name);
-    //   return ListTile(
-    //     title: Row(
-    //       mainAxisSize: MainAxisSize.min,
-    //       children: [
-    //         Expanded(
-    //           child: Text(
-    //             value.left,
-    //             maxLines: 2,
-    //           ),
-    //         ),
-    //         if (!showMethod)
-    //           const SizedBox(
-    //             width: 12,
-    //           ),
-    //         if (!showMethod && showTranslation)
-    //           Text(
-    //             subTitle,
-    //             style: TextStyle(
-    //                 fontSize: 14, color: Theme.of(context).colorScheme.outline),
-    //           )
-    //       ],
-    //     ),
-    //     subtitle: (showMethod && showTranslation) ? Text(subTitle) : null,
-    //     trailing: Text(
-    //       value.right.name,
-    //       style: const TextStyle(fontSize: 13),
-    //     ),
-    //     onTap: () => onSelected(value.left, value.right),
-    //   );
-    // }
+    Widget buildItem(Pair<String, TranslationType> value) {
+      var subTitle = TagsTranslation.translationTagWithNamespace(
+          value.left, value.right.name);
+      return ListTile(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: Text(
+                value.left,
+                maxLines: 2,
+              ),
+            ),
+            if (!showMethod)
+              const SizedBox(
+                width: 12,
+              ),
+            if (!showMethod && showTranslation)
+              Text(
+                subTitle,
+                style: TextStyle(
+                    fontSize: 14, color: Theme.of(context).colorScheme.outline),
+              )
+          ],
+        ),
+        subtitle: (showMethod && showTranslation) ? Text(subTitle) : null,
+        trailing: Text(
+          value.right.name,
+          style: const TextStyle(fontSize: 13),
+        ),
+        onTap: () => onSelected(value.left, value.right),
+      );
+    }
 
     return Column(
       children: [
-        SizedBox(
-          height: 32,
-          child: Row(
-            children: [
-              const SizedBox(
-                width: 32,
-              ),
-              Text("建议"),
-              const Spacer(),
-              InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  // widget.controller.suggestions.clear();
-                  widget.controller.remove();
-                },
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(
-                    Icons.close,
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 36,
-              ),
-            ],
+        ListTile(
+          leading: const Icon(Icons.hub_outlined),
+          title: Text("Suggestions".tl),
+          trailing: Tooltip(
+            message: "Clear".tl,
+            child: IconButton(
+              icon: const Icon(Icons.clear_all),
+              onPressed: () {
+                widget.controller.suggestions.clear();
+                widget.controller.remove();
+              },
+            ),
           ),
         ),
-        // Expanded(
-        //   // child: ListView.builder(
-        //   //   padding: const EdgeInsets.symmetric(horizontal: 16),
-        //   //   // itemCount: widget.controller.suggestions.length,
-        //   //   itemBuilder: (context, index) =>
-        //   //       // buildItem(widget.controller.suggestions[index]),
-        //   // ),
-        // )
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: widget.controller.suggestions.length,
+            itemBuilder: (context, index) =>
+                buildItem(widget.controller.suggestions[index]),
+          ),
+        )
       ],
     );
   }
 
   bool check(String text, String key, String value) {
-    // if (text.removeAllBlank == "") {
-    //   return false;
-    // }
+    if (text.removeAllBlank == "") {
+      return false;
+    }
     if (key.length >= text.length && key.substring(0, text.length) == text ||
         (key.contains(" ") &&
             key.split(" ").last.length >= text.length &&
@@ -584,126 +360,136 @@ class _SuggestionsState extends State<_Suggestions> {
     return false;
   }
 
-  // void onSelected(String text, TranslationType? type) {
-  //   var controller = widget.controller.controller;
-  //   var words = controller.text.split(" ");
-  //   if (words.length >= 2 &&
-  //       check("${words[words.length - 2]} ${words[words.length - 1]}", text,
-  //           text.translateTagsToCN)) {
-  //     controller.text = controller.text.replaceLast(
-  //         "${words[words.length - 2]} ${words[words.length - 1]}", "");
-  //   } else {
-  //     controller.text =
-  //         controller.text.replaceLast(words[words.length - 1], "");
-  //   }
-  //   if (type != null) {
-  //     controller.text += "${type.name}:$text ";
-  //   } else {
-  //     controller.text += "$text ";
-  //   }
-  //   widget.controller.suggestions.clear();
-  //   widget.controller.remove();
-  // }
+  void onSelected(String text, TranslationType? type) {
+    var controller = widget.controller.controller;
+    var words = controller.text.split(" ");
+    if (words.length >= 2 &&
+        check("${words[words.length - 2]} ${words[words.length - 1]}", text,
+            text.translateTagsToCN)) {
+      controller.text = controller.text.replaceLast(
+          "${words[words.length - 2]} ${words[words.length - 1]}", "");
+    } else {
+      controller.text =
+          controller.text.replaceLast(words[words.length - 1], "");
+    }
+    if (text.contains(' ')) {
+      text = "'$text'";
+    }
+    if (type != null) {
+      controller.text += "${type.name}:$text ";
+    } else {
+      controller.text += "$text ";
+    }
+    widget.controller.suggestions.clear();
+    widget.controller.remove();
+  }
 }
 
-class _SearchOptions extends StatefulWidget {
-  const _SearchOptions({
-    required this.current,
-    required this.sourceKey,
-    required this.onChanged,
-  });
+class _SearchSettingsDialog extends StatefulWidget {
+  const _SearchSettingsDialog({required this.state});
 
-  final List<String> current;
-
-  final String sourceKey;
-
-  final void Function(List<String>) onChanged;
+  final _SearchResultPageState state;
 
   @override
-  State<_SearchOptions> createState() => _SearchOptionsState();
+  State<_SearchSettingsDialog> createState() => _SearchSettingsDialogState();
 }
 
-class _SearchOptionsState extends State<_SearchOptions> {
-  late SearchPageData data;
+class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
+  late String searchTarget;
 
-  var options = <String>[];
+  late List<String> options;
 
   @override
   void initState() {
-    data = AnimeSource.find(widget.sourceKey)!.searchPageData!;
-    options = widget.current;
-    if (data.searchOptions != null &&
-        options.length != data.searchOptions!.length) {
-      options = data.searchOptions!.map((e) => e.defaultValue).toList();
-    }
+    searchTarget = widget.state.sourceKey;
+    options = widget.state.options;
     super.initState();
+  }
+
+  void onChanged() {
+    widget.state.sourceKey = searchTarget;
+    widget.state.options = options;
   }
 
   @override
   Widget build(BuildContext context) {
     return ContentDialog(
-      title: "搜索选项",
-      content: buildSearchOptions(context),
-      actions: [
-        Button.filled(
-          child: Text("确认"),
-          onPressed: () {
-            context.pop();
-            widget.onChanged(options);
-          },
-        )
-      ],
+      title: "Settings".tl,
+      content: Column(
+        children: [
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            title: Text("Search in".tl),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: AnimeSource.all().map((e) {
+              return OptionChip(
+                text: e.name.tl,
+                isSelected: searchTarget == e.key,
+                onTap: () {
+                  setState(() {
+                    searchTarget = e.key;
+                    options.clear();
+                    final searchOptions = AnimeSource.find(searchTarget)!
+                            .searchPageData!
+                            .searchOptions ??
+                        <SearchOptions>[];
+                    options = searchOptions.map((e) => e.defaultValue).toList();
+                    onChanged();
+                  });
+                },
+              );
+            }).toList(),
+          ).fixWidth(double.infinity).paddingHorizontal(16),
+          buildSearchOptions(),
+          const SizedBox(height: 24),
+          FilledButton(
+            child: Text("Confirm".tl),
+            onPressed: () {
+              context.pop();
+            },
+          ),
+        ],
+      ).fixWidth(double.infinity),
     );
   }
 
-  Widget buildSearchOptions(BuildContext context) {
+  Widget buildSearchOptions() {
     var children = <Widget>[];
-    if (data.customOptionsBuilder != null) {
-      children.add(
-        data.customOptionsBuilder!(context, options, (options) {
-          this.options = options;
-        }),
-      );
-    } else {
-      final searchOptions = data.searchOptions ?? <SearchOptions>[];
-      for (int i = 0; i < searchOptions.length; i++) {
-        final option = searchOptions[i];
-        children.add(ListTile(
-          title: Text(option.label),
-        ));
-        children.add(Wrap(
-          runSpacing: 8,
-          spacing: 8,
-          children: option.options.entries.map((e) {
-            return InkWell(
-              onTap: () {
-                setState(() {
-                  options[i] = e.key;
-                });
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                decoration: BoxDecoration(
-                  color: options[i] == e.key
-                      ? context.colorScheme.primaryContainer
-                      : context.colorScheme.primaryContainer.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(e.value),
-                ),
-              ),
-            );
-          }).toList(),
-        ).paddingHorizontal(16));
-      }
+
+    final searchOptions =
+        AnimeSource.find(searchTarget)!.searchPageData!.searchOptions ??
+            <SearchOptions>[];
+    if (searchOptions.length != options.length) {
+      options = searchOptions.map((e) => e.defaultValue).toList();
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
-    ).paddingBottom(12);
+    if (searchOptions.isEmpty) {
+      return const SizedBox();
+    }
+    for (int i = 0; i < searchOptions.length; i++) {
+      final option = searchOptions[i];
+      children.add(SearchOptionWidget(
+        option: option,
+        value: options[i],
+        onChanged: (value) {
+          setState(() {
+            options[i] = value;
+          });
+        },
+        sourceKey: searchTarget,
+      ));
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: children,
+      ),
+    );
   }
 }

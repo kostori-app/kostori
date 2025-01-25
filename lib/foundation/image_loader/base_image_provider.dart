@@ -1,17 +1,47 @@
 import 'dart:async' show Future, StreamController, scheduleMicrotask;
-import 'dart:collection';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:ui' as ui show Codec;
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import '../cache_manager.dart';
-import '../image_manager.dart';
+import 'package:kostori/foundation/cache_manager.dart';
 
 abstract class BaseImageProvider<T extends BaseImageProvider<T>>
     extends ImageProvider<T> {
   const BaseImageProvider();
+
+  static double? _effectiveScreenWidth;
+
+  static const double _normalComicImageRatio = 0.72;
+
+  static const double _minComicImageWidth = 1920 * _normalComicImageRatio;
+
+  static TargetImageSize _getTargetSize(width, height) {
+    if (_effectiveScreenWidth == null) {
+      final screens = PlatformDispatcher.instance.displays;
+      for (var screen in screens) {
+        if (screen.size.width > screen.size.height) {
+          _effectiveScreenWidth = max(
+            _effectiveScreenWidth ?? 0,
+            screen.size.height * _normalComicImageRatio,
+          );
+        } else {
+          _effectiveScreenWidth =
+              max(_effectiveScreenWidth ?? 0, screen.size.width);
+        }
+      }
+      if (_effectiveScreenWidth! < _minComicImageWidth) {
+        _effectiveScreenWidth = _minComicImageWidth;
+      }
+    }
+    if (width > _effectiveScreenWidth!) {
+      height = (height * _effectiveScreenWidth! / width).round();
+      width = _effectiveScreenWidth!.round();
+    }
+    return TargetImageSize(width: width, height: height);
+  }
 
   @override
   ImageStreamCompleter loadImage(T key, ImageDecoderCallback decode) {
@@ -48,22 +78,12 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
 
       while (data == null && !stop) {
         try {
-          if (_cache.containsKey(key.key)) {
-            data = _cache[key.key];
-          } else {
-            data = await load(chunkEvents);
-            _checkCacheSize();
-            _cache[key.key] = data;
-            _cacheSize += data.length;
-          }
+          data = await load(chunkEvents);
         } catch (e) {
-          if (e.toString().contains("Maximum image loading limit reached")) {
+          if (e.toString().contains("Invalid Status Code: 404")) {
             rethrow;
           }
-          if (e.toString().contains("Your IP address")) {
-            rethrow;
-          }
-          if (e is BadRequestException) {
+          if (e.toString().contains("Invalid Status Code: 403")) {
             rethrow;
           }
           if (e.toString().contains("handshake")) {
@@ -89,21 +109,23 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
 
       try {
         final buffer = await ImmutableBuffer.fromUint8List(data);
-        return await decode(buffer);
+        return await decode(
+          buffer,
+          getTargetSize: enableResize ? _getTargetSize : null,
+        );
       } catch (e) {
         await CacheManager().delete(this.key);
-        Object error = e;
         if (data.length < 2 * 1024) {
           // data is too short, it's likely that the data is text, not image
           try {
             var text =
                 const Utf8Codec(allowMalformed: false).decoder.convert(data);
-            error = Exception("Expected image data, but got text: $text");
+            throw Exception("Expected image data, but got text: $text");
           } catch (e) {
             // ignore
           }
         }
-        throw error;
+        rethrow;
       }
     } catch (e) {
       scheduleMicrotask(() {
@@ -113,30 +135,6 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
     } finally {
       chunkEvents.close();
     }
-  }
-
-  static final _cache = LinkedHashMap<String, Uint8List>();
-
-  static var _cacheSize = 0;
-
-  static var _cacheSizeLimit = 50 * 1024 * 1024;
-
-  static void _checkCacheSize() {
-    while (_cacheSize > _cacheSizeLimit) {
-      var firstKey = _cache.keys.first;
-      _cacheSize -= _cache[firstKey]!.length;
-      _cache.remove(firstKey);
-    }
-  }
-
-  static void clearCache() {
-    _cache.clear();
-    _cacheSize = 0;
-  }
-
-  static void setCacheSizeLimit(int size) {
-    _cacheSizeLimit = size;
-    _checkCacheSize();
   }
 
   Future<Uint8List> load(StreamController<ImageChunkEvent> chunkEvents);
@@ -155,6 +153,8 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
   String toString() {
     return "$runtimeType($key)";
   }
+
+  bool get enableResize => false;
 }
 
 typedef FileDecoderCallback = Future<ui.Codec> Function(Uint8List);

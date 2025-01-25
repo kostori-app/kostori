@@ -1,16 +1,16 @@
 #pragma comment(lib, "winhttp.lib")
 #include "flutter_window.h"
-#include <dwmapi.h>
+#include <optional>
+#include <winhttp.h>
+#include <Windows.h>
+#include <winbase.h>
 #include <flutter/method_channel.h>
 #include <flutter/event_channel.h>
 #include <flutter/event_sink.h>
 #include <flutter/event_stream_handler_functions.h>
-#include <optional>
-#include "flutter/generated_plugin_registrant.h"
 #include <flutter/standard_method_codec.h>
-#include <winhttp.h>
-#include <Windows.h>
-#include <winbase.h>
+#include "flutter/generated_plugin_registrant.h"
+
 #define _CRT_SECURE_NO_WARNINGS
 
 std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& mouseEvents = nullptr;
@@ -46,104 +46,74 @@ FlutterWindow::FlutterWindow(const flutter::DartProject& project)
 FlutterWindow::~FlutterWindow() {}
 
 bool FlutterWindow::OnCreate() {
-    if (!Win32Window::OnCreate())
-    {
-        return false;
-    }
+  if (!Win32Window::OnCreate()) {
+    return false;
+  }
 
-    const RECT frame = GetClientArea();
+  RECT frame = GetClientArea();
 
-    // The size here must match the window dimensions to avoid unnecessary surface
-    // creation / destruction in the startup path.
-    flutter_controller_ = std::make_unique<flutter::FlutterViewController>(
-        frame.right - frame.left, frame.bottom - frame.top, project_);
-    // Ensure that basic setup of the controller was successful.
-    if (!flutter_controller_->engine() || !flutter_controller_->view()) {
-        return false;
-    }
-    RegisterPlugins(flutter_controller_->engine());
+  // The size here must match the window dimensions to avoid unnecessary surface
+  // creation / destruction in the startup path.
+  flutter_controller_ = std::make_unique<flutter::FlutterViewController>(
+      frame.right - frame.left, frame.bottom - frame.top, project_);
+  // Ensure that basic setup of the controller was successful.
+  if (!flutter_controller_->engine() || !flutter_controller_->view()) {
+    return false;
+  }
+  RegisterPlugins(flutter_controller_->engine());
 
-    //检查系统代理的MethodChannel
-    const flutter::MethodChannel<> channel(
-        flutter_controller_->engine()->messenger(), "axlmly.kostori/proxy",
-        &flutter::StandardMethodCodec::GetInstance()
-    );
-    channel.SetMethodCallHandler(
-      [](const flutter::MethodCall<>& call,const std::unique_ptr<flutter::MethodResult<>>& result) {
-          const auto res = getProxy();
-          if (res != nullptr){
-              std::string s = res;
-              result->Success(s);
+  const flutter::MethodChannel<> channel(
+      flutter_controller_->engine()->messenger(), "kostori/method_channel",
+      &flutter::StandardMethodCodec::GetInstance()
+  );
+  channel.SetMethodCallHandler(
+    [](const flutter::MethodCall<>& call,const std::unique_ptr<flutter::MethodResult<>>& result) {
+      if(call.method_name() == "getProxy"){
+        const auto res = getProxy();
+        if (res != nullptr){
+          std::string s = res;
+          result->Success(s);
           }
-          else
-              result->Success(flutter::EncodableValue("No Proxy"));
-          delete(res);
-    });
+        else
+          result->Success(flutter::EncodableValue("No Proxy"));
+        delete(res);
+      }
+  });
 
-//    监听鼠标侧键的EventChannel
-    const auto channelName = "axlmly.kostori/mouse";
-    flutter::EventChannel<> channel2(
-        flutter_controller_->engine()->messenger(), channelName,
-        &flutter::StandardMethodCodec::GetInstance()
-    );
+  flutter::EventChannel<> channel2(
+    flutter_controller_->engine()->messenger(), "kostori/mouse",
+    &flutter::StandardMethodCodec::GetInstance()
+  );
 
-    auto eventHandler = std::make_unique<
-        flutter::StreamHandlerFunctions<flutter::EncodableValue>>(
+  auto eventHandler = std::make_unique<
+    flutter::StreamHandlerFunctions<flutter::EncodableValue>>(
     [](
-        const flutter::EncodableValue* arguments,
-        std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& events){
-            mouseEvents = std::move(events);
-            return nullptr;
+      const flutter::EncodableValue* arguments,
+      std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& events){
+        mouseEvents = std::move(events);
+        return nullptr;
     },
     [](const flutter::EncodableValue* arguments)
-        -> std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> {
-            mouseEvents = nullptr;
-            return nullptr;
-    });
+      -> std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> {
+        mouseEvents = nullptr;
+        return nullptr;
+    }
+  );
 
-    channel2.SetStreamHandler(std::move(eventHandler));
+  channel2.SetStreamHandler(std::move(eventHandler));
 
-    const flutter::MethodChannel<> channel3(
-        flutter_controller_->engine()->messenger(), "kostori/title_bar",
-        &flutter::StandardMethodCodec::GetInstance()
-    );
-    channel3.SetMethodCallHandler(
-        [this](const flutter::MethodCall<>& call, const std::unique_ptr<flutter::MethodResult<>>& result) {
-            auto value = static_cast<COLORREF>(std::get<int64_t>(*call.arguments()));
-            COLORREF color = RGB(GetRValue(value), GetGValue(value), GetBValue(value));
-            DwmSetWindowAttribute(GetHandle(), DWMWA_CAPTION_COLOR,
-            &color, sizeof(color));
-            RedrawWindow(GetHandle(), NULL, 0, RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
-            result->Success();
-        });
+  SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-    const flutter::MethodChannel<> channel4(
-        flutter_controller_->engine()->messenger(), "kostori/full_screen",
-        &flutter::StandardMethodCodec::GetInstance()
-    );
-    channel4.SetMethodCallHandler(
-        [this](const flutter::MethodCall<>& call, const std::unique_ptr<flutter::MethodResult<>>& result) {
-            if (std::get<bool>(*call.arguments())) {
-                GetWindowRect(GetHandle(), &windowRect);
-                int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-                int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-                SetWindowLong(GetHandle(), GWL_STYLE, WS_POPUP);
-                SetWindowPos(GetHandle(), HWND_TOP, 0, 0, screenWidth, screenHeight, SWP_SHOWWINDOW);
-            }
-            else {
-                SetWindowLong(GetHandle(), GWL_STYLE, WS_OVERLAPPEDWINDOW);
-                SetWindowPos(GetHandle(), HWND_TOP, windowRect.left, windowRect.top, windowRect.right - windowRect.left, windowRect.bottom - windowRect.top, SWP_SHOWWINDOW);
-            }
-            result->Success();
-        });
+  flutter_controller_->engine()->SetNextFrameCallback([&]() {
+    // this->Show();
+  });
 
-    SetChildContent(flutter_controller_->view()->GetNativeWindow());
+  // Flutter can complete the first frame before the "show window" callback is
+  // registered. The following call ensures a frame is pending to ensure the
+  // window is shown. It is a no-op if the first frame hasn't completed yet.
+  flutter_controller_->ForceRedraw();
 
-    flutter_controller_->engine()->SetNextFrameCallback([&]() {
-        //this->Show();
-    });
-
-    return true;
+  return true;
 }
 
 void FlutterWindow::OnDestroy() {

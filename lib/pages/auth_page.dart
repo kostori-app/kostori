@@ -1,95 +1,71 @@
-import 'package:flutter/scheduler.dart';
-// import 'package:kostori/foundation/widget_utils.dart';
-import 'package:kostori/pages/main_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:local_auth/local_auth.dart';
 
-import '../foundation/app.dart';
-
 class AuthPage extends StatefulWidget {
-  const AuthPage({Key? key}) : super(key: key);
+  const AuthPage({super.key, this.onSuccessfulAuth});
 
-  static bool lock = false;
-
-  static bool initial = true;
+  final void Function()? onSuccessfulAuth;
 
   @override
   State<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> with WidgetsBindingObserver {
+class _AuthPageState extends State<AuthPage> {
   @override
   void initState() {
-    AuthPage.lock = true;
-    WidgetsBinding.instance.addObserver(this);
-    if (SchedulerBinding.instance.lifecycleState == AppLifecycleState.resumed) {
-      auth();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (SchedulerBinding.instance.lifecycleState !=
+          AppLifecycleState.paused) {
+        auth();
+      }
+    });
     super.initState();
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed &&
-        AuthPage.lock &&
-        mounted &&
-        !inProgress) {
-      auth();
-    }
-    super.didChangeAppLifecycleState(state);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: auth,
-      child: Scaffold(
-        body: PopScope(
-          canPop: false,
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            child: Center(
-              child: SizedBox(
-                height: 100,
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.security,
-                      size: 40,
-                      color: context.colorScheme.secondary,
-                    ),
-                    const SizedBox(
-                      height: 5,
-                    ),
-                    Text("点击完成身份验证")
-                  ],
-                ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          SystemNavigator.pop();
+        }
+      },
+      child: Material(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.security, size: 36),
+              const SizedBox(height: 16),
+              Text("Authentication Required".tl),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: auth,
+                child: Text("Continue".tl),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  bool inProgress = false;
-
   void auth() async {
-    if (inProgress) {
+    var localAuth = LocalAuthentication();
+    var canCheckBiometrics = await localAuth.canCheckBiometrics;
+    if (!canCheckBiometrics && !await localAuth.isDeviceSupported()) {
+      widget.onSuccessfulAuth?.call();
       return;
     }
-    inProgress = true;
-    var res =
-        await LocalAuthentication().authenticate(localizedReason: "需要身份验证");
-    inProgress = false;
-    if (res) {
-      AuthPage.lock = false;
-      if (AuthPage.initial) {
-        App.offAll(() => const MainPage());
-      } else {
-        App.globalBack();
-      }
+    var isAuthorized = await localAuth.authenticate(
+      localizedReason: "Please authenticate to continue".tl,
+    );
+    if (isAuthorized) {
+      widget.onSuccessfulAuth?.call();
     }
   }
 }

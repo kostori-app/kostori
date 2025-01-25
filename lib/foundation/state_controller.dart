@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:kostori/foundation/pair.dart';
 
 class SimpleController extends StateController {
-  final void Function()? refresh_;
+  final void Function()? refreshFunction;
 
-  SimpleController({this.refresh_});
+  final Map<String, dynamic> Function()? control;
+
+  SimpleController({this.refreshFunction, this.control});
 
   @override
   void refresh() {
-    (refresh_ ?? super.refresh)();
+    (refreshFunction ?? super.refresh)();
   }
+
+  Map<String, dynamic> get controlMap => control?.call() ?? {};
 }
 
 abstract class StateController {
@@ -34,8 +37,16 @@ abstract class StateController {
               element.controller is T && (tag == null || tag == element.tag))
           .controller as T;
     } catch (e) {
-      throw StateError("${T.runtimeType} with tag $tag Not Found");
+      throw StateError("$T with tag $tag Not Found");
     }
+  }
+
+  static List<T> findAll<T extends StateController>({Object? tag}) {
+    return _controllers
+        .where((element) =>
+            element.controller is T && (tag == null || tag == element.tag))
+        .map((e) => e.controller as T)
+        .toList();
   }
 
   static T? findOrNull<T extends StateController>({Object? tag}) {
@@ -64,8 +75,9 @@ abstract class StateController {
 
   static SimpleController putSimpleController(
       void Function() onUpdate, Object? tag,
-      {void Function()? refresh}) {
-    var controller = SimpleController(refresh_: refresh);
+      {void Function()? refresh, Map<String, dynamic> Function()? control}) {
+    var controller =
+        SimpleController(refreshFunction: refresh, control: control);
     controller.stateUpdaters.add(Pair(null, onUpdate));
     _controllers.add(StateControllerWrapped(controller, false, tag));
     return controller;
@@ -105,14 +117,15 @@ class StateControllerWrapped {
 }
 
 class StateBuilder<T extends StateController> extends StatefulWidget {
-  const StateBuilder(
-      {super.key,
-      this.init,
-      this.dispose,
-      this.initState,
-      this.tag,
-      required this.builder,
-      this.id});
+  const StateBuilder({
+    super.key,
+    this.init,
+    this.dispose,
+    this.initState,
+    this.tag,
+    required this.builder,
+    this.id,
+  });
 
   final T? init;
 
@@ -187,8 +200,15 @@ abstract class StateWithController<T extends StatefulWidget> extends State<T> {
   @mustCallSuper
   void initState() {
     _controller = StateController.putSimpleController(
-        () => setState(() {}), tag,
-        refresh: refresh);
+      () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+      tag,
+      refresh: refresh,
+      control: () => control,
+    );
     super.initState();
   }
 
@@ -204,4 +224,17 @@ abstract class StateWithController<T extends StatefulWidget> extends State<T> {
   }
 
   Object? get tag;
+
+  Map<String, dynamic> get control => {};
+}
+
+class Pair<M, V> {
+  M left;
+  V right;
+
+  Pair(this.left, this.right);
+
+  Pair.fromMap(Map<M, V> map, M key)
+      : left = key,
+        right = map[key] ?? (throw Exception("Pair not found"));
 }

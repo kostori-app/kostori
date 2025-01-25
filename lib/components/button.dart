@@ -24,8 +24,9 @@ class _HoverBoxState extends State<HoverBox> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-            color:
-                isHover ? Theme.of(context).colorScheme.surfaceContainer : null,
+            color: isHover
+                ? Theme.of(context).colorScheme.surfaceContainerLow
+                : null,
             borderRadius: widget.borderRadius),
         child: widget.child,
       ),
@@ -46,7 +47,6 @@ class Button extends StatefulWidget {
       this.padding,
       this.color,
       this.onPressedAt,
-      this.disabled = false,
       required this.onPressed});
 
   const Button.filled(
@@ -58,7 +58,6 @@ class Button extends StatefulWidget {
       this.padding,
       this.color,
       this.onPressedAt,
-      this.disabled = false,
       this.isLoading = false})
       : type = ButtonType.filled;
 
@@ -71,7 +70,6 @@ class Button extends StatefulWidget {
       this.padding,
       this.color,
       this.onPressedAt,
-      this.disabled = false,
       this.isLoading = false})
       : type = ButtonType.outlined;
 
@@ -84,7 +82,6 @@ class Button extends StatefulWidget {
       this.padding,
       this.color,
       this.onPressedAt,
-      this.disabled = false,
       this.isLoading = false})
       : type = ButtonType.text;
 
@@ -97,7 +94,6 @@ class Button extends StatefulWidget {
       this.padding,
       this.color,
       this.onPressedAt,
-      this.disabled = false,
       this.isLoading = false})
       : type = ButtonType.normal;
 
@@ -140,8 +136,6 @@ class Button extends StatefulWidget {
 
   final Color? color;
 
-  final bool disabled;
-
   @override
   State<Button> createState() => _ButtonState();
 }
@@ -162,7 +156,7 @@ class _ButtonState extends State<Button> {
   @override
   Widget build(BuildContext context) {
     var padding = widget.padding ??
-        const EdgeInsets.symmetric(horizontal: 24, vertical: 6);
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 4);
     var width = widget.width;
     if (width != null) {
       width = width - padding.horizontal;
@@ -171,35 +165,34 @@ class _ButtonState extends State<Button> {
     if (height != null) {
       height = height - padding.vertical;
     }
-    bool fixed = width != null || height != null;
     Widget child = IconTheme(
-        data: IconThemeData(color: textColor),
-        child: DefaultTextStyle(
-          style: TextStyle(
-            color: textColor,
-            fontSize: 16,
-          ),
-          child: isLoading
-              ? CircularProgressIndicator(
-                  color: widget.type == ButtonType.filled
-                      ? context.colorScheme.inversePrimary
-                      : context.colorScheme.primary,
-                  strokeWidth: 1.8,
-                ).fixWidth(18).fixHeight(18)
-              : widget.child,
-        ));
+      data: IconThemeData(
+        color: textColor,
+      ),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          color: textColor,
+          fontSize: 14,
+        ),
+        child: isLoading
+            ? CircularProgressIndicator(
+                color: widget.type == ButtonType.filled
+                    ? context.colorScheme.inversePrimary
+                    : context.colorScheme.primary,
+                strokeWidth: 1.8,
+              ).fixWidth(16).fixHeight(16)
+            : widget.child,
+      ),
+    );
     if (width != null || height != null) {
       child = child.toCenter();
     }
     return MouseRegion(
       onEnter: (_) => setState(() => isHover = true),
       onExit: (_) => setState(() => isHover = false),
-      cursor: !widget.disabled ? SystemMouseCursors.click : MouseCursor.defer,
+      cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-          if (widget.disabled) {
-            return;
-          }
           if (isLoading) return;
           widget.onPressed();
           if (widget.onPressedAt != null) {
@@ -211,26 +204,43 @@ class _ButtonState extends State<Button> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: padding,
+          constraints: const BoxConstraints(
+            minWidth: 76,
+          ),
           decoration: BoxDecoration(
             color: buttonColor,
             borderRadius: BorderRadius.circular(16),
+            boxShadow: (isHover &&
+                    !isLoading &&
+                    (widget.type == ButtonType.filled ||
+                        widget.type == ButtonType.normal))
+                ? [
+                    BoxShadow(
+                      color: Colors.black.toOpacity(0.1),
+                      blurRadius: 2,
+                      offset: const Offset(0, 1),
+                    )
+                  ]
+                : null,
             border: widget.type == ButtonType.outlined
                 ? Border.all(
                     color: widget.color ??
                         Theme.of(context).colorScheme.outlineVariant,
-                    width: 0.6)
+                    width: 0.6,
+                  )
                 : null,
           ),
-          child: fixed
-              ? SizedBox(
-                  width: width,
-                  height: height,
-                  child: child,
-                )
-              : AnimatedSize(
-                  duration: _fastAnimationDuration,
-                  child: child,
-                ),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 160),
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: Center(
+                widthFactor: 1,
+                child: child,
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -238,28 +248,30 @@ class _ButtonState extends State<Button> {
 
   Color get buttonColor {
     if (widget.type == ButtonType.filled) {
-      if (widget.disabled) {
-        return context.colorScheme.primaryContainer.withOpacity(0.6);
-      }
       var color = widget.color ?? context.colorScheme.primary;
       if (isHover) {
-        return color.withOpacity(0.9);
+        return color.toOpacity(0.9);
       } else {
         return color;
       }
     }
-    if (isHover && !widget.disabled) {
-      return context.colorScheme.outline.withOpacity(0.2);
+    if (widget.type == ButtonType.normal) {
+      var color = widget.color ?? context.colorScheme.surfaceContainer;
+      if (isHover) {
+        return color.toOpacity(0.9);
+      } else {
+        return color;
+      }
+    }
+    if (isHover) {
+      return context.colorScheme.outline.toOpacity(0.2);
     }
     return Colors.transparent;
   }
 
   Color get textColor {
-    if (widget.disabled) {
-      return context.colorScheme.outline;
-    }
     if (widget.type == ButtonType.outlined) {
-      return widget.color ?? context.colorScheme.onSurface;
+      return widget.color ?? context.colorScheme.primary;
     }
     return widget.type == ButtonType.filled
         ? context.colorScheme.onPrimary
@@ -332,10 +344,7 @@ class _IconButtonState extends State<_IconButton> {
           child: Container(
             decoration: BoxDecoration(
               color: isHover
-                  ? Theme.of(context)
-                      .colorScheme
-                      .outlineVariant
-                      .withOpacity(0.4)
+                  ? Theme.of(context).colorScheme.outlineVariant.toOpacity(0.4)
                   : null,
               borderRadius: BorderRadius.circular((iconSize + 12) / 2),
             ),
@@ -348,36 +357,32 @@ class _IconButtonState extends State<_IconButton> {
   }
 }
 
-class StatefulSwitch extends StatefulWidget {
-  const StatefulSwitch(
-      {required this.initialValue, required this.onChanged, super.key});
+class MenuButton extends StatefulWidget {
+  const MenuButton({super.key, required this.entries});
 
-  final bool initialValue;
-
-  final void Function(bool) onChanged;
+  final List<MenuEntry> entries;
 
   @override
-  State<StatefulSwitch> createState() => _StatefulSwitchState();
+  State<MenuButton> createState() => _MenuButtonState();
 }
 
-class _StatefulSwitchState extends State<StatefulSwitch> {
-  late bool value;
-
-  @override
-  void initState() {
-    value = widget.initialValue;
-    super.initState();
-  }
-
+class _MenuButtonState extends State<MenuButton> {
   @override
   Widget build(BuildContext context) {
-    return Switch(
-        value: value,
-        onChanged: (b) {
-          setState(() {
-            value = b;
-            widget.onChanged(b);
-          });
-        });
+    return Tooltip(
+      message: 'more'.tl,
+      child: Button.icon(
+        icon: const Icon(Icons.more_horiz),
+        onPressed: () {
+          var renderBox = context.findRenderObject() as RenderBox;
+          var offset = renderBox.localToGlobal(Offset.zero);
+          showMenuX(
+            context,
+            offset,
+            widget.entries,
+          );
+        },
+      ),
+    );
   }
 }

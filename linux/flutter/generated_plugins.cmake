@@ -6,17 +6,22 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_webview_window
   dynamic_color
   file_selector_linux
+  flutter_memory_info
   flutter_qjs
+  flutter_volume_controller
+  gtk
   media_kit_libs_linux
   media_kit_video
-  screen_retriever
+  screen_retriever_linux
   sqlite3_flutter_libs
   url_launcher_linux
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  lodepng_flutter
   media_kit_native_event_loop
+  rhttp
   zip_flutter
 )
 

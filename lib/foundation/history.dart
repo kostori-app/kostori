@@ -1,15 +1,16 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart' show ChangeNotifier;
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-import '../anime_source/anime_source.dart';
-import '../network/webdav.dart';
-import 'app.dart';
-import 'log.dart';
+import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 
-// part "image_favorites.dart";
+typedef HistoryType = AnimeType;
 
 abstract mixin class HistoryMixin {
   String get title;
@@ -18,83 +19,55 @@ abstract mixin class HistoryMixin {
 
   String get cover;
 
-  String get target;
-
-  Object? get playbackTime => null;
+  String get id;
 
   HistoryType get historyType;
 }
 
-final class HistoryType {
-  static HistoryType get gglAnime => const HistoryType(0);
-
-  final int value;
-
-  String get name {
-    if (value >= 0 && value <= 5) {
-      return [
-        "girigirilove",
-      ][value];
-    } else {
-      return AnimeSource.fromIntKey(value)?.name ?? "Unknown";
-    }
-  }
-
-  const HistoryType(this.value);
-
-  @override
-  bool operator ==(Object other) =>
-      other is HistoryType && other.value == value;
-
-  @override
-  int get hashCode => value.hashCode;
-
-  AnimeSource? get animeSource {
-    if (value >= 0 && value <= 5) {
-      return AnimeSource.find(name);
-    } else {
-      return AnimeSource.fromIntKey(value);
-    }
-  }
-}
-
-base class History extends LinkedListEntry<History> {
+class History implements Anime {
   HistoryType type;
 
   DateTime time;
 
+  @override
   String title;
 
+  @override
   String subtitle;
 
+  @override
   String cover;
 
-  /// 标记为0表示没有阅读位置记录
-  int ep;
+  int lastWatchEpisode; // 上次观看番剧集数
 
-  int nowPlaying;
+  int lastWatchTime; // 上次观看时间
 
-  String target;
+  int lastRoad; //上次播放列表
 
-  Set<int> readEpisode;
+  int allEpisode; //全部集数
 
-  int? playbackTime;
+  int? bangumiId;
 
-  History(this.type, this.time, this.title, this.subtitle, this.cover, this.ep,
-      this.nowPlaying, this.target,
-      [this.readEpisode = const <int>{}, this.playbackTime]);
+  @override
+  String id;
+
+  Set<int> watchEpisode;
 
   History.fromModel(
       {required HistoryMixin model,
-      required this.ep,
-      required this.nowPlaying,
-      this.readEpisode = const <int>{},
+      required this.lastWatchEpisode,
+      required this.lastWatchTime,
+      required this.lastRoad,
+      required this.allEpisode,
+      required this.bangumiId,
+      Set<int>? watchEpisode,
       DateTime? time})
       : type = model.historyType,
         title = model.title,
         subtitle = model.subTitle ?? '',
         cover = model.cover,
-        target = model.target,
+        id = model.id,
+        watchEpisode = watchEpisode ?? <int>{},
         time = time ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
@@ -103,11 +76,12 @@ base class History extends LinkedListEntry<History> {
         "title": title,
         "subtitle": subtitle,
         "cover": cover,
-        "ep": ep,
-        "nowPlaying": nowPlaying,
-        "target": target,
-        "readEpisode": readEpisode.toList(),
-        "playbackTime": playbackTime
+        "lastWatchEpisode ": lastWatchEpisode,
+        "lastWatchTime": lastWatchTime,
+        "lastRoad": lastRoad,
+        "allEpisode": allEpisode,
+        "id": id,
+        "watchEpisode": watchEpisode.toList(),
       };
 
   History.fromMap(Map<String, dynamic> map)
@@ -116,16 +90,18 @@ base class History extends LinkedListEntry<History> {
         title = map["title"],
         subtitle = map["subtitle"],
         cover = map["cover"],
-        ep = map["ep"],
-        nowPlaying = map["nowPlaying"],
-        target = map["target"],
-        readEpisode = Set<int>.from(
-            (map["readEpisode"] as List<dynamic>?)?.toSet() ?? const <int>{}),
-        playbackTime = map["playbackTime"];
+        lastWatchEpisode = map["lastWatchEpisode"],
+        lastWatchTime = map["lastWatchTime"],
+        lastRoad = map["lastRoad"],
+        allEpisode = map["allEpisode"],
+        id = map["id"],
+        watchEpisode = Set<int>.from(
+            (map["watchEpisode"] as List<dynamic>?)?.toSet() ?? const <int>{}),
+        bangumiId = map["bangumiId"];
 
   @override
   String toString() {
-    return 'NewHistory{type: $type, time: $time, title: $title, subtitle: $subtitle, cover: $cover, ep: $ep, nowPlaying: $nowPlaying, target: $target}';
+    return 'History{type: $type, time: $time, title: $title, subtitle: $subtitle, cover: $cover, lastWatchEpisode : $lastWatchEpisode , id: $id, bangumiId: $bangumiId}';
   }
 
   History.fromRow(Row row)
@@ -134,25 +110,34 @@ base class History extends LinkedListEntry<History> {
         title = row["title"],
         subtitle = row["subtitle"],
         cover = row["cover"],
-        ep = row["ep"],
-        nowPlaying = row["nowPlaying"],
-        target = row["target"],
-        readEpisode = Set<int>.from((row["readEpisode"] as String)
+        lastWatchEpisode = row["lastWatchEpisode"],
+        lastWatchTime = row["lastWatchTime"],
+        lastRoad = row["lastRoad"],
+        allEpisode = row["allEpisode"],
+        id = row["id"],
+        watchEpisode = Set<int>.from((row["watchEpisode"] as String)
             .split(',')
             .where((element) => element != "")
             .map((e) => int.parse(e))),
-        playbackTime = row["playbackTime"];
+        bangumiId = row["bangumiId"];
 
   static Future<History> findOrCreate(
     HistoryMixin model, {
-    int ep = 0,
-    int nowPlaying = 0,
+    int lastWatchEpisode = 0,
+    int page = 0,
+    int lastWatchTime = 0,
   }) async {
-    var history = await HistoryManager().find(model.target);
+    var history = await HistoryManager().find(model.id, model.historyType);
     if (history != null) {
       return history;
     }
-    history = History.fromModel(model: model, ep: ep, nowPlaying: nowPlaying);
+    history = History.fromModel(
+        model: model,
+        lastWatchEpisode: lastWatchEpisode,
+        lastWatchTime: lastWatchTime,
+        lastRoad: 1,
+        allEpisode: 1,
+        bangumiId: null);
     HistoryManager().addHistory(history);
     return history;
   }
@@ -162,13 +147,113 @@ base class History extends LinkedListEntry<History> {
     if (history != null) {
       return history;
     }
-    history = History.fromModel(model: model, ep: 0, nowPlaying: 0);
+    history = History.fromModel(
+        model: model,
+        lastWatchEpisode: 0,
+        lastWatchTime: 0,
+        lastRoad: 1,
+        allEpisode: 1,
+        bangumiId: null);
     HistoryManager().addHistory(history);
     return history;
   }
+
+  @override
+  int get hashCode => Object.hash(id, type);
+
+  @override
+  bool operator ==(Object other) {
+    return other is History && type == other.type && id == other.id;
+  }
+
+  @override
+  String get description {
+    var res = "";
+    if (lastWatchEpisode >= 1) {
+      res += "Chapter @ep".tlParams({
+        "ep": lastWatchEpisode,
+      });
+    }
+    // if (page >= 1) {
+    //   if (lastWatchEpisode >= 1) {
+    //     res += " - ";
+    //   }
+    //   res += "Page @page".tlParams({
+    //     "page": page,
+    //   });
+    // }
+    return res;
+  }
+
+  @override
+  String? get favoriteId => null;
+
+  @override
+  String? get language => null;
+
+  @override
+  String get sourceKey => type == AnimeType.local
+      ? 'local'
+      : type.animeSource?.key ?? "Unknown:${type.value}";
+
+  @override
+  double? get stars => null;
+
+  @override
+  List<String>? get tags => null;
+
+  @override
+  Map<String, dynamic> toJson() {
+    throw UnimplementedError();
+  }
 }
 
-class HistoryManager {
+class Progress {
+  String historyId;
+  int episode;
+  int road;
+  int progressInMilli;
+  HistoryType type;
+
+  Progress.fromModel({
+    required HistoryMixin model,
+    required this.episode,
+    required this.road,
+    required this.progressInMilli,
+  })  : type = model.historyType,
+        historyId = model.id;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'type': type,
+      'historyId': historyId,
+      'episode': episode,
+      'road': road,
+      'progressInMilli': progressInMilli,
+    };
+  }
+
+  Progress.fromMap(Map<String, dynamic> map)
+      : type = HistoryType(map['type']),
+        historyId = map['historyId'],
+        episode = map['episode'],
+        road = map['road'],
+        progressInMilli = map['progressInMilli'];
+
+  @override
+  String toString() {
+    return 'Progress{type: $type, historyId: $historyId, episode: $episode, road: $road, progressInMilli: $progressInMilli}';
+  }
+
+  Progress.fromRow(Row row)
+      : type = HistoryType(row['type']),
+        historyId = row['historyId'],
+        episode = row['episode'],
+        road = row['road'],
+        progressInMilli = row['progressInMilli'];
+}
+
+class HistoryManager with ChangeNotifier {
   static HistoryManager? cache;
 
   HistoryManager.create();
@@ -185,7 +270,7 @@ class HistoryManager {
   Future<void> tryUpdateDb() async {
     var file = File("${App.dataPath}/history_temp.db");
     if (!file.existsSync()) {
-      LogManager.addLog(
+      Log.addLog(
           LogLevel.info, "HistoryManager.tryUpdateDb", "db file not exist");
       return;
     }
@@ -199,15 +284,15 @@ class HistoryManager {
     if (file.existsSync()) {
       var skips = 0;
       for (var history in newHistory) {
-        if (findSync(history.target) == null) {
+        if (findSync(history.id, history.type) == null) {
           addHistory(history);
-          LogManager.addLog(LogLevel.info, "HistoryManager",
-              "merge history ${history.target}");
+          Log.addLog(
+              LogLevel.info, "HistoryManager", "merge history ${history.id}");
         } else {
           skips++;
         }
       }
-      LogManager.addLog(LogLevel.info, "HistoryManager",
+      Log.addLog(LogLevel.info, "HistoryManager",
           "merge history, skipped $skips, added ${newHistory.length - skips}");
     }
     db.dispose();
@@ -219,118 +304,152 @@ class HistoryManager {
 
     _db.execute("""
         create table if not exists history  (
-          target text primary key,
+          id text primary key,
           title text,
           subtitle text,
           cover text,
           time int,
           type int,
-          ep int,
-          nowPlaying int,
-          readEpisode text,
-          playbackTime int
+          lastWatchEpisode int,
+          lastWatchTime int,
+          lastRoad int,
+          allEpisode int,
+          watchEpisode text,
+          bangumiId int
         );
       """);
 
-    // 检查是否有max_page字段, 如果没有则添加
-    var res = _db.select("""
-      PRAGMA table_info(history);
-    """);
-    if (res.every((row) => row["name"] != "playbackTime")) {
-      _db.execute("""
-        alter table history
-        add column playbackTime int;
+    _db.execute('''
+  CREATE TABLE IF NOT EXISTS progress (
+    type int,
+    historyId TEXT,
+    episode INT,
+    road INT,
+    progressInMilli INT,
+    PRIMARY KEY (type, episode, road, historyId),
+    FOREIGN KEY (historyId) REFERENCES History(id)
+  );
+''');
+
+    var columns = _db.select("""
+        pragma table_info("history");
       """);
+    if (!columns.any((element) => element["name"] == "bangumiId")) {
+      _db.execute("""
+          alter table history
+          add column bangumiId int;
+        """);
     }
-  }
 
-  void readDataFromJson(List<dynamic> json) {
-    var history = LinkedList<History>();
-    for (var h in json) {
-      history.add(History.fromMap((h as Map<String, dynamic>)));
-    }
-    // do not clear previous history
-    for (var element in history) {
-      if (findSync(element.target) == null) addHistory(element);
-    }
-    vacuum();
-  }
-
-  void saveData() async {
-    Webdav.uploadData();
+    notifyListeners();
   }
 
   /// add history. if exists, update time.
   ///
   /// This function would be called when user start reading.
   Future<void> addHistory(History newItem) async {
-    var res = _db.select("""
-      select * from history
-      where target == ?;
-    """, [newItem.target]);
-    if (res.isEmpty) {
-      _db.execute("""
-        insert into history (target, title, subtitle, cover, time, type, ep, nowPlaying, readEpisode, playbackTime)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    _db.execute("""
+        insert or replace into history (
+        id,
+        title,
+        subtitle,
+        cover,
+        time,
+        type,
+        lastWatchEpisode,
+        lastWatchTime,
+        lastRoad,
+        allEpisode,
+        watchEpisode,
+        bangumiId
+        )
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       """, [
-        newItem.target,
-        newItem.title,
-        newItem.subtitle,
-        newItem.cover,
-        newItem.time.millisecondsSinceEpoch,
-        newItem.type.value,
-        newItem.ep,
-        newItem.nowPlaying,
-        newItem.readEpisode.join(','),
-        newItem.playbackTime
-      ]);
-    } else {
-      _db.execute("""
-        update history
-        set time = ${DateTime.now().millisecondsSinceEpoch}
-        where target == ?;
-      """, [newItem.target]);
-    }
-    saveData();
+      newItem.id,
+      newItem.title,
+      newItem.subtitle,
+      newItem.cover,
+      newItem.time.millisecondsSinceEpoch,
+      newItem.type.value,
+      newItem.lastWatchEpisode,
+      newItem.lastWatchTime,
+      newItem.lastRoad,
+      newItem.allEpisode,
+      newItem.watchEpisode.join(','),
+      newItem.bangumiId
+    ]);
     updateCache();
+    notifyListeners();
   }
 
-  ///退出阅读器时调用此函数, 修改阅读位置
-  Future<void> saveReadHistory(History history,
-      [bool updateMePage = true]) async {
-    _db.execute("""
-        update history
-        set time = ${DateTime.now().millisecondsSinceEpoch}, ep = ?, nowPlaying = ?, readEpisode = ?, playbackTime = ?
-        where target == ?;
-    """, [
-      history.ep,
-      history.nowPlaying,
-      history.readEpisode.join(','),
-      history.playbackTime,
-      history.target
-    ]);
-    if (updateMePage) {
-      scheduleMicrotask(() {
-        StateController.findOrNull(tag: "me_page")?.update();
-      });
-    }
+  Future<void> addProgress(Progress newProgress, String historyId) async {
+    _db.execute(
+      '''
+    INSERT OR REPLACE INTO progress (
+      type,
+      historyId,
+      episode,
+      road,
+      progressInMilli
+    ) VALUES (?, ?, ?, ?, ?);
+    ''',
+      [
+        newProgress.type.value, // Progress 的类型 (如 episode, episode2, episode3)
+        historyId, // 引用的 History ID
+        newProgress.episode, // 集数
+        newProgress.road, // 路径
+        newProgress.progressInMilli, // 进度存储为毫秒数
+      ],
+    );
+
+    updateCache(); // 更新缓存
+    notifyListeners(); // 通知监听器
+  }
+
+  Future<bool> checkIfProgressExists(
+      String historyId, AnimeType type, int episode, int road) async {
+    final result = _db.select(
+      '''
+    SELECT COUNT(*) as count
+    FROM progress
+    WHERE historyId = ? AND type = ? AND episode = ? AND road = ?;
+    ''',
+      [historyId, type.value, episode, road],
+    );
+
+    // 如果查询结果中返回的 count 大于 0，说明该历史记录已经存在
+    return result.isNotEmpty && (result.first['count'] as int) > 0;
   }
 
   void clearHistory() {
     _db.execute("delete from history;");
     updateCache();
+    notifyListeners();
   }
 
-  void remove(String id) async {
+  void remove(String id, AnimeType type) async {
     _db.execute("""
       delete from history
-      where target == '$id';
-    """);
+      where id == ? and type == ?;
+    """, [id, type.value]);
     updateCache();
+    notifyListeners();
   }
 
-  Future<History?> find(String target) async {
-    return findSync(target);
+  Future<History?> find(String id, AnimeType type) async {
+    return findSync(id, type);
+  }
+
+  Future<Progress?> progressFind(
+      String historyId, AnimeType type, int episode, int road) async {
+    var res = _db.select('''
+    select * from progress
+    where historyId == ? and type == ? and episode == ? and road == ?;
+    ''', [historyId, type.value, episode, road]);
+    if (res.isEmpty) {
+      return null;
+    }
+    return Progress.fromRow(res.first);
   }
 
   void updateCache() {
@@ -339,22 +458,22 @@ class HistoryManager {
         select * from history;
       """);
     for (var element in res) {
-      _cachedHistory![element["target"] as String] = true;
+      _cachedHistory![element["id"] as String] = true;
     }
   }
 
-  History? findSync(String target) {
+  History? findSync(String id, AnimeType type) {
     if (_cachedHistory == null) {
       updateCache();
     }
-    if (!_cachedHistory!.containsKey(target)) {
+    if (!_cachedHistory!.containsKey(id)) {
       return null;
     }
 
     var res = _db.select("""
       select * from history
-      where target == ?;
-    """, [target]);
+      where id == ? and type == ?;
+    """, [id, type.value]);
     if (res.isEmpty) {
       return null;
     }
@@ -369,28 +488,7 @@ class HistoryManager {
     return res.map((element) => History.fromRow(element)).toList();
   }
 
-  void vacuum() {
-    _db.execute("""
-      vacuum;
-    """);
-  }
-
-  /// 获取最近一周的阅读数据, 用于生成图表, List中的元素是当天阅读的漫画数量
-  List<int> getWeekData(int days) {
-    var res = _db.select("""
-      select * from history
-      where time > ${DateTime.now().add(Duration(days: 1 - days)).millisecondsSinceEpoch}
-      order by time ASC;
-    """);
-    var data = List<int>.filled(days, 0);
-    for (var element in res) {
-      var time = DateTime.fromMillisecondsSinceEpoch(element["time"] as int);
-      data[DateTime.now().difference(time).inDays]++;
-    }
-    return data.reversed.toList();
-  }
-
-  /// 获取最近阅读的漫画
+  /// 获取最近观看的番剧
   List<History> getRecent() {
     var res = _db.select("""
       select * from history
@@ -406,5 +504,9 @@ class HistoryManager {
       select count(*) from history;
     """);
     return res.first[0] as int;
+  }
+
+  void close() {
+    _db.dispose();
   }
 }

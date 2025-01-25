@@ -4,15 +4,18 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
+  battery_plus
   desktop_webview_window
   dynamic_color
   file_selector_windows
+  flutter_inappwebview_windows
   flutter_qjs
+  flutter_volume_controller
   local_auth_windows
   media_kit_libs_windows_video
   media_kit_video
   screen_brightness_windows
-  screen_retriever
+  screen_retriever_windows
   share_plus
   sqlite3_flutter_libs
   url_launcher_windows
@@ -20,7 +23,9 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  lodepng_flutter
   media_kit_native_event_loop
+  rhttp
   zip_flutter
 )
 

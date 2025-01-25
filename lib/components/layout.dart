@@ -2,10 +2,7 @@ part of 'components.dart';
 
 class SliverGridViewWithFixedItemHeight extends StatelessWidget {
   const SliverGridViewWithFixedItemHeight(
-      {required this.delegate,
-      required this.maxCrossAxisExtent,
-      required this.itemHeight,
-      super.key});
+      {required this.delegate, required this.maxCrossAxisExtent, required this.itemHeight, super.key});
 
   final SliverChildDelegate delegate;
 
@@ -16,13 +13,14 @@ class SliverGridViewWithFixedItemHeight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverLayoutBuilder(
-        builder: ((context, constraints) => SliverGrid(
-              delegate: delegate,
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: maxCrossAxisExtent,
-                  childAspectRatio:
-                      calcChildAspectRatio(constraints.crossAxisExtent)),
-            )));
+      builder: (context, constraints) => SliverGrid(
+        delegate: delegate,
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: maxCrossAxisExtent,
+          childAspectRatio: calcChildAspectRatio(constraints.crossAxisExtent),
+        ),
+      ),
+    );
   }
 
   double calcChildAspectRatio(double width) {
@@ -64,8 +62,7 @@ class SliverGridDelegateWithFixedHeight extends SliverGridDelegate {
   @override
   bool shouldRelayout(covariant SliverGridDelegate oldDelegate) {
     if (oldDelegate is! SliverGridDelegateWithFixedHeight) return true;
-    if (oldDelegate.maxCrossAxisExtent != maxCrossAxisExtent ||
-        oldDelegate.itemHeight != itemHeight) {
+    if (oldDelegate.maxCrossAxisExtent != maxCrossAxisExtent || oldDelegate.itemHeight != itemHeight) {
       return true;
     }
     return false;
@@ -77,31 +74,29 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
 
   final bool useBriefMode;
 
-  final String? scale;
+  final double? scale;
 
   @override
   SliverGridLayout getLayout(SliverConstraints constraints) {
-    var setting = appdata.settings[44].split(',');
-    if (setting.length == 1) {
-      setting.add("1.0");
-    }
-    if (setting[0] == "1" || setting[0] == "2" || useBriefMode) {
-      return getBriefModeLayout(constraints, double.parse(scale ?? setting[1]));
+    if (appdata.settings['animeDisplayMode'] == 'brief' || useBriefMode) {
+      return getBriefModeLayout(
+        constraints,
+        scale ?? (appdata.settings['animeTileScale'] as num).toDouble(),
+      );
     } else {
       return getDetailedModeLayout(
-          constraints, double.parse(scale ?? setting[1]));
+        constraints,
+        scale ?? (appdata.settings['animeTileScale'] as num).toDouble(),
+      );
     }
   }
 
-  SliverGridLayout getDetailedModeLayout(
-      SliverConstraints constraints, double scale) {
-    const maxCrossAxisExtent = 650;
-    final itemHeight = 164 * scale;
+  SliverGridLayout getDetailedModeLayout(SliverConstraints constraints, double scale) {
+    const minCrossAxisExtent = 360;
+    final itemHeight = 152 * scale;
     final width = constraints.crossAxisExtent;
-    var crossItems = width ~/ maxCrossAxisExtent;
-    if (width % maxCrossAxisExtent != 0) {
-      crossItems += 1;
-    }
+    var crossItems = width ~/ minCrossAxisExtent;
+    crossItems = math.max(1, crossItems);
     return SliverGridRegularTileLayout(
         crossAxisCount: crossItems,
         mainAxisStride: itemHeight,
@@ -111,14 +106,11 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
         reverseCrossAxis: false);
   }
 
-  SliverGridLayout getBriefModeLayout(
-      SliverConstraints constraints, double scale) {
+  SliverGridLayout getBriefModeLayout(SliverConstraints constraints, double scale) {
     final maxCrossAxisExtent = 192.0 * scale;
-    const childAspectRatio = 0.72;
+    const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
-    int crossAxisCount =
-        (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing))
-            .ceil();
+    int crossAxisCount = (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing)).ceil();
     // Ensure a minimum count of 1, can be zero and result in an infinite extent
     // below when the window size is 0.
     crossAxisCount = math.max(1, crossAxisCount);

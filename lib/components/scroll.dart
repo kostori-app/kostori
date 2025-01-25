@@ -16,7 +16,14 @@ class SmoothCustomScrollView extends StatelessWidget {
         return CustomScrollView(
           controller: controller,
           physics: physics,
-          slivers: slivers,
+          slivers: [
+            ...slivers,
+            SliverPadding(
+              padding: EdgeInsets.only(
+                bottom: context.padding.bottom,
+              ),
+            ),
+          ],
         );
       },
     );
@@ -56,12 +63,13 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
       return widget.builder(
         context,
         _controller,
-        const ClampingScrollPhysics(),
+        const BouncingScrollPhysics(),
       );
     }
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (event) {
+        _futurePosition = null;
         if (_isMouseScroll) {
           setState(() {
             _isMouseScroll = false;
@@ -70,6 +78,9 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
       },
       onPointerSignal: (pointerSignal) {
         if (pointerSignal is PointerScrollEvent) {
+          if (HardwareKeyboard.instance.isShiftPressed) {
+            return;
+          }
           if (pointerSignal.kind == PointerDeviceKind.mouse &&
               !_isMouseScroll) {
             setState(() {
@@ -78,12 +89,15 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
           }
           if (!_isMouseScroll) return;
           var currentLocation = _controller.position.pixels;
+          var old = _futurePosition;
           _futurePosition ??= currentLocation;
           double k = (_futurePosition! - currentLocation).abs() / 1600 + 1;
           _futurePosition = _futurePosition! + pointerSignal.scrollDelta.dy * k;
           _futurePosition = _futurePosition!.clamp(
-              _controller.position.minScrollExtent,
-              _controller.position.maxScrollExtent);
+            _controller.position.minScrollExtent,
+            _controller.position.maxScrollExtent,
+          );
+          if (_futurePosition == old) return;
           _controller.animateTo(_futurePosition!,
               duration: _fastAnimationDuration, curve: Curves.linear);
         }
@@ -93,7 +107,7 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
         _controller,
         _isMouseScroll
             ? const NeverScrollableScrollPhysics()
-            : const ClampingScrollPhysics(),
+            : const BouncingScrollPhysics(),
       ),
     );
   }

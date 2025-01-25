@@ -44,8 +44,6 @@ class SideBarRoute<T> extends PopupRoute<T> {
   @override
   Widget buildPage(BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation) {
-    bool showSideBar = MediaQuery.of(context).size.width > width;
-
     Widget body = SidebarBody(
       title: title,
       widget: widget,
@@ -55,7 +53,11 @@ class SideBarRoute<T> extends PopupRoute<T> {
     if (addTopPadding) {
       body = Padding(
         padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-        child: body,
+        child: MediaQuery.removePadding(
+          context: context,
+          removeTop: true,
+          child: body,
+        ),
       );
     }
 
@@ -67,111 +69,78 @@ class SideBarRoute<T> extends PopupRoute<T> {
 
     bool enableDrag = false;
 
-    return Stack(
-      alignment: Alignment.centerRight,
-      children: [
-        StatefulBuilder(
-          builder: (context, stateUpdater) => Positioned(
-            right: location,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                  borderRadius: showSideBar
-                      ? const BorderRadius.horizontal(left: Radius.circular(16))
-                      : null,
-                  color: Theme.of(context).colorScheme.surfaceTint),
-              clipBehavior: Clip.antiAlias,
-              constraints: BoxConstraints(maxWidth: sideBarWidth),
-              height: MediaQuery.of(context).size.height,
-              child: GestureDetector(
-                onHorizontalDragStart: (details) {
-                  if (details.kind == PointerDeviceKind.touch) {
-                    enableDrag = true;
-                  }
-                },
-                onHorizontalDragUpdate: (details) {
-                  if (!enableDrag) return;
-                  shouldPop = details.delta.dx > 0;
-                  location = location - details.delta.dx;
-                  if (location > 0) {
-                    location = 0;
-                  }
-                  stateUpdater(() {});
-                },
-                onHorizontalDragEnd: (details) {
-                  if (!enableDrag) return;
-                  enableDrag = false;
-                  if (shouldPop &&
-                      ((location != 0 && location < 0 - sideBarWidth / 2) ||
-                          (details.primaryVelocity != null &&
-                              details.primaryVelocity! > 1.0))) {
-                    Navigator.of(context).pop();
-                  } else {
-                    () async {
-                      double value = 5;
-                      while (location != 0) {
-                        stateUpdater(() {
-                          location += value;
-                          value += 5;
-                          if (location > 0) {
-                            location = 0;
-                          }
-                        });
-                        await Future.delayed(const Duration(milliseconds: 12));
+    return Center(
+      child: StatefulBuilder(
+        builder: (context, stateUpdater) => Container(
+          width: sideBarWidth,
+          height: MediaQuery.of(context).size.height * 0.6,
+          decoration: BoxDecoration(
+            color: useSurfaceTintColor
+                ? Theme.of(context).colorScheme.surfaceTint.withAlpha(20)
+                : null,
+            borderRadius: BorderRadius.circular(16), // 设置圆角半径
+          ),
+          child: GestureDetector(
+            onHorizontalDragStart: (details) {
+              if (details.kind == PointerDeviceKind.touch) {
+                enableDrag = true;
+              }
+            },
+            onHorizontalDragUpdate: (details) {
+              if (!enableDrag) return;
+              shouldPop = details.delta.dx > 0;
+              location = location - details.delta.dx;
+              if (location > 0) {
+                location = 0;
+              }
+              stateUpdater(() {});
+            },
+            onHorizontalDragEnd: (details) {
+              if (!enableDrag) return;
+              enableDrag = false;
+              if (shouldPop &&
+                  ((location != 0 && location < 0 - sideBarWidth / 2) ||
+                      (details.primaryVelocity != null &&
+                          details.primaryVelocity! > 1.0))) {
+                Navigator.of(context).pop();
+              } else {
+                () async {
+                  double value = 5;
+                  while (location != 0) {
+                    stateUpdater(() {
+                      location += value;
+                      value += 5;
+                      if (location > 0) {
+                        location = 0;
                       }
-                    }();
+                    });
+                    await Future.delayed(const Duration(milliseconds: 12));
                   }
-                },
-                onHorizontalDragCancel: () {
-                  enableDrag = false;
-                },
-                child: Material(
-                  child: ClipRect(
-                    clipBehavior: Clip.antiAlias,
-                    child: Container(
-                      padding: EdgeInsets.fromLTRB(
-                          0,
-                          0,
-                          MediaQuery.of(context).padding.right,
-                          addBottomPadding
-                              ? MediaQuery.of(context).padding.bottom +
-                                  MediaQuery.of(context).viewInsets.bottom
-                              : 0),
-                      color: useSurfaceTintColor
-                          ? Theme.of(context)
-                              .colorScheme
-                              .surfaceTint
-                              .withAlpha(20)
-                          : null,
-                      child: body,
-                    ),
+                }();
+              }
+            },
+            onHorizontalDragCancel: () {
+              enableDrag = false;
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16), // 添加圆角效果
+              child: Material(
+                child: ClipRect(
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(
+                    child: body,
                   ),
                 ),
               ),
             ),
           ),
-        )
-      ],
+        ),
+      ),
     );
   }
 
   @override
-  Duration get transitionDuration => const Duration(milliseconds: 300);
-
-  @override
-  Widget buildTransitions(BuildContext context, Animation<double> animation,
-      Animation<double> secondaryAnimation, Widget child) {
-    var offset =
-        Tween<Offset>(begin: const Offset(1, 0), end: const Offset(0, 0));
-    return SlideTransition(
-      position: offset.animate(CurvedAnimation(
-        parent: animation,
-        curve: Curves.fastOutSlowIn,
-      )),
-      child: child,
-    );
-  }
+  Duration get transitionDuration => const Duration(milliseconds: 170);
 }
 
 class SidebarBody extends StatefulWidget {
@@ -233,10 +202,10 @@ class _SidebarBodyState extends State<SidebarBody> {
                   width: 8,
                 ),
                 Tooltip(
-                  message: "返回",
+                  message: "Back".tl,
                   child: IconButton(
                     iconSize: 25,
-                    icon: const Icon(Icons.arrow_back),
+                    icon: const Icon(Icons.arrow_back_ios_new),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
@@ -256,25 +225,21 @@ class _SidebarBodyState extends State<SidebarBody> {
   }
 }
 
-///显示侧边栏
-///
-/// 此组件会自动适应窗口大小:
-/// 大于600显示为右侧的侧边栏
-/// 小于600显示为从侧边划入的页面
-///
-/// [width] 侧边栏的宽度
-///
-/// [title] 标题, 为空时不显示顶部的Appbar
-void showSideBar(BuildContext context, Widget widget,
+Future<void> showSideBar(BuildContext context, Widget widget,
     {String? title,
     bool showBarrier = true,
     bool useSurfaceTintColor = false,
     double width = 500,
     bool addTopPadding = false}) {
-  Navigator.of(context).push(SideBarRoute(title, widget,
+  return Navigator.of(context).push(
+    SideBarRoute(
+      title,
+      widget,
       showBarrier: showBarrier,
       useSurfaceTintColor: useSurfaceTintColor,
       width: width,
       addTopPadding: addTopPadding,
-      addBottomPadding: true));
+      addBottomPadding: true,
+    ),
+  );
 }

@@ -1,11 +1,9 @@
-import 'dart:io';
-
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
-import 'package:kostori/tools/io_extensions.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-import 'app.dart';
+import 'package:kostori/foundation/app.dart';
 
 class CacheManager {
   static String get cachePath => '${App.cachePath}/cache';
@@ -35,14 +33,6 @@ class CacheManager {
         type TEXT
       )
     ''');
-    // 旧版本的表中没有type字段，需要添加
-    try {
-      _db.execute('''
-        ALTER TABLE cache ADD COLUMN type TEXT
-      ''');
-    } catch (e) {
-      // ignore
-    }
     compute((path) => Directory(path).size, cachePath)
         .then((value) => _currentSize = value);
   }
@@ -73,7 +63,7 @@ class CacheManager {
     return res.first[0];
   }
 
-  Future<void> writeCache(String key, Uint8List data,
+  Future<void> writeCache(String key, List<int> data,
       [int duration = 7 * 24 * 60 * 60 * 1000]) async {
     this.dir++;
     this.dir %= 100;
@@ -93,9 +83,7 @@ class CacheManager {
     if (_currentSize != null) {
       _currentSize = _currentSize! + data.length;
     }
-    if (_currentSize != null && _currentSize! > _limitSize) {
-      await checkCache();
-    }
+    checkCacheIfRequired();
   }
 
   Future<CachingFile> openWrite(String key) async {
@@ -112,7 +100,7 @@ class CacheManager {
     return CachingFile._(key, dir.toString(), name, file);
   }
 
-  Future<String?> findCache(String key) async {
+  Future<File?> findCache(String key) async {
     var res = _db.select('''
       SELECT * FROM cache
       WHERE key = ?
@@ -125,12 +113,18 @@ class CacheManager {
     var name = row[2] as String;
     var file = File('$cachePath/$dir/$name');
     if (await file.exists()) {
-      return file.path;
+      return file;
     }
     return null;
   }
 
   bool _isChecking = false;
+
+  void checkCacheIfRequired() {
+    if (_currentSize != null && _currentSize! > _limitSize) {
+      checkCache();
+    }
+  }
 
   Future<void> checkCache() async {
     if (_isChecking) {
@@ -142,7 +136,7 @@ class CacheManager {
       WHERE expires < ?
     ''', [DateTime.now().millisecondsSinceEpoch]);
     for (var row in res) {
-      var dir = row[1] as int;
+      var dir = row[1] as String;
       var name = row[2] as String;
       var file = File('$cachePath/$dir/$name');
       if (await file.exists()) {
@@ -166,12 +160,12 @@ class CacheManager {
         (_currentSize != null && _currentSize! > _limitSize) || count > 2000) {
       var res = _db.select('''
         SELECT * FROM cache
-        ORDER BY time ASC
+        ORDER BY expires ASC
         limit 10
       ''');
       for (var row in res) {
         var key = row[0] as String;
-        var dir = row[1] as int;
+        var dir = row[1] as String;
         var name = row[2] as String;
         var file = File('$cachePath/$dir/$name');
         if (await file.exists()) {
@@ -293,6 +287,7 @@ class CachingFile {
       name,
       DateTime.now().millisecondsSinceEpoch + 7 * 24 * 60 * 60 * 1000
     ]);
+    CacheManager().checkCacheIfRequired();
   }
 
   Future<void> cancel() async {

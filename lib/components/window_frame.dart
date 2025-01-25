@@ -2,16 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kostori/base.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
-// import 'package:kostori/foundation/widget_utils.dart';
+import 'package:kostori/foundation/state_controller.dart';
 import 'package:window_manager/window_manager.dart';
 
-// import '../foundation/state_controller.dart';
-import '../pages/settings/settings_page.dart';
-
-const _kTitleBarHeight = 32.0;
+const _kTitleBarHeight = 36.0;
 
 class WindowFrameController extends StateController {
   bool useDarkTheme = false;
@@ -54,75 +52,39 @@ class WindowFrame extends StatelessWidget {
     return StateBuilder<WindowFrameController>(builder: (controller) {
       if (controller.isHideWindowFrame) return child;
 
-      return Stack(
+      var body = Stack(
         children: [
           Positioned.fill(
-              child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-                padding: const EdgeInsets.only(top: _kTitleBarHeight)),
-            child: child,
-          )),
-          const _SideBar(),
-          if (!App.isMacOS)
-            Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Material(
-                  color: Colors.transparent,
-                  child: SizedBox(
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                  padding: const EdgeInsets.only(top: _kTitleBarHeight)),
+              child: child,
+            ),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Material(
+              color: Colors.transparent,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  brightness: controller.useDarkTheme ? Brightness.dark : null,
+                ),
+                child: Builder(builder: (context) {
+                  return SizedBox(
                     height: _kTitleBarHeight,
                     child: Row(
                       children: [
-                        buildMenuButton(controller, context)
-                            .toAlign(Alignment.centerLeft),
-                        Expanded(
-                          child: DragToMoveArea(
-                            child: Text(
-                              'kostori',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: (controller.useDarkTheme ||
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark)
-                                    ? Colors.white
-                                    : Colors.black,
-                              ),
-                            ).toAlign(Alignment.centerLeft).paddingLeft(4),
-                          ),
-                        ),
-                        Theme(
-                          data: Theme.of(context).copyWith(
-                            brightness: controller.useDarkTheme
-                                ? Brightness.dark
-                                : null,
-                          ),
-                          child: const WindowButtons(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ))
-          else
-            Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Material(
-                  color: Colors.transparent,
-                  child: SizedBox(
-                    height: _kTitleBarHeight,
-                    child: Row(
-                      children: [
-                        const DragToMoveArea(
-                          child: SizedBox(
-                            height: double.infinity,
-                            width: 16,
-                          ),
-                        ),
-                        const SizedBox(
-                          width: 52,
-                        ),
+                        if (App.isMacOS)
+                          const DragToMoveArea(
+                            child: SizedBox(
+                              height: double.infinity,
+                              width: 16,
+                            ),
+                          ).paddingRight(52)
+                        else
+                          const SizedBox(width: 12),
                         Expanded(
                           child: DragToMoveArea(
                             child: Text(
@@ -130,22 +92,36 @@ class WindowFrame extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 color: (controller.useDarkTheme ||
-                                        Theme.of(context).brightness ==
-                                            Brightness.dark)
+                                        context.brightness == Brightness.dark)
                                     ? Colors.white
                                     : Colors.black,
                               ),
-                            ).toAlign(Alignment.centerLeft).paddingLeft(16),
+                            )
+                                .toAlign(Alignment.centerLeft)
+                                .paddingLeft(4 + (App.isMacOS ? 25 : 0)),
                           ),
                         ),
-                        buildMenuButton(controller, context)
-                            .toAlign(Alignment.centerRight),
+                        if (kDebugMode)
+                          const TextButton(
+                            onPressed: debug,
+                            child: Text('Debug'),
+                          ),
+                        if (!App.isMacOS) const WindowButtons()
                       ],
                     ),
-                  ),
-                ))
+                  );
+                }),
+              ),
+            ),
+          )
         ],
       );
+
+      if (App.isLinux) {
+        return VirtualWindowFrame(child: body);
+      } else {
+        return body;
+      }
     });
   }
 
@@ -179,10 +155,7 @@ class _MenuPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+    final paint = getPaint(color);
     final path = Path()
       ..moveTo(0, size.height / 4)
       ..lineTo(size.width, size.height / 4)
@@ -195,172 +168,6 @@ class _MenuPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _SideBar extends StatefulWidget {
-  const _SideBar();
-
-  @override
-  State<_SideBar> createState() => __SideBarState();
-}
-
-class __SideBarState extends State<_SideBar>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  void run() {
-    if (_controller.isAnimating) return;
-    if (_controller.isCompleted) {
-      _controller.reverse();
-    } else {
-      _controller.forward();
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 160), value: 0);
-    var controller = StateController.find<WindowFrameController>();
-    controller.openSideBar = run;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-        animation: CurvedAnimation(
-            parent: _controller, curve: Curves.fastEaseInToSlowEaseOut),
-        builder: (context, child) {
-          var value = _controller.value;
-          return Stack(
-            children: [
-              Positioned.fill(
-                  child: GestureDetector(
-                onTap: run,
-                child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  color:
-                      value == 0 ? null : Colors.black.withOpacity(0.2 * value),
-                ),
-              )),
-              Positioned(
-                left: !App.isMacOS ? (1 - _controller.value) * (-300) : null,
-                right: App.isMacOS ? (_controller.value - 1) * 300 : null,
-                top: 0,
-                bottom: 0,
-                child: Material(
-                  color: Theme.of(context).colorScheme.surface,
-                  surfaceTintColor: Theme.of(context).colorScheme.surfaceTint,
-                  elevation: 2,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(8),
-                    bottomRight: Radius.circular(8),
-                  ),
-                  child: SizedBox(
-                    width: 300,
-                    height: double.infinity,
-                    child: const SingleChildScrollView(
-                      child: _SideBarBody(),
-                    ).paddingTop(_kTitleBarHeight),
-                  ),
-                ),
-              )
-            ],
-          );
-        });
-  }
-}
-
-class _SideBarBody extends StatelessWidget {
-  const _SideBarBody();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        // buildItem(
-        //     icon: Icons.person_outline,
-        //     title: '账号管理',
-        //     onTap: () {
-        //       StateController.find<WindowFrameController>().openSideBar();
-        //       showAdaptiveWidget(App.globalContext!, AccountsPage());
-        //     }),
-        // buildItem(
-        //     icon: Icons.history,
-        //     title: '历史记录',
-        //     onTap: () {
-        //       StateController.find<WindowFrameController>().openSideBar();
-        //       MainPage.to(() => const HistoryPage(), preventDuplicate: true);
-        //     }),
-        // buildItem(
-        //     icon: Icons.download_outlined,
-        //     title: '已下载',
-        //     onTap: () {
-        //       StateController.find<WindowFrameController>().openSideBar();
-        //       MainPage.to(() => const DownloadPage(), preventDuplicate: true);
-        //     }),
-        // buildItem(
-        //     icon: Icons.downloading,
-        //     title: '下载管理器',
-        //     onTap: () {
-        //       StateController.find<WindowFrameController>().openSideBar();
-        //       showAdaptiveWidget(App.globalContext!, const DownloadingPage());
-        //     }),
-        // buildItem(
-        //     icon: Icons.image_outlined,
-        //     title: '图片收藏',
-        //     onTap: () {
-        //       StateController.find<WindowFrameController>().openSideBar();
-        //       MainPage.to(() => const ImageFavoritesPage(),
-        //           preventDuplicate: true);
-        //     }),
-        const Divider().paddingHorizontal(8),
-        buildItem(
-            icon: Icons.search,
-            title: '搜索',
-            onTap: () {
-              // StateController.find<WindowFrameController>().openSideBar();
-              // MainPage.to(() => PreSearchPage(), preventDuplicate: true);
-            }),
-        buildItem(
-            icon: Icons.settings,
-            title: '设置',
-            onTap: () {
-              StateController.find<WindowFrameController>().openSideBar();
-              SettingsPage.open();
-            }),
-      ],
-    );
-  }
-
-  Widget buildItem(
-      {required IconData icon,
-      required String title,
-      required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 20),
-            const SizedBox(width: 16),
-            Text(title, style: const TextStyle(fontSize: 14)),
-          ],
-        ),
-      ),
-    ).paddingHorizontal(8);
-  }
 }
 
 class WindowButtons extends StatefulWidget {
@@ -410,9 +217,9 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = theme.iconTheme.color ?? Colors.black;
-    final hoverColor = theme.colorScheme.surfaceContainerHighest;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final color = dark ? Colors.white : Colors.black;
+    final hoverColor = dark ? Colors.white30 : Colors.black12;
 
     return SizedBox(
       width: 138,
@@ -456,57 +263,11 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
               color: color,
             ),
             hoverIcon: CloseIcon(
-              color: theme.brightness == Brightness.light
-                  ? Colors.white
-                  : Colors.black,
+              color: !dark ? Colors.white : Colors.black,
             ),
             hoverColor: Colors.red,
             onPressed: () {
-              if (appdata.implicitData[2] == '0') {
-                showDialog(
-                    context: App.navigatorKey.currentContext!,
-                    builder: (context) {
-                      bool isCheck = false;
-                      return AlertDialog(
-                        title: Text('是否退出程序？'),
-                        content: StatefulBuilder(builder: (context, setState) {
-                          return Row(
-                            children: [
-                              Checkbox(
-                                value: isCheck,
-                                onChanged: (value) {
-                                  setState(() {
-                                    isCheck = value!;
-                                  });
-                                },
-                              ),
-                              Text('不再提示'),
-                            ],
-                          );
-                        }),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Text('否'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              if (isCheck) {
-                                appdata.implicitData[2] = '1';
-                                appdata.writeImplicitData();
-                              }
-                              windowManager.close();
-                            },
-                            child: Text('是'),
-                          ),
-                        ],
-                      );
-                    });
-              } else {
-                windowManager.close();
-              }
+              windowManager.close();
             },
           )
         ],
@@ -564,13 +325,16 @@ class _WindowButtonState extends State<WindowButton> {
 /// Close
 class CloseIcon extends StatelessWidget {
   final Color color;
+
   const CloseIcon({super.key, required this.color});
+
   @override
   Widget build(BuildContext context) => _AlignedPaint(_ClosePainter(color));
 }
 
 class _ClosePainter extends _IconPainter {
   _ClosePainter(super.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = getPaint(color, true);
@@ -582,13 +346,16 @@ class _ClosePainter extends _IconPainter {
 /// Maximize
 class MaximizeIcon extends StatelessWidget {
   final Color color;
+
   const MaximizeIcon({super.key, required this.color});
+
   @override
   Widget build(BuildContext context) => _AlignedPaint(_MaximizePainter(color));
 }
 
 class _MaximizePainter extends _IconPainter {
   _MaximizePainter(super.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = getPaint(color);
@@ -599,16 +366,19 @@ class _MaximizePainter extends _IconPainter {
 /// Restore
 class RestoreIcon extends StatelessWidget {
   final Color color;
+
   const RestoreIcon({
     super.key,
     required this.color,
   });
+
   @override
   Widget build(BuildContext context) => _AlignedPaint(_RestorePainter(color));
 }
 
 class _RestorePainter extends _IconPainter {
   _RestorePainter(super.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = getPaint(color);
@@ -625,13 +395,16 @@ class _RestorePainter extends _IconPainter {
 /// Minimize
 class MinimizeIcon extends StatelessWidget {
   final Color color;
+
   const MinimizeIcon({super.key, required this.color});
+
   @override
   Widget build(BuildContext context) => _AlignedPaint(_MinimizePainter(color));
 }
 
 class _MinimizePainter extends _IconPainter {
   _MinimizePainter(super.color);
+
   @override
   void paint(Canvas canvas, Size size) {
     Paint p = getPaint(color);
@@ -643,6 +416,7 @@ class _MinimizePainter extends _IconPainter {
 /// Helpers
 abstract class _IconPainter extends CustomPainter {
   _IconPainter(this.color);
+
   final Color color;
 
   @override
@@ -651,6 +425,7 @@ abstract class _IconPainter extends CustomPainter {
 
 class _AlignedPaint extends StatelessWidget {
   const _AlignedPaint(this.painter);
+
   final CustomPainter painter;
 
   @override
@@ -712,8 +487,15 @@ class WindowPlacement {
     }
   }
 
+  static Rect? lastValidRect;
+
   static Future<WindowPlacement> get current async {
     var rect = await windowManager.getBounds();
+    if (validate(rect)) {
+      lastValidRect = rect;
+    } else {
+      rect = lastValidRect ?? defaultPlacement.rect;
+    }
     var isMaximized = await windowManager.isMaximized();
     return WindowPlacement(rect, isMaximized);
   }
@@ -728,9 +510,6 @@ class WindowPlacement {
   static void loop() async {
     timer ??= Timer.periodic(const Duration(milliseconds: 100), (timer) async {
       var placement = await WindowPlacement.current;
-      if (!validate(placement.rect)) {
-        return;
-      }
       if (placement.rect != cache.rect ||
           placement.isMaximized != cache.isMaximized) {
         cache = placement;
@@ -742,4 +521,120 @@ class WindowPlacement {
   static bool validate(Rect rect) {
     return rect.topLeft.dx >= 0 && rect.topLeft.dy >= 0;
   }
+}
+
+class VirtualWindowFrame extends StatefulWidget {
+  const VirtualWindowFrame({
+    super.key,
+    required this.child,
+  });
+
+  /// The [child] contained by the VirtualWindowFrame.
+  final Widget child;
+
+  @override
+  State<StatefulWidget> createState() => _VirtualWindowFrameState();
+}
+
+class _VirtualWindowFrameState extends State<VirtualWindowFrame>
+    with WindowListener {
+  bool _isFocused = true;
+  bool _isMaximized = false;
+  bool _isFullScreen = false;
+
+  @override
+  void initState() {
+    windowManager.addListener(this);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  Widget _buildVirtualWindowFrame(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        border: Border.all(
+          color: Theme.of(context).dividerColor,
+          width: (_isMaximized || _isFullScreen) ? 0 : 1,
+        ),
+        boxShadow: <BoxShadow>[
+          if (!_isMaximized && !_isFullScreen)
+            BoxShadow(
+              color: Colors.black.toOpacity(0.1),
+              offset: Offset(0.0, _isFocused ? 4 : 2),
+              blurRadius: 6,
+            )
+        ],
+      ),
+      child: widget.child,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DragToResizeArea(
+      enableResizeEdges: (_isMaximized || _isFullScreen) ? [] : null,
+      child: _buildVirtualWindowFrame(context),
+    );
+  }
+
+  @override
+  void onWindowFocus() {
+    setState(() {
+      _isFocused = true;
+    });
+  }
+
+  @override
+  void onWindowBlur() {
+    setState(() {
+      _isFocused = false;
+    });
+  }
+
+  @override
+  void onWindowMaximize() {
+    setState(() {
+      _isMaximized = true;
+    });
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    setState(() {
+      _isMaximized = false;
+    });
+  }
+
+  @override
+  void onWindowEnterFullScreen() {
+    setState(() {
+      _isFullScreen = true;
+    });
+  }
+
+  @override
+  void onWindowLeaveFullScreen() {
+    setState(() {
+      _isFullScreen = false;
+    });
+  }
+}
+
+// ignore: non_constant_identifier_names
+TransitionBuilder VirtualWindowFrameInit() {
+  return (_, Widget? child) {
+    return VirtualWindowFrame(
+      child: child!,
+    );
+  };
+}
+
+void debug() {
+  AnimeSource.reload();
 }

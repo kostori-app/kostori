@@ -4,40 +4,48 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+ext.abiCodes = ["armeabi-v7a": 1, "arm64-v8a": 2, "x86_64": 3]
+
+
 def localProperties = new Properties()
-def localPropertiesFile = rootProject.file("local.properties")
+def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader("UTF-8") { reader ->
+    localPropertiesFile.withReader('UTF-8') { reader ->
         localProperties.load(reader)
     }
 }
 
 def flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
-def flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
-
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+def flutterVersionName = localProperties.getProperty("flutter.versionName")
+if (flutterVersionName == null) {
+    flutterVersionName = "1.0"
 }
 
-
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
-    compileSdk 35
+    namespace 'com.axlmly.kostori'
+    compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
+    splits {
+        abi {
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+            enable true
+            universalApk true
+        }
+    }
+
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
-    }
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
+        jvmTarget = JavaVersion.VERSION_17
     }
 
     signingConfigs {
@@ -48,64 +56,72 @@ android {
             keyPassword keystoreProperties['keyPassword']
         }
         release {
-            keyAlias = keystoreProperties['keyAlias']
-            keyPassword = keystoreProperties['keyPassword']
-            storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword = keystoreProperties['storePassword']
+
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
         }
     }
 
     defaultConfig {
         applicationId = "com.axlmly.kostori"
-        minSdkVersion 21
-        targetSdkVersion 35
+        minSdkVersion flutter.minSdkVersion
+        targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        multiDexEnabled true
+        minSdk = flutter.minSdkVersion
     }
 
     buildTypes {
         release {
             // Signing with the debug keys for now, so `flutter run --release` works.
+            ndk {
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
+            }
             signingConfig signingConfigs.release
-            minifyEnabled false
-            shrinkResources false
             applicationVariants.all { variant ->
                 variant.outputs.all { output ->
                     def abi = output.getFilter(com.android.build.OutputFile.ABI)
                     if (abi != null) {   // null for the universal-debug, universal-release variants
                         outputFileName = "Kostori-${variant.versionName}-${abi}.apk"
+                        def abiVersionCode = project.ext.abiCodes.get(abi)
+                        if (abiVersionCode != null) {
+                            versionCodeOverride = variant.versionCode * 10 + abiVersionCode
+                        }
                     } else {
                         outputFileName = "Kostori-${variant.versionName}.apk"
+                        versionCodeOverride = variant.versionCode * 10
                     }
                 }
             }
         }
-    }
-    namespace 'com.axlmly.kostori'
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
-
-    splits{
-        abi {
-            enable true
-            universalApk true
+        debug {
+            ndk {
+                abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
+            }
+            signingConfig signingConfigs.debug
+            applicationVariants.all { variant ->
+                variant.outputs.all { output ->
+                    versionCodeOverride = variant.versionCode * 10 + 4
+                }
+            }
         }
+    }
+
+    dependenciesInfo {
+        // Disables dependency metadata when building APKs.
+        includeInApk = false
+        // Disables dependency metadata when building Android App Bundles.
+        includeInBundle = false
     }
 }
 
-//kotlin {
-//    jvmToolchain {
-//        languageVersion.set(JavaLanguageVersion.of(17))
-//    }
-//}
-
 flutter {
-    source = "../.."
+    source '../..'
 }
 
 dependencies {
-    implementation("com.google.android.gms:play-services-base:18.3.0")
+    implementation "androidx.activity:activity-ktx:1.9.2"
+    implementation 'androidx.documentfile:documentfile:1.0.1'
 }

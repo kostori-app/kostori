@@ -2,10 +2,8 @@
 
 #include <dwmapi.h>
 #include <flutter_windows.h>
-#include <fstream>
+
 #include "resource.h"
-#include <filesystem>
-#include "app_links/app_links_plugin_c_api.h"
 
 namespace {
 
@@ -122,64 +120,29 @@ Win32Window::~Win32Window() {
   Destroy();
 }
 
-bool Win32Window::SendAppLinkToInstance(const std::wstring& title) {
-    // Find our exact window
-    HWND hwnd = ::FindWindow(kWindowClassName, title.c_str());
-
-    if (hwnd) {
-        // Dispatch new link to current window
-        SendAppLink(hwnd);
-
-        // (Optional) Restore our window to front in same state
-        WINDOWPLACEMENT place = { sizeof(WINDOWPLACEMENT) };
-        GetWindowPlacement(hwnd, &place);
-
-        switch (place.showCmd) {
-        case SW_SHOWMAXIMIZED:
-            ShowWindow(hwnd, SW_SHOWMAXIMIZED);
-            break;
-        case SW_SHOWMINIMIZED:
-            ShowWindow(hwnd, SW_RESTORE);
-            break;
-        default:
-            ShowWindow(hwnd, SW_NORMAL);
-            break;
-        }
-
-        SetWindowPos(0, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
-        SetForegroundWindow(hwnd);
-        // END Restore
-
-        // Window has been found, don't create another one.
-        return true;
-    }
-
-    return false;
-}
-
-void Win32Window::readPlacement(HWND hwnd) {
-    WINDOWPLACEMENT windowsPlacement{};
-    wchar_t appDataPath[MAX_PATH];
-    GetEnvironmentVariableW(L"APPDATA", appDataPath, MAX_PATH);
-    std::wstring path{appDataPath};
-    path += L"\\com.axlmly\\kostori";
-    if (!std::filesystem::exists(path)) {
-        std::filesystem::create_directories(path);
-    }
-    path += L"\\location.data";
-    std::ifstream file{path, std::ios::binary};
-    if (file.good()) {
-        file.read(reinterpret_cast<char*>(&windowsPlacement), sizeof(WINDOWPLACEMENT));
-        SetWindowPlacement(hwnd, &windowsPlacement);
-    }
-}
-
 bool Win32Window::Create(const std::wstring& title,
                          const Point& origin,
                          const Size& size) {
-    if (SendAppLinkToInstance(title)) {
-        return false;
+  HWND hwnd = ::FindWindow(kWindowClassName, title.c_str());
+  if (hwnd) {
+    WINDOWPLACEMENT place = { sizeof(WINDOWPLACEMENT) };
+    GetWindowPlacement(hwnd, &place);
+    SetForegroundWindow(hwnd);
+    switch (place.showCmd) {
+    case SW_SHOWMAXIMIZED:
+        ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+        break;
+    case SW_SHOWMINIMIZED:
+        ShowWindow(hwnd, SW_RESTORE);
+        break;
+    default:
+        ShowWindow(hwnd, SW_NORMAL);
+        break;
     }
+
+    SetWindowPos(0, HWND_TOP, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+    return false;
+  }
   Destroy();
 
   const wchar_t* window_class =

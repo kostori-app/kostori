@@ -1,16 +1,15 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
-
-import 'package:collection/collection.dart';
-import 'package:cookie_jar/cookie_jar.dart';
 import 'package:crypto/crypto.dart';
-import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:html/parser.dart' as html;
 import 'package:html/dom.dart' as dom;
-
 import 'package:flutter_qjs/flutter_qjs.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:pointycastle/api.dart';
 import 'package:pointycastle/asn1/asn1_parser.dart';
 import 'package:pointycastle/asn1/primitives/asn1_integer.dart';
@@ -23,13 +22,13 @@ import 'package:pointycastle/block/modes/cbc.dart';
 import 'package:pointycastle/block/modes/cfb.dart';
 import 'package:pointycastle/block/modes/ecb.dart';
 import 'package:pointycastle/block/modes/ofb.dart';
-
-import '../anime_source/anime_source.dart';
-import '../network/app_dio.dart';
-import '../network/cloudflare.dart';
-import '../network/cookie_jar.dart';
-import 'def.dart';
-import 'log.dart';
+import 'package:url_launcher/url_launcher_string.dart';
+import 'package:uuid/uuid.dart';
+import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
 
 class JavaScriptRuntimeException implements Exception {
   final String message;
@@ -42,7 +41,7 @@ class JavaScriptRuntimeException implements Exception {
   }
 }
 
-class JsEngine with _JSEngineApi {
+class JsEngine with _JSEngineApi, _JsUiApi {
   factory JsEngine() => _cache ?? (_cache = JsEngine._create());
 
   static JsEngine? _cache;
@@ -61,101 +60,107 @@ class JsEngine with _JSEngineApi {
     JsEngine().init();
   }
 
+  void resetDio() {
+    _dio = AppDio(BaseOptions(
+        responseType: ResponseType.plain, validateStatus: (status) => true));
+  }
+
   Future<void> init() async {
     if (!_closed) {
       return;
     }
     try {
-      _dio ??= logDio(BaseOptions(
+      _dio ??= AppDio(BaseOptions(
           responseType: ResponseType.plain, validateStatus: (status) => true));
       _cookieJar ??= SingleInstanceCookieJar.instance!;
-      _dio!.interceptors.add(CookieManagerSql(_cookieJar!));
-      _dio!.interceptors.add(CloudflareInterceptor());
       _closed = false;
       _engine = FlutterQjs();
       _engine!.dispatch();
       var setGlobalFunc =
           _engine!.evaluate("(key, value) => { this[key] = value; }");
       (setGlobalFunc as JSInvokable)(["sendMessage", _messageReceiver]);
+      setGlobalFunc(["appVersion", App.version]);
       setGlobalFunc.free();
       var jsInit = await rootBundle.load("assets/init.js");
       _engine!
           .evaluate(utf8.decode(jsInit.buffer.asUint8List()), name: "<init>");
     } catch (e, s) {
-      log('JS Engine Init Error:\n$e\n$s', 'JS Engine', LogLevel.error);
+      Log.error('JS Engine', 'JS Engine Init Error:\n$e\n$s');
     }
   }
 
-  dynamic _messageReceiver(dynamic message) {
+  Object? _messageReceiver(dynamic message) {
     try {
       if (message is Map<dynamic, dynamic>) {
         String method = message["method"] as String;
         switch (method) {
           case "log":
-            {
-              String level = message["level"];
-              LogManager.addLog(
-                  switch (level) {
-                    "error" => LogLevel.error,
-                    "warning" => LogLevel.warning,
-                    "info" => LogLevel.info,
-                    _ => LogLevel.warning
-                  },
-                  message["title"],
-                  message["content"].toString());
-            }
+            String level = message["level"];
+            Log.addLog(
+                switch (level) {
+                  "error" => LogLevel.error,
+                  "warning" => LogLevel.warning,
+                  "info" => LogLevel.info,
+                  _ => LogLevel.warning
+                },
+                message["title"],
+                message["content"].toString());
           case 'load_data':
-            {
-              String key = message["key"];
-              String dataKey = message["data_key"];
-              return AnimeSource.sources
-                  .firstWhereOrNull((element) => element.key == key)
-                  ?.data[dataKey];
-            }
+            String key = message["key"];
+            String dataKey = message["data_key"];
+            return AnimeSource.find(key)?.data[dataKey];
           case 'save_data':
-            {
-              String key = message["key"];
-              String dataKey = message["data_key"];
-              var data = message["data"];
-              var source = AnimeSource.sources
-                  .firstWhere((element) => element.key == key);
-              source.data[dataKey] = data;
-              source.saveData();
+            String key = message["key"];
+            String dataKey = message["data_key"];
+            if (dataKey == 'setting') {
+              throw "setting is not allowed to be saved";
             }
+            var data = message["data"];
+            var source = AnimeSource.find(key)!;
+            source.data[dataKey] = data;
+            source.saveData();
           case 'delete_data':
-            {
-              String key = message["key"];
-              String dataKey = message["data_key"];
-              var source = AnimeSource.sources
-                  .firstWhereOrNull((element) => element.key == key);
-              source?.data.remove(dataKey);
-              source?.saveData();
-            }
+            String key = message["key"];
+            String dataKey = message["data_key"];
+            var source = AnimeSource.find(key);
+            source?.data.remove(dataKey);
+            source?.saveData();
           case 'http':
-            {
-              return _http(Map.from(message));
-            }
+            return _http(Map.from(message));
           case 'html':
-            {
-              return handleHtmlCallback(Map.from(message));
-            }
+            return handleHtmlCallback(Map.from(message));
           case 'convert':
-            {
-              return _convert(Map.from(message));
-            }
+            return _convert(Map.from(message));
           case "random":
-            {
-              return _randomInt(message["min"], message["max"]);
-            }
+            return _random(
+              message["min"] ?? 0,
+              message["max"] ?? 1,
+              message["type"],
+            );
           case "cookie":
-            {
-              return handleCookieCallback(Map.from(message));
-            }
+            return handleCookieCallback(Map.from(message));
+          case "uuid":
+            return const Uuid().v1();
+          case "load_setting":
+            String key = message["key"];
+            String settingKey = message["setting_key"];
+            var source = AnimeSource.find(key)!;
+            return source.data["settings"]?[settingKey] ??
+                source.settings?[settingKey]!['default'] ??
+                (throw "Setting not found: $settingKey");
+          case "isLogged":
+            return AnimeSource.find(message["key"])!.isLogged;
+          // temporary solution for [setTimeout] function
+          // TODO: implement [setTimeout] in quickjs project
+          case "delay":
+            return Future.delayed(Duration(milliseconds: message["time"]));
+          case "UI":
+            handleUIMessage(Map.from(message));
         }
       }
+      return null;
     } catch (e, s) {
-      log("Failed to handle message: $message\n$e\n$s", "JsEngine",
-          LogLevel.error);
+      Log.error("Failed to handle message: $message\n$e\n$s", "JsEngine");
       rethrow;
     }
   }
@@ -169,7 +174,24 @@ class JsEngine with _JSEngineApi {
       if (headers["user-agent"] == null && headers["User-Agent"] == null) {
         headers["User-Agent"] = webUA;
       }
-      response = await _dio!.request(req["url"],
+      var dio = _dio;
+      if (headers['http_client'] == "dart:io") {
+        dio = Dio(BaseOptions(
+          responseType: ResponseType.plain,
+          validateStatus: (status) => true,
+        ));
+        var proxy = await AppDio.getProxy();
+        dio.httpClientAdapter = IOHttpClientAdapter(
+          createHttpClient: () {
+            return HttpClient()
+              ..findProxy = (uri) => proxy == null ? "DIRECT" : "PROXY $proxy";
+          },
+        );
+        dio.interceptors
+            .add(CookieManagerSql(SingleInstanceCookieJar.instance!));
+        dio.interceptors.add(LogInterceptor());
+      }
+      response = await dio!.request(req["url"],
           data: req["data"],
           options: Options(
               method: req['http_method'],
@@ -212,54 +234,77 @@ class JsEngine with _JSEngineApi {
 }
 
 mixin class _JSEngineApi {
-  final Map<int, dom.Document> _documents = {};
-  final Map<int, dom.Element> _elements = {};
   CookieJarSql? _cookieJar;
 
-  dynamic handleHtmlCallback(Map<String, dynamic> data) {
+  final _documents = <int, DocumentWrapper>{};
+
+  Object? handleHtmlCallback(Map<String, dynamic> data) {
     switch (data["function"]) {
       case "parse":
-        _documents[data["key"]] = html.parse(data["data"]);
+        if (_documents.length > 8) {
+          var shouldDelete = _documents.keys.first;
+          Log.warning(
+            "JS Engine",
+            "Too many documents, deleting the oldest: $shouldDelete\n"
+                "Current documents: ${_documents.keys}",
+          );
+          _documents.remove(shouldDelete);
+        }
+        _documents[data["key"]] = DocumentWrapper.parse(data["data"]);
         return null;
       case "querySelector":
-        var res = _documents[data["key"]]!.querySelector(data["query"]);
-        if (res == null) return null;
-        _elements[_elements.length] = res;
-        return _elements.length - 1;
+        var key = data["key"];
+        return _documents[key]!.querySelector(data["query"]);
       case "querySelectorAll":
-        var res = _documents[data["key"]]!.querySelectorAll(data["query"]);
-        var keys = <int>[];
-        for (var element in res) {
-          _elements[_elements.length] = element;
-          keys.add(_elements.length - 1);
-        }
-        return keys;
+        var key = data["key"];
+        return _documents[key]!.querySelectorAll(data["query"]);
       case "getText":
-        return _elements[data["key"]]!.text;
+        return _documents[data["doc"]]!.elementGetText(data["key"]);
       case "getAttributes":
-        return _elements[data["key"]]!.attributes;
+        var res = _documents[data["doc"]]!.elementGetAttributes(data["key"]);
+        return res;
       case "dom_querySelector":
-        var res = _elements[data["key"]]!.querySelector(data["query"]);
-        if (res == null) return null;
-        _elements[_elements.length] = res;
-        return _elements.length - 1;
+        var doc = _documents[data["doc"]]!;
+        return doc.elementQuerySelector(data["key"], data["query"]);
       case "dom_querySelectorAll":
-        var res = _elements[data["key"]]!.querySelectorAll(data["query"]);
-        var keys = <int>[];
-        for (var element in res) {
-          _elements[_elements.length] = element;
-          keys.add(_elements.length - 1);
-        }
-        return keys;
+        var doc = _documents[data["doc"]]!;
+        return doc.elementQuerySelectorAll(data["key"], data["query"]);
       case "getChildren":
-        var res = _elements[data["key"]]!.children;
-        var keys = <int>[];
-        for (var element in res) {
-          _elements[_elements.length] = element;
-          keys.add(_elements.length - 1);
-        }
-        return keys;
+        var doc = _documents[data["doc"]]!;
+        return doc.elementGetChildren(data["key"]);
+      case "getNodes":
+        var doc = _documents[data["doc"]]!;
+        return doc.elementGetNodes(data["key"]);
+      case "getInnerHTML":
+        var doc = _documents[data["doc"]]!;
+        return doc.elementGetInnerHTML(data["key"]);
+      case "getParent":
+        var doc = _documents[data["doc"]]!;
+        return doc.elementGetParent(data["key"]);
+      case "node_text":
+        return _documents[data["doc"]]!.nodeGetText(data["key"]);
+      case "node_type":
+        return _documents[data["doc"]]!.nodeType(data["key"]);
+      case "node_to_element":
+        return _documents[data["doc"]]!.nodeToElement(data["key"]);
+      case "dispose":
+        var docKey = data["key"];
+        _documents.remove(docKey);
+        return null;
+      case "getClassNames":
+        return _documents[data["doc"]]!.getClassNames(data["key"]);
+      case "getId":
+        return _documents[data["doc"]]!.getId(data["key"]);
+      case "getLocalName":
+        return _documents[data["doc"]]!.getLocalName(data["key"]);
+      case "getElementById":
+        return _documents[data["key"]]!.getElementById(data["id"]);
+      case "getPreviousSibling":
+        return _documents[data["doc"]]!.getPreviousSibling(data["key"]);
+      case "getNextSibling":
+        return _documents[data["doc"]]!.getNextSibling(data["key"]);
     }
+    return null;
   }
 
   dynamic handleCookieCallback(Map<String, dynamic> data) {
@@ -296,11 +341,6 @@ mixin class _JSEngineApi {
     }
   }
 
-  void clear() {
-    _documents.clear();
-    _elements.clear();
-  }
-
   void clearCookies(List<String> domains) async {
     for (var domain in domains) {
       var uri = Uri.tryParse(domain);
@@ -309,16 +349,15 @@ mixin class _JSEngineApi {
     }
   }
 
-  dynamic _convert(Map<String, dynamic> data) {
+  Object? _convert(Map<String, dynamic> data) {
     String type = data["type"];
     var value = data["value"];
     bool isEncode = data["isEncode"];
     try {
       switch (type) {
+        case "utf8":
+          return isEncode ? utf8.encode(value) : utf8.decode(value);
         case "base64":
-          if (value is String) {
-            value = utf8.encode(value);
-          }
           return isEncode ? base64Encode(value) : base64Decode(value);
         case "md5":
           return Uint8List.fromList(md5.convert(value).bytes);
@@ -328,12 +367,42 @@ mixin class _JSEngineApi {
           return Uint8List.fromList(sha256.convert(value).bytes);
         case "sha512":
           return Uint8List.fromList(sha512.convert(value).bytes);
+        case "hmac":
+          var key = data["key"];
+          var hash = data["hash"];
+          var hmac = Hmac(
+              switch (hash) {
+                "md5" => md5,
+                "sha1" => sha1,
+                "sha256" => sha256,
+                "sha512" => sha512,
+                _ => throw "Unsupported hash: $hash"
+              },
+              key);
+          if (data['isString'] == true) {
+            return hmac.convert(value).toString();
+          } else {
+            return Uint8List.fromList(hmac.convert(value).bytes);
+          }
         case "aes-ecb":
           if (!isEncode) {
             var key = data["key"];
             var cipher = ECBBlockCipher(AESEngine());
-            cipher.init(false, KeyParameter(key));
-            return cipher.process(value);
+            cipher.init(
+              false,
+              KeyParameter(key),
+            );
+            var offset = 0;
+            var result = Uint8List(value.length);
+            while (offset < value.length) {
+              offset += cipher.processBlock(
+                value,
+                offset,
+                result,
+                offset,
+              );
+            }
+            return result;
           }
           return null;
         case "aes-cbc":
@@ -342,7 +411,17 @@ mixin class _JSEngineApi {
             var iv = data["iv"];
             var cipher = CBCBlockCipher(AESEngine());
             cipher.init(false, ParametersWithIV(KeyParameter(key), iv));
-            return cipher.process(value);
+            var offset = 0;
+            var result = Uint8List(value.length);
+            while (offset < value.length) {
+              offset += cipher.processBlock(
+                value,
+                offset,
+                result,
+                offset,
+              );
+            }
+            return result;
           }
           return null;
         case "aes-cfb":
@@ -351,7 +430,17 @@ mixin class _JSEngineApi {
             var blockSize = data["blockSize"];
             var cipher = CFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
-            return cipher.process(value);
+            var offset = 0;
+            var result = Uint8List(value.length);
+            while (offset < value.length) {
+              offset += cipher.processBlock(
+                value,
+                offset,
+                result,
+                offset,
+              );
+            }
+            return result;
           }
           return null;
         case "aes-ofb":
@@ -360,7 +449,17 @@ mixin class _JSEngineApi {
             var blockSize = data["blockSize"];
             var cipher = OFBBlockCipher(AESEngine(), blockSize);
             cipher.init(false, KeyParameter(key));
-            return cipher.process(value);
+            var offset = 0;
+            var result = Uint8List(value.length);
+            while (offset < value.length) {
+              offset += cipher.processBlock(
+                value,
+                offset,
+                result,
+                offset,
+              );
+            }
+            return result;
           }
           return null;
         case "rsa":
@@ -375,8 +474,8 @@ mixin class _JSEngineApi {
         default:
           return value;
       }
-    } catch (e) {
-      Log.error("JS Engine", "Failed to convert $type: $e");
+    } catch (e, s) {
+      Log.error("JS Engine", "Failed to convert $type: $e", s);
       return null;
     }
   }
@@ -423,7 +522,217 @@ mixin class _JSEngineApi {
         : output.sublist(0, outputOffset);
   }
 
-  int _randomInt(int min, int max) {
+  num _random(num min, num max, String type) {
+    if (type == "double") {
+      return min + (max - min) * math.Random().nextDouble();
+    }
     return (min + (max - min) * math.Random().nextDouble()).toInt();
+  }
+}
+
+class DocumentWrapper {
+  final dom.Document doc;
+
+  DocumentWrapper.parse(String doc) : doc = html.parse(doc);
+
+  var elements = <dom.Element>[];
+
+  var nodes = <dom.Node>[];
+
+  int? querySelector(String query) {
+    var element = doc.querySelector(query);
+    if (element == null) return null;
+    elements.add(element);
+    return elements.length - 1;
+  }
+
+  List<int> querySelectorAll(String query) {
+    var res = doc.querySelectorAll(query);
+    var keys = <int>[];
+    for (var element in res) {
+      elements.add(element);
+      keys.add(elements.length - 1);
+    }
+    return keys;
+  }
+
+  String? elementGetText(int key) {
+    return elements[key].text;
+  }
+
+  Map<String, String> elementGetAttributes(int key) {
+    return elements[key].attributes.map(
+          (key, value) => MapEntry(
+            key.toString(),
+            value,
+          ),
+        );
+  }
+
+  String? elementGetInnerHTML(int key) {
+    return elements[key].innerHtml;
+  }
+
+  int? elementGetParent(int key) {
+    var res = elements[key].parent;
+    if (res == null) return null;
+    elements.add(res);
+    return elements.length - 1;
+  }
+
+  int? elementQuerySelector(int key, String query) {
+    var res = elements[key].querySelector(query);
+    if (res == null) return null;
+    elements.add(res);
+    return elements.length - 1;
+  }
+
+  List<int> elementQuerySelectorAll(int key, String query) {
+    var res = elements[key].querySelectorAll(query);
+    var keys = <int>[];
+    for (var element in res) {
+      elements.add(element);
+      keys.add(elements.length - 1);
+    }
+    return keys;
+  }
+
+  List<int> elementGetChildren(int key) {
+    var res = elements[key].children;
+    var keys = <int>[];
+    for (var element in res) {
+      elements.add(element);
+      keys.add(elements.length - 1);
+    }
+    return keys;
+  }
+
+  List<int> elementGetNodes(int key) {
+    var res = elements[key].nodes;
+    var keys = <int>[];
+    for (var node in res) {
+      nodes.add(node);
+      keys.add(nodes.length - 1);
+    }
+    return keys;
+  }
+
+  String? nodeGetText(int key) {
+    return nodes[key].text;
+  }
+
+  String nodeType(int key) {
+    return switch (nodes[key].nodeType) {
+      dom.Node.ELEMENT_NODE => "element",
+      dom.Node.TEXT_NODE => "text",
+      dom.Node.COMMENT_NODE => "comment",
+      dom.Node.DOCUMENT_NODE => "document",
+      _ => "unknown"
+    };
+  }
+
+  int? nodeToElement(int key) {
+    if (nodes[key] is dom.Element) {
+      elements.add(nodes[key] as dom.Element);
+      return elements.length - 1;
+    }
+    return null;
+  }
+
+  List<String> getClassNames(int key) {
+    return (elements[key]).classes.toList();
+  }
+
+  String? getId(int key) {
+    return (elements[key]).id;
+  }
+
+  String? getLocalName(int key) {
+    return (elements[key]).localName;
+  }
+
+  int? getElementById(String id) {
+    var element = doc.getElementById(id);
+    if (element == null) return null;
+    elements.add(element);
+    return elements.length - 1;
+  }
+
+  int? getPreviousSibling(int key) {
+    var res = elements[key].previousElementSibling;
+    if (res == null) return null;
+    elements.add(res);
+    return elements.length - 1;
+  }
+
+  int? getNextSibling(int key) {
+    var res = elements[key].nextElementSibling;
+    if (res == null) return null;
+    elements.add(res);
+    return elements.length - 1;
+  }
+}
+
+class JSAutoFreeFunction {
+  final JSInvokable func;
+
+  /// Automatically free the function when it's not used anymore
+  JSAutoFreeFunction(this.func) {
+    finalizer.attach(this, func);
+  }
+
+  dynamic call(List<dynamic> args) {
+    return func(args);
+  }
+
+  static final finalizer = Finalizer<JSInvokable>((func) {
+    func.free();
+  });
+}
+
+mixin class _JsUiApi {
+  void handleUIMessage(Map<String, dynamic> message) {
+    switch (message['function']) {
+      case 'showMessage':
+        var m = message['message'];
+        if (m.toString().isNotEmpty) {
+          App.rootContext.showMessage(message: m.toString());
+        }
+      case 'showDialog':
+        _showDialog(message);
+      case 'launchUrl':
+        var url = message['url'];
+        if (url.toString().isNotEmpty) {
+          launchUrlString(url.toString());
+        }
+    }
+  }
+
+  void _showDialog(Map<String, dynamic> message) {
+    var title = message['title'];
+    var content = message['content'];
+    var actions = <String, JSAutoFreeFunction>{};
+    for (var action in message['actions']) {
+      // [message] will be released after the method call, causing the action to be invalid, so we need to duplicate it
+      (action['callback'] as JSInvokable).dup();
+      actions[action['text']] = JSAutoFreeFunction(action['callback']);
+    }
+    showDialog(
+        context: App.rootContext,
+        builder: (context) {
+          return ContentDialog(
+            title: title,
+            content: Text(content).paddingHorizontal(16),
+            actions: actions.entries.map((entry) {
+              return TextButton(
+                onPressed: () {
+                  entry.value.call([]);
+                  context.pop();
+                },
+                child: Text(entry.key),
+              );
+            }).toList(),
+          );
+        });
   }
 }

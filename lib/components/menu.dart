@@ -1,16 +1,16 @@
 part of "components.dart";
 
-void showDesktopMenu(
-    BuildContext context, Offset location, List<DesktopMenuEntry> entries) {
-  Navigator.of(context).push(DesktopMenuRoute(entries, location));
+void showMenuX(BuildContext context, Offset location, List<MenuEntry> entries) {
+  Navigator.of(context, rootNavigator: true)
+      .push(_MenuRoute(entries, location));
 }
 
-class DesktopMenuRoute<T> extends PopupRoute<T> {
-  final List<DesktopMenuEntry> entries;
+class _MenuRoute<T> extends PopupRoute<T> {
+  final List<MenuEntry> entries;
 
   final Offset location;
 
-  DesktopMenuRoute(this.entries, this.location);
+  _MenuRoute(this.entries, this.location);
 
   @override
   Color? get barrierColor => Colors.transparent;
@@ -21,17 +21,22 @@ class DesktopMenuRoute<T> extends PopupRoute<T> {
   @override
   String? get barrierLabel => "menu";
 
+  double get entryHeight => App.isMobile ? 42 : 36;
+
   @override
   Widget buildPage(BuildContext context, Animation<double> animation,
       Animation<double> secondaryAnimation) {
-    const width = 196.0;
+    var width = entries.first.icon == null ? 216.0 : 242.0;
     final size = MediaQuery.of(context).size;
     var left = location.dx;
+    if (left < 10) {
+      left = 10;
+    }
     if (left + width > size.width - 10) {
       left = size.width - width - 10;
     }
     var top = location.dy;
-    var height = 16 + 32 * entries.length;
+    var height = 16 + entryHeight * entries.length;
     if (top + height > size.height - 15) {
       top = size.height - height - 15;
     }
@@ -41,22 +46,34 @@ class DesktopMenuRoute<T> extends PopupRoute<T> {
           left: left,
           top: top,
           child: Container(
-            width: width,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
             decoration: BoxDecoration(
-                color: App.colors(context).surface,
+              borderRadius: BorderRadius.circular(4),
+              border: context.brightness == Brightness.dark
+                  ? Border.all(color: context.colorScheme.outlineVariant)
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: context.colorScheme.shadow.toOpacity(0.2),
+                  blurRadius: 8,
+                  blurStyle: BlurStyle.outer,
+                ),
+              ],
+            ),
+            child: BlurEffect(
+              borderRadius: BorderRadius.circular(4),
+              child: Material(
+                color: context.colorScheme.surface.toOpacity(0.78),
                 borderRadius: BorderRadius.circular(4),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                child: Container(
+                  width: width,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children:
+                        entries.map((e) => buildEntry(e, context)).toList(),
                   ),
-                ]),
-            child: Material(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: entries.map((e) => buildEntry(e, context)).toList(),
+                ),
               ),
             ),
           ),
@@ -65,7 +82,7 @@ class DesktopMenuRoute<T> extends PopupRoute<T> {
     );
   }
 
-  Widget buildEntry(DesktopMenuEntry entry, BuildContext context) {
+  Widget buildEntry(MenuEntry entry, BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(4),
       onTap: () {
@@ -73,22 +90,17 @@ class DesktopMenuRoute<T> extends PopupRoute<T> {
         entry.onClick();
       },
       child: SizedBox(
-        height: 32,
-        child: Row(
-          children: [
-            const SizedBox(
-              width: 4,
-            ),
-            if (entry.icon != null)
-              Icon(
-                entry.icon,
-                size: 18,
-              ),
-            const SizedBox(
-              width: 4,
-            ),
-            Text(entry.text),
-          ],
+        height: entryHeight,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              if (entry.icon != null)
+                Icon(entry.icon, size: 18, color: entry.color),
+              const SizedBox(width: 12),
+              Text(entry.text, style: TextStyle(color: entry.color)),
+            ],
+          ),
         ),
       ),
     );
@@ -108,10 +120,11 @@ class DesktopMenuRoute<T> extends PopupRoute<T> {
   }
 }
 
-class DesktopMenuEntry {
+class MenuEntry {
   final String text;
   final IconData? icon;
+  final Color? color;
   final void Function() onClick;
 
-  DesktopMenuEntry({required this.text, this.icon, required this.onClick});
+  MenuEntry({required this.text, this.icon, this.color, required this.onClick});
 }

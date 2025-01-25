@@ -1,17 +1,15 @@
 import 'dart:async' show Future, StreamController;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../image_manager.dart';
-import 'base_image_provider.dart';
-import 'cached_image.dart' as image_provider;
-
-/// Function which is called after loading the image failed.
-typedef ErrorListener = void Function();
+import 'package:kostori/network/images.dart';
+import 'package:kostori/foundation/image_loader/base_image_provider.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart'
+    as image_provider;
 
 class CachedImageProvider
     extends BaseImageProvider<image_provider.CachedImageProvider> {
   /// Image provider for normal image.
-  const CachedImageProvider(this.url, {this.headers, this.sourceKey});
+  const CachedImageProvider(this.url, {this.headers, this.sourceKey, this.aid});
 
   final String url;
 
@@ -19,31 +17,20 @@ class CachedImageProvider
 
   final String? sourceKey;
 
+  final String? aid;
+
   @override
   Future<Uint8List> load(StreamController<ImageChunkEvent> chunkEvents) async {
-    chunkEvents.add(const ImageChunkEvent(
-        cumulativeBytesLoaded: 0, expectedTotalBytes: 100));
-    var manager = ImageManager();
-    DownloadProgress? finishProgress;
-
-    var stream = sourceKey == null
-        ? manager.getImage(url, headers)
-        : manager.getCustomThumbnail(url, sourceKey!);
-    await for (var progress in stream) {
-      if (progress.currentBytes == progress.expectedBytes) {
-        finishProgress = progress;
-      }
+    await for (var progress in ImageDownloader.loadThumbnail(url, sourceKey)) {
       chunkEvents.add(ImageChunkEvent(
-          cumulativeBytesLoaded: progress.currentBytes,
-          expectedTotalBytes: progress.expectedBytes));
+        cumulativeBytesLoaded: progress.currentBytes,
+        expectedTotalBytes: progress.totalBytes,
+      ));
+      if (progress.imageBytes != null) {
+        return progress.imageBytes!;
+      }
     }
-
-    if (finishProgress!.data != null) {
-      return finishProgress.data!;
-    }
-
-    var file = finishProgress.getFile();
-    return await file.readAsBytes();
+    throw "Error: Empty response body.";
   }
 
   @override
@@ -52,5 +39,5 @@ class CachedImageProvider
   }
 
   @override
-  String get key => url;
+  String get key => url + (sourceKey ?? "") + (aid ?? "");
 }

@@ -1,50 +1,70 @@
-library components;
+library;
 
 import 'dart:async';
 import 'dart:collection';
+import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:kostori/components/select.dart';
-// import 'package:kostori/foundation/widget_utils.dart';
-import 'package:kostori/network/base_anime.dart';
-import 'package:kostori/tools/extensions.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/app_page_route.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/foundation/local.dart';
+import 'package:kostori/foundation/res.dart';
+import 'package:kostori/network/cloudflare.dart';
+import 'package:kostori/pages/anime_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_item.dart';
+import 'package:kostori/pages/favorites/favorites_page.dart';
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/tag_translation.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:syntax_highlight/syntax_highlight.dart';
+import 'package:text_scroll/text_scroll.dart';
 
-import '../anime_source/anime_source.dart';
-import '../base.dart';
-import '../foundation/app.dart';
-import '../foundation/history.dart';
-import '../foundation/image_loader/cached_image.dart';
-import '../foundation/image_loader/stream_image_provider.dart';
-import '../foundation/image_manager.dart';
-import '../foundation/local_favorites.dart';
-// import '../foundation/state_controller.dart';
-import '../foundation/ui_mode.dart';
-import '../network/cloudflare.dart';
-import '../network/res.dart';
-import '../pages/anime_page.dart';
+part 'image.dart';
 
-part 'animated_image.dart';
 part 'appbar.dart';
-part 'avatar.dart';
-// part 'builder.dart';
+
 part 'button.dart';
-part 'color.dart';
-part 'anime_tile.dart';
-part 'anime_list.dart';
+
 part 'consts.dart';
-// part 'flyout.dart';
+
+part 'flyout.dart';
+
 part 'layout.dart';
+
 part 'loading.dart';
+
 part 'menu.dart';
+
 part 'message.dart';
+
 part 'navigation_bar.dart';
+
 part 'pop_up_widget.dart';
+
 part 'scroll.dart';
-// part 'select.dart';
+
+part 'select.dart';
+
 part 'side_bar.dart';
+
+part 'effects.dart';
+
+part 'anime.dart';
+
+part 'gesture.dart';
+
+part 'code.dart';

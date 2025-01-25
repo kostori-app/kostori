@@ -21,31 +21,47 @@ class NetworkError extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 60,
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 28,
+                  color: context.colorScheme.error,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "Error".tl,
+                  style: ts.withColor(context.colorScheme.error).s16,
+                ),
+              ],
+            ),
           ),
           const SizedBox(
-            height: 4,
+            height: 8,
           ),
           Text(
-            cfe == null ? message : "需要进行Cloudflare验证",
+            cfe == null ? message : "Cloudflare verification required".tl,
             textAlign: TextAlign.center,
             maxLines: 3,
           ),
           if (retry != null)
             const SizedBox(
-              height: 4,
+              height: 12,
             ),
           if (retry != null)
             if (cfe != null)
               FilledButton(
                 onPressed: () => passCloudflare(
                     CloudflareException.fromString(message)!, retry!),
-                child: Text('继续'),
+                child: Text('Verify'.tl),
               )
             else
-              FilledButton(onPressed: retry, child: Text('重试'))
+              FilledButton(
+                onPressed: retry,
+                child: Text('Retry'.tl),
+              ),
         ],
       ),
     );
@@ -66,7 +82,7 @@ class NetworkError extends StatelessWidget {
 }
 
 class ListLoadingIndicator extends StatelessWidget {
-  const ListLoadingIndicator({Key? key}) : super(key: key);
+  const ListLoadingIndicator({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +93,129 @@ class ListLoadingIndicator extends StatelessWidget {
         child: FiveDotLoadingAnimation(),
       ),
     );
+  }
+}
+
+class SliverListLoadingIndicator extends StatelessWidget {
+  const SliverListLoadingIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // SliverToBoxAdapter can not been lazy loaded.
+    // Use SliverList to make sure the animation can be lazy loaded.
+    return SliverList.list(children: const [
+      SizedBox(),
+      ListLoadingIndicator(),
+    ]);
+  }
+}
+
+abstract class LoadingState<T extends StatefulWidget, S extends Object>
+    extends State<T> {
+  bool isLoading = false;
+
+  S? data;
+
+  String? error;
+
+  Future<Res<S>> loadData();
+
+  Future<Res<S>> loadDataWithRetry() async {
+    int retry = 0;
+    while (true) {
+      var res = await loadData();
+      if (res.success) {
+        return res;
+      } else {
+        if (!mounted) return res;
+        if (retry >= 3) {
+          return res;
+        }
+        retry++;
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+    }
+  }
+
+  FutureOr<void> onDataLoaded() {}
+
+  Widget buildContent(BuildContext context, S data);
+
+  Widget? buildFrame(BuildContext context, Widget child) => null;
+
+  Widget buildLoading() {
+    return Center(
+      child: const CircularProgressIndicator(
+        strokeWidth: 2,
+      ).fixWidth(32).fixHeight(32),
+    );
+  }
+
+  void retry() {
+    setState(() {
+      isLoading = true;
+      error = null;
+    });
+    loadDataWithRetry().then((value) async {
+      if (value.success) {
+        data = value.data;
+        await onDataLoaded();
+        setState(() {
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          error = value.errorMessage!;
+        });
+      }
+    });
+  }
+
+  Widget buildError() {
+    return NetworkError(
+      message: error!,
+      retry: retry,
+    );
+  }
+
+  @override
+  @mustCallSuper
+  void initState() {
+    isLoading = true;
+    Future.microtask(() {
+      loadDataWithRetry().then((value) async {
+        if (!mounted) return;
+        if (value.success) {
+          data = value.data;
+          await onDataLoaded();
+          setState(() {
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            isLoading = false;
+            error = value.errorMessage!;
+          });
+        }
+      });
+    });
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget child;
+
+    if (isLoading) {
+      child = buildLoading();
+    } else if (error != null) {
+      child = buildError();
+    } else {
+      child = buildContent(context, data!);
+    }
+
+    return buildFrame(context, child) ?? child;
   }
 }
 
@@ -92,7 +231,7 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
 
   int _page = 1;
 
-  int _maxPage = 1;
+  int? _maxPage;
 
   Future<Res<List<S>>> loadData(int page);
 
@@ -104,10 +243,10 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
 
   bool get isFirstLoading => _isFirstLoading;
 
-  bool get haveNextPage => _page <= _maxPage;
+  bool get haveNextPage => _maxPage == null || _page <= _maxPage!;
 
   void nextPage() {
-    if (_page > _maxPage) return;
+    if (_maxPage != null && _page > _maxPage!) return;
     if (_isLoading) return;
     _isLoading = true;
     loadData(_page).then((value) {

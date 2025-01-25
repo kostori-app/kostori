@@ -1,86 +1,105 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:kostori/pages/bingeWatchPage.dart';
-import 'package:kostori/pages/explorePage.dart';
-import 'package:kostori/pages/historyPage.dart';
-import 'package:kostori/pages/homePage.dart';
-import 'package:kostori/pages/musicPage.dart';
-import 'package:kostori/pages/personsPage.dart';
+import 'package:flutter/services.dart';
+
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/pages/bangumi_page.dart';
+import 'package:kostori/pages/explore_Page.dart';
+import 'package:kostori/pages/favorites/favorites_page.dart';
+import 'package:kostori/pages/history_page.dart';
+import 'package:kostori/pages/search_page.dart';
+import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
-import '../components/components.dart';
-import '../base.dart';
-import '../foundation/app.dart';
-import '../foundation/app_page_route.dart';
-import '../network/webdav.dart';
-import 'category_page.dart';
+import 'package:kostori/utils/translations.dart';
+
+import 'bangumi/bangumi.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({Key? key}) : super(key: key);
-
-  static MainPageState of(BuildContext context) {
-    return context.findAncestorStateOfType<MainPageState>()!;
-  }
+  const MainPage({super.key});
 
   @override
-  State<MainPage> createState() => MainPageState();
+  State<MainPage> createState() => _MainPageState();
 }
 
-class MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> {
+  late final NaviObserver _observer;
+
   GlobalKey<NavigatorState>? _navigatorKey;
 
-  late final NaviObserver _observer;
-  List<Widget> get _pages => [
-        const Personspage(),
-        Homepage(),
-        Bingewatchpage(),
-        Historypage(),
-        Explorepage(
-          key: Key(appdata.appSettings.explorePages.length.toString()),
-        ),
-        Musicpage(),
-        const AllCategoryPage(),
-      ];
+  void to(Widget Function() widget, {bool preventDuplicate = false}) async {
+    if (preventDuplicate) {
+      var page = widget();
+      if ("/${page.runtimeType}" == _observer.routes.last.toString()) return;
+    }
+    _navigatorKey!.currentContext!.to(widget);
+  }
+
+  void back() {
+    _navigatorKey!.currentContext!.pop();
+  }
+
+  void checkUpdates() async {
+    var lastCheck = appdata.implicitData['lastCheckUpdate'] ?? 0;
+    if (appdata.settings['bangumiDataVer'] == null) {
+      await Bangumi.checkBangumiData();
+    }
+    var now = DateTime.now().millisecondsSinceEpoch;
+    if (now - lastCheck < 24 * 60 * 60 * 1000) {
+      return;
+    }
+    appdata.implicitData['lastCheckUpdate'] = now;
+    appdata.writeImplicitData();
+    AnimeSourceSettings.checkAnimeSourceUpdate();
+    await Bangumi.getCalendarData();
+    await Bangumi.checkBangumiData();
+    if (appdata.settings['checkUpdateOnStart']) {
+      await Future.delayed(const Duration(milliseconds: 300));
+      await checkUpdateUi(false);
+    }
+  }
+
   @override
   void initState() {
+    checkUpdates();
+    _observer = NaviObserver();
     _navigatorKey = GlobalKey();
     App.mainNavigatorKey = _navigatorKey;
-    // _login();
-    notifications.requestPermission();
-    notifications.cancelAll();
-    _observer = NaviObserver();
-
-    if (appdata.firstUse[3] == "0") {
-      appdata.firstUse[3] = "1";
-      appdata.writeData();
-    }
-
-    // Future.delayed(const Duration(milliseconds: 300), () => Webdav.syncData())
-    //     .then((v) => checkClipboard());
-    // _observer = NaviObserver();
     super.initState();
   }
+
+  final _pages = [
+    // const Personspage(),
+    const BangumiPage(
+      key: PageStorageKey('bangumi'),
+    ),
+    const FavoritesPage(
+      key: PageStorageKey('favorites'),
+    ),
+    const HistoryPage(key: PageStorageKey('history')),
+    const ExplorePage(
+      key: PageStorageKey('explore'),
+    ),
+    // const Musicpage(),
+  ];
+
+  var index = 0;
 
   @override
   Widget build(BuildContext context) {
     return NaviPane(
-      initialPage: int.parse(appdata.settings[23]),
       observer: _observer,
+      navigatorKey: _navigatorKey!,
       paneItems: [
         PaneItemEntry(
-          label: '个人',
-          icon: Icons.person_outline,
-          activeIcon: Icons.person,
-        ),
-        PaneItemEntry(
-          label: '主页',
-          icon: Icons.home_outlined,
-          activeIcon: Icons.home_rounded,
+          label: '番组计划',
+          icon: Icons.account_balance_outlined,
+          activeIcon: Icons.account_balance,
         ),
         PaneItemEntry(
           label: '追番',
-          icon: Icons.local_activity_outlined,
-          activeIcon: Icons.local_activity,
+          icon: Icons.star_border,
+          activeIcon: Icons.star,
         ),
         PaneItemEntry(
           label: '历史',
@@ -92,41 +111,34 @@ class MainPageState extends State<MainPage> {
           icon: Icons.explore_outlined,
           activeIcon: Icons.explore_rounded,
         ),
-        PaneItemEntry(
-          label: '音乐',
-          icon: Icons.music_note_outlined,
-          activeIcon: Icons.music_note,
-        ),
+        // PaneItemEntry(
+        //   label: '音乐',
+        //   icon: Icons.music_note_outlined,
+        //   activeIcon: Icons.music_note,
+        // ),
       ],
       paneActions: [
-        PaneActionEntry(icon: Icons.search, label: "搜索", onTap: () {}),
+        // if(index != 0)
         PaneActionEntry(
-            icon: Icons.settings,
-            label: "设置",
-            onTap: () => SettingsPage.open()),
+          icon: Icons.search,
+          label: "Search".tl,
+          onTap: () {
+            to(() => const SearchPage(), preventDuplicate: true);
+          },
+        ),
+        PaneActionEntry(
+          icon: Icons.settings,
+          label: "Settings".tl,
+          onTap: () {
+            to(() => const SettingsPage(), preventDuplicate: true);
+          },
+        )
       ],
       pageBuilder: (index) {
-        return Navigator(
-          observers: [_observer],
-          key: _navigatorKey,
-          onGenerateRoute: (settings) => AppPageRoute(
-            preventRebuild: false,
-            isRootRoute: true,
-            builder: (context) {
-              return NaviPaddingWidget(child: _pages[index]);
-            },
-          ),
-        );
+        return _pages[index];
       },
-      onPageChange: (index) {
-        _navigatorKey!.currentState?.pushAndRemoveUntil(
-            AppPageRoute(
-                preventRebuild: false,
-                isRootRoute: true,
-                builder: (context) {
-                  return NaviPaddingWidget(child: _pages[index]);
-                }),
-            (route) => false);
+      onPageChanged: (index) {
+        HapticFeedback.selectionClick();
       },
     );
   }
