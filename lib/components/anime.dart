@@ -2,25 +2,31 @@ part of 'components.dart';
 
 ImageProvider? _findImageProvider(Anime anime) {
   ImageProvider image;
-  image = CachedImageProvider(
-    anime.cover,
-    sourceKey: anime.sourceKey,
-    aid: anime.id,
-  );
+  if (anime is History) {
+    image = HistoryImageProvider(anime);
+  } else {
+    image = CachedImageProvider(
+      anime.cover,
+      sourceKey: anime.sourceKey,
+      aid: anime.id,
+    );
+  }
   return image;
 }
 
 class AnimeTile extends StatelessWidget {
-  const AnimeTile(
-      {super.key,
-      required this.anime,
-      this.enableLongPressed = true,
-      this.enableFavorite = true,
-      this.enableHistory = false,
-      this.badge,
-      this.menuOptions,
-      this.onTap,
-      this.onLongPressed});
+  const AnimeTile({
+    super.key,
+    required this.anime,
+    this.enableLongPressed = true,
+    this.enableFavorite = true,
+    this.enableHistory = false,
+    this.badge,
+    this.menuOptions,
+    this.onTap,
+    this.onLongPressed,
+    this.heroID,
+  });
 
   final Anime anime;
 
@@ -38,6 +44,8 @@ class AnimeTile extends StatelessWidget {
 
   final VoidCallback? onLongPressed;
 
+  final int? heroID;
+
   void _onTap() {
     if (onTap != null) {
       onTap!();
@@ -48,6 +56,7 @@ class AnimeTile extends StatelessWidget {
           sourceKey: anime.sourceKey,
           cover: anime.cover,
           title: anime.title,
+          heroID: heroID,
         ));
   }
 
@@ -123,8 +132,7 @@ class AnimeTile extends StatelessWidget {
             .isExist(anime.id, AnimeType(anime.sourceKey.hashCode))
         : false;
     var history = appdata.settings['showHistoryStatusOnTile']
-        ? HistoryManager()
-            .findSync(anime.id, AnimeType(anime.sourceKey.hashCode))
+        ? HistoryManager().find(anime.id, AnimeType(anime.sourceKey.hashCode))
         : null;
     // if (history?.lastWatchTime == 0) {
     //   history!.lastWatchTime = 1;
@@ -215,23 +223,9 @@ class AnimeTile extends StatelessWidget {
   }
 
   Widget buildImage(BuildContext context) {
-    ImageProvider image;
-    if (anime is LocalAnime) {
-      image = FileImage((anime as LocalAnime).coverFile);
-    } else if (anime.cover.startsWith('file://')) {
-      image = FileImage(File(anime.cover.substring(7)));
-    } else if (anime.sourceKey == 'local') {
-      var localAnime = LocalManager().find(anime.id, AnimeType.local);
-      if (localAnime == null) {
-        return const SizedBox();
-      }
-      image = FileImage(localAnime.coverFile);
-    } else {
-      image = CachedImageProvider(
-        anime.cover,
-        sourceKey: anime.sourceKey,
-        aid: anime.id,
-      );
+    var image = _findImageProvider(anime);
+    if (image == null) {
+      return const SizedBox();
     }
     return AnimatedImage(
       image: image,
@@ -244,6 +238,32 @@ class AnimeTile extends StatelessWidget {
   Widget _buildDetailedMode(BuildContext context) {
     return LayoutBuilder(builder: (context, constrains) {
       final height = constrains.maxHeight - 16;
+
+      Widget image = Container(
+        width: height * 0.68,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: context.colorScheme.outlineVariant,
+              blurRadius: 1,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: buildImage(context),
+      );
+
+      if (heroID != null) {
+        image = Hero(
+          tag: "cover$heroID",
+          child: image,
+        );
+      }
+
       return InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: _onTap,
@@ -253,26 +273,7 @@ class AnimeTile extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 24, 8),
             child: Row(
               children: [
-                Hero(
-                  tag: "cover${anime.id}${anime.sourceKey}",
-                  child: Container(
-                    width: height * 0.68,
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.colorScheme.outlineVariant,
-                          blurRadius: 1,
-                          offset: const Offset(0, 1),
-                        ),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: buildImage(context),
-                  ),
-                ),
+                image,
                 SizedBox.fromSize(
                   size: const Size(16, 5),
                 ),
@@ -301,6 +302,29 @@ class AnimeTile extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
         child: LayoutBuilder(
           builder: (context, constraints) {
+            Widget image = Container(
+              decoration: BoxDecoration(
+                color: context.colorScheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.toOpacity(0.2),
+                    blurRadius: 2,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: buildImage(context),
+            );
+
+            if (heroID != null) {
+              image = Hero(
+                tag: "cover$heroID",
+                child: image,
+              );
+            }
+
             return InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: _onTap,
@@ -313,21 +337,7 @@ class AnimeTile extends StatelessWidget {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: context.colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.toOpacity(0.2),
-                                  blurRadius: 2,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: buildImage(context),
-                          ),
+                          child: image,
                         ),
                         Align(
                           alignment: Alignment.bottomRight,
@@ -573,10 +583,8 @@ class _AnimeDescription extends StatelessWidget {
             softWrap: true,
             overflow: TextOverflow.ellipsis,
           ),
-        const SizedBox(
-          height: 4,
-        ),
-        if (tags != null)
+        const SizedBox(height: 4),
+        if (tags != null && tags!.isNotEmpty)
           Expanded(
             child: LayoutBuilder(builder: (context, constraints) {
               if (constraints.maxHeight < 22) {
@@ -642,6 +650,8 @@ class _AnimeDescription extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 12.0,
                     ),
+                    maxLines: (tags == null || tags!.isEmpty) ? 3 : 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -778,16 +788,27 @@ class SliverGridAnimes extends StatefulWidget {
 
 class _SliverGridAnimesState extends State<SliverGridAnimes> {
   List<Anime> animes = [];
+  List<int> heroIDs = [];
+
+  static int _nextHeroID = 0;
+
+  void generateHeroID() {
+    heroIDs.clear();
+    for (var i = 0; i < animes.length; i++) {
+      heroIDs.add(_nextHeroID++);
+    }
+  }
 
   @override
   void didUpdateWidget(covariant SliverGridAnimes oldWidget) {
-    if (oldWidget.animes != widget.animes) {
+    if (!oldWidget.animes.isEqualTo(widget.animes)) {
       animes.clear();
       for (var anime in widget.animes) {
         if (isBlocked(anime) == null) {
           animes.add(anime);
         }
       }
+      generateHeroID();
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -799,6 +820,7 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
         animes.add(anime);
       }
     }
+    generateHeroID();
     HistoryManager().addListener(update);
     super.initState();
   }
@@ -824,6 +846,7 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
   Widget build(BuildContext context) {
     return _SliverGridAnimes(
         animes: animes,
+        heroIDs: heroIDs,
         selection: widget.selections,
         onLastItemBuild: widget.onLastItemBuild,
         badgeBuilder: widget.badgeBuilder,
@@ -838,6 +861,7 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
 class _SliverGridAnimes extends StatelessWidget {
   const _SliverGridAnimes(
       {required this.animes,
+      required this.heroIDs,
       this.onLastItemBuild,
       this.badgeBuilder,
       this.menuBuilder,
@@ -848,6 +872,8 @@ class _SliverGridAnimes extends StatelessWidget {
       this.enableHistory});
 
   final List<Anime> animes;
+
+  final List<int> heroIDs;
 
   final Map<Anime, bool>? selection;
 
@@ -886,6 +912,7 @@ class _SliverGridAnimes extends StatelessWidget {
             onLongPressed: onLongPressed != null
                 ? () => onLongPressed!(animes[index])
                 : null,
+            heroID: heroIDs[index],
           );
           if (selection == null) {
             return anime;
@@ -1480,7 +1507,7 @@ class _RatingWidgetState extends State<RatingWidget> {
     }
     if (full < widget.count) {
       children.add(ClipRect(
-        clipper: SMClipper(rating: star() * widget.size),
+        clipper: _SMClipper(rating: star() * widget.size),
         child: Icon(
           Icons.star,
           size: widget.size,
@@ -1529,10 +1556,10 @@ class _RatingWidgetState extends State<RatingWidget> {
   }
 }
 
-class SMClipper extends CustomClipper<Rect> {
+class _SMClipper extends CustomClipper<Rect> {
   final double rating;
 
-  SMClipper({required this.rating});
+  _SMClipper({required this.rating});
 
   @override
   Rect getClip(Size size) {
@@ -1540,23 +1567,26 @@ class SMClipper extends CustomClipper<Rect> {
   }
 
   @override
-  bool shouldReclip(SMClipper oldClipper) {
+  bool shouldReclip(_SMClipper oldClipper) {
     return rating != oldClipper.rating;
   }
 }
 
 class SimpleAnimeTile extends StatelessWidget {
-  const SimpleAnimeTile({super.key, required this.anime, this.onTap});
+  const SimpleAnimeTile(
+      {super.key, required this.anime, this.onTap, this.withTitle = false});
 
   final Anime anime;
 
   final void Function()? onTap;
 
+  final bool withTitle;
+
   @override
   Widget build(BuildContext context) {
     var image = _findImageProvider(anime);
 
-    var child = image == null
+    Widget child = image == null
         ? const SizedBox()
         : AnimatedImage(
             image: image,
@@ -1566,7 +1596,18 @@ class SimpleAnimeTile extends StatelessWidget {
             filterQuality: FilterQuality.medium,
           );
 
-    return AnimatedTapRegion(
+    child = Container(
+      width: 98,
+      height: 136,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorScheme.secondaryContainer,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+
+    child = AnimatedTapRegion(
       borderRadius: 8,
       onTap: onTap ??
           () {
@@ -1577,17 +1618,30 @@ class SimpleAnimeTile extends StatelessWidget {
               ),
             );
           },
-      child: Container(
-        width: 92,
-        height: 114,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          color: Theme.of(context).colorScheme.secondaryContainer,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: child,
-      ),
+      child: child,
     );
+
+    if (withTitle) {
+      child = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          child,
+          const SizedBox(height: 4),
+          SizedBox(
+            width: 92,
+            child: Center(
+              child: Text(
+                anime.title.replaceAll('\n', ''),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return child;
   }
 }
 
@@ -1614,40 +1668,57 @@ class _BangumiCardState extends State<BangumiCard> {
           height: 300,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            color: Theme.of(context).colorScheme.secondaryContainer,
+            // color: Theme.of(context).colorScheme.secondaryContainer,
           ),
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              var child = image == null
+              Widget child = image == null
                   ? const SizedBox()
                   : AnimatedImage(
                       image: CachedImageProvider(image),
                       width: double.infinity * 0.72,
-                      height: constraints.maxHeight * 0.9,
+                      height: constraints.maxHeight * 0.85,
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.medium,
                     );
-              return Column(
-                mainAxisSize: MainAxisSize.min, // 确保列按最小的空间布局
-                children: [
-                  child,
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 8.0), // 给文字添加一些间距
-                      child: TextScroll(
-                        widget.anime.nameCn == ''
-                            ? widget.anime.nameCn
-                            : widget.anime.name,
-                        style: TextStyle(fontSize: 16),
-                        mode: TextScrollMode.endless,
-                        delayBefore: Duration(milliseconds: 500),
-                        velocity:
-                            const Velocity(pixelsPerSecond: Offset(40, 0)),
+
+              child = Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: child,
+              );
+
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // 确保列按最小的空间布局
+                  children: [
+                    child,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            top: 8.0,
+                            left: 4,
+                            right: 4,
+                            bottom: 4), // 给文字添加一些间距
+                        child: TextScroll(
+                          widget.anime.nameCn != ''
+                              ? widget.anime.nameCn
+                              : widget.anime.name,
+                          style: TextStyle(fontSize: 16),
+                          mode: TextScrollMode.endless,
+                          delayBefore: Duration(milliseconds: 500),
+                          velocity:
+                              const Velocity(pixelsPerSecond: Offset(40, 0)),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
           )),

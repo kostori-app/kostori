@@ -181,3 +181,45 @@ Widget setExplorePagesWidget() {
     pages: pages,
   );
 }
+
+Widget setCategoryPagesWidget() {
+  var pages = <String, String>{};
+  for (var c in AnimeSource.all()) {
+    if (c.categoryData != null) {
+      pages[c.categoryData!.key] = c.categoryData!.title;
+    }
+  }
+  return _MultiPagesFilter(
+    title: "Category Pages".tl,
+    settingsIndex: "categories",
+    pages: pages,
+  );
+}
+
+Widget setFavoritesPagesWidget() {
+  var pages = <String, String>{};
+  for (var c in AnimeSource.all()) {
+    if (c.favoriteData != null) {
+      pages[c.favoriteData!.key] = c.favoriteData!.title;
+    }
+  }
+  return _MultiPagesFilter(
+    title: "Network Favorite Pages".tl,
+    settingsIndex: "favorites",
+    pages: pages,
+  );
+}
+
+Widget setSearchSourcesWidget() {
+  var pages = <String, String>{};
+  for (var c in AnimeSource.all()) {
+    if (c.searchPageData != null) {
+      pages[c.key] = c.name;
+    }
+  }
+  return _MultiPagesFilter(
+    title: "Search Sources".tl,
+    settingsIndex: "searchSources",
+    pages: pages,
+  );
+}

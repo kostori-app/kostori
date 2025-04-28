@@ -68,6 +68,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     App.registerForceRebuild(forceRebuild);
     // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     WidgetsBinding.instance.addObserver(this);
+    checkUpdates();
     super.initState();
   }
 
@@ -138,6 +139,38 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     };
   }
 
+  ThemeData getTheme(
+    Color primary,
+    Color? secondary,
+    Color? tertiary,
+    Brightness brightness,
+  ) {
+    String? font;
+    List<String>? fallback;
+    if (App.isWindows) {
+      font = 'Segoe UI';
+      fallback = [
+        'Segoe UI',
+        'Microsoft YaHei',
+        'PingFang SC',
+        'Noto Sans CJK',
+        'Arial',
+        'sans-serif'
+      ];
+    }
+    return ThemeData(
+      colorScheme: SeedColorScheme.fromSeeds(
+        primaryKey: primary,
+        secondaryKey: secondary,
+        tertiaryKey: tertiary,
+        brightness: brightness,
+        tones: FlexTones.vividBackground(brightness),
+      ),
+      fontFamily: font,
+      fontFamilyFallback: fallback,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget home;
@@ -164,30 +197,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       return MaterialApp(
           home: home,
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: SeedColorScheme.fromSeeds(
-              primaryKey: primary,
-              secondaryKey: secondary,
-              tertiaryKey: tertiary,
-              tones: FlexTones.vividBackground(Brightness.light),
-            ),
-          ),
-          darkTheme: ThemeData(
-            colorScheme: SeedColorScheme.fromSeeds(
-              primaryKey: primary,
-              secondaryKey: secondary,
-              tertiaryKey: tertiary,
-              brightness: Brightness.dark,
-              tones: FlexTones.vividBackground(Brightness.dark),
-            ),
-          ),
+          theme: getTheme(primary, secondary, tertiary, Brightness.light),
           navigatorKey: App.rootNavigatorKey,
-          navigatorObservers: [FlutterSmartDialog.observer],
+          darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
           themeMode: switch (appdata.settings['theme_mode']) {
             'light' => ThemeMode.light,
             'dark' => ThemeMode.dark,
             _ => ThemeMode.system
           },
+          navigatorObservers: [FlutterSmartDialog.observer],
           localizationsDelegates: [
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,

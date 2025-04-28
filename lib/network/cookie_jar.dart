@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/ext.dart';
@@ -33,8 +34,9 @@ class CookieJarSql {
   void saveFromResponse(Uri uri, List<Cookie> cookies) {
     var current = loadForRequest(uri);
     for (var cookie in cookies) {
-      var currentCookie = current.firstWhereOrNull(
-          (element) => element.name == cookie.name && (cookie.path == null || cookie.path!.startsWith(element.path!)));
+      var currentCookie = current.firstWhereOrNull((element) =>
+          element.name == cookie.name &&
+          (cookie.path == null || cookie.path!.startsWith(element.path!)));
       if (currentCookie != null) {
         cookie.domain = currentCookie.domain;
       }
@@ -67,7 +69,9 @@ class CookieJarSql {
             )
               ..domain = row["domain"] as String
               ..path = row["path"] as String
-              ..expires = row["expires"] == null ? null : DateTime.fromMillisecondsSinceEpoch(row["expires"] as int)
+              ..expires = row["expires"] == null
+                  ? null
+                  : DateTime.fromMillisecondsSinceEpoch(row["expires"] as int)
               ..secure = row["secure"] == 1
               ..httpOnly = row["httpOnly"] == 1)
         .toList();
@@ -92,7 +96,8 @@ class CookieJarSql {
     }
 
     // check expires
-    var expires = cookies.where((cookie) => cookie.expires != null && cookie.expires!.isBefore(DateTime.now()));
+    var expires = cookies.where((cookie) =>
+        cookie.expires != null && cookie.expires!.isBefore(DateTime.now()));
     for (var cookie in expires) {
       _db.execute('''
         DELETE FROM cookies
@@ -100,7 +105,10 @@ class CookieJarSql {
       ''', [cookie.name, cookie.domain, cookie.path]);
     }
 
-    return cookies.where((element) => !expires.contains(element) && _checkPathMatch(uri, element.path)).toList();
+    return cookies
+        .where((element) =>
+            !expires.contains(element) && _checkPathMatch(uri, element.path))
+        .toList();
   }
 
   bool _checkPathMatch(Uri uri, String? cookiePath) {
@@ -151,7 +159,9 @@ class CookieJarSql {
         map[cookie.name] = cookie;
       }
     }
-    return map.entries.map((cookie) => "${cookie.value.name}=${cookie.value.value}").join("; ");
+    return map.entries
+        .map((cookie) => "${cookie.value.name}=${cookie.value.value}")
+        .join("; ");
   }
 
   void delete(Uri uri, String name) {
@@ -186,11 +196,17 @@ class CookieJarSql {
 }
 
 class SingleInstanceCookieJar extends CookieJarSql {
-  factory SingleInstanceCookieJar(String path) => instance ??= SingleInstanceCookieJar._create(path);
+  factory SingleInstanceCookieJar(String path) =>
+      instance ??= SingleInstanceCookieJar._create(path);
 
   SingleInstanceCookieJar._create(super.path);
 
   static SingleInstanceCookieJar? instance;
+
+  static Future<void> createInstance() async {
+    var dataPath = (await getApplicationSupportDirectory()).path;
+    instance = SingleInstanceCookieJar("$dataPath/cookie.db");
+  }
 }
 
 class CookieManagerSql extends Interceptor {
@@ -212,7 +228,8 @@ class CookieManagerSql extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    cookieJar.saveFromResponseCookieHeader(response.requestOptions.uri, response.headers["set-cookie"] ?? []);
+    cookieJar.saveFromResponseCookieHeader(
+        response.requestOptions.uri, response.headers["set-cookie"] ?? []);
     handler.next(response);
   }
 

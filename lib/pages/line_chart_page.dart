@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
@@ -6,6 +8,7 @@ class LineChatPage extends StatefulWidget {
   const LineChatPage({super.key, required this.bangumiItem});
 
   final BangumiItem bangumiItem;
+
   @override
   State<LineChatPage> createState() => _LineChatPageState();
 }
@@ -66,60 +69,63 @@ class _LineChatPageState extends State<LineChatPage> {
     );
   }
 
+  double _calculateOptimalIntegerInterval(double maxValue) {
+    // 确保至少有2个标签，最多10个标签
+    final rawInterval = maxValue / 9; // 10个标签需要9个间隔
+    final base = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
+
+    // 选择最接近的友好间隔（1,2,5,10的倍数）
+    final candidates = [1 * base, 2 * base, 5 * base, 10 * base];
+    final optimal = candidates.firstWhere(
+        (interval) => (maxValue / interval).ceil() <= 10,
+        orElse: () => 10 * base);
+
+    return optimal;
+  }
+
+  // 新增方法：计算动态整数间隔
+  double getYInterval(BangumiItem item) {
+    final maxValue = item.total.toDouble() * 2 / 4;
+    return _calculateOptimalIntegerInterval(maxValue);
+  }
+
+  // 将最大值对齐到间隔整数倍
+  double _ceilToInterval(double value, double interval) {
+    return (value / interval).ceil() * interval;
+  }
+
+  String _formatInteger(double value) {
+    return value.toInt().toString();
+  }
+
+  // 动态计算左侧保留空间
+  double _calculateLeftReservedSize(double maxY) {
+    final maxLabel = _formatInteger(maxY);
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: maxLabel,
+        style: const TextStyle(fontSize: 12),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    return textPainter.width;
+  }
+
   Widget leftTitleWidgets(double value, TitleMeta meta) {
     const style = TextStyle(
       // fontWeight: FontWeight.bold,
       fontSize: 12,
     );
-    String text;
-    switch (value.toInt()) {
-      case 1:
-        text = '1';
-        break;
-      case 5:
-        text = '5';
-        break;
-      case 10:
-        text = '10';
-        break;
-      case 15:
-        text = '15';
-        break;
-      case 20:
-        text = '20';
-        break;
-      case 40:
-        text = '40';
-        break;
-      case 80:
-        text = '80';
-        break;
-      case 160:
-        text = '160';
-        break;
-      case 240:
-        text = '240';
-        break;
-      case 320:
-        text = '320';
-        break;
-      case 400:
-        text = '400';
-        break;
-      case 480:
-        text = '480';
-        break;
-      case 560:
-        text = '560';
-        break;
-      default:
-        return Container();
-    }
 
-    return Text(text, style: style, textAlign: TextAlign.left);
+    return Text(_formatInteger(value), style: style, textAlign: TextAlign.left);
   }
 
   LineChartData mainData(BangumiItem bangumiItem) {
+    final yInterval = getYInterval(bangumiItem);
+    final rawMaxY = bangumiItem.total.toDouble() * 2 / 4;
+    final maxY = _ceilToInterval(rawMaxY, yInterval);
+
     return LineChartData(
       gridData: FlGridData(
         show: true,
@@ -158,7 +164,7 @@ class _LineChatPageState extends State<LineChatPage> {
         leftTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            interval: 1,
+            interval: yInterval,
             getTitlesWidget: leftTitleWidgets,
             reservedSize: 42,
           ),
@@ -171,7 +177,7 @@ class _LineChatPageState extends State<LineChatPage> {
       minX: 0,
       maxX: 9,
       minY: 0,
-      maxY: bangumiItem.total.toDouble() * 2 / 4,
+      maxY: maxY,
       lineBarsData: [
         LineChartBarData(
           spots: [

@@ -1,7 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/io.dart';
+
+import 'app.dart';
 
 class LogItem {
   final LogLevel level;
@@ -28,31 +29,41 @@ class Log {
 
   static bool ignoreLimitation = false;
 
-  /// only for debug
-  static const String? logFile = null;
-
   static void printWarning(String text) {
-    print('\x1B[33m$text\x1B[0m');
+    debugPrint('\x1B[33m$text\x1B[0m');
   }
 
   static void printError(String text) {
-    print('\x1B[31m$text\x1B[0m');
+    debugPrint('\x1B[31m$text\x1B[0m');
   }
 
+  static IOSink? _file;
+
   static void addLog(LogLevel level, String title, String content) {
+    if (_file == null) {
+      Directory dir;
+      if (App.isAndroid) {
+        dir = Directory(App.externalStoragePath!);
+      } else {
+        dir = Directory(App.dataPath);
+      }
+      var file = dir.joinFile("logs.txt");
+      _file = file.openWrite();
+    }
+
     if (!ignoreLimitation && content.length > maxLogLength) {
       content = "${content.substring(0, maxLogLength)}...";
     }
 
-    if (kDebugMode) {
-      switch (level) {
-        case LogLevel.error:
-          printError(content);
-        case LogLevel.warning:
-          printWarning(content);
-        case LogLevel.info:
-          print(content);
-      }
+    switch (level) {
+      case LogLevel.error:
+        printError(content);
+      case LogLevel.warning:
+        printWarning(content);
+      case LogLevel.info:
+        if (kDebugMode) {
+          debugPrint(content);
+        }
     }
 
     var newLog = LogItem(level, title, content);
@@ -62,11 +73,12 @@ class Log {
     }
 
     _logs.add(newLog);
-    if (logFile != null) {
-      File(logFile!).writeAsString(newLog.toString(), mode: FileMode.append);
+    if (_file != null) {
+      _file!.write(newLog.toString());
     }
     if (_logs.length > maxLogNumber) {
-      var res = _logs.remove(_logs.firstWhereOrNull((element) => element.level == LogLevel.info));
+      var res = _logs.remove(
+          _logs.firstWhereOrNull((element) => element.level == LogLevel.info));
       if (!res) {
         _logs.removeAt(0);
       }

@@ -1,19 +1,19 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_saf/flutter_saf.dart';
-import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/pages/bangumi/bangumi.dart';
+import 'package:rhttp/rhttp.dart';
+import 'package:kostori/pages/settings/anime_source_settings.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/tag_translation.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:rhttp/rhttp.dart';
 import 'foundation/anime_source/anime_source.dart';
 import 'foundation/app.dart';
 import 'foundation/appdata.dart';
 import 'foundation/cache_manager.dart';
-import 'foundation/favorites.dart';
-import 'foundation/history.dart';
 import 'foundation/js_engine.dart';
-import 'foundation/local.dart';
 import 'foundation/log.dart';
 import 'network/cookie_jar.dart';
 
@@ -31,24 +31,73 @@ extension _FutureInit<T> on Future<T> {
 }
 
 Future<void> init() async {
-  await Rhttp.init();
-  await SAFTaskWorker().init().wait();
-  await AppTranslation.init().wait();
-  await appdata.init().wait();
   await App.init().wait();
-  await HistoryManager().init().wait();
-  await BangumiManager().init().wait();
-  await TagsTranslation.readData().wait();
-  await LocalFavoritesManager().init().wait();
-  SingleInstanceCookieJar("${App.dataPath}/cookie.db");
-  await JsEngine().init().wait();
-  await AnimeSource.init().wait();
-  await LocalManager().init().wait();
+  await SingleInstanceCookieJar.createInstance();
+  var futures = [
+    Rhttp.init(),
+    App.initComponents(),
+    SAFTaskWorker().init().wait(),
+    AppTranslation.init().wait(),
+    TagsTranslation.readData().wait(),
+    JsEngine().init().wait(),
+    AnimeSourceManager().init().wait(),
+  ];
+  await Future.wait(futures);
   CacheManager().setLimitSize(appdata.settings['cacheSize']);
+  _checkOldConfigs();
   if (App.isAndroid) {
     handleLinks();
   }
   FlutterError.onError = (details) {
     Log.error("Unhandled Exception", "${details.exception}\n${details.stack}");
   };
+  if (App.isWindows) {
+    // Report to the monitor thread that the app is running
+    // https://github.com/venera-app/venera/issues/343
+    Timer.periodic(const Duration(seconds: 1), (_) {
+      const methodChannel = MethodChannel('kostori/method_channel');
+      methodChannel.invokeMethod("heartBeat");
+    });
+  }
+}
+
+void _checkOldConfigs() {
+  if (appdata.settings['searchSources'] == null) {
+    appdata.settings['searchSources'] = AnimeSource.all()
+        .where((e) => e.searchPageData != null)
+        .map((e) => e.key)
+        .toList();
+  }
+
+  if (appdata.implicitData['webdavAutoSync'] == null) {
+    var webdavConfig = appdata.settings['webdav'];
+    if (webdavConfig is List &&
+        webdavConfig.length == 3 &&
+        webdavConfig.whereType<String>().length == 3) {
+      appdata.implicitData['webdavAutoSync'] = true;
+    } else {
+      appdata.implicitData['webdavAutoSync'] = false;
+    }
+    appdata.writeImplicitData();
+  }
+}
+
+Future<void> _checkAppUpdates() async {
+  var lastCheck = appdata.implicitData['lastCheckUpdate'] ?? 0;
+  var now = DateTime.now().millisecondsSinceEpoch;
+  if (now - lastCheck < 24 * 60 * 60 * 1000) {
+    return;
+  }
+  appdata.implicitData['lastCheckUpdate'] = now;
+  appdata.writeImplicitData();
+  AnimeSourceSettings.checkAnimeSourceUpdate();
+  if (appdata.settings['checkUpdateOnStart']) {
+    await Future.delayed(const Duration(milliseconds: 300));
+    await checkUpdateUi(false);
+  }
+}
+
+void checkUpdates() {
+  _checkAppUpdates();
+  // FollowUpdatesService.initChecker();
 }

@@ -6,13 +6,20 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
 import 'package:kostori/pages/bangumi/comment_item.dart';
 import 'package:kostori/pages/bangumi/comments_card.dart';
+import 'package:kostori/pages/bangumi/staff_card.dart';
+import 'package:kostori/pages/bangumi/staff_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
+import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import 'bangumi.dart';
 import 'character_card.dart';
 import 'character_item.dart';
+import 'episode_comments_sheet.dart';
+import 'episode_item.dart';
+import 'error_widget.dart';
 
 class BottomInfo extends StatefulWidget {
   const BottomInfo({
@@ -29,14 +36,21 @@ class BottomInfo extends StatefulWidget {
 class BottomInfoState extends State<BottomInfo> {
   static BottomInfoState? currentState; // 静态变量
   late ScrollController scrollController;
+  EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   bool commentsIsLoading = false;
   bool charactersIsLoading = false;
   bool commentsQueryTimeout = false;
   bool charactersQueryTimeout = false;
+  bool staffIsLoading = false;
+  bool staffQueryTimeout = false;
 
   List<CommentItem> commentsList = []; // 评论列表
   List<CharacterItem> characterList = [];
+  List<StaffFullItem> staffList = [];
+  List<EpisodeCommentItem> episodeCommentsList = [];
+
+  final maxWidth = 950.0;
 
   var bangumiId;
 
@@ -50,6 +64,9 @@ class BottomInfoState extends State<BottomInfo> {
     }
     if (characterList.isEmpty) {
       loadCharacters();
+    }
+    if (staffList.isEmpty) {
+      loadStaff();
     }
     scrollController = ScrollController();
     scrollController.addListener(scrollListener);
@@ -72,6 +89,7 @@ class BottomInfoState extends State<BottomInfo> {
       bangumiId = int;
       loadMoreComments();
       loadCharacters();
+      loadStaff();
     });
   }
 
@@ -109,6 +127,22 @@ class BottomInfoState extends State<BottomInfo> {
     }
   }
 
+  Future<void> queryBangumiStaffsByID(int id) async {
+    staffList.clear();
+    await Bangumi.getBangumiStaffByID(id).then((value) {
+      staffList.addAll(value.data);
+    });
+  }
+
+  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode) async {
+    episodeCommentsList.clear();
+    episodeInfo = await Bangumi.getBangumiEpisodeByID(id, episode);
+    setState(() {});
+    await Bangumi.getBangumiCommentsByEpisodeID(episodeInfo.id).then((value) {
+      episodeCommentsList.addAll(value.commentList);
+    });
+  }
+
   Future<void> loadCharacters() async {
     if (bangumiId != null) {
       queryBangumiCharactersByID(bangumiId as int).then((_) {
@@ -141,6 +175,43 @@ class BottomInfoState extends State<BottomInfo> {
         if (commentsList.isNotEmpty && mounted) {
           setState(() {
             commentsIsLoading = false;
+          });
+        }
+      });
+    } else {
+      // 如果没有有效的 bangumiId，直接返回
+      return;
+    }
+  }
+
+  Future<void> loadComments(int episode) async {
+    commentsQueryTimeout = false;
+    await queryBangumiEpisodeCommentsByID(bangumiId, episode).then((_) {
+      if (episodeCommentsList.isEmpty && mounted) {
+        setState(() {
+          commentsQueryTimeout = true;
+        });
+      }
+    });
+  }
+
+  Future<void> loadStaff() async {
+    if (bangumiId != null) {
+      if (staffIsLoading) return;
+      setState(() {
+        staffIsLoading = true;
+        staffQueryTimeout = false;
+      });
+      queryBangumiStaffsByID(bangumiId).then((_) {
+        if (staffList.isEmpty && mounted) {
+          setState(() {
+            staffIsLoading = false;
+            staffQueryTimeout = true;
+          });
+        }
+        if (staffList.isNotEmpty && mounted) {
+          setState(() {
+            staffIsLoading = false;
           });
         }
       });
@@ -473,10 +544,82 @@ class BottomInfoState extends State<BottomInfo> {
     ));
   }
 
+  Widget get staffListBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return CustomScrollView(
+          scrollBehavior: const ScrollBehavior().copyWith(
+            scrollbars: false,
+          ),
+          key: PageStorageKey<String>('制作人员'),
+          slivers: <Widget>[
+            SliverLayoutBuilder(builder: (context, _) {
+              if (staffList.isNotEmpty) {
+                return SliverList.builder(
+                  itemCount: staffList.length,
+                  itemBuilder: (context, index) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: StaffCard(
+                            staffFullItem: staffList[index],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+              if (staffQueryTimeout) {
+                return SliverFillRemaining(
+                  child: GeneralErrorWidget(
+                    errMsg: '获取失败，请重试',
+                    actions: [
+                      GeneralErrorButton(
+                        onPressed: () {
+                          loadStaff();
+                        },
+                        text: '重试',
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return SliverList.builder(
+                itemCount: 8,
+                itemBuilder: (context, _) {
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width > maxWidth
+                          ? maxWidth
+                          : MediaQuery.sizeOf(context).width - 32,
+                      child: Skeletonizer.zone(
+                        child: ListTile(
+                          leading: Bone.circle(size: 36),
+                          title: Bone.text(width: 100),
+                          subtitle: Bone.text(width: 80),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 5,
       child: Scaffold(
         body: Column(
           children: [
@@ -487,14 +630,27 @@ class BottomInfoState extends State<BottomInfo> {
                   tabs: [
                     Tab(text: 'Details'.tl),
                     Tab(text: 'Comments'.tl),
+                    Tab(text: 'Comment'.tl),
                     Tab(text: 'Characters'.tl),
+                    Tab(text: 'staffList'.tl),
                   ],
                 ),
               ),
             ),
             Expanded(
               child: TabBarView(
-                children: [infoBody, commentsListBody, charactersListBody],
+                children: [
+                  infoBody,
+                  commentsListBody,
+                  EpisodeCommentsSheet(
+                    episodeCommentsList: episodeCommentsList,
+                    episodeInfo: episodeInfo,
+                    loadComments: loadComments,
+                    episode: WatcherState.currentState!.episode,
+                  ),
+                  charactersListBody,
+                  staffListBody
+                ],
               ),
             ),
           ],

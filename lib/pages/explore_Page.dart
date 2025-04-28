@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/global_state.dart';
 
 import 'package:kostori/pages/search_result_page.dart';
+import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
@@ -9,7 +11,6 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/foundation/state_controller.dart';
 import 'package:kostori/pages/category_animes_page.dart';
 
 class ExplorePage extends StatefulWidget {
@@ -36,7 +37,7 @@ class _ExplorePageState extends State<ExplorePage>
         .expand((e) => e.map((e) => e.title))
         .toList();
     explorePages = explorePages.where((e) => all.contains(e)).toList();
-    if (!pages.isEqualsTo(explorePages)) {
+    if (!pages.isEqualTo(explorePages)) {
       setState(() {
         pages = explorePages;
         controller = TabController(
@@ -51,9 +52,7 @@ class _ExplorePageState extends State<ExplorePage>
     if (index == 2) {
       int page = controller.index;
       String currentPageId = pages[page];
-      StateController.find<SimpleController>(tag: currentPageId)
-          .control!()['toTop']
-          ?.call();
+      GlobalState.find<_SingleExplorePageState>(currentPageId).toTop();
     }
   }
 
@@ -97,7 +96,7 @@ class _ExplorePageState extends State<ExplorePage>
   void refresh() {
     int page = controller.index;
     String currentPageId = pages[page];
-    StateController.find<SimpleController>(tag: currentPageId).refresh();
+    GlobalState.find<_SingleExplorePageState>(currentPageId).refresh();
   }
 
   Widget buildFAB() => Material(
@@ -122,15 +121,21 @@ class _ExplorePageState extends State<ExplorePage>
   Widget buildEmpty() {
     var msg = "No Explore Pages".tl;
     msg += '\n';
+    VoidCallback onTap;
     if (AnimeSource.isEmpty) {
-      msg += "Add a anime source in home page".tl;
+      msg += "Please add some sources".tl;
+      onTap = () {
+        context.to(() => AnimeSourceSettings());
+      };
     } else {
       msg += "Please check your settings".tl;
+      onTap = addPage;
     }
     return NetworkError(
       message: msg,
-      retry: onSettingsChanged,
+      retry: onTap,
       withAppbar: false,
+      buttonText: "Manage".tl,
     );
   }
 
@@ -237,7 +242,7 @@ class _SingleExplorePage extends StatefulWidget {
   State<_SingleExplorePage> createState() => _SingleExplorePageState();
 }
 
-class _SingleExplorePageState extends StateWithController<_SingleExplorePage>
+class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     with AutomaticKeepAliveClientMixin<_SingleExplorePage> {
   late final ExplorePageData data;
 
@@ -321,7 +326,7 @@ class _SingleExplorePageState extends StateWithController<_SingleExplorePage>
   }
 
   @override
-  Object? get tag => widget.title;
+  Object? get key => widget.title;
 
   @override
   void refresh() {
@@ -340,9 +345,6 @@ class _SingleExplorePageState extends StateWithController<_SingleExplorePage>
       );
     }
   }
-
-  @override
-  Map<String, dynamic> get control => {"toTop": toTop};
 }
 
 class _MixedExplorePage extends StatefulWidget {
@@ -443,30 +445,7 @@ Iterable<Widget> _buildExplorePagePart(
                 TextButton(
                   onPressed: () {
                     var context = App.mainNavigatorKey!.currentContext!;
-                    if (part.viewMore!.startsWith("search:")) {
-                      context.to(
-                        () => SearchResultPage(
-                          text: part.viewMore!.replaceFirst("search:", ""),
-                          options: const [],
-                          sourceKey: sourceKey,
-                        ),
-                      );
-                    } else if (part.viewMore!.startsWith("category:")) {
-                      var cp = part.viewMore!.replaceFirst("category:", "");
-                      var c = cp.split('@').first;
-                      String? p = cp.split('@').last;
-                      if (p == c) {
-                        p = null;
-                      }
-                      context.to(
-                        () => CategoryAnimesPage(
-                          category: c,
-                          categoryKey:
-                              AnimeSource.find(sourceKey)!.categoryData!.key,
-                          param: p,
-                        ),
-                      );
-                    }
+                    part.viewMore!.jump(context);
                   },
                   child: Text("View more".tl),
                 )

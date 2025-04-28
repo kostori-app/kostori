@@ -151,7 +151,7 @@ void defaultFavorite(Anime anime) {
 Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
   var animes = LocalFavoritesManager().getAllAnimes(folder);
 
-  Future<void> updateSingleComic(int index) async {
+  Future<void> updateSingleAnime(int index) async {
     int retry = 3;
 
     while (true) {
@@ -244,7 +244,7 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
 
     for (var i = 0; i < maxConcurrency; i++) {
       if (index + i >= animes.length) break;
-      futures.add(updateSingleComic(index + i).then((v) {
+      futures.add(updateSingleAnime(index + i).then((v) {
         finished.value++;
       }, onError: (_) {
         errors++;

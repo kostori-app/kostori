@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/network/proxy.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/components/components.dart';
@@ -25,8 +26,13 @@ extension WebviewExtension on InAppWebViewController {
     if (url[url.length - 1] == '/') {
       url = url.substring(0, url.length - 1);
     }
-    CookieManager cookieManager = CookieManager.instance();
-    final cookies = await cookieManager.getCookies(url: WebUri(url));
+    CookieManager cookieManager = CookieManager.instance(
+      webViewEnvironment: AppWebview.webViewEnvironment,
+    );
+    final cookies = await cookieManager.getCookies(
+      url: WebUri(url),
+      webViewController: this,
+    );
     var res = <io.Cookie>[];
     for (var cookie in cookies) {
       var c = io.Cookie(cookie.name, cookie.value);
@@ -86,11 +92,12 @@ class _AppWebviewState extends State<AppWebview> {
 
   late var future = _createWebviewEnvironment();
 
-  Future<WebViewEnvironment> _createWebviewEnvironment() async {
+  Future<bool> _createWebviewEnvironment() async {
     var proxy = appdata.settings['proxy'].toString();
     if (proxy != "system" && proxy != "direct") {
       var proxyAvailable = await WebViewFeature.isFeatureSupported(
-          WebViewFeature.PROXY_OVERRIDE);
+        WebViewFeature.PROXY_OVERRIDE,
+      );
       if (proxyAvailable) {
         ProxyController proxyController = ProxyController.instance();
         await proxyController.clearProxyOverride();
@@ -104,11 +111,15 @@ class _AppWebviewState extends State<AppWebview> {
         );
       }
     }
-    return WebViewEnvironment.create(
+    if (!App.isWindows) {
+      return true;
+    }
+    AppWebview.webViewEnvironment = await WebViewEnvironment.create(
       settings: WebViewEnvironmentSettings(
         userDataFolder: "${App.dataPath}\\webview",
       ),
     );
+    return true;
   }
 
   @override
@@ -147,22 +158,20 @@ class _AppWebviewState extends State<AppWebview> {
       )
     ];
 
-    Widget body = (App.isWindows && AppWebview.webViewEnvironment == null)
-        ? FutureBuilder(
-            future: future,
-            builder: (context, e) {
-              if (e.error != null) {
-                return Center(child: Text("Error: ${e.error}"));
-              }
-              if (e.data == null) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              AppWebview.webViewEnvironment = e.data;
-              return createWebviewWithEnvironment(
-                  AppWebview.webViewEnvironment);
-            },
-          )
-        : createWebviewWithEnvironment(AppWebview.webViewEnvironment);
+    Widget body = FutureBuilder(
+      future: future,
+      builder: (context, e) {
+        if (e.error != null) {
+          return Center(child: Text("Error: ${e.error}"));
+        }
+        if (!e.hasData) {
+          return const SizedBox();
+        }
+        return createWebviewWithEnvironment(
+          AppWebview.webViewEnvironment,
+        );
+      },
+    );
 
     body = Stack(
       children: [
@@ -300,10 +309,13 @@ class DesktopWebview {
       useWindowPositionAndSize: true,
       userDataFolderWindows: "${App.dataPath}\\webview",
       title: "webview",
-      proxy: AppDio.proxy,
+      proxy: await getProxy(),
     ));
     _webview!.addOnWebMessageReceivedCallback(onMessage);
-    _webview!.setOnNavigation((s) => onNavigation?.call(s, this));
+    _webview!.setOnNavigation((s) {
+      s = s.substring(1, s.length - 1);
+      return onNavigation?.call(s, this);
+    });
     _webview!.launch(initialUrl, triggerOnUrlRequestEvent: false);
     _runTimer();
     _webview!.onClose.then((value) {

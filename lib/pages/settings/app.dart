@@ -17,46 +17,46 @@ class _AppSettingsState extends State<AppSettings> {
           title: "Data".tl,
           icon: Icons.storage,
         ),
-        ListTile(
-          title: Text("Storage Path for local animes".tl),
-          subtitle: Text(LocalManager().path, softWrap: false),
-          trailing: IconButton(
-            icon: const Icon(Icons.copy),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: LocalManager().path));
-              context.showMessage(message: "Path copied to clipboard".tl);
-            },
-          ),
-        ).toSliver(),
-        _CallbackSetting(
-          title: "Set New Storage Path".tl,
-          actionTitle: "Set".tl,
-          callback: () async {
-            String? result;
-            if (App.isAndroid) {
-              var picker = DirectoryPicker();
-              result = (await picker.pickDirectory())?.path;
-            } else if (App.isIOS) {
-              result = await selectDirectoryIOS();
-            } else {
-              result = await selectDirectory();
-            }
-            if (result == null) return;
-            var loadingDialog = showLoadingDialog(
-              App.rootContext,
-              barrierDismissible: false,
-              allowCancel: false,
-            );
-            var res = await LocalManager().setNewPath(result);
-            loadingDialog.close();
-            if (res != null) {
-              context.showMessage(message: res);
-            } else {
-              context.showMessage(message: "Path set successfully".tl);
-              setState(() {});
-            }
-          },
-        ).toSliver(),
+        // ListTile(
+        //   title: Text("Storage Path for local animes".tl),
+        //   subtitle: Text(LocalManager().path, softWrap: false),
+        //   trailing: IconButton(
+        //     icon: const Icon(Icons.copy),
+        //     onPressed: () {
+        //       Clipboard.setData(ClipboardData(text: LocalManager().path));
+        //       context.showMessage(message: "Path copied to clipboard".tl);
+        //     },
+        //   ),
+        // ).toSliver(),
+        // _CallbackSetting(
+        //   title: "Set New Storage Path".tl,
+        //   actionTitle: "Set".tl,
+        //   callback: () async {
+        //     String? result;
+        //     if (App.isAndroid) {
+        //       var picker = DirectoryPicker();
+        //       result = (await picker.pickDirectory())?.path;
+        //     } else if (App.isIOS) {
+        //       result = await selectDirectoryIOS();
+        //     } else {
+        //       result = await selectDirectory();
+        //     }
+        //     if (result == null) return;
+        //     var loadingDialog = showLoadingDialog(
+        //       App.rootContext,
+        //       barrierDismissible: false,
+        //       allowCancel: false,
+        //     );
+        //     var res = await LocalManager().setNewPath(result);
+        //     loadingDialog.close();
+        //     if (res != null) {
+        //       context.showMessage(message: res);
+        //     } else {
+        //       context.showMessage(message: "Path set successfully".tl);
+        //       setState(() {});
+        //     }
+        //   },
+        // ).toSliver(),
         ListTile(
           title: Text("Cache Size".tl),
           subtitle: Text(bytesToReadableString(CacheManager().currentSize)),
@@ -326,9 +326,9 @@ class _WebdavSettingState extends State<_WebdavSetting> {
   String url = "";
   String user = "";
   String pass = "";
+  bool autoSync = true;
 
   bool isTesting = false;
-
   bool upload = true;
 
   @override
@@ -344,6 +344,15 @@ class _WebdavSettingState extends State<_WebdavSetting> {
     url = configs[0];
     user = configs[1];
     pass = configs[2];
+    autoSync = appdata.implicitData['webdavAutoSync'] ?? true;
+  }
+
+  void onAutoSyncChanged(bool value) {
+    setState(() {
+      autoSync = value;
+      appdata.implicitData['webdavAutoSync'] = value;
+      appdata.writeImplicitData();
+    });
   }
 
   @override
@@ -355,8 +364,9 @@ class _WebdavSettingState extends State<_WebdavSetting> {
           children: [
             const SizedBox(height: 12),
             TextField(
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: "URL",
+                hintText: "A valid WebDav directory URL".tl,
                 border: OutlineInputBorder(),
               ),
               controller: TextEditingController(text: url),
@@ -379,6 +389,16 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               ),
               controller: TextEditingController(text: pass),
               onChanged: (value) => pass = value,
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: Icon(Icons.sync),
+              title: Text("Auto Sync Data".tl),
+              contentPadding: EdgeInsets.zero,
+              trailing: Switch(
+                value: autoSync,
+                onChanged: onAutoSyncChanged,
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -407,12 +427,60 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               ],
             ),
             const SizedBox(height: 16),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              child: autoSync
+                  ? Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                                "Once the operation is successful, app will automatically sync data with the server."
+                                    .tl),
+                          ),
+                        ],
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 16),
             Center(
               child: Button.filled(
                 isLoading: isTesting,
                 onPressed: () async {
                   var oldConfig = appdata.settings['webdav'];
+                  var oldAutoSync = appdata.implicitData['webdavAutoSync'];
+
+                  if (url.trim().isEmpty &&
+                      user.trim().isEmpty &&
+                      pass.trim().isEmpty) {
+                    appdata.settings['webdav'] = [];
+                    appdata.implicitData['webdavAutoSync'] = false;
+                    appdata.writeImplicitData();
+                    appdata.saveData();
+                    context.showMessage(message: "Saved".tl);
+                    App.rootPop();
+                    return;
+                  }
+
                   appdata.settings['webdav'] = [url, user, pass];
+                  appdata.implicitData['webdavAutoSync'] = autoSync;
+                  appdata.writeImplicitData();
+
+                  if (!autoSync) {
+                    appdata.saveData();
+                    context.showMessage(message: "Saved".tl);
+                    App.rootPop();
+                    return;
+                  }
+
                   setState(() {
                     isTesting = true;
                   });
@@ -424,12 +492,16 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                       isTesting = false;
                     });
                     appdata.settings['webdav'] = oldConfig;
+                    appdata.implicitData['webdavAutoSync'] = oldAutoSync;
+                    appdata.writeImplicitData();
+                    appdata.saveData();
                     context.showMessage(message: testResult.errorMessage!);
-                    return;
+                    context.showMessage(message: "Saved Failed".tl);
+                  } else {
+                    appdata.saveData();
+                    context.showMessage(message: "Saved".tl);
+                    App.rootPop();
                   }
-                  appdata.saveData();
-                  context.showMessage(message: "Saved".tl);
-                  App.rootPop();
                 },
                 child: Text("Continue".tl),
               ),

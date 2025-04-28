@@ -5,7 +5,6 @@ import 'package:kostori/utils/io.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/local.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/utils/ext.dart';
@@ -42,8 +41,6 @@ abstract class DownloadTask with ChangeNotifier {
 
   /// convert current state to json, which can be used to restore the task
   Map<String, dynamic> toJson();
-
-  LocalAnime toLocalAnime();
 
   String get id;
 
@@ -87,23 +84,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
   });
 
   @override
-  void cancel() {
-    _isRunning = false;
-    LocalManager().removeTask(this);
-    var local = LocalManager().find(id, animeType);
-    if (path != null) {
-      if (local == null) {
-        Directory(path!).deleteIgnoreError(recursive: true);
-      } else if (episode != null) {
-        for (var c in episode!) {
-          var dir = Directory(FilePath.join(path!, c));
-          if (dir.existsSync()) {
-            dir.deleteSync(recursive: true);
-          }
-        }
-      }
-    }
-  }
+  void cancel() {}
 
   @override
   String? get cover => _cover;
@@ -235,25 +216,6 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
       }
     }
 
-    if (path == null) {
-      var dir = await LocalManager().findValidDirectory(
-        animeId,
-        animeType,
-        anime!.title,
-      );
-      if (!(await dir.exists())) {
-        try {
-          await dir.create();
-        } catch (e) {
-          _setError("Error: $e");
-          return;
-        }
-      }
-      path = dir.path;
-    }
-
-    await LocalManager().saveCurrentDownloadingTasks();
-
     if (cover == null) {
       var res = await runWithRetry(() async {
         Uint8List? data;
@@ -278,64 +240,7 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
         _cover = res.data;
         notifyListeners();
       }
-      await LocalManager().saveCurrentDownloadingTasks();
     }
-
-    // if (_images == null) {
-    //   if (anime!.episode == null) {
-    //     var res = await runWithRetry(() async {
-    //       var r = await source.loadAnimePages!(animeId, null);
-    //       if (r.error) {
-    //         throw r.errorMessage!;
-    //       } else {
-    //         return r.data;
-    //       }
-    //     });
-    //     if (!_isRunning) {
-    //       return;
-    //     }
-    //     if (res.error) {
-    //       _setError("Error: ${res.errorMessage}");
-    //       return;
-    //     } else {
-    //       _images = {'': res.data};
-    //       _totalCount = _images!['']!.length;
-    //     }
-    //   } else {
-    //     _images = {};
-    //     _totalCount = 0;
-    //     for (var i in anime!.episode!.keys) {
-    //       if (episode != null && !episode!.contains(i)) {
-    //         continue;
-    //       }
-    //       if (_images![i] != null) {
-    //         _totalCount += _images![i]!.length;
-    //         continue;
-    //       }
-    //       var res = await runWithRetry(() async {
-    //         var r = await source.loadAnimePages!(animeId, i);
-    //         if (r.error) {
-    //           throw r.errorMessage!;
-    //         } else {
-    //           return r.data;
-    //         }
-    //       });
-    //       if (!_isRunning) {
-    //         return;
-    //       }
-    //       if (res.error) {
-    //         _setError("Error: ${res.errorMessage}");
-    //         return;
-    //       } else {
-    //         _images![i] = res.data;
-    //         _totalCount += _images![i]!.length;
-    //       }
-    //     }
-    //   }
-    //   _message = "$_downloadedCount/$_totalCount";
-    //   notifyListeners();
-    //   await LocalManager().saveCurrentDownloadingTasks();
-    // }
 
     while (_episode < _images!.length) {
       var images = _images![_images!.keys.elementAt(_episode)]!;
@@ -354,13 +259,11 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
         _index++;
         _downloadedCount++;
         _message = "$_downloadedCount/$_totalCount";
-        await LocalManager().saveCurrentDownloadingTasks();
       }
       _index = 0;
       _episode++;
     }
 
-    LocalManager().completeTask(this);
     stopRecorder();
   }
 
@@ -437,24 +340,6 @@ class ImagesDownloadTask extends DownloadTask with _TransferSpeedMixin {
 
   @override
   bool get isPaused => !_isRunning;
-
-  @override
-  LocalAnime toLocalAnime() {
-    return LocalAnime(
-      id: anime!.id,
-      title: title,
-      subtitle: anime!.subTitle ?? '',
-      tags: anime!.tags.entries.expand((e) {
-        return e.value.map((v) => "${e.key}:$v");
-      }).toList(),
-      directory: Directory(path!).name,
-      episode: anime!.episode,
-      cover: File(_cover!).uri.pathSegments.last,
-      animeType: AnimeType(source.key.hashCode),
-      downloadedChapters: episode ?? [],
-      createdAt: DateTime.now(),
-    );
-  }
 
   @override
   bool operator ==(Object other) {

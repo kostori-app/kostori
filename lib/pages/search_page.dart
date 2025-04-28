@@ -6,9 +6,10 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/pages/anime_page.dart';
+import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/pages/search_result_page.dart';
-import 'package:kostori/foundation/state_controller.dart';
+import 'package:kostori/pages/settings/anime_source_settings.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/tag_translation.dart';
 import 'package:kostori/utils/ext.dart';
@@ -16,6 +17,7 @@ import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 import 'aggregated_search_page.dart';
+import 'anime_details_page/anime_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -27,7 +29,12 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   late final SearchBarController controller;
 
+  late List<String> searchSources;
+
   String searchTarget = "";
+
+  SearchPageData get currentSearchPageData =>
+      AnimeSource.find(searchTarget)!.searchPageData!;
 
   bool aggregatedSearch = false;
 
@@ -81,7 +88,7 @@ class _SearchPageState extends State<SearchPage> {
     if (canHandleUrl(controller.text)) {
       suggestions.add(Pair("**URL**", TranslationType.other));
     } else {
-      text = controller.text;
+      var text = controller.text;
 
       for (var AnimeSource in AnimeSource.all()) {
         if (AnimeSource.idMatcher?.hasMatch(text) ?? false) {
@@ -139,6 +146,7 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   void initState() {
+    findSearchSources();
     var defaultSearchTarget = appdata.settings['defaultSearchTarget'];
     if (defaultSearchTarget == "_aggregated_") {
       aggregatedSearch = true;
@@ -151,17 +159,74 @@ class _SearchPageState extends State<SearchPage> {
     controller = SearchBarController(
       onSearch: search,
     );
+    appdata.settings.addListener(updateSearchSourcesIfNeeded);
     super.initState();
   }
 
   @override
   void dispose() {
     focusNode.dispose();
+    appdata.settings.removeListener(updateSearchSourcesIfNeeded);
     super.dispose();
+  }
+
+  void findSearchSources() {
+    var all = AnimeSource.all()
+        .where((e) => e.searchPageData != null)
+        .map((e) => e.key)
+        .toList();
+    var settings = appdata.settings['searchSources'] as List;
+    var sources = <String>[];
+    for (var source in settings) {
+      if (all.contains(source)) {
+        sources.add(source);
+      }
+    }
+    searchSources = sources;
+    if (!searchSources.contains(searchTarget)) {
+      searchTarget = searchSources.firstOrNull ?? "";
+    }
+  }
+
+  void updateSearchSourcesIfNeeded() {
+    var old = searchSources;
+    findSearchSources();
+    if (old.isEqualTo(searchSources)) {
+      return;
+    }
+    setState(() {});
+  }
+
+  void manageSearchSources() {
+    showPopUpWidget(App.rootContext, setSearchSourcesWidget());
+  }
+
+  Widget buildEmpty() {
+    var msg = "No Search Sources".tl;
+    msg += '\n';
+    VoidCallback onTap;
+    if (AnimeSource.isEmpty) {
+      msg += "Please add some sources".tl;
+      onTap = () {
+        context.to(() => AnimeSourceSettings());
+      };
+    } else {
+      msg += "Please check your settings".tl;
+      onTap = manageSearchSources;
+    }
+    return NetworkError(
+      message: msg,
+      retry: onTap,
+      withAppbar: true,
+      buttonText: "Manage".tl,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (searchSources.isEmpty) {
+      return buildEmpty();
+    }
     return Scaffold(
       body: SmoothCustomScrollView(
         slivers: buildSlivers().toList(),
@@ -190,8 +255,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget buildSearchTarget() {
-    var sources =
-        AnimeSource.all().where((e) => e.searchPageData != null).toList();
+    var sources = searchSources.map((e) => AnimeSource.find(e)!).toList();
     return SliverToBoxAdapter(
       child: Container(
         width: double.infinity,
@@ -203,6 +267,10 @@ class _SearchPageState extends State<SearchPage> {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.search),
               title: Text("Search in".tl),
+              trailing: IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: manageSearchSources,
+              ),
             ),
             Wrap(
               spacing: 8,
@@ -229,11 +297,6 @@ class _SearchPageState extends State<SearchPage> {
                 onChanged: (value) {
                   setState(() {
                     aggregatedSearch = value ?? false;
-                    if (!aggregatedSearch &&
-                        appdata.settings['defaultSearchTarget'] ==
-                            "_aggregated_") {
-                      searchTarget = sources.first.key;
-                    }
                   });
                 },
               ),
@@ -245,9 +308,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void useDefaultOptions() {
-    final searchOptions =
-        AnimeSource.find(searchTarget)!.searchPageData!.searchOptions ??
-            <SearchOptions>[];
+    final searchOptions = currentSearchPageData.searchOptions ?? [];
     options = searchOptions.map((e) => e.defaultValue).toList();
   }
 
@@ -258,9 +319,7 @@ class _SearchPageState extends State<SearchPage> {
 
     var children = <Widget>[];
 
-    final searchOptions =
-        AnimeSource.find(searchTarget)!.searchPageData!.searchOptions ??
-            <SearchOptions>[];
+    final searchOptions = currentSearchPageData.searchOptions ?? [];
     if (searchOptions.length != options.length) {
       useDefaultOptions();
     }

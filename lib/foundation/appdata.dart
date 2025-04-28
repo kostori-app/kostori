@@ -1,30 +1,34 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/network/api.dart';
 import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/init.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/io.dart';
 
-class _Appdata {
-  final _Settings settings = _Settings();
+class Appdata with Init {
+  Appdata._create();
+
+  final Settings settings = Settings._create();
 
   var searchHistory = <String>[];
 
   bool _isSavingData = false;
 
   Future<void> saveData([bool sync = true]) async {
-    if (_isSavingData) {
-      await Future.doWhile(() async {
-        await Future.delayed(const Duration(milliseconds: 20));
-        return _isSavingData;
-      });
+    while (_isSavingData) {
+      await Future.delayed(const Duration(milliseconds: 20));
     }
     _isSavingData = true;
-    var data = jsonEncode(toJson());
-    var file = File(FilePath.join(App.dataPath, 'appdata.json'));
-    await file.writeAsString(data);
-    _isSavingData = false;
+    try {
+      var data = jsonEncode(toJson());
+      var file = File(FilePath.join(App.dataPath, 'appdata.json'));
+      await file.writeAsString(data);
+    } finally {
+      _isSavingData = false;
+    }
     if (sync) {
       DataSync().uploadData();
     }
@@ -51,28 +55,6 @@ class _Appdata {
     saveData();
   }
 
-  Future<void> init() async {
-    var dataPath = (await getApplicationSupportDirectory()).path;
-    var file = File(FilePath.join(
-      dataPath,
-      'appdata.json',
-    ));
-    if (!await file.exists()) {
-      return;
-    }
-    var json = jsonDecode(await file.readAsString());
-    for (var key in (json['settings'] as Map<String, dynamic>).keys) {
-      if (json['settings'][key] != null) {
-        settings[key] = json['settings'][key];
-      }
-    }
-    searchHistory = List.from(json['searchHistory']);
-    var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
-    if (await implicitDataFile.exists()) {
-      implicitData = jsonDecode(await implicitDataFile.readAsString());
-    }
-  }
-
   Map<String, dynamic> toJson() {
     return {
       'settings': settings._data,
@@ -96,7 +78,6 @@ class _Appdata {
         if (!_disableSync.contains(key)) {
           this.settings[key] = settings[key];
         }
-        settings[key] = data[key];
       }
     }
     searchHistory = List.from(data['searchHistory'] ?? []);
@@ -105,16 +86,50 @@ class _Appdata {
 
   var implicitData = <String, dynamic>{};
 
-  void writeImplicitData() {
-    var file = File(FilePath.join(App.dataPath, 'implicitData.json'));
-    file.writeAsString(jsonEncode(implicitData));
+  void writeImplicitData() async {
+    while (_isSavingData) {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+    _isSavingData = true;
+    try {
+      var file = File(FilePath.join(App.dataPath, 'implicitData.json'));
+      await file.writeAsString(jsonEncode(implicitData));
+    } finally {
+      _isSavingData = false;
+    }
+  }
+
+  Future<void> doInit() async {
+    var dataPath = (await getApplicationSupportDirectory()).path;
+    var file = File(FilePath.join(
+      dataPath,
+      'appdata.json',
+    ));
+    if (!await file.exists()) {
+      return;
+    }
+    var json = jsonDecode(await file.readAsString());
+    for (var key in (json['settings'] as Map<String, dynamic>).keys) {
+      if (json['settings'][key] != null) {
+        settings[key] = json['settings'][key];
+      }
+    }
+    searchHistory = List.from(json['searchHistory']);
+    var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
+    if (await implicitDataFile.exists()) {
+      try {
+        implicitData = jsonDecode(await implicitDataFile.readAsString());
+      } catch (_) {
+        // ignore
+      }
+    }
   }
 }
 
-final appdata = _Appdata();
+final appdata = Appdata._create();
 
-class _Settings with ChangeNotifier {
-  _Settings();
+class Settings with ChangeNotifier {
+  Settings._create();
 
   final _data = <String, dynamic>{
     'animeDisplayMode': 'brief', // detailed, brief
@@ -127,6 +142,7 @@ class _Settings with ChangeNotifier {
     'explore_pages': [],
     'categories': [],
     'favorites': [],
+    'searchSources': null,
     'showFavoriteStatusOnTile': true,
     'showHistoryStatusOnTile': false,
     'blockedWords': [],
@@ -152,9 +168,8 @@ class _Settings with ChangeNotifier {
     'sni': true,
     'autoAddLanguageFilter': 'none',
     'bangumiDataVer': null,
-    'animeSourceListUrl':
-        "https://raw.githubusercontent.com/kostori-app/kostori-configs/master/index.json",
-    'gitMirror': false
+    'animeSourceListUrl': Api.kostoriConfig,
+    'gitMirror': false,
   };
 
   operator [](String key) {
@@ -171,3 +186,6 @@ class _Settings with ChangeNotifier {
     return _data.toString();
   }
 }
+
+const defaultAnimeSourceUrl =
+    "https://cdn.jsdelivr.net/gh/kostori-app/kostori-configs@latest/index.json";

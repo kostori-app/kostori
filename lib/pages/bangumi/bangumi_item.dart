@@ -28,6 +28,8 @@ class BangumiItem {
 
   num score;
 
+  String? airTime;
+
   Map<String, int>? count;
 
   Map<String, int>? collection;
@@ -50,6 +52,7 @@ class BangumiItem {
       required this.score,
       this.count,
       this.collection,
+      this.airTime,
       required this.images,
       required this.tags});
 
@@ -144,6 +147,39 @@ class BangumiItem {
       count: Map<String, int>.from(json['rating']?['count'] ?? {}),
       collection: Map<String, int>.from(json['collection'] ?? {}),
       // collection: Map<String, int>.from(json['collection']),
+    );
+  }
+
+  BangumiItem copyWith(
+      {int? id,
+      String? nameCn,
+      String? name,
+      Map<String, String>? images,
+      int? rank,
+      double? score,
+      int? total,
+      int? airWeekday,
+      String? airTime,
+      int? type,
+      String? summary,
+      String? airDate,
+      int? totalEpisodes,
+      List<BangumiTag>? tags}) {
+    return BangumiItem(
+      id: id ?? this.id,
+      nameCn: nameCn ?? this.nameCn,
+      name: name ?? this.name,
+      images: images ?? this.images,
+      rank: rank ?? this.rank,
+      score: score ?? this.score,
+      total: total ?? this.total,
+      airWeekday: airWeekday ?? this.airWeekday,
+      airTime: airTime ?? this.airTime,
+      type: type ?? this.type,
+      summary: summary ?? this.summary,
+      airDate: airDate ?? this.airDate,
+      totalEpisodes: totalEpisodes ?? this.totalEpisodes,
+      tags: tags ?? this.tags,
     );
   }
 

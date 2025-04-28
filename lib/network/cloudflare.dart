@@ -1,6 +1,8 @@
 import 'dart:io' as io;
 
 import 'package:dio/dio.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -11,7 +13,7 @@ import 'package:kostori/network/cookie_jar.dart';
 class CloudflareException implements DioException {
   final String url;
 
-  const CloudflareException(this.url);
+  CloudflareException(this.url);
 
   @override
   String toString() {
@@ -52,6 +54,9 @@ class CloudflareException implements DioException {
 
   @override
   DioExceptionType get type => DioExceptionType.badResponse;
+
+  @override
+  DioExceptionReadableStringBuilder? stringBuilder;
 }
 
 class CloudflareInterceptor extends Interceptor {
@@ -115,13 +120,22 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
 
   // windows version of package `flutter_inappwebview` cannot get some cookies
   // Using DesktopWebview instead
-  if (App.isLinux || App.isWindows) {
+  if (App.isLinux) {
     var webview = DesktopWebview(
       initialUrl: url,
       onTitleChange: (title, controller) async {
-        var res = await controller.evaluateJavascript(
-            "document.head.innerHTML.includes('#challenge-success-text')");
-        if (res == 'false') {
+        var head =
+            await controller.evaluateJavascript("document.head.innerHTML") ??
+                "";
+        Log.info("Cloudflare", "Checking head: $head");
+        var isChallenging = head.contains('#challenge-success-text') ||
+            head.contains("#challenge-error-text") ||
+            head.contains("#challenge-form");
+        if (!isChallenging) {
+          Log.info(
+            "Cloudflare",
+            "Cloudflare is passed due to there is no challenge css",
+          );
           var ua = controller.userAgent;
           if (ua != null) {
             appdata.implicitData['ua'] = ua;
@@ -136,118 +150,51 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
           onFinished();
         }
       },
+      onClose: onFinished,
     );
     webview.open();
   } else {
-    await App.rootContext.to(
-      () => AppWebview(
-        initialUrl: url,
-        singlePage: true,
-        onLoadStop: (controller) async {
-          var res = await controller.platform.evaluateJavascript(
-              source:
-                  "document.head.innerHTML.includes('#challenge-success-text')");
-          if (res == false) {
-            var ua = await controller.getUA();
-            if (ua != null) {
-              appdata.implicitData['ua'] = ua;
-              appdata.writeImplicitData();
-            }
-            var cookies = await controller.getCookies(url) ?? [];
-            if (cookies.firstWhereOrNull(
-                    (element) => element.name == 'cf_clearance') ==
-                null) {
-              return;
-            }
-            SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
-            App.rootPop();
-          }
-        },
-        onStarted: (controller) async {
-          var ua = await controller.getUA();
-          if (ua != null) {
-            appdata.implicitData['ua'] = ua;
-            appdata.writeImplicitData();
-          }
-          var cookies = await controller.getCookies(url) ?? [];
-          SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
-        },
-      ),
-    );
-    onFinished();
-  }
-}
-
-void passCloudflareed(String e, void Function() onFinished) async {
-  var url = e;
-  var uri = Uri.parse(url);
-
-  void saveCookies(Map<String, String> cookies) {
-    var domain = uri.host;
-    var splits = domain.split('.');
-    if (splits.length > 1) {
-      domain = ".${splits[splits.length - 2]}.${splits[splits.length - 1]}";
+    bool success = false;
+    void check(InAppWebViewController controller) async {
+      var head = await controller.evaluateJavascript(
+          source: "document.head.innerHTML") as String;
+      Log.info("Cloudflare", "Checking head: $head");
+      var isChallenging = head.contains('#challenge-success-text') ||
+          head.contains("#challenge-error-text") ||
+          head.contains("#challenge-form");
+      if (!isChallenging) {
+        Log.info(
+          "Cloudflare",
+          "Cloudflare is passed due to there is no challenge css",
+        );
+        var ua = await controller.getUA();
+        if (ua != null) {
+          appdata.implicitData['ua'] = ua;
+          appdata.writeImplicitData();
+        }
+        var cookies = await controller.getCookies(url) ?? [];
+        if (cookies.firstWhereOrNull(
+                (element) => element.name == 'cf_clearance') ==
+            null) {
+          return;
+        }
+        SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
+        if (!success) {
+          App.rootPop();
+          success = true;
+        }
+      }
     }
-    SingleInstanceCookieJar.instance!.saveFromResponse(
-      uri,
-      List<io.Cookie>.generate(cookies.length, (index) {
-        var cookie = io.Cookie(
-            cookies.keys.elementAt(index), cookies.values.elementAt(index));
-        cookie.domain = domain;
-        return cookie;
-      }),
-    );
-  }
 
-  // windows version of package `flutter_inappwebview` cannot get some cookies
-  // Using DesktopWebview instead
-  if (App.isLinux || App.isWindows) {
-    var webview = DesktopWebview(
-      initialUrl: url,
-      onTitleChange: (title, controller) async {
-        var res = await controller.evaluateJavascript(
-            "document.head.innerHTML.includes('#challenge-success-text')");
-        if (res == 'false') {
-          var ua = controller.userAgent;
-          if (ua != null) {
-            appdata.implicitData['ua'] = ua;
-            appdata.writeImplicitData();
-          }
-          var cookiesMap = await controller.getCookies(url);
-          if (cookiesMap['cf_clearance'] == null) {
-            return;
-          }
-          saveCookies(cookiesMap);
-          controller.close();
-          onFinished();
-        }
-      },
-    );
-    webview.open();
-  } else {
     await App.rootContext.to(
       () => AppWebview(
         initialUrl: url,
         singlePage: true,
+        onTitleChange: (title, controller) async {
+          check(controller);
+        },
         onLoadStop: (controller) async {
-          var res = await controller.platform.evaluateJavascript(
-              source:
-                  "document.head.innerHTML.includes('#challenge-success-text')");
-          if (res == false) {
-            var ua = await controller.getUA();
-            if (ua != null) {
-              appdata.implicitData['ua'] = ua;
-              appdata.writeImplicitData();
-            }
-            var cookies = await controller.getCookies(url) ?? [];
-            if (cookies.firstWhereOrNull(
-                    (element) => element.name == 'cf_clearance') ==
-                null) {
-              return;
-            }
-            SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
-            App.rootPop();
-          }
+          check(controller);
         },
         onStarted: (controller) async {
           var ua = await controller.getUA();

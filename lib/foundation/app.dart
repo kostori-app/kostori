@@ -6,13 +6,16 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:kostori/foundation/appdata.dart';
 
+import 'bangumi.dart';
+import 'favorites.dart';
+import 'history.dart';
+
 export "widget_utils.dart";
 export "context.dart";
 
 class _App {
-  final version = "1.0.5";
+  final version = "1.1.1";
 
-  // platform
   bool get isAndroid => Platform.isAndroid;
 
   bool get isIOS => Platform.isIOS;
@@ -45,6 +48,7 @@ class _App {
 
   late String dataPath;
   late String cachePath;
+  String? externalStoragePath;
 
   final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -52,8 +56,16 @@ class _App {
 
   BuildContext get rootContext => rootNavigatorKey.currentContext!;
 
+  final Appdata data = appdata;
+
+  final HistoryManager history = HistoryManager();
+
+  final LocalFavoritesManager favorites = LocalFavoritesManager();
+
+  final BangumiManager Bangumi = BangumiManager();
+
   void rootPop() {
-    rootNavigatorKey.currentState?.pop();
+    rootNavigatorKey.currentState?.maybePop();
   }
 
   void pop() {
@@ -67,6 +79,18 @@ class _App {
   Future<void> init() async {
     cachePath = (await getApplicationCacheDirectory()).path;
     dataPath = (await getApplicationSupportDirectory()).path;
+    if (isAndroid) {
+      externalStoragePath = (await getExternalStorageDirectory())!.path;
+    }
+  }
+
+  Future<void> initComponents() async {
+    await Future.wait([
+      data.init(),
+      history.init(),
+      favorites.init(),
+      Bangumi.init(),
+    ]);
   }
 
   Function? _forceRebuildHandler;

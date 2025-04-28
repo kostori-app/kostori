@@ -28,7 +28,7 @@ keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 android {
     namespace 'com.axlmly.kostori'
     compileSdk flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    ndkVersion "28.0.13004108"
 
     splits {
         abi {
@@ -122,6 +122,6 @@ flutter {
 }
 
 dependencies {
-    implementation "androidx.activity:activity-ktx:1.9.2"
+    implementation "androidx.activity:activity-ktx:1.10.1"
     implementation 'androidx.documentfile:documentfile:1.0.1'
 }

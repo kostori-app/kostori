@@ -115,34 +115,6 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
                 if (index < folders.length) {
                   return buildLocalFolder(folders[index]);
                 }
-                index -= folders.length;
-                if (index == 0) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(
-                          color: context.colorScheme.outlineVariant,
-                          width: 0.6,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 16),
-                        Icon(
-                          Icons.cloud,
-                          color: context.colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text("Network".tl),
-                      ],
-                    ),
-                  );
-                }
-                index--;
-                return buildNetworkFolder(networkFolders[index]);
               },
             ),
           )

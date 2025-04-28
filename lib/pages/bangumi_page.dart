@@ -44,7 +44,7 @@ class _TimetableState extends State<_Timetable> {
   void initState() {
     weekday = DateTime.now().weekday;
     // 异步加载数据
-    filterExistingBangumiItems(weekday);
+    filterExistingBangumiItems();
     BangumiManager().addListener(onHistoryChange);
     super.initState();
   }
@@ -55,24 +55,86 @@ class _TimetableState extends State<_Timetable> {
     super.dispose();
   }
 
-  Future<void> filterExistingBangumiItems(int weekday) async {
-    // 获取并筛选数据
-    var filteredList = await Future.wait(
-      BangumiManager().getWeek(weekday).map((item) async {
-        bool exists = await BangumiManager().checkWhetherDataExists(item.id);
-        return exists ? item : null;
-      }),
-    ).then((list) => list.whereType<BangumiItem>().toList());
+  Future<void> filterExistingBangumiItems() async {
+    try {
+      // 1. 获取当前星期几 (1=周一, 7=周日)
+      final currentWeekday = DateTime.now().weekday;
 
-    // 更新状态
-    setState(() {
-      bangumiCalendar = filteredList;
-    });
+      // 2. 获取所有番剧数据
+      final allItems = BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
+      final allIds = allItems.map((item) => item.id.toString()).toList();
+      final existenceMap =
+          await BangumiManager().checkWhetherDataExistsBatch(allIds);
+
+      // 3. 过滤并处理今日番剧
+      final todayItems = <BangumiItem>[];
+
+      for (final item in allItems) {
+        // 跳过不存在的番剧
+        if (!existenceMap.containsKey(item.id.toString())) continue;
+
+        // 获取播出时间（优先使用existenceMap中的时间）
+        final airTimeStr = existenceMap[item.id.toString()] ?? item.airTime;
+        if (airTimeStr == null) continue; // 没有时间则跳过
+
+        try {
+          final airTime = DateTime.parse(airTimeStr).toLocal();
+
+          // 验证星期几是否匹配当前日
+          if (airTime.weekday == currentWeekday) {
+            todayItems.add(item.copyWith(airTime: airTimeStr));
+          }
+        } catch (e) {
+          print('解析时间失败: ${item.id}, $airTimeStr');
+        }
+      }
+
+      // 4. 按播出时间排序（00:00最早 → 23:59最晚）
+      todayItems.sort((a, b) {
+        final timeA = a.airTime;
+        final timeB = b.airTime;
+        if (timeA == null && timeB == null) return 0;
+        if (timeA == null) return 1; // 空时间排后面
+        if (timeB == null) return -1;
+        return _parseTime(timeA).compareTo(_parseTime(timeB));
+      });
+
+      // 5. 更新状态
+      if (mounted) {
+        setState(() => bangumiCalendar = todayItems);
+      }
+    } catch (e) {
+      print("Error processing bangumi calendar: $e");
+      if (mounted) setState(() => bangumiCalendar = []);
+    }
+  }
+
+// 辅助方法：解析时间用于排序
+  DateTime _parseTime(String timeStr) {
+    try {
+      final dt = DateTime.parse(timeStr).toLocal();
+      return DateTime(2000, 1, 1, dt.hour, dt.minute); // 仅比较时分
+    } catch (e) {
+      return DateTime(2000, 1, 1); // 解析失败默认值
+    }
+  }
+
+  String getWeekdayString(int weekday) {
+    const weekdays = [
+      '周一时间表',
+      '周二时间表',
+      '周三时间表',
+      '周四时间表',
+      '周五时间表',
+      '周六时间表',
+      '周日时间表'
+    ];
+    return weekdays[weekday - 1];
   }
 
   void onHistoryChange() {
     setState(() {
-      filterExistingBangumiItems(weekday);
+      filterExistingBangumiItems();
     });
   }
 
@@ -91,7 +153,8 @@ class _TimetableState extends State<_Timetable> {
             child: InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: () async {
-                App.rootContext.to(() => BangumiCalendarPage());
+                App.mainNavigatorKey?.currentContext
+                    ?.to(() => BangumiCalendarPage());
               },
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 SizedBox(
@@ -99,7 +162,7 @@ class _TimetableState extends State<_Timetable> {
                   child: Row(
                     children: [
                       Center(
-                        child: Text('Timetable'.tl, style: ts.s18),
+                        child: Text(getWeekdayString(weekday), style: ts.s18),
                       ),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -113,7 +176,11 @@ class _TimetableState extends State<_Timetable> {
                         child: Text('${bangumiCalendar.length}', style: ts.s12),
                       ),
                       const Spacer(),
-                      const Icon(Icons.arrow_right),
+                      const Icon(Icons.calendar_month),
+                      SizedBox(
+                        width: 10,
+                      ),
+                      Text('Timetable'.tl)
                     ],
                   ),
                 ).paddingHorizontal(16),

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/consts.dart';
 
 import 'package:kostori/foundation/context.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/history.dart';
-import 'package:kostori/foundation/local.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -34,6 +31,12 @@ class _HistoryPageState extends State<HistoryPage> {
   void onUpdate() {
     setState(() {
       animes = HistoryManager().getAll();
+      if (multiSelectMode) {
+        selectedAnimes.removeWhere((anime, _) => !animes.contains(anime));
+        if (selectedAnimes.isEmpty) {
+          multiSelectMode = false;
+        }
+      }
     });
   }
 
@@ -41,101 +44,194 @@ class _HistoryPageState extends State<HistoryPage> {
 
   var controller = FlyoutController();
 
+  bool multiSelectMode = false;
+  Map<History, bool> selectedAnimes = {};
+
+  void selectAll() {
+    setState(() {
+      selectedAnimes = animes.asMap().map((k, v) => MapEntry(v, true));
+    });
+  }
+
+  void deSelect() {
+    setState(() {
+      selectedAnimes.clear();
+    });
+  }
+
+  void invertSelection() {
+    setState(() {
+      animes.asMap().forEach((k, v) {
+        selectedAnimes[v] = !selectedAnimes.putIfAbsent(v, () => false);
+      });
+      selectedAnimes.removeWhere((k, v) => !v);
+    });
+  }
+
+  void _removeHistory(History anime) {
+    if (anime.sourceKey.startsWith("Unknown")) {
+      HistoryManager().remove(
+        anime.id,
+        AnimeType(int.parse(anime.sourceKey.split(':')[1])),
+      );
+    } else if (anime.sourceKey == 'local') {
+      HistoryManager().remove(
+        anime.id,
+        AnimeType.local,
+      );
+    } else {
+      HistoryManager().remove(
+        anime.id,
+        AnimeType(anime.sourceKey.hashCode),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SmoothCustomScrollView(
-        slivers: [
-          SliverAppbar(
-            style: context.width < changePoint
-                ? AppbarStyle.shadow
-                : AppbarStyle.blur,
-            title: Text('History'.tl),
-            actions: [
-              Tooltip(
-                message: 'Clear History'.tl,
-                child: Flyout(
-                  controller: controller,
-                  flyoutBuilder: (context) {
-                    return FlyoutContent(
-                      title: 'Clear History'.tl,
-                      content: Text(
-                          'Are you sure you want to clear your history?'.tl),
-                      actions: [
-                        Button.filled(
-                          color: context.colorScheme.error,
-                          onPressed: () {
-                            HistoryManager().clearHistory();
-                            context.pop();
-                          },
-                          child: Text('Clear'.tl),
-                        ),
-                      ],
-                    );
+    List<Widget> selectActions = [
+      IconButton(
+          icon: const Icon(Icons.select_all),
+          tooltip: "Select All".tl,
+          onPressed: selectAll),
+      IconButton(
+          icon: const Icon(Icons.deselect),
+          tooltip: "Deselect".tl,
+          onPressed: deSelect),
+      IconButton(
+          icon: const Icon(Icons.flip),
+          tooltip: "Invert Selection".tl,
+          onPressed: invertSelection),
+      IconButton(
+        icon: const Icon(Icons.delete),
+        tooltip: "Delete".tl,
+        onPressed: selectedAnimes.isEmpty
+            ? null
+            : () {
+                final animesToDelete = List<History>.from(selectedAnimes.keys);
+                setState(() {
+                  multiSelectMode = false;
+                  selectedAnimes.clear();
+                });
+
+                for (final anime in animesToDelete) {
+                  _removeHistory(anime);
+                }
+              },
+      ),
+    ];
+
+    List<Widget> normalActions = [
+      IconButton(
+        icon: const Icon(Icons.checklist),
+        tooltip: multiSelectMode ? "Exit Multi-Select".tl : "Multi-Select".tl,
+        onPressed: () {
+          setState(() {
+            multiSelectMode = !multiSelectMode;
+          });
+        },
+      ),
+      Tooltip(
+        message: 'Clear History'.tl,
+        child: Flyout(
+          controller: controller,
+          flyoutBuilder: (context) {
+            return FlyoutContent(
+              title: 'Clear History'.tl,
+              content: Text('Are you sure you want to clear your history?'.tl),
+              actions: [
+                Button.filled(
+                  color: context.colorScheme.error,
+                  onPressed: () {
+                    HistoryManager().clearHistory();
+                    context.pop();
                   },
-                  child: IconButton(
-                    icon: const Icon(Icons.clear_all),
-                    onPressed: () {
-                      controller.show();
+                  child: Text('Clear'.tl),
+                ),
+              ],
+            );
+          },
+          child: IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              controller.show();
+            },
+          ),
+        ),
+      )
+    ];
+
+    return PopScope(
+      canPop: !multiSelectMode,
+      onPopInvokedWithResult: (didPop, result) {
+        if (multiSelectMode) {
+          setState(() {
+            multiSelectMode = false;
+            selectedAnimes.clear();
+          });
+        }
+      },
+      child: Scaffold(
+        body: SmoothCustomScrollView(
+          slivers: [
+            SliverAppbar(
+              leading: multiSelectMode
+                  ? Tooltip(
+                      message: "Cancel".tl,
+                      child: IconButton(
+                        onPressed: () {
+                          if (multiSelectMode) {
+                            setState(() {
+                              multiSelectMode = false;
+                              selectedAnimes.clear();
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.close),
+                      ),
+                    )
+                  : null,
+              title: multiSelectMode
+                  ? Text(selectedAnimes.length.toString())
+                  : Text('History'.tl),
+              actions: multiSelectMode ? selectActions : normalActions,
+            ),
+            SliverGridAnimes(
+              animes: animes,
+              selections: selectedAnimes,
+              onLongPressed: null,
+              onTap: multiSelectMode
+                  ? (c) {
+                      setState(() {
+                        if (selectedAnimes.containsKey(c as History)) {
+                          selectedAnimes.remove(c);
+                        } else {
+                          selectedAnimes[c] = true;
+                        }
+                        if (selectedAnimes.isEmpty) {
+                          multiSelectMode = false;
+                        }
+                      });
+                    }
+                  : null,
+              badgeBuilder: (c) {
+                return AnimeSource.find(c.sourceKey)?.name;
+              },
+              menuBuilder: (c) {
+                return [
+                  MenuEntry(
+                    icon: Icons.remove,
+                    text: 'Remove'.tl,
+                    color: context.colorScheme.error,
+                    onClick: () {
+                      _removeHistory(c as History);
                     },
                   ),
-                ),
-              )
-            ],
-          ),
-          SliverGridAnimes(
-            animes: animes.map(
-              (e) {
-                var cover = e.cover;
-                if (!cover.isURL) {
-                  var localAnime = LocalManager().find(
-                    e.id,
-                    e.type,
-                  );
-                  if (localAnime != null) {
-                    cover = "file://${localAnime.coverFile.path}";
-                  }
-                }
-                return Anime(
-                  e.title,
-                  cover,
-                  e.id,
-                  e.subtitle,
-                  null,
-                  getDescription(e),
-                  e.type.animeSource?.key ?? "Invalid:${e.type.value}",
-                  null,
-                );
+                ];
               },
-            ).toList(),
-            badgeBuilder: (c) {
-              return AnimeSource.find(c.sourceKey)?.name;
-            },
-            enableHistory: true,
-            menuBuilder: (c) {
-              return [
-                MenuEntry(
-                  icon: Icons.remove,
-                  text: 'Remove'.tl,
-                  color: context.colorScheme.error,
-                  onClick: () {
-                    if (c.sourceKey.startsWith("Invalid")) {
-                      HistoryManager().remove(
-                        c.id,
-                        AnimeType(int.parse(c.sourceKey.split(':')[1])),
-                      );
-                    } else {
-                      HistoryManager().remove(
-                        c.id,
-                        AnimeType(c.sourceKey.hashCode),
-                      );
-                    }
-                  },
-                ),
-              ];
-            },
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

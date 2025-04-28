@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
+import 'package:intl/intl.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -121,43 +124,6 @@ class History implements Anime {
             .map((e) => int.parse(e))),
         bangumiId = row["bangumiId"];
 
-  static Future<History> findOrCreate(
-    HistoryMixin model, {
-    int lastWatchEpisode = 0,
-    int page = 0,
-    int lastWatchTime = 0,
-  }) async {
-    var history = await HistoryManager().find(model.id, model.historyType);
-    if (history != null) {
-      return history;
-    }
-    history = History.fromModel(
-        model: model,
-        lastWatchEpisode: lastWatchEpisode,
-        lastWatchTime: lastWatchTime,
-        lastRoad: 1,
-        allEpisode: 1,
-        bangumiId: null);
-    HistoryManager().addHistory(history);
-    return history;
-  }
-
-  static Future<History> createIfNull(
-      History? history, HistoryMixin model) async {
-    if (history != null) {
-      return history;
-    }
-    history = History.fromModel(
-        model: model,
-        lastWatchEpisode: 0,
-        lastWatchTime: 0,
-        lastRoad: 1,
-        allEpisode: 1,
-        bangumiId: null);
-    HistoryManager().addHistory(history);
-    return history;
-  }
-
   @override
   int get hashCode => Object.hash(id, type);
 
@@ -170,19 +136,38 @@ class History implements Anime {
   String get description {
     var res = "";
     if (lastWatchEpisode >= 1) {
-      res += "Chapter @ep".tlParams({
+      res += "Episode @ep".tlParams({
         "ep": lastWatchEpisode,
       });
     }
-    // if (page >= 1) {
-    //   if (lastWatchEpisode >= 1) {
-    //     res += " - ";
-    //   }
-    //   res += "Page @page".tlParams({
-    //     "page": page,
-    //   });
-    // }
+    if (lastWatchTime >= 1) {
+      res += " ";
+      res += formatLastWatchTime(lastWatchTime);
+    }
     return res;
+  }
+
+  String formatLastWatchTime(int milliseconds) {
+    // 将毫秒转换为秒
+    int totalSeconds = milliseconds ~/ 1000;
+
+    // 计算小时、分钟和秒
+    int hours = totalSeconds ~/ 3600;
+    int remainingSeconds = totalSeconds % 3600;
+    int minutes = remainingSeconds ~/ 60;
+    int seconds = remainingSeconds % 60;
+
+    // 格式化输出
+    if (hours > 0) {
+      // 超过1小时：显示HH:MM:SS
+      return '${hours.toString().padLeft(2, '0')}:'
+          '${minutes.toString().padLeft(2, '0')}:'
+          '${seconds.toString().padLeft(2, '0')}';
+    } else {
+      // 不足1小时：显示MM:SS
+      return '${minutes.toString().padLeft(2, '0')}:'
+          '${seconds.toString().padLeft(2, '0')}';
+    }
   }
 
   @override
@@ -265,41 +250,18 @@ class HistoryManager with ChangeNotifier {
 
   int get length => _db.select("select count(*) from history;").first[0] as int;
 
-  Map<String, bool>? _cachedHistory;
+  /// Cache of history ids. Improve the performance of find operation.
+  Map<String, bool>? _cachedHistoryIds;
 
-  Future<void> tryUpdateDb() async {
-    var file = File("${App.dataPath}/history_temp.db");
-    if (!file.existsSync()) {
-      Log.addLog(
-          LogLevel.info, "HistoryManager.tryUpdateDb", "db file not exist");
-      return;
-    }
-    var db = sqlite3.open(file.path);
-    var newHistory0 = db.select("""
-      select * from history
-      order by time DESC;
-    """);
-    var newHistory =
-        newHistory0.map((element) => History.fromRow(element)).toList();
-    if (file.existsSync()) {
-      var skips = 0;
-      for (var history in newHistory) {
-        if (findSync(history.id, history.type) == null) {
-          addHistory(history);
-          Log.addLog(
-              LogLevel.info, "HistoryManager", "merge history ${history.id}");
-        } else {
-          skips++;
-        }
-      }
-      Log.addLog(LogLevel.info, "HistoryManager",
-          "merge history, skipped $skips, added ${newHistory.length - skips}");
-    }
-    db.dispose();
-    file.deleteSync();
-  }
+  /// Cache records recently modified by the app. Improve the performance of listeners.
+  final cachedHistories = <String, History>{};
+
+  bool isInitialized = false;
 
   Future<void> init() async {
+    if (isInitialized) {
+      return;
+    }
     _db = sqlite3.open("${App.dataPath}/history.db");
 
     _db.execute("""
@@ -344,27 +306,59 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   }
 
+  static const _insertHistorySql = """
+        insert or replace into history (id, title, subtitle, cover, time, type, lastWatchEpisode, lastWatchTime, lastRoad, allEpisode, watchEpisode, bangumiId)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      """;
+
+  static Future<void> _addHistoryAsync(int dbAddr, History newItem) {
+    return Isolate.run(() {
+      var db = sqlite3.fromPointer(ffi.Pointer.fromAddress(dbAddr));
+      db.execute(_insertHistorySql, [
+        newItem.id,
+        newItem.title,
+        newItem.subtitle,
+        newItem.cover,
+        newItem.time.millisecondsSinceEpoch,
+        newItem.type.value,
+        newItem.lastWatchEpisode,
+        newItem.lastWatchTime,
+        newItem.lastRoad,
+        newItem.allEpisode,
+        newItem.watchEpisode.join(','),
+        newItem.bangumiId
+      ]);
+    });
+  }
+
+  bool _haveAsyncTask = false;
+
+  /// Create a isolate to add history to prevent blocking the UI thread.
+  Future<void> addHistoryAsync(History newItem) async {
+    while (_haveAsyncTask) {
+      await Future.delayed(Duration(milliseconds: 20));
+    }
+
+    _haveAsyncTask = true;
+    await _addHistoryAsync(_db.handle.address, newItem);
+    _haveAsyncTask = false;
+    if (_cachedHistoryIds == null) {
+      updateCache();
+    } else {
+      _cachedHistoryIds![newItem.id] = true;
+    }
+    cachedHistories[newItem.id] = newItem;
+    if (cachedHistories.length > 10) {
+      cachedHistories.remove(cachedHistories.keys.first);
+    }
+    notifyListeners();
+  }
+
   /// add history. if exists, update time.
   ///
   /// This function would be called when user start reading.
-  Future<void> addHistory(History newItem) async {
-    _db.execute("""
-        insert or replace into history (
-        id,
-        title,
-        subtitle,
-        cover,
-        time,
-        type,
-        lastWatchEpisode,
-        lastWatchTime,
-        lastRoad,
-        allEpisode,
-        watchEpisode,
-        bangumiId
-        )
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """, [
+  void addHistory(History newItem) {
+    _db.execute(_insertHistorySql, [
       newItem.id,
       newItem.title,
       newItem.subtitle,
@@ -378,7 +372,15 @@ class HistoryManager with ChangeNotifier {
       newItem.watchEpisode.join(','),
       newItem.bangumiId
     ]);
-    updateCache();
+    if (_cachedHistoryIds == null) {
+      updateCache();
+    } else {
+      _cachedHistoryIds![newItem.id] = true;
+    }
+    cachedHistories[newItem.id] = newItem;
+    if (cachedHistories.length > 10) {
+      cachedHistories.remove(cachedHistories.keys.first);
+    }
     notifyListeners();
   }
 
@@ -436,10 +438,6 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<History?> find(String id, AnimeType type) async {
-    return findSync(id, type);
-  }
-
   Future<Progress?> progressFind(
       String historyId, AnimeType type, int episode, int road) async {
     var res = _db.select('''
@@ -453,21 +451,29 @@ class HistoryManager with ChangeNotifier {
   }
 
   void updateCache() {
-    _cachedHistory = {};
+    _cachedHistoryIds = {};
     var res = _db.select("""
-        select * from history;
+        select id from history;
       """);
     for (var element in res) {
-      _cachedHistory![element["id"] as String] = true;
+      _cachedHistoryIds![element["id"] as String] = true;
+    }
+    for (var key in cachedHistories.keys.toList()) {
+      if (!_cachedHistoryIds!.containsKey(key)) {
+        cachedHistories.remove(key);
+      }
     }
   }
 
-  History? findSync(String id, AnimeType type) {
-    if (_cachedHistory == null) {
+  History? find(String id, AnimeType type) {
+    if (_cachedHistoryIds == null) {
       updateCache();
     }
-    if (!_cachedHistory!.containsKey(id)) {
+    if (!_cachedHistoryIds!.containsKey(id)) {
       return null;
+    }
+    if (cachedHistories.containsKey(id)) {
+      return cachedHistories[id];
     }
 
     var res = _db.select("""
@@ -507,6 +513,7 @@ class HistoryManager with ChangeNotifier {
   }
 
   void close() {
+    isInitialized = false;
     _db.dispose();
   }
 }

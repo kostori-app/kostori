@@ -10,12 +10,11 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/cache_manager.dart';
-import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/js_engine.dart';
-import 'package:kostori/foundation/local.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/pages/bangumi/bangumi.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
@@ -54,7 +53,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
 
   ColorScheme get colors => Theme.of(context).colorScheme;
 
-  bool get enableTwoViews => context.width > changePoint;
+  bool get enableTwoViews => context.width > 720;
 
   final categories = <String>[
     "Explore",
@@ -216,37 +215,41 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
         ],
       );
     } else {
-      return Stack(
-        children: [
-          Positioned.fill(child: buildLeft()),
-          Positioned(
-            left: offset,
-            width: MediaQuery.of(context).size.width,
-            top: 0,
-            bottom: 0,
-            child: Listener(
-              onPointerDown: handlePointerDown,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                switchInCurve: Curves.fastOutSlowIn,
-                switchOutCurve: Curves.fastOutSlowIn,
-                transitionBuilder: (child, animation) {
-                  var tween = Tween<Offset>(
-                      begin: const Offset(1, 0), end: const Offset(0, 0));
+      return LayoutBuilder(
+        builder: (context, constrains) {
+          return Stack(
+            children: [
+              Positioned.fill(child: buildLeft()),
+              Positioned(
+                left: offset,
+                width: constrains.maxWidth,
+                top: 0,
+                bottom: 0,
+                child: Listener(
+                  onPointerDown: handlePointerDown,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    switchInCurve: Curves.fastOutSlowIn,
+                    switchOutCurve: Curves.fastOutSlowIn,
+                    transitionBuilder: (child, animation) {
+                      var tween = Tween<Offset>(
+                          begin: const Offset(1, 0), end: const Offset(0, 0));
 
-                  return SlideTransition(
-                    position: tween.animate(animation),
-                    child: child,
-                  );
-                },
-                child: Material(
-                  key: ValueKey(currentPage),
-                  child: buildRight(),
+                      return SlideTransition(
+                        position: tween.animate(animation),
+                        child: child,
+                      );
+                    },
+                    child: Material(
+                      key: ValueKey(currentPage),
+                      child: buildRight(),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )
-        ],
+              )
+            ],
+          );
+        },
       );
     }
   }
@@ -349,7 +352,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   Widget buildRight() {
     return switch (currentPage) {
       -1 => const SizedBox(),
-      0 => ExploreSettings(),
+      0 => const ExploreSettings(),
       1 => const AnimeSourceSettings(),
       // 2 => const ReadingSettings(false),
       2 => AppearanceSettings(),

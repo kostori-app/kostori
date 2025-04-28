@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/state_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:media_kit/media_kit.dart';
@@ -99,12 +98,14 @@ abstract class _PlayerController with Store {
           onExit: onExit)); // 传递当前的 PlayerController
     }
 
-    isFullScreen = !isFullScreen;
-
     if (isFullScreen) {
-      StateController.find<WindowFrameController>().hideWindowFrame();
+      windowManager.setFullScreen(!isFullScreen);
+      toggleWindowFrame();
+      isFullScreen = !isFullScreen;
     } else {
-      StateController.find<WindowFrameController>().showWindowFrame();
+      windowManager.setFullScreen(!isFullScreen);
+      toggleWindowFrame();
+      isFullScreen = !isFullScreen;
     }
   }
 

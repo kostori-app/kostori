@@ -3,8 +3,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
+import 'package:kostori/network/proxy.dart';
 import 'package:rhttp/rhttp.dart' as rhttp;
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/app.dart';
@@ -108,62 +108,13 @@ class MyLogInterceptor implements Interceptor {
 }
 
 class AppDio with DioMixin {
-  String? _proxy = proxy;
-
   AppDio([BaseOptions? options]) {
     this.options = options ?? BaseOptions();
-    httpClientAdapter = RHttpAdapter(rhttp.ClientSettings(
-      proxySettings: proxy == null
-          ? const rhttp.ProxySettings.noProxy()
-          : rhttp.ProxySettings.proxy(proxy!),
-    ));
+    httpClientAdapter = RHttpAdapter();
     interceptors.add(CookieManagerSql(SingleInstanceCookieJar.instance!));
     interceptors.add(NetworkCacheManager());
     interceptors.add(CloudflareInterceptor());
     interceptors.add(MyLogInterceptor());
-  }
-
-  static String? proxy;
-
-  static Future<String?> getProxy() async {
-    if ((appdata.settings['proxy'] as String).removeAllBlank == "direct") {
-      return null;
-    }
-    if (appdata.settings['proxy'] != "system") return appdata.settings['proxy'];
-
-    String res;
-    if (!App.isLinux) {
-      const channel = MethodChannel("kostori/method_channel");
-      try {
-        res = await channel.invokeMethod("getProxy");
-      } catch (e) {
-        return null;
-      }
-    } else {
-      res = "No Proxy";
-    }
-    if (res == "No Proxy") return null;
-
-    if (res.contains(";")) {
-      var proxies = res.split(";");
-      for (String proxy in proxies) {
-        proxy = proxy.removeAllBlank;
-        if (proxy.startsWith('https=')) {
-          return proxy.substring(6);
-        }
-      }
-    }
-
-    final RegExp regex = RegExp(
-      r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$',
-      caseSensitive: false,
-      multiLine: false,
-    );
-    if (!regex.hasMatch(res)) {
-      return null;
-    }
-
-    return res;
   }
 
   static final Map<String, bool> _requests = {};
@@ -185,16 +136,6 @@ class AppDio with DioMixin {
       _requests[path] = true;
       options!.headers!.remove('prevent-parallel');
     }
-    proxy = await getProxy();
-    if (_proxy != proxy) {
-      Log.info("Network", "Proxy changed to $proxy");
-      _proxy = proxy;
-      httpClientAdapter = RHttpAdapter(rhttp.ClientSettings(
-        proxySettings: proxy == null
-            ? const rhttp.ProxySettings.noProxy()
-            : rhttp.ProxySettings.proxy(proxy!),
-      ));
-    }
     try {
       return super.request<T>(
         path,
@@ -214,7 +155,26 @@ class AppDio with DioMixin {
 }
 
 class RHttpAdapter implements HttpClientAdapter {
-  rhttp.ClientSettings settings;
+  Future<rhttp.ClientSettings> get settings async {
+    var proxy = await getProxy();
+
+    return rhttp.ClientSettings(
+      proxySettings: proxy == null
+          ? const rhttp.ProxySettings.noProxy()
+          : rhttp.ProxySettings.proxy(proxy),
+      redirectSettings: const rhttp.RedirectSettings.limited(5),
+      timeoutSettings: const rhttp.TimeoutSettings(
+        connectTimeout: Duration(seconds: 15),
+        keepAliveTimeout: Duration(seconds: 60),
+        keepAlivePing: Duration(seconds: 30),
+      ),
+      throwOnStatusCode: false,
+      dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
+      tlsSettings: rhttp.TlsSettings(
+        sni: appdata.settings['sni'] != false,
+      ),
+    );
+  }
 
   static Map<String, List<String>> _getOverrides() {
     if (!appdata.settings['enableDnsOverrides'] == true) {
@@ -232,22 +192,6 @@ class RHttpAdapter implements HttpClientAdapter {
     return result;
   }
 
-  RHttpAdapter([this.settings = const rhttp.ClientSettings()]) {
-    settings = settings.copyWith(
-      redirectSettings: const rhttp.RedirectSettings.limited(5),
-      timeoutSettings: const rhttp.TimeoutSettings(
-        connectTimeout: Duration(seconds: 15),
-        keepAliveTimeout: Duration(seconds: 60),
-        keepAlivePing: Duration(seconds: 30),
-      ),
-      throwOnStatusCode: false,
-      dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
-      tlsSettings: rhttp.TlsSettings(
-        sni: appdata.settings['sni'] != false,
-      ),
-    );
-  }
-
   @override
   void close({bool force = false}) {}
 
@@ -257,21 +201,15 @@ class RHttpAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    if (options.headers['User-Agent'] == null &&
+        options.headers['user-agent'] == null) {
+      options.headers['User-Agent'] = "kostori/v${App.version}";
+    }
+
     var res = await rhttp.Rhttp.request(
-      method: switch (options.method) {
-        'GET' => rhttp.HttpMethod.get,
-        'POST' => rhttp.HttpMethod.post,
-        'PUT' => rhttp.HttpMethod.put,
-        'PATCH' => rhttp.HttpMethod.patch,
-        'DELETE' => rhttp.HttpMethod.delete,
-        'HEAD' => rhttp.HttpMethod.head,
-        'OPTIONS' => rhttp.HttpMethod.options,
-        'TRACE' => rhttp.HttpMethod.trace,
-        'CONNECT' => rhttp.HttpMethod.connect,
-        _ => throw ArgumentError('Unsupported method: ${options.method}'),
-      },
+      method: rhttp.HttpMethod(options.method),
       url: options.uri.toString(),
-      settings: settings,
+      settings: await settings,
       expectBody: rhttp.HttpExpectBody.stream,
       body: requestStream == null ? null : rhttp.HttpBody.stream(requestStream),
       headers: rhttp.HttpHeaders.rawMap(
@@ -294,9 +232,29 @@ class RHttpAdapter implements HttpClientAdapter {
     return ResponseBody(
       res.body,
       res.statusCode,
-      statusMessage: null,
+      statusMessage: _getStatusMessage(res.statusCode),
       isRedirect: false,
       headers: headers,
     );
+  }
+
+  static String _getStatusMessage(int statusCode) {
+    return switch (statusCode) {
+      200 => "OK",
+      201 => "Created",
+      202 => "Accepted",
+      204 => "No Content",
+      206 => "Partial Content",
+      301 => "Moved Permanently",
+      302 => "Found",
+      400 => "Invalid Status Code 400: The Request is invalid.",
+      401 => "Invalid Status Code 401: The Request is unauthorized.",
+      403 =>
+        "Invalid Status Code 403: No permission to access the resource. Check your account or network.",
+      404 => "Invalid Status Code 404: Not found.",
+      429 =>
+        "Invalid Status Code 429: Too many requests. Please try again later.",
+      _ => "Invalid Status Code $statusCode",
+    };
   }
 }

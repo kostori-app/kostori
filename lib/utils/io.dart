@@ -36,20 +36,10 @@ class FilePath {
 
 extension FileSystemEntityExt on FileSystemEntity {
   String get name {
-    var path = this.path;
-    if (path.endsWith('/') || path.endsWith('\\')) {
-      path = path.substring(0, path.length - 1);
-    }
-
-    int i = path.length - 1;
-
-    while (i >= 0 && path[i] != '\\' && path[i] != '/') {
-      i--;
-    }
-
-    return path.substring(i + 1);
+    return p.basename(path);
   }
 
+  /// Delete the file or directory and ignore errors.
   Future<void> deleteIgnoreError({bool recursive = false}) async {
     try {
       await delete(recursive: recursive);
@@ -58,12 +48,14 @@ extension FileSystemEntityExt on FileSystemEntity {
     }
   }
 
+  /// Delete the file or directory if it exists.
   Future<void> deleteIfExists({bool recursive = false}) async {
     if (existsSync()) {
       await delete(recursive: recursive);
     }
   }
 
+  /// Delete the file or directory if it exists.
   void deleteIfExistsSync({bool recursive = false}) {
     if (existsSync()) {
       deleteSync(recursive: recursive);
@@ -83,9 +75,15 @@ extension FileExtension on File {
     // Stream is not usable since [AndroidFile] does not support [openRead].
     await newFile.writeAsBytes(await readAsBytes());
   }
+
+  /// Get the base name of the file without the extension.
+  String get basenameWithoutExt {
+    return p.basenameWithoutExtension(path);
+  }
 }
 
 extension DirectoryExtension on Directory {
+  /// Calculate the size of the directory.
   Future<int> get size async {
     if (!existsSync()) return 0;
     int total = 0;
@@ -97,6 +95,7 @@ extension DirectoryExtension on Directory {
     return total;
   }
 
+  /// Change the base name of the directory.
   Directory renameX(String newName) {
     newName = sanitizeFileName(newName);
     return renameSync(path.replaceLast(name, newName));
@@ -106,6 +105,7 @@ extension DirectoryExtension on Directory {
     return File(FilePath.join(path, name));
   }
 
+  /// Delete the contents of the directory.
   void deleteContentsSync({recursive = true}) {
     if (!existsSync()) return;
     for (var f in listSync()) {
@@ -113,33 +113,46 @@ extension DirectoryExtension on Directory {
     }
   }
 
+  /// Delete the contents of the directory.
   Future<void> deleteContents({recursive = true}) async {
     if (!existsSync()) return;
     for (var f in listSync()) {
       await f.deleteIfExists(recursive: recursive);
     }
   }
+
+  /// Create the directory. If the directory already exists, delete it first.
+  void forceCreateSync() {
+    if (existsSync()) {
+      deleteSync(recursive: true);
+    }
+    createSync(recursive: true);
+  }
 }
 
-String sanitizeFileName(String fileName) {
-  if (fileName.endsWith('.')) {
+/// Sanitize the file name. Remove invalid characters and trim the file name.
+String sanitizeFileName(String fileName, {String? dir, int? maxLength}) {
+  while (fileName.endsWith('.')) {
     fileName = fileName.substring(0, fileName.length - 1);
   }
-  const maxLength = 255;
+  var length = maxLength ?? 255;
+  if (dir != null) {
+    if (!dir.endsWith('/') && !dir.endsWith('\\')) {
+      dir = "$dir/";
+    }
+    length -= dir.length;
+  }
   final invalidChars = RegExp(r'[<>:"/\\|?*]');
   final sanitizedFileName = fileName.replaceAll(invalidChars, ' ');
   var trimmedFileName = sanitizedFileName.trim();
   if (trimmedFileName.isEmpty) {
     throw Exception('Invalid File Name: Empty length.');
   }
-  while (true) {
-    final bytes = utf8.encode(trimmedFileName);
-    if (bytes.length > maxLength) {
-      trimmedFileName =
-          trimmedFileName.substring(0, trimmedFileName.length - 1);
-    } else {
-      break;
-    }
+  if (length <= 0) {
+    throw Exception('Invalid File Name: Max length is less than 0.');
+  }
+  if (trimmedFileName.length > length) {
+    trimmedFileName = trimmedFileName.substring(0, length);
   }
   return trimmedFileName;
 }
@@ -163,11 +176,11 @@ Future<void> copyDirectory(Directory source, Directory destination) async {
   }
 }
 
+/// Copy the **contents** of the source directory to the destination directory.
+/// This function is executed in an isolate to prevent the UI from freezing.
 Future<void> copyDirectoryIsolate(
     Directory source, Directory destination) async {
-  await Isolate.run(() {
-    copyDirectory(source, destination);
-  });
+  await Isolate.run(() => overrideIO(() => copyDirectory(source, destination)));
 }
 
 String findValidDirectoryName(String path, String directory) {
@@ -285,7 +298,9 @@ Future<FileSelectResult?> selectFile({required List<String> ext}) async {
       file = FileSelectResult(xFile.path);
     }
     if (!ext.contains(file.path.split(".").last)) {
-      App.rootContext.showMessage(message: "Invalid file type");
+      App.rootContext.showMessage(
+        message: "Invalid file type: ${file.path.split(".").last}",
+      );
       return null;
     }
     return file;
@@ -392,8 +407,10 @@ class Share {
     required String mime,
   }) {
     if (!App.isWindows) {
-      s.Share.shareXFiles([s.XFile.fromData(data, mimeType: mime)],
-          fileNameOverrides: [filename]);
+      s.Share.shareXFiles(
+        [s.XFile.fromData(data, mimeType: mime)],
+        fileNameOverrides: [filename],
+      );
     } else {
       // write to cache
       var file = File(FilePath.join(App.cachePath, filename));

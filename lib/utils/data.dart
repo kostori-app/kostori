@@ -46,68 +46,74 @@ Future<File> exportAppData() async {
 Future<void> importAppData(File file, [bool checkVersion = false]) async {
   var cacheDirPath = FilePath.join(App.cachePath, 'temp_data');
   var cacheDir = Directory(cacheDirPath);
-  await Isolate.run(() {
-    ZipFile.openAndExtract(file.path, cacheDirPath);
-  });
-  var historyFile = cacheDir.joinFile("history.db");
-  var localFavoriteFile = cacheDir.joinFile("local_favorite.db");
-  var bangumiFile = cacheDir.joinFile("bangumi.db");
-  var appdataFile = cacheDir.joinFile("appdata.json");
-  var cookieFile = cacheDir.joinFile("cookie.db");
-  if (checkVersion && appdataFile.existsSync()) {
-    var data = jsonDecode(await appdataFile.readAsString());
-    var version = data["settings"]["dataVersion"];
-    if (version is int && version <= appdata.settings["dataVersion"]) {
-      return;
-    }
+  if (cacheDir.existsSync()) {
+    cacheDir.deleteSync(recursive: true);
   }
-  if (await historyFile.exists()) {
-    HistoryManager().close();
-    File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
-    historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
-    HistoryManager().init();
-  }
-  if (await localFavoriteFile.exists()) {
-    LocalFavoritesManager().close();
-    File(FilePath.join(App.dataPath, "local_favorite.db")).deleteIfExistsSync();
-    localFavoriteFile
-        .renameSync(FilePath.join(App.dataPath, "local_favorite.db"));
-    LocalFavoritesManager().init();
-  }
-  if (await bangumiFile.exists()) {
-    BangumiManager().close();
-    File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
-    bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
-    BangumiManager().init();
-  }
-  if (await appdataFile.exists()) {
-    // proxy settings & authorization setting should be kept
-    var proxySettings = appdata.settings["proxy"];
-    var authSettings = appdata.settings["authorizationRequired"];
-    File(FilePath.join(App.dataPath, "appdata.json")).deleteIfExistsSync();
-    appdataFile.renameSync(FilePath.join(App.dataPath, "appdata.json"));
-    await appdata.init();
-    appdata.settings["proxy"] = proxySettings;
-    appdata.settings["authorizationRequired"] = authSettings;
-    appdata.saveData();
-  }
-  if (await cookieFile.exists()) {
-    SingleInstanceCookieJar.instance?.dispose();
-    File(FilePath.join(App.dataPath, "cookie.db")).deleteIfExistsSync();
-    cookieFile.renameSync(FilePath.join(App.dataPath, "cookie.db"));
-    SingleInstanceCookieJar.instance =
-        SingleInstanceCookieJar(FilePath.join(App.dataPath, "cookie.db"))
-          ..init();
-  }
-  var animeSourceDir = FilePath.join(cacheDirPath, "anime_source");
-  if (Directory(animeSourceDir).existsSync()) {
-    for (var file in Directory(animeSourceDir).listSync()) {
-      if (file is File) {
-        var targetFile = FilePath.join(App.dataPath, "anime_source", file.name);
-        File(targetFile).deleteIfExistsSync();
-        await file.copy(targetFile);
+  cacheDir.createSync();
+  try {
+    await Isolate.run(() {
+      ZipFile.openAndExtract(file.path, cacheDirPath);
+    });
+    var historyFile = cacheDir.joinFile("history.db");
+    var localFavoriteFile = cacheDir.joinFile("local_favorite.db");
+    var bangumiFile = cacheDir.joinFile("bangumi.db");
+    var appdataFile = cacheDir.joinFile("appdata.json");
+    var cookieFile = cacheDir.joinFile("cookie.db");
+    if (checkVersion && appdataFile.existsSync()) {
+      var data = jsonDecode(await appdataFile.readAsString());
+      var version = data["settings"]["dataVersion"];
+      if (version is int && version <= appdata.settings["dataVersion"]) {
+        return;
       }
     }
-    await AnimeSource.reload();
+    if (await historyFile.exists()) {
+      HistoryManager().close();
+      File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
+      historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
+      HistoryManager().init();
+    }
+    if (await localFavoriteFile.exists()) {
+      LocalFavoritesManager().close();
+      File(FilePath.join(App.dataPath, "local_favorite.db"))
+          .deleteIfExistsSync();
+      localFavoriteFile
+          .renameSync(FilePath.join(App.dataPath, "local_favorite.db"));
+      LocalFavoritesManager().init();
+    }
+    if (await bangumiFile.exists()) {
+      BangumiManager().close();
+      File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
+      bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
+      BangumiManager().init();
+    }
+    if (await appdataFile.exists()) {
+      var content = await appdataFile.readAsString();
+      var data = jsonDecode(content);
+      appdata.syncData(data);
+    }
+    if (await cookieFile.exists()) {
+      SingleInstanceCookieJar.instance?.dispose();
+      File(FilePath.join(App.dataPath, "cookie.db")).deleteIfExistsSync();
+      cookieFile.renameSync(FilePath.join(App.dataPath, "cookie.db"));
+      SingleInstanceCookieJar.instance =
+          SingleInstanceCookieJar(FilePath.join(App.dataPath, "cookie.db"))
+            ..init();
+    }
+    var animeSourceDir = FilePath.join(cacheDirPath, "anime_source");
+    if (Directory(animeSourceDir).existsSync()) {
+      Directory(FilePath.join(App.dataPath, "anime_source"))
+          .deleteIfExistsSync(recursive: true);
+      Directory(FilePath.join(App.dataPath, "anime_source")).createSync();
+      for (var file in Directory(animeSourceDir).listSync()) {
+        if (file is File) {
+          var targetFile =
+              FilePath.join(App.dataPath, "anime_source", file.name);
+          await file.copy(targetFile);
+        }
+      }
+      await AnimeSourceManager().reload();
+    }
+  } finally {
+    cacheDir.deleteIgnoreError(recursive: true);
   }
 }

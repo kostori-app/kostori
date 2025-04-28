@@ -160,7 +160,7 @@ class BangumiManager with ChangeNotifier {
     """);
 
     _db.execute("""
-      create table if not exists bnagumi_calendar (
+      create table if not exists bangumi_calendar (
         id INTEGER primary key,
         type int,
         name text,
@@ -258,7 +258,7 @@ class BangumiManager with ChangeNotifier {
 
   Future<void> addBnagumiCalendar(BangumiItem newItem) async {
     _db.execute("""
-        insert or replace into bnagumi_calendar (
+        insert or replace into bangumi_calendar (
         id,
         type,
         name,
@@ -293,26 +293,69 @@ class BangumiManager with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> checkWhetherDataExists(id) async {
-    bool state = false;
-    var res = _db.select("""
-    select * from bangumi_data
-    where sites LIKE ?
-  """, ['%"bangumi","id":"$id"%']);
-// 如果查询结果不为空，则表示存在该数据
-    if (res.isNotEmpty) {
-      state = true;
+  // 修改后的存在性检查方法（返回包含存在状态和时间的 Map）
+  Future<Map<String, String?>> checkWhetherDataExistsBatch(
+      List<String> ids) async {
+    if (ids.isEmpty) return {};
+
+    final conditions =
+        List.generate(ids.length, (_) => 'sites LIKE ?').join(' OR ');
+    final patterns = ids.map((id) => '%"bangumi","id":"$id"%').toList();
+
+    // 同时查询 sites 和 begin 列
+    final result = _db.select(
+        'SELECT sites, begin FROM bangumi_data WHERE $conditions', patterns);
+
+    final existenceMap = <String, String?>{};
+    for (final row in result) {
+      final sites = jsonDecode(row['sites'] as String) as List;
+      final beginTime = row['begin']?.toString(); // 获取 begin 列
+
+      // 遍历所有匹配的站点
+      for (final site in sites.cast<Map>()) {
+        if (site['site'] == 'bangumi') {
+          final id = site['id'].toString();
+          existenceMap[id] = beginTime; // 关联 ID 和 begin 时间
+        }
+      }
     }
-    return state;
+
+    return existenceMap;
   }
 
-  List<BangumiItem> getWeek(int week) {
-    var res = _db.select("""
-    select * from bnagumi_calendar
-    where airWeekday = ?
-    order by airWeekday DESC
-  """, [week]);
-    return res.map((element) => BangumiItem.fromRow(element)).toList();
+  // 修改后的单ID检查方法
+  Future<bool> checkWhetherDataExists(String id) async {
+    final existenceMap = await checkWhetherDataExistsBatch([id]);
+
+    // 检查映射中是否包含该ID，且值不为null（根据实际需求选择条件）
+    return existenceMap.containsKey(id); // 仅检查ID存在性
+    // 或 existenceMap[id] != null // 同时要求存在begin数据
+  }
+
+  // 支持批量周数查询
+  List<BangumiItem> getWeeks(List<int> weeks) {
+    if (weeks.isEmpty) return [];
+
+    final placeholders = List.filled(weeks.length, '?').join(',');
+    final res = _db.select("""
+    SELECT * FROM bangumi_calendar
+    WHERE airWeekday IN ($placeholders)
+    ORDER BY airWeekday DESC
+  """, weeks);
+
+    return res.map(BangumiItem.fromRow).toList();
+  }
+
+  List<BangumiItem> getWeek(int week) => getWeeks([week]);
+
+  void clearBangumiData() {
+    _db.execute("delete from bangumi_data;");
+    notifyListeners();
+  }
+
+  void clearBnagumiCalendar() {
+    _db.execute("delete from bangumi_calendar;");
+    notifyListeners();
   }
 
   void close() {

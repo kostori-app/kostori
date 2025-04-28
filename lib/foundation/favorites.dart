@@ -11,8 +11,6 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart';
 import 'package:kostori/foundation/log.dart';
 
-import 'local.dart';
-
 String _getTimeString(DateTime time) {
   return time.toIso8601String().replaceFirst("T", " ").substring(0, 19);
 }
@@ -532,8 +530,7 @@ class LocalFavoritesManager with ChangeNotifier {
       var all = allAnimes();
       for (var c in all) {
         var animeSource = c.type.animeSource;
-        if ((c.type == AnimeType.local &&
-                LocalManager().find(c.id, c.type) == null) ||
+        if ((c.type == AnimeType.local) ||
             (c.type != AnimeType.local && animeSource == null)) {
           deleteAnimeWithId(c.folder, c.id, c.type);
           count++;

@@ -3,13 +3,15 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'package:crypto/crypto.dart';
 import 'package:dio/io.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show protected;
 import 'package:flutter/services.dart';
 import 'package:html/parser.dart' as html;
 import 'package:html/dom.dart' as dom;
 import 'package:flutter_qjs/flutter_qjs.dart';
-import 'package:kostori/components/components.dart';
+import 'package:kostori/components/js_ui.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/network/proxy.dart';
+import 'package:kostori/utils/init.dart';
 import 'package:pointycastle/api.dart';
 import 'package:pointycastle/asn1/asn1_parser.dart';
 import 'package:pointycastle/asn1/primitives/asn1_integer.dart';
@@ -22,7 +24,6 @@ import 'package:pointycastle/block/modes/cbc.dart';
 import 'package:pointycastle/block/modes/cfb.dart';
 import 'package:pointycastle/block/modes/ecb.dart';
 import 'package:pointycastle/block/modes/ofb.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cookie_jar.dart';
@@ -41,7 +42,7 @@ class JavaScriptRuntimeException implements Exception {
   }
 }
 
-class JsEngine with _JSEngineApi, _JsUiApi {
+class JsEngine with _JSEngineApi, JsUiApi, Init {
   factory JsEngine() => _cache ?? (_cache = JsEngine._create());
 
   static JsEngine? _cache;
@@ -65,7 +66,9 @@ class JsEngine with _JSEngineApi, _JsUiApi {
         responseType: ResponseType.plain, validateStatus: (status) => true));
   }
 
-  Future<void> init() async {
+  @override
+  @protected
+  Future<void> doInit() async {
     if (!_closed) {
       return;
     }
@@ -155,7 +158,18 @@ class JsEngine with _JSEngineApi, _JsUiApi {
           case "delay":
             return Future.delayed(Duration(milliseconds: message["time"]));
           case "UI":
-            handleUIMessage(Map.from(message));
+            return handleUIMessage(Map.from(message));
+          case "getLocale":
+            return "${App.locale.languageCode}_${App.locale.countryCode}";
+          case "getPlatform":
+            return Platform.operatingSystem;
+          case "setClipboard":
+            return Clipboard.setData(ClipboardData(text: message["text"]));
+          case "getClipboard":
+            return Future.sync(() async {
+              var res = await Clipboard.getData(Clipboard.kTextPlain);
+              return res?.text;
+            });
         }
       }
       return null;
@@ -180,7 +194,7 @@ class JsEngine with _JSEngineApi, _JsUiApi {
           responseType: ResponseType.plain,
           validateStatus: (status) => true,
         ));
-        var proxy = await AppDio.getProxy();
+        var proxy = await getProxy();
         dio.httpClientAdapter = IOHttpClientAdapter(
           createHttpClient: () {
             return HttpClient()
@@ -678,6 +692,7 @@ class JSAutoFreeFunction {
 
   /// Automatically free the function when it's not used anymore
   JSAutoFreeFunction(this.func) {
+    func.dup();
     finalizer.attach(this, func);
   }
 
@@ -686,53 +701,6 @@ class JSAutoFreeFunction {
   }
 
   static final finalizer = Finalizer<JSInvokable>((func) {
-    func.free();
+    func.destroy();
   });
-}
-
-mixin class _JsUiApi {
-  void handleUIMessage(Map<String, dynamic> message) {
-    switch (message['function']) {
-      case 'showMessage':
-        var m = message['message'];
-        if (m.toString().isNotEmpty) {
-          App.rootContext.showMessage(message: m.toString());
-        }
-      case 'showDialog':
-        _showDialog(message);
-      case 'launchUrl':
-        var url = message['url'];
-        if (url.toString().isNotEmpty) {
-          launchUrlString(url.toString());
-        }
-    }
-  }
-
-  void _showDialog(Map<String, dynamic> message) {
-    var title = message['title'];
-    var content = message['content'];
-    var actions = <String, JSAutoFreeFunction>{};
-    for (var action in message['actions']) {
-      // [message] will be released after the method call, causing the action to be invalid, so we need to duplicate it
-      (action['callback'] as JSInvokable).dup();
-      actions[action['text']] = JSAutoFreeFunction(action['callback']);
-    }
-    showDialog(
-        context: App.rootContext,
-        builder: (context) {
-          return ContentDialog(
-            title: title,
-            content: Text(content).paddingHorizontal(16),
-            actions: actions.entries.map((entry) {
-              return TextButton(
-                onPressed: () {
-                  entry.value.call([]);
-                  context.pop();
-                },
-                child: Text(entry.key),
-              );
-            }).toList(),
-          );
-        });
-  }
 }

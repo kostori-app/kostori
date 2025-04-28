@@ -6,168 +6,145 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/state_controller.dart';
+import 'package:kostori/foundation/global_state.dart';
 import 'package:window_manager/window_manager.dart';
 
 const _kTitleBarHeight = 36.0;
 
-class WindowFrameController extends StateController {
-  bool useDarkTheme = false;
+void toggleWindowFrame() {
+  GlobalState.find<_WindowFrameState>().toggleWindowFrame();
+}
 
-  bool isHideWindowFrame = false;
+class WindowFrameController extends InheritedWidget {
+  /// Whether the window frame is hidden.
+  final bool isWindowFrameHidden;
 
-  void setDarkTheme() {
-    useDarkTheme = true;
-    update();
-  }
+  /// Sets the visibility of the window frame.
+  final void Function(bool) setWindowFrame;
 
-  void resetTheme() {
-    useDarkTheme = false;
-    update();
-  }
+  /// Adds a listener that will be called when close button is clicked.
+  /// The listener should return `true` to allow the window to be closed.
+  final void Function(WindowCloseListener listener) addCloseListener;
 
-  VoidCallback openSideBar = () {};
+  /// Removes a close listener.
+  final void Function(WindowCloseListener listener) removeCloseListener;
 
-  void hideWindowFrame() {
-    isHideWindowFrame = true;
-    update();
-  }
+  const WindowFrameController._create({
+    required this.isWindowFrameHidden,
+    required this.setWindowFrame,
+    required this.addCloseListener,
+    required this.removeCloseListener,
+    required super.child,
+  });
 
-  void showWindowFrame() {
-    isHideWindowFrame = false;
-    update();
+  @override
+  bool updateShouldNotify(covariant InheritedWidget oldWidget) {
+    return false;
   }
 }
 
-class WindowFrame extends StatelessWidget {
+class WindowFrame extends StatefulWidget {
   const WindowFrame(this.child, {super.key});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    StateController.putIfNotExists<WindowFrameController>(
-        WindowFrameController());
-    if (App.isMobile) return child;
-    return StateBuilder<WindowFrameController>(builder: (controller) {
-      if (controller.isHideWindowFrame) return child;
+  State<WindowFrame> createState() => _WindowFrameState();
 
-      var body = Stack(
-        children: [
-          Positioned.fill(
-            child: MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                  padding: const EdgeInsets.only(top: _kTitleBarHeight)),
-              child: child,
-            ),
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Material(
-              color: Colors.transparent,
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  brightness: controller.useDarkTheme ? Brightness.dark : null,
-                ),
-                child: Builder(builder: (context) {
-                  return SizedBox(
-                    height: _kTitleBarHeight,
-                    child: Row(
-                      children: [
-                        if (App.isMacOS)
-                          const DragToMoveArea(
-                            child: SizedBox(
-                              height: double.infinity,
-                              width: 16,
-                            ),
-                          ).paddingRight(52)
-                        else
-                          const SizedBox(width: 12),
-                        Expanded(
-                          child: DragToMoveArea(
-                            child: Text(
-                              'Kostori',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: (controller.useDarkTheme ||
-                                        context.brightness == Brightness.dark)
-                                    ? Colors.white
-                                    : Colors.black,
-                              ),
-                            )
-                                .toAlign(Alignment.centerLeft)
-                                .paddingLeft(4 + (App.isMacOS ? 25 : 0)),
-                          ),
-                        ),
-                        if (kDebugMode)
-                          const TextButton(
-                            onPressed: debug,
-                            child: Text('Debug'),
-                          ),
-                        if (!App.isMacOS) const WindowButtons()
-                      ],
-                    ),
-                  );
-                }),
-              ),
-            ),
-          )
-        ],
-      );
-
-      if (App.isLinux) {
-        return VirtualWindowFrame(child: body);
-      } else {
-        return body;
-      }
-    });
-  }
-
-  Widget buildMenuButton(
-      WindowFrameController controller, BuildContext context) {
-    return InkWell(
-        onTap: () {
-          controller.openSideBar();
-        },
-        child: SizedBox(
-          width: 42,
-          height: double.infinity,
-          child: Center(
-            child: CustomPaint(
-              size: const Size(18, 20),
-              painter: _MenuPainter(
-                  color: (controller.useDarkTheme ||
-                          Theme.of(context).brightness == Brightness.dark)
-                      ? Colors.white
-                      : Colors.black),
-            ),
-          ),
-        ));
+  static WindowFrameController of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<WindowFrameController>()!;
   }
 }
 
-class _MenuPainter extends CustomPainter {
-  final Color color;
+typedef WindowCloseListener = bool Function();
 
-  _MenuPainter({this.color = Colors.black});
+class _WindowFrameState extends AutomaticGlobalState<WindowFrame> {
+  bool isHideWindowFrame = false;
+  bool useDarkTheme = false;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = getPaint(color);
-    final path = Path()
-      ..moveTo(0, size.height / 4)
-      ..lineTo(size.width, size.height / 4)
-      ..moveTo(0, size.height / 4 * 2)
-      ..lineTo(size.width, size.height / 4 * 2)
-      ..moveTo(0, size.height / 4 * 3)
-      ..lineTo(size.width, size.height / 4 * 3);
-    canvas.drawPath(path, paint);
+  void toggleWindowFrame() {
+    isHideWindowFrame = !isHideWindowFrame;
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) {
+    if (App.isMobile) return widget.child;
+    if (isHideWindowFrame) return widget.child;
+
+    var body = Stack(
+      children: [
+        Positioned.fill(
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+                padding: const EdgeInsets.only(top: _kTitleBarHeight)),
+            child: widget.child,
+          ),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: Material(
+            color: Colors.transparent,
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                brightness: useDarkTheme ? Brightness.dark : null,
+              ),
+              child: Builder(builder: (context) {
+                return SizedBox(
+                  height: _kTitleBarHeight,
+                  child: Row(
+                    children: [
+                      if (App.isMacOS)
+                        const DragToMoveArea(
+                          child: SizedBox(
+                            height: double.infinity,
+                            width: 16,
+                          ),
+                        ).paddingRight(52)
+                      else
+                        const SizedBox(width: 12),
+                      Expanded(
+                        child: DragToMoveArea(
+                          child: Text(
+                            'Kostori',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: (useDarkTheme ||
+                                      context.brightness == Brightness.dark)
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          )
+                              .toAlign(Alignment.centerLeft)
+                              .paddingLeft(4 + (App.isMacOS ? 25 : 0)),
+                        ),
+                      ),
+                      if (kDebugMode)
+                        const TextButton(
+                          onPressed: debug,
+                          child: Text('Debug'),
+                        ),
+                      if (!App.isMacOS) const WindowButtons()
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        )
+      ],
+    );
+
+    if (App.isLinux) {
+      return VirtualWindowFrame(child: body);
+    } else {
+      return body;
+    }
+  }
+
+  @override
+  Object? get key => 'WindowFrame';
 }
 
 class WindowButtons extends StatefulWidget {
@@ -636,5 +613,5 @@ TransitionBuilder VirtualWindowFrameInit() {
 }
 
 void debug() {
-  AnimeSource.reload();
+  AnimeSourceManager().reload();
 }

@@ -6,6 +6,7 @@ class NetworkError extends StatelessWidget {
     required this.message,
     this.retry,
     this.withAppbar = true,
+    this.buttonText,
   });
 
   final String message;
@@ -13,6 +14,8 @@ class NetworkError extends StatelessWidget {
   final void Function()? retry;
 
   final bool withAppbar;
+
+  final String? buttonText;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +63,7 @@ class NetworkError extends StatelessWidget {
             else
               FilledButton(
                 onPressed: retry,
-                child: Text('Retry'.tl),
+                child: Text(buttonText ?? 'Retry'.tl),
               ),
         ],
       ),
@@ -313,28 +316,16 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
 
   Widget buildLoading(BuildContext context) {
     return Center(
-      child: const CircularProgressIndicator(
-        strokeWidth: 2,
-      ).fixWidth(32).fixHeight(32),
+      child: const CircularProgressIndicator().fixWidth(32).fixHeight(32),
     );
   }
 
   Widget buildError(BuildContext context, String error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(error, maxLines: 3),
-          const SizedBox(height: 12),
-          Button.outlined(
-            onPressed: () {
-              reset();
-            },
-            child: const Text("Retry"),
-          )
-        ],
-      ),
-    ).paddingHorizontal(16);
+    return NetworkError(
+      withAppbar: false,
+      message: error,
+      retry: reset,
+    );
   }
 
   @override

@@ -3,7 +3,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/state_controller.dart';
+import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/tag_translation.dart';
@@ -45,8 +45,9 @@ class _SearchResultPageState extends State<SearchResultPage> {
       if (suggestionsController.entry != null) {
         suggestionsController.remove();
       }
+      text = checkAutoLanguage(text);
       setState(() {
-        this.text = text;
+        this.text = text!;
       });
       appdata.addSearchHistory(text);
       controller.currentText = text;
@@ -92,16 +93,36 @@ class _SearchResultPageState extends State<SearchResultPage> {
     super.dispose();
   }
 
+  String checkAutoLanguage(String text) {
+    var setting = appdata.settings["autoAddLanguageFilter"] ?? 'none';
+    if (setting == 'none') {
+      return text;
+    }
+    var searchSource = sourceKey;
+    // TODO: Move it to a better place
+    const enabledSources = [
+      'nhentai',
+      'ehentai',
+    ];
+    if (!enabledSources.contains(searchSource)) {
+      return text;
+    }
+    if (!text.contains('language:')) {
+      return '$text language:$setting';
+    }
+    return text;
+  }
+
   @override
   void initState() {
+    sourceKey = widget.sourceKey;
+    text = checkAutoLanguage(widget.text);
     controller = SearchBarController(
-      currentText: widget.text,
+      currentText: text,
       onSearch: search,
     );
-    sourceKey = widget.sourceKey;
     options = widget.options ?? const [];
     validateOptions();
-    text = widget.text;
     appdata.addSearchHistory(text);
     suggestionsController = _SuggestionsController(controller);
     super.initState();
@@ -166,6 +187,8 @@ class _SearchResultPageState extends State<SearchResultPage> {
             suggestionsController.remove();
           }
 
+          var previousOptions = List<String>.from(options);
+          var previousSourceKey = sourceKey;
           await showDialog(
             context: context,
             useRootNavigator: true,
@@ -173,7 +196,12 @@ class _SearchResultPageState extends State<SearchResultPage> {
               return _SearchSettingsDialog(state: this);
             },
           );
-          setState(() {});
+          if (!previousOptions.isEqualTo(options) ||
+              previousSourceKey != sourceKey) {
+            text = checkAutoLanguage(controller.text);
+            controller.currentText = text;
+            setState(() {});
+          }
         },
       ),
     );

@@ -19,12 +19,12 @@ list(APPEND FLUTTER_PLUGIN_LIST
   share_plus
   sqlite3_flutter_libs
   url_launcher_windows
+  volume_controller
   window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   lodepng_flutter
-  media_kit_native_event_loop
   rhttp
   zip_flutter
 )

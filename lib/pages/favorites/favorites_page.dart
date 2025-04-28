@@ -11,8 +11,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/res.dart';
-import 'package:kostori/pages/anime_page.dart';
+import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 
@@ -21,8 +20,6 @@ part 'favorite_actions.dart';
 part 'side_bar.dart';
 
 part 'local_favorites_page.dart';
-
-part 'network_favorites_page.dart';
 
 part 'local_search_page.dart';
 
@@ -165,19 +162,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ],
       );
     }
-    if (!isNetwork) {
-      return _LocalFavoritesPage(
-          folder: folder!, key: PageStorageKey("local_$folder"));
-    } else {
-      var favoriteData = getFavoriteDataOrNull(folder!);
-      if (favoriteData == null) {
-        folder = null;
-        return buildBody();
-      } else {
-        return NetworkFavoritePage(favoriteData,
-            key: PageStorageKey("network_$folder"));
-      }
-    }
+    return _LocalFavoritesPage(
+        folder: folder!, key: PageStorageKey("local_$folder"));
   }
 }
 

@@ -62,6 +62,41 @@ class _AboutSettingsState extends State<AboutSettings> {
             },
           ).fixHeight(32),
         ).toSliver(),
+        ListTile(
+          title: const Text("Bangumi-data"),
+          subtitle: Text(appdata.settings['bangumiDataVer']),
+          trailing: Button.filled(
+            isLoading: isCheckingUpdate,
+            child: Text("Check".tl),
+            onPressed: () {
+              setState(() {
+                isCheckingUpdate = true;
+              });
+              Bangumi.checkBangumiData().then((value) {
+                setState(() {
+                  isCheckingUpdate = false;
+                });
+              });
+            },
+          ).fixHeight(32),
+        ).toSliver(),
+        ListTile(
+          title: Text("Reset Bangumi-data".tl),
+          trailing: Button.filled(
+            isLoading: isCheckingUpdate,
+            child: Text("Reset".tl),
+            onPressed: () {
+              setState(() {
+                isCheckingUpdate = true;
+              });
+              Bangumi.resetBangumiData().then((value) {
+                setState(() {
+                  isCheckingUpdate = false;
+                });
+              });
+            },
+          ).fixHeight(32),
+        ).toSliver(),
         _SwitchSetting(
           title: "Check for updates on startup".tl,
           settingKey: "checkUpdateOnStart",
@@ -79,10 +114,6 @@ class _AboutSettingsState extends State<AboutSettings> {
           onTap: () {
             launchUrlString("https://github.com/kostori-app");
           },
-        ).toSliver(),
-        ListTile(
-          title: const Text("Bangumi-data"),
-          subtitle: Text(appdata.settings['bangumiDataVer']),
         ).toSliver(),
       ],
     );

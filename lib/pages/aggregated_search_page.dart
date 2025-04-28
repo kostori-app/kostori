@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import "package:kostori/components/components.dart";
 import "package:kostori/foundation/app.dart";
+import "package:kostori/foundation/appdata.dart";
 import "package:kostori/pages/search_result_page.dart";
 import "package:kostori/utils/translations.dart";
 
@@ -25,7 +26,18 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
 
   @override
   void initState() {
-    sources = AnimeSource.all().where((e) => e.searchPageData != null).toList();
+    var all = AnimeSource.all()
+        .where((e) => e.searchPageData != null)
+        .map((e) => e.key)
+        .toList();
+    var settings = appdata.settings['searchSources'] as List;
+    var sources = <String>[];
+    for (var source in settings) {
+      if (all.contains(source)) {
+        sources.add(source);
+      }
+    }
+    this.sources = sources.map((e) => AnimeSource.find(e)!).toList();
     _keyword = widget.keyword;
     controller = SearchBarController(
       currentText: widget.keyword,
@@ -47,7 +59,11 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final source = sources[index];
-            return _SliverSearchResult(source: source, keyword: _keyword);
+            return _SliverSearchResult(
+              key: ValueKey(source.key),
+              source: source,
+              keyword: _keyword,
+            );
           },
           childCount: sources.length,
         ),
@@ -57,7 +73,11 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
 }
 
 class _SliverSearchResult extends StatefulWidget {
-  const _SliverSearchResult({required this.source, required this.keyword});
+  const _SliverSearchResult({
+    required this.source,
+    required this.keyword,
+    super.key,
+  });
 
   final AnimeSource source;
 
@@ -71,13 +91,15 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
     with AutomaticKeepAliveClientMixin {
   bool isLoading = true;
 
-  static const _kAnimeHeight = 144.0;
+  static const _kAnimeHeight = 162.0;
 
-  get _comicWidth => _kAnimeHeight * 0.72;
+  get _animeWidth => _kAnimeHeight * 0.7;
 
   static const _kLeftPadding = 16.0;
 
   List<Anime>? animes;
+
+  String? error;
 
   void load() async {
     final data = widget.source.searchPageData!;
@@ -90,12 +112,22 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
           animes = res.data;
           isLoading = false;
         });
+      } else {
+        setState(() {
+          error = res.errorMessage ?? "Unknown error".tl;
+          isLoading = false;
+        });
       }
     } else if (data.loadNext != null) {
       var res = await data.loadNext!(widget.keyword, null, options);
       if (!res.error) {
         setState(() {
           animes = res.data;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          error = res.errorMessage ?? "Unknown error".tl;
           isLoading = false;
         });
       }
@@ -111,7 +143,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
   Widget buildPlaceHolder() {
     return Container(
       height: _kAnimeHeight,
-      width: _comicWidth,
+      width: _animeWidth,
       margin: const EdgeInsets.only(left: _kLeftPadding),
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainerLow,
@@ -121,13 +153,16 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
   }
 
   Widget buildAnime(Anime c) {
-    return SimpleAnimeTile(anime: c)
+    return SimpleAnimeTile(anime: c, withTitle: true)
         .paddingLeft(_kLeftPadding)
         .paddingBottom(2);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (error != null && error!.startsWith("CloudflareException")) {
+      error = "Cloudflare verification required".tl;
+    }
     super.build(context);
     return InkWell(
       onTap: () {
@@ -150,7 +185,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
               width: double.infinity,
               child: Shimmer(
                 child: LayoutBuilder(builder: (context, constrains) {
-                  var itemWidth = _comicWidth + _kLeftPadding;
+                  var itemWidth = _animeWidth + _kLeftPadding;
                   var items = (constrains.maxWidth / itemWidth).ceil();
                   return Stack(
                     children: [
@@ -179,7 +214,13 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
                     children: [
                       const Icon(Icons.error_outline),
                       const SizedBox(width: 8),
-                      Text("No search results found".tl),
+                      Expanded(
+                        child: Text(
+                          error ?? "No search results found".tl,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )
                     ],
                   ),
                   const Spacer(),

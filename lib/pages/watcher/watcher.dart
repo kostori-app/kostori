@@ -41,7 +41,6 @@ class Watcher extends StatefulWidget {
 
   final AnimeDetails anime;
 
-  /// Map<Chapter ID, Chapter Name>.
   /// null if the comic is a gallery
   final Map<String, Map<String, String>>? episode;
 
@@ -280,7 +279,7 @@ class WatcherState extends State<Watcher>
         if (bangumiId != null) {
           history?.bangumiId = bangumiId;
         }
-        HistoryManager().addHistory(history!);
+        HistoryManager().addHistoryAsync(history!);
         HistoryManager().addProgress(progress!, widget.anime.animeId);
       }
     });
@@ -357,12 +356,18 @@ class WatcherState extends State<Watcher>
     }
   }
 
+  Timer? _updateHistoryTimer;
+
   void updateHistory() {
     if (history != null) {
       history!.lastWatchEpisode = episode;
       history!.allEpisode =
           widget.episode!.values.elementAt(playerController.currentRoad).length;
-      HistoryManager().addHistory(history!);
+      _updateHistoryTimer?.cancel();
+      _updateHistoryTimer = Timer(const Duration(seconds: 1), () {
+        HistoryManager().addHistoryAsync(history!);
+        _updateHistoryTimer = null;
+      });
     }
   }
 }
