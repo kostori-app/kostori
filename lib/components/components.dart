@@ -2,7 +2,6 @@ library;
 
 import 'dart:async';
 import 'dart:collection';
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -24,7 +23,6 @@ import 'package:kostori/foundation/image_loader/history_image_provider.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
-import 'package:kostori/pages/anime_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/utils/ext.dart';

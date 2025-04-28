@@ -2,7 +2,6 @@ import 'package:app_links/app_links.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
-import 'package:kostori/pages/anime_page.dart';
 
 void handleLinks() {
   final appLinks = AppLinks();
