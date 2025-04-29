@@ -14,9 +14,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   late List<FavoriteItem> animes;
 
-  String? networkSource;
-  String? networkFolder;
-
   Map<Anime, bool> selectedAnimes = {};
 
   var selectedLocalFolders = <String>{};
@@ -47,9 +44,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
   void initState() {
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
     animes = LocalFavoritesManager().getAllAnimes(widget.folder);
-    var (a, b) = LocalFavoritesManager().findLinked(widget.folder);
-    networkSource = a;
-    networkFolder = b;
     super.initState();
   }
 
@@ -99,51 +93,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                   : "Unselected".tl),
             ),
             actions: [
-              if (networkSource != null)
-                Tooltip(
-                  message: "Sync".tl,
-                  child: Flyout(
-                    flyoutBuilder: (context) {
-                      var sourceName = AnimeSource.find(networkSource!)?.name ??
-                          networkSource!;
-                      var text = "The folder is Linked to @source".tlParams({
-                        "source": sourceName,
-                      });
-                      if (networkFolder != null && networkFolder!.isNotEmpty) {
-                        text += "\n${"Source Folder".tl}: $networkFolder";
-                      }
-                      return FlyoutContent(
-                        title: "Sync".tl,
-                        content: Text(text),
-                        actions: [
-                          Button.filled(
-                            child: Text("Update".tl),
-                            onPressed: () {
-                              context.pop();
-                              importNetworkFolder(
-                                networkSource!,
-                                widget.folder,
-                                networkFolder!,
-                              ).then(
-                                (value) {
-                                  updateAnimes();
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                    child: Builder(builder: (context) {
-                      return IconButton(
-                        icon: const Icon(Icons.sync),
-                        onPressed: () {
-                          Flyout.of(context).show();
-                        },
-                      );
-                    }),
-                  ),
-                ),
               Tooltip(
                 message: "Search".tl,
                 child: IconButton(

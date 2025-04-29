@@ -128,12 +128,12 @@ abstract mixin class _AnimePageActions {
 
   // 显示 BottomSheet，并允许选择一个项目
   Future<void> bangumiBottomInfoSelect(BuildContext context) async {
-    var res = await Bangumi.bangumiGetSearch(anime.title);
+    var res = await Bangumi.combinedBangumiSearch(anime.title);
 
     // 如果 res 是 null 或者数据不正确，显示检索失败提示
     if (res.isEmpty) {
       SmartDialog.showNotify(
-        msg: '检索失败，请稍后再试（一直捅 API 会出问题）...',
+        msg: '检索失败',
         notifyType: NotifyType.error,
       );
     }
@@ -158,10 +158,10 @@ abstract mixin class _AnimePageActions {
             Future<void> fetchSearchResults(String query) async {
               if (query.isEmpty) {
                 // 如果搜索框为空，则默认展示初始数据
-                res = await Bangumi.bangumiGetSearch(anime.title);
+                res = await Bangumi.combinedBangumiSearch(anime.title);
               } else {
                 // 否则根据用户输入重新搜索
-                res = await Bangumi.bangumiGetSearch(query);
+                res = await Bangumi.combinedBangumiSearch(query);
               }
 
               // 如果搜索结果为空，提示用户
@@ -228,48 +228,135 @@ abstract mixin class _AnimePageActions {
                                         : 10 / 16);
                                 double width = height * 0.72;
 
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.network(
-                                        item.images['large']!,
-                                        width: width,
-                                        height: height,
-                                        fit: BoxFit.cover,
+                                return SizedBox(
+                                  width: constraints.maxWidth,
+                                  height: height,
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.network(
+                                          item.images['large']!,
+                                          width: width,
+                                          height: height,
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(width: 12.0),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Bangumi ID: ${item.id}',
-                                            style: TextStyle(
-                                              fontSize: 18.0,
-                                              fontWeight: FontWeight.bold,
+                                      SizedBox(width: 12.0),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Bangumi ID: ${item.id}',
+                                              style: TextStyle(
+                                                fontSize: 18.0,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            item.nameCn,
-                                            style: TextStyle(
-                                              fontSize: 18.0,
-                                              fontWeight: FontWeight.bold,
+                                            Text(
+                                              item.nameCn,
+                                              style: TextStyle(
+                                                fontSize: 18.0,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            item.name,
-                                            style: TextStyle(
-                                              fontSize: 14.0,
+                                            Text(
+                                              item.name,
+                                              style: TextStyle(
+                                                fontSize: 14.0,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                            Text(
+                                              '放送日期: ${item.airDate}',
+                                            ),
+                                            const SizedBox(
+                                              height: 10,
+                                            ),
+                                            Text(
+                                              item.summary,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Align(
+                                              alignment: Alignment.bottomRight,
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    '${item.score}',
+                                                    style: TextStyle(
+                                                      fontSize: 32.0,
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 5,
+                                                  ),
+                                                  Container(
+                                                    padding: EdgeInsets.all(
+                                                        2.0), // 可选，设置内边距
+                                                    decoration: BoxDecoration(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              8), // 设置圆角半径
+                                                      border: Border.all(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .secondaryContainer
+                                                            .toOpacity(0.72),
+                                                        width: 2.0, // 设置边框宽度
+                                                      ),
+                                                    ),
+                                                    child: Text(
+                                                      Utils.getRatingLabel(
+                                                          item.score),
+                                                    ),
+                                                  ),
+                                                  SizedBox(
+                                                    width: 4,
+                                                  ),
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .end, // 右对齐
+                                                    children: [
+                                                      RatingBarIndicator(
+                                                        itemCount: 5,
+                                                        rating: item.score
+                                                                .toDouble() /
+                                                            2,
+                                                        itemBuilder:
+                                                            (context, index) =>
+                                                                const Icon(
+                                                          Icons.star_rounded,
+                                                        ),
+                                                        itemSize: 20.0,
+                                                      ),
+                                                      Text(
+                                                        '${item.total} 人评 | #${item.rank}',
+                                                        style: TextStyle(
+                                                            fontSize: 12),
+                                                      )
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 );
                               },
                             ),

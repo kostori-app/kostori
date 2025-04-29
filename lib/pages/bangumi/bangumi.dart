@@ -1,3 +1,6 @@
+import 'dart:collection';
+import 'dart:math';
+
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -89,6 +92,74 @@ class Bangumi {
       Log.addLog(LogLevel.error, 'bangumi', '$e');
     }
     return bangumiList;
+  }
+
+  static Future<List<BangumiItem>> combinedBangumiSearch(String keyword) async {
+    try {
+      final results = await Future.wait([
+        bangumiPostSearch(keyword).timeout(const Duration(seconds: 10)),
+        bangumiGetSearch(keyword).timeout(const Duration(seconds: 10)),
+      ]).catchError((e, s) {
+        Log.addLog(LogLevel.warning, 'bangumi', 'Partial search failed: $e');
+        return [<BangumiItem>[], <BangumiItem>[]];
+      });
+
+      final combinedList = [...results[0], ...results[1]];
+      final uniqueItems = <int, BangumiItem>{};
+
+      // 计算字符匹配度（适用于中文、日文、英文等）
+      int calculateCharacterMatchScore(String keyword, String text) {
+        if (text.isEmpty) return 0;
+
+        final keywordChars =
+            keyword.runes.map((rune) => String.fromCharCode(rune)).toList();
+        final textChars =
+            text.runes.map((rune) => String.fromCharCode(rune)).toList();
+
+        int matchCount = 0;
+        for (final char in keywordChars) {
+          if (textChars.contains(char)) {
+            matchCount++;
+          }
+        }
+
+        // 返回匹配字符数占总字符数的百分比（0-100）
+        return (matchCount / keywordChars.length * 100).round();
+      }
+
+      // 综合计算项目的匹配度
+      int calculateItemMatchScore(BangumiItem item) {
+        final namecn = item.nameCn ?? '';
+        final name = item.name ?? '';
+
+        // 计算两个字段的匹配度
+        final scoreNamecn = calculateCharacterMatchScore(keyword, namecn);
+        final scoreName = calculateCharacterMatchScore(keyword, name);
+
+        // 取最高分
+        return max(scoreNamecn, scoreName);
+      }
+
+      // 排序逻辑：先按匹配度降序，再按评分降序
+      combinedList
+        ..sort((a, b) {
+          final matchScoreA = calculateItemMatchScore(a);
+          final matchScoreB = calculateItemMatchScore(b);
+
+          if (matchScoreA != matchScoreB) {
+            return matchScoreB.compareTo(matchScoreA); // 匹配度高的在前
+          }
+          return b.score.compareTo(a.score); // 评分高的在前
+        })
+        ..forEach((item) {
+          uniqueItems.putIfAbsent(item.id, () => item);
+        });
+
+      return uniqueItems.values.toList();
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'bangumi', 'Combined search failed: $e\n$s');
+      return [];
+    }
   }
 
   static Future<BangumiItem?> getBangumiInfoByID(int id) async {
