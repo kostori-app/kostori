@@ -9,6 +9,8 @@ abstract mixin class _AnimePageActions {
 
   History? history;
 
+  BangumiItem? bangumiBindInfo;
+
   bool isLiking = false;
 
   bool isLiked = false;

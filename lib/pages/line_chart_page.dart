@@ -71,14 +71,14 @@ class _LineChatPageState extends State<LineChatPage> {
 
   double _calculateOptimalIntegerInterval(double maxValue) {
     // 确保至少有2个标签，最多10个标签
-    final rawInterval = maxValue / 9; // 10个标签需要9个间隔
-    final base = pow(10, (log(rawInterval) / ln10).floor()).toDouble();
+    final rawInterval = maxValue / 14; // 10个标签需要9个间隔
+    final base = pow(15, (log(rawInterval) / ln10).floor()).toDouble();
 
     // 选择最接近的友好间隔（1,2,5,10的倍数）
-    final candidates = [1 * base, 2 * base, 5 * base, 10 * base];
+    final candidates = [1 * base, 2 * base, 5 * base, 10 * base, 15 * base];
     final optimal = candidates.firstWhere(
-        (interval) => (maxValue / interval).ceil() <= 10,
-        orElse: () => 10 * base);
+        (interval) => (maxValue / interval).ceil() <= 15,
+        orElse: () => 15 * base);
 
     return optimal;
   }
@@ -192,7 +192,7 @@ class _LineChatPageState extends State<LineChatPage> {
             FlSpot(8, bangumiItem.count!['9']!.toDouble()),
             FlSpot(9, bangumiItem.count!['10']!.toDouble()),
           ],
-          isCurved: true,
+          isCurved: false,
           gradient: LinearGradient(
             colors: gradientColors,
           ),

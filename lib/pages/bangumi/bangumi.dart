@@ -1,4 +1,3 @@
-import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -166,6 +165,8 @@ class Bangumi {
     try {
       final res = await Request().get(Api.bangumiInfoByID + id.toString(),
           options: Options(headers: bangumiHTTPHeader));
+      Log.addLog(LogLevel.info, 'bangumi',
+          '请求 ${Api.bangumiInfoByID + id.toString()}');
       return BangumiItem.fromJson(res.data);
     } catch (e) {
       Log.addLog(LogLevel.error, 'bangumi', '$e');
@@ -237,6 +238,17 @@ class Bangumi {
           var bangumiItem = json;
           BangumiManager().addBnagumiCalendar(bangumiItem);
         }
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+    }
+  }
+
+  static Future<void> getBangumiInfoBind(int id) async {
+    try {
+      var res = await getBangumiInfoByID(id);
+      if (res != null) {
+        BangumiManager().addBnagumiBinding(res);
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');

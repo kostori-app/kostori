@@ -3,8 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/pages/bangumi/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
 import 'package:sqlite3/sqlite3.dart';
+
+import 'log.dart';
 
 class BangumiData {
   String? title;
@@ -177,6 +180,26 @@ class BangumiManager with ChangeNotifier {
       );
     """);
 
+    _db.execute("""
+      create table if not exists bangumi_binding (
+        id INTEGER primary key,
+        type int,
+        name text,
+        nameCn text,
+        summary text,
+        airDate text,
+        airWeekday int,
+        total int,
+        totalEpisodes int,
+        count text,
+        score NUMERIC,
+        rank int,
+        images text,
+        collection text,
+        tags text
+      );
+    """);
+
     notifyListeners();
   }
 
@@ -250,9 +273,9 @@ class BangumiManager with ChangeNotifier {
       _db.execute('COMMIT');
 
       stmt.dispose(); // 释放statement
-    } catch (e) {
+    } catch (e, s) {
       _db.execute('ROLLBACK'); // 如果发生错误，则回滚事务
-      print("Error: $e");
+      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
     }
   }
 
@@ -291,6 +314,65 @@ class BangumiManager with ChangeNotifier {
     ]);
 
     notifyListeners();
+  }
+
+  Future<void> addBnagumiBinding(BangumiItem newItem) async {
+    _db.execute("""
+        insert or replace into bangumi_binding (
+        id,
+        type,
+        name,
+        nameCn,
+        summary,
+        airDate,
+        airWeekday,
+        total,
+        totalEpisodes,
+        count,
+        score,
+        rank,
+        images,
+        collection,
+        tags
+        )
+        values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      """, [
+      newItem.id,
+      newItem.type,
+      newItem.name,
+      newItem.nameCn,
+      newItem.summary,
+      newItem.airDate,
+      newItem.airWeekday,
+      newItem.total,
+      newItem.totalEpisodes,
+      jsonEncode(newItem.count),
+      newItem.score,
+      newItem.rank,
+      jsonEncode(newItem.images),
+      jsonEncode(newItem.collection),
+      jsonEncode(newItem.tags)
+    ]);
+
+    notifyListeners();
+  }
+
+  Future<BangumiItem?> bindFind(int id) async {
+    var res = _db.select("""
+      select * from bangumi_binding
+      where id == ?;
+    """, [id]);
+    if (res.isEmpty) {
+      await Bangumi.getBangumiInfoBind(id);
+      res = _db.select("""
+      select * from bangumi_binding
+      where id == ?;
+    """, [id]);
+      if (res.isEmpty) {
+        return null;
+      }
+    }
+    return BangumiItem.fromRow(res.first);
   }
 
   // 修改后的存在性检查方法（返回包含存在状态和时间的 Map）

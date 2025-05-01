@@ -15,7 +15,7 @@ class CommentResponse {
         list?.map((i) => CommentItem.fromJson(i)).toList();
     return CommentResponse(
       commentList: resCommentList ?? <CommentItem>[],
-      total: json['total'],
+      total: json['total'] ?? [],
     );
   }
 

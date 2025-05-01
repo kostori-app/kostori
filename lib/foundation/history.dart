@@ -4,14 +4,12 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
-import 'package:intl/intl.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/log.dart';
 
 typedef HistoryType = AnimeType;
 

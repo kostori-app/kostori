@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
 import 'package:kostori/pages/bangumi/comment_item.dart';
@@ -234,7 +235,7 @@ class BottomInfoState extends State<BottomInfo> {
     }
 
     return FutureBuilder<BangumiItem?>(
-      future: Bangumi.getBangumiInfoByID(bangumiId as int),
+      future: BangumiManager().bindFind(bangumiId as int),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());

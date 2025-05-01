@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/bangumi/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
@@ -33,8 +34,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
-
-import '../../network/app_dio.dart';
 
 part 'actions.dart';
 
@@ -87,6 +86,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
   }
 
+  void updateBangumiBind() async {
+    if (history?.bangumiId != null) {
+      // Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+      bangumiBindInfo =
+          await BangumiManager().bindFind(history!.bangumiId as int);
+      update();
+    }
+  }
+
   @override
   Widget buildLoading() {
     return _AnimePageLoadingPlaceHolder(
@@ -102,7 +110,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void initState() {
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
-
+    BangumiManager().addListener(updateBangumiBind);
+    if (history?.bangumiId != null) {
+      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+    }
     super.initState();
   }
 
@@ -110,6 +121,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
+    BangumiManager().removeListener(updateBangumiBind);
     super.dispose();
   }
 
@@ -280,13 +292,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
             return FutureBuilder<BangumiItem?>(
               future: history?.bangumiId != null
-                  ? Bangumi.getBangumiInfoByID(history!.bangumiId as int)
+                  ? BangumiManager().bindFind(history!.bangumiId as int)
                   : Future.value(null),
               builder: (context, snapshot) {
                 final bangumiItem = snapshot.data;
                 return SizedBox(
                   width: constraints.maxWidth,
-                  height: imageHeight, // 容器高度=图片高度
+                  height: imageHeight,
                   // padding: const EdgeInsets.all(2),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

@@ -107,9 +107,12 @@ class BangumiItem {
         // 转为 Map<String, String>
         tags = row["tags"] == null
             ? []
-            : (row["tags"])
-                .map((tag) => BangumiTag.fromJson(tag))
-                .toList(); // 转为 List<BangumiTag>
+            : (row["tags"] is String)
+                ? (json.decode(row["tags"]) as List)
+                    .map((tag) => BangumiTag.fromJson(tag))
+                    .toList()
+                : (row["tags"]).map((tag) => BangumiTag.fromJson(tag)).toList()
+                    as List<BangumiTag>; // 转为 List<BangumiTag>
 
   factory BangumiItem.fromJson(Map<String, dynamic> json) {
     List list = json['tags'] ?? [];

@@ -62,7 +62,7 @@ class _App {
 
   final LocalFavoritesManager favorites = LocalFavoritesManager();
 
-  final BangumiManager Bangumi = BangumiManager();
+  final BangumiManager bangumi = BangumiManager();
 
   void rootPop() {
     rootNavigatorKey.currentState?.maybePop();
@@ -89,7 +89,7 @@ class _App {
       data.init(),
       history.init(),
       favorites.init(),
-      Bangumi.init(),
+      bangumi.init(),
     ]);
   }
 
