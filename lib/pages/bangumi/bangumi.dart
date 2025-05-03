@@ -397,6 +397,24 @@ class Bangumi {
     return episodeInfo;
   }
 
+  static Future<List<EpisodeInfo>> getBangumiEpisodeAllByID(int id) async {
+    try {
+      var params = <String, dynamic>{'subject_id': id};
+      final res = await Request().get(
+        Api.bangumiEpisodeByID,
+        data: params,
+        options: Options(headers: bangumiHTTPHeader),
+      );
+
+      final List<dynamic> jsonDataList = res.data['data'] ?? [];
+
+      return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      return []; // 返回空列表而不是null
+    }
+  }
+
   static Future<EpisodeCommentResponse> getBangumiCommentsByEpisodeID(
       int id) async {
     EpisodeCommentResponse commentResponse =

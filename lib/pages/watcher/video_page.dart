@@ -70,12 +70,13 @@ class _VideoPageState extends State<VideoPage>
     widget.playerController.showTabBody = false;
     widget.playerController.currentRoad = 0;
     currentRoad = 0;
+    widget.playerController.changePlayerSettings();
   }
 
   @override
   void dispose() {
     observerController.controller?.dispose();
-    // widget.playerController.dispose();
+    // if (mounted) widget.playerController.dispose();
     super.dispose();
   }
 

@@ -2,7 +2,10 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/pages/bangumi/episode_item.dart';
+import 'package:path_provider/path_provider.dart';
 
 class Utils {
   Utils._();
@@ -29,6 +32,30 @@ class Utils {
     }
   }
 
+  static Future<String> getPlayerTempPath() async {
+    final directory = await getTemporaryDirectory();
+    return directory.path;
+  }
+
+  static EpisodeInfo? findCurrentWeekEpisode(List<EpisodeInfo> allEpisodes) {
+    final now = DateTime.now();
+    final currentWeek = getISOWeekNumber(now);
+
+    try {
+      // 倒序查找当前周的剧集
+      for (var i = allEpisodes.length - 1; i >= 0; i--) {
+        final ep = allEpisodes[i];
+        final airDate = DateTime.parse(ep.airDate);
+        if (getISOWeekNumber(airDate) == currentWeek) {
+          return ep;
+        }
+      }
+    } catch (e) {
+      debugPrint('查找当前周剧集出错: $e');
+    }
+    return null;
+  }
+
   static String getRandomUA() {
     final random = Random();
     String randomElement =
@@ -44,6 +71,12 @@ class Utils {
     } catch (_) {
       return 1;
     }
+  }
+
+  // 计算ISO周数（1-53）
+  static int getISOWeekNumber(DateTime date) {
+    final dayOfYear = int.parse(DateFormat("D").format(date));
+    return ((dayOfYear - date.weekday + 10) / 7).floor();
   }
 
   static String getRatingLabel(num score) {

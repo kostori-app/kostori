@@ -5,6 +5,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mobx/mobx.dart';
@@ -18,8 +19,21 @@ abstract class _PlayerController with Store {
   @observable
   bool loading = true;
 
-  late final player = Player();
-  late final playerController = VideoController(player);
+  late final player = Player(
+    configuration: PlayerConfiguration(
+      bufferSize: 1500 * 1024 * 1024,
+      osc: false,
+      logLevel: MPVLogLevel.info,
+    ),
+  );
+  late final playerController = VideoController(
+    player,
+    configuration: VideoControllerConfiguration(
+      enableHardwareAcceleration: hAenable,
+      hwdec: 'auto-safe',
+      androidAttachSurfaceAfterVideoParameters: false,
+    ),
+  );
 
   late final AnimeDetails anime;
 
@@ -27,7 +41,7 @@ abstract class _PlayerController with Store {
   @observable
   bool isFullScreen = false;
 
-  String currentEpisode; // 当前集
+  // String currentEpisode; // 当前集
 
   @observable
   bool playing = false;
@@ -61,10 +75,11 @@ abstract class _PlayerController with Store {
 
   double playbackSpeed = 1;
 
-  ValueNotifier<String> currentEpisodeNotifier;
+  bool hAenable = true;
 
-  _PlayerController({required this.anime, required this.currentEpisode})
-      : currentEpisodeNotifier = ValueNotifier<String>(currentEpisode);
+  String currentSetName = '';
+
+  _PlayerController({required this.anime});
 
   void playNextEpisode(BuildContext context) {
     // 播放下一集的逻辑
@@ -73,17 +88,38 @@ abstract class _PlayerController with Store {
 
   void playEpisode(int index, int road) {
     // 播放指定集数的逻辑
-    // logic.order = index + 1; // 更新当前集数
     WatcherState.currentState!.loadInfo(index, road); // 加载信息
   }
 
   // 更新当前集数的方法
-  void updateCurrentEpisode(String newEpisode) {
-    currentEpisodeNotifier.value = newEpisode;
-    // print(currentEpisode);
+  void updateCurrentSetName(int newEpisode) {
+    // currentEpisodeNotifier.value = newEpisode;
+    currentSetName = WatcherState.currentState!.widget.anime.episode!.values
+        .elementAt(currentRoad)
+        .values
+        .elementAt(newEpisode - 1);
   }
 
-  // pc端
+  Future<void> changePlayerSettings() async {
+    var pp = player.platform as NativePlayer;
+    // media-kit 默认启用硬盘作为双重缓存，这可以维持大缓存的前提下减轻内存压力
+    // media-kit 内部硬盘缓存目录按照 Linux 配置，这导致该功能在其他平台上被损坏
+    // 该设置可以在所有平台上正确启用双重缓存
+    await pp.setProperty("demuxer-cache-dir", await Utils.getPlayerTempPath());
+    await pp.setProperty("af", "scaletempo2=max-speed=8");
+    if (App.isAndroid) {
+      await pp.setProperty("volume-max", "100");
+      await pp.setProperty("ao", "opensles");
+    }
+
+    await player.setAudioTrack(
+      AudioTrack.auto(),
+    );
+
+    player.setPlaylistMode(PlaylistMode.none);
+  }
+
+  // pc
   void toggleFullscreen(BuildContext context, {VoidCallback? onExit}) {
     windowManager.setFullScreen(!isFullScreen);
     if (isFullScreen) {
@@ -123,12 +159,12 @@ abstract class _PlayerController with Store {
   }
 
   void dispose() {
-    currentEpisodeNotifier.dispose();
+    // currentEpisodeNotifier.dispose();
     player.dispose(); // 释放播放器资源
     focusNode.dispose(); // 释放焦点节点
   }
 
-  // 移动端
+  // 移动
   Future<void> enterFullScreen(BuildContext context,
       {VoidCallback? onExit}) async {
     if (isFullScreen) {

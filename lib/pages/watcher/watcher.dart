@@ -1,4 +1,4 @@
-library kostori_watcher;
+library;
 
 import 'dart:async';
 
@@ -105,10 +105,7 @@ class WatcherState extends State<Watcher>
   void initState() {
     super.initState();
     observerController = GridObserverController(controller: scrollController);
-
-    playerController = PlayerController(
-        anime: widget.anime, currentEpisode: '$name 第$episode 集');
-
+    playerController = PlayerController(anime: widget.anime);
     currentState = this;
     lastWatchTime = widget.initialWatchEpisode ?? 1;
     episode = widget.initialEpisode ?? 1;
@@ -201,7 +198,7 @@ class WatcherState extends State<Watcher>
       await _play(res, episode, time);
       loaded = episodeIndex;
       playerController.playing = true;
-      playerController.updateCurrentEpisode('$name 第 $episodeIndex 集');
+      playerController.updateCurrentSetName(episode);
       updateHistory();
     } catch (e, s) {
       Log.addLog(LogLevel.error, "加载剧集", "$e\n$s");
@@ -234,7 +231,7 @@ class WatcherState extends State<Watcher>
       loaded = episodeIndex;
 
       playerController.playing = true;
-      playerController.updateCurrentEpisode('$name 第 $episodeIndex 集');
+      playerController.updateCurrentSetName(episode);
       updateHistory();
     } catch (e, s) {
       Log.addLog(LogLevel.error, "加载剧集", "$e\n$s");

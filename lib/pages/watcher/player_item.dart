@@ -18,8 +18,8 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:screen_brightness/screen_brightness.dart';
 import 'package:kostori/utils/bean/appbar/drag_to_move_bar.dart' as dtb;
+import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
 
 class PlayerItem extends StatefulWidget {
@@ -83,7 +83,8 @@ class _PlayerItemState extends State<PlayerItem>
 
   Future<void> setBrightness(double value) async {
     try {
-      await ScreenBrightness().setScreenBrightness(value);
+      await ScreenBrightnessPlatform.instance
+          .setApplicationScreenBrightness(value);
     } catch (_) {}
   }
 
@@ -180,7 +181,7 @@ class _PlayerItemState extends State<PlayerItem>
           !App.isMacOS &&
           !App.isLinux &&
           !brightnessSeeking) {
-        ScreenBrightness().current.then((value) {
+        ScreenBrightnessPlatform.instance.application.then((value) {
           widget.playerController.brightness = value;
         });
       }
@@ -1028,28 +1029,17 @@ class _PlayerItemState extends State<PlayerItem>
                                                         //标题集数显示
                                                         (widget.playerController
                                                                 .isFullScreen)
-                                                            ? ValueListenableBuilder<
-                                                                String>(
-                                                                valueListenable: widget
-                                                                    .playerController
-                                                                    .currentEpisodeNotifier,
-                                                                builder: (context,
-                                                                    currentEpisode,
-                                                                    child) {
-                                                                  return Text(
-                                                                    "    $currentEpisode",
-                                                                    style:
-                                                                        const TextStyle(
-                                                                      color: Colors
-                                                                          .white,
-                                                                      fontSize:
-                                                                          16,
-                                                                    ),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .right,
-                                                                  );
-                                                                },
+                                                            ? Text(
+                                                                '${widget.anime.title} ${widget.playerController.currentSetName}',
+                                                                style:
+                                                                    const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 16,
+                                                                ),
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .right,
                                                               )
                                                             : Container(),
                                                         // 拖动条

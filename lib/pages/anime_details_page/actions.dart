@@ -559,8 +559,13 @@ abstract mixin class _AnimePageActions {
           );
         }
 
-        return FutureBuilder<BangumiItem?>(
-          future: Bangumi.getBangumiInfoByID(history!.bangumiId as int),
+        return FutureBuilder<List<dynamic>>(
+          future: Future.wait([
+            BangumiManager().bindFind(history?.bangumiId as int),
+            // Future 1
+            Bangumi.getBangumiEpisodeAllByID(history?.bangumiId as int),
+            // Future 2, // Future 3
+          ]),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return PopUpWidgetScaffold(
@@ -581,7 +586,15 @@ abstract mixin class _AnimePageActions {
               );
             }
 
-            final bangumiItem = snapshot.data; // Successfully loaded data
+            final bangumiItem = snapshot.data?[0];
+            final allEpisodes = snapshot.data?[1] as List<EpisodeInfo>;
+
+            // 获取当前周的剧集
+            final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
+
+            // 判断是否已全部播出
+            final isCompleted = currentWeekEp != null &&
+                currentWeekEp.episode == bangumiItem.totalEpisodes;
 
             return PopUpWidgetScaffold(
               title: anime.title,
@@ -689,10 +702,12 @@ abstract mixin class _AnimePageActions {
                                                           null &&
                                                       bangumiItem != null)
                                                     Text(
-                                                        '预定全 ${bangumiItem.totalEpisodes} 话',
-                                                        style: TextStyle(
-                                                          fontSize: 14.0,
-                                                        )),
+                                                      isCompleted
+                                                          ? '全 ${bangumiItem.totalEpisodes} 话'
+                                                          : '连载至 ${currentWeekEp?.episode} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                      style: TextStyle(
+                                                          fontSize: 14.0),
+                                                    ),
                                                   Spacer(),
                                                   if (history?.bangumiId !=
                                                           null &&
@@ -837,10 +852,23 @@ abstract mixin class _AnimePageActions {
                                     ),
                                   ),
                                 ),
-                              Text(
-                                '简介',
-                                style: TextStyle(
-                                    fontSize: 24, fontWeight: FontWeight.bold),
+                              SizedBox(
+                                child: Divider(),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 6, horizontal: 16),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '简介',
+                                      style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
                               ),
                               if (history?.bangumiId != null &&
                                   bangumiItem != null)
@@ -855,13 +883,26 @@ abstract mixin class _AnimePageActions {
                                 SizedBox(
                                   height: 12,
                                 ),
+                              SizedBox(
+                                child: Divider(),
+                              ),
                               if (history?.bangumiId != null &&
                                   bangumiItem != null)
-                                Text(
-                                  '标签',
-                                  style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 6, horizontal: 16),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '标签',
+                                        style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               if (history?.bangumiId != null &&
                                   bangumiItem != null)
@@ -901,13 +942,26 @@ abstract mixin class _AnimePageActions {
                                 SizedBox(
                                   height: 12,
                                 ),
+                              SizedBox(
+                                child: Divider(),
+                              ),
                               if (history?.bangumiId != null &&
                                   bangumiItem != null)
-                                Text(
-                                  '评分统计图',
-                                  style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 6, horizontal: 16),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        '评分统计图',
+                                        style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               if (history?.bangumiId != null &&
                                   bangumiItem != null)
@@ -919,6 +973,9 @@ abstract mixin class _AnimePageActions {
                                 LineChatPage(
                                   bangumiItem: bangumiItem,
                                 ),
+                              SizedBox(
+                                child: Divider(),
+                              ),
                             ],
                           ),
                         ),

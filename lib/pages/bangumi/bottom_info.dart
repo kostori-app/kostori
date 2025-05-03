@@ -234,8 +234,11 @@ class BottomInfoState extends State<BottomInfo> {
       );
     }
 
-    return FutureBuilder<BangumiItem?>(
-      future: BangumiManager().bindFind(bangumiId as int),
+    return FutureBuilder<List<dynamic>>(
+      future: Future.wait([
+        BangumiManager().bindFind(bangumiId as int), // Future 1
+        Bangumi.getBangumiEpisodeAllByID(bangumiId), // Future 2, // Future 3
+      ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -245,7 +248,15 @@ class BottomInfoState extends State<BottomInfo> {
           return Center(child: Text('No data available'));
         }
 
-        final bangumiItem = snapshot.data;
+        final bangumiItem = snapshot.data?[0];
+        final allEpisodes = snapshot.data?[1] as List<EpisodeInfo>;
+
+        // 获取当前周的剧集
+        final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
+
+        // 判断是否已全部播出
+        final isCompleted = currentWeekEp != null &&
+            currentWeekEp.episode == bangumiItem.totalEpisodes;
 
         return SelectionArea(
           child: Padding(
@@ -317,13 +328,12 @@ class BottomInfoState extends State<BottomInfo> {
                                     ),
                                   ),
                                   SizedBox(height: 12.0),
-                                  Text('预定全 ${bangumiItem.totalEpisodes} 话',
-                                      style: TextStyle(
-                                        fontSize: 14.0,
-                                      )),
-                                  // SizedBox(
-                                  //     height: width * (height / width) -
-                                  //         height * 5 / 6),
+                                  Text(
+                                    isCompleted
+                                        ? '全 ${bangumiItem.totalEpisodes} 话'
+                                        : '连载至 ${currentWeekEp?.episode} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                    style: TextStyle(fontSize: 14.0),
+                                  ),
                                   Spacer(),
                                   Align(
                                     alignment: Alignment.bottomRight,
@@ -496,53 +506,182 @@ class BottomInfoState extends State<BottomInfo> {
   }
 
   Widget get commentsListBody {
-    return SelectionArea(
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Observer(builder: (context) {
-          if (commentsList.isEmpty && !commentsQueryTimeout) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-          if (commentsQueryTimeout) {
-            return const Center(
-              child: Text('空空如也'),
-            );
-          }
-          return ListView.builder(
-              controller: scrollController,
-              itemCount: commentsList.length,
-              itemBuilder: (context, index) {
-                return CommentsCard(commentItem: commentsList[index]);
-              });
-        }),
-      ),
+    return Builder(
+      builder: (BuildContext context) {
+        return NotificationListener<ScrollEndNotification>(
+          onNotification: (scrollEnd) {
+            final metrics = scrollEnd.metrics;
+            if (metrics.pixels >= metrics.maxScrollExtent - 200) {
+              loadMoreComments(offset: commentsList.length);
+            }
+            return true;
+          },
+          child: CustomScrollView(
+            scrollBehavior: const ScrollBehavior().copyWith(
+              scrollbars: false,
+            ),
+            key: PageStorageKey<String>('吐槽'),
+            slivers: <Widget>[
+              // 已移除 SliverOverlapInjector
+              SliverLayoutBuilder(builder: (context, _) {
+                if (commentsList.isNotEmpty) {
+                  return SliverList.separated(
+                    addAutomaticKeepAlives: false,
+                    itemCount: commentsList.length,
+                    itemBuilder: (context, index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: CommentsCard(
+                                commentItem: commentsList[index],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: Divider(
+                                  thickness: 0.5, indent: 10, endIndent: 10),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (commentsQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: '获取失败，请重试',
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            loadMoreComments(offset: commentsList.length);
+                          },
+                          text: '重试',
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: CommentsCard.bone(),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              })
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget get charactersListBody {
-    return SelectionArea(
-        child: Padding(
-      padding: const EdgeInsets.fromLTRB(4.0, 4.0, 4.0, 4.0),
-      child: Observer(builder: (context) {
-        if (characterList.isEmpty && !charactersQueryTimeout) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        if (charactersQueryTimeout) {
-          return const Center(
-            child: Text('空空如也'),
-          );
-        }
-        return ListView.builder(
-            itemCount: characterList.length,
-            itemBuilder: (context, index) {
-              return CharacterCard(characterItem: characterList[index]);
-            });
-      }),
-    ));
+    return Builder(
+      builder: (BuildContext context) {
+        return CustomScrollView(
+          scrollBehavior: const ScrollBehavior().copyWith(
+            scrollbars: false,
+          ),
+          key: PageStorageKey<String>('角色'),
+          slivers: <Widget>[
+            SliverLayoutBuilder(builder: (context, _) {
+              if (characterList.isNotEmpty) {
+                return SliverList.builder(
+                  itemCount: characterList.length,
+                  itemBuilder: (context, index) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: CharacterCard(
+                            characterItem: characterList[index],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+              if (charactersQueryTimeout) {
+                return SliverFillRemaining(
+                  child: GeneralErrorWidget(
+                    errMsg: '获取失败，请重试',
+                    actions: [
+                      GeneralErrorButton(
+                        onPressed: () {
+                          loadCharacters();
+                        },
+                        text: '重试',
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return SliverList.builder(
+                itemCount: 4,
+                itemBuilder: (context, _) {
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width > maxWidth
+                          ? maxWidth
+                          : MediaQuery.sizeOf(context).width - 32,
+                      child: Skeletonizer.zone(
+                        child: ListTile(
+                          leading: Bone.circle(size: 36),
+                          title: Bone.text(width: 100),
+                          subtitle: Bone.text(width: 80),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }),
+          ],
+        );
+      },
+    );
   }
 
   Widget get staffListBody {

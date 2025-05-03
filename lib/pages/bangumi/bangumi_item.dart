@@ -38,6 +38,8 @@ class BangumiItem {
 
   List<BangumiTag> tags;
 
+  Map<String, dynamic>? extraInfo; // 新增字段
+
   BangumiItem(
       {required this.id,
       required this.type,
@@ -54,7 +56,8 @@ class BangumiItem {
       this.collection,
       this.airTime,
       required this.images,
-      required this.tags});
+      required this.tags,
+      this.extraInfo});
 
   BangumiItem.fromMap(Map<String, dynamic> map)
       : id = map["id"],
@@ -167,7 +170,8 @@ class BangumiItem {
       String? summary,
       String? airDate,
       int? totalEpisodes,
-      List<BangumiTag>? tags}) {
+      List<BangumiTag>? tags,
+      Map<String, dynamic>? extraInfo}) {
     return BangumiItem(
       id: id ?? this.id,
       nameCn: nameCn ?? this.nameCn,
@@ -183,6 +187,7 @@ class BangumiItem {
       airDate: airDate ?? this.airDate,
       totalEpisodes: totalEpisodes ?? this.totalEpisodes,
       tags: tags ?? this.tags,
+      extraInfo: extraInfo ?? this.extraInfo,
     );
   }
 

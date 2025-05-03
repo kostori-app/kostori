@@ -127,6 +127,7 @@ dependencies:
   antlr4: ^4.13.2
   cached_network_image: ^3.4.1
   skeletonizer: ^1.4.3
+  screen_brightness_platform_interface: any
 
 dev_dependencies:
   flutter_test:

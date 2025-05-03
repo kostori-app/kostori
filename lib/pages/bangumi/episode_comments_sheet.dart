@@ -258,7 +258,9 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
         ),
         onRefresh: () async {
           await widget.loadComments(ep == 0 ? episode : ep);
-          setState(() {});
+          if (mounted) {
+            setState(() {});
+          }
         },
       ),
     );

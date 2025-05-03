@@ -8,6 +8,7 @@ import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/bangumi/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
+import 'package:kostori/pages/bangumi/episode_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:photo_view/photo_view.dart';
