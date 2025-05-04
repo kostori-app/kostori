@@ -592,9 +592,10 @@ abstract mixin class _AnimePageActions {
             // 获取当前周的剧集
             final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
 
-            // 判断是否已全部播出
+            // 判断是否已全部播出（检查是否是最后一项）
             final isCompleted = currentWeekEp != null &&
-                currentWeekEp.episode == bangumiItem.totalEpisodes;
+                allEpisodes.isNotEmpty &&
+                currentWeekEp == allEpisodes.last;
 
             return PopUpWidgetScaffold(
               title: anime.title,

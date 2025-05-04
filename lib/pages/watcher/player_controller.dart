@@ -35,8 +35,6 @@ abstract class _PlayerController with Store {
     ),
   );
 
-  late final AnimeDetails anime;
-
   var focusNode = FocusNode();
   @observable
   bool isFullScreen = false;
@@ -79,7 +77,11 @@ abstract class _PlayerController with Store {
 
   String currentSetName = '';
 
-  _PlayerController({required this.anime});
+  late WindowFrameController windowFrame;
+
+  bool _isInit = false;
+
+  _PlayerController();
 
   void playNextEpisode(BuildContext context) {
     // 播放下一集的逻辑
@@ -135,13 +137,9 @@ abstract class _PlayerController with Store {
     }
 
     if (isFullScreen) {
-      windowManager.setFullScreen(!isFullScreen);
-      toggleWindowFrame();
-      isFullScreen = !isFullScreen;
+      fullscreen();
     } else {
-      windowManager.setFullScreen(!isFullScreen);
-      toggleWindowFrame();
-      isFullScreen = !isFullScreen;
+      fullscreen();
     }
   }
 
@@ -162,6 +160,36 @@ abstract class _PlayerController with Store {
     // currentEpisodeNotifier.dispose();
     player.dispose(); // 释放播放器资源
     focusNode.dispose(); // 释放焦点节点
+  }
+
+  void fullscreen() async {
+    if (!App.isDesktop) return;
+    // await windowManager.hide();
+    await windowManager.setFullScreen(!isFullScreen);
+    await windowManager.show();
+    isFullScreen = !isFullScreen;
+    WindowFrame.of(App.rootContext).setWindowFrame(!isFullScreen);
+  }
+
+  void initReaderWindow() {
+    if (!App.isDesktop || _isInit) return;
+    windowFrame = WindowFrame.of(App.rootContext);
+    windowFrame.addCloseListener(onWindowClose);
+    _isInit = true;
+  }
+
+  bool onWindowClose() {
+    if (Navigator.of(App.rootContext).canPop()) {
+      Navigator.of(App.rootContext).pop();
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  void disposeReaderWindow() {
+    if (!App.isDesktop) return;
+    windowFrame.removeCloseListener(onWindowClose);
   }
 
   // 移动

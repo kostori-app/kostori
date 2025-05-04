@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/episode_item.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -38,22 +39,58 @@ class Utils {
   }
 
   static EpisodeInfo? findCurrentWeekEpisode(List<EpisodeInfo> allEpisodes) {
+    if (allEpisodes.isEmpty) return null;
+
     final now = DateTime.now();
     final currentWeek = getISOWeekNumber(now);
+    List<bool?> dateStatusList = []; // true=未来, false=过去, null=无效日期
 
     try {
-      // 倒序查找当前周的剧集
-      for (var i = allEpisodes.length - 1; i >= 0; i--) {
-        final ep = allEpisodes[i];
-        final airDate = DateTime.parse(ep.airDate);
-        if (getISOWeekNumber(airDate) == currentWeek) {
-          return ep;
+      // 第一步：收集所有日期的状态
+      for (final ep in allEpisodes) {
+        try {
+          final airDate = DateTime.parse(ep.airDate);
+          dateStatusList.add(airDate.isAfter(now));
+
+          // 优先检查当前周匹配
+          if (getISOWeekNumber(airDate) == currentWeek) {
+            return ep;
+          }
+        } catch (e) {
+          dateStatusList.add(null);
+          Log.addLog(LogLevel.warning, 'dateParse',
+              'Failed to parse date: ${ep.airDate}');
         }
       }
-    } catch (e) {
-      debugPrint('查找当前周剧集出错: $e');
+
+      // 第二步：统计过去/未来的数量
+      final futureCount = dateStatusList.where((s) => s == true).length;
+      final pastCount = dateStatusList.where((s) => s == false).length;
+
+      // 第三步：根据统计结果选择策略
+      if (pastCount > futureCount) {
+        // 过去多：从后往前找第一个有效的过去日期
+        for (var i = allEpisodes.length - 1; i >= 0; i--) {
+          if (dateStatusList[i] == false) {
+            return allEpisodes[i];
+          }
+        }
+        // 如果全是无效日期，返回最后一项
+        return allEpisodes.last;
+      } else {
+        // 未来多或相等：从前往后找第一个有效的未来日期
+        for (var i = 0; i < allEpisodes.length; i++) {
+          if (dateStatusList[i] == true) {
+            return allEpisodes[i];
+          }
+        }
+        // 如果全是无效日期，返回第一项
+        return allEpisodes.first;
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');
+      return null;
     }
-    return null;
   }
 
   static String getRandomUA() {
@@ -73,10 +110,52 @@ class Utils {
     }
   }
 
-  // 计算ISO周数（1-53）
-  static int getISOWeekNumber(DateTime date) {
+  /// 获取完整的 ISO 周信息 (year, weekNumber)
+  /// 符合 ISO 8601 标准（周一到周日为一周，跨年周归属取决于周四所在的年份）
+  static (int year, int week) getISOWeekNumber(DateTime date) {
+    // 原始计算逻辑（优化版）
     final dayOfYear = int.parse(DateFormat("D").format(date));
-    return ((dayOfYear - date.weekday + 10) / 7).floor();
+    final weekNumber = ((dayOfYear - date.weekday + 10) / 7).floor();
+
+    // === 处理跨年周的特殊情况 ===
+    DateTime thursday;
+
+    // 计算本周的周四（ISO 标准以周四所在年份决定周归属）
+    if (date.weekday <= DateTime.thursday) {
+      thursday = date.add(Duration(days: DateTime.thursday - date.weekday));
+    } else {
+      thursday =
+          date.subtract(Duration(days: date.weekday - DateTime.thursday));
+    }
+
+    // 如果计算的周数超出合理范围（1-53），调整年份
+    if (weekNumber < 1) {
+      // 属于前一年的最后一周（52或53周）
+      final prevYearLastWeek =
+          getISOWeekNumber(DateTime(date.year - 1, 12, 28) // 12月28日肯定在最后一周
+              );
+      return (date.year - 1, prevYearLastWeek.$2);
+    } else if (weekNumber > 52) {
+      // 检查是否真的有53周（某些年份有53周）
+      final dec28 = DateTime(date.year, 12, 28);
+      final weekOfDec28 =
+          ((int.parse(DateFormat("D").format(dec28)) - dec28.weekday + 10) ~/
+              7);
+
+      if (weekNumber > weekOfDec28) {
+        // 属于下一年的第一周
+        return (date.year + 1, 1);
+      }
+    }
+
+    // 正常情况返回
+    return (thursday.year, weekNumber);
+  }
+
+  /// 获取标准格式的ISO周编号（如 "2023-W05"）
+  static String getISOWeekString(DateTime date) {
+    final (year, week) = getISOWeekNumber(date);
+    return '$year-W${week.toString().padLeft(2, '0')}';
   }
 
   static String getRatingLabel(num score) {

@@ -14,6 +14,8 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -25,8 +27,6 @@ import 'package:window_manager/window_manager.dart';
 class PlayerItem extends StatefulWidget {
   final PlayerController playerController;
 
-  final AnimeDetails anime;
-
   final VoidCallback openMenu;
 
   final VoidCallback locateEpisode;
@@ -34,7 +34,6 @@ class PlayerItem extends StatefulWidget {
   const PlayerItem(
       {super.key,
       required this.playerController,
-      required this.anime,
       required this.openMenu,
       required this.locateEpisode});
 
@@ -422,10 +421,6 @@ class _PlayerItemState extends State<PlayerItem>
                                                 .enterFullScreen(context);
                                           }
                                         }
-                                        // D键盘被按下
-                                        // if (event.logicalKey == LogicalKeyboardKey.keyD) {
-                                        //   _handleDanmaku();
-                                        // }
                                       }
                                     },
                                     child: SizedBox(
@@ -444,7 +439,11 @@ class _PlayerItemState extends State<PlayerItem>
                                         child: Stack(
                                             alignment: Alignment.center,
                                             children: [
-                                              Center(child: playerSurface),
+                                              Center(
+                                                  child: PlayerItemSurface(
+                                                playerController:
+                                                    widget.playerController,
+                                              )),
                                               // (widget.playerController.isBuffering || widget.playerController.loading)
                                               //     ? const Positioned.fill(
                                               //         child: Center(
@@ -1030,7 +1029,7 @@ class _PlayerItemState extends State<PlayerItem>
                                                         (widget.playerController
                                                                 .isFullScreen)
                                                             ? Text(
-                                                                '${widget.anime.title} ${widget.playerController.currentSetName}',
+                                                                '${WatcherState.currentState!.widget.anime.title} ${widget.playerController.currentSetName}',
                                                                 style:
                                                                     const TextStyle(
                                                                   color: Colors
@@ -1158,7 +1157,9 @@ class _PlayerItemState extends State<PlayerItem>
                                                             if (value == 0) {
                                                               Clipboard.setData(
                                                                   ClipboardData(
-                                                                      text: widget
+                                                                      text: WatcherState
+                                                                          .currentState!
+                                                                          .widget
                                                                           .anime
                                                                           .title));
                                                               context.showMessage(
@@ -1169,7 +1170,9 @@ class _PlayerItemState extends State<PlayerItem>
                                                             if (value == 1) {
                                                               Clipboard.setData(
                                                                   ClipboardData(
-                                                                      text: widget
+                                                                      text: WatcherState
+                                                                          .currentState!
+                                                                          .widget
                                                                           .anime
                                                                           .id));
                                                               context.showMessage(
@@ -1180,7 +1183,9 @@ class _PlayerItemState extends State<PlayerItem>
                                                             if (value == 2) {
                                                               Clipboard.setData(
                                                                   ClipboardData(
-                                                                      text: widget
+                                                                      text: WatcherState
+                                                                          .currentState!
+                                                                          .widget
                                                                           .anime
                                                                           .url!));
                                                               context.showMessage(
@@ -1383,14 +1388,6 @@ class _PlayerItemState extends State<PlayerItem>
                                             ])))))))));
       }),
     );
-  }
-
-  Widget get playerSurface {
-    return AspectRatio(
-        aspectRatio: 16 / 9,
-        child: Video(
-          controller: widget.playerController.playerController,
-        ));
   }
 
   void _showPlaybackSpeedDialog(BuildContext context) {

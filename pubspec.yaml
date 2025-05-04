@@ -187,6 +187,7 @@ flutter:
     - images/avatar_small.png
     - images/github.png
     - images/
+    - assets/shaders/
     - assets/translation.json
     - assets/app_icon.png
     - assets/app_icon.ico

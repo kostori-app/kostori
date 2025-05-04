@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/pages/bangumi/bangumi_item.dart';
 import 'package:kostori/pages/bangumi/comment_item.dart';
 import 'package:kostori/pages/bangumi/comments_card.dart';
 import 'package:kostori/pages/bangumi/staff_card.dart';
@@ -254,9 +252,21 @@ class BottomInfoState extends State<BottomInfo> {
         // 获取当前周的剧集
         final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
 
-        // 判断是否已全部播出
+        // 判断是否已全部播出（检查是否是最后一项）
         final isCompleted = currentWeekEp != null &&
-            currentWeekEp.episode == bangumiItem.totalEpisodes;
+            allEpisodes.isNotEmpty &&
+            currentWeekEp == allEpisodes.last;
+
+        if (bangumiItem == null) {
+          return SelectionArea(
+            child: Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Center(
+                child: Text('空'),
+              ),
+            ),
+          );
+        }
 
         return SelectionArea(
           child: Padding(
@@ -436,7 +446,7 @@ class BottomInfoState extends State<BottomInfo> {
                             )),
                         Text(' / '),
                         Text(
-                            '${bangumiItem!.collection!['doing']! + bangumiItem.collection!['collect']! + bangumiItem.collection!['wish']! + bangumiItem.collection!['on_hold']! + bangumiItem.collection!['dropped']!} 总计数',
+                            '${bangumiItem?.collection!['doing']! + bangumiItem.collection!['collect']! + bangumiItem.collection!['wish']! + bangumiItem.collection!['on_hold']! + bangumiItem.collection!['dropped']!} 总计数',
                             style: TextStyle(fontSize: 12)),
                       ],
                     ),

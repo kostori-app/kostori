@@ -98,8 +98,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           Map<String, dynamic>? episodeExtraInfo;
           if (allEpisodes != null && allEpisodes.isNotEmpty) {
             final now = DateTime.now();
-            final currentYear = now.year;
-            final currentWeek = Utils.getISOWeekNumber(now);
 
             EpisodeInfo? currentWeekEpisode;
             EpisodeInfo? nextWeekEpisode;
@@ -109,21 +107,31 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
             for (final ep in allEpisodes) {
               try {
                 final airDate = DateTime.parse(ep.airDate).toLocal();
-                final airWeek = Utils.getISOWeekNumber(airDate);
+                final (currentYear, currentWeek) = Utils.getISOWeekNumber(now);
+                final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
 
-                if (airDate.year == currentYear) {
-                  if (airWeek == currentWeek) {
-                    currentWeekEpisode ??= ep;
-                  } else if (airWeek > currentWeek) {
-                    if (nextWeekNumber == null || airWeek < nextWeekNumber) {
-                      nextWeekNumber = airWeek;
+                // 仅处理同年份的剧集
+                if (airYear == currentYear) {
+                  if (airWeekNum == currentWeek) {
+                    currentWeekEpisode ??= ep; // 当前周剧集
+                  }
+                  // 未来周处理
+                  else if (airWeekNum > currentWeek) {
+                    if (nextWeekEpisode == null ||
+                        airWeekNum < nextWeekNumber!) {
+                      nextWeekNumber = airWeekNum;
                       nextWeekEpisode = ep;
                     }
-                  } else {
-                    if (lastPastEpisode == null ||
-                        airWeek >
-                            Utils.getISOWeekNumber(
-                                DateTime.parse(lastPastEpisode.airDate))) {
+                  }
+                  // 过去周处理
+                  else {
+                    final lastPastWeek = lastPastEpisode != null
+                        ? Utils.getISOWeekNumber(
+                                DateTime.parse(lastPastEpisode!.airDate))
+                            .$2
+                        : 0;
+
+                    if (airWeekNum > lastPastWeek) {
                       lastPastEpisode = ep;
                     }
                   }

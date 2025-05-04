@@ -11,10 +11,6 @@ import 'package:window_manager/window_manager.dart';
 
 const _kTitleBarHeight = 36.0;
 
-void toggleWindowFrame() {
-  GlobalState.find<_WindowFrameState>().toggleWindowFrame();
-}
-
 class WindowFrameController extends InheritedWidget {
   /// Whether the window frame is hidden.
   final bool isWindowFrameHidden;
@@ -58,103 +54,138 @@ class WindowFrame extends StatefulWidget {
 
 typedef WindowCloseListener = bool Function();
 
-class _WindowFrameState extends AutomaticGlobalState<WindowFrame> {
-  bool isHideWindowFrame = false;
+class _WindowFrameState extends State<WindowFrame> {
+  bool isWindowFrameHidden = false;
   bool useDarkTheme = false;
+  var closeListeners = <WindowCloseListener>[];
 
-  void toggleWindowFrame() {
-    isHideWindowFrame = !isHideWindowFrame;
+  /// Sets the visibility of the window frame.
+  void setWindowFrame(bool show) {
+    setState(() {
+      isWindowFrameHidden = !show;
+    });
+  }
+
+  /// Adds a listener that will be called when close button is clicked.
+  /// The listener should return `true` to allow the window to be closed.
+  void addCloseListener(WindowCloseListener listener) {
+    closeListeners.add(listener);
+  }
+
+  /// Removes a close listener.
+  void removeCloseListener(WindowCloseListener listener) {
+    closeListeners.remove(listener);
+  }
+
+  void _onClose() {
+    for (var listener in closeListeners) {
+      if (!listener()) {
+        return;
+      }
+    }
+    exit(0);
   }
 
   @override
   Widget build(BuildContext context) {
     if (App.isMobile) return widget.child;
-    if (isHideWindowFrame) return widget.child;
 
-    var body = Stack(
+    Widget body = Stack(
       children: [
         Positioned.fill(
           child: MediaQuery(
             data: MediaQuery.of(context).copyWith(
-                padding: const EdgeInsets.only(top: _kTitleBarHeight)),
+              padding: isWindowFrameHidden
+                  ? null
+                  : const EdgeInsets.only(top: _kTitleBarHeight),
+            ),
             child: widget.child,
           ),
         ),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Material(
-            color: Colors.transparent,
-            child: Theme(
-              data: Theme.of(context).copyWith(
-                brightness: useDarkTheme ? Brightness.dark : null,
-              ),
-              child: Builder(builder: (context) {
-                return SizedBox(
-                  height: _kTitleBarHeight,
-                  child: Row(
-                    children: [
-                      if (App.isMacOS)
-                        const DragToMoveArea(
-                          child: SizedBox(
-                            height: double.infinity,
-                            width: 16,
-                          ),
-                        ).paddingRight(52)
-                      else
-                        const SizedBox(width: 12),
-                      Expanded(
-                        child: DragToMoveArea(
-                          child: Text(
-                            'Kostori',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: (useDarkTheme ||
-                                      context.brightness == Brightness.dark)
-                                  ? Colors.white
-                                  : Colors.black,
+        if (!isWindowFrameHidden)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Material(
+              color: Colors.transparent,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  brightness: useDarkTheme ? Brightness.dark : null,
+                ),
+                child: Builder(builder: (context) {
+                  return SizedBox(
+                    height: _kTitleBarHeight,
+                    child: Row(
+                      children: [
+                        if (App.isMacOS)
+                          const DragToMoveArea(
+                            child: SizedBox(
+                              height: double.infinity,
+                              width: 16,
                             ),
+                          ).paddingRight(52)
+                        else
+                          const SizedBox(width: 12),
+                        Expanded(
+                          child: DragToMoveArea(
+                            child: Text(
+                              'Kostori',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: (useDarkTheme ||
+                                        context.brightness == Brightness.dark)
+                                    ? Colors.white
+                                    : Colors.black,
+                              ),
+                            )
+                                .toAlign(Alignment.centerLeft)
+                                .paddingLeft(4 + (App.isMacOS ? 25 : 0)),
+                          ),
+                        ),
+                        if (kDebugMode)
+                          const TextButton(
+                            onPressed: debug,
+                            child: Text('Debug'),
+                          ),
+                        if (!App.isMacOS)
+                          _WindowButtons(
+                            onClose: _onClose,
                           )
-                              .toAlign(Alignment.centerLeft)
-                              .paddingLeft(4 + (App.isMacOS ? 25 : 0)),
-                        ),
-                      ),
-                      if (kDebugMode)
-                        const TextButton(
-                          onPressed: debug,
-                          child: Text('Debug'),
-                        ),
-                      if (!App.isMacOS) const WindowButtons()
-                    ],
-                  ),
-                );
-              }),
+                      ],
+                    ),
+                  );
+                }),
+              ),
             ),
-          ),
-        )
+          )
       ],
     );
 
     if (App.isLinux) {
-      return VirtualWindowFrame(child: body);
-    } else {
-      return body;
+      body = VirtualWindowFrame(child: body);
     }
+
+    return WindowFrameController._create(
+      isWindowFrameHidden: isWindowFrameHidden,
+      setWindowFrame: setWindowFrame,
+      addCloseListener: addCloseListener,
+      removeCloseListener: removeCloseListener,
+      child: body,
+    );
   }
-
-  @override
-  Object? get key => 'WindowFrame';
 }
 
-class WindowButtons extends StatefulWidget {
-  const WindowButtons({super.key});
+class _WindowButtons extends StatefulWidget {
+  const _WindowButtons({required this.onClose});
+
+  final void Function() onClose;
 
   @override
-  State<WindowButtons> createState() => _WindowButtonsState();
+  State<_WindowButtons> createState() => _WindowButtonsState();
 }
 
-class _WindowButtonsState extends State<WindowButtons> with WindowListener {
+class _WindowButtonsState extends State<_WindowButtons> with WindowListener {
   bool isMaximized = false;
 
   @override
@@ -243,9 +274,7 @@ class _WindowButtonsState extends State<WindowButtons> with WindowListener {
               color: !dark ? Colors.white : Colors.black,
             ),
             hoverColor: Colors.red,
-            onPressed: () {
-              windowManager.close();
-            },
+            onPressed: widget.onClose,
           )
         ],
       ),
@@ -532,22 +561,18 @@ class _VirtualWindowFrameState extends State<VirtualWindowFrame>
   }
 
   Widget _buildVirtualWindowFrame(BuildContext context) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_isMaximized ? 0 : 8),
         color: Colors.transparent,
-        border: Border.all(
-          color: Theme.of(context).dividerColor,
-          width: (_isMaximized || _isFullScreen) ? 0 : 1,
-        ),
         boxShadow: <BoxShadow>[
-          if (!_isMaximized && !_isFullScreen)
-            BoxShadow(
-              color: Colors.black.toOpacity(0.1),
-              offset: Offset(0.0, _isFocused ? 4 : 2),
-              blurRadius: 6,
-            )
+          BoxShadow(
+            color: Colors.black.toOpacity(_isFocused ? 0.4 : 0.2),
+            blurRadius: 4,
+          )
         ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: widget.child,
     );
   }
@@ -556,7 +581,10 @@ class _VirtualWindowFrameState extends State<VirtualWindowFrame>
   Widget build(BuildContext context) {
     return DragToResizeArea(
       enableResizeEdges: (_isMaximized || _isFullScreen) ? [] : null,
-      child: _buildVirtualWindowFrame(context),
+      child: Padding(
+        padding: EdgeInsets.all(_isMaximized ? 0 : 4),
+        child: _buildVirtualWindowFrame(context),
+      ),
     );
   }
 

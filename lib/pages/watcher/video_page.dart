@@ -3,6 +3,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
+import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 
 class VideoPage extends StatefulWidget {
@@ -210,7 +211,6 @@ class _VideoPageState extends State<VideoPage>
             openMenu: openTabBodyAnimated,
             locateEpisode: menuJumpToCurrentEpisode,
             playerController: widget.playerController,
-            anime: widget.playerController.anime,
           ),
         ),
       ],
@@ -226,7 +226,7 @@ class _VideoPageState extends State<VideoPage>
           const Text(' 合集 '),
           Expanded(
             child: Text(
-              widget.playerController.anime.title,
+              WatcherState.currentState!.widget.anime.title,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
@@ -255,8 +255,8 @@ class _VideoPageState extends State<VideoPage>
                             children: [
                               for (int i = 0;
                                   i <
-                                      widget.playerController.anime.episode!
-                                          .keys.length;
+                                      WatcherState.currentState!.widget.anime
+                                          .episode!.keys.length;
                                   i++) ...<Widget>[
                                 if (i == currentRoad) ...<Widget>[
                                   FilledButton(
@@ -266,8 +266,8 @@ class _VideoPageState extends State<VideoPage>
                                         currentRoad = i;
                                       });
                                     },
-                                    child: Text(widget
-                                        .playerController.anime.episode!.keys
+                                    child: Text(WatcherState.currentState!
+                                        .widget.anime.episode!.keys
                                         .elementAt(i)),
                                   ),
                                 ] else ...[
@@ -278,8 +278,8 @@ class _VideoPageState extends State<VideoPage>
                                         currentRoad = i;
                                       });
                                     },
-                                    child: Text(widget
-                                        .playerController.anime.episode!.keys
+                                    child: Text(WatcherState.currentState!
+                                        .widget.anime.episode!.keys
                                         .elementAt(i)),
                                   ),
                                 ]
@@ -291,7 +291,7 @@ class _VideoPageState extends State<VideoPage>
                     });
               },
               child: Text(
-                widget.playerController.anime.episode!.keys
+                WatcherState.currentState!.widget.anime.episode!.keys
                     .elementAt(currentRoad),
                 style: const TextStyle(fontSize: 13),
               ),
@@ -304,7 +304,7 @@ class _VideoPageState extends State<VideoPage>
 
   Widget get tabBody {
     var cardList = <Widget>[];
-    var roadList = widget.playerController.anime.episode ?? {};
+    var roadList = WatcherState.currentState!.widget.anime.episode ?? {};
     var selectedRoad =
         roadList.values.elementAt(currentRoad); // 用 currentRoad 直接获取对应的 road
 

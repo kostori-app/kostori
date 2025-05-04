@@ -21,9 +21,7 @@ import 'foundation/app.dart';
 
 void main(List<String> args) {
   MediaKit.ensureInitialized();
-  if (runWebViewTitleBarWidget(args)) {
-    return;
-  }
+  if (runWebViewTitleBarWidget(args)) return;
   overrideIO(() {
     runZonedGuarded(() async {
       WidgetsFlutterBinding.ensureInitialized();
@@ -40,13 +38,16 @@ void main(List<String> args) {
             await windowManager.setBackgroundColor(Colors.transparent);
           }
           await windowManager.setMinimumSize(const Size(500, 600));
-          if (!App.isLinux) {
-            // https://github.com/leanflutter/window_manager/issues/460
-            var placement = await WindowPlacement.loadFromFile();
+          var placement = await WindowPlacement.loadFromFile();
+          if (App.isLinux) {
+            await windowManager.show();
+            await placement.applyToWindow();
+          } else {
             await placement.applyToWindow();
             await windowManager.show();
-            WindowPlacement.loop();
           }
+
+          WindowPlacement.loop();
         });
       }
     }, (error, stack) {
@@ -147,13 +148,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   ) {
     String? font;
     List<String>? fallback;
-    if (App.isWindows) {
-      font = 'Segoe UI';
+    if (App.isLinux || App.isWindows) {
+      font = 'Noto Sans CJK';
       fallback = [
         'Segoe UI',
+        'Noto Sans SC',
+        'Noto Sans TC',
+        'Noto Sans',
         'Microsoft YaHei',
         'PingFang SC',
-        'Noto Sans CJK',
         'Arial',
         'sans-serif'
       ];
@@ -206,6 +209,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             _ => ThemeMode.system
           },
           navigatorObservers: [FlutterSmartDialog.observer],
+          color: Colors.transparent,
           localizationsDelegates: [
             GlobalMaterialLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -255,6 +259,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   );
                 }
                 return _SystemUiProvider(Material(
+                  color: App.isLinux ? Colors.transparent : null,
                   child: widget,
                 ));
               }

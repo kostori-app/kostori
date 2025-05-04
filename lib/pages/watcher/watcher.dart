@@ -105,7 +105,7 @@ class WatcherState extends State<Watcher>
   void initState() {
     super.initState();
     observerController = GridObserverController(controller: scrollController);
-    playerController = PlayerController(anime: widget.anime);
+    playerController = PlayerController();
     currentState = this;
     lastWatchTime = widget.initialWatchEpisode ?? 1;
     episode = widget.initialEpisode ?? 1;
@@ -131,10 +131,19 @@ class WatcherState extends State<Watcher>
     _initializeProgress();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    playerController.initReaderWindow();
+  }
+
   var bangumiId;
 
   @override
   void dispose() {
+    // if (playerController.isFullScreen) {
+    //   playerController.fullscreen();
+    // }
     observerController.controller?.dispose();
     playerController.dispose();
     updateHistoryTimer.cancel();
@@ -142,6 +151,7 @@ class WatcherState extends State<Watcher>
     Future.microtask(() {
       DataSync().onDataChanged();
     });
+    playerController.disposeReaderWindow();
     super.dispose();
   }
 
