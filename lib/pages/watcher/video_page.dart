@@ -17,10 +17,10 @@ class VideoPage extends StatefulWidget {
 
 class _VideoPageState extends State<VideoPage>
     with SingleTickerProviderStateMixin {
-  // final PlayerController playerController = Modular.get<PlayerController>();
-
   late AnimationController animation;
   late Animation<Offset> _rightOffsetAnimation;
+
+  final FocusNode keyboardFocus = FocusNode();
 
   late GridObserverController observerController;
 
@@ -71,13 +71,11 @@ class _VideoPageState extends State<VideoPage>
     widget.playerController.showTabBody = false;
     widget.playerController.currentRoad = 0;
     currentRoad = 0;
-    widget.playerController.changePlayerSettings();
   }
 
   @override
   void dispose() {
     observerController.controller?.dispose();
-    // if (mounted) widget.playerController.dispose();
     super.dispose();
   }
 
@@ -211,6 +209,7 @@ class _VideoPageState extends State<VideoPage>
             openMenu: openTabBodyAnimated,
             locateEpisode: menuJumpToCurrentEpisode,
             playerController: widget.playerController,
+            keyboardFocus: keyboardFocus,
           ),
         ),
       ],

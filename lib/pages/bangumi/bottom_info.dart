@@ -121,8 +121,8 @@ class BottomInfoState extends State<BottomInfo> {
     try {
       characterList.sort((a, b) =>
           relationValue[a.relation]!.compareTo(relationValue[b.relation]!));
-    } catch (e) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e');
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
     }
   }
 

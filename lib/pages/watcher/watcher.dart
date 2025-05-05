@@ -129,6 +129,7 @@ class WatcherState extends State<Watcher>
     }
     currentRoad = 0;
     _initializeProgress();
+    playerController.changePlayerSettings();
   }
 
   @override

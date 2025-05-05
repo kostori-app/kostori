@@ -87,8 +87,8 @@ class Bangumi {
           }
         }
       }
-    } catch (e) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e');
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
     }
     return bangumiList;
   }
@@ -165,11 +165,11 @@ class Bangumi {
     try {
       final res = await Request().get(Api.bangumiInfoByID + id.toString(),
           options: Options(headers: bangumiHTTPHeader));
-      Log.addLog(LogLevel.info, 'bangumi',
-          '请求 ${Api.bangumiInfoByID + id.toString()}');
+      // Log.addLog(LogLevel.info, 'bangumi',
+      //     '请求 ${Api.bangumiInfoByID + id.toString()}');
       return BangumiItem.fromJson(res.data);
-    } catch (e) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e');
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
       return null;
     }
   }
@@ -247,11 +247,12 @@ class Bangumi {
   static Future<void> getBangumiInfoBind(int id) async {
     try {
       var res = await getBangumiInfoByID(id);
+      // Log.addLog(LogLevel.info, 'bangumiGetBangumiInfoBind', res.toString());
       if (res != null) {
         BangumiManager().addBnagumiBinding(res);
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'bangumiGetBangumiInfoBind', '$e\n$s');
     }
   }
 
@@ -410,7 +411,7 @@ class Bangumi {
 
       return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'bangumiGetBangumiEpisodeAllByID', '$e\n$s');
       return []; // 返回空列表而不是null
     }
   }
