@@ -99,6 +99,7 @@ class Appdata with Init {
     }
   }
 
+  @override
   Future<void> doInit() async {
     var dataPath = (await getApplicationSupportDirectory()).path;
     var file = File(FilePath.join(
@@ -168,6 +169,7 @@ class Settings with ChangeNotifier {
     'sni': true,
     'autoAddLanguageFilter': 'none',
     'bangumiDataVer': null,
+    'getBangumiAllEpInfoTime': null,
     'animeSourceListUrl': Api.kostoriConfig,
     'gitMirror': false,
   };

@@ -18,7 +18,6 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
@@ -29,7 +28,6 @@ import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/tag_translation.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -111,6 +109,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void initState() {
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
+    HistoryManager().addListener(updateBangumiBind);
     BangumiManager().addListener(updateBangumiBind);
     if (history?.bangumiId != null) {
       Bangumi.getBangumiInfoBind(history!.bangumiId as int);
@@ -122,6 +121,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
+    HistoryManager().removeListener(updateBangumiBind);
     BangumiManager().removeListener(updateBangumiBind);
     super.dispose();
   }
@@ -309,14 +309,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(8),
-                          onTap: () => _showImagePreview(context, anime),
+                          onTap: () =>
+                              _showImagePreview(context, anime, bangumiItem!),
                           child: Hero(
                             tag: "cover${widget.heroID}",
                             child: Container(
                               width: imageWidth,
                               height: imageHeight,
                               decoration: BoxDecoration(
-                                // color: context.colorScheme.primaryContainer,
+                                color: context.colorScheme.primaryContainer,
                                 borderRadius: BorderRadius.circular(8),
                                 boxShadow: [
                                   BoxShadow(
@@ -334,6 +335,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   aid: anime.id,
                                 ),
                                 fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
                               ),
                             ),
                           ),
@@ -483,21 +486,34 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }
 
   // 提取的方法
-  void _showImagePreview(BuildContext context, AnimeDetails anime) {
+  void _showImagePreview(
+      BuildContext context, AnimeDetails anime, BangumiItem bangumiItem) {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) => Scaffold(
-                  appBar: AppBar(title: Text(anime.title)),
-                  body: PhotoView(
-                    imageProvider:
-                        CachedImageProvider(widget.cover ?? anime.cover),
-                    minScale: PhotoViewComputedScale.contained,
-                    maxScale: PhotoViewComputedScale.covered * 3,
-                    heroAttributes:
-                        PhotoViewHeroAttributes(tag: "cover${widget.heroID}"),
-                  ),
-                )));
+            builder: (_) => history?.bangumiId == null
+                ? Scaffold(
+                    appBar: AppBar(title: Text(anime.title)),
+                    body: PhotoView(
+                      imageProvider:
+                          CachedImageProvider(widget.cover ?? anime.cover),
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 3,
+                      heroAttributes:
+                          PhotoViewHeroAttributes(tag: "cover${widget.heroID}"),
+                    ),
+                  )
+                : Scaffold(
+                    appBar: AppBar(title: Text(anime.title)),
+                    body: PhotoView(
+                      imageProvider:
+                          CachedImageProvider(bangumiItem.images['large']!),
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 3,
+                      heroAttributes:
+                          PhotoViewHeroAttributes(tag: "cover${widget.heroID}"),
+                    ),
+                  )));
   }
 
   Widget _buildActionButtons(BuildContext context, AnimeDetails anime) {
@@ -654,9 +670,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       ).paddingHorizontal(16).paddingBottom(8);
     }
 
-    bool enableTranslation =
-        App.locale.languageCode == 'zh' && animeSource.enableTagsTranslate;
-
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,12 +696,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   buildTag(text: e.key.ts(animeSource.key), isTitle: true),
                 for (var tag in e.value)
                   buildTag(
-                    text: enableTranslation
-                        ? TagsTranslation.translationTagWithNamespace(
-                            tag,
-                            e.key.toLowerCase(),
-                          )
-                        : tag,
+                    text: tag,
                     onTap: () => onTapTag(tag, e.key),
                   ),
               ],
@@ -874,18 +882,6 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          if (context.width < changePoint)
-            Row(
-              children: [
-                Expanded(
-                  child: buildContainer(null, 36, radius: 18),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: buildContainer(null, 36, radius: 18),
-                ),
-              ],
-            ).paddingHorizontal(16),
           const Divider(),
           const SizedBox(height: 8),
           Center(

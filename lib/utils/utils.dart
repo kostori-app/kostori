@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/episode_item.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
 class Utils {
@@ -107,6 +108,44 @@ class Utils {
       return date.weekday;
     } catch (_) {
       return 1;
+    }
+  }
+
+  // 格式化为 "yyyy-MM-dd"
+  static String formatDate(DateTime date) {
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
+
+  /// 安全解析日期，支持以下格式：
+  /// - null → 返回 null
+  /// - "2099" → 解析为 2099-01-01
+  /// - "2099-1" → 解析为 2099-01-01
+  /// - "2099-1-20" → 解析为 2099-01-20
+  /// - "2099-01-20" → 标准解析
+  static DateTime? safeParseDate(String? dateStr) {
+    if (dateStr == null) return null;
+
+    try {
+      // 处理纯年份（如 "2099"）
+      if (RegExp(r'^\d{4}$').hasMatch(dateStr)) {
+        return DateTime(int.parse(dateStr));
+      }
+
+      // 处理带分隔符的日期（兼容 -/ 等分隔符和不带前导零的数字）
+      final parts = dateStr.split(RegExp(r'[-/]'));
+      if (parts.isNotEmpty && parts.length <= 3) {
+        final year = int.parse(parts[0]);
+        final month = parts.length >= 2 ? int.parse(parts[1]) : 1;
+        final day = parts.length >= 3 ? int.parse(parts[2]) : 1;
+
+        return DateTime(year, month, day);
+      }
+
+      // 尝试标准解析（兜底）
+      return DateTime.parse(dateStr).toLocal();
+    } catch (e) {
+      Log.addLog(LogLevel.warning, 'parseDate', '日期解析失败: $dateStr\n$e');
+      return null;
     }
   }
 
@@ -262,6 +301,17 @@ class Utils {
       }
     }
     return date;
+  }
+
+  static String buildShadersAbsolutePath(
+      String baseDirectory, List<String> shaders) {
+    List<String> absolutePaths = shaders.map((shader) {
+      return path.join(baseDirectory, shader);
+    }).toList();
+    if (Platform.isWindows) {
+      return absolutePaths.join(';');
+    }
+    return absolutePaths.join(':');
   }
 }
 

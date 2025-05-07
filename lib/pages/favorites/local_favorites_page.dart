@@ -14,6 +14,8 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   late List<FavoriteItem> animes;
 
+  late FavoriteSortType sortType;
+
   Map<Anime, bool> selectedAnimes = {};
 
   var selectedLocalFolders = <String>{};
@@ -31,7 +33,8 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
   void updateAnimes() {
     if (keyword.isEmpty) {
       setState(() {
-        animes = LocalFavoritesManager().getAllAnimes(widget.folder);
+        animes = LocalFavoritesManager()
+            .getAllAnimes(widget.folder, sortType: sortType);
       });
     } else {
       setState(() {
@@ -42,8 +45,11 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   @override
   void initState() {
+    var sort = appdata.implicitData["favori_sort"] ?? "displayOrder_asc";
+    sortType = FavoriteSortType.fromString(sort);
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
-    animes = LocalFavoritesManager().getAllAnimes(widget.folder);
+    animes =
+        LocalFavoritesManager().getAllAnimes(widget.folder, sortType: sortType);
     super.initState();
   }
 
@@ -63,6 +69,92 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
   }
 
   var scrollController = ScrollController();
+
+  List<MenuItemButton> _buildSortMenuItems(BuildContext context) {
+    return [
+      // 按名称排序选项
+      MenuItemButton(
+        onPressed: () {
+          setState(() {
+            sortType = sortType == FavoriteSortType.nameAsc
+                ? FavoriteSortType.nameDesc
+                : FavoriteSortType.nameAsc;
+            appdata.implicitData["favori_sort"] = sortType.value;
+            appdata.writeImplicitData();
+            updateAnimes();
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.sort_by_alpha, size: 20),
+              const SizedBox(width: 8),
+              const Text('按名称'),
+              if (sortType == FavoriteSortType.nameAsc)
+                const Icon(Icons.arrow_upward, size: 16),
+              if (sortType == FavoriteSortType.nameDesc)
+                const Icon(Icons.arrow_downward, size: 16),
+            ],
+          ),
+        ),
+      ),
+      // 按时间排序选项
+      MenuItemButton(
+        onPressed: () {
+          setState(() {
+            sortType = sortType == FavoriteSortType.timeAsc
+                ? FavoriteSortType.timeDesc
+                : FavoriteSortType.timeAsc;
+            appdata.implicitData["favori_sort"] = sortType.value;
+            appdata.writeImplicitData();
+            updateAnimes();
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.access_time, size: 20),
+              const SizedBox(width: 8),
+              const Text('按时间'),
+              if (sortType == FavoriteSortType.timeAsc)
+                const Icon(Icons.arrow_upward, size: 16),
+              if (sortType == FavoriteSortType.timeDesc)
+                const Icon(Icons.arrow_downward, size: 16),
+            ],
+          ),
+        ),
+      ),
+      // 默认顺序选项
+      MenuItemButton(
+        onPressed: () {
+          setState(() {
+            sortType = sortType == FavoriteSortType.displayOrderAsc
+                ? FavoriteSortType.displayOrderDesc
+                : FavoriteSortType.displayOrderAsc;
+            appdata.implicitData["favori_sort"] = sortType.value;
+            appdata.writeImplicitData();
+            updateAnimes();
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.view_list, size: 20),
+              const SizedBox(width: 8),
+              const Text('默认顺序'),
+              if (sortType == FavoriteSortType.displayOrderAsc)
+                const Icon(Icons.arrow_upward, size: 16),
+              if (sortType == FavoriteSortType.displayOrderDesc)
+                const Icon(Icons.arrow_downward, size: 16),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +196,24 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                   },
                 ),
               ),
+              Tooltip(
+                message: "Sort".tl,
+                child: MenuAnchor(
+                  menuChildren: _buildSortMenuItems(context),
+                  builder: (context, controller, child) {
+                    return IconButton(
+                      icon: const Icon(Icons.sort),
+                      onPressed: () {
+                        if (controller.isOpen) {
+                          controller.close();
+                        } else {
+                          controller.open();
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
               MenuButton(
                 entries: [
                   MenuEntry(
@@ -126,27 +236,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                             favPage.folderList?.updateFolders();
                             favPage.setFolder(false, value.toString());
                             return null;
-                          },
-                        );
-                      }),
-                  MenuEntry(
-                      icon: Icons.reorder,
-                      text: "Reorder".tl,
-                      onClick: () {
-                        context.to(
-                          () {
-                            return _ReorderAnimesPage(
-                              widget.folder,
-                              (animes) {
-                                this.animes = animes;
-                              },
-                            );
-                          },
-                        ).then(
-                          (value) {
-                            if (mounted) {
-                              setState(() {});
-                            }
                           },
                         );
                       }),
@@ -535,120 +624,5 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
     }
     updateAnimes();
     _cancel();
-  }
-}
-
-class _ReorderAnimesPage extends StatefulWidget {
-  const _ReorderAnimesPage(this.name, this.onReorder);
-
-  final String name;
-
-  final void Function(List<FavoriteItem>) onReorder;
-
-  @override
-  State<_ReorderAnimesPage> createState() => _ReorderAnimesPageState();
-}
-
-class _ReorderAnimesPageState extends State<_ReorderAnimesPage> {
-  final _key = GlobalKey();
-  var reorderWidgetKey = UniqueKey();
-  final _scrollController = ScrollController();
-  late var animes = LocalFavoritesManager().getAllAnimes(widget.name);
-  bool changed = false;
-
-  static int _floatToInt8(double x) {
-    return (x * 255.0).round() & 0xff;
-  }
-
-  Color lightenColor(Color color, double lightenValue) {
-    int red =
-        (_floatToInt8(color.r) + ((255 - color.r) * lightenValue)).round();
-    int green = (_floatToInt8(color.g) * 255 + ((255 - color.g) * lightenValue))
-        .round();
-    int blue = (_floatToInt8(color.b) * 255 + ((255 - color.b) * lightenValue))
-        .round();
-
-    return Color.fromARGB(_floatToInt8(color.a), red, green, blue);
-  }
-
-  @override
-  void dispose() {
-    if (changed) {
-      LocalFavoritesManager().reorder(animes, widget.name);
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    var type = appdata.settings['animeDisplayMode'];
-    var tiles = animes.map(
-      (e) {
-        var animeSource = e.type.animeSource;
-        return AnimeTile(
-          key: Key(e.hashCode.toString()),
-          enableLongPressed: false,
-          anime: Anime(
-            e.name,
-            e.coverPath,
-            e.id,
-            e.author,
-            e.tags,
-            type == 'detailed'
-                ? "${e.time} | ${animeSource?.name ?? "Unknown"}"
-                : "${e.type.animeSource?.name ?? "Unknown"} | ${e.time}",
-            animeSource?.key ?? "Unknown",
-            null,
-          ),
-        );
-      },
-    ).toList();
-    return Scaffold(
-      appBar: Appbar(
-        title: Text("Reorder".tl),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              showInfoDialog(
-                context: context,
-                title: "Reorder".tl,
-                content: "Long press and drag to reorder.".tl,
-              );
-            },
-          ),
-        ],
-      ),
-      body: ReorderableBuilder<FavoriteItem>(
-        key: reorderWidgetKey,
-        scrollController: _scrollController,
-        longPressDelay: App.isDesktop
-            ? const Duration(milliseconds: 100)
-            : const Duration(milliseconds: 500),
-        onReorder: (reorderFunc) {
-          changed = true;
-          setState(() {
-            animes = reorderFunc(animes);
-          });
-          widget.onReorder(animes);
-        },
-        dragChildBoxDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: lightenColor(
-            Theme.of(context).splashColor.withAlpha(255),
-            0.2,
-          ),
-        ),
-        builder: (children) {
-          return GridView(
-            key: _key,
-            controller: _scrollController,
-            gridDelegate: SliverGridDelegateWithAnimes(),
-            children: children,
-          );
-        },
-        children: tiles,
-      ),
-    );
   }
 }

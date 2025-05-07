@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -19,6 +21,7 @@ part 'player_controller.g.dart';
 class PlayerController = _PlayerController with _$PlayerController;
 
 abstract class _PlayerController with Store {
+  late ShadersController shadersController;
   @observable
   bool loading = true;
 
@@ -32,7 +35,7 @@ abstract class _PlayerController with Store {
   late final playerController = VideoController(
     player,
     configuration: VideoControllerConfiguration(
-      enableHardwareAcceleration: hAenable,
+      enableHardwareAcceleration: true,
       hwdec: 'auto-safe',
       androidAttachSurfaceAfterVideoParameters: false,
     ),
@@ -41,7 +44,11 @@ abstract class _PlayerController with Store {
   @observable
   bool isFullScreen = false;
 
-  // String currentEpisode; // 当前集
+  /// 视频超分
+  /// 1. OFF
+  /// 2. Anime4K
+  @observable
+  int superResolutionType = 1;
 
   @observable
   bool playing = false;
@@ -91,8 +98,6 @@ abstract class _PlayerController with Store {
   bool brightnessSeeking = false;
   @observable
   bool canHidePlayerPanel = true;
-
-  bool hAenable = true;
 
   String currentSetName = '';
 
@@ -154,6 +159,8 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> changePlayerSettings() async {
+    shadersController = ShadersController();
+    shadersController.copyShadersToExternalDirectory();
     var pp = player.platform as NativePlayer;
     // media-kit 默认启用硬盘作为双重缓存，这可以维持大缓存的前提下减轻内存压力
     // media-kit 内部硬盘缓存目录按照 Linux 配置，这导致该功能在其他平台上被损坏
@@ -171,21 +178,40 @@ abstract class _PlayerController with Store {
 
     player.setPlaylistMode(PlaylistMode.none);
     playerTimer = getPlayerTimer();
+
+    if (superResolutionType != 1) {
+      await setShader(superResolutionType);
+    }
   }
 
-  // pc
-  void toggleFullscreen(BuildContext context) {
-    windowManager.setFullScreen(!isFullScreen);
-    if (isFullScreen) {
-      App.rootContext.pop(); // 退出全屏，返回原页面
-    } else {
-      Future.microtask(() {
-        App.rootContext.to(() =>
-            FullscreenVideoPage(playerController: this as PlayerController));
-      });
+  Future<void> setShader(int type, {bool synchronized = true}) async {
+    var pp = player.platform as NativePlayer;
+    await pp.waitForPlayerInitialization;
+    await pp.waitForVideoControllerInitializationIfAttached;
+    if (type == 2) {
+      await pp.command([
+        'change-list',
+        'glsl-shaders',
+        'set',
+        Utils.buildShadersAbsolutePath(
+            shadersController.shadersDirectory.path, mpvAnime4KShadersLite),
+      ]);
+      superResolutionType = 2;
+      return;
     }
-
-    fullscreen();
+    if (type == 3) {
+      await pp.command([
+        'change-list',
+        'glsl-shaders',
+        'set',
+        Utils.buildShadersAbsolutePath(
+            shadersController.shadersDirectory.path, mpvAnime4KShaders),
+      ]);
+      superResolutionType = 3;
+      return;
+    }
+    await pp.command(['change-list', 'glsl-shaders', 'clr', '']);
+    superResolutionType = 1;
   }
 
   void setPlaybackSpeed(double rate) {
@@ -256,6 +282,21 @@ abstract class _PlayerController with Store {
       ]);
     }
     isFullScreen = !isFullScreen;
+  }
+
+  // pc
+  void toggleFullscreen(BuildContext context) {
+    windowManager.setFullScreen(!isFullScreen);
+    if (isFullScreen) {
+      App.rootContext.pop(); // 退出全屏，返回原页面
+    } else {
+      Future.microtask(() {
+        App.rootContext.to(() =>
+            FullscreenVideoPage(playerController: this as PlayerController));
+      });
+    }
+
+    fullscreen();
   }
 
   Future<void> setVolume(double value) async {

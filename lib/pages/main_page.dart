@@ -39,29 +39,8 @@ class _MainPageState extends State<MainPage> {
     _navigatorKey!.currentContext!.pop();
   }
 
-  void checkUpdates() async {
-    var lastCheck = appdata.implicitData['lastCheckUpdate'] ?? 0;
-    if (appdata.settings['bangumiDataVer'] == null) {
-      await Bangumi.checkBangumiData();
-    }
-    var now = DateTime.now().millisecondsSinceEpoch;
-    if (now - lastCheck < 24 * 60 * 60 * 1000) {
-      return;
-    }
-    appdata.implicitData['lastCheckUpdate'] = now;
-    appdata.writeImplicitData();
-    AnimeSourceSettings.checkAnimeSourceUpdate();
-    await Bangumi.getCalendarData();
-    await Bangumi.checkBangumiData();
-    if (appdata.settings['checkUpdateOnStart']) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      await checkUpdateUi(false);
-    }
-  }
-
   @override
   void initState() {
-    checkUpdates();
     _observer = NaviObserver();
     _navigatorKey = GlobalKey();
     App.mainNavigatorKey = _navigatorKey;
@@ -69,7 +48,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   final _pages = [
-    // const Personspage(),
     const BangumiPage(
       key: PageStorageKey('bangumi'),
     ),
@@ -80,7 +58,6 @@ class _MainPageState extends State<MainPage> {
     const ExplorePage(
       key: PageStorageKey('explore'),
     ),
-    // const Musicpage(),
   ];
 
   var index = 0;
@@ -111,14 +88,8 @@ class _MainPageState extends State<MainPage> {
           icon: Icons.explore_outlined,
           activeIcon: Icons.explore_rounded,
         ),
-        // PaneItemEntry(
-        //   label: '音乐',
-        //   icon: Icons.music_note_outlined,
-        //   activeIcon: Icons.music_note,
-        // ),
       ],
       paneActions: [
-        // if(index != 0)
         PaneActionEntry(
           icon: Icons.search,
           label: "Search".tl,

@@ -387,13 +387,22 @@ class _PlayerItemState extends State<PlayerItem>
                                           // 右方向键长按
                                           if (event.logicalKey ==
                                               LogicalKeyboardKey.arrowRight) {
-                                            widget.playerController
-                                                .showPlaySpeed = true;
-                                            widget.playerController
-                                                .setPlaybackSpeed(widget
-                                                        .playerController
+                                            if (widget.playerController
+                                                    .playbackSpeed <
+                                                widget.playerController
                                                         .playbackSpeed *
-                                                    2);
+                                                    2) {
+                                              if (!widget.playerController
+                                                  .showPlaySpeed) {
+                                                widget.playerController
+                                                    .showPlaySpeed = true;
+                                                widget.playerController
+                                                    .setPlaybackSpeed(widget
+                                                            .playerController
+                                                            .playbackSpeed *
+                                                        2);
+                                              }
+                                            }
                                           }
                                         } else if (event is KeyUpEvent) {
                                           // 右方向键抬起

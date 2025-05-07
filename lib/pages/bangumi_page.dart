@@ -3,6 +3,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
@@ -87,8 +88,9 @@ class _TimetableState extends State<_Timetable> {
           if (airTime.weekday == currentWeekday) {
             todayItems.add(item.copyWith(airTime: airTimeStr));
           }
-        } catch (e) {
-          print('解析时间失败: ${item.id}, $airTimeStr');
+        } catch (e, s) {
+          Log.addLog(LogLevel.error, 'parseAirTimeTime',
+              '${item.id}\n$airTimeStr\n$e\n$s');
         }
       }
 

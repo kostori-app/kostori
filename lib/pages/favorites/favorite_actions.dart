@@ -149,28 +149,29 @@ void defaultFavorite(Anime anime) {
 }
 
 Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
-  var animes = LocalFavoritesManager().getAllAnimes(folder);
+  var animes = LocalFavoritesManager()
+      .getAllAnimes(folder, sortType: FavoriteSortType.displayOrderAsc);
 
   Future<void> updateSingleAnime(int index) async {
     int retry = 3;
 
     while (true) {
       try {
-        var c = animes[index];
-        var animeSource = c.type.animeSource;
+        var a = animes[index];
+        var animeSource = a.type.animeSource;
         if (animeSource == null) return;
 
-        var newInfo = (await animeSource.loadAnimeInfo!(c.id)).data;
+        var newInfo = (await animeSource.loadAnimeInfo!(a.id)).data;
 
         animes[index] = FavoriteItem(
-          id: c.id,
+          id: a.id,
           name: newInfo.title,
           coverPath: newInfo.cover,
           author: newInfo.subTitle ??
               newInfo.tags['author']?.firstOrNull ??
-              c.author,
-          type: c.type,
-          tags: c.tags,
+              a.author,
+          type: a.type,
+          tags: a.tags,
         );
 
         LocalFavoritesManager().updateInfo(folder, animes[index]);

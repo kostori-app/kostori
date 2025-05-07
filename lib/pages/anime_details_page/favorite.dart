@@ -2,7 +2,6 @@ part of 'anime_page.dart';
 
 class _FavoriteDialog extends StatefulWidget {
   const _FavoriteDialog({
-    super.key,
     required this.cid,
     required this.type,
     required this.isFavorite,
@@ -48,11 +47,20 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
   var selectedLocalFolders = <String>{};
   var isEditing = false;
 
+  // 定义需要排除的文件夹名称
+  final excludedFolders = ["default", "默认"];
+
+  late List<String> filteredFolders;
+
   @override
   void initState() {
     super.initState();
     animeSource = widget.type.animeSource!;
     localFolders = LocalFavoritesManager().folderNames;
+    // 过滤后的数据源
+    filteredFolders = localFolders
+        .where((folder) => !excludedFolders.contains(folder))
+        .toList();
     added = LocalFavoritesManager().find(widget.cid, widget.type);
   }
 
@@ -164,13 +172,13 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
 
   Widget buildLocalContent() {
     return ListView.builder(
-      itemCount: localFolders.length + 1,
+      itemCount: filteredFolders.length + 1,
       itemBuilder: (context, index) {
-        if (index == localFolders.length) {
+        if (index == filteredFolders.length) {
           return _buildNewFolderButton();
         }
 
-        final folder = localFolders[index];
+        final folder = filteredFolders[index];
         final isAdded = added.contains(folder);
         final isSelected = selectedLocalFolders.contains(folder);
 

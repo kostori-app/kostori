@@ -28,4 +28,12 @@ class AnimeType {
   }
 
   static const local = AnimeType(0);
+
+  factory AnimeType.fromKey(String key) {
+    if (key == "local") {
+      return local;
+    } else {
+      return AnimeType(key.hashCode);
+    }
+  }
 }

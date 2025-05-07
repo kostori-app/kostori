@@ -233,14 +233,15 @@ class Bangumi {
   static Future<void> getCalendarData() async {
     try {
       var res = await getCalendar();
+      BangumiManager().clearBnagumiCalendar();
       for (dynamic jsonlist in res) {
         for (dynamic json in jsonlist) {
           var bangumiItem = json;
-          BangumiManager().addBnagumiCalendar(bangumiItem);
+          BangumiManager().addBangumiCalendar(bangumiItem);
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'bangumiGetCalendarData', '$e\n$s');
     }
   }
 
@@ -321,15 +322,17 @@ class Bangumi {
           options: Options(headers: bangumiHTTPHeader));
       final jsonData = res.data;
       if (appdata.settings['bangumiDataVer'] != jsonData['tag_name']) {
-        Log.addLog(LogLevel.info, 'bangumi', '${jsonData['tag_name']}');
+        Log.addLog(
+            LogLevel.info, 'checkBangumiData', '${jsonData['tag_name']}');
+        BangumiManager().clearBangumiData();
         await getBangumiData();
         SmartDialog.showToast(
-            'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}');
-        Log.addLog(LogLevel.info, 'bangumi',
+            'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}');
+        Log.addLog(LogLevel.info, 'checkBangumiData',
             '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}');
         appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
         appdata.saveData();
-        Log.addLog(LogLevel.info, 'bangumi',
+        Log.addLog(LogLevel.info, 'bangumiDataVer',
             '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}');
       } else {
         SmartDialog.showToast(
@@ -338,7 +341,7 @@ class Bangumi {
     } catch (e, s) {
       SmartDialog.showNotify(
           msg: 'bangumiData更新失败...', notifyType: NotifyType.error);
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'checkBangumiData', '$e\n$s');
     }
   }
 
@@ -408,6 +411,9 @@ class Bangumi {
       );
 
       final List<dynamic> jsonDataList = res.data['data'] ?? [];
+      if (res.data['data'] != null) {
+        BangumiManager().addBnagumiAllEpInfo(id, res.data['data']);
+      }
 
       return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();
     } catch (e, s) {

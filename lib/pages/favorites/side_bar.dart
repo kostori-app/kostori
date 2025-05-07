@@ -125,7 +125,9 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
 
   Widget? buildLocalFolder(String name) {
     if (name == 'default') {
-      if (LocalFavoritesManager().getAllAnimes('default').isEmpty) {
+      if (LocalFavoritesManager()
+          .getAllAnimes('default', sortType: FavoriteSortType.nameAsc)
+          .isEmpty) {
         return Container();
       }
     }

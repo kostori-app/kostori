@@ -67,7 +67,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     App.registerForceRebuild(forceRebuild);
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     WidgetsBinding.instance.addObserver(this);
     checkUpdates();
     super.initState();

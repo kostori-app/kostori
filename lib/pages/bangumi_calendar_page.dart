@@ -1,10 +1,12 @@
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/translations.dart';
@@ -106,9 +108,13 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
             for (final ep in allEpisodes) {
               try {
-                final airDate = DateTime.parse(ep.airDate).toLocal();
+                final airDate = Utils.safeParseDate(ep.airDate);
+                if (airDate == null) {
+                  Log.addLog(LogLevel.warning, '日期解析', '剧集 ${ep.id} 无有效日期');
+                  continue;
+                }
                 final (currentYear, currentWeek) = Utils.getISOWeekNumber(now);
-                final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
+                final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate!);
 
                 // 仅处理同年份的剧集
                 if (airYear == currentYear) {
@@ -126,8 +132,8 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                   // 过去周处理
                   else {
                     final lastPastWeek = lastPastEpisode != null
-                        ? Utils.getISOWeekNumber(
-                                DateTime.parse(lastPastEpisode!.airDate))
+                        ? Utils.getISOWeekNumber(DateFormat('yyyy-M-d')
+                                .parse(lastPastEpisode.airDate))
                             .$2
                         : 0;
 
@@ -136,8 +142,9 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                     }
                   }
                 }
-              } catch (e) {
-                Log.addLog(LogLevel.warning, '解析日期失败', '${ep.airDate}: $e');
+              } catch (e, s) {
+                Log.addLog(LogLevel.warning, 'parseDate',
+                    '${lastPastEpisode?.airDate} $e\n$s');
               }
             }
 
@@ -198,16 +205,40 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
   Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
       List<BangumiItem> batch) async {
     final result = <int, List<EpisodeInfo>>{};
-    await Future.wait(batch.map((item) async {
-      try {
-        final episodes = await Bangumi.getBangumiEpisodeAllByID(item.id);
-        if (episodes.isNotEmpty) {
-          result[item.id] = episodes;
+    final now = Utils.formatDate(DateTime.now());
+
+    final lastUpdateTime = appdata.settings['getBangumiAllEpInfoTime'];
+
+    if (lastUpdateTime != null && lastUpdateTime == now) {
+      await Future.wait(batch.map((item) async {
+        try {
+          final episodes = await BangumiManager().allEpInfoFind(item.id);
+          if (episodes.isNotEmpty) {
+            result[item.id] = episodes;
+          }
+        } catch (e, s) {
+          Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
         }
-      } catch (e) {
-        Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e');
+      }));
+    } else {
+      try {
+        await Future.wait(batch.map((item) async {
+          try {
+            final episodes = await Bangumi.getBangumiEpisodeAllByID(item.id);
+            if (episodes.isNotEmpty) {
+              result[item.id] = episodes;
+            }
+          } catch (e) {
+            Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e');
+          }
+        }));
+        appdata.settings['getBangumiAllEpInfoTime'] = now;
+        appdata.saveData();
+      } catch (e, s) {
+        Log.addLog(LogLevel.warning, '批量获取剧集', '$e\n$s');
       }
-    }));
+    }
+
     return result;
   }
 
@@ -498,11 +529,13 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                         // 图片部分
                         ClipRRect(
                           borderRadius: BorderRadius.circular(24),
-                          child: Image.network(
-                            bangumiItem.images['large']!,
+                          child: CachedNetworkImage(
+                            imageUrl: bangumiItem.images['large']!,
                             width: imageWidth,
                             height: imageHeight,
                             fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                CircularProgressIndicator(),
                           ),
                         ),
 

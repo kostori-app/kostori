@@ -130,10 +130,8 @@ class BangumiItem {
           : json['name_cn'],
       summary: json['summary'] ?? '',
       airDate: json['air_date'] ?? json['date'] ?? '',
-      airWeekday: json['air_weekday'] ?? json['date'] == null
-          ? 1
-          : Utils.dateStringToWeekday(json['date']),
-
+      airWeekday: json['air_weekday'] ??
+          (json['date'] == null ? 1 : Utils.dateStringToWeekday(json['date'])),
       // 修改这一行，使用安全访问操作符检查 json['rating']
       rank: json['rating']?['rank'] ?? json['rank'] ?? 0,
       total: json['rating']?['total'] ?? json['total'] ?? 0,

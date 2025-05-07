@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/foundation/app.dart';
@@ -292,11 +293,13 @@ class BottomInfoState extends State<BottomInfo> {
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                bangumiItem!.images['large']!,
+                              child: CachedNetworkImage(
+                                imageUrl: bangumiItem!.images['large']!,
                                 width: width,
                                 height: height,
                                 fit: BoxFit.cover,
+                                placeholder: (context, url) =>
+                                    CircularProgressIndicator(),
                               ),
                             ),
                             // SizedBox(width: 12.0),

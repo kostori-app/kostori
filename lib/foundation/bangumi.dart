@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/bangumi/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_item.dart';
+import 'package:kostori/pages/bangumi/episode_item.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'log.dart';
@@ -200,6 +201,13 @@ class BangumiManager with ChangeNotifier {
       );
     """);
 
+    _db.execute("""
+      create table if not exists bangumi_AllEpInfo (
+        id INTEGER primary key,
+        data text
+      );
+    """);
+
     notifyListeners();
   }
 
@@ -279,7 +287,7 @@ class BangumiManager with ChangeNotifier {
     }
   }
 
-  Future<void> addBnagumiCalendar(BangumiItem newItem) async {
+  Future<void> addBangumiCalendar(BangumiItem newItem) async {
     _db.execute("""
         insert or replace into bangumi_calendar (
         id,
@@ -357,6 +365,18 @@ class BangumiManager with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addBnagumiAllEpInfo(int bangumiId, dynamic data) async {
+    _db.execute("""
+        insert or replace into bangumi_AllEpInfo (
+        id,
+        data
+        )
+        values ( ?, ?);
+      """, [bangumiId, jsonEncode(data)]);
+
+    notifyListeners();
+  }
+
   Future<BangumiItem?> bindFind(int id) async {
     var res = _db.select("""
       select * from bangumi_binding
@@ -373,6 +393,21 @@ class BangumiManager with ChangeNotifier {
       }
     }
     return BangumiItem.fromRow(res.first);
+  }
+
+  Future<List<EpisodeInfo>> allEpInfoFind(int id) async {
+    var res = _db.select("""
+      select * from bangumi_AllEpInfo
+      where id == ?;
+    """, [id]);
+    if (res.isNotEmpty) {
+      final String jsonStr = res.first['data'] as String;
+      final List<dynamic> jsonList = jsonDecode(jsonStr);
+
+      // 显式转换为 List<EpisodeInfo>
+      return jsonList.map((item) => EpisodeInfo.fromJson(item)).toList();
+    }
+    return [];
   }
 
   // 修改后的存在性检查方法（返回包含存在状态和时间的 Map）

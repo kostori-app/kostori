@@ -12,6 +12,7 @@ import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
+import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';

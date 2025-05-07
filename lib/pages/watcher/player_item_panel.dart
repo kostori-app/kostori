@@ -13,9 +13,9 @@ import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../foundation/log.dart';
-import '../../utils/bean/appbar/drag_to_move_bar.dart' as dtb;
-import '../../utils/utils.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/bean/appbar/drag_to_move_bar.dart' as dtb;
+import 'package:kostori/utils/utils.dart';
 import 'BatteryWidget.dart';
 
 class PlayerItemPanel extends StatefulWidget {
@@ -105,6 +105,41 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         ),
       ),
     );
+  }
+
+  // 单独提取菜单项构建方法
+  List<MenuItemButton> _buildShaderMenuItems(BuildContext context) {
+    return List.generate(3, (index) {
+      final type = index + 1;
+      final isSelected = widget.playerController.superResolutionType == type;
+
+      return MenuItemButton(
+        onPressed: () => widget.playerController.setShader(type),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Text(
+            _getShaderTypeName(type),
+            style: TextStyle(
+              color: isSelected ? Theme.of(context).colorScheme.primary : null,
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+// 获取超分辨率类型名称
+  String _getShaderTypeName(int type) {
+    switch (type) {
+      case 1:
+        return '关闭';
+      case 2:
+        return '效率档';
+      case 3:
+        return '质量档';
+      default:
+        return '未知';
+    }
   }
 
   @override
@@ -319,51 +354,65 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
           top: 60,
           child: SlideTransition(
             position: leftOffsetAnimation,
-            child: IconButton(
-              icon: Icon(
-                Icons.fit_screen,
-                color: Colors.white,
-              ),
-              onPressed: () async {
-                if (App.isAndroid) {
-                  try {
-                    Uint8List? screenData =
-                        await widget.playerController.player.screenshot();
-                    _saveImageToGallery(screenData!);
-                    SmartDialog.showNotify(
-                        msg: '截图成功', notifyType: NotifyType.success);
-                  } catch (e) {
-                    Log.addLog(LogLevel.error, '截图失败', '$e');
-                  }
-                } else {
-                  try {
-                    Uint8List? screenData =
-                        await widget.playerController.player.screenshot();
-                    // 获取桌面平台的文档目录
-                    final directory = await getApplicationDocumentsDirectory();
-                    // 目标文件夹路径
-                    final folderPath = '${directory.path}/Screenshots';
-                    // 检查文件夹是否存在，如果不存在则创建它
-                    final folder = Directory(folderPath);
-                    if (!await folder.exists()) {
-                      await folder.create(recursive: true);
-                      Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+            child: Column(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.fit_screen,
+                    color: Colors.white,
+                  ),
+                  onPressed: () async {
+                    if (App.isAndroid) {
+                      try {
+                        Uint8List? screenData =
+                            await widget.playerController.player.screenshot();
+                        _saveImageToGallery(screenData!);
+                        SmartDialog.showNotify(
+                            msg: '截图成功', notifyType: NotifyType.success);
+                      } catch (e) {
+                        Log.addLog(LogLevel.error, '截图失败', '$e');
+                      }
                     } else {
-                      Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
-                    }
+                      try {
+                        Uint8List? screenData =
+                            await widget.playerController.player.screenshot();
+                        // 获取桌面平台的文档目录
+                        final directory =
+                            await getApplicationDocumentsDirectory();
+                        // 目标文件夹路径
+                        final folderPath = '${directory.path}/Screenshots';
+                        // 检查文件夹是否存在，如果不存在则创建它
+                        final folder = Directory(folderPath);
+                        if (!await folder.exists()) {
+                          await folder.create(recursive: true);
+                          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+                        } else {
+                          Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
+                        }
 
-                    final timestamp = DateTime.now().millisecondsSinceEpoch;
-                    final filePath = '$folderPath/anime_image_$timestamp.png';
-                    // 将图像保存为文件
-                    final file = File(filePath);
-                    await file.writeAsBytes(screenData!);
-                    SmartDialog.showNotify(
-                        msg: '截图成功', notifyType: NotifyType.success);
-                  } catch (e) {
-                    Log.addLog(LogLevel.error, '截图失败', '$e');
-                  }
-                }
-              },
+                        final timestamp = DateTime.now().millisecondsSinceEpoch;
+                        final filePath =
+                            '$folderPath/anime_image_$timestamp.png';
+                        // 将图像保存为文件
+                        final file = File(filePath);
+                        await file.writeAsBytes(screenData!);
+                        SmartDialog.showNotify(
+                            msg: '截图成功', notifyType: NotifyType.success);
+                      } catch (e) {
+                        Log.addLog(LogLevel.error, '截图失败', '$e');
+                      }
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.refresh),
+                  onPressed: () {
+                    widget.playerController.seek(
+                        widget.playerController.currentPosition +
+                            Duration(seconds: 80));
+                  },
+                ),
+              ],
             ),
           ),
         ),
@@ -420,6 +469,33 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     // 拖动条
                     Expanded(
                       child: dtb.DragToMoveArea(child: SizedBox(height: 40)),
+                    ),
+                    //超分
+                    MenuAnchor(
+                      consumeOutsideTap: true,
+                      onOpen: () {
+                        widget.cancelHideTimer();
+                        widget.playerController.canHidePlayerPanel = false;
+                      },
+                      onClose: () {
+                        widget.cancelHideTimer();
+                        widget.startHideTimer();
+                        widget.playerController.canHidePlayerPanel = true;
+                      },
+                      builder: (BuildContext context, MenuController controller,
+                          Widget? child) {
+                        return TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                          ),
+                          onPressed: () => controller.isOpen
+                              ? controller.close()
+                              : controller.open(),
+                          child: const Text('超分辨率'),
+                        );
+                      },
+                      menuChildren: _buildShaderMenuItems(context),
                     ),
                     //时间
                     (widget.playerController.isFullScreen)

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:kostori/utils/tag_translation.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
@@ -172,7 +171,7 @@ class LocalFavoritesManager with ChangeNotifier {
           alter table "$folder"
           add column translated_tags TEXT;
         """);
-        var animes = getAllAnimes(folder);
+        var animes = getAllAnimes(folder, sortType: FavoriteSortType.nameAsc);
         for (var anime in animes) {
           var translatedTags = _translateTags(anime.tags);
           _db.execute("""
@@ -278,15 +277,30 @@ class LocalFavoritesManager with ChangeNotifier {
       """).firstOrNull?["min_value"] ?? 0;
   }
 
-  List<FavoriteItem> getAllAnimes(String folder) {
+  List<FavoriteItem> getAllAnimes(String folder,
+      {required FavoriteSortType sortType}) {
     if (folder == '默认') {
       folder = 'default';
     }
+
+    // 解析排序类型
+    final orderBy = switch (sortType) {
+      FavoriteSortType.nameAsc => 'name ASC',
+      FavoriteSortType.nameDesc => 'name DESC',
+      FavoriteSortType.timeAsc => 'time ASC',
+      FavoriteSortType.timeDesc => 'time DESC',
+      FavoriteSortType.displayOrderAsc => 'display_order ASC',
+      FavoriteSortType.displayOrderDesc => 'display_order DESC',
+    };
+
     var rows = _db.select("""
         select * from "$folder"
-        ORDER BY display_order;
+        ORDER BY $orderBy;
       """);
-    return rows.map((element) => FavoriteItem.fromRow(element)).toList();
+    // 获取列表并排序
+    var items = rows.map((element) => FavoriteItem.fromRow(element)).toList();
+
+    return items;
   }
 
   void addTagTo(String folder, String id, String tag) {
@@ -406,7 +420,7 @@ class LocalFavoritesManager with ChangeNotifier {
   String _translateTags(List<String> tags) {
     var res = <String>[];
     for (var tag in tags) {
-      var translated = tag.translateTagsToCN;
+      var translated = tag;
       if (translated != tag) {
         res.add(translated);
       }
@@ -770,5 +784,27 @@ class LocalFavoritesManager with ChangeNotifier {
 
   void close() {
     _db.dispose();
+  }
+}
+
+enum FavoriteSortType {
+  nameAsc("name_asc"),
+  nameDesc("name_desc"),
+  timeAsc("time_asc"),
+  timeDesc("time_desc"),
+  displayOrderAsc("displayOrder_asc"),
+  displayOrderDesc("displayOrder_desc");
+
+  final String value;
+
+  const FavoriteSortType(this.value);
+
+  static FavoriteSortType fromString(String value) {
+    for (var type in values) {
+      if (type.value == value) {
+        return type;
+      }
+    }
+    return nameAsc;
   }
 }

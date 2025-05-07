@@ -622,9 +622,7 @@ class _AnimeDescription extends StatelessWidget {
                           child: Center(
                               widthFactor: 1,
                               child: Text(
-                                enableTranslate
-                                    ? TagsTranslation.translateTag(s)
-                                    : s.split(':').last,
+                                s.split(':').last,
                                 style: const TextStyle(fontSize: 12),
                                 softWrap: true,
                                 overflow: TextOverflow.ellipsis,
