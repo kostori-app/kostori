@@ -117,8 +117,8 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     super.initState();
     infoController.bangumiItem = bangumiItem;
     infoController.allEpisodes = [];
-    queryBangumiInfoByID(bangumiId);
     queryBangumiEpisodeByID(bangumiId);
+    queryBangumiInfoByID(bangumiId);
     infoController.characterList.clear();
     infoController.commentsList.clear();
     infoController.staffList.clear();

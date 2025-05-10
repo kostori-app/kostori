@@ -1,12 +1,16 @@
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/foundation/bangumi/character/character_comments_card.dart';
+import 'package:photo_view/photo_view.dart';
 
+import '../components/misc_components.dart';
 import '../foundation/bangumi/character/character_full_item.dart';
 import '../foundation/bangumi/comment/comment_item.dart';
 import '../components/error_widget.dart';
+import '../foundation/image_loader/cached_image.dart';
 import '../network/network_img_layer.dart';
 
 class CharacterPage extends StatefulWidget {
@@ -92,6 +96,20 @@ class _CharacterPageState extends State<CharacterPage> {
     );
   }
 
+  void _showImagePreview(BuildContext context, String url) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => Scaffold(
+                  appBar: AppBar(title: Text(characterFullItem.nameCN)),
+                  body: PhotoView(
+                    imageProvider: CachedImageProvider(url),
+                    minScale: PhotoViewComputedScale.contained,
+                    maxScale: PhotoViewComputedScale.covered * 3,
+                  ),
+                )));
+  }
+
   Widget get characterInfoBody {
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -100,7 +118,10 @@ class _CharacterPageState extends State<CharacterPage> {
           children: [
             Expanded(
               child: loadingCharacter
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: MiscComponents.placeholder(
+                          context, constraints.maxWidth, constraints.maxHeight),
+                    )
                   : (characterFullItem.id == 0
                       ? GeneralErrorWidget(
                           errMsg: '什么都没有找到 (´;ω;`)',
@@ -118,13 +139,25 @@ class _CharacterPageState extends State<CharacterPage> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(
-                                width: constraints.maxWidth * 0.3,
-                                height: constraints.maxHeight,
-                                child: NetworkImgLayer(
-                                  width: constraints.maxWidth,
+                              InkWell(
+                                onTap: () {
+                                  _showImagePreview(
+                                      context, characterFullItem.image);
+                                },
+                                child: SizedBox(
+                                  width: constraints.maxWidth * 0.6,
                                   height: constraints.maxHeight,
-                                  src: characterFullItem.image,
+                                  child: CachedNetworkImage(
+                                    width: constraints.maxWidth,
+                                    height: constraints.maxHeight,
+                                    imageUrl: characterFullItem.image,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) =>
+                                        MiscComponents.placeholder(
+                                            context,
+                                            constraints.maxWidth,
+                                            constraints.maxHeight),
+                                  ),
                                 ),
                               ),
                               Expanded(
@@ -235,9 +268,9 @@ class _CharacterPageState extends State<CharacterPage> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
           sliver: Builder(builder: (context) {
             if (loadingComments) {
-              return const SliverFillRemaining(
+              return SliverFillRemaining(
                 child: Center(
-                  child: CircularProgressIndicator(),
+                  child: MiscComponents.placeholder(context, 24, 24),
                 ),
               );
             }
@@ -277,6 +310,24 @@ class _CharacterPageState extends State<CharacterPage> {
                 addAutomaticKeepAlives: false,
                 addRepaintBoundaries: false,
                 addSemanticIndexes: false,
+                separatorBuilder: (BuildContext context, int index) {
+                  return SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: Divider(
+                              thickness: 0.5, indent: 10, endIndent: 10),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             );
           }),

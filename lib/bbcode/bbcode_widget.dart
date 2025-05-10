@@ -12,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../components/misc_components.dart';
 import 'bbcode_base_listener.dart';
 import 'bbcode_elements.dart';
 import 'generated/BBCodeParser.dart';
@@ -319,10 +320,14 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                     onTap: () => _showImagePreview(url),
                     child: CachedNetworkImage(
                       imageUrl: url,
-                      placeholder: (_, __) => Container(
-                        width: 24,
-                        height: 24,
-                      ),
+                      placeholder: (context, url) =>
+                          MiscComponents.placeholder(context, 24, 24),
+                      errorListener: (e) {
+                        Log.addLog(LogLevel.error, 'bbcodeImage', e.toString());
+                      },
+                      errorWidget:
+                          (BuildContext context, String url, Object error) =>
+                              MiscComponents.placeholder(context, 24, 24),
                     ),
                   ),
                 );
@@ -334,10 +339,14 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                         'https://bangumi.tv/img/smiles/${e.id}.gif'),
                     child: CachedNetworkImage(
                       imageUrl: 'https://bangumi.tv/img/smiles/${e.id}.gif',
-                      placeholder: (_, __) => Container(
-                        width: 24,
-                        height: 24,
-                      ),
+                      placeholder: (context, url) =>
+                          MiscComponents.placeholder(context, 24, 24),
+                      errorListener: (e) {
+                        Log.addLog(LogLevel.error, 'bbcodeImage', e.toString());
+                      },
+                      errorWidget:
+                          (BuildContext context, String url, Object error) =>
+                              MiscComponents.placeholder(context, 24, 24),
                     ),
                   ),
                 );

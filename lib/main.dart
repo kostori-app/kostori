@@ -4,6 +4,7 @@ import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:kostori/pages/auth_page.dart';
@@ -19,6 +20,7 @@ import 'components/window_frame.dart';
 import 'foundation/app.dart';
 
 void main(List<String> args) {
+  // debugPaintSizeEnabled = true;
   MediaKit.ensureInitialized();
   if (runWebViewTitleBarWidget(args)) return;
   overrideIO(() {

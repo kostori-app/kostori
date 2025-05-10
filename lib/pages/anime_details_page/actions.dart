@@ -86,9 +86,11 @@ abstract mixin class _AnimePageActions {
       enableDrag: false,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
-        maxWidth: (App.isDesktop)
-            ? MediaQuery.of(context).size.width * 9 / 16 // 设置最大宽度
-            : MediaQuery.of(context).size.width,
+        maxWidth: MediaQuery.of(context).size.width <= 600
+            ? MediaQuery.of(context).size.width
+            : (App.isDesktop)
+                ? MediaQuery.of(context).size.width * 9 / 16 // 设置最大宽度
+                : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
       context: context,

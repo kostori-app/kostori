@@ -76,7 +76,7 @@ class _LineChatPageState extends State<LineChatPage> {
     }
 
     // 计算初始间隔（确保不为零或负）
-    final rawInterval = (maxValue / 14).clamp(1e-10, double.infinity);
+    final rawInterval = (maxValue / 15).clamp(1e-10, double.infinity);
     final logValue = log(rawInterval) / ln10;
     final exponent = logValue.floor();
     final base = pow(10, exponent).toDouble();
@@ -93,7 +93,7 @@ class _LineChatPageState extends State<LineChatPage> {
 
   // 新增方法：计算动态整数间隔
   double getYInterval(BangumiItem item) {
-    final maxValue = item.total.toDouble() * 2 / 4;
+    final maxValue = item.total.toDouble() * 2 / 3;
     return _calculateOptimalIntegerInterval(maxValue);
   }
 
@@ -117,7 +117,7 @@ class _LineChatPageState extends State<LineChatPage> {
 
   LineChartData mainData(BangumiItem bangumiItem) {
     final yInterval = getYInterval(bangumiItem);
-    final rawMaxY = bangumiItem.total.toDouble() * 2 / 4;
+    final rawMaxY = bangumiItem.total.toDouble() * 2 / 3;
     final maxY = _ceilToInterval(rawMaxY, yInterval);
 
     return LineChartData(

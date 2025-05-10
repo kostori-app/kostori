@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:ui' as ui;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -57,6 +60,8 @@ class BottomInfoState extends State<BottomInfo>
   bool staffQueryTimeout = false;
 
   final maxWidth = 950.0;
+  bool fullIntro = false;
+  bool fullTag = false;
 
   int? get bangumiId => widget.bangumiId;
 
@@ -253,14 +258,6 @@ class BottomInfoState extends State<BottomInfo>
       return Center(child: infoBodyBone);
     }
 
-    // if (snapshot.connectionState == ConnectionState.waiting) {
-    //   return Center(child: infoBodyLoading);
-    // } else if (snapshot.hasError) {
-    //   return Center(child: Text('Error: ${snapshot.error}'));
-    // } else if (!snapshot.hasData) {
-    //   return Center(child: Text('No data available'));
-    // }
-
     var bangumiItem = infoController.bangumiItem;
     var allEpisodes = infoController.allEpisodes;
 
@@ -435,7 +432,51 @@ class BottomInfoState extends State<BottomInfo>
               SizedBox(
                 height: 12,
               ),
-              Text(bangumiItem.summary),
+              LayoutBuilder(builder: (context, constraints) {
+                final span = TextSpan(text: bangumiItem.summary);
+                final tp =
+                    TextPainter(text: span, textDirection: TextDirection.ltr);
+                tp.layout(maxWidth: constraints.maxWidth);
+                final numLines = tp.computeLineMetrics().length;
+                if (numLines > 7) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      SizedBox(
+                        // make intro expandable
+                        height: fullIntro ? null : 120,
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: SelectableText(
+                          bangumiItem.summary,
+                          textAlign: TextAlign.start,
+                          scrollBehavior: const ScrollBehavior().copyWith(
+                            scrollbars: false,
+                          ),
+                          scrollPhysics: NeverScrollableScrollPhysics(),
+                          selectionHeightStyle: ui.BoxHeightStyle.max,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            fullIntro = !fullIntro;
+                          });
+                        },
+                        child: Text(fullIntro ? '加载更少' : '加载更多'),
+                      ),
+                    ],
+                  );
+                } else {
+                  return SelectableText(
+                    bangumiItem.summary,
+                    textAlign: TextAlign.start,
+                    scrollPhysics: NeverScrollableScrollPhysics(),
+                    selectionHeightStyle: ui.BoxHeightStyle.max,
+                  );
+                }
+              }),
               SizedBox(
                 height: 12,
               ),
@@ -448,11 +489,15 @@ class BottomInfoState extends State<BottomInfo>
                 height: 12,
               ),
               Wrap(
-                  spacing: 8.0,
-                  runSpacing: App.isDesktop ? 8 : 0,
-                  children: List<Widget>.generate(bangumiItem.tags.length,
-                      (int index) {
-                    return Chip(
+                spacing: 8.0,
+                runSpacing: Utils.isDesktop() ? 8 : 0,
+                children: [
+                  // 显示标签列表
+                  ...List<Widget>.generate(
+                    fullTag
+                        ? bangumiItem.tags.length
+                        : min(12, bangumiItem.tags.length), // 根据状态决定显示数量
+                    (int index) => ActionChip(
                       label: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -460,12 +505,34 @@ class BottomInfoState extends State<BottomInfo>
                           Text(
                             '${bangumiItem.tags[index].count}',
                             style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary),
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                           ),
                         ],
                       ),
-                    );
-                  }).toList()),
+                      onPressed: () {
+                        // 标签点击逻辑
+                      },
+                    ),
+                  ),
+
+                  // 添加展开/收起按钮
+                  if (bangumiItem.tags.length > 12) // 只有标签数量超过12时才显示按钮
+                    ActionChip(
+                      label: Text(
+                        fullTag ? '收起 -' : '更多 +', // 根据状态显示不同文本
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          fullTag = !fullTag; // 切换状态
+                        });
+                      },
+                    ),
+                ],
+              ),
               SizedBox(height: 12),
               Divider(),
               Text(

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -133,40 +134,47 @@ class _InfoTabViewState extends State<InfoTabView>
                 Wrap(
                   spacing: 8.0,
                   runSpacing: Utils.isDesktop() ? 8 : 0,
-                  children: List<Widget>.generate(
-                      fullTag || widget.bangumiItem.tags.length < 13
+                  children: [
+                    // 显示标签列表
+                    ...List<Widget>.generate(
+                      fullTag
                           ? widget.bangumiItem.tags.length
-                          : 13, (int index) {
-                    if (!fullTag && index == 12) {
-                      // make tag expandable
-                      return ActionChip(
+                          : min(12, widget.bangumiItem.tags.length), // 添加min限制
+                      (int index) => ActionChip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('${widget.bangumiItem.tags[index].name} '),
+                            Text(
+                              '${widget.bangumiItem.tags[index].count}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        onPressed: () {
+                          // 标签点击逻辑
+                        },
+                      ),
+                    ),
+
+                    // 添加展开/收起按钮
+                    if (widget.bangumiItem.tags.length > 12)
+                      ActionChip(
                         label: Text(
-                          '更多 +',
+                          fullTag ? '收起 -' : '更多 +',
                           style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary),
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
                         onPressed: () {
                           setState(() {
                             fullTag = !fullTag;
                           });
                         },
-                      );
-                    }
-                    return ActionChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('${widget.bangumiItem.tags[index].name} '),
-                          Text(
-                            '${widget.bangumiItem.tags[index].count}',
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary),
-                          ),
-                        ],
                       ),
-                      onPressed: () {},
-                    );
-                  }).toList(),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 if (MediaQuery.sizeOf(context).width <= 1200 &&
