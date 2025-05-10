@@ -21,6 +21,27 @@ void showToast({
   Timer(Duration(seconds: seconds ?? 2), () => state?.remove(newEntry));
 }
 
+void showCenter({
+  required String message,
+  required BuildContext context,
+  Widget? icon,
+  Widget? trailing,
+  int? seconds,
+}) {
+  var newEntry = OverlayEntry(
+      builder: (context) => _CenterOverlay(
+            message: message,
+            icon: icon,
+            trailing: trailing,
+          ));
+
+  var state = context.findAncestorStateOfType<OverlayWidgetState>();
+
+  state?.addOverlay(newEntry);
+
+  Timer(Duration(seconds: seconds ?? 2), () => state?.remove(newEntry));
+}
+
 class _ToastOverlay extends StatelessWidget {
   const _ToastOverlay({required this.message, this.icon, this.trailing});
 
@@ -68,6 +89,72 @@ class _ToastOverlay extends StatelessWidget {
                       ),
                     ),
                     if (trailing != null) trailing!.paddingLeft(8)
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CenterOverlay extends StatelessWidget {
+  const _CenterOverlay({required this.message, this.icon, this.trailing});
+
+  final String message;
+  final Widget? icon;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      // 关键修改：移除 bottom 定位，改用 top: 0 + 高度居中计算
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0 + MediaQuery.of(context).viewInsets.bottom,
+      child: Align(
+        alignment: Alignment.center, // 修改为居中
+        child: Material(
+          // color: Theme.of(context).colorScheme.inverseSurface,
+          borderRadius: BorderRadius.circular(8),
+          elevation: 2,
+          child: IconTheme(
+            data: IconThemeData(
+              color: Theme.of(context).colorScheme.inverseSurface,
+            ),
+            child: IntrinsicWidth(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 12, horizontal: 24), // 增加内边距
+                constraints: BoxConstraints(
+                  maxWidth:
+                      MediaQuery.of(context).size.width * 0.8, // 限制最大宽度为屏幕的80%
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) icon!.paddingRight(8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            message,
+                            textAlign: TextAlign.center, // 文本居中
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (trailing != null) trailing!.paddingLeft(8),
+                      ],
+                    ),
                   ],
                 ),
               ),

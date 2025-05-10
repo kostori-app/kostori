@@ -18,24 +18,20 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
 
   var folders = <String>[];
 
-  var networkFolders = <String>[];
-
   @override
   void initState() {
     favPage = widget.favPage ??
         context.findAncestorStateOfType<_FavoritesPageState>()!;
     favPage.folderList = this;
     folders = LocalFavoritesManager().folderNames;
-    networkFolders = AnimeSource.all()
-        .where((e) => e.favoriteData != null && e.isLogged)
-        .map((e) => e.favoriteData!.key)
-        .toList();
+    appdata.settings.addListener(updateFolders);
     super.initState();
   }
 
   @override
   void dispose() {
     super.dispose();
+    appdata.settings.removeListener(updateFolders);
   }
 
   @override
@@ -73,43 +69,10 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               padding: widget.withAppbar
                   ? EdgeInsets.zero
                   : EdgeInsets.only(top: context.padding.top),
-              itemCount: folders.length + networkFolders.length + 2,
+              itemCount: folders.length + 2,
               itemBuilder: (context, index) {
                 if (index == 0) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 16),
-                        Icon(
-                          Icons.star,
-                          color: context.colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text("Local".tl),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.search),
-                          color: context.colorScheme.primary,
-                          onPressed: () {
-                            context.to(() => const LocalSearchPage());
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add),
-                          color: context.colorScheme.primary,
-                          onPressed: () {
-                            newFolder().then((value) {
-                              setState(() {
-                                folders = LocalFavoritesManager().folderNames;
-                              });
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 16),
-                      ],
-                    ),
-                  );
+                  return buildLocalTitle();
                 }
                 index--;
                 if (index < folders.length) {
@@ -123,15 +86,67 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     );
   }
 
+  Widget buildLocalTitle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const SizedBox(width: 16),
+          Icon(
+            Icons.star,
+            color: context.colorScheme.secondary,
+          ),
+          const SizedBox(width: 12),
+          Text("Local".tl),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.search),
+            color: context.colorScheme.primary,
+            onPressed: () {
+              context.to(() => const LocalSearchPage());
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            color: context.colorScheme.primary,
+            onPressed: () {
+              newFolder().then((value) {
+                setState(() {
+                  folders = LocalFavoritesManager().folderNames;
+                });
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.reorder),
+            color: context.colorScheme.primary,
+            onPressed: () {
+              sortFolders().then((value) {
+                setState(() {
+                  folders = LocalFavoritesManager().folderNames;
+                });
+              });
+            },
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+    );
+  }
+
   Widget? buildLocalFolder(String name) {
     if (name == 'default') {
       if (LocalFavoritesManager()
-          .getAllAnimes('default', sortType: FavoriteSortType.nameAsc)
+          .getAllAnimes('default', FavoriteSortType.nameAsc)
           .isEmpty) {
         return Container();
       }
     }
     bool isSelected = name == favPage.folder && !favPage.isNetwork;
+    int count = 0;
+
+    count = LocalFavoritesManager().folderAnimes(name);
+
     return InkWell(
       onTap: () {
         if (isSelected) {
@@ -156,7 +171,25 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
           ),
         ),
         padding: const EdgeInsets.only(left: 16),
-        child: Text(name == 'default' ? 'default'.tl : name),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(name == 'default' ? 'default'.tl : name),
+            ),
+            Container(
+              margin: EdgeInsets.only(right: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: context.colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(count.toString()),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -207,10 +240,6 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     if (!mounted) return;
     setState(() {
       folders = LocalFavoritesManager().folderNames;
-      networkFolders = AnimeSource.all()
-          .where((e) => e.favoriteData != null)
-          .map((e) => e.favoriteData!.key)
-          .toList();
     });
   }
 }

@@ -1,15 +1,20 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/pages/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
-import 'bangumi_calendar_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
+
+import 'bangumi_info_page.dart';
+import 'bottom_info.dart';
 
 class BangumiPage extends StatefulWidget {
   const BangumiPage({super.key});
@@ -108,8 +113,8 @@ class _TimetableState extends State<_Timetable> {
       if (mounted) {
         setState(() => bangumiCalendar = todayItems);
       }
-    } catch (e) {
-      print("Error processing bangumi calendar: $e");
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'processing bangumi calendar', "$e\n$s");
       if (mounted) setState(() => bangumiCalendar = []);
     }
   }
@@ -146,63 +151,81 @@ class _TimetableState extends State<_Timetable> {
   @override
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(
-        child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant,
-                width: 0.6,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () async {
-                App.mainNavigatorKey?.currentContext
-                    ?.to(() => BangumiCalendarPage());
-              },
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                SizedBox(
-                  height: 56,
-                  child: Row(
-                    children: [
-                      Center(
-                        child: Text(getWeekdayString(weekday), style: ts.s18),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text('${bangumiCalendar.length}', style: ts.s12),
-                      ),
-                      const Spacer(),
-                      const Icon(Icons.calendar_month),
-                      SizedBox(
-                        width: 10,
-                      ),
-                      Text('Timetable'.tl)
-                    ],
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 0.6,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () async {
+            App.mainNavigatorKey?.currentContext
+                ?.to(() => BangumiCalendarPage());
+          },
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            SizedBox(
+              height: 56,
+              child: Row(
+                children: [
+                  Center(
+                    child: Text(getWeekdayString(weekday), style: ts.s18),
                   ),
-                ).paddingHorizontal(16),
-                SizedBox(
-                  height: 384,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: bangumiCalendar.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return BangumiCard(anime: bangumiCalendar[index])
-                          .paddingHorizontal(8)
-                          .paddingVertical(2);
-                    },
-                  ).paddingHorizontal(8).paddingVertical(16),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('${bangumiCalendar.length}', style: ts.s12),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.calendar_month),
+                  SizedBox(
+                    width: 10,
+                  ),
+                  Text('Timetable'.tl)
+                ],
+              ),
+            ).paddingHorizontal(16),
+            SizedBox(
+              height: 384,
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  scrollbars: true,
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.stylus,
+                    PointerDeviceKind.trackpad,
+                  },
                 ),
-              ]),
-            )));
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: bangumiCalendar.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return BangumiCard(
+                      anime: bangumiCalendar[index],
+                      onTap: () async {
+                        App.mainNavigatorKey?.currentContext
+                            ?.to(() => BangumiInfoPage(
+                                  bangumiItem: bangumiCalendar[index],
+                                ));
+                      },
+                    ).paddingHorizontal(8).paddingVertical(2);
+                  },
+                ).paddingHorizontal(8).paddingVertical(16),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
   }
 }
 

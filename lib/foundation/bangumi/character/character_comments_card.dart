@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/utils/utils.dart';
 
-import 'comment_item.dart';
+import '../comment/comment_item.dart';
 
 class CharacterCommentsCard extends StatelessWidget {
   const CharacterCommentsCard({

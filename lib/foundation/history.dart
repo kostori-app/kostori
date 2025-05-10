@@ -175,9 +175,7 @@ class History implements Anime {
   String? get language => null;
 
   @override
-  String get sourceKey => type == AnimeType.local
-      ? 'local'
-      : type.animeSource?.key ?? "Unknown:${type.value}";
+  String get sourceKey => type.animeSource?.key ?? "Unknown:${type.value}";
 
   @override
   double? get stars => null;

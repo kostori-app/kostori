@@ -3,10 +3,8 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/tag_translation.dart';
 import 'package:kostori/utils/translations.dart';
 
 class SearchResultPage extends StatefulWidget {

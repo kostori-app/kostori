@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -241,8 +240,7 @@ class _VideoPageState extends State<VideoPage>
                 padding: WidgetStateProperty.all(EdgeInsets.zero),
               ),
               onPressed: () {
-                SmartDialog.show(
-                    useAnimation: false,
+                showDialog(
                     builder: (context) {
                       return AlertDialog(
                         title: const Text('播放列表'),
@@ -260,7 +258,7 @@ class _VideoPageState extends State<VideoPage>
                                 if (i == currentRoad) ...<Widget>[
                                   FilledButton(
                                     onPressed: () {
-                                      SmartDialog.dismiss();
+                                      Navigator.of(context).pop();
                                       setState(() {
                                         currentRoad = i;
                                       });
@@ -272,7 +270,7 @@ class _VideoPageState extends State<VideoPage>
                                 ] else ...[
                                   FilledButton.tonal(
                                     onPressed: () {
-                                      SmartDialog.dismiss();
+                                      Navigator.of(context).pop();
                                       setState(() {
                                         currentRoad = i;
                                       });
@@ -287,7 +285,8 @@ class _VideoPageState extends State<VideoPage>
                           );
                         }),
                       );
-                    });
+                    },
+                    context: context);
               },
               child: Text(
                 WatcherState.currentState!.widget.anime.episode!.keys
@@ -334,6 +333,11 @@ class _VideoPageState extends State<VideoPage>
                       if (count0 == widget.playerController.currentEpisoded &&
                           currentRoad ==
                               widget.playerController.currentRoad) ...<Widget>[
+                        Image.asset(
+                          'assets/playing.gif',
+                          color: Theme.of(context).colorScheme.primary,
+                          height: 16,
+                        ),
                         const SizedBox(width: 6),
                       ],
                       Expanded(

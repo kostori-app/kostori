@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -9,12 +9,12 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/request.dart';
 
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/pages/bangumi/staff_response.dart';
-import 'bangumi_item.dart';
-import 'character_full_item.dart';
-import 'character_response.dart';
-import 'comment_response.dart';
-import 'episode_item.dart';
+import 'package:kostori/foundation/bangumi/staff/staff_response.dart';
+import '../foundation/bangumi/bangumi_item.dart';
+import '../foundation/bangumi/character/character_full_item.dart';
+import '../foundation/bangumi/character/character_response.dart';
+import '../foundation/bangumi/comment/comment_response.dart';
+import '../foundation/bangumi/episode/episode_item.dart';
 
 class Bangumi {
   static Future<List<BangumiItem>> bangumiPostSearch(String keyword) async {
@@ -165,11 +165,9 @@ class Bangumi {
     try {
       final res = await Request().get(Api.bangumiInfoByID + id.toString(),
           options: Options(headers: bangumiHTTPHeader));
-      // Log.addLog(LogLevel.info, 'bangumi',
-      //     '请求 ${Api.bangumiInfoByID + id.toString()}');
       return BangumiItem.fromJson(res.data);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'getBangumiInfoByID', '$e\n$s');
       return null;
     }
   }
@@ -326,8 +324,9 @@ class Bangumi {
             LogLevel.info, 'checkBangumiData', '${jsonData['tag_name']}');
         BangumiManager().clearBangumiData();
         await getBangumiData();
-        SmartDialog.showToast(
-            'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}');
+        App.rootContext.showMessage(
+            message:
+                'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}');
         Log.addLog(LogLevel.info, 'checkBangumiData',
             '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}');
         appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
@@ -335,12 +334,12 @@ class Bangumi {
         Log.addLog(LogLevel.info, 'bangumiDataVer',
             '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}');
       } else {
-        SmartDialog.showToast(
-            '当前bangumiData数据版本: ${appdata.settings['bangumiDataVer']} 已是最新');
+        App.rootContext.showMessage(
+            message:
+                '当前bangumiData数据版本: ${appdata.settings['bangumiDataVer']} 已是最新');
       }
     } catch (e, s) {
-      SmartDialog.showNotify(
-          msg: 'bangumiData更新失败...', notifyType: NotifyType.error);
+      App.rootContext.showMessage(message: 'bangumiData更新失败...');
       Log.addLog(LogLevel.error, 'checkBangumiData', '$e\n$s');
     }
   }
@@ -356,8 +355,9 @@ class Bangumi {
       Log.addLog(LogLevel.info, 'bangumi', 'Cleared bangumi data successfully');
       await getBangumiData();
       await getCalendarData();
-      SmartDialog.showToast(
-          'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}');
+      App.rootContext.showMessage(
+          message:
+              'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}');
       Log.addLog(LogLevel.info, 'bangumi',
           '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}');
       appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
@@ -365,8 +365,7 @@ class Bangumi {
       Log.addLog(LogLevel.info, 'bangumi',
           '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}');
     } catch (e, s) {
-      SmartDialog.showNotify(
-          msg: 'bangumiData重置失败...', notifyType: NotifyType.error);
+      App.rootContext.showMessage(message: 'bangumiData重置失败...');
       Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
     }
   }

@@ -3,9 +3,9 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/pages/bangumi/bangumi.dart';
-import 'package:kostori/pages/bangumi/bangumi_item.dart';
-import 'package:kostori/pages/bangumi/episode_item.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'log.dart';

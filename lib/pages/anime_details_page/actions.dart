@@ -134,10 +134,16 @@ abstract mixin class _AnimePageActions {
 
     // 如果 res 是 null 或者数据不正确，显示检索失败提示
     if (res.isEmpty) {
-      SmartDialog.showNotify(
-        msg: '检索失败',
-        notifyType: NotifyType.error,
-      );
+      showCenter(
+          seconds: 3,
+          icon: Gif(
+            image: AssetImage('assets/warning.gif'),
+            height: 64,
+            color: Theme.of(context).colorScheme.primary,
+            autostart: Autostart.once,
+          ),
+          message: '检索失败',
+          context: context);
     }
 
     // 显示 BottomSheet
@@ -168,10 +174,16 @@ abstract mixin class _AnimePageActions {
 
               // 如果搜索结果为空，提示用户
               if (res.isEmpty) {
-                SmartDialog.showNotify(
-                  msg: '未找到相关结果，请尝试其他关键字',
-                  notifyType: NotifyType.warning,
-                );
+                showCenter(
+                    seconds: 3,
+                    icon: Gif(
+                      image: AssetImage('assets/warning.gif'),
+                      height: 64,
+                      color: Theme.of(context).colorScheme.primary,
+                      autostart: Autostart.once,
+                    ),
+                    message: '未找到相关结果，请尝试其他关键字',
+                    context: context);
               }
 
               // 更新状态
@@ -412,8 +424,7 @@ abstract mixin class _AnimePageActions {
                 } catch (e) {
                   Log.addLog(LogLevel.error, "绑定bangumiId", "$e");
                 }
-
-                SmartDialog.showToast('绑定bangumiId成功');
+                App.rootContext.showMessage(message: '绑定bangumiId成功');
                 Navigator.pop(context);
               },
               child: Text('Ok'.tl),
@@ -1038,11 +1049,6 @@ abstract mixin class _AnimePageActions {
     }
   }
 
-  /// read the anime
-  ///
-  /// [ep] the episode number, start from 1
-  ///
-  /// [page] the page number, start from 1
   void watch([int? ep, int? road]) {
     WatcherState.currentState!.loadInfo(ep!, road!); // 传递集数
   }
@@ -1060,14 +1066,6 @@ abstract mixin class _AnimePageActions {
             sourceKey: animeSource.key,
             options: const [],
           ));
-    } else if (config['action'] == 'category') {
-      context.to(
-        () => CategoryAnimesPage(
-          category: config['keyword'] ?? '',
-          categoryKey: animeSource.categoryData!.key,
-          param: config['param'],
-        ),
-      );
     }
   }
 }

@@ -58,6 +58,8 @@ class AnimeTile extends StatelessWidget {
           title: anime.title,
           heroID: heroID,
         ));
+    LocalFavoritesManager()
+        .updateRecentlyWatched(anime.id, AnimeType(anime.sourceKey.hashCode));
   }
 
   void _onLongPressed(context) {
@@ -73,7 +75,7 @@ class AnimeTile extends StatelessWidget {
       if (!LocalFavoritesManager()
           .isExist(anime.id, AnimeType(anime.sourceKey.hashCode))) {
         defaultFavorite(anime);
-        SmartDialog.showToast('收藏成功');
+        App.rootContext.showMessage(message: '收藏成功');
       }
     } else {
       var renderBox = context.findRenderObject() as RenderBox;
@@ -411,7 +413,7 @@ class AnimeTile extends StatelessWidget {
                     ),
                   ),
                 ],
-              ).paddingHorizontal(6).paddingVertical(8),
+              ).paddingHorizontal(2).paddingVertical(2),
             );
           },
         ));
@@ -558,8 +560,6 @@ class _AnimeDescription extends StatelessWidget {
         s = s.replaceAll("\n", " ");
       }
     }
-    var enableTranslate =
-        App.locale.languageCode == 'zh' && this.enableTranslate;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -671,81 +671,6 @@ class _AnimeDescription extends StatelessWidget {
         )
       ],
     );
-  }
-}
-
-class _WatchingHistoryPainter extends CustomPainter {
-  final int lastWatchEpisode;
-  final int? allEpisode;
-
-  const _WatchingHistoryPainter(this.lastWatchEpisode, this.allEpisode);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (allEpisode == null) {
-      // 在中央绘制page
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: "$lastWatchEpisode",
-          style: TextStyle(
-            fontSize: size.width * 0.8,
-            color: Colors.white,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(
-          canvas,
-          Offset((size.width - textPainter.width) / 2,
-              (size.height - textPainter.height) / 2));
-    } else if (lastWatchEpisode == allEpisode) {
-      // 在中央绘制勾
-      final paint = Paint()
-        ..color = Colors.white
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke;
-      canvas.drawLine(Offset(size.width * 0.2, size.height * 0.5),
-          Offset(size.width * 0.45, size.height * 0.75), paint);
-      canvas.drawLine(Offset(size.width * 0.45, size.height * 0.75),
-          Offset(size.width * 0.85, size.height * 0.3), paint);
-    } else {
-      // 在左上角绘制page, 在右下角绘制maxPage
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: "$lastWatchEpisode",
-          style: TextStyle(
-            fontSize: size.width * 0.8,
-            color: Colors.white,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, const Offset(0, 0));
-      final textPainter2 = TextPainter(
-        text: TextSpan(
-          text: "/$allEpisode",
-          style: TextStyle(
-            fontSize: size.width * 0.5,
-            color: Colors.white,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter2.layout();
-      textPainter2.paint(
-          canvas,
-          Offset(size.width - textPainter2.width,
-              size.height - textPainter2.height));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is! _WatchingHistoryPainter ||
-        oldDelegate.lastWatchEpisode != lastWatchEpisode ||
-        oldDelegate.allEpisode != allEpisode;
   }
 }
 
@@ -1656,7 +1581,7 @@ class BangumiCard extends StatefulWidget {
 class _BangumiCardState extends State<BangumiCard> {
   @override
   Widget build(BuildContext context) {
-    var image = widget.anime.images['large'];
+    String? image = widget.anime.images['large'];
 
     return AnimatedTapRegion(
       borderRadius: 8,
@@ -1671,15 +1596,15 @@ class _BangumiCardState extends State<BangumiCard> {
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              Widget child = image == null
-                  ? const SizedBox()
-                  : AnimatedImage(
-                      image: CachedImageProvider(image),
-                      width: double.infinity * 0.72,
-                      height: constraints.maxHeight * 0.85,
-                      fit: BoxFit.cover,
-                      filterQuality: FilterQuality.medium,
-                    );
+              Widget child = CachedNetworkImage(
+                imageUrl: image as String,
+                width: double.infinity * 0.72,
+                height: constraints.maxHeight * 0.85,
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.medium,
+                placeholder: (context, url) => MiscComponents.placeholder(
+                    context, 300 * 0.72, constraints.maxHeight * 0.85),
+              );
 
               child = Container(
                 decoration: BoxDecoration(

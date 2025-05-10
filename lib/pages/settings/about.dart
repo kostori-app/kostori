@@ -132,8 +132,8 @@ Future<bool> checkUpdate() async {
     }
     return false;
   } catch (e, s) {
+    App.rootContext.showMessage(message: '检查更新失败...');
     Log.addLog(LogLevel.error, "检查更新", '$e\n$s');
-    SmartDialog.showNotify(msg: '检查更新失败...', notifyType: NotifyType.error);
     return false;
   }
 }

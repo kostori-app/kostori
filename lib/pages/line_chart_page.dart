@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:kostori/pages/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 
 class LineChatPage extends StatefulWidget {
   const LineChatPage({super.key, required this.bangumiItem});
@@ -70,17 +70,25 @@ class _LineChatPageState extends State<LineChatPage> {
   }
 
   double _calculateOptimalIntegerInterval(double maxValue) {
-    // 确保至少有2个标签，最多10个标签
-    final rawInterval = maxValue / 14; // 10个标签需要9个间隔
-    final base = pow(15, (log(rawInterval) / ln10).floor()).toDouble();
+    // 处理无效输入
+    if (maxValue <= 0 || maxValue.isInfinite || maxValue.isNaN) {
+      return 1.0;
+    }
 
-    // 选择最接近的友好间隔（1,2,5,10的倍数）
+    // 计算初始间隔（确保不为零或负）
+    final rawInterval = (maxValue / 14).clamp(1e-10, double.infinity);
+    final logValue = log(rawInterval) / ln10;
+    final exponent = logValue.floor();
+    final base = pow(10, exponent).toDouble();
+
+    // 候选友好间隔
     final candidates = [1 * base, 2 * base, 5 * base, 10 * base, 15 * base];
-    final optimal = candidates.firstWhere(
-        (interval) => (maxValue / interval).ceil() <= 15,
-        orElse: () => 15 * base);
 
-    return optimal;
+    // 选择最优间隔
+    return candidates.firstWhere(
+      (interval) => interval > 0 && (maxValue / interval).ceil() <= 15,
+      orElse: () => 15 * base,
+    );
   }
 
   // 新增方法：计算动态整数间隔
@@ -96,20 +104,6 @@ class _LineChatPageState extends State<LineChatPage> {
 
   String _formatInteger(double value) {
     return value.toInt().toString();
-  }
-
-  // 动态计算左侧保留空间
-  double _calculateLeftReservedSize(double maxY) {
-    final maxLabel = _formatInteger(maxY);
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: maxLabel,
-        style: const TextStyle(fontSize: 12),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-
-    return textPainter.width;
   }
 
   Widget leftTitleWidgets(double value, TitleMeta meta) {

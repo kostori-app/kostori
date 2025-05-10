@@ -8,6 +8,8 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/history.dart';
 
+import '../foundation/consts.dart';
+
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
 
@@ -47,6 +49,8 @@ class _HistoryPageState extends State<HistoryPage> {
   bool multiSelectMode = false;
   Map<History, bool> selectedAnimes = {};
 
+  var scrollController = ScrollController();
+
   void selectAll() {
     setState(() {
       selectedAnimes = animes.asMap().map((k, v) => MapEntry(v, true));
@@ -73,11 +77,6 @@ class _HistoryPageState extends State<HistoryPage> {
       HistoryManager().remove(
         anime.id,
         AnimeType(int.parse(anime.sourceKey.split(':')[1])),
-      );
-    } else if (anime.sourceKey == 'local') {
-      HistoryManager().remove(
-        anime.id,
-        AnimeType.local,
       );
     } else {
       HistoryManager().remove(
@@ -161,6 +160,80 @@ class _HistoryPageState extends State<HistoryPage> {
       )
     ];
 
+    Widget body = SmoothCustomScrollView(
+      controller: scrollController,
+      slivers: [
+        SliverAppbar(
+          style: context.width < changePoint
+              ? AppbarStyle.shadow
+              : AppbarStyle.blur,
+          leading: multiSelectMode
+              ? Tooltip(
+                  message: "Cancel".tl,
+                  child: IconButton(
+                    onPressed: () {
+                      if (multiSelectMode) {
+                        setState(() {
+                          multiSelectMode = false;
+                          selectedAnimes.clear();
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+                )
+              : null,
+          title: multiSelectMode
+              ? Text(selectedAnimes.length.toString())
+              : Text(''),
+          actions: multiSelectMode ? selectActions : normalActions,
+        ),
+        SliverGridAnimes(
+          animes: animes,
+          selections: selectedAnimes,
+          onLongPressed: null,
+          onTap: multiSelectMode
+              ? (c) {
+                  setState(() {
+                    if (selectedAnimes.containsKey(c as History)) {
+                      selectedAnimes.remove(c);
+                    } else {
+                      selectedAnimes[c] = true;
+                    }
+                    if (selectedAnimes.isEmpty) {
+                      multiSelectMode = false;
+                    }
+                  });
+                }
+              : null,
+          badgeBuilder: (c) {
+            return AnimeSource.find(c.sourceKey)?.name;
+          },
+          menuBuilder: (c) {
+            return [
+              MenuEntry(
+                icon: Icons.remove,
+                text: 'Remove'.tl,
+                color: context.colorScheme.error,
+                onClick: () {
+                  _removeHistory(c as History);
+                },
+              ),
+            ];
+          },
+        ),
+      ],
+    );
+
+    body = AppScrollBar(
+      topPadding: 48,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: body,
+      ),
+    );
+
     return PopScope(
       canPop: !multiSelectMode,
       onPopInvokedWithResult: (didPop, result) {
@@ -171,68 +244,7 @@ class _HistoryPageState extends State<HistoryPage> {
           });
         }
       },
-      child: Scaffold(
-        body: SmoothCustomScrollView(
-          slivers: [
-            SliverAppbar(
-              leading: multiSelectMode
-                  ? Tooltip(
-                      message: "Cancel".tl,
-                      child: IconButton(
-                        onPressed: () {
-                          if (multiSelectMode) {
-                            setState(() {
-                              multiSelectMode = false;
-                              selectedAnimes.clear();
-                            });
-                          }
-                        },
-                        icon: const Icon(Icons.close),
-                      ),
-                    )
-                  : null,
-              title: multiSelectMode
-                  ? Text(selectedAnimes.length.toString())
-                  : Text('History'.tl),
-              actions: multiSelectMode ? selectActions : normalActions,
-            ),
-            SliverGridAnimes(
-              animes: animes,
-              selections: selectedAnimes,
-              onLongPressed: null,
-              onTap: multiSelectMode
-                  ? (c) {
-                      setState(() {
-                        if (selectedAnimes.containsKey(c as History)) {
-                          selectedAnimes.remove(c);
-                        } else {
-                          selectedAnimes[c] = true;
-                        }
-                        if (selectedAnimes.isEmpty) {
-                          multiSelectMode = false;
-                        }
-                      });
-                    }
-                  : null,
-              badgeBuilder: (c) {
-                return AnimeSource.find(c.sourceKey)?.name;
-              },
-              menuBuilder: (c) {
-                return [
-                  MenuEntry(
-                    icon: Icons.remove,
-                    text: 'Remove'.tl,
-                    color: context.colorScheme.error,
-                    onClick: () {
-                      _removeHistory(c as History);
-                    },
-                  ),
-                ];
-              },
-            ),
-          ],
-        ),
-      ),
+      child: body,
     );
   }
 

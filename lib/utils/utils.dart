@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/pages/bangumi/episode_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 

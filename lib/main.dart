@@ -6,7 +6,6 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
@@ -197,74 +196,71 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         tertiary = light.tertiary;
       }
       return MaterialApp(
-          home: home,
-          debugShowCheckedModeBanner: false,
-          theme: getTheme(primary, secondary, tertiary, Brightness.light),
-          navigatorKey: App.rootNavigatorKey,
-          darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
-          themeMode: switch (appdata.settings['theme_mode']) {
-            'light' => ThemeMode.light,
-            'dark' => ThemeMode.dark,
-            _ => ThemeMode.system
-          },
-          navigatorObservers: [FlutterSmartDialog.observer],
-          color: Colors.transparent,
-          localizationsDelegates: [
-            GlobalMaterialLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          locale: () {
-            var lang = appdata.settings['language'];
-            if (lang == 'system') {
-              return null;
-            }
-            return switch (lang) {
-              'zh-CN' => const Locale('zh', 'CN'),
-              'zh-TW' => const Locale('zh', 'TW'),
-              'en-US' => const Locale('en'),
-              _ => null
-            };
-          }(),
-          supportedLocales: const [
-            Locale('en'),
-            Locale('zh', 'CN'),
-            Locale('zh', 'TW'),
-          ],
-          builder: FlutterSmartDialog.init(
-            builder: (context, widget) {
-              ErrorWidget.builder = (details) {
-                Log.error("Unhandled Exception",
-                    "${details.exception}\n${details.stack}");
-                return Material(
-                  child: Center(
-                    child: Text(details.exception.toString()),
+        home: home,
+        debugShowCheckedModeBanner: false,
+        theme: getTheme(primary, secondary, tertiary, Brightness.light),
+        navigatorKey: App.rootNavigatorKey,
+        darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
+        themeMode: switch (appdata.settings['theme_mode']) {
+          'light' => ThemeMode.light,
+          'dark' => ThemeMode.dark,
+          _ => ThemeMode.system
+        },
+        color: Colors.transparent,
+        localizationsDelegates: [
+          GlobalMaterialLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        locale: () {
+          var lang = appdata.settings['language'];
+          if (lang == 'system') {
+            return null;
+          }
+          return switch (lang) {
+            'zh-CN' => const Locale('zh', 'CN'),
+            'zh-TW' => const Locale('zh', 'TW'),
+            'en-US' => const Locale('en'),
+            _ => null
+          };
+        }(),
+        supportedLocales: const [
+          Locale('en'),
+          Locale('zh', 'CN'),
+          Locale('zh', 'TW'),
+        ],
+        builder: (context, widget) {
+          ErrorWidget.builder = (details) {
+            Log.error("Unhandled Exception",
+                "${details.exception}\n${details.stack}");
+            return Material(
+              child: Center(
+                child: Text(details.exception.toString()),
+              ),
+            );
+          };
+          if (widget != null) {
+            widget = OverlayWidget(widget);
+            if (App.isDesktop) {
+              widget = Shortcuts(
+                shortcuts: {
+                  LogicalKeySet(LogicalKeyboardKey.escape): VoidCallbackIntent(
+                    App.pop,
                   ),
-                );
-              };
-              if (widget != null) {
-                widget = OverlayWidget(widget);
-                if (App.isDesktop) {
-                  widget = Shortcuts(
-                    shortcuts: {
-                      LogicalKeySet(LogicalKeyboardKey.escape):
-                          VoidCallbackIntent(
-                        App.pop,
-                      ),
-                    },
-                    child: MouseBackDetector(
-                      onTapDown: App.pop,
-                      child: WindowFrame(widget),
-                    ),
-                  );
-                }
-                return _SystemUiProvider(Material(
-                  color: App.isLinux ? Colors.transparent : null,
-                  child: widget,
-                ));
-              }
-              throw ('widget is null');
-            },
-          ));
+                },
+                child: MouseBackDetector(
+                  onTapDown: App.pop,
+                  child: WindowFrame(widget),
+                ),
+              );
+            }
+            return _SystemUiProvider(Material(
+              color: App.isLinux ? Colors.transparent : null,
+              child: widget,
+            ));
+          }
+          throw ('widget is null');
+        },
+      );
     });
   }
 }

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:gif/gif.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
-import 'package:kostori/pages/bangumi/bangumi.dart';
-import 'package:kostori/pages/bangumi/bangumi_item.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
-import 'package:kostori/pages/bangumi/episode_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:photo_view/photo_view.dart';
@@ -23,7 +24,6 @@ import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/pages/category_animes_page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -358,9 +358,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                               onLongPress: () {
                                 Clipboard.setData(
                                     ClipboardData(text: anime.title));
-                                SmartDialog.showNotify(
-                                    msg: '已复制到剪贴板.',
-                                    notifyType: NotifyType.success);
+                                App.rootContext
+                                    .showMessage(message: '已复制到剪贴板.');
                               },
                               child: Text(
                                 anime.title,
@@ -537,18 +536,19 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         ),
         _ActionButton(
           icon: ClipOval(
-            child: Image.asset(
-              "assets/bgm.png",
-              width: 20,
-              height: 20,
-              fit: BoxFit.cover,
+              child: SizedBox(
+            width: 24,
+            height: 24,
+            child: SvgPicture.asset(
+              'assets/bangumi_icon.svg',
+              fit: BoxFit.fill, // 强制填充
             ),
-          ),
+          )),
           text: 'Bangumi'.tl,
           onPressed: () async {
             bangumiBottomInfo(context);
           },
-          iconColor: context.useTextColor(Colors.blue),
+          // iconColor: context.useTextColor(Colors.blue),
         ),
         if (anime.url != null)
           _ActionButton(

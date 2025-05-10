@@ -6,18 +6,14 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
-import 'package:kostori/utils/app_links.dart';
-import 'package:kostori/utils/tag_translation.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 import 'aggregated_search_page.dart';
-import 'anime_details_page/anime_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});

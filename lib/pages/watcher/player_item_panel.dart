@@ -4,9 +4,11 @@ import 'dart:io';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
+import 'package:gif/gif.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -14,9 +16,10 @@ import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/utils/bean/appbar/drag_to_move_bar.dart' as dtb;
+import 'package:kostori/components//bean/appbar/drag_to_move_bar.dart' as dtb;
 import 'package:kostori/utils/utils.dart';
-import 'BatteryWidget.dart';
+import 'package:kostori/utils/remote.dart';
+import 'package:kostori/pages/watcher/BatteryWidget.dart';
 
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
@@ -54,15 +57,23 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
   Timer? timer;
   String formattedTime = '';
+  String saveAddress = '';
 
   // 将图片保存到相册
-  Future<void> _saveImageToGallery(Uint8List imageData) async {
+  Future<void> _saveImageToGallery(Uint8List imageData, int timestamp) async {
     try {
       // 使用 image_gallery_saver 插件保存图片
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
       final result = await ImageGallerySaverPlus.saveImage(imageData,
-          name: '$widget.playerController.anime.title_$timestamp');
+          name: '${WatcherState.currentState!.widget.anime.title}_$timestamp');
       Log.addLog(LogLevel.info, '图片路径', '$result');
+      // Get pictures directory
+      Directory? picturesDir =
+          await AbsolutePath.absoluteDirectory(dirType: DirectoryType.pictures);
+      setState(() {
+        saveAddress =
+            '${picturesDir?.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.jpg';
+      });
+      Log.addLog(LogLevel.info, '图片路径', saveAddress);
     } on PlatformException catch (e) {
       Log.addLog(LogLevel.error, '图片路径', '$e');
     }
@@ -182,6 +193,54 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     timer!.cancel();
   }
 
+  MenuButton _buildMenuItems() {
+    return MenuButton(
+      message: "更多".tl,
+      entries: [
+        MenuEntry(
+            text: "Copy Title".tl,
+            onClick: () {
+              setState(() {
+                Clipboard.setData(ClipboardData(
+                    text: WatcherState.currentState!.widget.anime.title));
+                context.showMessage(message: "Copied".tl);
+              });
+            }),
+        MenuEntry(
+            text: "Copy ID".tl,
+            onClick: () {
+              setState(() {
+                Clipboard.setData(ClipboardData(
+                    text: WatcherState.currentState!.widget.anime.id));
+                context.showMessage(message: "Copied".tl);
+              });
+            }),
+        MenuEntry(
+            text: "Copy URL".tl,
+            onClick: () {
+              setState(() {
+                Clipboard.setData(ClipboardData(
+                    text: WatcherState.currentState!.widget.anime.url!));
+                context.showMessage(message: "Copied".tl);
+              });
+            }),
+        MenuEntry(
+            text: "远程投屏".tl,
+            onClick: () {
+              bool needRestart = widget.playerController.playing;
+              widget.playerController.pause();
+              RemotePlay()
+                  .castVideo(widget.playerController.videoUrl)
+                  .whenComplete(() {
+                if (needRestart) {
+                  widget.playerController.play();
+                }
+              });
+            })
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Observer(builder: (context) {
@@ -277,11 +336,17 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           color: Colors.black.toOpacity(0.5),
                           borderRadius: BorderRadius.circular(8.0), // 圆角
                         ),
-                        child: const Row(
+                        child: Row(
                           children: <Widget>[
-                            Icon(Icons.fast_forward, color: Colors.white),
+                            Gif(
+                              image: AssetImage('assets/speeding.gif'),
+                              height: 14,
+                              color: Theme.of(context).colorScheme.primary,
+                              autostart: Autostart.loop,
+                              fps: 40,
+                            ),
                             Text(
-                              ' 倍速播放',
+                              '${widget.playerController.playbackSpeed.toInt()}X',
                               style: TextStyle(
                                 color: Colors.white,
                               ),
@@ -362,13 +427,28 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     color: Colors.white,
                   ),
                   onPressed: () async {
+                    saveAddress = '';
+                    final timestamp = DateTime.now().millisecondsSinceEpoch;
+                    context.showMessage(message: '正在截图中...'.tl);
                     if (App.isAndroid) {
                       try {
                         Uint8List? screenData =
                             await widget.playerController.player.screenshot();
-                        _saveImageToGallery(screenData!);
-                        SmartDialog.showNotify(
-                            msg: '截图成功', notifyType: NotifyType.success);
+                        await _saveImageToGallery(screenData!, timestamp);
+                        widget.playerController.showScreenshotPopup(
+                            context,
+                            saveAddress,
+                            '${WatcherState.currentState!.widget.anime.title}_$timestamp.jpg');
+                        showCenter(
+                            seconds: 2,
+                            icon: Gif(
+                              image: AssetImage('assets/check.gif'),
+                              height: 64,
+                              color: Theme.of(context).colorScheme.primary,
+                              autostart: Autostart.once,
+                            ),
+                            message: '截图成功',
+                            context: context);
                       } catch (e) {
                         Log.addLog(LogLevel.error, '截图失败', '$e');
                       }
@@ -390,14 +470,27 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
                         }
 
-                        final timestamp = DateTime.now().millisecondsSinceEpoch;
                         final filePath =
-                            '$folderPath/anime_image_$timestamp.png';
+                            '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
                         // 将图像保存为文件
                         final file = File(filePath);
                         await file.writeAsBytes(screenData!);
-                        SmartDialog.showNotify(
-                            msg: '截图成功', notifyType: NotifyType.success);
+                        saveAddress =
+                            '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
+                        widget.playerController.showScreenshotPopup(
+                            context,
+                            saveAddress,
+                            '${WatcherState.currentState!.widget.anime.title}_$timestamp.png');
+                        showCenter(
+                            seconds: 2,
+                            icon: Gif(
+                              image: AssetImage('assets/check.gif'),
+                              height: 64,
+                              color: Theme.of(context).colorScheme.primary,
+                              autostart: Autostart.once,
+                            ),
+                            message: '截图成功',
+                            context: context);
                       } catch (e) {
                         Log.addLog(LogLevel.error, '截图失败', '$e');
                       }
@@ -534,62 +627,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         ),
                       ),
                     ),
-                    PopupMenuButton(
-                      tooltip: '',
-                      icon: const Icon(
-                        Icons.more_vert,
-                        color: Colors.white,
-                      ),
-                      itemBuilder: (context) {
-                        return [
-                          PopupMenuItem(
-                            value: 0,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text("Copy Title".tl),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 1,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text("Copy ID".tl),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 2,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [Text("Copy URL".tl)],
-                            ),
-                          ),
-                        ];
-                      },
-                      onSelected: (value) {
-                        if (value == 0) {
-                          Clipboard.setData(ClipboardData(
-                              text: WatcherState
-                                  .currentState!.widget.anime.title));
-                          context.showMessage(message: "Copied".tl);
-                        }
-                        if (value == 1) {
-                          Clipboard.setData(ClipboardData(
-                              text:
-                                  WatcherState.currentState!.widget.anime.id));
-                          context.showMessage(message: "Copied".tl);
-                        }
-                        if (value == 2) {
-                          Clipboard.setData(ClipboardData(
-                              text: WatcherState
-                                  .currentState!.widget.anime.url!));
-                          context.showMessage(message: "Copied".tl);
-                        }
-                      },
-                    )
+                    _buildMenuItems()
                   ],
                 ),
               ),

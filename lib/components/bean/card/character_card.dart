@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/character_page.dart';
 
-import 'character_item.dart';
+import '../../../foundation/bangumi/character/character_item.dart';
 
 class CharacterCard extends StatelessWidget {
   const CharacterCard({

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
@@ -12,8 +12,11 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
+import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
+
+import '../../components/misc_components.dart';
 
 part 'favorite_actions.dart';
 
@@ -22,6 +25,8 @@ part 'side_bar.dart';
 part 'local_favorites_page.dart';
 
 part 'local_search_page.dart';
+
+part 'favorite_dialog.dart';
 
 const _kLeftBarWidth = 256.0;
 

@@ -330,16 +330,6 @@ class PageJumpTarget {
           options: List.from(attributes?["options"] ?? []),
         ),
       );
-    } else if (page == "category") {
-      var key = AnimeSource.find(sourceKey)!.categoryData!.key;
-      context.to(
-        () => CategoryAnimesPage(
-          categoryKey: key,
-          category: attributes?["category"] ??
-              (throw ArgumentError("Category name is required")),
-          param: attributes?["param"],
-        ),
-      );
     } else {
       Log.error("Page Jump", "Unknown page: $page");
     }

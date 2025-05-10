@@ -12,28 +12,14 @@ class AnimeType {
   int get hashCode => value.hashCode;
 
   String get sourceKey {
-    if (this == local) {
-      return "local";
-    } else {
-      return animeSource!.key;
-    }
+    return animeSource!.key;
   }
 
   AnimeSource? get animeSource {
-    if (this == local) {
-      return null;
-    } else {
-      return AnimeSource.fromIntKey(value);
-    }
+    return AnimeSource.fromIntKey(value);
   }
 
-  static const local = AnimeType(0);
-
   factory AnimeType.fromKey(String key) {
-    if (key == "local") {
-      return local;
-    } else {
-      return AnimeType(key.hashCode);
-    }
+    return AnimeType(key.hashCode);
   }
 }

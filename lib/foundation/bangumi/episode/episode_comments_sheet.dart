@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
-import 'bottom_info.dart';
-import 'comment_item.dart';
-import 'episode_comments_card.dart';
+import '../comment/comment_item.dart';
+import '../../../components/bean/card/episode_comments_card.dart';
 import 'episode_item.dart';
 
 // class EpisodeInfo extends InheritedWidget {

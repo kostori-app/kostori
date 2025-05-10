@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/global_state.dart';
 
-import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
@@ -11,7 +10,6 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/pages/category_animes_page.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});

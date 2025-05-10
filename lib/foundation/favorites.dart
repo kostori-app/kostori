@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -72,7 +74,7 @@ class FavoriteItem implements Anime {
   String get description {
     var time = this.time.substring(0, 10);
     return appdata.settings['animeDisplayMode'] == 'detailed'
-        ? "$time | ${type == AnimeType.local ? 'local' : type.animeSource?.name ?? "Unknown"}"
+        ? "$time | ${type.animeSource?.name ?? "Unknown"}"
         : "${type.animeSource?.name ?? "Unknown"} | $time";
   }
 
@@ -85,9 +87,7 @@ class FavoriteItem implements Anime {
   int? get maxPage => null;
 
   @override
-  String get sourceKey => type == AnimeType.local
-      ? 'local'
-      : type.animeSource?.key ?? "Unknown:${type.value}";
+  String get sourceKey => type.animeSource?.key ?? "Unknown:${type.value}";
 
   @override
   double? get stars => null;
@@ -137,6 +137,50 @@ class FavoriteItemWithFolderInfo extends FavoriteItem {
         );
 }
 
+class FavoriteItemWithUpdateInfo extends FavoriteItem {
+  String? updateTime;
+
+  DateTime? lastCheckTime;
+
+  bool hasNewUpdate;
+
+  FavoriteItemWithUpdateInfo(
+    FavoriteItem item,
+    this.updateTime,
+    this.hasNewUpdate,
+    int? lastCheckTime,
+  )   : lastCheckTime = lastCheckTime == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(lastCheckTime),
+        super(
+          id: item.id,
+          name: item.name,
+          coverPath: item.coverPath,
+          author: item.author,
+          type: item.type,
+          tags: item.tags,
+        );
+
+  @override
+  String get description {
+    var updateTime = this.updateTime ?? "Unknown";
+    var sourceName = type.animeSource?.name ?? "Unknown";
+    return "$updateTime | $sourceName";
+  }
+
+  @override
+  operator ==(Object other) {
+    return other is FavoriteItemWithUpdateInfo &&
+        other.updateTime == updateTime &&
+        other.hasNewUpdate == hasNewUpdate &&
+        super == other;
+  }
+
+  @override
+  int get hashCode =>
+      super.hashCode ^ updateTime.hashCode ^ hasNewUpdate.hashCode;
+}
+
 class LocalFavoritesManager with ChangeNotifier {
   factory LocalFavoritesManager() =>
       cache ?? (cache = LocalFavoritesManager._create());
@@ -147,7 +191,22 @@ class LocalFavoritesManager with ChangeNotifier {
 
   late Database _db;
 
+  late Map<String, int> counts;
+
+  int get totalAnimes {
+    int total = 0;
+    for (var t in counts.values) {
+      total += t;
+    }
+    return total;
+  }
+
+  int folderAnimes(String folder) {
+    return counts[folder] ?? 0;
+  }
+
   Future<void> init() async {
+    counts = {};
     _db = sqlite3.open("${App.dataPath}/local_favorite.db");
     _db.execute("""
       create table if not exists folder_order (
@@ -162,27 +221,28 @@ class LocalFavoritesManager with ChangeNotifier {
         source_folder text
       );
     """);
-    for (var folder in _getFolderNamesWithDB()) {
+    //遍历增加列
+    var folderNames = _getFolderNamesWithDB();
+    for (var folder in folderNames) {
       var columns = _db.select("""
         pragma table_info("$folder");
       """);
-      if (!columns.any((element) => element["name"] == "translated_tags")) {
+      if (!columns.any((element) => element["name"] == "recently_watched")) {
         _db.execute("""
           alter table "$folder"
-          add column translated_tags TEXT;
+          add column recently_watched TEXT;
         """);
-        var animes = getAllAnimes(folder, sortType: FavoriteSortType.nameAsc);
-        for (var anime in animes) {
-          var translatedTags = _translateTags(anime.tags);
-          _db.execute("""
-            update "$folder"
-            set translated_tags = ?
-            where id == ? and type == ?;
-          """, [translatedTags, anime.id, anime.type.value]);
-        }
       } else {
         break;
       }
+    }
+    await appdata.ensureInit();
+    initCounts();
+  }
+
+  void initCounts() {
+    for (var folder in folderNames) {
+      counts[folder] = count(folder);
     }
   }
 
@@ -277,8 +337,45 @@ class LocalFavoritesManager with ChangeNotifier {
       """).firstOrNull?["min_value"] ?? 0;
   }
 
+  List<FavoriteItem> getFolderAnimes(String folder) {
+    var rows = _db.select("""
+        select * from "$folder"
+        ORDER BY display_order;
+      """);
+    return rows.map((element) => FavoriteItem.fromRow(element)).toList();
+  }
+
+  static Future<List<FavoriteItem>> _getFolderAnimesAsync(
+      String folder, Pointer<void> p, FavoriteSortType sortType) {
+    // 解析排序类型
+    final orderBy = switch (sortType) {
+      FavoriteSortType.nameAsc => 'name ASC',
+      FavoriteSortType.nameDesc => 'name DESC',
+      FavoriteSortType.timeAsc => 'time ASC',
+      FavoriteSortType.timeDesc => 'time DESC',
+      FavoriteSortType.displayOrderAsc => 'display_order ASC',
+      FavoriteSortType.displayOrderDesc => 'display_order DESC',
+      FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
+      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC'
+    };
+    return Isolate.run(() {
+      var db = sqlite3.fromPointer(p);
+      var rows = db.select("""
+        select * from "$folder"
+        ORDER BY $orderBy;
+      """);
+      return rows.map((element) => FavoriteItem.fromRow(element)).toList();
+    });
+  }
+
+  /// Start a new isolate to get the comics in the folder
+  Future<List<FavoriteItem>> getFolderAnimesAsync(
+      String folder, FavoriteSortType sortType) {
+    return _getFolderAnimesAsync(folder, _db.handle, sortType);
+  }
+
   List<FavoriteItem> getAllAnimes(String folder,
-      {required FavoriteSortType sortType}) {
+      [FavoriteSortType sortType = FavoriteSortType.displayOrderAsc]) {
     if (folder == '默认') {
       folder = 'default';
     }
@@ -291,13 +388,14 @@ class LocalFavoritesManager with ChangeNotifier {
       FavoriteSortType.timeDesc => 'time DESC',
       FavoriteSortType.displayOrderAsc => 'display_order ASC',
       FavoriteSortType.displayOrderDesc => 'display_order DESC',
+      FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
+      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC'
     };
 
     var rows = _db.select("""
         select * from "$folder"
         ORDER BY $orderBy;
       """);
-    // 获取列表并排序
     var items = rows.map((element) => FavoriteItem.fromRow(element)).toList();
 
     return items;
@@ -363,7 +461,7 @@ class LocalFavoritesManager with ChangeNotifier {
         cover_path TEXT,
         time TEXT,
         display_order int,
-        translated_tags TEXT,
+        recently_watched TEXT,
         primary key (id, type)
       );
     """);
@@ -376,15 +474,6 @@ class LocalFavoritesManager with ChangeNotifier {
       insert or replace into folder_sync (folder_name, source_key, source_folder)
       values (?, ?, ?);
     """, [folder, source, networkFolder]);
-  }
-
-  bool isLinkedToNetworkFolder(
-      String folder, String source, String networkFolder) {
-    var res = _db.select("""
-      select * from folder_sync
-      where folder_name == ? and source_key == ? and source_folder == ?;
-    """, [folder, source, networkFolder]);
-    return res.isNotEmpty;
   }
 
   (String?, String?) findLinked(String folder) {
@@ -417,17 +506,6 @@ class LocalFavoritesManager with ChangeNotifier {
     return FavoriteItem.fromRow(res.first);
   }
 
-  String _translateTags(List<String> tags) {
-    var res = <String>[];
-    for (var tag in tags) {
-      var translated = tag;
-      if (translated != tag) {
-        res.add(translated);
-      }
-    }
-    return res.join(",");
-  }
-
   /// add anime to a folder
   ///
   /// This method will download cover to local, to avoid problems like changing url
@@ -443,7 +521,6 @@ class LocalFavoritesManager with ChangeNotifier {
     if (res.isNotEmpty) {
       return false;
     }
-    var translatedTags = _translateTags(anime.tags);
     final params = [
       anime.id,
       anime.name,
@@ -452,24 +529,25 @@ class LocalFavoritesManager with ChangeNotifier {
       anime.tags.join(","),
       anime.coverPath,
       anime.time,
-      translatedTags
+      anime.time,
     ];
     if (order != null) {
       _db.execute("""
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, translated_tags, display_order)
+        insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?);
       """, [...params, order]);
     } else if (appdata.settings['newFavoriteAddTo'] == "end") {
       _db.execute("""
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, translated_tags, display_order)
+        insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?);
       """, [...params, maxValue(folder) + 1]);
     } else {
       _db.execute("""
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, translated_tags, display_order)
+        insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?);
       """, [...params, minValue(folder) - 1]);
     }
+    initCounts();
     notifyListeners();
     return true;
   }
@@ -491,12 +569,13 @@ class LocalFavoritesManager with ChangeNotifier {
   """, [id, type.value]);
 
     if (res.isNotEmpty) {
+      initCounts();
       return;
     }
 
     _db.execute("""
-      insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order)
-      select id, name, author, type, tags, cover_path, time, ?
+      insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order, recently_watched)
+      select id, name, author, type, tags, cover_path, time, ?, recently_watched
       from "$sourceFolder"
       where id == ? and type == ?;
     """, [minValue(targetFolder) - 1, id, type.value]);
@@ -507,6 +586,7 @@ class LocalFavoritesManager with ChangeNotifier {
     where id == ? and type == ?;
   """, [id, type.value]);
 
+    initCounts();
     notifyListeners();
   }
 
@@ -520,12 +600,14 @@ class LocalFavoritesManager with ChangeNotifier {
       delete from folder_order
       where folder_name == ?;
     """, [name]);
+    counts.remove(name);
     notifyListeners();
   }
 
   void deleteAnime(String folder, FavoriteItem anime) {
     _modifiedAfterLastCache = true;
     deleteAnimeWithId(folder, anime.id, anime.type);
+    initCounts();
   }
 
   void deleteAnimeWithId(String folder, String id, AnimeType type) {
@@ -535,6 +617,7 @@ class LocalFavoritesManager with ChangeNotifier {
       delete from "$folder"
       where id == ? and type == ?;
     """, [id, type.value]);
+    initCounts();
     notifyListeners();
   }
 
@@ -544,8 +627,7 @@ class LocalFavoritesManager with ChangeNotifier {
       var all = allAnimes();
       for (var c in all) {
         var animeSource = c.type.animeSource;
-        if ((c.type == AnimeType.local) ||
-            (c.type != AnimeType.local && animeSource == null)) {
+        if ((animeSource == null)) {
           deleteAnimeWithId(c.folder, c.id, c.type);
           count++;
         }
@@ -640,7 +722,7 @@ class LocalFavoritesManager with ChangeNotifier {
     keyword = "%$keyword%";
     var res = _db.select("""
       SELECT * FROM "$folder" 
-      WHERE name LIKE ? OR author LIKE ? OR tags LIKE ? OR translated_tags LIKE ?;
+      WHERE name LIKE ? OR author LIKE ? OR tags LIKE;
     """, [keyword, keyword, keyword, keyword]);
     var animes = res.map((e) => FavoriteItem.fromRow(e)).toList();
     bool test(FavoriteItem anime, String keyword) {
@@ -669,8 +751,8 @@ class LocalFavoritesManager with ChangeNotifier {
       keyword = "%$keyword%";
       var res = _db.select("""
         SELECT * FROM "$table" 
-        WHERE name LIKE ? OR author LIKE ? OR tags LIKE ? OR translated_tags LIKE ?;
-      """, [keyword, keyword, keyword, keyword]);
+        WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?;
+      """, [keyword, keyword, keyword]);
       for (var anime in res) {
         animes.add(
             FavoriteItemWithFolderInfo(FavoriteItem.fromRow(anime), table));
@@ -782,6 +864,58 @@ class LocalFavoritesManager with ChangeNotifier {
     }
   }
 
+  void prepareTableForFollowUpdates(String table, [bool clearData = true]) {
+    // check if the table has the column "last_update_time" "has_new_update" "last_check_time"
+    var columns = _db.select("""
+      pragma table_info("$table");
+    """);
+    if (!columns.any((element) => element["name"] == "last_update_time")) {
+      _db.execute("""
+        alter table "$table"
+        add column last_update_time TEXT;
+      """);
+    }
+    if (!columns.any((element) => element["name"] == "has_new_update")) {
+      _db.execute("""
+        alter table "$table"
+        add column has_new_update int;
+      """);
+    }
+    if (clearData) {
+      _db.execute("""
+        update "$table"
+        set has_new_update = 0;
+      """);
+    }
+    if (!columns.any((element) => element["name"] == "last_check_time")) {
+      _db.execute("""
+        alter table "$table"
+        add column last_check_time int;
+      """);
+    }
+  }
+
+  void updateRecentlyWatched(String id, AnimeType type) {
+    if (isExist(id, type)) {
+      final now = DateTime.now();
+      var folderNames = _getFolderNamesWithDB();
+      for (var folder in folderNames) {
+        var row = _db.select("""
+        select * from "$folder"
+        where id == ? and type == ?;
+      """, [id, type.value]);
+        if (row.isNotEmpty) {
+          _db.execute("""
+        update "$folder"
+        set recently_watched = ?
+        where id == ? and type == ?;
+      """, [_getTimeString(now), id, type.value]);
+        }
+      }
+      notifyListeners();
+    }
+  }
+
   void close() {
     _db.dispose();
   }
@@ -793,7 +927,9 @@ enum FavoriteSortType {
   timeAsc("time_asc"),
   timeDesc("time_desc"),
   displayOrderAsc("displayOrder_asc"),
-  displayOrderDesc("displayOrder_desc");
+  displayOrderDesc("displayOrder_desc"),
+  recentlyWatchedAsc("recentlyWatched_asc"),
+  recentlyWatchedDesc("recentlyWatched_desc");
 
   final String value;
 

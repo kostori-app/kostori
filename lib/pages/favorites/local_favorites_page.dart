@@ -1,5 +1,9 @@
 part of 'favorites_page.dart';
 
+const _asyncDataFetchLimit = 500;
+
+final excludedFolders = ["default", "默认"];
+
 class _LocalFavoritesPage extends StatefulWidget {
   const _LocalFavoritesPage({required this.folder, super.key});
 
@@ -22,6 +26,8 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   late List<String> added = [];
 
+  List<String> filteredFolders = [];
+
   String keyword = "";
 
   bool searchMode = false;
@@ -30,17 +36,72 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   int? lastSelectedIndex;
 
+  LocalFavoritesManager get manager => LocalFavoritesManager();
+
+  bool isLoading = false;
+
+  var searchResults = <FavoriteItem>[];
+
+  void updateSearchResult() {
+    setState(() {
+      if (keyword.trim().isEmpty) {
+        searchResults = animes;
+      } else {
+        searchResults = [];
+        for (var comic in animes) {
+          if (matchKeyword(keyword, comic)) {
+            searchResults.add(comic);
+          }
+        }
+      }
+    });
+  }
+
   void updateAnimes() {
-    if (keyword.isEmpty) {
-      setState(() {
-        animes = LocalFavoritesManager()
-            .getAllAnimes(widget.folder, sortType: sortType);
-      });
+    if (isLoading) return;
+    var folderAnimes = manager.folderAnimes(widget.folder);
+    if (folderAnimes < _asyncDataFetchLimit) {
+      animes = manager.getAllAnimes(widget.folder, sortType);
     } else {
-      setState(() {
-        animes = LocalFavoritesManager().searchInFolder(widget.folder, keyword);
+      isLoading = true;
+      manager
+          .getFolderAnimesAsync(widget.folder, sortType)
+          .minTime(const Duration(milliseconds: 200))
+          .then((value) {
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+            animes = value;
+          });
+        }
       });
     }
+    setState(() {});
+  }
+
+  bool matchKeyword(String keyword, FavoriteItem anime) {
+    var list = keyword.split(" ");
+    for (var k in list) {
+      if (k.isEmpty) continue;
+      if (anime.title.contains(k)) {
+        continue;
+      } else if (anime.subtitle != null && anime.subtitle!.contains(k)) {
+        continue;
+      } else if (anime.tags.any((tag) {
+        if (tag == k) {
+          return true;
+        } else if (tag.contains(':') && tag.split(':')[1] == k) {
+          return true;
+        }
+        return false;
+      })) {
+        continue;
+      } else if (anime.author == k) {
+        continue;
+      }
+      return false;
+    }
+    return true;
   }
 
   @override
@@ -48,9 +109,16 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
     var sort = appdata.implicitData["favori_sort"] ?? "displayOrder_asc";
     sortType = FavoriteSortType.fromString(sort);
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
-    animes =
-        LocalFavoritesManager().getAllAnimes(widget.folder, sortType: sortType);
+    animes = [];
+    animes = LocalFavoritesManager().getAllAnimes(widget.folder, sortType);
+    LocalFavoritesManager().addListener(updateAnimes);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    LocalFavoritesManager().removeListener(updateAnimes);
   }
 
   void selectAll() {
@@ -70,90 +138,89 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   var scrollController = ScrollController();
 
-  List<MenuItemButton> _buildSortMenuItems(BuildContext context) {
-    return [
-      // 按名称排序选项
-      MenuItemButton(
-        onPressed: () {
-          setState(() {
-            sortType = sortType == FavoriteSortType.nameAsc
-                ? FavoriteSortType.nameDesc
-                : FavoriteSortType.nameAsc;
-            appdata.implicitData["favori_sort"] = sortType.value;
-            appdata.writeImplicitData();
-            updateAnimes();
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.sort_by_alpha, size: 20),
-              const SizedBox(width: 8),
-              const Text('按名称'),
-              if (sortType == FavoriteSortType.nameAsc)
-                const Icon(Icons.arrow_upward, size: 16),
-              if (sortType == FavoriteSortType.nameDesc)
-                const Icon(Icons.arrow_downward, size: 16),
-            ],
-          ),
-        ),
-      ),
-      // 按时间排序选项
-      MenuItemButton(
-        onPressed: () {
-          setState(() {
-            sortType = sortType == FavoriteSortType.timeAsc
-                ? FavoriteSortType.timeDesc
-                : FavoriteSortType.timeAsc;
-            appdata.implicitData["favori_sort"] = sortType.value;
-            appdata.writeImplicitData();
-            updateAnimes();
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.access_time, size: 20),
-              const SizedBox(width: 8),
-              const Text('按时间'),
-              if (sortType == FavoriteSortType.timeAsc)
-                const Icon(Icons.arrow_upward, size: 16),
-              if (sortType == FavoriteSortType.timeDesc)
-                const Icon(Icons.arrow_downward, size: 16),
-            ],
-          ),
-        ),
-      ),
-      // 默认顺序选项
-      MenuItemButton(
-        onPressed: () {
-          setState(() {
-            sortType = sortType == FavoriteSortType.displayOrderAsc
-                ? FavoriteSortType.displayOrderDesc
-                : FavoriteSortType.displayOrderAsc;
-            appdata.implicitData["favori_sort"] = sortType.value;
-            appdata.writeImplicitData();
-            updateAnimes();
-          });
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.view_list, size: 20),
-              const SizedBox(width: 8),
-              const Text('默认顺序'),
-              if (sortType == FavoriteSortType.displayOrderAsc)
-                const Icon(Icons.arrow_upward, size: 16),
-              if (sortType == FavoriteSortType.displayOrderDesc)
-                const Icon(Icons.arrow_downward, size: 16),
-            ],
-          ),
-        ),
-      ),
-    ];
+  MenuButton _buildSortMenuItems() {
+    return MenuButton(
+      icon: Icons.sort,
+      message: "Sort",
+      entries: [
+        MenuEntry(
+            icon: Icons.receipt_long,
+            endIcon: (sortType == FavoriteSortType.recentlyWatchedAsc ||
+                    sortType == FavoriteSortType.recentlyWatchedDesc)
+                ? (sortType == FavoriteSortType.recentlyWatchedAsc
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward)
+                : null,
+            text: "最近观看".tl,
+            onClick: () {
+              setState(() {
+                sortType = sortType == FavoriteSortType.recentlyWatchedAsc
+                    ? FavoriteSortType.recentlyWatchedDesc
+                    : FavoriteSortType.recentlyWatchedAsc;
+                appdata.implicitData["favori_sort"] = sortType.value;
+                appdata.writeImplicitData();
+                updateAnimes();
+              });
+            }),
+        MenuEntry(
+            icon: Icons.sort_by_alpha,
+            endIcon: (sortType == FavoriteSortType.nameAsc ||
+                    sortType == FavoriteSortType.nameDesc)
+                ? (sortType == FavoriteSortType.nameAsc
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward)
+                : null,
+            text: "按名称".tl,
+            onClick: () {
+              setState(() {
+                sortType = sortType == FavoriteSortType.nameAsc
+                    ? FavoriteSortType.nameDesc
+                    : FavoriteSortType.nameAsc;
+                appdata.implicitData["favori_sort"] = sortType.value;
+                appdata.writeImplicitData();
+                updateAnimes();
+              });
+            }),
+        MenuEntry(
+            icon: Icons.access_time,
+            endIcon: (sortType == FavoriteSortType.timeAsc ||
+                    sortType == FavoriteSortType.timeDesc)
+                ? (sortType == FavoriteSortType.timeAsc
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward)
+                : null,
+            text: "按时间".tl,
+            onClick: () {
+              setState(() {
+                sortType = sortType == FavoriteSortType.timeAsc
+                    ? FavoriteSortType.timeDesc
+                    : FavoriteSortType.timeAsc;
+                appdata.implicitData["favori_sort"] = sortType.value;
+                appdata.writeImplicitData();
+                updateAnimes();
+              });
+            }),
+        MenuEntry(
+            icon: Icons.view_list,
+            endIcon: (sortType == FavoriteSortType.displayOrderAsc ||
+                    sortType == FavoriteSortType.displayOrderDesc)
+                ? (sortType == FavoriteSortType.displayOrderAsc
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward)
+                : null,
+            text: "默认顺序".tl,
+            onClick: () {
+              setState(() {
+                sortType = sortType == FavoriteSortType.displayOrderAsc
+                    ? FavoriteSortType.displayOrderDesc
+                    : FavoriteSortType.displayOrderAsc;
+                appdata.implicitData["favori_sort"] = sortType.value;
+                appdata.writeImplicitData();
+                updateAnimes();
+              });
+            }),
+      ],
+    );
   }
 
   @override
@@ -191,54 +258,41 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                   icon: const Icon(Icons.search),
                   onPressed: () {
                     setState(() {
+                      keyword = "";
                       searchMode = true;
+                      updateSearchResult();
                     });
                   },
                 ),
               ),
-              Tooltip(
-                message: "Sort".tl,
-                child: MenuAnchor(
-                  menuChildren: _buildSortMenuItems(context),
-                  builder: (context, controller, child) {
-                    return IconButton(
-                      icon: const Icon(Icons.sort),
-                      onPressed: () {
-                        if (controller.isOpen) {
-                          controller.close();
-                        } else {
-                          controller.open();
-                        }
-                      },
-                    );
-                  },
-                ),
-              ),
+              _buildSortMenuItems(),
               MenuButton(
                 entries: [
-                  MenuEntry(
-                      icon: Icons.edit_outlined,
-                      text: "Rename".tl,
-                      onClick: () {
-                        showInputDialog(
-                          context: App.rootContext,
-                          title: "Rename".tl,
-                          hintText: "New Name".tl,
-                          onConfirm: (value) {
-                            var err = validateFolderName(value.toString());
-                            if (err != null) {
-                              return err;
-                            }
-                            LocalFavoritesManager().rename(
-                              widget.folder,
-                              value.toString(),
-                            );
-                            favPage.folderList?.updateFolders();
-                            favPage.setFolder(false, value.toString());
-                            return null;
-                          },
-                        );
-                      }),
+                  if (widget.folder != 'default')
+                    MenuEntry(
+                        icon: Icons.edit_outlined,
+                        text: "Rename".tl,
+                        onClick: () {
+                          showInputDialog(
+                            context: App.rootContext,
+                            title: "Rename".tl,
+                            hintText: "New Name".tl,
+                            onConfirm: (value) {
+                              var err = validateFolderName(value.toString());
+                              if (err != null) {
+                                return err;
+                              }
+                              LocalFavoritesManager().rename(
+                                widget.folder,
+                                value.toString(),
+                              );
+                              manager.initCounts();
+                              favPage.folderList?.updateFolders();
+                              favPage.setFolder(false, value.toString());
+                              return null;
+                            },
+                          );
+                        }),
                   MenuEntry(
                       icon: Icons.upload_file,
                       text: "Export".tl,
@@ -308,13 +362,14 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
               actions: [
                 MenuButton(entries: [
                   MenuEntry(
-                      icon: Icons.drive_file_move,
-                      text: "Move to folder".tl,
-                      onClick: () => favoriteOption('move')),
-                  MenuEntry(
-                      icon: Icons.copy,
-                      text: "Copy to folder".tl,
-                      onClick: () => favoriteOption('add')),
+                      icon: Icons.star_rounded,
+                      text: "Favorite actions".tl,
+                      onClick: () => _FavoriteDialog.show(
+                          context: App.rootContext,
+                          selectedAnimes: selectedAnimes,
+                          favPage: favPage,
+                          updateAnimes: () => updateAnimes(),
+                          cancel: () => _cancel())),
                   MenuEntry(
                       icon: Icons.select_all,
                       text: "Select All".tl,
@@ -357,8 +412,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                 onPressed: () {
                   setState(() {
                     searchMode = false;
-                    keyword = "";
-                    updateAnimes();
                   });
                 },
               ),
@@ -367,76 +420,86 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
               autofocus: true,
               decoration: InputDecoration(
                 hintText: "Search".tl,
-                border: InputBorder.none,
+                border: UnderlineInputBorder(),
               ),
               onChanged: (v) {
                 keyword = v;
-                updateAnimes();
+                updateSearchResult();
               },
-            ),
+            ).paddingBottom(8).paddingRight(8),
           ),
-        SliverGridAnimes(
-          animes: animes,
-          selections: selectedAnimes,
-          enableFavorite: false,
-          onTap: multiSelectMode
-              ? (a) {
-                  setState(() {
-                    if (selectedAnimes.containsKey(a as FavoriteItem)) {
-                      selectedAnimes.remove(a);
-                      _checkExitSelectMode();
-                    } else {
-                      selectedAnimes[a] = true;
-                    }
-                    lastSelectedIndex = animes.indexOf(a);
-                  });
-                }
-              : (a) {
-                  App.mainNavigatorKey?.currentContext
-                      ?.to(() => AnimePage(id: a.id, sourceKey: a.sourceKey));
-                },
-          onLongPressed: (a) {
-            setState(() {
-              if (!multiSelectMode) {
-                multiSelectMode = true;
-                if (!selectedAnimes.containsKey(a as FavoriteItem)) {
-                  selectedAnimes[a] = true;
-                }
-                lastSelectedIndex = animes.indexOf(a);
-              } else {
-                if (lastSelectedIndex != null) {
-                  int start = lastSelectedIndex!;
-                  int end = animes.indexOf(a as FavoriteItem);
-                  if (start > end) {
-                    int temp = start;
-                    start = end;
-                    end = temp;
+        if (isLoading)
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 200,
+              child: Center(
+                child: MiscComponents.placeholder(context, 200, 200),
+              ),
+            ),
+          )
+        else
+          SliverGridAnimes(
+            animes: searchMode ? searchResults : animes,
+            selections: selectedAnimes,
+            enableFavorite: false,
+            onTap: multiSelectMode
+                ? (a) {
+                    setState(() {
+                      if (selectedAnimes.containsKey(a as FavoriteItem)) {
+                        selectedAnimes.remove(a);
+                        _checkExitSelectMode();
+                      } else {
+                        selectedAnimes[a] = true;
+                      }
+                      lastSelectedIndex = animes.indexOf(a);
+                    });
                   }
+                : (a) {
+                    App.mainNavigatorKey?.currentContext
+                        ?.to(() => AnimePage(id: a.id, sourceKey: a.sourceKey));
+                    LocalFavoritesManager().updateRecentlyWatched(
+                        a.id, AnimeType(a.sourceKey.hashCode));
+                  },
+            onLongPressed: (a) {
+              setState(() {
+                if (!multiSelectMode) {
+                  multiSelectMode = true;
+                  if (!selectedAnimes.containsKey(a as FavoriteItem)) {
+                    selectedAnimes[a] = true;
+                  }
+                  lastSelectedIndex = animes.indexOf(a);
+                } else {
+                  if (lastSelectedIndex != null) {
+                    int start = lastSelectedIndex!;
+                    int end = animes.indexOf(a as FavoriteItem);
+                    if (start > end) {
+                      int temp = start;
+                      start = end;
+                      end = temp;
+                    }
 
-                  for (int i = start; i <= end; i++) {
-                    if (i == lastSelectedIndex) continue;
+                    for (int i = start; i <= end; i++) {
+                      if (i == lastSelectedIndex) continue;
 
-                    var anime = animes[i];
-                    if (selectedAnimes.containsKey(anime)) {
-                      selectedAnimes.remove(anime);
-                    } else {
-                      selectedAnimes[anime] = true;
+                      var anime = animes[i];
+                      if (selectedAnimes.containsKey(anime)) {
+                        selectedAnimes.remove(anime);
+                      } else {
+                        selectedAnimes[anime] = true;
+                      }
                     }
                   }
+                  lastSelectedIndex = animes.indexOf(a as FavoriteItem);
                 }
-                lastSelectedIndex = animes.indexOf(a as FavoriteItem);
-              }
-              _checkExitSelectMode();
-            });
-          },
-        ),
+                _checkExitSelectMode();
+              });
+            },
+          ),
       ],
     );
-    body = Scrollbar(
+    body = AppScrollBar(
+      topPadding: 48,
       controller: scrollController,
-      thickness: App.isDesktop ? 8 : 12,
-      radius: const Radius.circular(8),
-      interactive: true,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
         child: body,
@@ -462,142 +525,142 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
     );
   }
 
-  void favoriteOption(String option) {
-    var targetFolders = LocalFavoritesManager()
-        .folderNames
-        .where((folder) => folder != favPage.folder && folder != "default")
-        .toList();
-
-    showPopUpWidget(
-      App.rootContext,
-      StatefulBuilder(
-        builder: (context, setState) {
-          return PopUpWidgetScaffold(
-            title: favPage.folder ?? "Unselected".tl,
-            body: Padding(
-              padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
-              child: Container(
-                constraints:
-                    const BoxConstraints(maxHeight: 700, maxWidth: 500),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: targetFolders.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == targetFolders.length) {
-                            return SizedBox(
-                              height: 36,
-                              child: Center(
-                                child: TextButton(
-                                  onPressed: () {
-                                    newFolder().then((v) {
-                                      setState(() {
-                                        targetFolders = LocalFavoritesManager()
-                                            .folderNames
-                                            .where((folder) =>
-                                                folder != favPage.folder)
-                                            .toList();
-                                      });
-                                    });
-                                  },
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(Icons.add, size: 20),
-                                      const SizedBox(width: 4),
-                                      Text("New Folder".tl),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }
-                          var folder = targetFolders[index];
-                          var disabled = false;
-                          if (selectedLocalFolders.isNotEmpty) {
-                            if (added.contains(folder) &&
-                                !added.contains(selectedLocalFolders.first)) {
-                              disabled = true;
-                            } else if (!added.contains(folder) &&
-                                added.contains(selectedLocalFolders.first)) {
-                              disabled = true;
-                            }
-                          }
-                          return CheckboxListTile(
-                            title: Row(
-                              children: [
-                                Text(folder),
-                                const SizedBox(width: 8),
-                              ],
-                            ),
-                            value: selectedLocalFolders.contains(folder),
-                            onChanged: disabled
-                                ? null
-                                : (v) {
-                                    setState(() {
-                                      if (v!) {
-                                        selectedLocalFolders.add(folder);
-                                      } else {
-                                        selectedLocalFolders.remove(folder);
-                                      }
-                                    });
-                                  },
-                          );
-                        },
-                      ),
-                    ),
-                    Center(
-                      child: FilledButton(
-                        onPressed: () {
-                          if (selectedLocalFolders.isEmpty) {
-                            return;
-                          }
-                          if (option == 'move') {
-                            for (var c in selectedAnimes.keys) {
-                              for (var s in selectedLocalFolders) {
-                                LocalFavoritesManager().moveFavorite(
-                                    favPage.folder as String,
-                                    s,
-                                    c.id,
-                                    (c as FavoriteItem).type);
-                              }
-                            }
-                          } else {
-                            for (var c in selectedAnimes.keys) {
-                              for (var s in selectedLocalFolders) {
-                                LocalFavoritesManager().addAnime(
-                                  s,
-                                  FavoriteItem(
-                                    id: c.id,
-                                    name: c.title,
-                                    coverPath: c.cover,
-                                    author: c.subtitle ?? '',
-                                    type: AnimeType((c.sourceKey == 'local'
-                                        ? 0
-                                        : c.sourceKey.hashCode)),
-                                    tags: c.tags ?? [],
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                          App.rootContext.pop();
-                          updateAnimes();
-                          _cancel();
-                        },
-                        child: Text(option == 'move' ? "Move".tl : "Add".tl),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+  // void favoriteOption(String option) {
+  //   var targetFolders = LocalFavoritesManager()
+  //       .folderNames
+  //       .where((folder) => folder != favPage.folder && folder != "default")
+  //       .toList();
+  //
+  //   showPopUpWidget(
+  //     App.rootContext,
+  //     StatefulBuilder(
+  //       builder: (context, setState) {
+  //         return PopUpWidgetScaffold(
+  //           title: favPage.folder ?? "Unselected".tl,
+  //           body: Padding(
+  //             padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
+  //             child: Container(
+  //               constraints:
+  //                   const BoxConstraints(maxHeight: 700, maxWidth: 500),
+  //               child: Column(
+  //                 children: [
+  //                   Expanded(
+  //                     child: ListView.builder(
+  //                       itemCount: targetFolders.length + 1,
+  //                       itemBuilder: (context, index) {
+  //                         if (index == targetFolders.length) {
+  //                           return SizedBox(
+  //                             height: 36,
+  //                             child: Center(
+  //                               child: TextButton(
+  //                                 onPressed: () {
+  //                                   newFolder().then((v) {
+  //                                     setState(() {
+  //                                       targetFolders = LocalFavoritesManager()
+  //                                           .folderNames
+  //                                           .where((folder) =>
+  //                                               folder != favPage.folder)
+  //                                           .toList();
+  //                                     });
+  //                                   });
+  //                                 },
+  //                                 child: Row(
+  //                                   mainAxisSize: MainAxisSize.min,
+  //                                   children: [
+  //                                     const Icon(Icons.add, size: 20),
+  //                                     const SizedBox(width: 4),
+  //                                     Text("New Folder".tl),
+  //                                   ],
+  //                                 ),
+  //                               ),
+  //                             ),
+  //                           );
+  //                         }
+  //                         var folder = targetFolders[index];
+  //                         var disabled = false;
+  //                         if (selectedLocalFolders.isNotEmpty) {
+  //                           if (added.contains(folder) &&
+  //                               !added.contains(selectedLocalFolders.first)) {
+  //                             disabled = true;
+  //                           } else if (!added.contains(folder) &&
+  //                               added.contains(selectedLocalFolders.first)) {
+  //                             disabled = true;
+  //                           }
+  //                         }
+  //                         return CheckboxListTile(
+  //                           title: Row(
+  //                             children: [
+  //                               Text(folder),
+  //                               const SizedBox(width: 8),
+  //                             ],
+  //                           ),
+  //                           value: selectedLocalFolders.contains(folder),
+  //                           onChanged: disabled
+  //                               ? null
+  //                               : (v) {
+  //                                   setState(() {
+  //                                     if (v!) {
+  //                                       selectedLocalFolders.add(folder);
+  //                                     } else {
+  //                                       selectedLocalFolders.remove(folder);
+  //                                     }
+  //                                   });
+  //                                 },
+  //                         );
+  //                       },
+  //                     ),
+  //                   ),
+  //                   Center(
+  //                     child: FilledButton(
+  //                       onPressed: () {
+  //                         if (selectedLocalFolders.isEmpty) {
+  //                           return;
+  //                         }
+  //                         if (option == 'move') {
+  //                           for (var c in selectedAnimes.keys) {
+  //                             for (var s in selectedLocalFolders) {
+  //                               LocalFavoritesManager().moveFavorite(
+  //                                   favPage.folder as String,
+  //                                   s,
+  //                                   c.id,
+  //                                   (c as FavoriteItem).type);
+  //                             }
+  //                           }
+  //                         } else {
+  //                           for (var c in selectedAnimes.keys) {
+  //                             for (var s in selectedLocalFolders) {
+  //                               LocalFavoritesManager().addAnime(
+  //                                 s,
+  //                                 FavoriteItem(
+  //                                   id: c.id,
+  //                                   name: c.title,
+  //                                   coverPath: c.cover,
+  //                                   author: c.subtitle ?? '',
+  //                                   type: AnimeType((c.sourceKey == 'local'
+  //                                       ? 0
+  //                                       : c.sourceKey.hashCode)),
+  //                                   tags: c.tags ?? [],
+  //                                 ),
+  //                               );
+  //                             }
+  //                           }
+  //                         }
+  //                         App.rootContext.pop();
+  //                         updateAnimes();
+  //                         _cancel();
+  //                       },
+  //                       child: Text(option == 'move' ? "Move".tl : "Add".tl),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
 
   void _checkExitSelectMode() {
     if (selectedAnimes.isEmpty) {

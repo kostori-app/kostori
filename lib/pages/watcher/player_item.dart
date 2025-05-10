@@ -1,27 +1,17 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
-import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
-import 'package:kostori/pages/watcher/watcher.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:kostori/utils/bean/appbar/drag_to_move_bar.dart' as dtb;
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
 

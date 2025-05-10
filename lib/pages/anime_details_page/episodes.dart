@@ -54,25 +54,25 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                       padding: WidgetStateProperty.all(EdgeInsets.zero),
                     ),
                     onPressed: () {
-                      SmartDialog.show(
-                          useAnimation: false,
+                      showDialog(
+                          context: context,
                           builder: (context) {
                             return AlertDialog(
                               title: const Text('播放列表'),
                               content: StatefulBuilder(builder:
                                   (BuildContext context,
-                                  StateSetter innerSetState) {
+                                      StateSetter innerSetState) {
                                 return Wrap(
                                   spacing: 8,
                                   runSpacing: 2,
                                   children: [
                                     for (int i = 0;
-                                    i < state.anime.episode!.keys.length;
-                                    i++) ...<Widget>[
+                                        i < state.anime.episode!.keys.length;
+                                        i++) ...<Widget>[
                                       if (i == playList) ...<Widget>[
                                         FilledButton(
                                           onPressed: () {
-                                            SmartDialog.dismiss();
+                                            Navigator.of(context).pop();
                                             setState(() {
                                               playList = i;
                                             });
@@ -83,7 +83,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                                       ] else ...[
                                         FilledButton.tonal(
                                           onPressed: () {
-                                            SmartDialog.dismiss();
+                                            Navigator.of(context).pop();
                                             setState(() {
                                               playList = i;
                                             });
@@ -129,7 +129,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
           key: ValueKey(playList),
           delegate: SliverChildBuilderDelegate(
             childCount: currentLength, // 使用更新后的 length
-                (context, i) {
+            (context, i) {
               if (i >= currentEps.length) {
                 return Container(); // 防止越界
               }
@@ -141,7 +141,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
               var key = currentEps.keys.elementAt(i); // 获取集数名称
               var value = currentEps[key]!; // 获取集数内容
               bool visited =
-              (state.history?.watchEpisode ?? const {}).contains(i + 1);
+                  (state.history?.watchEpisode ?? const {}).contains(i + 1);
 
               return Padding(
                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
@@ -15,6 +17,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mobx/mobx.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
+
+import '../../utils/io.dart';
 
 part 'player_controller.g.dart';
 
@@ -67,6 +71,9 @@ abstract class _PlayerController with Store {
 
   int currentRoad = 0;
 
+  // 视频地址
+  String videoUrl = '';
+
   @observable
   bool showTabBody = false;
 
@@ -108,6 +115,8 @@ abstract class _PlayerController with Store {
   _PlayerController();
 
   Timer? playerTimer;
+
+  OverlayEntry? _overlayEntry;
 
   Timer getPlayerTimer() {
     return Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -155,6 +164,10 @@ abstract class _PlayerController with Store {
     currentSetName = WatcherState.currentState!.widget.anime.episode!.values
         .elementAt(currentRoad)
         .values
+        .elementAt(newEpisode - 1);
+    videoUrl = WatcherState.currentState!.widget.anime.episode!.values
+        .elementAt(currentRoad)
+        .keys
         .elementAt(newEpisode - 1);
   }
 
@@ -332,6 +345,65 @@ abstract class _PlayerController with Store {
   Future play() async {
     await player.play();
     playing = true;
+  }
+
+  void showScreenshotPopup(BuildContext context, String image, String name) {
+    _overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        right: isFullScreen ? 60 : 60, // 水平偏移调整
+        top: isFullScreen ? 70 : 90, // 在按钮下方显示
+        child: Material(
+          elevation: 8,
+          color: Colors.black.toOpacity(0.5),
+          borderRadius: BorderRadius.circular(8),
+          child: InkWell(
+            onTap: () async {
+              Log.addLog(LogLevel.info, 'image图片路径', image);
+              final file = File(image);
+              Uint8List data = await file.readAsBytes();
+              Share.shareFile(data: data, filename: name, mime: 'image/jpeg');
+            },
+            child: Container(
+              width: 160,
+              height: 90,
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                // color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                // border: Border.all(color: Colors.grey),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                      child: Stack(children: [
+                    Positioned.fill(
+                      child: Image.file(
+                        File(image),
+                        // width: 160,
+                        // height: 90,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Text('点击分享', style: TextStyle(fontSize: 12)),
+                    )
+                  ])),
+                  SizedBox(height: 4),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_overlayEntry!);
+
+    if (context.mounted) {
+      Timer(Duration(seconds: 3), () => _overlayEntry?.remove());
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kostori/pages/bangumi/staff_item.dart';
+import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 
 class StaffCard extends StatelessWidget {
   const StaffCard({

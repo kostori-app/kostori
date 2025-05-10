@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_saf/flutter_saf.dart';
-import 'package:kostori/pages/bangumi/bangumi.dart';
+import 'package:kostori/network/bangumi.dart';
 import 'package:rhttp/rhttp.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/app_links.dart';
-import 'package:kostori/utils/tag_translation.dart';
 import 'package:kostori/utils/translations.dart';
 import 'foundation/anime_source/anime_source.dart';
 import 'foundation/app.dart';
@@ -39,7 +38,6 @@ Future<void> init() async {
     App.initComponents(),
     SAFTaskWorker().init().wait(),
     AppTranslation.init().wait(),
-    TagsTranslation.readData().wait(),
     JsEngine().init().wait(),
     AnimeSourceManager().init().wait(),
   ];

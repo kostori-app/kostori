@@ -1,25 +1,29 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/pages/bangumi/comment_item.dart';
-import 'package:kostori/pages/bangumi/comments_card.dart';
-import 'package:kostori/pages/bangumi/staff_card.dart';
-import 'package:kostori/pages/bangumi/staff_item.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
+import 'package:kostori/components/bean/card/comments_card.dart';
+import 'package:kostori/components/bean/card/staff_card.dart';
+import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import 'bangumi.dart';
-import 'character_card.dart';
-import 'character_item.dart';
-import 'episode_comments_sheet.dart';
-import 'episode_item.dart';
-import 'error_widget.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/components/bean/card/character_card.dart';
+import 'package:kostori/foundation/bangumi/character/character_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_comments_sheet.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/components/error_widget.dart';
+
+import 'info_controller.dart';
 
 class BottomInfo extends StatefulWidget {
   const BottomInfo({
@@ -33,9 +37,12 @@ class BottomInfo extends StatefulWidget {
   State<BottomInfo> createState() => BottomInfoState();
 }
 
-class BottomInfoState extends State<BottomInfo> {
+class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
+  late TabController infoTabController;
+  final InfoController infoController = InfoController();
+
   static BottomInfoState? currentState; // 静态变量
-  late ScrollController scrollController;
+  // late ScrollController scrollController;
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   bool commentsIsLoading = false;
@@ -52,37 +59,45 @@ class BottomInfoState extends State<BottomInfo> {
 
   final maxWidth = 950.0;
 
-  var bangumiId;
+  int? bangumiId;
 
   @override
   void initState() {
+    super.initState();
     currentState = this;
     bangumiId = widget.bangumiId;
-    super.initState();
-    if (commentsList.isEmpty) {
-      loadMoreComments();
-    }
-    if (characterList.isEmpty) {
-      loadCharacters();
-    }
-    if (staffList.isEmpty) {
-      loadStaff();
-    }
-    scrollController = ScrollController();
-    scrollController.addListener(scrollListener);
+    infoTabController = TabController(length: 5, vsync: this);
+    infoTabController.addListener(() {
+      int index = infoTabController.index;
+      if (index == 1 &&
+          infoController.commentsList.isEmpty &&
+          !commentsIsLoading) {
+        loadMoreComments();
+      }
+      if (index == 3 &&
+          infoController.characterList.isEmpty &&
+          !charactersIsLoading) {
+        loadCharacters();
+      }
+      if (index == 4 && infoController.staffList.isEmpty && !staffIsLoading) {
+        loadStaff();
+      }
+    });
+    // scrollController = ScrollController();
+    // scrollController.addListener(scrollListener);
   }
 
-  void scrollListener() {
-    if (scrollController.position.pixels >=
-            scrollController.position.maxScrollExtent - 200 &&
-        !commentsIsLoading &&
-        mounted) {
-      setState(() {
-        commentsIsLoading = true;
-      });
-      loadMoreComments(offset: commentsList.length);
-    }
-  }
+  // void scrollListener() {
+  //   if (scrollController.position.pixels >=
+  //           scrollController.position.maxScrollExtent - 200 &&
+  //       !commentsIsLoading &&
+  //       mounted) {
+  //     setState(() {
+  //       commentsIsLoading = true;
+  //     });
+  //     loadMoreComments(offset: commentsList.length);
+  //   }
+  // }
 
   void upDate(int) {
     setState(() {
@@ -95,7 +110,11 @@ class BottomInfoState extends State<BottomInfo> {
 
   @override
   void dispose() {
-    scrollController.dispose();
+    // scrollController.dispose();
+    infoController.characterList.clear();
+    infoController.commentsList.clear();
+    infoController.staffList.clear();
+    infoTabController.dispose();
     super.dispose();
   }
 
@@ -186,7 +205,7 @@ class BottomInfoState extends State<BottomInfo> {
 
   Future<void> loadComments(int episode) async {
     commentsQueryTimeout = false;
-    await queryBangumiEpisodeCommentsByID(bangumiId, episode).then((_) {
+    await queryBangumiEpisodeCommentsByID(bangumiId!, episode).then((_) {
       if (episodeCommentsList.isEmpty && mounted) {
         setState(() {
           commentsQueryTimeout = true;
@@ -202,7 +221,7 @@ class BottomInfoState extends State<BottomInfo> {
         staffIsLoading = true;
         staffQueryTimeout = false;
       });
-      queryBangumiStaffsByID(bangumiId).then((_) {
+      queryBangumiStaffsByID(bangumiId!).then((_) {
         if (staffList.isEmpty && mounted) {
           setState(() {
             staffIsLoading = false;
@@ -236,7 +255,7 @@ class BottomInfoState extends State<BottomInfo> {
     return FutureBuilder<List<dynamic>>(
       future: Future.wait([
         BangumiManager().bindFind(bangumiId as int), // Future 1
-        Bangumi.getBangumiEpisodeAllByID(bangumiId), // Future 2, // Future 3
+        Bangumi.getBangumiEpisodeAllByID(bangumiId!), // Future 2, // Future 3
       ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -299,7 +318,8 @@ class BottomInfoState extends State<BottomInfo> {
                                 height: height,
                                 fit: BoxFit.cover,
                                 placeholder: (context, url) =>
-                                    CircularProgressIndicator(),
+                                    MiscComponents.placeholder(
+                                        context, width, height),
                               ),
                             ),
                             // SizedBox(width: 12.0),
@@ -790,8 +810,9 @@ class BottomInfoState extends State<BottomInfo> {
                 ),
               ),
             ),
-            Expanded(
-              child: TabBarView(
+            Expanded(child: Observer(builder: (context) {
+              return TabBarView(
+                controller: infoTabController,
                 children: [
                   infoBody,
                   commentsListBody,
@@ -804,8 +825,8 @@ class BottomInfoState extends State<BottomInfo> {
                   charactersListBody,
                   staffListBody
                 ],
-              ),
-            ),
+              );
+            })),
           ],
         ),
       ),
