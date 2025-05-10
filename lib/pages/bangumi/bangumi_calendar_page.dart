@@ -17,6 +17,7 @@ import 'package:kostori/utils/utils.dart';
 import '../../network/bangumi.dart';
 import '../../foundation/bangumi/bangumi_item.dart';
 import '../../foundation/bangumi/episode/episode_item.dart';
+import 'bangumi_info_page.dart';
 
 class BangumiCalendarPage extends StatefulWidget {
   const BangumiCalendarPage({super.key});
@@ -429,8 +430,17 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                   // 5. 边界检查
                   if (adjustedIndex >= bangumiList.length) return null;
 
-                  return bangumiCalendarCard(
-                      context, bangumiList[adjustedIndex]);
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onTap: () async {
+                      App.mainNavigatorKey?.currentContext
+                          ?.to(() => BangumiInfoPage(
+                                bangumiItem: bangumiList[adjustedIndex],
+                              ));
+                    },
+                    child: bangumiCalendarCard(
+                        context, bangumiList[adjustedIndex]),
+                  );
                 },
                 childCount: bangumiList.isEmpty
                     ? 0
@@ -541,9 +551,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                     context, imageWidth, imageHeight),
                           ),
                         ),
-
                         const SizedBox(width: 16),
-
                         // 信息部分
                         Expanded(
                           child: Column(

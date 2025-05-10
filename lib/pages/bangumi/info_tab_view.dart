@@ -169,11 +169,11 @@ class _InfoTabViewState extends State<InfoTabView>
                   }).toList(),
                 ),
                 const SizedBox(height: 16),
-                if (MediaQuery.sizeOf(context).width <= 950 &&
+                if (MediaQuery.sizeOf(context).width <= 1200 &&
                     !widget.isLoading)
                   Text('评分统计图', style: TextStyle(fontSize: 18)),
                 const SizedBox(height: 8),
-                if (MediaQuery.sizeOf(context).width <= 950 &&
+                if (MediaQuery.sizeOf(context).width <= 1200 &&
                     !widget.isLoading &&
                     !count)
                   LineChatPage(

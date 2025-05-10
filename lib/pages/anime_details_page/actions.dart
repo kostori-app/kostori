@@ -123,6 +123,7 @@ abstract mixin class _AnimePageActions {
             Expanded(
                 child: BottomInfo(
               bangumiId: bangumiId,
+              infoController: infoController,
             )),
           ],
         );
@@ -141,7 +142,7 @@ abstract mixin class _AnimePageActions {
           icon: Gif(
             image: AssetImage('assets/warning.gif'),
             height: 64,
-            color: Theme.of(context).colorScheme.primary,
+            // color: Theme.of(context).colorScheme.primary,
             autostart: Autostart.once,
           ),
           message: '检索失败',
@@ -153,7 +154,7 @@ abstract mixin class _AnimePageActions {
       isScrollControlled: true,
       enableDrag: false,
       constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
         maxWidth: (App.isDesktop)
             ? MediaQuery.of(context).size.width * 9 / 16 // 设置最大宽度
             : MediaQuery.of(context).size.width,
@@ -164,6 +165,8 @@ abstract mixin class _AnimePageActions {
         // 使用 StatefulBuilder 实现搜索框和动态搜索功能
         return StatefulBuilder(
           builder: (context, setState) {
+            String searchQuery = anime.title;
+
             // 更新搜索结果的函数
             Future<void> fetchSearchResults(String query) async {
               if (query.isEmpty) {
@@ -192,213 +195,216 @@ abstract mixin class _AnimePageActions {
               setState(() {});
             }
 
-            return SingleChildScrollView(
-              clipBehavior: Clip.antiAlias,
-              child: Container(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 搜索框部分
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: TextField(
-                        decoration: InputDecoration(
-                          labelText: '搜索',
-                          hintText: '请输入关键字进行搜索',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12.0),
-                          ),
-                        ),
-                        onSubmitted: (query) {
-                          fetchSearchResults(query); // 用户提交时重新搜索
-                        },
+            return Scaffold(
+              body: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  // 固定在顶部的搜索框
+                  SliverAppBar(
+                    pinned: true,
+                    floating: true,
+                    snap: true,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: ClipRect(
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                            color: context.colorScheme.surface.toOpacity(0.22)),
                       ),
                     ),
-                    // 搜索结果列表
-                    if (res.isNotEmpty)
-                      ...res.map((item) {
-                        return InkWell(
-                          onTap: () {
-                            Navigator.pop(context, item); // 返回选中的项
-                          },
-                          splashColor: Theme.of(context)
-                              .colorScheme
-                              .secondaryContainer
-                              .toOpacity(0.72),
-                          highlightColor: Theme.of(context)
-                              .colorScheme
-                              .secondaryContainer
-                              .toOpacity(0.72),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                vertical: 8.0, horizontal: 12.0),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                double height = constraints.maxWidth *
-                                    (App.isDesktop
-                                        ? (constraints.maxWidth > 1024
-                                            ? 6 / 16
-                                            : 10 / 16)
-                                        : 10 / 16);
-                                double width = height * 0.72;
-
-                                return SizedBox(
-                                  width: constraints.maxWidth,
-                                  height: height,
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.network(
-                                          item.images['large']!,
-                                          width: width,
-                                          height: height,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      SizedBox(width: 12.0),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Bangumi ID: ${item.id}',
-                                              style: TextStyle(
-                                                fontSize: 18.0,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            Text(
-                                              item.nameCn,
-                                              style: TextStyle(
-                                                fontSize: 18.0,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            Text(
-                                              item.name,
-                                              style: TextStyle(
-                                                fontSize: 14.0,
-                                              ),
-                                            ),
-                                            Text(
-                                              '放送日期: ${item.airDate}',
-                                            ),
-                                            const SizedBox(
-                                              height: 10,
-                                            ),
-                                            Text(
-                                              item.summary,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            const Spacer(),
-                                            Align(
-                                              alignment: Alignment.bottomRight,
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.center,
-                                                children: [
-                                                  Text(
-                                                    '${item.score}',
-                                                    style: TextStyle(
-                                                      fontSize: 32.0,
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 5,
-                                                  ),
-                                                  Container(
-                                                    padding: EdgeInsets.all(
-                                                        2.0), // 可选，设置内边距
-                                                    decoration: BoxDecoration(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8), // 设置圆角半径
-                                                      border: Border.all(
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .secondaryContainer
-                                                            .toOpacity(0.72),
-                                                        width: 2.0, // 设置边框宽度
-                                                      ),
-                                                    ),
-                                                    child: Text(
-                                                      Utils.getRatingLabel(
-                                                          item.score),
-                                                    ),
-                                                  ),
-                                                  SizedBox(
-                                                    width: 4,
-                                                  ),
-                                                  Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .end, // 右对齐
-                                                    children: [
-                                                      RatingBarIndicator(
-                                                        itemCount: 5,
-                                                        rating: item.score
-                                                                .toDouble() /
-                                                            2,
-                                                        itemBuilder:
-                                                            (context, index) =>
-                                                                const Icon(
-                                                          Icons.star_rounded,
-                                                        ),
-                                                        itemSize: 20.0,
-                                                      ),
-                                                      Text(
-                                                        '${item.total} 人评 | #${item.rank}',
-                                                        style: TextStyle(
-                                                            fontSize: 12),
-                                                      )
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        );
-                      })
-                    else
-                      Center(
-                        child: Text(
-                          '暂无搜索结果',
-                          style: TextStyle(fontSize: 16.0, color: Colors.grey),
+                    backgroundColor: Colors.transparent,
+                    title: TextField(
+                      decoration: InputDecoration(
+                        labelText: anime.title,
+                        hintText: '请输入关键字进行搜索',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
                         ),
+                        filled: true,
+                        fillColor: Theme.of(context).cardColor,
                       ),
-                  ],
-                ),
+                      onSubmitted: fetchSearchResults,
+                      onChanged: (value) => searchQuery = value,
+                    ),
+                  ),
+                ],
+                body: _buildResultsList(context, res, fetchSearchResults),
               ),
             );
           },
         );
       },
     );
-
     // 如果用户选择了某个项，执行相关操作
     if (selectedItem != null) {
       await handleSelection(context, selectedItem);
     }
+  }
+
+  Widget _buildResultsList(BuildContext context, List<BangumiItem> items,
+      Function(String) onSearch) {
+    if (items.isEmpty) {
+      return Center(child: Text('暂无搜索结果'));
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.only(top: 16), // 给顶部留出空间
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return InkWell(
+          onTap: () {
+            Navigator.pop(context, item); // 返回选中的项
+          },
+          splashColor:
+              Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72),
+          highlightColor:
+              Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                double height = constraints.maxWidth *
+                    (App.isDesktop
+                        ? (constraints.maxWidth > 1024 ? 6 / 16 : 10 / 16)
+                        : 10 / 16);
+                double width = height * 0.72;
+
+                return SizedBox(
+                  width: constraints.maxWidth,
+                  height: height,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: item.images['large']!,
+                          width: width,
+                          height: height,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              MiscComponents.placeholder(
+                                  context, width, height),
+                          errorListener: (e) {
+                            Log.addLog(LogLevel.error, 'image', e.toString());
+                          },
+                          errorWidget: (BuildContext context, String url,
+                                  Object error) =>
+                              MiscComponents.placeholder(
+                                  context, width, height),
+                        ),
+                      ),
+                      SizedBox(width: 12.0),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Bangumi ID: ${item.id}',
+                              style: TextStyle(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              item.nameCn,
+                              style: TextStyle(
+                                fontSize: 18.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              item.name,
+                              style: TextStyle(
+                                fontSize: 14.0,
+                              ),
+                            ),
+                            Text(
+                              '放送日期: ${item.airDate}',
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            Text(
+                              item.summary,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                              ),
+                            ),
+                            const Spacer(),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '${item.score}',
+                                    style: TextStyle(
+                                      fontSize: 32.0,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 5,
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                                    decoration: BoxDecoration(
+                                      borderRadius:
+                                          BorderRadius.circular(8), // 设置圆角半径
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondaryContainer
+                                            .toOpacity(0.72),
+                                        width: 2.0, // 设置边框宽度
+                                      ),
+                                    ),
+                                    child: Text(
+                                      Utils.getRatingLabel(item.score),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 4,
+                                  ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.end, // 右对齐
+                                    children: [
+                                      RatingBarIndicator(
+                                        itemCount: 5,
+                                        rating: item.score.toDouble() / 2,
+                                        itemBuilder: (context, index) =>
+                                            const Icon(
+                                          Icons.star_rounded,
+                                        ),
+                                        itemSize: 20.0,
+                                      ),
+                                      Text(
+                                        '${item.total} 人评 | #${item.rank}',
+                                        style: TextStyle(fontSize: 12),
+                                      )
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // 处理选择后的操作
@@ -422,6 +428,9 @@ abstract mixin class _AnimePageActions {
                     HistoryManager().addHistoryAsync(history!);
                     WatcherState.currentState!.bangumiId = item.id;
                     infoController.bangumiId = item.id;
+                    BottomInfoState.currentState?.queryBangumiInfoByID(item.id);
+                    BottomInfoState.currentState
+                        ?.queryBangumiEpisodeByID(item.id);
                   }
                 } catch (e) {
                   Log.addLog(LogLevel.error, "绑定bangumiId", "$e");
