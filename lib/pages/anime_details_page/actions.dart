@@ -1,6 +1,8 @@
 part of 'anime_page.dart';
 
 abstract mixin class _AnimePageActions {
+  final InfoController infoController = InfoController();
+
   void update();
 
   AnimeDetails get anime;
@@ -419,7 +421,7 @@ abstract mixin class _AnimePageActions {
                     history!.bangumiId = item.id;
                     HistoryManager().addHistoryAsync(history!);
                     WatcherState.currentState!.bangumiId = item.id;
-                    BottomInfoState.currentState?.upDate(item.id);
+                    infoController.bangumiId = item.id;
                   }
                 } catch (e) {
                   Log.addLog(LogLevel.error, "绑定bangumiId", "$e");

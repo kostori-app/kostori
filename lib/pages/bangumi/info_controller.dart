@@ -16,8 +16,10 @@ class InfoController = _InfoController with _$InfoController;
 abstract class _InfoController with Store {
   late BangumiItem bangumiItem;
   late List<EpisodeInfo> allEpisodes;
-
   late int bangumiId;
+  late int episode;
+
+  EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   final List<String> tabs = <String>['概览', '吐槽', '角色', '制作'];
 
@@ -86,6 +88,14 @@ abstract class _InfoController with Store {
     staffList.clear();
     await Bangumi.getBangumiStaffByID(id).then((value) {
       staffList.addAll(value.data);
+    });
+  }
+
+  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode) async {
+    episodeCommentsList.clear();
+    episodeInfo = await Bangumi.getBangumiEpisodeByID(id, episode);
+    await Bangumi.getBangumiCommentsByEpisodeID(episodeInfo.id).then((value) {
+      episodeCommentsList.addAll(value.commentList);
     });
   }
 }

@@ -34,6 +34,8 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import '../bangumi/info_controller.dart';
+
 part 'actions.dart';
 
 part 'favorite.dart';

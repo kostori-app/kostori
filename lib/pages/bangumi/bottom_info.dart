@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -5,11 +7,8 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
-import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
@@ -18,12 +17,20 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
-import 'package:kostori/foundation/bangumi/character/character_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_comments_sheet.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/components/error_widget.dart';
 
+import '../../foundation/log.dart';
 import 'info_controller.dart';
+
+class _StatItem {
+  final String key;
+  final String label;
+  final Color? color;
+
+  _StatItem(this.key, this.label, this.color);
+}
 
 class BottomInfo extends StatefulWidget {
   const BottomInfo({
@@ -34,15 +41,13 @@ class BottomInfo extends StatefulWidget {
   final int? bangumiId;
 
   @override
-  State<BottomInfo> createState() => BottomInfoState();
+  State<BottomInfo> createState() => _BottomInfoState();
 }
 
-class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
+class _BottomInfoState extends State<BottomInfo>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController infoTabController;
   final InfoController infoController = InfoController();
-
-  static BottomInfoState? currentState; // 静态变量
-  // late ScrollController scrollController;
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   bool commentsIsLoading = false;
@@ -52,20 +57,19 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
   bool staffIsLoading = false;
   bool staffQueryTimeout = false;
 
-  List<CommentItem> commentsList = []; // 评论列表
-  List<CharacterItem> characterList = [];
-  List<StaffFullItem> staffList = [];
-  List<EpisodeCommentItem> episodeCommentsList = [];
-
   final maxWidth = 950.0;
 
-  int? bangumiId;
+  int? get bangumiId => widget.bangumiId;
 
   @override
   void initState() {
     super.initState();
-    currentState = this;
-    bangumiId = widget.bangumiId;
+    infoController.bangumiId = widget.bangumiId!;
+    queryBangumiInfoByID(infoController.bangumiId);
+    queryBangumiEpisodeByID(infoController.bangumiId);
+    infoController.characterList.clear();
+    infoController.commentsList.clear();
+    infoController.staffList.clear();
     infoTabController = TabController(length: 5, vsync: this);
     infoTabController.addListener(() {
       int index = infoTabController.index;
@@ -74,6 +78,9 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
           !commentsIsLoading) {
         loadMoreComments();
       }
+      // if (index == 2) {
+      //   loadComments(infoController.episode);
+      // }
       if (index == 3 &&
           infoController.characterList.isEmpty &&
           !charactersIsLoading) {
@@ -83,34 +90,10 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
         loadStaff();
       }
     });
-    // scrollController = ScrollController();
-    // scrollController.addListener(scrollListener);
-  }
-
-  // void scrollListener() {
-  //   if (scrollController.position.pixels >=
-  //           scrollController.position.maxScrollExtent - 200 &&
-  //       !commentsIsLoading &&
-  //       mounted) {
-  //     setState(() {
-  //       commentsIsLoading = true;
-  //     });
-  //     loadMoreComments(offset: commentsList.length);
-  //   }
-  // }
-
-  void upDate(int) {
-    setState(() {
-      bangumiId = int;
-      loadMoreComments();
-      loadCharacters();
-      loadStaff();
-    });
   }
 
   @override
   void dispose() {
-    // scrollController.dispose();
     infoController.characterList.clear();
     infoController.commentsList.clear();
     infoController.staffList.clear();
@@ -118,95 +101,80 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Future<void> queryBangumiCommentsByID(int id, {int offset = 0}) async {
-    if (offset == 0) {
-      commentsList.clear();
-    }
-    await Bangumi.getBangumiCommentsByID(id, offset: offset).then((value) {
-      commentsList.addAll(value.commentList);
-    });
-  }
-
-  Future<void> queryBangumiCharactersByID(int id) async {
-    characterList.clear();
-    await Bangumi.getCharatersByID(id).then((value) {
-      characterList.addAll(value.characterList);
-    });
-    Map<String, int> relationValue = {
-      '主角': 1,
-      '配角': 2,
-      '客串': 3,
-      '未知': 4,
-    };
+  Future<void> queryBangumiInfoByID(int id) async {
     try {
-      characterList.sort((a, b) =>
-          relationValue[a.relation]!.compareTo(relationValue[b.relation]!));
-    } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      await infoController.queryBangumiInfoByID(id);
+      setState(() {});
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());
     }
   }
 
-  Future<void> queryBangumiStaffsByID(int id) async {
-    staffList.clear();
-    await Bangumi.getBangumiStaffByID(id).then((value) {
-      staffList.addAll(value.data);
-    });
+  Future<void> queryBangumiEpisodeByID(int id) async {
+    try {
+      await infoController.queryBangumiEpisodeByID(id);
+      setState(() {});
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
+    }
   }
 
   Future<void> queryBangumiEpisodeCommentsByID(int id, int episode) async {
-    episodeCommentsList.clear();
-    episodeInfo = await Bangumi.getBangumiEpisodeByID(id, episode);
+    await infoController.queryBangumiEpisodeCommentsByID(id, episode);
     setState(() {});
-    await Bangumi.getBangumiCommentsByEpisodeID(episodeInfo.id).then((value) {
-      episodeCommentsList.addAll(value.commentList);
-    });
   }
 
   Future<void> loadCharacters() async {
-    if (bangumiId != null) {
-      queryBangumiCharactersByID(bangumiId as int).then((_) {
-        if (characterList.isEmpty && mounted) {
-          setState(() {
-            charactersQueryTimeout = true;
-          });
-        }
-        if (characterList.isNotEmpty && mounted) {
-          setState(() {
-            charactersIsLoading = false;
-          });
-        }
-      });
-    } else {
-      return;
-    }
+    if (charactersIsLoading) return;
+    setState(() {
+      charactersIsLoading = true;
+      charactersQueryTimeout = false;
+    });
+    infoController
+        .queryBangumiCharactersByID(infoController.bangumiId)
+        .then((_) {
+      if (infoController.characterList.isEmpty && mounted) {
+        setState(() {
+          charactersIsLoading = false;
+          charactersQueryTimeout = true;
+        });
+      }
+      if (infoController.characterList.isNotEmpty && mounted) {
+        setState(() {
+          charactersIsLoading = false;
+        });
+      }
+    });
   }
 
   Future<void> loadMoreComments({int offset = 0}) async {
-    if (bangumiId != null) {
-      // 调用异步方法并使用 .then() 来处理结果
-      queryBangumiCommentsByID(bangumiId as int, offset: offset).then((_) {
-        // 在获取评论数据后处理
-        if (commentsList.isEmpty && mounted) {
-          setState(() {
-            commentsQueryTimeout = true;
-          });
-        }
-        if (commentsList.isNotEmpty && mounted) {
-          setState(() {
-            commentsIsLoading = false;
-          });
-        }
-      });
-    } else {
-      // 如果没有有效的 bangumiId，直接返回
-      return;
-    }
+    if (commentsIsLoading) return;
+    setState(() {
+      commentsIsLoading = true;
+      commentsQueryTimeout = false;
+    });
+    infoController
+        .queryBangumiCommentsByID(infoController.bangumiId, offset: offset)
+        .then((_) {
+      if (infoController.commentsList.isEmpty && mounted) {
+        setState(() {
+          commentsIsLoading = false;
+          commentsQueryTimeout = true;
+        });
+      }
+      if (infoController.commentsList.isNotEmpty && mounted) {
+        setState(() {
+          commentsIsLoading = false;
+        });
+      }
+    });
   }
 
   Future<void> loadComments(int episode) async {
     commentsQueryTimeout = false;
-    await queryBangumiEpisodeCommentsByID(bangumiId!, episode).then((_) {
-      if (episodeCommentsList.isEmpty && mounted) {
+    await queryBangumiEpisodeCommentsByID(infoController.bangumiId, episode)
+        .then((_) {
+      if (infoController.episodeCommentsList.isEmpty && mounted) {
         setState(() {
           commentsQueryTimeout = true;
         });
@@ -215,51 +183,77 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
   }
 
   Future<void> loadStaff() async {
-    if (bangumiId != null) {
-      if (staffIsLoading) return;
-      setState(() {
-        staffIsLoading = true;
-        staffQueryTimeout = false;
-      });
-      queryBangumiStaffsByID(bangumiId!).then((_) {
-        if (staffList.isEmpty && mounted) {
-          setState(() {
-            staffIsLoading = false;
-            staffQueryTimeout = true;
-          });
-        }
-        if (staffList.isNotEmpty && mounted) {
-          setState(() {
-            staffIsLoading = false;
-          });
-        }
-      });
-    } else {
-      // 如果没有有效的 bangumiId，直接返回
-      return;
-    }
+    if (staffIsLoading) return;
+    setState(() {
+      staffIsLoading = true;
+      staffQueryTimeout = false;
+    });
+    infoController.queryBangumiStaffsByID(infoController.bangumiId).then((_) {
+      if (infoController.staffList.isEmpty && mounted) {
+        setState(() {
+          staffIsLoading = false;
+          staffQueryTimeout = true;
+        });
+      }
+      if (infoController.staffList.isNotEmpty && mounted) {
+        setState(() {
+          staffIsLoading = false;
+        });
+      }
+    });
+  }
+
+  Widget _buildStatsRow(BuildContext context) {
+    final collection = infoController.bangumiItem.collection!; // 提前解构，避免重复访问
+    final total =
+        collection.values.fold<int>(0, (sum, val) => sum + (val ?? 0)); // 计算总数
+
+    // 定义统计数据项（类型 + 显示文本 + 颜色）
+    final stats = [
+      _StatItem('doing', '在看', Theme.of(context).colorScheme.primary),
+      _StatItem('collect', '看过', Theme.of(context).colorScheme.error),
+      _StatItem('wish', '想看', Colors.blueAccent),
+      _StatItem('on_hold', '搁置', null), // 默认文本颜色
+      _StatItem('dropped', '抛弃', Colors.grey),
+    ];
+
+    return Row(
+      children: [
+        ...stats.expand((stat) => [
+              Text('${collection[stat.key]} ${stat.label}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: stat.color,
+                  )),
+              const Text(' / '),
+            ]),
+        Text('$total 总计数', style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget get infoBodyLoading {
+    return LayoutBuilder(builder: (context, constraints) {
+      double height = constraints.maxHeight;
+      double width = constraints.maxWidth;
+      return MiscComponents.placeholder(context, width, height);
+    });
   }
 
   Widget get infoBody {
     if (bangumiId == null) {
-      return SelectionArea(
-        child: Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Center(
-            child: InkWell(),
-          ),
-        ),
-      );
+      return Center(child: infoBodyLoading);
     }
 
     return FutureBuilder<List<dynamic>>(
       future: Future.wait([
-        BangumiManager().bindFind(bangumiId as int), // Future 1
-        Bangumi.getBangumiEpisodeAllByID(bangumiId!), // Future 2, // Future 3
+        BangumiManager().bindFind(infoController.bangumiId), // Future 1
+        Bangumi.getBangumiEpisodeAllByID(
+            infoController.bangumiId), // Future 2, // Future 3
       ]),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: infoBodyLoading);
         } else if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData) {
@@ -268,6 +262,8 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
 
         final bangumiItem = snapshot.data?[0];
         final allEpisodes = snapshot.data?[1] as List<EpisodeInfo>;
+
+        infoController.bangumiItem = bangumiItem;
 
         // 获取当前周的剧集
         final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
@@ -442,37 +438,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
                     height: 20,
                   ),
                   Align(
-                    child: Row(
-                      children: [
-                        Text('${bangumiItem?.collection?['doing']} 在看',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context).colorScheme.primary,
-                            )),
-                        Text(' / '),
-                        Text('${bangumiItem?.collection?['collect']} 看过',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context).colorScheme.error)),
-                        Text(' / '),
-                        Text('${bangumiItem?.collection?['wish']} 想看',
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.blueAccent)),
-                        Text(' / '),
-                        Text('${bangumiItem?.collection?['on_hold']} 搁置',
-                            style: TextStyle(fontSize: 12)),
-                        Text(' / '),
-                        Text('${bangumiItem?.collection?['dropped']} 抛弃',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            )),
-                        Text(' / '),
-                        Text(
-                            '${bangumiItem?.collection!['doing']! + bangumiItem.collection!['collect']! + bangumiItem.collection!['wish']! + bangumiItem.collection!['on_hold']! + bangumiItem.collection!['dropped']!} 总计数',
-                            style: TextStyle(fontSize: 12)),
-                      ],
-                    ),
+                    child: _buildStatsRow(context),
                   ),
                   SizedBox(
                     height: 20,
@@ -545,7 +511,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
           onNotification: (scrollEnd) {
             final metrics = scrollEnd.metrics;
             if (metrics.pixels >= metrics.maxScrollExtent - 200) {
-              loadMoreComments(offset: commentsList.length);
+              loadMoreComments(offset: infoController.commentsList.length);
             }
             return true;
           },
@@ -555,12 +521,11 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
             ),
             key: PageStorageKey<String>('吐槽'),
             slivers: <Widget>[
-              // 已移除 SliverOverlapInjector
               SliverLayoutBuilder(builder: (context, _) {
-                if (commentsList.isNotEmpty) {
+                if (infoController.commentsList.isNotEmpty) {
                   return SliverList.separated(
                     addAutomaticKeepAlives: false,
-                    itemCount: commentsList.length,
+                    itemCount: infoController.commentsList.length,
                     itemBuilder: (context, index) {
                       return SafeArea(
                         top: false,
@@ -574,7 +539,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
                                   ? maxWidth
                                   : MediaQuery.sizeOf(context).width - 32,
                               child: CommentsCard(
-                                commentItem: commentsList[index],
+                                commentItem: infoController.commentsList[index],
                               ),
                             ),
                           ),
@@ -609,7 +574,8 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
-                            loadMoreComments(offset: commentsList.length);
+                            loadMoreComments(
+                                offset: infoController.commentsList.length);
                           },
                           text: '重试',
                         ),
@@ -655,9 +621,9 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
           key: PageStorageKey<String>('角色'),
           slivers: <Widget>[
             SliverLayoutBuilder(builder: (context, _) {
-              if (characterList.isNotEmpty) {
+              if (infoController.characterList.isNotEmpty) {
                 return SliverList.builder(
-                  itemCount: characterList.length,
+                  itemCount: infoController.characterList.length,
                   itemBuilder: (context, index) {
                     return Center(
                       child: Padding(
@@ -667,7 +633,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
                               ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
                           child: CharacterCard(
-                            characterItem: characterList[index],
+                            characterItem: infoController.characterList[index],
                           ),
                         ),
                       ),
@@ -727,9 +693,9 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
           key: PageStorageKey<String>('制作人员'),
           slivers: <Widget>[
             SliverLayoutBuilder(builder: (context, _) {
-              if (staffList.isNotEmpty) {
+              if (infoController.staffList.isNotEmpty) {
                 return SliverList.builder(
-                  itemCount: staffList.length,
+                  itemCount: infoController.staffList.length,
                   itemBuilder: (context, index) {
                     return Center(
                       child: Padding(
@@ -739,7 +705,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
                               ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
                           child: StaffCard(
-                            staffFullItem: staffList[index],
+                            staffFullItem: infoController.staffList[index],
                           ),
                         ),
                       ),
@@ -791,6 +757,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return DefaultTabController(
       length: 5,
       child: Scaffold(
@@ -800,6 +767,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
               preferredSize: Size.fromHeight(kToolbarHeight),
               child: Material(
                 child: TabBar(
+                  controller: infoTabController,
                   tabs: [
                     Tab(text: 'Details'.tl),
                     Tab(text: 'Comments'.tl),
@@ -817,7 +785,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
                   infoBody,
                   commentsListBody,
                   EpisodeCommentsSheet(
-                    episodeCommentsList: episodeCommentsList,
+                    episodeCommentsList: infoController.episodeCommentsList,
                     episodeInfo: episodeInfo,
                     loadComments: loadComments,
                     episode: WatcherState.currentState!.episode,
@@ -832,4 +800,7 @@ class BottomInfoState extends State<BottomInfo> with TickerProviderStateMixin {
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }

@@ -9,11 +9,10 @@ import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:kostori/components/misc_components.dart';
 
-// 辅助类：存储统计项数据
 class _StatItem {
-  final String key; // 如 'doing'
-  final String label; // 如 '在看'
-  final Color? color; // 文本颜色（可选）
+  final String key;
+  final String label;
+  final Color? color;
 
   _StatItem(this.key, this.label, this.color);
 }
