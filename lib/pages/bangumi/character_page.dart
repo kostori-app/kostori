@@ -6,12 +6,11 @@ import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/foundation/bangumi/character/character_comments_card.dart';
 import 'package:photo_view/photo_view.dart';
 
-import '../components/misc_components.dart';
-import '../foundation/bangumi/character/character_full_item.dart';
-import '../foundation/bangumi/comment/comment_item.dart';
-import '../components/error_widget.dart';
-import '../foundation/image_loader/cached_image.dart';
-import '../network/network_img_layer.dart';
+import '../../components/misc_components.dart';
+import '../../foundation/bangumi/character/character_full_item.dart';
+import '../../foundation/bangumi/comment/comment_item.dart';
+import '../../components/error_widget.dart';
+import '../../foundation/image_loader/cached_image.dart';
 
 class CharacterPage extends StatefulWidget {
   const CharacterPage({super.key, required this.characterID});
@@ -27,6 +26,7 @@ class _CharacterPageState extends State<CharacterPage> {
   bool loadingCharacter = true;
   List<CharacterCommentItem> commentsList = [];
   bool loadingComments = true;
+  bool commentsQueryTimeout = false;
 
   Future<void> loadCharacter() async {
     setState(() {
@@ -50,6 +50,11 @@ class _CharacterPageState extends State<CharacterPage> {
     await Bangumi.getCharacterCommentsByCharacterID(widget.characterID)
         .then((value) {
       commentsList = value.commentList;
+      if (commentsList.isEmpty && mounted) {
+        setState(() {
+          commentsQueryTimeout = true;
+        });
+      }
     });
     if (mounted) {
       setState(() {
@@ -253,86 +258,111 @@ class _CharacterPageState extends State<CharacterPage> {
   }
 
   Widget get characterCommentsBody {
-    return CustomScrollView(
-      scrollBehavior: const ScrollBehavior().copyWith(
-        // Scrollbars' movement is not linear so hide it.
-        scrollbars: false,
-        // Enable mouse drag to refresh
-        dragDevices: {
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.touch,
-        },
-      ),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
-          sliver: Builder(builder: (context) {
-            if (loadingComments) {
-              return SliverFillRemaining(
-                child: Center(
-                  child: MiscComponents.placeholder(context, 24, 24),
-                ),
-              );
-            }
-            if (commentsList.isEmpty) {
-              return SliverFillRemaining(
-                child: GeneralErrorWidget(
-                  errMsg: '什么都没有找到 (´;ω;`)',
-                  actions: [
-                    GeneralErrorButton(
-                      onPressed: () {
-                        loadComments();
-                      },
-                      text: '点击重试',
-                    ),
-                  ],
-                ),
-              );
-            }
-            return SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  // Fix scroll issue caused by height change of network images
-                  // by keeping loaded cards alive.
-                  return KeepAlive(
-                    keepAlive: true,
-                    child: IndexedSemantics(
-                      index: index,
-                      child: SelectionArea(
-                        child: CharacterCommentsCard(
-                          commentItem: commentsList[index],
+    return Builder(
+      builder: (BuildContext context) {
+        return CustomScrollView(
+          scrollBehavior: const ScrollBehavior().copyWith(
+            // Scrollbars' movement is not linear so hide it.
+            scrollbars: false,
+            // Enable mouse drag to refresh
+            dragDevices: {
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.touch,
+              PointerDeviceKind.trackpad
+            },
+          ),
+          key: PageStorageKey<String>('吐槽箱'),
+          slivers: [
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (commentsList.isNotEmpty) {
+                  return SliverList.separated(
+                    addAutomaticKeepAlives: false,
+                    itemCount: commentsList.length,
+                    itemBuilder: (context, index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: CharacterCommentsCard(
+                                commentItem: commentsList[index],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      );
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: Divider(
+                                thickness: 0.5,
+                                indent: 10,
+                                endIndent: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (commentsQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: '获取失败，请重试',
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            loadComments();
+                          },
+                          text: '重试',
+                        ),
+                      ],
                     ),
                   );
-                },
-                childCount: commentsList.length,
-                addAutomaticKeepAlives: false,
-                addRepaintBoundaries: false,
-                addSemanticIndexes: false,
-                separatorBuilder: (BuildContext context, int index) {
-                  return SafeArea(
-                    top: false,
-                    bottom: false,
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: Divider(
-                              thickness: 0.5, indent: 10, endIndent: 10),
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > 950
+                                ? 950
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: CharacterCommentsCard.bone(),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            );
-          }),
-        ),
-      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

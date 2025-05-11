@@ -91,8 +91,12 @@ abstract class _InfoController with Store {
     });
   }
 
-  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode) async {
-    episodeCommentsList.clear();
+  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode,
+      {int offset = 0}) async {
+    if (offset == 0) {
+      episodeCommentsList.clear();
+    }
+
     episodeInfo = await Bangumi.getBangumiEpisodeByID(id, episode);
     await Bangumi.getBangumiCommentsByEpisodeID(episodeInfo.id).then((value) {
       episodeCommentsList.addAll(value.commentList);

@@ -43,8 +43,6 @@ class _PlayerItemState extends State<PlayerItem>
   late AnimationController? animationController;
 
   Timer? hideTimer;
-
-  // Timer? playerTimer;
   Timer? mouseScrollerTimer;
   Timer? hideVolumeUITimer;
   Timer? timer;
@@ -52,6 +50,59 @@ class _PlayerItemState extends State<PlayerItem>
   String formattedTime = '';
 
   int? hoveredIndex;
+
+  Future<void> _showPreview(Duration time) async {
+    widget.playerController.showPreviewImage = true;
+    _updatePreview(time);
+  }
+
+  Future<void> _updatePreview(Duration time) async {
+    // 如果时间未变化或变化小于200ms，则跳过
+    if (widget.playerController.lastPreviewTime != null &&
+        (time == widget.playerController.lastPreviewTime ||
+            time.inMilliseconds -
+                    widget.playerController.lastPreviewTime!.inMilliseconds <
+                1000)) {
+      return;
+    }
+
+    widget.playerController.lastPreviewTime = time;
+
+    try {
+      // 2. 截取当前帧
+      final imageBytes = await widget.playerController.player.screenshot();
+
+      if (imageBytes == widget.playerController.previewImage) return;
+
+      if (imageBytes != null && mounted) {
+        widget.playerController.previewImage = imageBytes;
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'updatePreview', e.toString());
+    }
+  }
+
+  void _hidePreview() {
+    if (mounted) {
+      widget.playerController.showPreviewImage = false;
+      widget.playerController.previewImage = null;
+      widget.playerController.lastPreviewTime = Duration(seconds: 0);
+    }
+  }
+
+  Future<Uint8List?> _getVideoThumbnail({
+    required String videoPath,
+    required Duration timePoint,
+    int quality = 75,
+  }) async {
+    final thumbnail = await VideoThumbnail.thumbnailData(
+      video: videoPath, // 视频路径（本地或网络）
+      timeMs: timePoint.inMilliseconds, // 指定时间点（毫秒）
+      imageFormat: ImageFormat.JPEG, // 输出格式（JPEG/WEBP）
+      quality: quality, // 压缩质量（0-100）
+    );
+    return thumbnail; // 返回 Uint8List 格式的图像数据
+  }
 
   Future<void> setBrightness(double value) async {
     try {
@@ -133,6 +184,7 @@ class _PlayerItemState extends State<PlayerItem>
     widget.playerController.pause();
     hideTimer?.cancel();
     widget.playerController.showVideoController = true;
+    // _showPreview(details.timeStamp);
   }
 
   void handleProgressBarDragEnd() {
@@ -140,6 +192,7 @@ class _PlayerItemState extends State<PlayerItem>
     startHideTimer();
     widget.playerController.playerTimer =
         widget.playerController.getPlayerTimer();
+    // _hidePreview();
   }
 
   void _handleKeyChangingVolume() {
@@ -500,52 +553,57 @@ class _PlayerItemState extends State<PlayerItem>
                                       }
                                       widget.playerController
                                           .canHidePlayerPanel = false;
+                                      // _showPreview(Duration(
+                                      //     seconds: widget
+                                      //         .playerController
+                                      //         .player
+                                      //         .state
+                                      //         .position
+                                      //         .inSeconds));
                                     },
                                     onHorizontalDragUpdate:
                                         (DragUpdateDetails details) {
-                                      setState(() {
-                                        widget.playerController.showSeekTime =
-                                            true;
-                                        widget.playerController.playerTimer
-                                            ?.cancel();
-                                        widget.playerController.pause();
-                                        final double scale = 180000 /
-                                            MediaQuery.sizeOf(context).width;
-                                        int ms = (widget
-                                                    .playerController
-                                                    .currentPosition
-                                                    .inMilliseconds +
-                                                (details.delta.dx * scale)
-                                                    .round())
-                                            .clamp(
-                                                0,
-                                                widget.playerController.duration
-                                                    .inMilliseconds);
-                                        widget.playerController
-                                                .currentPosition =
-                                            Duration(milliseconds: ms);
-                                      });
+                                      widget.playerController.showSeekTime =
+                                          true;
+                                      widget.playerController.playerTimer
+                                          ?.cancel();
+                                      widget.playerController.pause();
+                                      final double scale = 180000 /
+                                          MediaQuery.sizeOf(context).width;
+                                      int ms = (widget
+                                                  .playerController
+                                                  .currentPosition
+                                                  .inMilliseconds +
+                                              (details.delta.dx * scale)
+                                                  .round())
+                                          .clamp(
+                                              0,
+                                              widget.playerController.duration
+                                                  .inMilliseconds);
+                                      // _updatePreview(
+                                      //     Duration(milliseconds: ms));
+                                      widget.playerController.currentPosition =
+                                          Duration(milliseconds: ms);
                                     },
                                     onHorizontalDragEnd: (_) {
-                                      setState(() {
-                                        widget.playerController.play();
-                                        widget.playerController.seek(widget
-                                            .playerController.currentPosition);
-                                        widget.playerController
-                                            .canHidePlayerPanel = true;
-                                        if (!widget.playerController
-                                            .showVideoController) {
-                                          animationController?.reverse();
-                                        } else {
-                                          hideTimer?.cancel();
-                                          startHideTimer();
-                                        }
-                                        widget.playerController.playerTimer =
-                                            widget.playerController
-                                                .getPlayerTimer();
-                                        widget.playerController.showSeekTime =
-                                            false;
-                                      });
+                                      widget.playerController.play();
+                                      widget.playerController.seek(widget
+                                          .playerController.currentPosition);
+                                      widget.playerController
+                                          .canHidePlayerPanel = true;
+                                      if (!widget.playerController
+                                          .showVideoController) {
+                                        animationController?.reverse();
+                                      } else {
+                                        hideTimer?.cancel();
+                                        startHideTimer();
+                                      }
+                                      widget.playerController.playerTimer =
+                                          widget.playerController
+                                              .getPlayerTimer();
+                                      widget.playerController.showSeekTime =
+                                          false;
+                                      // _hidePreview();
                                     },
                                     onVerticalDragUpdate:
                                         (DragUpdateDetails details) async {

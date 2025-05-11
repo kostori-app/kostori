@@ -27,7 +27,7 @@ class _AboutSettingsState extends State<AboutSettings> {
               ),
               clipBehavior: Clip.antiAlias,
               child: const Image(
-                image: AssetImage("assets/app_icon.png"),
+                image: AssetImage("images/app_icon.png"),
                 filterQuality: FilterQuality.medium,
               ),
             ),

@@ -17,7 +17,7 @@ class MiscComponents {
         ),
         child: Center(
           child: Image.asset(
-            'assets/image_loading.gif',
+            'assets/img/image_loading.gif',
             width: width,
             height: height,
             cacheWidth: width.cacheSize(context),

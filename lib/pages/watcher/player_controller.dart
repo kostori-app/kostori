@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,7 +52,8 @@ abstract class _PlayerController with Store {
   /// 2. Anime4K
   @observable
   int superResolutionType = 1;
-
+  @observable
+  bool showPreviewImage = false;
   @observable
   bool playing = false;
   @observable
@@ -66,6 +66,10 @@ abstract class _PlayerController with Store {
   Duration buffer = Duration.zero;
   @observable
   Duration duration = Duration.zero;
+  @observable
+  Uint8List? previewImage;
+  @observable
+  Duration? lastPreviewTime;
 
   int currentEpisoded = 1;
 
@@ -358,6 +362,7 @@ abstract class _PlayerController with Store {
           borderRadius: BorderRadius.circular(8),
           child: InkWell(
             onTap: () async {
+              pause;
               Log.addLog(LogLevel.info, 'image图片路径', image);
               final file = File(image);
               Uint8List data = await file.readAsBytes();

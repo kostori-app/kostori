@@ -21,6 +21,8 @@ import 'package:kostori/utils/utils.dart';
 import 'package:kostori/utils/remote.dart';
 import 'package:kostori/pages/watcher/BatteryWidget.dart';
 
+import '../settings/settings_page.dart';
+
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
     super.key,
@@ -58,6 +60,25 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   Timer? timer;
   String formattedTime = '';
   String saveAddress = '';
+
+  Widget _buildPreviewImage() {
+    return Container(
+      width: 200,
+      height: 120,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 10)],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.memory(
+          widget.playerController.previewImage!,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.low, // 性能优化
+        ),
+      ),
+    );
+  }
 
   // 将图片保存到相册
   Future<void> _saveImageToGallery(Uint8List imageData, int timestamp) async {
@@ -198,33 +219,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       message: "更多".tl,
       entries: [
         MenuEntry(
-            text: "Copy Title".tl,
-            onClick: () {
-              setState(() {
-                Clipboard.setData(ClipboardData(
-                    text: WatcherState.currentState!.widget.anime.title));
-                context.showMessage(message: "Copied".tl);
-              });
-            }),
-        MenuEntry(
-            text: "Copy ID".tl,
-            onClick: () {
-              setState(() {
-                Clipboard.setData(ClipboardData(
-                    text: WatcherState.currentState!.widget.anime.id));
-                context.showMessage(message: "Copied".tl);
-              });
-            }),
-        MenuEntry(
-            text: "Copy URL".tl,
-            onClick: () {
-              setState(() {
-                Clipboard.setData(ClipboardData(
-                    text: WatcherState.currentState!.widget.anime.url!));
-                context.showMessage(message: "Copied".tl);
-              });
-            }),
-        MenuEntry(
             text: "远程投屏".tl,
             onClick: () {
               bool needRestart = widget.playerController.playing;
@@ -236,7 +230,13 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   widget.playerController.play();
                 }
               });
-            })
+            }),
+        if (!widget.playerController.isFullScreen)
+          MenuEntry(
+              text: "日志".tl,
+              onClick: () {
+                context.to(() => const LogsPage());
+              }),
       ],
     );
   }
@@ -323,6 +323,20 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     ],
                   )
                 : Container()),
+        //底部进度图片预览
+        Positioned(
+            bottom: 60,
+            left: 0,
+            right: 0,
+            child: widget.playerController.showPreviewImage
+                ? Wrap(
+                    alignment: WrapAlignment.center,
+                    children: <Widget>[
+                      if (widget.playerController.previewImage != null)
+                        _buildPreviewImage()
+                    ],
+                  )
+                : Container()),
         // 顶部播放速度条
         Positioned(
             top: 25,
@@ -339,9 +353,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         child: Row(
                           children: <Widget>[
                             Gif(
-                              image: AssetImage('assets/speeding.gif'),
+                              image: AssetImage('assets/img/speeding.gif'),
                               height: 14,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .toOpacity(0.52),
                               autostart: Autostart.loop,
                               fps: 40,
                             ),
@@ -413,7 +430,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     ],
                   )
                 : Container()),
-        // 截图
+        // 侧边栏:截图,快进
         Positioned(
           right: 10,
           top: 60,
@@ -440,10 +457,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             saveAddress,
                             '${WatcherState.currentState!.widget.anime.title}_$timestamp.jpg');
                         showCenter(
-                            seconds: 2,
+                            seconds: 1,
                             icon: Gif(
-                              image: AssetImage('assets/check.gif'),
-                              height: 64,
+                              image: AssetImage('assets/img/check.gif'),
+                              height: 80,
+                              fps: 120,
                               color: Theme.of(context).colorScheme.primary,
                               autostart: Autostart.once,
                             ),
@@ -482,10 +500,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             saveAddress,
                             '${WatcherState.currentState!.widget.anime.title}_$timestamp.png');
                         showCenter(
-                            seconds: 2,
+                            seconds: 1,
                             icon: Gif(
-                              image: AssetImage('assets/check.gif'),
-                              height: 64,
+                              image: AssetImage('assets/img/check.gif'),
+                              height: 80,
+                              fps: 120,
                               color: Theme.of(context).colorScheme.primary,
                               autostart: Autostart.once,
                             ),
@@ -558,7 +577,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             ),
                             textAlign: TextAlign.right,
                           )
-                        : Container(),
+                        : Text(
+                            widget.playerController.currentSetName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
                     // 拖动条
                     Expanded(
                       child: dtb.DragToMoveArea(child: SizedBox(height: 40)),
@@ -590,23 +616,27 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       },
                       menuChildren: _buildShaderMenuItems(context),
                     ),
-                    //时间
-                    (widget.playerController.isFullScreen)
-                        ? Text(
-                            formattedTime,
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium!
-                                    .fontSize),
-                          )
-                        : Container(),
-                    const SizedBox(width: 8),
-                    //电池
-                    (widget.playerController.isFullScreen)
-                        ? BatteryWidget()
-                        : Container(),
+
+                    if (widget.playerController.isFullScreen) ...[
+                      const SizedBox(width: 4),
+                      //时间
+                      Text(
+                        formattedTime,
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: Theme.of(context)
+                                .textTheme
+                                .titleMedium!
+                                .fontSize),
+                      ),
+                      const SizedBox(width: 8),
+                      //安卓流量速度显示
+                      (App.isAndroid) ? SpeedMonitorWidget() : Container(),
+                      (App.isAndroid) ? const SizedBox(width: 8) : Container(),
+                      //电池
+                      BatteryWidget(),
+                      const SizedBox(width: 4),
+                    ],
                     //倍数状态条
                     TextButton(
                       style: ButtonStyle(
@@ -706,7 +736,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         },
                         onDragUpdate: (details) => {
                           widget.playerController.currentPosition =
-                              details.timeStamp
+                              details.timeStamp,
                         },
                         onDragEnd: () {
                           widget.handleProgressBarDragEnd();

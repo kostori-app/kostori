@@ -126,7 +126,8 @@ class WatcherState extends State<Watcher>
     });
     // SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     if (history != null && history!.lastWatchEpisode != 0) {
-      loadInfo(history!.lastWatchEpisode, history!.lastRoad); // 这里传入初始集数
+      loadInfo(
+          history!.lastWatchEpisode, history!.lastRoad.toInt()); // 这里传入初始集数
     }
     currentRoad = 0;
     _initializeProgress();
@@ -139,17 +140,13 @@ class WatcherState extends State<Watcher>
     playerController.initReaderWindow();
   }
 
-  var bangumiId;
+  int? bangumiId;
 
   @override
   void dispose() {
-    // if (playerController.isFullScreen) {
-    //   playerController.fullscreen();
-    // }
     observerController.controller?.dispose();
     playerController.dispose();
     updateHistoryTimer.cancel();
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     Future.microtask(() {
       DataSync().onDataChanged();
     });
@@ -172,9 +169,9 @@ class WatcherState extends State<Watcher>
         showCenter(
             seconds: 3,
             icon: Gif(
-              image: AssetImage('assets/warning.gif'),
+              image: AssetImage('assets/img/warning.gif'),
               height: 64,
-              color: Theme.of(context).colorScheme.primary,
+              fps: 120,
               autostart: Autostart.once,
             ),
             message: '没有更多剧集可播放',

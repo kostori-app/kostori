@@ -132,9 +132,13 @@ class BottomInfoState extends State<BottomInfo>
     }
   }
 
-  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode) async {
-    await infoController.queryBangumiEpisodeCommentsByID(id, episode);
-    setState(() {});
+  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode,
+      {int offset = 0}) async {
+    await infoController.queryBangumiEpisodeCommentsByID(id, episode,
+        offset: offset);
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> loadCharacters() async {
@@ -183,9 +187,10 @@ class BottomInfoState extends State<BottomInfo>
     });
   }
 
-  Future<void> loadComments(int episode) async {
+  Future<void> loadComments(int episode, {int offset = 0}) async {
     commentsQueryTimeout = false;
-    await queryBangumiEpisodeCommentsByID(infoController.bangumiId, episode)
+    await queryBangumiEpisodeCommentsByID(infoController.bangumiId, episode,
+            offset: offset)
         .then((_) {
       if (infoController.episodeCommentsList.isEmpty && mounted) {
         setState(() {
@@ -839,10 +844,10 @@ class BottomInfoState extends State<BottomInfo>
                   }),
                   commentsListBody,
                   EpisodeCommentsSheet(
-                    episodeCommentsList: infoController.episodeCommentsList,
                     episodeInfo: episodeInfo,
                     loadComments: loadComments,
                     episode: WatcherState.currentState!.episode,
+                    infoController: infoController,
                   ),
                   charactersListBody,
                   staffListBody

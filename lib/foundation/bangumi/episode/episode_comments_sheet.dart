@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 
+import '../../../components/error_widget.dart';
+import '../../../pages/bangumi/bottom_info.dart';
+import '../../../pages/bangumi/info_controller.dart';
 import '../comment/comment_item.dart';
 import '../../../components/bean/card/episode_comments_card.dart';
 import 'episode_item.dart';
@@ -25,18 +28,18 @@ import 'episode_item.dart';
 class EpisodeCommentsSheet extends StatefulWidget {
   const EpisodeCommentsSheet(
       {super.key,
-      required this.episodeCommentsList,
       required this.episodeInfo,
       required this.loadComments,
-      required this.episode});
-
-  final List<EpisodeCommentItem> episodeCommentsList;
+      required this.episode,
+      required this.infoController});
 
   final EpisodeInfo episodeInfo;
 
-  final Future<void> Function(int episode) loadComments;
+  final Future<void> Function(int episode, {int offset}) loadComments;
 
   final int episode;
+
+  final InfoController infoController;
 
   @override
   State<EpisodeCommentsSheet> createState() => _EpisodeCommentsSheetState();
@@ -47,13 +50,14 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
 
+  late InfoController infoController;
+
   /// episode input by [showEpisodeSelection]
   int ep = 0;
 
   @override
   void initState() {
-    // EpisodeInfo episodeInfo = BottomInfoState.currentState?.loadComments();
-    // EpisodeInfo newepisodeInfo = widget.episodeInfo.episode == 0 ? BottomInfoState.currentState?.loadComments() : widget.episodeInfo;
+    infoController = widget.infoController;
     super.initState();
   }
 
@@ -62,7 +66,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
     ep = 0;
     // wait until currentState is not null
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.episodeCommentsList.isEmpty) {
+      if (infoController.episodeCommentsList.isEmpty) {
         // trigger RefreshIndicator onRefresh and show animation
         _refreshIndicatorKey.currentState?.show();
       }
@@ -76,55 +80,94 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
   }
 
   Widget get episodeCommentsBody {
-    return CustomScrollView(
-      scrollBehavior: const ScrollBehavior().copyWith(
-        // Scrollbars' movement is not linear so hide it.
-        scrollbars: false,
-        // Enable mouse drag to refresh
-        dragDevices: {
-          PointerDeviceKind.mouse,
-          PointerDeviceKind.touch,
-          PointerDeviceKind.trackpad
-        },
-      ),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
-          sliver: Observer(builder: (context) {
-            if (commentsQueryTimeout) {
-              return const SliverFillRemaining(
-                child: Center(
-                  child: Text('空空如也'),
-                ),
-              );
-            }
-            return SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  // Fix scroll issue caused by height change of network images
-                  // by keeping loaded cards alive.
-                  return KeepAlive(
-                    keepAlive: true,
-                    child: IndexedSemantics(
-                      index: index,
-                      child: SelectionArea(
-                        child: EpisodeCommentsCard(
-                          commentItem: widget.episodeCommentsList[index],
+    return Builder(builder: (BuildContext context) {
+      return CustomScrollView(
+        scrollBehavior: const ScrollBehavior().copyWith(
+          // Scrollbars' movement is not linear so hide it.
+          scrollbars: false,
+          // Enable mouse drag to refresh
+          dragDevices: {
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.touch,
+            PointerDeviceKind.trackpad
+          },
+        ),
+        key: PageStorageKey<String>('集评论'),
+        slivers: [
+          SliverLayoutBuilder(
+            builder: (context, _) {
+              if (infoController.episodeCommentsList.isNotEmpty) {
+                return SliverList.separated(
+                  addAutomaticKeepAlives: false,
+                  itemCount: infoController.episodeCommentsList.length,
+                  itemBuilder: (context, index) {
+                    return SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > 950
+                                ? 950
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: EpisodeCommentsCard(
+                              commentItem:
+                                  infoController.episodeCommentsList[index],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  separatorBuilder: (BuildContext context, int index) {
+                    return SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > 950
+                                ? 950
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: Divider(
+                              thickness: 0.5,
+                              indent: 10,
+                              endIndent: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }
+              return SliverList.builder(
+                itemCount: 4,
+                itemBuilder: (context, _) {
+                  return SafeArea(
+                    top: false,
+                    bottom: false,
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > 950
+                              ? 950
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: EpisodeCommentsCard.bone(),
                         ),
                       ),
                     ),
                   );
                 },
-                childCount: widget.episodeCommentsList.length,
-                addAutomaticKeepAlives: false,
-                addRepaintBoundaries: false,
-                addSemanticIndexes: false,
-              ),
-            );
-          }),
-        ),
-      ],
-    );
+              );
+            },
+          ),
+        ],
+      );
+    });
   }
 
   Widget get commentsInfo {
@@ -139,15 +182,15 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    '${widget.episodeInfo.readType()}.${widget.episodeInfo.episode} ${widget.episodeInfo.name}',
+                    '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.episode} ${infoController.episodeInfo.name}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.outline)),
                 Text(
-                    (widget.episodeInfo.nameCn != '')
-                        ? '${widget.episodeInfo.readType()}.${widget.episodeInfo.episode} ${widget.episodeInfo.nameCn}'
-                        : '${widget.episodeInfo.readType()}.${widget.episodeInfo.episode} ${widget.episodeInfo.name}',
+                    (infoController.episodeInfo.nameCn != '')
+                        ? '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.episode} ${infoController.episodeInfo.nameCn}'
+                        : '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.episode} ${infoController.episodeInfo.name}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: 12,

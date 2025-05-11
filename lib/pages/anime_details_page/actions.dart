@@ -109,7 +109,7 @@ abstract mixin class _AnimePageActions {
               ),
               child: Row(children: [
                 const Image(
-                  image: AssetImage("assets/app_icon.png"),
+                  image: AssetImage("images/app_icon.png"),
                   filterQuality: FilterQuality.medium,
                 ),
                 Spacer(),
@@ -142,8 +142,9 @@ abstract mixin class _AnimePageActions {
       showCenter(
           seconds: 3,
           icon: Gif(
-            image: AssetImage('assets/warning.gif'),
+            image: AssetImage('assets/img/warning.gif'),
             height: 64,
+            fps: 120,
             // color: Theme.of(context).colorScheme.primary,
             autostart: Autostart.once,
           ),
@@ -184,9 +185,9 @@ abstract mixin class _AnimePageActions {
                 showCenter(
                     seconds: 3,
                     icon: Gif(
-                      image: AssetImage('assets/warning.gif'),
+                      image: AssetImage('assets/img/warning.gif'),
                       height: 64,
-                      color: Theme.of(context).colorScheme.primary,
+                      fps: 120,
                       autostart: Autostart.once,
                     ),
                     message: '未找到相关结果，请尝试其他关键字',

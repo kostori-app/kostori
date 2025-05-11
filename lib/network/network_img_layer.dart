@@ -107,7 +107,9 @@ class NetworkImgLayer extends StatelessWidget {
           ? const SizedBox()
           : Center(
               child: Image.asset(
-                type == 'avatar' ? 'assets/noface.jpeg' : 'assets/loading.png',
+                type == 'avatar'
+                    ? 'assets/img/noface.jpeg'
+                    : 'assets/img/loading.png',
                 width: width,
                 height: height,
                 cacheWidth: width.cacheSize(context),

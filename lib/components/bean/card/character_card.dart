@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/pages/character_page.dart';
+import 'package:kostori/pages/bangumi/character_page.dart';
 
 import '../../../foundation/bangumi/character/character_item.dart';
 

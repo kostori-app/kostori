@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
@@ -21,6 +22,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import android.net.TrafficStats
 import dev.flutter.packages.file_selector_android.FileUtils
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -30,15 +32,54 @@ import io.flutter.plugins.GeneratedPluginRegistrant
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.Timer
+import java.util.TimerTask
 
 class MainActivity : FlutterFragmentActivity() {
     var volumeListen = VolumeListen()
     var listening = false
 
+    private val CHANNEL = "kostori/network_speed"
+
     private val storageRequestCode = 0x10
     private var storagePermissionRequest: ((Boolean) -> Unit)? = null
 
     private val nextLocalRequestCode = AtomicInteger()
+
+    private val sharedTexts = ArrayList<String>()
+
+    private var textShareHandler: ((String) -> Unit)? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        if (intent?.action == Intent.ACTION_SEND) {
+            if (intent.type == "text/plain") {
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                if (text != null)
+                    handleSharedText(text)
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == Intent.ACTION_SEND) {
+            if (intent.type == "text/plain") {
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                if (text != null)
+                    handleSharedText(text)
+            }
+        }
+    }
+
+    private fun handleSharedText(text: String) {
+        if (textShareHandler != null) {
+            textShareHandler?.invoke(text)
+        } else {
+            sharedTexts.add(text)
+        }
+    }
 
     private fun <I, O> startContractForResult(
         contract: ActivityResultContract<I, O>,
@@ -67,6 +108,7 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
         GeneratedPluginRegistrant.registerWith(flutterEngine)
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -134,6 +176,19 @@ class MainActivity : FlutterFragmentActivity() {
             val mimeType = req.arguments<String>()
             openFile(res, mimeType!!)
         }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "getNetworkStats") {
+                val uid = applicationContext.applicationInfo.uid
+                val rxBytes = TrafficStats.getUidRxBytes(uid)
+                val txBytes = TrafficStats.getUidTxBytes(uid)
+                val stats = mapOf("rxBytes" to rxBytes, "txBytes" to txBytes)
+                result.success(stats)
+            } else {
+                result.notImplemented()
+            }
+        }
+
     }
 
     private fun getProxy(): String {

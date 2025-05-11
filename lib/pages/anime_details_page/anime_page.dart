@@ -546,7 +546,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             width: 24,
             height: 24,
             child: SvgPicture.asset(
-              'assets/bangumi_icon.svg',
+              'assets/img/bangumi_icon.svg',
               fit: BoxFit.fill, // 强制填充
             ),
           )),

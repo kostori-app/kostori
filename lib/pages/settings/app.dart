@@ -17,46 +17,6 @@ class _AppSettingsState extends State<AppSettings> {
           title: "Data".tl,
           icon: Icons.storage,
         ),
-        // ListTile(
-        //   title: Text("Storage Path for local animes".tl),
-        //   subtitle: Text(LocalManager().path, softWrap: false),
-        //   trailing: IconButton(
-        //     icon: const Icon(Icons.copy),
-        //     onPressed: () {
-        //       Clipboard.setData(ClipboardData(text: LocalManager().path));
-        //       context.showMessage(message: "Path copied to clipboard".tl);
-        //     },
-        //   ),
-        // ).toSliver(),
-        // _CallbackSetting(
-        //   title: "Set New Storage Path".tl,
-        //   actionTitle: "Set".tl,
-        //   callback: () async {
-        //     String? result;
-        //     if (App.isAndroid) {
-        //       var picker = DirectoryPicker();
-        //       result = (await picker.pickDirectory())?.path;
-        //     } else if (App.isIOS) {
-        //       result = await selectDirectoryIOS();
-        //     } else {
-        //       result = await selectDirectory();
-        //     }
-        //     if (result == null) return;
-        //     var loadingDialog = showLoadingDialog(
-        //       App.rootContext,
-        //       barrierDismissible: false,
-        //       allowCancel: false,
-        //     );
-        //     var res = await LocalManager().setNewPath(result);
-        //     loadingDialog.close();
-        //     if (res != null) {
-        //       context.showMessage(message: res);
-        //     } else {
-        //       context.showMessage(message: "Path set successfully".tl);
-        //       setState(() {});
-        //     }
-        //   },
-        // ).toSliver(),
         ListTile(
           title: Text("Cache Size".tl),
           subtitle: Text(bytesToReadableString(CacheManager().currentSize)),

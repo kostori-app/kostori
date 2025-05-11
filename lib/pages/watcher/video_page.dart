@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -81,7 +82,8 @@ class _VideoPageState extends State<VideoPage>
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !widget.playerController.isFullScreen,
+      canPop: !widget.playerController.isFullScreen &&
+          !widget.playerController.showTabBody,
       onPopInvokedWithResult: (bool didPop, _) {
         closeTabBodyAnimated();
         if (widget.playerController.showTabBody = false) {
@@ -117,6 +119,44 @@ class _VideoPageState extends State<VideoPage>
                         height: double.infinity,
                       ),
                     ),
+                    AnimatedPositioned(
+                      duration: Duration(seconds: 1),
+                      top: 0,
+                      right: 0,
+                      child: Visibility(
+                        child: SlideTransition(
+                          position: _rightOffsetAnimation,
+                          child: Container(
+                            height: MediaQuery.of(context).size.height,
+                            width: MediaQuery.of(context).size.width * 1 / 3 >
+                                    420
+                                ? 420 + 80
+                                : MediaQuery.of(context).size.width * 1 / 3 +
+                                    80,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft, // 从右侧开始
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.toOpacity(0.3), // 起始透明度提高
+                                  Colors.black.toOpacity(0.6), // 中间过渡点
+                                  Colors.black.toOpacity(0.8),
+                                ],
+                                stops: [0.0, 0.3, 0.7, 1.0],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.toOpacity(0.2),
+                                  blurRadius: 20.0, // 边缘模糊
+                                  spreadRadius: 5.0,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     SlideTransition(
                       position: _rightOffsetAnimation,
                       child: SizedBox(
@@ -125,7 +165,7 @@ class _VideoPageState extends State<VideoPage>
                             ? 420
                             : MediaQuery.of(context).size.width * 1 / 3,
                         child: Container(
-                          color: Theme.of(context).canvasColor,
+                          color: Colors.black.toOpacity(0.42),
                           child: GridViewObserver(
                             controller: observerController,
                             child: Column(
@@ -334,7 +374,7 @@ class _VideoPageState extends State<VideoPage>
                           currentRoad ==
                               widget.playerController.currentRoad) ...<Widget>[
                         Image.asset(
-                          'assets/playing.gif',
+                          'assets/img/playing.gif',
                           color: Theme.of(context).colorScheme.primary,
                           height: 16,
                         ),

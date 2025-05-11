@@ -118,7 +118,7 @@ class _CenterOverlay extends StatelessWidget {
       child: Align(
         alignment: Alignment.center, // 修改为居中
         child: Material(
-          // color: Theme.of(context).colorScheme.inverseSurface,
+          color: Colors.black.toOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
           elevation: 2,
           child: IconTheme(

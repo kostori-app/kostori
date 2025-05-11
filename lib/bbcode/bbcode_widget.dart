@@ -6,13 +6,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:gif/gif.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../components/components.dart';
 import '../components/misc_components.dart';
+import '../foundation/app.dart';
 import 'bbcode_base_listener.dart';
 import 'bbcode_elements.dart';
 import 'generated/BBCodeParser.dart';
@@ -108,50 +111,26 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('已保存到: $filePath'),
-            duration: const Duration(seconds: 5),
-            action: Platform.isWindows || Platform.isLinux || Platform.isMacOS
-                ? SnackBarAction(
-                    label: '打开',
-                    onPressed: () => _openFile(filePath),
-                  )
-                : null,
-          ),
-        );
+        App.rootContext.showMessage(message: '已保存到: $filePath');
       }
     } catch (e, s) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('保存失败: ${e.toString()}')),
-      );
+      showCenter(
+          seconds: 3,
+          icon: Gif(
+            image: AssetImage('assets/img/warning.gif'),
+            height: 64,
+            fps: 120,
+            color: Theme.of(context).colorScheme.primary,
+            autostart: Autostart.once,
+          ),
+          message: '保存失败: ${e.toString()}',
+          context: context);
+      App.rootContext.showMessage(message: '保存失败: ${e.toString()}');
       Log.addLog(LogLevel.error, 'saveImageToGallery', '$e\n$s');
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
-      }
-    }
-  }
-
-  // 新增的打开文件方法（用于桌面平台）
-  Future<void> _openFile(String path) async {
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      try {
-        if (Platform.isWindows) {
-          await Process.run('start', [path], runInShell: true);
-        } else if (Platform.isLinux) {
-          await Process.run('xdg-open', [path]);
-        } else if (Platform.isMacOS) {
-          await Process.run('open', [path]);
-        }
-      } catch (e) {
-        debugPrint('打开文件失败: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('无法打开文件')),
-          );
-        }
       }
     }
   }
@@ -289,13 +268,14 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                           onLongPress: () => _showSaveDialog(e.imageUrl),
                           child: CachedNetworkImage(
                             imageUrl: e.imageUrl,
-                            placeholder: (_, __) => Container(
-                              color: Colors.grey[200],
-                              width: 100,
-                              height: 100,
-                            ),
-                            errorWidget: (_, __, ___) =>
-                                const Icon(Icons.broken_image),
+                            placeholder: (context, url) =>
+                                MiscComponents.placeholder(context, 100, 100),
+                            errorListener: (e) {
+                              Log.addLog(LogLevel.error, 'image', e.toString());
+                            },
+                            errorWidget: (BuildContext context, String url,
+                                    Object error) =>
+                                MiscComponents.placeholder(context, 100, 100),
                           ),
                         ),
                       ),

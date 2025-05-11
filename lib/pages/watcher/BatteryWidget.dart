@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 
 class BatteryWidget extends StatefulWidget {
@@ -113,7 +114,7 @@ class BatteryWidgetState extends State<BatteryWidget>
                     width: 32,
                     height: 28,
                     child: SvgPicture.asset(
-                      'assets/battery_empty.svg',
+                      'assets/img/battery_empty.svg',
                       fit: BoxFit.fill, // 强制填充
                       colorFilter: ColorFilter.mode(
                         Colors.white,
@@ -184,5 +185,105 @@ class BatteryWidgetState extends State<BatteryWidget>
     _timer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+}
+
+class SpeedMonitorWidget extends StatefulWidget {
+  const SpeedMonitorWidget({super.key});
+
+  @override
+  State<SpeedMonitorWidget> createState() => _SpeedMonitorWidgetState();
+}
+
+class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
+  static const platform = MethodChannel('kostori/network_speed');
+  String _downloadSpeed = '0 B/s';
+  String _uploadSpeed = '0 B/s';
+  int _lastRxBytes = 0;
+  int _lastTxBytes = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startMonitoring();
+  }
+
+  void _startMonitoring() {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
+      try {
+        final result = await platform.invokeMethod('getNetworkStats');
+        final rxBytes = result['rxBytes'] as int;
+        final txBytes = result['txBytes'] as int;
+
+        // 计算速度
+        final downloadSpeed = rxBytes - _lastRxBytes;
+        final uploadSpeed = txBytes - _lastTxBytes;
+
+        setState(() {
+          _downloadSpeed = _formatSpeed(downloadSpeed);
+          _uploadSpeed = _formatSpeed(uploadSpeed);
+          _lastRxBytes = rxBytes;
+          _lastTxBytes = txBytes;
+        });
+      } on PlatformException catch (e) {
+        print("Failed to get network stats: '${e.message}'.");
+      }
+    });
+  }
+
+  String _formatSpeed(int speed) {
+    if (speed < 1024) {
+      return '$speed B/s';
+    } else if (speed < 1024 * 1024) {
+      return '${(speed / 1024).toStringAsFixed(1)} KB/s';
+    } else {
+      return '${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: Column(
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.arrow_downward,
+              size: 8,
+            ),
+            Text(
+              " $_downloadSpeed",
+              style: TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 8,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Icon(
+              Icons.arrow_upward,
+              size: 8,
+            ),
+            Text(
+              " $_uploadSpeed",
+              style: TextStyle(
+                fontWeight: FontWeight.normal,
+                fontSize: 8,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ));
   }
 }
