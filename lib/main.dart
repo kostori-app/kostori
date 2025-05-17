@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -200,6 +201,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       return MaterialApp(
         home: home,
         debugShowCheckedModeBanner: false,
+        scrollBehavior: MyCustomScrollBehavior(),
         theme: getTheme(primary, secondary, tertiary, Brightness.light),
         navigatorKey: App.rootNavigatorKey,
         darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
@@ -294,4 +296,14 @@ class _SystemUiProvider extends StatelessWidget {
       child: child,
     );
   }
+}
+
+class MyCustomScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.trackpad,
+      };
 }

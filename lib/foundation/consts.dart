@@ -57,3 +57,87 @@ class StyleString {
   static const Radius imgRadius = Radius.circular(10);
   static const double aspectRatio = 16 / 10;
 }
+
+const List<String> type = [
+  '科幻',
+  '喜剧',
+  '百合',
+  '校园',
+  '惊悚',
+  '后宫',
+  '机战',
+  '悬疑',
+  '恋爱',
+  '奇幻',
+  '推理',
+  '运动',
+  '耽美',
+  '音乐',
+  '战斗',
+  '冒险',
+  '萌系',
+  '穿越',
+  '玄幻',
+  '乙女',
+  '恐怖',
+  '历史',
+  '日常',
+  '剧情',
+  '武侠',
+  '美食',
+  '职场'
+];
+
+const List<String> background = [
+  '魔法少女',
+  '超能力',
+  '偶像',
+  '网游',
+  '末世',
+  '乐队',
+  '赛博朋克',
+  '宫廷',
+  '都市',
+  '异世界',
+  '性转',
+  '龙傲天',
+  '凤傲天'
+];
+
+const List<String> role = [
+  '制服',
+  '兽耳',
+  '伪娘',
+  '吸血鬼',
+  '妹控',
+  '萝莉',
+  '傲娇',
+  '女仆',
+  '巨乳',
+  '电波',
+  '动物',
+  '正太',
+  '兄控',
+  '僵尸',
+  '群像',
+  '美少女',
+  '美少年'
+];
+
+const List<String> emotional = ['热血', '治愈', '温情', '催泪', '纯爱', '友情', '致郁'];
+
+const List<String> source = ['原创', '漫画改', '游戏改', '小说改'];
+
+const List<String> audience = ['BL', 'GL', '子供向', '女性向', '少女向', '少年向', '青年向'];
+
+const List<String> classification = [
+  '短片',
+  '剧场版',
+  'TV',
+  'OVA',
+  'MV',
+  'CM',
+  'WEB',
+  'PV',
+  '动态漫画'
+];

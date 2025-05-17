@@ -51,58 +51,61 @@ class _PlayerItemState extends State<PlayerItem>
 
   int? hoveredIndex;
 
-  Future<void> _showPreview(Duration time) async {
-    widget.playerController.showPreviewImage = true;
-    _updatePreview(time);
-  }
+  // Future<void> _showPreview(Duration time) async {
+  //   widget.playerController.showPreviewImage = true;
+  //   _updatePreview(time);
+  // }
 
-  Future<void> _updatePreview(Duration time) async {
-    // 如果时间未变化或变化小于200ms，则跳过
-    if (widget.playerController.lastPreviewTime != null &&
-        (time == widget.playerController.lastPreviewTime ||
-            time.inMilliseconds -
-                    widget.playerController.lastPreviewTime!.inMilliseconds <
-                1000)) {
-      return;
-    }
+  // Future<void> _updatePreview(Duration time) async {
+  //   // 如果时间未变化或变化小于200ms，则跳过
+  //   if (widget.playerController.lastPreviewTime != null &&
+  //       (time == widget.playerController.lastPreviewTime ||
+  //           time.inMilliseconds -
+  //                   widget.playerController.lastPreviewTime!.inMilliseconds <
+  //               1000)) {
+  //     return;
+  //   }
+  //
+  //   widget.playerController.lastPreviewTime = time;
+  //
+  //   try {
+  //     // 2. 截取当前帧
+  //     final imageBytes = await _getVideoThumbnail(
+  //         videoPath: widget.playerController.videoUrl, timePoint: time);
+  //
+  //     Uint8List? bytes = await imageBytes.readAsBytes();
+  //
+  //     if (bytes == widget.playerController.previewImage) return;
+  //
+  //     if (mounted) {
+  //       widget.playerController.previewImage = bytes;
+  //     }
+  //   } catch (e) {
+  //     Log.addLog(LogLevel.error, 'updatePreview', e.toString());
+  //   }
+  // }
 
-    widget.playerController.lastPreviewTime = time;
+  // void _hidePreview() {
+  //   if (mounted) {
+  //     widget.playerController.showPreviewImage = false;
+  //     widget.playerController.previewImage = null;
+  //     // widget.playerController.lastPreviewTime = Duration(seconds: 0);
+  //   }
+  // }
 
-    try {
-      // 2. 截取当前帧
-      final imageBytes = await widget.playerController.player.screenshot();
-
-      if (imageBytes == widget.playerController.previewImage) return;
-
-      if (imageBytes != null && mounted) {
-        widget.playerController.previewImage = imageBytes;
-      }
-    } catch (e) {
-      Log.addLog(LogLevel.error, 'updatePreview', e.toString());
-    }
-  }
-
-  void _hidePreview() {
-    if (mounted) {
-      widget.playerController.showPreviewImage = false;
-      widget.playerController.previewImage = null;
-      widget.playerController.lastPreviewTime = Duration(seconds: 0);
-    }
-  }
-
-  Future<Uint8List?> _getVideoThumbnail({
-    required String videoPath,
-    required Duration timePoint,
-    int quality = 75,
-  }) async {
-    final thumbnail = await VideoThumbnail.thumbnailData(
-      video: videoPath, // 视频路径（本地或网络）
-      timeMs: timePoint.inMilliseconds, // 指定时间点（毫秒）
-      imageFormat: ImageFormat.JPEG, // 输出格式（JPEG/WEBP）
-      quality: quality, // 压缩质量（0-100）
-    );
-    return thumbnail; // 返回 Uint8List 格式的图像数据
-  }
+  // Future<XFile> _getVideoThumbnail({
+  //   required String videoPath,
+  //   required Duration timePoint,
+  //   int quality = 45,
+  // }) async {
+  //   final thumbnail = await VideoThumbnail.thumbnailFile(
+  //     video: videoPath, // 视频路径（本地或网络）
+  //     timeMs: timePoint.inMilliseconds, // 指定时间点（毫秒）
+  //     imageFormat: ImageFormat.JPEG, // 输出格式（JPEG/WEBP）
+  //     quality: quality, // 压缩质量（0-100）
+  //   );
+  //   return thumbnail; // 返回 Uint8List 格式的图像数据
+  // }
 
   Future<void> setBrightness(double value) async {
     try {
@@ -553,13 +556,15 @@ class _PlayerItemState extends State<PlayerItem>
                                       }
                                       widget.playerController
                                           .canHidePlayerPanel = false;
-                                      // _showPreview(Duration(
-                                      //     seconds: widget
-                                      //         .playerController
-                                      //         .player
-                                      //         .state
-                                      //         .position
-                                      //         .inSeconds));
+                                      // if (App.isAndroid) {
+                                      //   _showPreview(Duration(
+                                      //       seconds: widget
+                                      //           .playerController
+                                      //           .player
+                                      //           .state
+                                      //           .position
+                                      //           .inSeconds));
+                                      // }
                                     },
                                     onHorizontalDragUpdate:
                                         (DragUpdateDetails details) {
@@ -580,8 +585,10 @@ class _PlayerItemState extends State<PlayerItem>
                                               0,
                                               widget.playerController.duration
                                                   .inMilliseconds);
-                                      // _updatePreview(
-                                      //     Duration(milliseconds: ms));
+                                      // if (App.isAndroid) {
+                                      //   _updatePreview(
+                                      //       Duration(milliseconds: ms));
+                                      // }
                                       widget.playerController.currentPosition =
                                           Duration(milliseconds: ms);
                                     },
@@ -603,7 +610,9 @@ class _PlayerItemState extends State<PlayerItem>
                                               .getPlayerTimer();
                                       widget.playerController.showSeekTime =
                                           false;
-                                      // _hidePreview();
+                                      // if (App.isAndroid) {
+                                      //   _hidePreview();
+                                      // }
                                     },
                                     onVerticalDragUpdate:
                                         (DragUpdateDetails details) async {

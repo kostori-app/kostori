@@ -152,17 +152,19 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(
-                              imageUrl: widget.bangumiItem.images['large']!,
-                              width: width,
-                              height: height,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) =>
-                                  MiscComponents.placeholder(
-                                      context, width, height),
-                            ),
-                          ),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Hero(
+                                tag: widget.bangumiItem.id,
+                                child: CachedNetworkImage(
+                                  imageUrl: widget.bangumiItem.images['large']!,
+                                  width: width,
+                                  height: height,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) =>
+                                      MiscComponents.placeholder(
+                                          context, width, height),
+                                ),
+                              )),
                           SizedBox(width: 12.0),
                           Container(
                             height: height,

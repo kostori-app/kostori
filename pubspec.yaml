@@ -117,7 +117,7 @@ dependencies:
   dlna_dart: ^0.0.8
   gif: ^2.3.0
   flutter_absolute_path_provider: ^0.0.1
-  video_thumbnail: ^0.5.5
+  get_thumbnail_video: ^0.7.3
 
 dev_dependencies:
   flutter_test:

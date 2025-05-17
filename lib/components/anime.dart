@@ -1596,15 +1596,17 @@ class _BangumiCardState extends State<BangumiCard> {
           clipBehavior: Clip.antiAlias,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              Widget child = CachedNetworkImage(
-                imageUrl: image as String,
-                width: double.infinity * 0.72,
-                height: constraints.maxHeight * 0.85,
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.medium,
-                placeholder: (context, url) => MiscComponents.placeholder(
-                    context, 300 * 0.72, constraints.maxHeight * 0.85),
-              );
+              Widget child = Hero(
+                  tag: widget.anime.id,
+                  child: CachedNetworkImage(
+                    imageUrl: image as String,
+                    width: double.infinity * 0.72,
+                    height: constraints.maxHeight * 0.85,
+                    fit: BoxFit.cover,
+                    filterQuality: FilterQuality.medium,
+                    placeholder: (context, url) => MiscComponents.placeholder(
+                        context, 300 * 0.72, constraints.maxHeight * 0.85),
+                  ));
 
               child = Container(
                 decoration: BoxDecoration(

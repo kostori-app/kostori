@@ -107,6 +107,42 @@ class _VideoPageState extends State<VideoPage>
                     width: MediaQuery.of(context).size.width,
                     child: playerBody,
                   ),
+                  AnimatedPositioned(
+                    duration: Duration(seconds: 1),
+                    top: 0,
+                    right: 0,
+                    child: Visibility(
+                      child: SlideTransition(
+                        position: _rightOffsetAnimation,
+                        child: Container(
+                          height: MediaQuery.of(context).size.height,
+                          width: MediaQuery.of(context).size.width * 1 / 3 > 420
+                              ? 420 + 80
+                              : MediaQuery.of(context).size.width * 1 / 3 + 80,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.centerLeft, // 从右侧开始
+                              end: Alignment.centerRight,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.toOpacity(0.3), // 起始透明度提高
+                                Colors.black.toOpacity(0.6), // 中间过渡点
+                                Colors.black.toOpacity(0.8),
+                              ],
+                              stops: [0.0, 0.3, 0.7, 1.0],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.toOpacity(0.2),
+                                blurRadius: 20.0, // 边缘模糊
+                                spreadRadius: 5.0,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   // 显示播放列表
                   if (widget.playerController.showTabBody) ...[
                     GestureDetector(
@@ -117,44 +153,6 @@ class _VideoPageState extends State<VideoPage>
                         color: Colors.black38,
                         width: double.infinity,
                         height: double.infinity,
-                      ),
-                    ),
-                    AnimatedPositioned(
-                      duration: Duration(seconds: 1),
-                      top: 0,
-                      right: 0,
-                      child: Visibility(
-                        child: SlideTransition(
-                          position: _rightOffsetAnimation,
-                          child: Container(
-                            height: MediaQuery.of(context).size.height,
-                            width: MediaQuery.of(context).size.width * 1 / 3 >
-                                    420
-                                ? 420 + 80
-                                : MediaQuery.of(context).size.width * 1 / 3 +
-                                    80,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft, // 从右侧开始
-                                end: Alignment.centerRight,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.toOpacity(0.3), // 起始透明度提高
-                                  Colors.black.toOpacity(0.6), // 中间过渡点
-                                  Colors.black.toOpacity(0.8),
-                                ],
-                                stops: [0.0, 0.3, 0.7, 1.0],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.toOpacity(0.2),
-                                  blurRadius: 20.0, // 边缘模糊
-                                  spreadRadius: 5.0,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ),
                     ),
                     SlideTransition(

@@ -14,7 +14,7 @@ import 'package:sliver_tools/sliver_tools.dart';
 import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
 
 import 'bangumi_info_page.dart';
-import 'bottom_info.dart';
+import 'bangumi_search_page.dart';
 
 class BangumiPage extends StatefulWidget {
   const BangumiPage({super.key});
@@ -28,10 +28,45 @@ class _BangumiPageState extends State<BangumiPage> {
   Widget build(BuildContext context) {
     var widget = SmoothCustomScrollView(slivers: [
       SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
+      const _SearchBar(),
       const _SyncDataWidget(),
       const _Timetable(),
     ]);
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Container(
+        height: App.isMobile ? 52 : 46,
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Material(
+          color: context.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(32),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(32),
+            onTap: () {
+              context.to(() => const BangumiSearchPage());
+            },
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                const Icon(Icons.search),
+                const SizedBox(width: 8),
+                Text('Search'.tl, style: ts.s16),
+                const Spacer(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

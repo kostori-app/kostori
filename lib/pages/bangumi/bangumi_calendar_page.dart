@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/misc_components.dart';
@@ -10,14 +9,13 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/utils/extension.dart';
 import 'package:kostori/utils/translations.dart';
 
 import 'package:kostori/utils/utils.dart';
-import '../../network/bangumi.dart';
-import '../../foundation/bangumi/bangumi_item.dart';
-import '../../foundation/bangumi/episode/episode_item.dart';
-import 'bangumi_info_page.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 
 class BangumiCalendarPage extends StatefulWidget {
   const BangumiCalendarPage({super.key});
@@ -540,17 +538,19 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                       children: [
                         // 图片部分
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: CachedNetworkImage(
-                            imageUrl: bangumiItem.images['large']!,
-                            width: imageWidth,
-                            height: imageHeight,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) =>
-                                MiscComponents.placeholder(
-                                    context, imageWidth, imageHeight),
-                          ),
-                        ),
+                            borderRadius: BorderRadius.circular(24),
+                            child: Hero(
+                              tag: bangumiItem.id,
+                              child: CachedNetworkImage(
+                                imageUrl: bangumiItem.images['large']!,
+                                width: imageWidth,
+                                height: imageHeight,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) =>
+                                    MiscComponents.placeholder(
+                                        context, imageWidth, imageHeight),
+                              ),
+                            )),
                         const SizedBox(width: 16),
                         // 信息部分
                         Expanded(

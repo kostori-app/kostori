@@ -10,30 +10,34 @@ import 'package:kostori/network/request.dart';
 
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_response.dart';
-import '../foundation/bangumi/bangumi_item.dart';
-import '../foundation/bangumi/character/character_full_item.dart';
-import '../foundation/bangumi/character/character_response.dart';
-import '../foundation/bangumi/comment/comment_response.dart';
-import '../foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_response.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_response.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
 class Bangumi {
-  static Future<List<BangumiItem>> bangumiPostSearch(String keyword) async {
+  static Future<List<BangumiItem>> bangumiPostSearch(String keyword,
+      {List<String> tags = const [],
+      bool nsfw = false,
+      String sort = 'rank',
+      int offset = 0}) async {
     List<BangumiItem> bangumiList = [];
 
     var params = <String, dynamic>{
       'keyword': keyword,
-      'sort': 'rank',
+      'sort': sort,
       "filter": {
         "type": [2],
-        "tag": [],
-        "rank": [">0", "<=99999"],
-        "nsfw": true
+        "tag": tags,
+        "rank": (sort == 'rank') ? [">0", "<=99999"] : [">=0", "<=99999"],
+        "nsfw": nsfw
       },
     };
 
     try {
       final res = await Request().post(
-          Api.formatUrl(Api.bangumiRankSearch, [100, 0]),
+          Api.formatUrl(Api.bangumiRankSearch, [40, offset]),
           data: params,
           options: Options(
               headers: bangumiHTTPHeader, contentType: 'application/json'));
@@ -47,12 +51,12 @@ class Bangumi {
               bangumiList.add(bangumiItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+            Log.addLog(LogLevel.error, 'bangumiPostSearch', '$e\n$s');
           }
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'bangumiPostSearch', '$e\n$s');
     }
     return bangumiList;
   }
@@ -83,12 +87,12 @@ class Bangumi {
               bangumiList.add(bangumiItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+            Log.addLog(LogLevel.error, 'bangumiGetSearch', '$e\n$s');
           }
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'bangumiGetSearch', '$e\n$s');
     }
     return bangumiList;
   }

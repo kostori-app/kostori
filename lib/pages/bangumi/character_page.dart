@@ -6,11 +6,11 @@ import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/foundation/bangumi/character/character_comments_card.dart';
 import 'package:photo_view/photo_view.dart';
 
-import '../../components/misc_components.dart';
-import '../../foundation/bangumi/character/character_full_item.dart';
-import '../../foundation/bangumi/comment/comment_item.dart';
-import '../../components/error_widget.dart';
-import '../../foundation/image_loader/cached_image.dart';
+import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
+import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 
 class CharacterPage extends StatefulWidget {
   const CharacterPage({super.key, required this.characterID});
