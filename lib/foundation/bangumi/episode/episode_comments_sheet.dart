@@ -1,12 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 
-import '../../../components/error_widget.dart';
-import '../../../pages/bangumi/bottom_info.dart';
 import '../../../pages/bangumi/info_controller.dart';
-import '../comment/comment_item.dart';
 import '../../../components/bean/card/episode_comments_card.dart';
 import 'episode_item.dart';
 

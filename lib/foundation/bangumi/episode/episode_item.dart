@@ -25,7 +25,6 @@ class EpisodeInfo {
         nameCn: json['name_cn'] ?? '',
         airDate: json['airdate'] ?? '',
         duration: json['duration'] ?? '');
-    ;
   }
 
   factory EpisodeInfo.fromTemplate() {

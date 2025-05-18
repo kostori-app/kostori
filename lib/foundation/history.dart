@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:ffi' as ffi;
-import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;

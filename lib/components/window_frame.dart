@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/global_state.dart';
 import 'package:window_manager/window_manager.dart';
 
 const _kTitleBarHeight = 36.0;

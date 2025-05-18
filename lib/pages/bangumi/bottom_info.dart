@@ -23,6 +23,8 @@ import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 
+import 'bangumi_search_page.dart' show BangumiSearchPage;
+
 class _StatItem {
   final String key;
   final String label;
@@ -224,7 +226,7 @@ class BottomInfoState extends State<BottomInfo>
   Widget _buildStatsRow(BuildContext context) {
     final collection = infoController.bangumiItem.collection!; // 提前解构，避免重复访问
     final total =
-        collection.values.fold<int>(0, (sum, val) => sum + (val ?? 0)); // 计算总数
+        collection.values.fold<int>(0, (sum, val) => sum + (val)); // 计算总数
 
     // 定义统计数据项（类型 + 显示文本 + 颜色）
     final stats = [
@@ -299,7 +301,7 @@ class BottomInfoState extends State<BottomInfo>
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: CachedNetworkImage(
-                            imageUrl: bangumiItem!.images['large']!,
+                            imageUrl: bangumiItem.images['large']!,
                             width: width,
                             height: height,
                             fit: BoxFit.cover,
@@ -517,6 +519,8 @@ class BottomInfoState extends State<BottomInfo>
                       ),
                       onPressed: () {
                         // 标签点击逻辑
+                        context.to(() => BangumiSearchPage(
+                            tag: bangumiItem.tags[index].name));
                       },
                     ),
                   ),

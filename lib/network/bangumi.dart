@@ -37,7 +37,7 @@ class Bangumi {
 
     try {
       final res = await Request().post(
-          Api.formatUrl(Api.bangumiRankSearch, [40, offset]),
+          Api.formatUrl(Api.bangumiRankSearch, [20, offset]),
           data: params,
           options: Options(
               headers: bangumiHTTPHeader, contentType: 'application/json'));
@@ -132,8 +132,8 @@ class Bangumi {
 
       // 综合计算项目的匹配度
       int calculateItemMatchScore(BangumiItem item) {
-        final namecn = item.nameCn ?? '';
-        final name = item.name ?? '';
+        final namecn = item.nameCn;
+        final name = item.name;
 
         // 计算两个字段的匹配度
         final scoreNamecn = calculateCharacterMatchScore(keyword, namecn);

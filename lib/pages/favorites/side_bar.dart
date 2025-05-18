@@ -78,6 +78,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
                 if (index < folders.length) {
                   return buildLocalFolder(folders[index]);
                 }
+                return null;
               },
             ),
           )

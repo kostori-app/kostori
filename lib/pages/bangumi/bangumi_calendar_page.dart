@@ -115,7 +115,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                   continue;
                 }
                 final (currentYear, currentWeek) = Utils.getISOWeekNumber(now);
-                final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate!);
+                final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
 
                 // 仅处理同年份的剧集
                 if (airYear == currentYear) {
@@ -157,8 +157,8 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
             if (resultEpisode != null) {
               episodeExtraInfo = {
                 'episode_airdate': resultEpisode.airDate,
-                'episode_name': resultEpisode.name ?? '',
-                'episode_name_cn': resultEpisode.nameCn ?? '',
+                'episode_name': resultEpisode.name,
+                'episode_name_cn': resultEpisode.nameCn,
                 'episode_ep': resultEpisode.episode,
               };
             }
@@ -325,17 +325,23 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           context.pop();
         },
         child: Scaffold(
-          appBar: AppBar(
-            title: Text('Timetable'.tl),
-            bottom: TabBar(
-              controller: controller,
-              tabs: getTabs(),
-              isScrollable: true,
-              indicatorColor: Theme.of(context).colorScheme.primary,
+            appBar: AppBar(
+              title: Text('Timetable'.tl),
+              bottom: TabBar(
+                controller: controller,
+                tabs: getTabs(),
+                isScrollable: true,
+                indicatorColor: Theme.of(context).colorScheme.primary,
+              ),
             ),
-          ),
-          body: _buildBody(orientation), // 修改body构建方式
-        ),
+            body: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: 950.0 // 设置最大宽度为800
+                    ),
+                child: _buildBody(orientation),
+              ),
+            ) // 修改body构建方式
+            ),
       );
     });
   }
@@ -590,67 +596,67 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                               ),
                               const Spacer(),
                               // 评分信息
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                          imageWidth * 1 / 16),
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondaryContainer
-                                            .toOpacity(0.72),
-                                        width: 4.0, // 设置边框宽度
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '${bangumiItem.score}',
+                                      style: TextStyle(
+                                        fontSize: imageWidth * 0.14,
                                       ),
                                     ),
-                                    child: Text('#${bangumiItem.rank}',
-                                        style: TextStyle(
-                                            fontSize: imageWidth * 1 / 10,
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  SizedBox(
-                                    width: 5,
-                                  ),
-                                  Container(
-                                    padding: EdgeInsets.all(4.0), // 可选，设置内边距
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                          imageWidth * 1 / 16), // 设置圆角半径
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondaryContainer
-                                            .toOpacity(0.72),
-                                        width: 4.0, // 设置边框宽度
-                                      ),
+                                    SizedBox(
+                                      width: 5,
                                     ),
-                                    child: Text(
+                                    Container(
+                                      padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                                      decoration: BoxDecoration(
+                                        borderRadius:
+                                            BorderRadius.circular(8), // 设置圆角半径
+                                        border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondaryContainer
+                                              .toOpacity(0.72),
+                                          width: 2.0, // 设置边框宽度
+                                        ),
+                                      ),
+                                      child: Text(
                                         Utils.getRatingLabel(bangumiItem.score),
                                         style: TextStyle(
-                                            fontSize: imageWidth * 1 / 10,
-                                            fontWeight: FontWeight.bold)),
-                                  ),
-                                  SizedBox(
-                                    width: 5,
-                                  ),
-                                  RatingBarIndicator(
-                                    itemCount: 5,
-                                    rating: bangumiItem.score.toDouble() / 2,
-                                    itemBuilder: (context, index) => const Icon(
-                                      Icons.star_rounded,
+                                          fontSize: imageWidth * 0.06,
+                                        ),
+                                      ),
                                     ),
-                                    itemSize: imageWidth * 1 / 10,
-                                  ),
-                                  SizedBox(
-                                    width: 5,
-                                  ),
-                                  Text('( ${bangumiItem.total} 人评)',
-                                      style: TextStyle(
-                                        fontSize: imageWidth * 1 / 10,
-                                      ))
-                                ],
+                                    SizedBox(
+                                      width: 4,
+                                    ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end, // 右对齐
+                                      children: [
+                                        RatingBarIndicator(
+                                          itemCount: 5,
+                                          rating:
+                                              bangumiItem.score.toDouble() / 2,
+                                          itemBuilder: (context, index) =>
+                                              const Icon(
+                                            Icons.star_rounded,
+                                          ),
+                                          itemSize: imageWidth * 0.12,
+                                        ),
+                                        Text(
+                                          '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                                          style: TextStyle(
+                                              fontSize: imageWidth * 0.06),
+                                        )
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),

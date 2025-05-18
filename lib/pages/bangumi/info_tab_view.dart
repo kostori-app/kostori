@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:kostori/components/error_widget.dart';
@@ -16,6 +17,8 @@ import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/utils/utils.dart';
 
 import 'package:kostori/pages/line_chart_page.dart';
+
+import 'bangumi_search_page.dart';
 
 class InfoTabView extends StatefulWidget {
   const InfoTabView({
@@ -155,6 +158,8 @@ class _InfoTabViewState extends State<InfoTabView>
                         ),
                         onPressed: () {
                           // 标签点击逻辑
+                          context.to(() => BangumiSearchPage(
+                              tag: widget.bangumiItem.tags[index].name));
                         },
                       ),
                     ),

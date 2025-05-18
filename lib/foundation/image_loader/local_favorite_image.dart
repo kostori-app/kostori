@@ -1,13 +1,14 @@
-import 'dart:async' show Future, StreamController;
+import 'dart:async' show Future;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:kostori/network/images.dart';
-import 'package:kostori/utils/io.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart'
     as image_provider;
+import 'package:kostori/network/images.dart';
+import 'package:kostori/utils/io.dart';
 
 class LocalFavoriteImageProvider
     extends BaseImageProvider<image_provider.LocalFavoriteImageProvider> {

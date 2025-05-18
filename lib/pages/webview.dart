@@ -12,7 +12,6 @@ import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/network/app_dio.dart';
 
 import 'package:url_launcher/url_launcher_string.dart';
 export 'package:flutter_inappwebview/flutter_inappwebview.dart'

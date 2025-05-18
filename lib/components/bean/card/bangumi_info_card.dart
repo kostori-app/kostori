@@ -52,7 +52,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
   Widget _buildStatsRow(BuildContext context) {
     final collection = bangumiItem.collection!; // 提前解构，避免重复访问
     final total =
-        collection.values.fold<int>(0, (sum, val) => sum + (val ?? 0)); // 计算总数
+        collection.values.fold<int>(0, (sum, val) => sum + (val)); // 计算总数
 
     // 定义统计数据项（类型 + 显示文本 + 颜色）
     final stats = [

@@ -8,8 +8,6 @@ import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/utils/image.dart';
 import 'package:kostori/network/app_dio.dart';
 
-import 'app_dio.dart';
-
 abstract class ImageDownloader {
   static Stream<ImageDownloadProgress> loadThumbnail(
       String url, String? sourceKey,

@@ -148,7 +148,7 @@ class BangumiItem {
             },
       ),
       tags: tagList,
-      totalEpisodes: json['total_episodes'] ?? 0,
+      totalEpisodes: json['total_episodes'] ?? json['eps'] ?? 0,
       count: Map<String, int>.from(json['rating']?['count'] ?? {}),
       collection: Map<String, int>.from(json['collection'] ?? {}),
       // collection: Map<String, int>.from(json['collection']),
