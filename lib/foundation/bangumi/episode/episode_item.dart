@@ -1,20 +1,26 @@
 class EpisodeInfo {
   int id;
   num episode;
+  int ep;
+  int comment;
   int type;
   String name;
   String nameCn;
   String airDate;
   String duration;
+  String desc;
 
   EpisodeInfo(
       {required this.id,
       required this.episode,
+      required this.ep,
+      required this.comment,
       required this.type,
       required this.name,
       required this.nameCn,
       required this.airDate,
-      required this.duration});
+      required this.duration,
+      required this.desc});
 
   factory EpisodeInfo.fromJson(Map<String, dynamic> json) {
     return EpisodeInfo(
@@ -24,7 +30,10 @@ class EpisodeInfo {
         name: json['name'] ?? '',
         nameCn: json['name_cn'] ?? '',
         airDate: json['airdate'] ?? '',
-        duration: json['duration'] ?? '');
+        duration: json['duration'] ?? '',
+        desc: json['desc'] ?? '',
+        ep: json['ep'] ?? 0,
+        comment: json['comment'] ?? 0);
   }
 
   factory EpisodeInfo.fromTemplate() {
@@ -35,7 +44,10 @@ class EpisodeInfo {
         name: '',
         nameCn: '',
         airDate: '',
-        duration: '');
+        duration: '',
+        desc: '',
+        ep: 0,
+        comment: 0);
   }
 
   void reset() {
@@ -44,6 +56,9 @@ class EpisodeInfo {
     type = 0;
     name = '';
     nameCn = '';
+    desc = '';
+    ep = 0;
+    comment = 0;
   }
 
   String readType() {

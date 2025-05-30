@@ -627,7 +627,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                       child: Text(
                                         Utils.getRatingLabel(bangumiItem.score),
                                         style: TextStyle(
-                                          fontSize: imageWidth * 0.06,
+                                          fontSize: imageWidth * 0.08,
                                         ),
                                       ),
                                     ),

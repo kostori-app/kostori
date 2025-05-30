@@ -16,6 +16,8 @@ import 'package:kostori/foundation/bangumi/character/character_response.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_response.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
+import '../foundation/bangumi/bangumi_subject_relations_item.dart';
+
 class Bangumi {
   static Future<List<BangumiItem>> bangumiPostSearch(String keyword,
       {List<String> tags = const [],
@@ -176,6 +178,30 @@ class Bangumi {
     }
   }
 
+  static Future<List<BangumiSRI>> getBangumiSRIByID(int id) async {
+    List<BangumiSRI> bangumiList = [];
+    try {
+      final res = await Request().get('${Api.bangumiInfoByID}$id/subjects',
+          options: Options(headers: bangumiHTTPHeader));
+      final jsonList = res.data;
+      for (dynamic jsonItem in jsonList) {
+        if (jsonItem is Map<String, dynamic>) {
+          try {
+            BangumiSRI bangumiSRI = BangumiSRI.fromJson(jsonItem);
+            if (bangumiSRI.type == 2) {
+              bangumiList.add(bangumiSRI);
+            }
+          } catch (e, s) {
+            Log.addLog(LogLevel.error, 'getBangumiSRIByID', '$e\n$s');
+          }
+        }
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'getBangumiSRIByID', '$e\n$s');
+    }
+    return bangumiList;
+  }
+
   static Future<CommentResponse> getBangumiCommentsByID(int id,
       {int offset = 0}) async {
     CommentResponse commentResponse = CommentResponse.fromTemplate();
@@ -250,7 +276,6 @@ class Bangumi {
   static Future<void> getBangumiInfoBind(int id) async {
     try {
       var res = await getBangumiInfoByID(id);
-      // Log.addLog(LogLevel.info, 'bangumiGetBangumiInfoBind', res.toString());
       if (res != null) {
         BangumiManager().addBnagumiBinding(res);
       }
@@ -436,7 +461,7 @@ class Bangumi {
       final jsonData = res.data;
       commentResponse = EpisodeCommentResponse.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'getBangumiCommentsByEpisodeID', '$e\n$s');
     }
     return commentResponse;
   }
@@ -452,7 +477,7 @@ class Bangumi {
       final jsonData = res.data;
       commentResponse = CharacterCommentResponse.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'getCharacterCommentsByCharacterID', '$e\n$s');
     }
     return commentResponse;
   }
@@ -469,5 +494,31 @@ class Bangumi {
       Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
     }
     return characterFullItem;
+  }
+
+  static Future<List<BangumiItem>> getBangumiTrendsList(
+      {int type = 2, int limit = 24, int offset = 0}) async {
+    List<BangumiItem> bangumiList = [];
+    var params = <String, dynamic>{
+      'type': type,
+      'limit': limit,
+      'offset': offset,
+    };
+    try {
+      final res = await Request().get(Api.bangumiTrendingByNext,
+          data: params,
+          options: Options(
+              headers: bangumiHTTPHeader, contentType: 'application/json'));
+      final jsonData = res.data;
+      final jsonList = jsonData['data'];
+      for (dynamic jsonItem in jsonList) {
+        if (jsonItem is Map<String, dynamic>) {
+          bangumiList.add(BangumiItem.fromJson(jsonItem['subject']));
+        }
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'getBangumiTrendsList', '$e\n$s');
+    }
+    return bangumiList;
   }
 }

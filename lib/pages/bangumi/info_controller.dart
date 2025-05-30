@@ -9,6 +9,8 @@ import 'package:kostori/network/bangumi.dart';
 
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
+import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
+
 part 'info_controller.g.dart';
 
 class InfoController = _InfoController with _$InfoController;
@@ -22,6 +24,8 @@ abstract class _InfoController with Store {
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   final List<String> tabs = <String>['概览', '吐槽', '角色', '制作'];
+
+  List<BangumiSRI> bangumiSRI = [];
 
   @observable
   bool isLoading = false;
@@ -42,6 +46,8 @@ abstract class _InfoController with Store {
     isLoading = true;
     try {
       bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+      bangumiSRI = [];
+      bangumiSRI = await Bangumi.getBangumiSRIByID(id);
       isLoading = false;
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());

@@ -1,8 +1,12 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:kostori/components/error_widget.dart';
@@ -17,8 +21,15 @@ import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/utils/utils.dart';
 
 import 'package:kostori/pages/line_chart_page.dart';
+import 'package:text_scroll/text_scroll.dart';
 
-import 'bangumi_search_page.dart';
+import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+
+import 'bangumi_all_episode_page.dart';
+import 'bangumi_episode_info_page.dart';
 
 class InfoTabView extends StatefulWidget {
   const InfoTabView({
@@ -31,11 +42,13 @@ class InfoTabView extends StatefulWidget {
     required this.loadCharacters,
     required this.loadStaff,
     required this.bangumiItem,
+    required this.bangumiSRI,
     required this.allEpisodes,
     required this.commentsList,
     required this.characterList,
     required this.staffList,
     required this.isLoading,
+    required this.infoController,
   });
 
   final bool commentsQueryTimeout;
@@ -46,11 +59,13 @@ class InfoTabView extends StatefulWidget {
   final Future<void> Function() loadCharacters;
   final Future<void> Function() loadStaff;
   final BangumiItem bangumiItem;
+  final List<BangumiSRI> bangumiSRI;
   final List<EpisodeInfo> allEpisodes;
   final List<CommentItem> commentsList;
   final List<CharacterItem> characterList;
   final List<StaffFullItem> staffList;
   final bool isLoading;
+  final InfoController infoController;
 
   @override
   State<InfoTabView> createState() => _InfoTabViewState();
@@ -131,8 +146,10 @@ class _InfoTabViewState extends State<InfoTabView>
                     );
                   }
                 }),
-                const SizedBox(height: 16),
-                Text('标签', style: TextStyle(fontSize: 18)),
+                const SizedBox(height: 8),
+                Text('标签',
+                    style:
+                        TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8.0,
@@ -181,17 +198,248 @@ class _InfoTabViewState extends State<InfoTabView>
                       ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                if (MediaQuery.sizeOf(context).width <= 1200 &&
-                    !widget.isLoading)
-                  Text('评分统计图', style: TextStyle(fontSize: 18)),
                 const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text('剧集 (${widget.allEpisodes.length})',
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    TextButton(
+                        onPressed: () {
+                          context.to(() => BangumiAllEpisodePage(
+                                allEpisodes: widget.allEpisodes,
+                                infoController: widget.infoController,
+                              ));
+                        },
+                        child: Text('more'.tl))
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 12,
+                  children: [
+                    // 先显示最多15个
+                    ...widget.allEpisodes.take(15).map((episode) {
+                      return SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: Card(
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color:
+                                  context.colorScheme.onSurface.withAlpha(25),
+                              width: 2,
+                            ),
+                          ),
+                          color: Theme.of(context).colorScheme.surface,
+                          shadowColor: Theme.of(context).shadowColor,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              context.to(() => BangumiEpisodeInfoPage(
+                                    episode: episode,
+                                    infoController: widget.infoController,
+                                  ));
+                            },
+                            onLongPress: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    content: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 320),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "ep${episode.episode}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                            style: const TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          if (episode.nameCn.isNotEmpty)
+                                            Text(
+                                                "ep${episode.episode}.${episode.name}"),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Text("放送时间：${episode.airDate}"),
+                                              const SizedBox(width: 8),
+                                              Text("时长：${episode.duration}"),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(episode.desc),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                            child: Center(
+                              child: Text(episode.episode.toString()),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    // 如果超过15个，显示一个“...”的卡片
+                    if (widget.allEpisodes.length > 15)
+                      SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: Card(
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color:
+                                  context.colorScheme.onSurface.withAlpha(25),
+                              width: 2,
+                            ),
+                          ),
+                          color: Theme.of(context).colorScheme.surface,
+                          shadowColor: Theme.of(context).shadowColor,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              context.to(() => BangumiAllEpisodePage(
+                                  allEpisodes: widget.allEpisodes,
+                                  infoController: widget.infoController));
+                            },
+                            child: const Center(
+                              child: Text('...'),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                if (widget.bangumiSRI.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('关联条目',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 240, // 根据卡片高度调整
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: widget.bangumiSRI.length,
+                      itemBuilder: (context, index) {
+                        final item = widget.bangumiSRI[index];
+
+                        return Container(
+                            width: 140,
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                            child: InkWell(
+                              onTap: () {
+                                App.mainNavigatorKey?.currentContext
+                                    ?.to(() => BangumiInfoPage(
+                                          bangumiItem: BangumiItem(
+                                              id: item.id,
+                                              type: 2,
+                                              name: item.name,
+                                              nameCn: item.nameCn,
+                                              summary: '',
+                                              airDate: '',
+                                              airWeekday: 1,
+                                              rank: 0,
+                                              total: 0,
+                                              totalEpisodes: 0,
+                                              score: 0,
+                                              images: item.images,
+                                              tags: []),
+                                        ));
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Card(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    // 封面图
+                                    ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(12)),
+                                      child: CachedNetworkImage(
+                                        imageUrl: item.images['large']!,
+                                        width: 140,
+                                        height: 180,
+                                        // 固定高度
+                                        fit: BoxFit.cover,
+                                        placeholder: (context, url) =>
+                                            MiscComponents.placeholder(
+                                                context, 140, 180),
+                                        errorListener: (e) {
+                                          Log.addLog(LogLevel.error, 'image',
+                                              e.toString());
+                                        },
+                                        errorWidget: (BuildContext context,
+                                                String url, Object error) =>
+                                            MiscComponents.placeholder(
+                                                context, 140, 180),
+                                      ),
+                                    ),
+
+                                    // 标题
+                                    Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: Center(
+                                          child: TextScroll(
+                                            item.nameCn.isNotEmpty
+                                                ? item.nameCn
+                                                : item.name,
+                                            mode: TextScrollMode.endless,
+                                            textAlign: TextAlign.center,
+                                            delayBefore: const Duration(
+                                                milliseconds: 500),
+                                            velocity: const Velocity(
+                                                pixelsPerSecond: Offset(40, 0)),
+                                            style:
+                                                const TextStyle(fontSize: 14),
+                                          ),
+                                        )),
+                                    Padding(
+                                        padding: const EdgeInsets.all(2.0),
+                                        child: Center(
+                                          child: Text(
+                                            item.relation,
+                                            style:
+                                                const TextStyle(fontSize: 14),
+                                          ),
+                                        ))
+                                  ],
+                                ),
+                              ),
+                            ));
+                      },
+                    ),
+                  ),
+                ],
                 if (MediaQuery.sizeOf(context).width <= 1200 &&
-                    !widget.isLoading &&
-                    !count)
+                    !widget.isLoading) ...[
+                  const SizedBox(height: 8),
+                  Text('评分统计图',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
                   LineChatPage(
                     bangumiItem: widget.bangumiItem,
                   ),
+                ]
               ],
             ),
           ),

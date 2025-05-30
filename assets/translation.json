@@ -262,7 +262,8 @@
     "Source URL": "源地址",
     "The URL should point to a 'index.json' file": "该URL应指向一个'index.json'文件",
     "Refresh": "刷新",
-    "Favorite actions": "操作收藏"
+    "Favorite actions": "操作收藏",
+    "All Episodes": "全部剧集"
   },
   "zh_TW": {
     "Home": "首頁",

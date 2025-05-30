@@ -1,0 +1,2 @@
+D:/kostori/android/app/.cxx/RelWithDebInfo/314n4o2m/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/kostori/android/app/.cxx/RelWithDebInfo/314n4o2m/armeabi-v7a/CMakeFiles/rebuild_cache.dir

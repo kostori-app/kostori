@@ -9,8 +9,8 @@ class Api {
   // 从条目ID获取详细信息
   static const String bangumiInfoByID = 'https://api.bgm.tv/v0/subjects/';
 
-  // Next条目API
-  static const String bangumiInfoByIDNext = 'https://next.bgm.tv/p1/subjects/';
+  // 从条目ID获取剧集ID
+  static const String bangumiEpisodeByID = 'https://api.bgm.tv/v0/episodes';
 
   // 每日放送
   static const String bangumiCalendar = 'https://api.bgm.tv/calendar';
@@ -21,9 +21,6 @@ class Api {
 
   static const String checkBangumiDataUrl =
       'https://api.github.com/repos/bangumi-data/bangumi-data/releases/latest';
-
-  // 从条目ID获取剧集ID
-  static const String bangumiEpisodeByID = 'https://api.bgm.tv/v0/episodes';
 
   // Github镜像
   static const String gitMirror = 'https://ghfast.top/';
@@ -41,6 +38,11 @@ class Api {
       'https://next.bgm.tv/p1/characters/{0}';
   static const String bangumiStaffByIDNext =
       'https://next.bgm.tv/p1/subjects/{0}/staffs/persons';
+  static const String bangumiTrendingByNext =
+      'https://next.bgm.tv/p1/trending/subjects';
+
+  // Next条目API
+  static const String bangumiInfoByIDNext = 'https://next.bgm.tv/p1/subjects/';
 
   static String formatUrl(String url, List<dynamic> params) {
     for (int i = 0; i < params.length; i++) {

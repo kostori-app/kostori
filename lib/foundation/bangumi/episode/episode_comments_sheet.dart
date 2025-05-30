@@ -2,24 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../pages/bangumi/info_controller.dart';
-import '../../../components/bean/card/episode_comments_card.dart';
-import 'episode_item.dart';
-
-// class EpisodeInfo extends InheritedWidget {
-//   /// This widget receives changes of episode and notify it's child,
-//   /// trigger [didChangeDependencies] of it's child.
-//   const EpisodeInfo({super.key, required this.episode, required super.child});
-//
-//   final int episode;
-//
-//   @override
-//   bool updateShouldNotify(covariant InheritedWidget oldWidget) => true;
-//
-//   static EpisodeInfo? of(BuildContext context) {
-//     return context.dependOnInheritedWidgetOfExactType<EpisodeInfo>();
-//   }
-// }
+import 'package:kostori/pages/bangumi/info_controller.dart';
+import 'package:kostori/components/bean/card/episode_comments_card.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
 class EpisodeCommentsSheet extends StatefulWidget {
   const EpisodeCommentsSheet(
@@ -290,16 +275,19 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
     return Scaffold(
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [commentsInfo, Expanded(child: episodeCommentsBody)],
-        ),
         onRefresh: () async {
           await widget.loadComments(ep == 0 ? episode : ep);
-          if (mounted) {
-            setState(() {});
-          }
+          if (mounted) setState(() {});
         },
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: commentsInfo),
+            SliverFillRemaining(
+              hasScrollBody: true,
+              child: episodeCommentsBody,
+            ),
+          ],
+        ),
       ),
     );
   }

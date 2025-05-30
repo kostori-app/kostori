@@ -11,6 +11,8 @@ import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
 
+import 'me_page.dart';
+
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -44,6 +46,9 @@ class _MainPageState extends State<MainPage> {
   }
 
   final _pages = [
+    const MePage(
+      key: PageStorageKey('me'),
+    ),
     const BangumiPage(
       key: PageStorageKey('bangumi'),
     ),
@@ -64,6 +69,11 @@ class _MainPageState extends State<MainPage> {
       observer: _observer,
       navigatorKey: _navigatorKey!,
       paneItems: [
+        PaneItemEntry(
+          label: '个人',
+          icon: Icons.person_outline,
+          activeIcon: Icons.person,
+        ),
         PaneItemEntry(
           label: '番组计划',
           icon: Icons.account_balance_outlined,

@@ -261,10 +261,19 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.toOpacity(0.9),
+                      Colors.black.toOpacity(0.8), // 起始透明度提高
+                      Colors.black.toOpacity(0.6), // 中间过渡点
+                      Colors.black.toOpacity(0.3),
                       Colors.transparent,
                     ],
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.toOpacity(0.2),
+                      blurRadius: 20.0, // 边缘模糊
+                      spreadRadius: 5.0,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -287,9 +296,18 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.toOpacity(0.9),
+                      Colors.black.toOpacity(0.3), // 起始透明度提高
+                      Colors.black.toOpacity(0.6), // 中间过渡点
+                      Colors.black.toOpacity(0.8),
                     ],
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.toOpacity(0.2),
+                      blurRadius: 20.0, // 边缘模糊
+                      spreadRadius: 5.0,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -324,19 +342,19 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   )
                 : Container()),
         //底部进度图片预览
-        Positioned(
-            bottom: 60,
-            left: 0,
-            right: 0,
-            child: widget.playerController.showPreviewImage
-                ? Wrap(
-                    alignment: WrapAlignment.center,
-                    children: <Widget>[
-                      if (widget.playerController.previewImage != null)
-                        _buildPreviewImage()
-                    ],
-                  )
-                : Container()),
+        // Positioned(
+        //     bottom: 60,
+        //     left: 0,
+        //     right: 0,
+        //     child: widget.playerController.showPreviewImage
+        //         ? Wrap(
+        //             alignment: WrapAlignment.center,
+        //             children: <Widget>[
+        //               if (widget.playerController.previewImage != null)
+        //                 _buildPreviewImage()
+        //             ],
+        //           )
+        //         : Container()),
         // 顶部播放速度条
         Positioned(
             top: 25,

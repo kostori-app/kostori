@@ -1,0 +1,2 @@
+D:/kostori/android/app/.cxx/Debug/6q3h2x3v/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/kostori/android/app/.cxx/Debug/6q3h2x3v/arm64-v8a/CMakeFiles/rebuild_cache.dir

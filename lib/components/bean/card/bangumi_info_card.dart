@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 import 'package:kostori/foundation/app.dart';
@@ -173,21 +174,38 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                               mainAxisAlignment: MainAxisAlignment.start,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  bangumiItem.nameCn,
-                                  style: TextStyle(
+                                GestureDetector(
+                                  onLongPress: () {
+                                    Clipboard.setData(ClipboardData(
+                                        text: bangumiItem.nameCn));
+                                    App.rootContext
+                                        .showMessage(message: '已复制到剪贴板.');
+                                  },
+                                  child: Text(
+                                    bangumiItem.nameCn,
+                                    style: TextStyle(
                                       fontSize: width * 1 / 10,
-                                      fontWeight: FontWeight.bold),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  bangumiItem.name,
-                                  style: TextStyle(
-                                    fontSize: width * 1 / 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                GestureDetector(
+                                  onLongPress: () {
+                                    Clipboard.setData(
+                                        ClipboardData(text: bangumiItem.name));
+                                    App.rootContext
+                                        .showMessage(message: '已复制到剪贴板.');
+                                  },
+                                  child: Text(
+                                    bangumiItem.name,
+                                    style: TextStyle(
+                                      fontSize: width * 1 / 24,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                                 SizedBox(height: 12.0),
                                 Row(

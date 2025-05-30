@@ -307,6 +307,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                 return InfoTabView(
                   tabController: infoTabController,
                   bangumiItem: infoController.bangumiItem,
+                  bangumiSRI: infoController.bangumiSRI,
                   allEpisodes: infoController.allEpisodes,
                   commentsQueryTimeout: commentsQueryTimeout,
                   charactersQueryTimeout: charactersQueryTimeout,
@@ -318,6 +319,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                   characterList: infoController.characterList,
                   staffList: infoController.staffList,
                   isLoading: infoController.isLoading,
+                  infoController: infoController,
                 );
               }),
             ),

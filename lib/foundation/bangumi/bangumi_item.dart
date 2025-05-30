@@ -125,9 +125,9 @@ class BangumiItem {
       id: json['id'],
       type: json['type'] ?? 2,
       name: json['name'] ?? '',
-      nameCn: (json['name_cn'] ?? '') == ''
+      nameCn: (json['name_cn'] ?? json['nameCN'] ?? '') == ''
           ? (json['name'] ?? '')
-          : json['name_cn'],
+          : json['name_cn'] ?? json['nameCN'],
       summary: json['summary'] ?? '',
       airDate: json['air_date'] ?? json['date'] ?? '',
       airWeekday: json['air_weekday'] ??
@@ -149,7 +149,20 @@ class BangumiItem {
       ),
       tags: tagList,
       totalEpisodes: json['total_episodes'] ?? json['eps'] ?? 0,
-      count: Map<String, int>.from(json['rating']?['count'] ?? {}),
+      count: (() {
+        final rawCount = json['rating']?['count'];
+        if (rawCount is Map) {
+          return rawCount
+              .map((key, value) => MapEntry(key.toString(), value as int));
+        } else if (rawCount is List) {
+          return {
+            for (int i = 0; i < rawCount.length; i++)
+              '${i + 1}': rawCount[i] as int,
+          };
+        } else {
+          return <String, int>{};
+        }
+      })(),
       collection: Map<String, int>.from(json['collection'] ?? {}),
       // collection: Map<String, int>.from(json['collection']),
     );
