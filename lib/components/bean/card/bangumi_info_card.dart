@@ -10,7 +10,7 @@ import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:kostori/components/misc_components.dart';
 
-import '../../../pages/aggregated_search_page.dart';
+import 'package:kostori/pages/aggregated_search_page.dart';
 
 class _StatItem {
   final String key;
@@ -25,11 +25,13 @@ class BangumiInfoCardV extends StatefulWidget {
       {super.key,
       required this.bangumiItem,
       required this.isLoading,
-      required this.allEpisodes});
+      required this.allEpisodes,
+      this.heroTag});
 
   final BangumiItem bangumiItem;
   final List<EpisodeInfo> allEpisodes;
   final bool isLoading;
+  final String? heroTag;
 
   @override
   State<BangumiInfoCardV> createState() => _BangumiInfoCardVState();
@@ -141,9 +143,13 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                     final currentWeekEp =
                         Utils.findCurrentWeekEpisode(allEpisodes);
 
+                    final type0Episodes =
+                        allEpisodes.where((ep) => ep.type == 0).toList();
+
                     final isCompleted = currentWeekEp != null &&
-                        allEpisodes.isNotEmpty &&
-                        currentWeekEp == allEpisodes.last;
+                        type0Episodes.isNotEmpty &&
+                        currentWeekEp == type0Episodes.last;
+
                     return Container(
                       width: MediaQuery.of(context).size.width,
                       height: height,
@@ -155,7 +161,9 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                           ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Hero(
-                                tag: widget.bangumiItem.id,
+                                tag: (widget.heroTag == null)
+                                    ? widget.bangumiItem.id
+                                    : '${widget.heroTag}-${widget.bangumiItem.id}',
                                 child: CachedNetworkImage(
                                   imageUrl: widget.bangumiItem.images['large']!,
                                   width: width,
@@ -234,11 +242,11 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                       ),
                                     ),
                                     SizedBox(width: 4.0),
-                                    if (currentWeekEp?.episode != null)
+                                    if (currentWeekEp?.sort != null)
                                       Text(
                                         isCompleted
                                             ? '全 ${bangumiItem.totalEpisodes} 话'
-                                            : '连载至 ${currentWeekEp?.episode} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                            : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
                                         style: TextStyle(fontSize: 12.0),
                                       ),
                                   ],

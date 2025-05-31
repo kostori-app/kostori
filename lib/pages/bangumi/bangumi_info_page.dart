@@ -18,9 +18,11 @@ class BangumiInfoPage extends StatefulWidget {
   const BangumiInfoPage({
     super.key,
     required this.bangumiItem,
+    this.heroTag,
   });
 
   final BangumiItem bangumiItem;
+  final String? heroTag;
 
   @override
   State<BangumiInfoPage> createState() => _BangumiInfoPageState();
@@ -281,6 +283,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                       bangumiItem: infoController.bangumiItem,
                                       allEpisodes: infoController.allEpisodes,
                                       isLoading: infoController.isLoading,
+                                      heroTag: widget.heroTag,
                                     ),
                                   ),
                                 ),

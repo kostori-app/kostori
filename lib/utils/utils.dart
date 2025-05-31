@@ -44,11 +44,15 @@ class Utils {
 
     final now = DateTime.now();
     final currentWeek = getISOWeekNumber(now);
+    final targetEpisodes = allEpisodes.where((e) => e.type == 0).toList();
+
+    if (targetEpisodes.isEmpty) return null;
+
     List<bool?> dateStatusList = []; // true=未来, false=过去, null=无效日期
 
     try {
       // 第一步：收集所有日期的状态
-      for (final ep in allEpisodes) {
+      for (final ep in targetEpisodes) {
         try {
           final airDate = DateTime.parse(ep.airDate);
           dateStatusList.add(airDate.isAfter(now));
@@ -71,22 +75,22 @@ class Utils {
       // 第三步：根据统计结果选择策略
       if (pastCount > futureCount) {
         // 过去多：从后往前找第一个有效的过去日期
-        for (var i = allEpisodes.length - 1; i >= 0; i--) {
+        for (var i = targetEpisodes.length - 1; i >= 0; i--) {
           if (dateStatusList[i] == false) {
-            return allEpisodes[i];
+            return targetEpisodes[i];
           }
         }
-        // 如果全是无效日期，返回最后一项
-        return allEpisodes.last;
+        // 如果全是无效日期，返回最后一个 type == 0 的剧集
+        return targetEpisodes.last;
       } else {
         // 未来多或相等：从前往后找第一个有效的未来日期
-        for (var i = 0; i < allEpisodes.length; i++) {
+        for (var i = 0; i < targetEpisodes.length; i++) {
           if (dateStatusList[i] == true) {
-            return allEpisodes[i];
+            return targetEpisodes[i];
           }
         }
-        // 如果全是无效日期，返回第一项
-        return allEpisodes.first;
+        // 如果全是无效日期，返回第一个 type == 0 的剧集
+        return targetEpisodes.first;
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');

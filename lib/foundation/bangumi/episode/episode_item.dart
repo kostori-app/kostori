@@ -1,6 +1,6 @@
 class EpisodeInfo {
   int id;
-  num episode;
+  num sort;
   int ep;
   int comment;
   int type;
@@ -12,7 +12,7 @@ class EpisodeInfo {
 
   EpisodeInfo(
       {required this.id,
-      required this.episode,
+      required this.sort,
       required this.ep,
       required this.comment,
       required this.type,
@@ -25,7 +25,7 @@ class EpisodeInfo {
   factory EpisodeInfo.fromJson(Map<String, dynamic> json) {
     return EpisodeInfo(
         id: json['id'] ?? 0,
-        episode: json['sort'] ?? 0,
+        sort: json['sort'] ?? 0,
         type: json['type'] ?? 0,
         name: json['name'] ?? '',
         nameCn: json['name_cn'] ?? '',
@@ -39,7 +39,7 @@ class EpisodeInfo {
   factory EpisodeInfo.fromTemplate() {
     return EpisodeInfo(
         id: 0,
-        episode: 0,
+        sort: 0,
         type: 0,
         name: '',
         nameCn: '',
@@ -52,7 +52,7 @@ class EpisodeInfo {
 
   void reset() {
     id = 0;
-    episode = 0;
+    sort = 0;
     type = 0;
     name = '';
     nameCn = '';

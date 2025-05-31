@@ -30,10 +30,7 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
 
   Future<void> loadComments(int episode, {int offset = 0}) async {
     commentsQueryTimeout = false;
-    await queryBangumiEpisodeCommentsByID(
-            infoController.bangumiItem.id, episode,
-            offset: offset)
-        .then((_) {
+    await queryBangumiEpisodeCommentsByID(episode, offset: offset).then((_) {
       if (infoController.episodeCommentsList.isEmpty && mounted) {
         setState(() {
           commentsQueryTimeout = true;
@@ -42,10 +39,8 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
     });
   }
 
-  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode,
-      {int offset = 0}) async {
-    await infoController.queryBangumiEpisodeCommentsByID(id, episode,
-        offset: offset);
+  Future<void> queryBangumiEpisodeCommentsByID(int id, {int offset = 0}) async {
+    await infoController.queryBangumiEpisodeCommentsByEpID(id, offset: offset);
     if (mounted) {
       setState(() {});
     }
@@ -54,7 +49,7 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
   @override
   void initState() {
     super.initState();
-    loadComments((episode.ep == 0) ? episode.episode.toInt() : episode.ep);
+    loadComments(episode.id);
   }
 
   @override
@@ -115,12 +110,12 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "ep${episode.episode}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                        "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                         style: const TextStyle(
                             fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       if (episode.nameCn.isNotEmpty)
-                        Text("ep${episode.episode}.${episode.name}"),
+                        Text("ep${episode.sort}.${episode.name}"),
                       const SizedBox(height: 8),
                       Row(
                         children: [

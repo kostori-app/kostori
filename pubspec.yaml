@@ -45,7 +45,7 @@ dependencies:
   file_selector: ^1.0.3
   image_picker: ^1.0.2
   flutter_file_dialog: ^3.0.2
-  package_info_plus: ^4.2.0
+  package_info_plus: ^8.3.0
   html: ^0.15.5
   shimmer_animation: ^2.1.0
   cookie_jar: any
@@ -117,7 +117,7 @@ dependencies:
   dlna_dart: ^0.0.8
   gif: ^2.3.0
   flutter_absolute_path_provider: ^0.0.1
-  get_thumbnail_video: ^0.7.3
+  wakelock_plus: 1.2.8
 
 dev_dependencies:
   flutter_test:

@@ -217,8 +217,8 @@ class _InfoTabViewState extends State<InfoTabView>
                 ),
                 const SizedBox(height: 8),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 12,
+                  // spacing: 2,
+                  // runSpacing: 2,
                   children: [
                     // 先显示最多15个
                     ...widget.allEpisodes.take(15).map((episode) {
@@ -259,14 +259,14 @@ class _InfoTabViewState extends State<InfoTabView>
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "ep${episode.episode}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                            "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                                             style: const TextStyle(
                                                 fontSize: 24,
                                                 fontWeight: FontWeight.bold),
                                           ),
                                           if (episode.nameCn.isNotEmpty)
                                             Text(
-                                                "ep${episode.episode}.${episode.name}"),
+                                                "ep${episode.sort}.${episode.name}"),
                                           const SizedBox(height: 8),
                                           Row(
                                             children: [
@@ -285,7 +285,7 @@ class _InfoTabViewState extends State<InfoTabView>
                               );
                             },
                             child: Center(
-                              child: Text(episode.episode.toString()),
+                              child: Text(episode.sort.toString()),
                             ),
                           ),
                         ),

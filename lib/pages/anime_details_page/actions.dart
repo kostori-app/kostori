@@ -730,7 +730,7 @@ abstract mixin class _AnimePageActions {
                                                     Text(
                                                       isCompleted
                                                           ? '全 ${bangumiItem.totalEpisodes} 话'
-                                                          : '连载至 ${currentWeekEp?.episode} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                          : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
                                                       style: TextStyle(
                                                           fontSize: 14.0),
                                                     ),

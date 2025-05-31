@@ -54,6 +54,7 @@ class BangumiWidget {
               onTap: () {
                 App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
                       bangumiItem: bangumiItem,
+                      heroTag: heroTag,
                     ));
               },
               child: Column(
@@ -139,6 +140,7 @@ class BangumiWidget {
           onTap: () {
             App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
                   bangumiItem: bangumiItem,
+                  heroTag: heroTag,
                 ));
           },
           child: Padding(

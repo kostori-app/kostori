@@ -11,10 +11,12 @@ import 'package:kostori/utils/translations.dart';
 
 import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
 
-import '../../components/bangumi_widget.dart';
-import '../../network/bangumi.dart';
-import 'bangumi_info_page.dart';
-import 'bangumi_search_page.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+
+import '../../components/misc_components.dart';
 
 class BangumiPage extends StatefulWidget {
   const BangumiPage({super.key});
@@ -57,6 +59,7 @@ class _BangumiPageState extends State<BangumiPage>
 
   Future<void> queryBangumiByTrend() async {
     isLoadingMore = true;
+    setState(() {});
     var result =
         await Bangumi.getBangumiTrendsList(offset: bangumiItems.length);
     bangumiItems.addAll(result);
@@ -64,16 +67,51 @@ class _BangumiPageState extends State<BangumiPage>
     if (mounted) setState(() {});
   }
 
-  Widget _buildContentListSliver() {
-    return SliverGrid(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return BangumiWidget.buildBriefMode(
-              context, bangumiItems[index], 'Trending');
-        },
-        childCount: bangumiItems.length,
+  Widget _bangumiTrending(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 0.6,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 56,
+              child: Row(
+                children: [
+                  Text('热度排行', style: ts.s18),
+                ],
+              ).paddingHorizontal(16),
+            ),
+            GridView.builder(
+              padding: const EdgeInsets.all(8),
+              physics: const NeverScrollableScrollPhysics(),
+              // 禁止内部滚动
+              shrinkWrap: true,
+              // 让GridView跟随内容高度
+              gridDelegate: SliverGridDelegateWithBangumiItems(true),
+              itemCount: bangumiItems.length,
+              itemBuilder: (context, index) {
+                return BangumiWidget.buildBriefMode(
+                    context, bangumiItems[index], 'Trending');
+              },
+            ),
+            if (isLoadingMore)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(
+                  child: MiscComponents.placeholder(
+                      context, 40, 40, Colors.transparent),
+                ),
+              ),
+          ],
+        ),
       ),
-      gridDelegate: SliverGridDelegateWithBangumiItems(true),
     );
   }
 
@@ -84,7 +122,7 @@ class _BangumiPageState extends State<BangumiPage>
       SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
       const _SearchBar(),
       const _Timetable(),
-      _buildContentListSliver(),
+      _bangumiTrending(context),
     ]);
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
@@ -304,8 +342,10 @@ class _TimetableState extends State<_Timetable> {
                         App.mainNavigatorKey?.currentContext
                             ?.to(() => BangumiInfoPage(
                                   bangumiItem: bangumiCalendar[index],
+                                  heroTag: 'Timetable',
                                 ));
                       },
+                      heroTag: 'Timetable',
                     ).paddingHorizontal(8).paddingVertical(2);
                   },
                 ).paddingHorizontal(8).paddingVertical(16),
@@ -317,71 +357,3 @@ class _TimetableState extends State<_Timetable> {
     );
   }
 }
-
-// class _Trending extends StatefulWidget {
-//   const _Trending({super.key});
-//
-//   @override
-//   State<_Trending> createState() => _TrendingState();
-// }
-//
-// class _TrendingState extends State<_Trending>
-//     with AutomaticKeepAliveClientMixin {
-//   final ScrollController scrollController = ScrollController();
-//   List<BangumiItem> bangumiItems = [];
-//   bool isLoadingMore = false;
-//
-//   @override
-//   bool get wantKeepAlive => true;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     scrollController.addListener(scrollListener);
-//     if (bangumiItems.isEmpty) {
-//       queryBangumiByTrend();
-//     }
-//   }
-//
-//   @override
-//   void dispose() {
-//     scrollController.removeListener(scrollListener);
-//     super.dispose();
-//   }
-//
-//   void scrollListener() {
-//     if (scrollController.position.pixels >=
-//             scrollController.position.maxScrollExtent - 200 &&
-//         !isLoadingMore) {
-//       queryBangumiByTrend();
-//     }
-//   }
-//
-//   Future<void> queryBangumiByTrend() async {
-//     isLoadingMore = true;
-//     var result =
-//         await Bangumi.getBangumiTrendsList(offset: bangumiItems.length);
-//     bangumiItems.addAll(result);
-//     isLoadingMore = false;
-//     setState(() {});
-//   }
-//
-//   Widget _buildContentListSliver() {
-//     return SliverGrid(
-//       delegate: SliverChildBuilderDelegate(
-//         (context, index) {
-//           return BangumiWidget.buildBriefMode(
-//               context, bangumiItems[index], 'Trending');
-//         },
-//         childCount: bangumiItems.length,
-//       ),
-//       gridDelegate: SliverGridDelegateWithBangumiItems(true),
-//     );
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     super.build(context);
-//     return _buildContentListSliver();
-//   }
-// }

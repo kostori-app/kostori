@@ -16,14 +16,16 @@ import 'package:kostori/foundation/bangumi/character/character_response.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_response.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
-import '../foundation/bangumi/bangumi_subject_relations_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 
 class Bangumi {
   static Future<List<BangumiItem>> bangumiPostSearch(String keyword,
       {List<String> tags = const [],
       bool nsfw = false,
       String sort = 'rank',
-      int offset = 0}) async {
+      int offset = 0,
+      String airDate = '',
+      String endDate = ''}) async {
     List<BangumiItem> bangumiList = [];
 
     var params = <String, dynamic>{
@@ -33,6 +35,10 @@ class Bangumi {
         "type": [2],
         "tag": tags,
         "rank": (sort == 'rank') ? [">0", "<=99999"] : [">=0", "<=99999"],
+        "air_date": [
+          if (airDate.isNotEmpty) '>=$airDate',
+          if (endDate.isNotEmpty) '<$endDate',
+        ],
         "nsfw": nsfw
       },
     };
@@ -424,7 +430,23 @@ class Bangumi {
       final jsonData = res.data['data'][0];
       episodeInfo = EpisodeInfo.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'getBangumiEpisodeByID', '$e\n$s');
+    }
+    return episodeInfo;
+  }
+
+  static Future<EpisodeInfo> getBangumiEpisodeByEpID(int id) async {
+    EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
+    var params = <String, dynamic>{
+      'episode_id': id,
+    };
+    try {
+      final res = await Request().get(Api.bangumiEpisodeByID,
+          data: params, options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data['data'][0];
+      episodeInfo = EpisodeInfo.fromJson(jsonData);
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'getBangumiEpisodeByEpID', '$e\n$s');
     }
     return episodeInfo;
   }

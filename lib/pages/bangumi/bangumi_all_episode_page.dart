@@ -169,14 +169,14 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "ep${episode.episode}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                            "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                                             style: const TextStyle(
                                                 fontSize: 24,
                                                 fontWeight: FontWeight.bold),
                                           ),
                                           if (episode.nameCn.isNotEmpty)
                                             Text(
-                                                "ep${episode.episode}.${episode.name}"),
+                                                "ep${episode.sort}.${episode.name}"),
                                           const SizedBox(height: 8),
                                           Row(
                                             children: [
@@ -198,7 +198,7 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 12),
                               child: Text(
-                                "ep${episode.episode}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                                 style: const TextStyle(
                                     fontSize: 24, fontWeight: FontWeight.bold),
                               ),

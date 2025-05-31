@@ -19,7 +19,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/components//bean/appbar/drag_to_move_bar.dart' as dtb;
 import 'package:kostori/utils/utils.dart';
 import 'package:kostori/utils/remote.dart';
-import 'package:kostori/pages/watcher/BatteryWidget.dart';
+import 'package:kostori/components/BatteryWidget.dart';
 
 import '../settings/settings_page.dart';
 

@@ -271,10 +271,11 @@ class BottomInfoState extends State<BottomInfo>
     // 获取当前周的剧集
     final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
 
-    // 判断是否已全部播出（检查是否是最后一项）
+    final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
+
     final isCompleted = currentWeekEp != null &&
-        allEpisodes.isNotEmpty &&
-        currentWeekEp == allEpisodes.last;
+        type0Episodes.isNotEmpty &&
+        currentWeekEp == type0Episodes.last;
 
     return SelectionArea(
       child: Padding(
@@ -351,7 +352,7 @@ class BottomInfoState extends State<BottomInfo>
                               Text(
                                 isCompleted
                                     ? '全 ${bangumiItem.totalEpisodes} 话'
-                                    : '连载至 ${currentWeekEp?.episode} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                    : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
                                 style: TextStyle(fontSize: 14.0),
                               ),
                               Spacer(),

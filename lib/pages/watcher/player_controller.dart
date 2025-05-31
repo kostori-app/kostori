@@ -15,6 +15,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mobx/mobx.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../utils/io.dart';
@@ -286,7 +287,9 @@ abstract class _PlayerController with Store {
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.portraitUp,
       ]);
+      WakelockPlus.disable();
     } else {
+      WakelockPlus.enable();
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky,
           overlays: SystemUiOverlay.values);
       // 进入全屏，使用 App.globalTo 跳转到全屏页面

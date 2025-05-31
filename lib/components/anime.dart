@@ -1569,10 +1569,11 @@ class SimpleAnimeTile extends StatelessWidget {
 }
 
 class BangumiCard extends StatefulWidget {
-  const BangumiCard({super.key, required this.anime, this.onTap});
+  const BangumiCard({super.key, required this.anime, this.onTap, this.heroTag});
 
   final BangumiItem anime;
   final void Function()? onTap;
+  final String? heroTag;
 
   @override
   State<BangumiCard> createState() => _BangumiCardState();
@@ -1597,7 +1598,7 @@ class _BangumiCardState extends State<BangumiCard> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               Widget child = Hero(
-                  tag: widget.anime.id,
+                  tag: '${widget.heroTag}-${widget.anime.id}',
                   child: CachedNetworkImage(
                     imageUrl: image as String,
                     width: double.infinity * 0.72,

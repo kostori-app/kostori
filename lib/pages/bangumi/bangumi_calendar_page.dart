@@ -159,7 +159,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                 'episode_airdate': resultEpisode.airDate,
                 'episode_name': resultEpisode.name,
                 'episode_name_cn': resultEpisode.nameCn,
-                'episode_ep': resultEpisode.episode,
+                'episode_ep': resultEpisode.sort,
               };
             }
           }
@@ -440,6 +440,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                       App.mainNavigatorKey?.currentContext
                           ?.to(() => BangumiInfoPage(
                                 bangumiItem: bangumiList[adjustedIndex],
+                                heroTag: 'calendar',
                               ));
                     },
                     child: bangumiCalendarCard(
@@ -546,7 +547,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                         ClipRRect(
                             borderRadius: BorderRadius.circular(24),
                             child: Hero(
-                              tag: bangumiItem.id,
+                              tag: 'calendar-${bangumiItem.id}',
                               child: CachedNetworkImage(
                                 imageUrl: bangumiItem.images['large']!,
                                 width: imageWidth,

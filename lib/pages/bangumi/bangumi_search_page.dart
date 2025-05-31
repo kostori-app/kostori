@@ -13,6 +13,9 @@ import 'package:kostori/utils/translations.dart';
 
 import 'package:kostori/components/bangumi_widget.dart';
 
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/utils.dart';
+
 class BangumiSearchPage extends StatefulWidget {
   const BangumiSearchPage({super.key, this.tag});
 
@@ -36,6 +39,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   String sort = 'rank';
 
   bool _isLoading = false;
+
+  String airDate = '';
+  String endDate = '';
 
   final List<String> options = [
     '最佳匹配',
@@ -70,12 +76,16 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     super.dispose();
   }
 
+  Future<List<BangumiItem>> bangumiSearch() async {
+    return Bangumi.bangumiPostSearch(keyword,
+        tags: tags, sort: sort, airDate: airDate, endDate: endDate);
+  }
+
   Future<void> _loadinitial() async {
     setState(() {
       _isLoading = true;
     });
-    final newItems =
-        await Bangumi.bangumiPostSearch(keyword, tags: tags, sort: sort);
+    final newItems = await bangumiSearch();
     bangumiItems = newItems;
     if (mounted) {
       setState(() {
@@ -93,7 +103,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         _isLoading = true;
       });
       final result = await Bangumi.bangumiPostSearch(keyword,
-          tags: tags, offset: bangumiItems.length, sort: sort);
+          tags: tags,
+          offset: bangumiItems.length,
+          sort: sort,
+          airDate: airDate,
+          endDate: endDate);
       bangumiItems.addAll(result);
       setState(() {
         _isLoading = false;
@@ -338,8 +352,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       _isLoading = true;
       bangumiItems.clear();
     });
-    final newItems =
-        await Bangumi.bangumiPostSearch(keyword, tags: tags, sort: sort);
+    final newItems = await bangumiSearch();
     bangumiItems = newItems;
     setState(() {
       _isLoading = false;
@@ -381,8 +394,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                       bangumiItems.clear();
                     });
                     context.pop();
-                    final newItems = await Bangumi.bangumiPostSearch(keyword,
-                        tags: tags, sort: sort);
+                    final newItems = await bangumiSearch();
                     bangumiItems = newItems;
                     if (mounted) {
                       setState(() {
@@ -416,6 +428,119 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     );
   }
 
+  void _showAirEndDateDialog(BuildContext context) {
+    DateTime now = DateTime.now();
+    DateTime? air = Utils.safeParseDate(airDate);
+    DateTime? end = Utils.safeParseDate(endDate);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStates) {
+            Future<void> pickDate(bool isAirDate) async {
+              DateTime initial = isAirDate ? (air ?? now) : (end ?? now);
+              DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: initial,
+                firstDate: DateTime(now.year - 50),
+                lastDate: DateTime(now.year + 30),
+              );
+              if (picked != null) {
+                setStates(() {
+                  if (isAirDate) {
+                    air = picked;
+                  } else {
+                    end = picked;
+                  }
+                });
+              }
+            }
+
+            String formatDate(DateTime? date) {
+              if (date == null) return "未选择";
+              return "${date.year.toString().padLeft(4, '0')}-"
+                  "${date.month.toString().padLeft(2, '0')}-"
+                  "${date.day.toString().padLeft(2, '0')}";
+            }
+
+            return AlertDialog(
+              title: Text("选择日期"),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              content: SizedBox(
+                width: 350,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      title: Text("开始日期"),
+                      subtitle: Text(formatDate(air)),
+                      trailing: Icon(Icons.date_range),
+                      onTap: () => pickDate(true),
+                    ),
+                    ListTile(
+                      title: Text("结束日期"),
+                      subtitle: Text(formatDate(end)),
+                      trailing: Icon(Icons.date_range),
+                      onTap: () => pickDate(false),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setStates(() {
+                      air = null;
+                      end = null;
+                    });
+                  },
+                  child: Text("清除日期"),
+                ),
+                // const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("取消"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (air == null && end == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("请选择日期")),
+                      );
+                      return;
+                    }
+
+                    if (air != null && end != null && end!.isBefore(air!)) {
+                      context.showMessage(message: '结束日期不能早于起始日期');
+                      return;
+                    }
+
+                    airDate = air != null ? formatDate(air) : '';
+                    endDate = end != null ? formatDate(end) : '';
+
+                    Log.addLog(LogLevel.info, 'pickDate',
+                        "Air Date: $airDate, End Date: $endDate");
+
+                    Navigator.pop(context);
+                    bangumiItems.clear();
+                    final newItems = await bangumiSearch();
+                    bangumiItems = newItems;
+
+                    setState(() {});
+                  },
+                  child: Text("确认"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _toolBoxWidget(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -429,6 +554,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               onPressed: () {
                 bangumiItems.clear();
                 tags.clear();
+                airDate = '';
+                endDate = '';
                 setState(() {});
               },
               tooltip: "清除标签".tl,
@@ -439,6 +566,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               },
               icon: const Icon(Icons.add)),
           const Spacer(),
+          IconButton(
+              onPressed: () {
+                _showAirEndDateDialog(context);
+              },
+              tooltip: "选择时间".tl,
+              icon: Icon(Icons.calendar_today)),
           IconButton(
               onPressed: () {
                 useBriefMode = !useBriefMode;
@@ -465,8 +598,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               setState(() {
                 _isLoading = true;
               });
-              bangumiItems = await Bangumi.bangumiPostSearch(keyword,
-                  tags: tags, sort: sort);
+              bangumiItems = await bangumiSearch();
               setState(() {
                 _isLoading = false;
               });
@@ -512,8 +644,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   setState(() {
                     _isLoading = true;
                   });
-                  final newItems = await Bangumi.bangumiPostSearch(keyword,
-                      tags: tags, sort: sort);
+                  final newItems = await bangumiSearch();
                   bangumiItems = newItems;
                   setState(() {
                     _isLoading = false;
@@ -556,8 +687,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 _isLoading = true;
                 bangumiItems.clear();
               });
-              final newItems = await Bangumi.bangumiPostSearch(keyword,
-                  tags: tags, sort: sort);
+              final newItems = await bangumiSearch();
               bangumiItems = newItems;
               setState(() {
                 _isLoading = false;
@@ -571,6 +701,58 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _dataTagsWidget(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
+          children: [
+            if (airDate.isNotEmpty)
+              ActionChip(
+                avatar:
+                    Icon(Icons.calendar_today, size: 16, color: Colors.green),
+                label: Text(airDate),
+                onPressed: () async {
+                  airDate = '';
+                  bangumiItems.clear();
+                  final newItems = await bangumiSearch();
+                  bangumiItems = newItems;
+                  setState(() {});
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.green.toOpacity(0.6)),
+                ),
+                backgroundColor: Colors.green.toOpacity(0.1),
+                labelStyle: TextStyle(color: Colors.green),
+              ),
+            if (endDate.isNotEmpty)
+              ActionChip(
+                avatar:
+                    Icon(Icons.calendar_today, size: 16, color: Colors.blue),
+                label: Text(endDate),
+                onPressed: () async {
+                  endDate = '';
+                  bangumiItems.clear();
+                  final newItems = await bangumiSearch();
+                  bangumiItems = newItems;
+                  setState(() {});
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.blue.toOpacity(0.6)),
+                ),
+                backgroundColor: Colors.blue.toOpacity(0.1),
+                labelStyle: TextStyle(color: Colors.blue),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -596,9 +778,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             slivers: [
               _sliverAppBar(context),
               ..._buildTagCategories(),
-              SliverToBoxAdapter(
-                child: _tagsWidget(context),
-              ),
+              if (tags.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _tagsWidget(context),
+                ),
+              if (airDate.isNotEmpty || endDate.isNotEmpty)
+                _dataTagsWidget(context),
               SliverToBoxAdapter(child: _toolBoxWidget(context)),
               _buildContentListSliver(),
               if (_isLoading)

@@ -163,15 +163,15 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.episode} ${infoController.episodeInfo.name}',
+                    '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.name}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.outline)),
                 Text(
                     (infoController.episodeInfo.nameCn != '')
-                        ? '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.episode} ${infoController.episodeInfo.nameCn}'
-                        : '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.episode} ${infoController.episodeInfo.name}',
+                        ? '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.nameCn}'
+                        : '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.name}',
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: 12,
