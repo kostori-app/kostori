@@ -61,25 +61,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   String formattedTime = '';
   String saveAddress = '';
 
-  Widget _buildPreviewImage() {
-    return Container(
-      width: 200,
-      height: 120,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 10)],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.memory(
-          widget.playerController.previewImage!,
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.low, // 性能优化
-        ),
-      ),
-    );
-  }
-
   // 将图片保存到相册
   Future<void> _saveImageToGallery(Uint8List imageData, int timestamp) async {
     try {

@@ -136,7 +136,6 @@ abstract mixin class _AnimePageActions {
   // 显示 BottomSheet，并允许选择一个项目
   Future<void> bangumiBottomInfoSelect(BuildContext context) async {
     var res = await Bangumi.combinedBangumiSearch(anime.title);
-
     // 如果 res 是 null 或者数据不正确，显示检索失败提示
     if (res.isEmpty) {
       showCenter(
@@ -168,8 +167,6 @@ abstract mixin class _AnimePageActions {
         // 使用 StatefulBuilder 实现搜索框和动态搜索功能
         return StatefulBuilder(
           builder: (context, setState) {
-            String searchQuery = anime.title;
-
             // 更新搜索结果的函数
             Future<void> fetchSearchResults(String query) async {
               if (query.isEmpty) {
@@ -227,7 +224,7 @@ abstract mixin class _AnimePageActions {
                         fillColor: Theme.of(context).cardColor,
                       ),
                       onSubmitted: fetchSearchResults,
-                      onChanged: (value) => searchQuery = value,
+                      onChanged: (value) => value,
                     ),
                   ),
                 ],
