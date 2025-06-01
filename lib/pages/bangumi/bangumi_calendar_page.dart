@@ -17,6 +17,8 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 
+import '../../components/bangumi_widget.dart';
+
 class BangumiCalendarPage extends StatefulWidget {
   const BangumiCalendarPage({super.key});
 
@@ -530,8 +532,8 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                 LayoutBuilder(builder: (context, constraints) {
                   final imageHeight = constraints.maxWidth * 6 / 16;
                   return SizedBox(
-                    child:
-                        _buildTimeIndicator(bangumiItem.airTime, imageHeight),
+                    child: Utils.buildTimeIndicator(
+                        bangumiItem.airTime, imageHeight),
                   );
                 }),
                 LayoutBuilder(builder: (context, constraints) {
@@ -548,15 +550,9 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                             borderRadius: BorderRadius.circular(24),
                             child: Hero(
                               tag: 'calendar-${bangumiItem.id}',
-                              child: CachedNetworkImage(
-                                imageUrl: bangumiItem.images['large']!,
-                                width: imageWidth,
-                                height: imageHeight,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    MiscComponents.placeholder(
-                                        context, imageWidth, imageHeight),
-                              ),
+                              child: BangumiWidget.kostoriImage(
+                                  context, bangumiItem.images['large']!,
+                                  width: imageWidth, height: imageHeight),
                             )),
                         const SizedBox(width: 16),
                         // 信息部分
@@ -581,7 +577,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                 bangumiItem.name,
                                 style: TextStyle(
                                   fontSize: imageWidth * 0.08,
-                                  color: Colors.grey[600],
+                                  // color: Colors.grey[600],
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -672,36 +668,5 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         },
       ),
     );
-  }
-
-  // 时间显示组件
-  Widget _buildTimeIndicator(String? rawTime, dynamic sizes) {
-    if (rawTime == null || rawTime.isEmpty) return const SizedBox.shrink();
-
-    try {
-      final dateTime = DateTime.parse(rawTime).toLocal();
-      final timeFormat = DateFormat('HH:mm');
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 8.0, left: 4),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 16,
-            ),
-            Text(
-              timeFormat.format(dateTime),
-              style: TextStyle(
-                fontSize: sizes! * 2 / 14,
-                // color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            )
-          ],
-        ),
-      );
-    } catch (e, s) {
-      Log.addLog(LogLevel.error, 'Invalid time format', '$rawTime\n$e\n$s');
-      return const SizedBox.shrink();
-    }
   }
 }

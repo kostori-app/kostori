@@ -525,11 +525,17 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                         "Air Date: $airDate, End Date: $endDate");
 
                     Navigator.pop(context);
-                    bangumiItems.clear();
+                    setState(() {
+                      _isLoading = true;
+                      bangumiItems.clear();
+                    });
+
                     final newItems = await bangumiSearch();
                     bangumiItems = newItems;
 
-                    setState(() {});
+                    setState(() {
+                      _isLoading = false;
+                    });
                   },
                   child: Text("确认"),
                 ),
@@ -543,7 +549,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
 
   Widget _toolBoxWidget(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       width: MediaQuery.of(context).size.width - 30,
       color: Colors.transparent,
       child: Row(
@@ -674,10 +680,10 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
 
   Widget _tagsWidget(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(4.0),
       child: Wrap(
         spacing: 8.0,
-        runSpacing: 8.0,
+        runSpacing: 6.0,
         children: tags.map((tag) {
           return ActionChip(
             label: Text(tag),
@@ -708,10 +714,10 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   Widget _dataTagsWidget(BuildContext context) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(8.0),
         child: Wrap(
-          spacing: 8.0,
-          runSpacing: 8.0,
+          spacing: 4.0,
+          // runSpacing: 8.0,
           children: [
             if (airDate.isNotEmpty)
               ActionChip(
@@ -719,11 +725,16 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     Icon(Icons.calendar_today, size: 16, color: Colors.green),
                 label: Text(airDate),
                 onPressed: () async {
-                  airDate = '';
-                  bangumiItems.clear();
+                  setState(() {
+                    airDate = '';
+                    _isLoading = true;
+                    bangumiItems.clear();
+                  });
                   final newItems = await bangumiSearch();
                   bangumiItems = newItems;
-                  setState(() {});
+                  setState(() {
+                    _isLoading = false;
+                  });
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),

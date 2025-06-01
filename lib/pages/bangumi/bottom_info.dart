@@ -23,6 +23,7 @@ import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 
+import '../../components/bangumi_widget.dart';
 import 'bangumi_search_page.dart' show BangumiSearchPage;
 
 class _StatItem {
@@ -301,15 +302,9 @@ class BottomInfoState extends State<BottomInfo>
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: bangumiItem.images['large']!,
-                            width: width,
-                            height: height,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) =>
-                                MiscComponents.placeholder(
-                                    context, width, height),
-                          ),
+                          child: BangumiWidget.kostoriImage(
+                              context, bangumiItem.images['large']!,
+                              width: width, height: height),
                         ),
                         // SizedBox(width: 12.0),
                         Expanded(

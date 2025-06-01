@@ -5,13 +5,13 @@ import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:kostori/components/misc_components.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -31,6 +31,9 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
 import 'package:text_scroll/text_scroll.dart';
+
+import '../utils/utils.dart';
+import 'bangumi_widget.dart';
 
 part 'image.dart';
 

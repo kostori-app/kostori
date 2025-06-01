@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -11,6 +12,8 @@ import 'package:kostori/utils/utils.dart';
 import 'package:kostori/components/misc_components.dart';
 
 import 'package:kostori/pages/aggregated_search_page.dart';
+
+import '../../../foundation/log.dart';
 
 class _StatItem {
   final String key;
@@ -41,12 +44,6 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
   BangumiItem get bangumiItem => widget.bangumiItem;
 
   List<EpisodeInfo> get allEpisodes => widget.allEpisodes;
-
-  bool get count => areAllValuesZero(widget.bangumiItem.count!);
-
-  bool areAllValuesZero(Map<String, int> countMap) {
-    return countMap.values.every((value) => value == 0);
-  }
 
   Widget get voteBarChart => LineChatPage(
         bangumiItem: widget.bangumiItem,
@@ -98,8 +95,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
         padding: EdgeInsets.all(2.0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12), // 设置圆角半径
-          color:
-              Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.30),
+          color: Colors.transparent,
           border: Border.all(
             color: Theme.of(context)
                 .colorScheme
@@ -158,22 +154,28 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ClipRRect(
+                          InkWell(
+                            onTap: () {
+                              BangumiWidget.showImagePreview(
+                                  context,
+                                  widget.bangumiItem.images['large']!,
+                                  widget.bangumiItem.nameCn,
+                                  '${widget.heroTag}-${widget.bangumiItem.id}');
+                            },
+                            borderRadius:
+                                BorderRadius.circular(12), // 水波纹保持一致圆角
+                            child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Hero(
                                 tag: (widget.heroTag == null)
                                     ? widget.bangumiItem.id
                                     : '${widget.heroTag}-${widget.bangumiItem.id}',
-                                child: CachedNetworkImage(
-                                  imageUrl: widget.bangumiItem.images['large']!,
-                                  width: width,
-                                  height: height,
-                                  fit: BoxFit.cover,
-                                  placeholder: (context, url) =>
-                                      MiscComponents.placeholder(
-                                          context, width, height),
-                                ),
-                              )),
+                                child: BangumiWidget.kostoriImage(context,
+                                    widget.bangumiItem.images['large']!,
+                                    width: width, height: height),
+                              ),
+                            ),
+                          ),
                           SizedBox(width: 12.0),
                           Container(
                             height: height,
@@ -219,36 +221,38 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      padding: EdgeInsets.all(8.0),
-                                      // 可选，设置内边距
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                            16.0), // 设置圆角半径
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondaryContainer
-                                            .toOpacity(0.30),
-                                        border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondaryContainer
-                                              .toOpacity(0.72),
-                                          width: 2.0, // 设置边框宽度
+                                    if (bangumiItem.airDate.isNotEmpty)
+                                      Container(
+                                        padding: EdgeInsets.all(8.0),
+                                        // 可选，设置内边距
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                              16.0), // 设置圆角半径
+                                          color: Colors.transparent,
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .secondaryContainer
+                                                .toOpacity(0.72),
+                                            width: 2.0, // 设置边框宽度
+                                          ),
+                                        ),
+                                        child: Text(
+                                          bangumiItem.airDate,
                                         ),
                                       ),
-                                      child: Text(
-                                        bangumiItem.airDate,
-                                      ),
-                                    ),
                                     SizedBox(width: 4.0),
-                                    if (currentWeekEp?.sort != null)
-                                      Text(
-                                        isCompleted
-                                            ? '全 ${bangumiItem.totalEpisodes} 话'
-                                            : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
-                                        style: TextStyle(fontSize: 12.0),
-                                      ),
+                                    (currentWeekEp?.sort != null)
+                                        ? Text(
+                                            isCompleted
+                                                ? '全 ${bangumiItem.totalEpisodes} 话'
+                                                : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                            style: TextStyle(fontSize: 12.0),
+                                          )
+                                        : Text(
+                                            '未开播',
+                                            style: TextStyle(fontSize: 12.0),
+                                          ),
                                   ],
                                 ),
                                 Spacer(),
@@ -352,7 +356,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (MediaQuery.sizeOf(context).width >= 1200 &&
                   !widget.isLoading &&
-                  !count)
+                  widget.bangumiItem.total > 20)
                 ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: 400, maxHeight: 300),
                   child: Column(

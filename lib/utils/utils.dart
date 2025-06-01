@@ -317,6 +317,37 @@ class Utils {
     }
     return absolutePaths.join(':');
   }
+
+  //时间转换HH:mm显示
+  static Widget buildTimeIndicator(String? rawTime, dynamic sizes) {
+    if (rawTime == null || rawTime.isEmpty) return const SizedBox.shrink();
+
+    try {
+      final dateTime = DateTime.parse(rawTime).toLocal();
+      final timeFormat = DateFormat('HH:mm');
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0, left: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+            ),
+            Text(
+              timeFormat.format(dateTime),
+              style: TextStyle(
+                fontSize: sizes! * 2 / 14,
+                // color: Colors.grey[700],
+                fontWeight: FontWeight.w500,
+              ),
+            )
+          ],
+        ),
+      );
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'Invalid time format', '$rawTime\n$e\n$s');
+      return const SizedBox.shrink();
+    }
+  }
 }
 
 const List<String> userAgentsList = [

@@ -118,6 +118,7 @@ dependencies:
   gif: ^2.3.0
   flutter_absolute_path_provider: ^0.0.1
   wakelock_plus: 1.2.8
+  flutter_cache_manager: ^3.4.1
 
 dev_dependencies:
   flutter_test:

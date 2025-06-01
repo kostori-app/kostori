@@ -1569,9 +1569,10 @@ class SimpleAnimeTile extends StatelessWidget {
 }
 
 class BangumiCard extends StatefulWidget {
-  const BangumiCard({super.key, required this.anime, this.onTap, this.heroTag});
+  const BangumiCard(
+      {super.key, required this.bangumiItem, this.onTap, this.heroTag});
 
-  final BangumiItem anime;
+  final BangumiItem bangumiItem;
   final void Function()? onTap;
   final String? heroTag;
 
@@ -1580,74 +1581,241 @@ class BangumiCard extends StatefulWidget {
 }
 
 class _BangumiCardState extends State<BangumiCard> {
+  BangumiItem get bangumiItem => widget.bangumiItem;
+
+  Widget _score() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '${bangumiItem.score}',
+          style: TextStyle(
+            fontSize: 18.0,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(
+          width: 5,
+        ),
+        Container(
+          padding: EdgeInsets.all(2.0), // 可选，设置内边距
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8), // 设置圆角半径
+            border: Border.all(
+              color: Theme.of(context)
+                  .colorScheme
+                  .secondaryContainer
+                  .toOpacity(0.72),
+              width: 2.0, // 设置边框宽度
+            ),
+          ),
+          child: Text(Utils.getRatingLabel(bangumiItem.score),
+              style: TextStyle(
+                fontSize: 10.0,
+              )),
+        ),
+        SizedBox(
+          width: 4,
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
+          children: [
+            RatingBarIndicator(
+              itemCount: 5,
+              rating: bangumiItem.score.toDouble() / 2,
+              itemBuilder: (context, index) => const Icon(
+                Icons.star_rounded,
+              ),
+              itemSize: 16.0,
+            ),
+            Text(
+              '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+              style: TextStyle(fontSize: 10),
+            )
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    String? image = widget.anime.images['large'];
+    String? image = widget.bangumiItem.images['large'];
 
     return AnimatedTapRegion(
       borderRadius: 8,
       onTap: widget.onTap ?? () {},
       child: Container(
-          width: 300 * 0.72,
-          height: 300,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            // color: Theme.of(context).colorScheme.secondaryContainer,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              Widget child = Hero(
-                  tag: '${widget.heroTag}-${widget.anime.id}',
-                  child: CachedNetworkImage(
-                    imageUrl: image as String,
-                    width: double.infinity * 0.72,
-                    height: constraints.maxHeight * 0.85,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.medium,
-                    placeholder: (context, url) => MiscComponents.placeholder(
-                        context, 300 * 0.72, constraints.maxHeight * 0.85),
-                  ));
+        width: 300 * 0.72,
+        height: 300,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // **背景图片（无Hero）**
+            Widget backgroundImage = BangumiWidget.kostoriImage(
+              context,
+              image!,
+              width: constraints.maxWidth,
+              height: constraints.maxHeight * 0.85,
+            );
 
-              child = Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Theme.of(context).colorScheme.secondaryContainer,
+            backgroundImage = Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Theme.of(context).colorScheme.secondaryContainer,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: backgroundImage,
+            );
+
+            // **前景图片（保留Hero动画）**
+            Widget foregroundImage = Hero(
+              tag: '${widget.heroTag}-${widget.bangumiItem.id}',
+              child: BangumiWidget.kostoriImage(
+                context,
+                image,
+                width: constraints.maxWidth,
+                height: constraints.maxHeight * 0.85,
+              ),
+            );
+
+            foregroundImage = Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Theme.of(context).colorScheme.secondaryContainer,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: foregroundImage,
+            );
+
+            return Stack(
+              children: [
+                // 图片作为背景层（可调整透明度或添加滤镜）
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: 0.2, // 调整背景图片透明度
+                    child: backgroundImage,
+                  ),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: child,
-              );
 
-              return Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // 确保列按最小的空间布局
-                  children: [
-                    child,
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                            top: 8.0,
-                            left: 4,
-                            right: 4,
-                            bottom: 4), // 给文字添加一些间距
-                        child: TextScroll(
-                          widget.anime.nameCn != ''
-                              ? widget.anime.nameCn
-                              : widget.anime.name,
-                          style: TextStyle(fontSize: 16),
-                          mode: TextScrollMode.endless,
-                          delayBefore: Duration(milliseconds: 500),
-                          velocity:
-                              const Velocity(pixelsPerSecond: Offset(40, 0)),
+                // 保持原有的Column布局
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 原有图片显示
+                      SizedBox(
+                        height: constraints.maxHeight * 0.85,
+                        width: constraints.maxWidth,
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: foregroundImage,
+                            ),
+                            Positioned(
+                              bottom: 50,
+                              right: 8,
+                              child: ClipRRect(
+                                // 确保圆角区域也能正确裁剪模糊效果
+                                borderRadius: BorderRadius.circular(8),
+                                child: Stack(
+                                  children: [
+                                    // 毛玻璃滤镜层
+                                    Positioned.fill(
+                                      child: BackdropFilter(
+                                        filter: ui.ImageFilter.blur(
+                                            sigmaX: 10, sigmaY: 10),
+                                        child: Container(
+                                          color: Colors.black
+                                              .toOpacity(0.3), // 必须有一个子容器
+                                        ),
+                                      ),
+                                    ),
+                                    // 原有内容（需要在模糊层之上）
+                                    Padding(
+                                      padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+                                      child: Text(
+                                          '放送时间: ${DateFormat('HH:mm').format(DateTime.parse(bangumiItem.airTime as String).toLocal())}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          )),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 8,
+                              right: 4,
+                              child: ClipRRect(
+                                // 确保圆角区域也能正确裁剪模糊效果
+                                borderRadius: BorderRadius.circular(8),
+                                child: Stack(
+                                  children: [
+                                    // 毛玻璃滤镜层
+                                    Positioned.fill(
+                                      child: BackdropFilter(
+                                        filter: ui.ImageFilter.blur(
+                                            sigmaX: 10, sigmaY: 10),
+                                        child: Container(
+                                          color: Colors.black
+                                              .toOpacity(0.3), // 必须有一个子容器
+                                        ),
+                                      ),
+                                    ),
+                                    // 原有背景（带透明度）
+                                    // 原有内容（需要在模糊层之上）
+                                    Padding(
+                                      padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+                                      child: _score(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      // 文字部分
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                              top: 8.0, left: 4, right: 4, bottom: 4),
+                          child: TextScroll(
+                            bangumiItem.nameCn != ''
+                                ? bangumiItem.nameCn
+                                : bangumiItem.name,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white, // 文字颜色可能需要调整
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                            mode: TextScrollMode.endless,
+                            delayBefore: Duration(milliseconds: 500),
+                            velocity:
+                                const Velocity(pixelsPerSecond: Offset(40, 0)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              );
-            },
-          )),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }

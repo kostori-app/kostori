@@ -13,13 +13,15 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../components/components.dart';
-import '../components/misc_components.dart';
-import '../foundation/app.dart';
-import 'bbcode_base_listener.dart';
-import 'bbcode_elements.dart';
-import 'generated/BBCodeParser.dart';
-import 'generated/BBCodeLexer.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/bbcode/bbcode_base_listener.dart';
+import 'package:kostori/bbcode/bbcode_elements.dart';
+import 'package:kostori/bbcode/generated/BBCodeParser.dart';
+import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
+
+import 'package:kostori/components/bangumi_widget.dart';
 
 class BBCodeWidget extends StatefulWidget {
   const BBCodeWidget({super.key, required this.bbcode});
@@ -60,112 +62,6 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
     }
   }
 
-  Future<void> _saveImageToGallery(String imageUrl) async {
-    if (!mounted) return;
-
-    setState(() => _isSaving = true);
-
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('正在保存图片...')),
-      );
-
-      final dio = Dio();
-      final response = await dio.get<Uint8List>(
-        imageUrl,
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      if (!mounted) return;
-
-      if (Platform.isAndroid) {
-        // Android平台：使用ImageGallerySaverPlus保存到相册
-        final result = await ImageGallerySaverPlus.saveImage(
-          response.data!,
-          quality: 100,
-          name: _generateFilename(imageUrl),
-          isReturnImagePathOfIOS: true,
-        );
-
-        if (!mounted) return;
-
-        if (result == null || !(result['isSuccess'] as bool? ?? false)) {
-          throw Exception('保存到相册失败');
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已保存到相册')),
-        );
-      } else {
-        // 其他平台：保存到应用文档目录
-        final directory = await getApplicationDocumentsDirectory();
-        final folderPath = '${directory.path}/BangumiImages';
-        final folder = Directory(folderPath);
-
-        if (!await folder.exists()) {
-          await folder.create(recursive: true);
-        }
-
-        final filePath = '$folderPath/${_generateFilename(imageUrl)}';
-        await File(filePath).writeAsBytes(response.data!);
-
-        if (!mounted) return;
-
-        App.rootContext.showMessage(message: '已保存到: $filePath');
-      }
-    } catch (e, s) {
-      if (!mounted) return;
-      showCenter(
-          seconds: 3,
-          icon: Gif(
-            image: AssetImage('assets/img/warning.gif'),
-            height: 64,
-            fps: 120,
-            color: Theme.of(context).colorScheme.primary,
-            autostart: Autostart.once,
-          ),
-          message: '保存失败: ${e.toString()}',
-          context: context);
-      App.rootContext.showMessage(message: '保存失败: ${e.toString()}');
-      Log.addLog(LogLevel.error, 'saveImageToGallery', '$e\n$s');
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
-  }
-
-  String _generateFilename(String url) {
-    final uri = Uri.parse(url);
-    final filename = uri.pathSegments.last;
-    return filename.isNotEmpty
-        ? 'bangumi_$filename'
-        : 'bangumi_${DateTime.now().millisecondsSinceEpoch}.jpg';
-  }
-
-  void _showImagePreview(String imageUrl) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => Scaffold(
-          appBar: AppBar(
-            title: const Text('图片预览'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.download),
-                onPressed: () => _saveImageToGallery(imageUrl),
-              ),
-            ],
-          ),
-          body: PhotoView(
-            imageProvider: NetworkImage(imageUrl),
-            minScale: PhotoViewComputedScale.contained,
-            maxScale: PhotoViewComputedScale.covered * 3,
-          ),
-        ),
-      ),
-    );
-  }
-
   void _showSaveDialog(String imageUrl) {
     showDialog(
       context: context,
@@ -181,7 +77,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
             ),
             TextButton(
               onPressed: () {
-                _saveImageToGallery(imageUrl); // 再执行保存
+                BangumiWidget.saveImageToGallery(context, imageUrl); // 再执行保存
               },
               child: const Text('保存到相册'),
             ),
@@ -260,24 +156,18 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            debugPrint('点击图片: ${e.imageUrl}');
-                            _showImagePreview(e.imageUrl);
-                          },
-                          onLongPress: () => _showSaveDialog(e.imageUrl),
-                          child: CachedNetworkImage(
-                            imageUrl: e.imageUrl,
-                            placeholder: (context, url) =>
-                                MiscComponents.placeholder(context, 100, 100),
-                            errorListener: (e) {
-                              Log.addLog(LogLevel.error, 'image', e.toString());
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              Log.addLog(LogLevel.info, 'imageUrl', e.imageUrl);
+                              BangumiWidget.showImagePreview(
+                                  context, e.imageUrl, '', e.imageUrl);
                             },
-                            errorWidget: (BuildContext context, String url,
-                                    Object error) =>
-                                MiscComponents.placeholder(context, 100, 100),
-                          ),
-                        ),
+                            onLongPress: () => _showSaveDialog(e.imageUrl),
+                            child: Hero(
+                              tag: e.imageUrl,
+                              child: BangumiWidget.kostoriImage(
+                                  context, e.imageUrl),
+                            )),
                       ),
                       if (_isSaving) const CircularProgressIndicator(),
                     ],
@@ -297,38 +187,27 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                 return WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
-                    onTap: () => _showImagePreview(url),
-                    child: CachedNetworkImage(
-                      imageUrl: url,
-                      placeholder: (context, url) =>
-                          MiscComponents.placeholder(context, 24, 24),
-                      errorListener: (e) {
-                        Log.addLog(LogLevel.error, 'bbcodeImage', e.toString());
-                      },
-                      errorWidget:
-                          (BuildContext context, String url, Object error) =>
-                              MiscComponents.placeholder(context, 24, 24),
-                    ),
+                    onTap: () =>
+                        BangumiWidget.showImagePreview(context, url, '', url),
+                    child: BangumiWidget.kostoriImage(context, url,
+                        width: 24, height: 24),
                   ),
                 );
               } else if (e is BBCodeSticker) {
                 return WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
-                    onTap: () => _showImagePreview(
-                        'https://bangumi.tv/img/smiles/${e.id}.gif'),
-                    child: CachedNetworkImage(
-                      imageUrl: 'https://bangumi.tv/img/smiles/${e.id}.gif',
-                      placeholder: (context, url) =>
-                          MiscComponents.placeholder(context, 24, 24),
-                      errorListener: (e) {
-                        Log.addLog(LogLevel.error, 'bbcodeImage', e.toString());
-                      },
-                      errorWidget:
-                          (BuildContext context, String url, Object error) =>
-                              MiscComponents.placeholder(context, 24, 24),
-                    ),
-                  ),
+                      onTap: () => BangumiWidget.showImagePreview(
+                          context,
+                          'https://bangumi.tv/img/smiles/${e.id}.gif',
+                          '',
+                          'https://bangumi.tv/img/smiles/${e.id}.gif'),
+                      child: Hero(
+                        tag: 'https://bangumi.tv/img/smiles/${e.id}.gif',
+                        child: BangumiWidget.kostoriImage(context,
+                            'https://bangumi.tv/img/smiles/${e.id}.gif',
+                            width: 24, height: 24),
+                      )),
                 );
               } else {
                 return WidgetSpan(

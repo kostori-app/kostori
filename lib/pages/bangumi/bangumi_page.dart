@@ -16,7 +16,7 @@ import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 
-import '../../components/misc_components.dart';
+import 'package:kostori/components/misc_components.dart';
 
 class BangumiPage extends StatefulWidget {
   const BangumiPage({super.key});
@@ -25,14 +25,10 @@ class BangumiPage extends StatefulWidget {
   State<BangumiPage> createState() => _BangumiPageState();
 }
 
-class _BangumiPageState extends State<BangumiPage>
-    with AutomaticKeepAliveClientMixin {
+class _BangumiPageState extends State<BangumiPage> {
   final ScrollController scrollController = ScrollController();
   List<BangumiItem> bangumiItems = [];
   bool isLoadingMore = false;
-
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -83,8 +79,9 @@ class _BangumiPageState extends State<BangumiPage>
             SizedBox(
               height: 56,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text('热度排行', style: ts.s18),
+                  Text('热度排行(${bangumiItems.length})', style: ts.s18),
                 ],
               ).paddingHorizontal(16),
             ),
@@ -98,7 +95,7 @@ class _BangumiPageState extends State<BangumiPage>
               itemCount: bangumiItems.length,
               itemBuilder: (context, index) {
                 return BangumiWidget.buildBriefMode(
-                    context, bangumiItems[index], 'Trending');
+                    context, bangumiItems[index], 'Trending$index');
               },
             ),
             if (isLoadingMore)
@@ -117,13 +114,21 @@ class _BangumiPageState extends State<BangumiPage>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    var widget = SmoothCustomScrollView(controller: scrollController, slivers: [
+    Widget widget =
+        SmoothCustomScrollView(controller: scrollController, slivers: [
       SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
       const _SearchBar(),
       const _Timetable(),
       _bangumiTrending(context),
     ]);
+    widget = AppScrollBar(
+      topPadding: 82,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
 }
@@ -337,7 +342,7 @@ class _TimetableState extends State<_Timetable> {
                   itemCount: bangumiCalendar.length,
                   itemBuilder: (BuildContext context, int index) {
                     return BangumiCard(
-                      anime: bangumiCalendar[index],
+                      bangumiItem: bangumiCalendar[index],
                       onTap: () async {
                         App.mainNavigatorKey?.currentContext
                             ?.to(() => BangumiInfoPage(

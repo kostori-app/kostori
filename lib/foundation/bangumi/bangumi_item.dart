@@ -117,6 +117,16 @@ class BangumiItem {
                 : (row["tags"]).map((tag) => BangumiTag.fromJson(tag)).toList()
                     as List<BangumiTag>; // 转为 List<BangumiTag>
 
+  static String? extractDateFromInfo(String? info) {
+    if (info == null || info.isEmpty) return null;
+
+    // 使用正则表达式匹配 "XXXX年XX月XX日" 格式
+    final dateRegex = RegExp(r'\d{4}年\d{1,2}月\d{1,2}日');
+    final match = dateRegex.firstMatch(info);
+
+    return match?.group(0); // 返回匹配到的第一个日期字符串
+  }
+
   factory BangumiItem.fromJson(Map<String, dynamic> json) {
     List list = json['tags'] ?? [];
     List<BangumiTag> tagList = list.map((i) => BangumiTag.fromJson(i)).toList();
@@ -129,7 +139,11 @@ class BangumiItem {
           ? (json['name'] ?? '')
           : json['name_cn'] ?? json['nameCN'],
       summary: json['summary'] ?? '',
-      airDate: json['air_date'] ?? json['date'] ?? '',
+      airDate: json['air_date'] ??
+          json['date'] ??
+          json['airtime']?['date'] ??
+          extractDateFromInfo(json['info']) ??
+          '',
       airWeekday: json['air_weekday'] ??
           (json['date'] == null ? 1 : Utils.dateStringToWeekday(json['date'])),
       // 修改这一行，使用安全访问操作符检查 json['rating']

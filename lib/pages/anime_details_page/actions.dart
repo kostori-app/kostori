@@ -279,22 +279,9 @@ abstract mixin class _AnimePageActions {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: CachedNetworkImage(
-                          imageUrl: item.images['large']!,
-                          width: width,
-                          height: height,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              MiscComponents.placeholder(
-                                  context, width, height),
-                          errorListener: (e) {
-                            Log.addLog(LogLevel.error, 'image', e.toString());
-                          },
-                          errorWidget: (BuildContext context, String url,
-                                  Object error) =>
-                              MiscComponents.placeholder(
-                                  context, width, height),
-                        ),
+                        child: BangumiWidget.kostoriImage(
+                            context, item.images['large']!,
+                            width: width, height: height),
                       ),
                       SizedBox(width: 12.0),
                       Expanded(

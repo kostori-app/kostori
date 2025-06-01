@@ -23,11 +23,10 @@ import 'package:kostori/utils/utils.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:text_scroll/text_scroll.dart';
 
-import 'package:kostori/components/misc_components.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 
+import '../../components/bangumi_widget.dart';
 import 'bangumi_all_episode_page.dart';
 import 'bangumi_episode_info_page.dart';
 
@@ -374,24 +373,9 @@ class _InfoTabViewState extends State<InfoTabView>
                                     ClipRRect(
                                       borderRadius: const BorderRadius.vertical(
                                           top: Radius.circular(12)),
-                                      child: CachedNetworkImage(
-                                        imageUrl: item.images['large']!,
-                                        width: 140,
-                                        height: 180,
-                                        // 固定高度
-                                        fit: BoxFit.cover,
-                                        placeholder: (context, url) =>
-                                            MiscComponents.placeholder(
-                                                context, 140, 180),
-                                        errorListener: (e) {
-                                          Log.addLog(LogLevel.error, 'image',
-                                              e.toString());
-                                        },
-                                        errorWidget: (BuildContext context,
-                                                String url, Object error) =>
-                                            MiscComponents.placeholder(
-                                                context, 140, 180),
-                                      ),
+                                      child: BangumiWidget.kostoriImage(
+                                          context, item.images['large']!,
+                                          width: 140, height: 180),
                                     ),
 
                                     // 标题
@@ -430,7 +414,8 @@ class _InfoTabViewState extends State<InfoTabView>
                   ),
                 ],
                 if (MediaQuery.sizeOf(context).width <= 1200 &&
-                    !widget.isLoading) ...[
+                    !widget.isLoading &&
+                    widget.bangumiItem.total > 20) ...[
                   const SizedBox(height: 8),
                   Text('评分统计图',
                       style:

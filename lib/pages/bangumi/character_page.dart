@@ -12,6 +12,8 @@ import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 
+import '../../components/bangumi_widget.dart';
+
 class CharacterPage extends StatefulWidget {
   const CharacterPage({super.key, required this.characterID});
 
@@ -101,20 +103,6 @@ class _CharacterPageState extends State<CharacterPage> {
     );
   }
 
-  void _showImagePreview(BuildContext context, String url) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => Scaffold(
-                  appBar: AppBar(title: Text(characterFullItem.nameCN)),
-                  body: PhotoView(
-                    imageProvider: CachedImageProvider(url),
-                    minScale: PhotoViewComputedScale.contained,
-                    maxScale: PhotoViewComputedScale.covered * 3,
-                  ),
-                )));
-  }
-
   Widget get characterInfoBody {
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -146,24 +134,22 @@ class _CharacterPageState extends State<CharacterPage> {
                             children: [
                               InkWell(
                                 onTap: () {
-                                  _showImagePreview(
-                                      context, characterFullItem.image);
+                                  BangumiWidget.showImagePreview(
+                                      context,
+                                      characterFullItem.image,
+                                      characterFullItem.nameCN,
+                                      characterFullItem.image);
                                 },
                                 child: SizedBox(
-                                  width: constraints.maxWidth * 0.6,
-                                  height: constraints.maxHeight,
-                                  child: CachedNetworkImage(
-                                    width: constraints.maxWidth,
+                                    width: constraints.maxWidth * 0.6,
                                     height: constraints.maxHeight,
-                                    imageUrl: characterFullItem.image,
-                                    fit: BoxFit.cover,
-                                    placeholder: (context, url) =>
-                                        MiscComponents.placeholder(
-                                            context,
-                                            constraints.maxWidth,
-                                            constraints.maxHeight),
-                                  ),
-                                ),
+                                    child: Hero(
+                                      tag: characterFullItem.image,
+                                      child: BangumiWidget.kostoriImage(
+                                          context, characterFullItem.image,
+                                          width: constraints.maxWidth,
+                                          height: constraints.maxHeight),
+                                    )),
                               ),
                               Expanded(
                                 child: SingleChildScrollView(

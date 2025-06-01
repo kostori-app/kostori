@@ -37,6 +37,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import '../../components/bangumi_widget.dart';
 import '../../components/misc_components.dart';
 import '../bangumi/info_controller.dart';
 
@@ -315,8 +316,19 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(8),
-                          onTap: () =>
-                              _showImagePreview(context, anime, bangumiItem!),
+                          onTap: () {
+                            history?.bangumiId == null
+                                ? BangumiWidget.showImagePreview(
+                                    context,
+                                    anime.cover,
+                                    anime.title,
+                                    "cover${widget.heroID}")
+                                : BangumiWidget.showImagePreview(
+                                    context,
+                                    bangumiItem!.images['large']!,
+                                    bangumiItem.nameCn,
+                                    "cover${widget.heroID}");
+                          },
                           child: Hero(
                             tag: "cover${widget.heroID}",
                             child: Container(
@@ -488,37 +500,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         ),
       ),
     );
-  }
-
-  // 提取的方法
-  void _showImagePreview(
-      BuildContext context, AnimeDetails anime, BangumiItem bangumiItem) {
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (_) => history?.bangumiId == null
-                ? Scaffold(
-                    appBar: AppBar(title: Text(anime.title)),
-                    body: PhotoView(
-                      imageProvider:
-                          CachedImageProvider(widget.cover ?? anime.cover),
-                      minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.covered * 3,
-                      heroAttributes:
-                          PhotoViewHeroAttributes(tag: "cover${widget.heroID}"),
-                    ),
-                  )
-                : Scaffold(
-                    appBar: AppBar(title: Text(anime.title)),
-                    body: PhotoView(
-                      imageProvider:
-                          CachedImageProvider(bangumiItem.images['large']!),
-                      minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.covered * 3,
-                      heroAttributes:
-                          PhotoViewHeroAttributes(tag: "cover${widget.heroID}"),
-                    ),
-                  )));
   }
 
   Widget _buildActionButtons(BuildContext context, AnimeDetails anime) {
