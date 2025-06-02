@@ -1,13 +1,18 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+
+import '../foundation/bangumi/bangumi_item.dart';
 
 class Utils {
   Utils._();
@@ -39,7 +44,8 @@ class Utils {
     return directory.path;
   }
 
-  static EpisodeInfo? findCurrentWeekEpisode(List<EpisodeInfo> allEpisodes) {
+  static EpisodeInfo? findCurrentWeekEpisode(
+      List<EpisodeInfo> allEpisodes, BangumiItem bangumiItem) {
     if (allEpisodes.isEmpty) return null;
 
     final now = DateTime.now();
@@ -48,50 +54,61 @@ class Utils {
 
     if (targetEpisodes.isEmpty) return null;
 
-    List<bool?> dateStatusList = []; // true=未来, false=过去, null=无效日期
+    // 获取番剧的标准播出时间
+    String? bangumiDataAirTime =
+        BangumiManager().findbangumiDataByID(bangumiItem.id);
+    final bangumiAirTime = bangumiDataAirTime != null
+        ? DateTime.tryParse(bangumiDataAirTime)?.toLocal()
+        : null;
+
+    // 判断是否需要调整周数（周一5点前属于上周）
+    final shouldAdjustWeek = bangumiAirTime != null &&
+        bangumiAirTime.weekday == DateTime.monday &&
+        (bangumiAirTime.hour < 5);
+
+    EpisodeInfo? currentWeekEpisode;
+    EpisodeInfo? lastPastEpisode; // 现在会记录所有年份中最近的过去剧集
+    bool foundCurrentWeekButNotAired = false;
 
     try {
-      // 第一步：收集所有日期的状态
       for (final ep in targetEpisodes) {
         try {
-          final airDate = DateTime.parse(ep.airDate);
-          dateStatusList.add(airDate.isAfter(now));
+          final airDate = DateTime.parse(ep.airDate).toLocal();
+          final (airYear, airWeekNum) = getISOWeekNumber(airDate);
+          final (currentYear, currentWeekNum) = currentWeek;
 
-          // 优先检查当前周匹配
-          if (getISOWeekNumber(airDate) == currentWeek) {
-            return ep;
+          // 应用周数调整
+          final adjustedWeekNum = shouldAdjustWeek
+              ? (airWeekNum == 1 ? 52 : airWeekNum + 1)
+              : airWeekNum;
+
+          // 判断是否当前周但未播出
+          if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
+            if (airDate.isAfter(now)) {
+              foundCurrentWeekButNotAired = true;
+            } else {
+              currentWeekEpisode ??= ep;
+            }
+          }
+
+          // 记录所有年份中最接近当前日期的过去剧集
+          if (airDate.isBefore(now)) {
+            if (lastPastEpisode == null ||
+                airDate.isAfter(DateTime.parse(lastPastEpisode.airDate))) {
+              lastPastEpisode = ep;
+            }
           }
         } catch (e) {
-          dateStatusList.add(null);
-          Log.addLog(LogLevel.warning, 'dateParse',
-              'Failed to parse date: ${ep.airDate}');
+          Log.addLog(LogLevel.warning, 'dateParse', '解析日期失败: ${ep.airDate}');
         }
       }
 
-      // 第二步：统计过去/未来的数量
-      final futureCount = dateStatusList.where((s) => s == true).length;
-      final pastCount = dateStatusList.where((s) => s == false).length;
-
-      // 第三步：根据统计结果选择策略
-      if (pastCount > futureCount) {
-        // 过去多：从后往前找第一个有效的过去日期
-        for (var i = targetEpisodes.length - 1; i >= 0; i--) {
-          if (dateStatusList[i] == false) {
-            return targetEpisodes[i];
-          }
-        }
-        // 如果全是无效日期，返回最后一个 type == 0 的剧集
-        return targetEpisodes.last;
-      } else {
-        // 未来多或相等：从前往后找第一个有效的未来日期
-        for (var i = 0; i < targetEpisodes.length; i++) {
-          if (dateStatusList[i] == true) {
-            return targetEpisodes[i];
-          }
-        }
-        // 如果全是无效日期，返回第一个 type == 0 的剧集
-        return targetEpisodes.first;
-      }
+      // 优先级逻辑：
+      // 1. 当前周已播出的剧集
+      // 2. 如果当前周有剧集但未播出，返回最近的过去剧集（不限年份）
+      // 3. 没有则返回null
+      return currentWeekEpisode ??
+          (foundCurrentWeekButNotAired ? lastPastEpisode : lastPastEpisode);
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');
       return null;
@@ -148,7 +165,7 @@ class Utils {
       // 尝试标准解析（兜底）
       return DateTime.parse(dateStr).toLocal();
     } catch (e) {
-      Log.addLog(LogLevel.warning, 'parseDate', '日期解析失败: $dateStr\n$e');
+      // Log.addLog(LogLevel.warning, 'parseDate', '日期解析失败: $dateStr\n$e');
       return null;
     }
   }

@@ -72,6 +72,18 @@ class BangumiData {
         comment = map["comment"],
         sites = map["sites"];
 
+  BangumiData.fromRow(Row row)
+      : title = row["title"],
+        titleTranslate = row["titleTranslate"],
+        type = row["type"],
+        lang = row["lang"],
+        officialSite = row["officialSite"],
+        begin = row["begin"],
+        broadcast = row["broadcast "],
+        end = row["end"],
+        comment = row["comment"],
+        sites = row["sites"];
+
   BangumiData.fromJson(Map<String, dynamic> json)
       : title = json["title"],
         titleTranslate = json["titleTranslate"],
@@ -197,7 +209,8 @@ class BangumiManager with ChangeNotifier {
         rank int,
         images text,
         collection text,
-        tags text
+        tags text,
+        alias text
       );
     """);
 
@@ -207,6 +220,16 @@ class BangumiManager with ChangeNotifier {
         data text
       );
     """);
+
+    var columns = _db.select("""
+        pragma table_info("bangumi_binding");
+      """);
+    if (!columns.any((element) => element["name"] == "alias")) {
+      _db.execute("""
+          alter table bangumi_binding
+          add column alias text;
+        """);
+    }
 
     notifyListeners();
   }
@@ -238,6 +261,7 @@ class BangumiManager with ChangeNotifier {
       newItem.comment,
       jsonEncode(newItem.sites)
     ]);
+
     notifyListeners();
   }
 
@@ -341,9 +365,10 @@ class BangumiManager with ChangeNotifier {
         rank,
         images,
         collection,
-        tags
+        tags,
+        alias
         )
-        values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       """, [
       newItem.id,
       newItem.type,
@@ -359,7 +384,8 @@ class BangumiManager with ChangeNotifier {
       newItem.rank,
       jsonEncode(newItem.images),
       jsonEncode(newItem.collection),
-      jsonEncode(newItem.tags)
+      jsonEncode(newItem.tags),
+      jsonEncode(newItem.alias)
     ]);
 
     notifyListeners();
@@ -410,6 +436,21 @@ class BangumiManager with ChangeNotifier {
     return [];
   }
 
+  String? findbangumiDataByID(int id) {
+    // 正确的 SQL 查询语法：列名在前，LIKE 条件在后
+    final query = 'SELECT sites, begin FROM bangumi_data WHERE sites LIKE ?';
+    final pattern = '%"bangumi","id":"$id"%';
+
+    // 执行查询
+    final result = _db.select(query, [pattern]);
+
+    if (result.isEmpty) {
+      return null;
+    }
+
+    return result[0]['begin'].toString();
+  }
+
   // 修改后的存在性检查方法（返回包含存在状态和时间的 Map）
   Future<Map<String, String?>> checkWhetherDataExistsBatch(
       List<String> ids) async {
@@ -428,7 +469,6 @@ class BangumiManager with ChangeNotifier {
       final sites = jsonDecode(row['sites'] as String) as List;
       final beginTime = row['begin']?.toString(); // 获取 begin 列
 
-      // 遍历所有匹配的站点
       for (final site in sites.cast<Map>()) {
         if (site['site'] == 'bangumi') {
           final id = site['id'].toString();

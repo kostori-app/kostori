@@ -21,8 +21,8 @@ class MiscComponents {
           'assets/img/image_loading.gif',
           width: width,
           height: height,
-          cacheWidth: width.cacheSize(context),
-          cacheHeight: height.cacheSize(context),
+          cacheWidth: (width / 2).cacheSize(context),
+          cacheHeight: (height / 2).cacheSize(context),
         ),
       ),
     );

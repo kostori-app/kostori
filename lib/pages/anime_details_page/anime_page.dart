@@ -1,12 +1,12 @@
-import 'dart:ui';
+// ignore_for_file: unused_element_parameter
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -15,7 +15,6 @@ import 'package:kostori/pages/bangumi/bottom_info.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:photo_view/photo_view.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -38,7 +37,6 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import '../../components/bangumi_widget.dart';
-import '../../components/misc_components.dart';
 import '../bangumi/info_controller.dart';
 
 part 'actions.dart';
@@ -78,6 +76,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   var scrollController = ScrollController();
 
   bool isDownloaded = false;
+  bool isUpdateBangumiBind = false;
+
+  BangumiItem? get bangumiItem => bangumiBindInfo;
 
   void updateHistory() async {
     var newHistory =
@@ -85,10 +86,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||
         newHistory?.lastWatchTime != history?.lastWatchTime) {
       history = newHistory;
-      update();
       if (history?.bangumiId == null) {
         updateBangumiId();
       }
+      if (!isUpdateBangumiBind && history?.bangumiId != null) {
+        Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+        isUpdateBangumiBind = true;
+      }
+      update();
     }
   }
 
@@ -116,11 +121,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void initState() {
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
-    HistoryManager().addListener(updateBangumiBind);
+    // HistoryManager().addListener(updateBangumiBind);
     BangumiManager().addListener(updateBangumiBind);
-    if (history?.bangumiId != null) {
-      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
-    }
     super.initState();
   }
 
@@ -128,7 +130,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
-    HistoryManager().removeListener(updateBangumiBind);
+    // HistoryManager().removeListener(updateBangumiBind);
     BangumiManager().removeListener(updateBangumiBind);
     super.dispose();
   }
@@ -298,203 +300,189 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             final imageHeight = math.min(calculatedHeight, 300.0);
             final imageWidth = imageHeight * 0.72; // 根据限制后的高度计算宽度
 
-            return FutureBuilder<BangumiItem?>(
-              future: history?.bangumiId != null
-                  ? BangumiManager().bindFind(history!.bangumiId as int)
-                  : Future.value(null),
-              builder: (context, snapshot) {
-                final bangumiItem = snapshot.data;
-                return SizedBox(
-                  width: constraints.maxWidth,
-                  height: imageHeight,
-                  // padding: const EdgeInsets.all(2),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(width: 16),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () {
-                            history?.bangumiId == null
-                                ? BangumiWidget.showImagePreview(
-                                    context,
-                                    anime.cover,
-                                    anime.title,
-                                    "cover${widget.heroID}")
-                                : BangumiWidget.showImagePreview(
-                                    context,
-                                    bangumiItem!.images['large']!,
-                                    bangumiItem.nameCn,
-                                    "cover${widget.heroID}");
-                          },
-                          child: Hero(
-                            tag: "cover${widget.heroID}",
-                            child: Container(
-                              width: imageWidth,
-                              height: imageHeight,
-                              decoration: BoxDecoration(
-                                color: context.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: context.colorScheme.outlineVariant,
-                                    blurRadius: 1,
-                                    offset: const Offset(0, 1),
-                                  )
-                                ],
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: AnimatedImage(
-                                image: CachedImageProvider(
-                                  widget.cover ?? anime.cover,
-                                  sourceKey: anime.sourceKey,
-                                  aid: anime.id,
-                                ),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
-                              ),
+            return SizedBox(
+              width: constraints.maxWidth,
+              height: imageHeight,
+              // padding: const EdgeInsets.all(2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 16),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        history?.bangumiId == null
+                            ? BangumiWidget.showImagePreview(
+                                context,
+                                anime.cover,
+                                anime.title,
+                                "cover${widget.heroID}")
+                            : BangumiWidget.showImagePreview(
+                                context,
+                                bangumiItem!.images['large']!,
+                                bangumiItem!.nameCn,
+                                "cover${widget.heroID}");
+                      },
+                      child: Hero(
+                        tag: "cover${widget.heroID}",
+                        child: Container(
+                          width: imageWidth,
+                          height: imageHeight,
+                          decoration: BoxDecoration(
+                            color: context.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.colorScheme.outlineVariant,
+                                blurRadius: 1,
+                                offset: const Offset(0, 1),
+                              )
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: AnimatedImage(
+                            image: CachedImageProvider(
+                              widget.cover ?? anime.cover,
+                              sourceKey: anime.sourceKey,
+                              aid: anime.id,
                             ),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                var context =
-                                    App.mainNavigatorKey!.currentContext!;
-                                context.to(() => AggregatedSearchPage(
-                                      keyword: anime.title,
-                                    ));
-                              },
-                              onLongPress: () {
-                                Clipboard.setData(
-                                    ClipboardData(text: anime.title));
-                                App.rootContext
-                                    .showMessage(message: '已复制到剪贴板.');
-                              },
-                              child: Text(
-                                anime.title,
-                                style: ts.s18,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (anime.subTitle != null)
-                              SelectableText(
-                                anime.subTitle!,
-                                style: ts.s14,
-                                maxLines: 2,
-                              ).paddingVertical(4),
-                            Text(
-                              AnimeSource.find(anime.sourceKey)?.name ?? '',
-                              style: ts.s12,
-                            ),
-                            const Spacer(),
-                            if (bangumiItem != null)
-                              Align(
-                                child: Row(
-                                  children: [
-                                    Text(
-                                        '${bangumiItem.collection?['doing']} 在看',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        )),
-                                    Text(' / '),
-                                    Text(
-                                        '${bangumiItem.collection?['collect']} 看过',
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .error)),
-                                    Text(' / '),
-                                    Text(
-                                        '${bangumiItem.collection?['dropped']} 抛弃',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        )),
-                                  ],
-                                ),
-                              ),
-                            if (bangumiItem != null)
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      '${bangumiItem.score}',
-                                      style: ts.s24,
-                                    ),
-                                    SizedBox(
-                                      width: 5,
-                                    ),
-                                    Container(
-                                      padding: EdgeInsets.all(2.0), // 可选，设置内边距
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(8), // 设置圆角半径
-                                        border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondaryContainer
-                                              .toOpacity(0.72),
-                                          width: 2.0, // 设置边框宽度
-                                        ),
-                                      ),
-                                      child: Text(
-                                        Utils.getRatingLabel(bangumiItem.score),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      width: 4,
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start, // 右对齐
-                                      children: [
-                                        RatingBarIndicator(
-                                          itemCount: 5,
-                                          rating:
-                                              bangumiItem.score.toDouble() / 2,
-                                          itemBuilder: (context, index) =>
-                                              const Icon(
-                                            Icons.star_rounded,
-                                          ),
-                                          itemSize: 20.0,
-                                        ),
-                                        Text(
-                                          '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
-                                          style: TextStyle(fontSize: 12),
-                                        )
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            SizedBox(
-                              height: 45,
-                              child: _buildActionButtons(context, anime),
-                            )
-                          ],
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                );
-              },
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            var context = App.mainNavigatorKey!.currentContext!;
+                            context.to(() => AggregatedSearchPage(
+                                  keyword: anime.title,
+                                ));
+                          },
+                          onLongPress: () {
+                            Clipboard.setData(ClipboardData(text: anime.title));
+                            App.rootContext.showMessage(message: '已复制到剪贴板.');
+                          },
+                          child: Text(
+                            anime.title,
+                            style: ts.s18,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (anime.subTitle != null)
+                          SelectableText(
+                            anime.subTitle!,
+                            style: ts.s14,
+                            maxLines: 2,
+                          ).paddingVertical(4),
+                        Text(
+                          AnimeSource.find(anime.sourceKey)?.name ?? '',
+                          style: ts.s12,
+                        ),
+                        const Spacer(),
+                        if (bangumiItem != null)
+                          Align(
+                            child: Row(
+                              children: [
+                                Text('${bangumiItem?.collection?['doing']} 在看',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    )),
+                                Text(' / '),
+                                Text(
+                                    '${bangumiItem?.collection?['collect']} 看过',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error)),
+                                Text(' / '),
+                                Text(
+                                    '${bangumiItem?.collection?['dropped']} 抛弃',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    )),
+                              ],
+                            ),
+                          ),
+                        if (bangumiItem != null)
+                          Align(
+                            alignment: Alignment.topLeft,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '${bangumiItem?.score}',
+                                  style: ts.s24,
+                                ),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                                Container(
+                                  padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                                  decoration: BoxDecoration(
+                                    borderRadius:
+                                        BorderRadius.circular(8), // 设置圆角半径
+                                    border: Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer
+                                          .toOpacity(0.72),
+                                      width: 2.0, // 设置边框宽度
+                                    ),
+                                  ),
+                                  child: Text(
+                                    Utils.getRatingLabel(bangumiItem!.score),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 4,
+                                ),
+                                Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start, // 右对齐
+                                  children: [
+                                    RatingBarIndicator(
+                                      itemCount: 5,
+                                      rating: bangumiItem!.score.toDouble() / 2,
+                                      itemBuilder: (context, index) =>
+                                          const Icon(
+                                        Icons.star_rounded,
+                                      ),
+                                      itemSize: 20.0,
+                                    ),
+                                    Text(
+                                      '${bangumiItem!.total} 人评 | #${bangumiItem!.rank}',
+                                      style: TextStyle(fontSize: 12),
+                                    )
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        SizedBox(
+                          height: 45,
+                          child: _buildActionButtons(context, anime),
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -746,8 +734,8 @@ class _ActionButton extends StatelessWidget {
     this.onLongPressed,
     this.activeIcon,
     this.isActive,
-    this.isLoading,
     this.iconColor,
+    this.isLoading,
   });
 
   final Widget icon;

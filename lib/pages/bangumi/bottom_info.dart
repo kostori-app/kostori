@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -270,7 +269,8 @@ class BottomInfoState extends State<BottomInfo>
     var allEpisodes = infoController.allEpisodes;
 
     // 获取当前周的剧集
-    final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
+    final currentWeekEp =
+        Utils.findCurrentWeekEpisode(allEpisodes, bangumiItem);
 
     final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
 

@@ -1,3 +1,5 @@
+// ignore_for_file: collection_methods_unrelated_type
+
 import 'dart:async';
 import 'dart:ffi' as ffi;
 import 'dart:isolate';
@@ -443,6 +445,18 @@ class HistoryManager with ChangeNotifier {
       return null;
     }
     return Progress.fromRow(res.first);
+  }
+
+  List<History> bangumiByIDFind(int id) {
+    final result = _db.select(
+      'SELECT * FROM history WHERE bangumiId = ?',
+      [id],
+    );
+
+    if (result.isEmpty) return [];
+
+    // 转换所有结果行
+    return result.map((row) => History.fromRow(row)).toList();
   }
 
   void updateCache() {

@@ -1,3 +1,6 @@
+// ignore_for_file: library_private_types_in_public_api
+
+import 'package:kostori/foundation/history.dart';
 import 'package:mobx/mobx.dart';
 
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -26,6 +29,8 @@ abstract class _InfoController with Store {
   final List<String> tabs = <String>['概览', '吐槽', '角色', '制作'];
 
   List<BangumiSRI> bangumiSRI = [];
+
+  List<History> bangumiHistory = [];
 
   @observable
   bool isLoading = false;

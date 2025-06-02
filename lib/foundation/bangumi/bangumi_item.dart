@@ -38,6 +38,8 @@ class BangumiItem {
 
   List<BangumiTag> tags;
 
+  List<String>? alias;
+
   Map<String, dynamic>? extraInfo; // 新增字段
 
   BangumiItem(
@@ -57,33 +59,8 @@ class BangumiItem {
       this.airTime,
       required this.images,
       required this.tags,
+      this.alias,
       this.extraInfo});
-
-  BangumiItem.fromMap(Map<String, dynamic> map)
-      : id = map["id"],
-        type = map["type"],
-        name = map["name"],
-        nameCn = map["nameCn"],
-        summary = map["summary"],
-        airDate = map["airDate"],
-        airWeekday = map["airWeekday"],
-        rank = map["rank"],
-        total = map["total"],
-        totalEpisodes = map["totalEpisodes"],
-        score = map["score"],
-        // 转为 double
-        count =
-            map["count"] == null ? null : Map<String, int>.from(map["count"]),
-        // 转为 Map<String, int>
-        collection = map["collection"] == null
-            ? null
-            : Map<String, int>.from(map["collection"]),
-        // 转为 Map<String, int>
-        images = Map<String, String>.from(map["images"]),
-        // 转为 Map<String, String>
-        tags = (map["tags"])
-            .map((tag) => BangumiTag.fromJson(tag))
-            .toList(); // 转为 List<BangumiTag>
 
   BangumiItem.fromRow(Row row)
       : id = row["id"],
@@ -115,7 +92,10 @@ class BangumiItem {
                     .map((tag) => BangumiTag.fromJson(tag))
                     .toList()
                 : (row["tags"]).map((tag) => BangumiTag.fromJson(tag)).toList()
-                    as List<BangumiTag>; // 转为 List<BangumiTag>
+                    as List<BangumiTag>,
+        alias = row['alias'] != null
+            ? (json.decode(row['alias']) as List).cast<String>()
+            : [];
 
   static String? extractDateFromInfo(String? info) {
     if (info == null || info.isEmpty) return null;
@@ -128,8 +108,33 @@ class BangumiItem {
   }
 
   factory BangumiItem.fromJson(Map<String, dynamic> json) {
+    List<String> parseBangumiAliases(Map<String, dynamic> jsonData) {
+      if (jsonData.containsKey('infobox') && jsonData['infobox'] is List) {
+        final List<dynamic> infobox = jsonData['infobox'];
+        for (var item in infobox) {
+          if (item is Map<String, dynamic> && item['key'] == '别名') {
+            final dynamic value = item['value'];
+            if (value is List) {
+              return value
+                  .map<String>((element) {
+                    if (element is Map<String, dynamic> &&
+                        element.containsKey('v')) {
+                      return element['v'].toString();
+                    }
+                    return '';
+                  })
+                  .where((alias) => alias.isNotEmpty)
+                  .toList();
+            }
+          }
+        }
+      }
+      return [];
+    }
+
     List list = json['tags'] ?? [];
     List<BangumiTag> tagList = list.map((i) => BangumiTag.fromJson(i)).toList();
+    List<String> bangumiAlias = parseBangumiAliases(json);
 
     return BangumiItem(
       id: json['id'],
@@ -150,7 +155,6 @@ class BangumiItem {
       rank: json['rating']?['rank'] ?? json['rank'] ?? 0,
       total: json['rating']?['total'] ?? json['total'] ?? 0,
       score: json['rating']?['score'] ?? json['score'] ?? 0.0,
-
       images: Map<String, String>.from(
         json['images'] ??
             {
@@ -162,6 +166,7 @@ class BangumiItem {
             },
       ),
       tags: tagList,
+      alias: bangumiAlias,
       totalEpisodes: json['total_episodes'] ?? json['eps'] ?? 0,
       count: (() {
         final rawCount = json['rating']?['count'];
@@ -197,6 +202,7 @@ class BangumiItem {
       String? airDate,
       int? totalEpisodes,
       List<BangumiTag>? tags,
+      List<String>? alias,
       Map<String, dynamic>? extraInfo}) {
     return BangumiItem(
       id: id ?? this.id,
@@ -213,12 +219,13 @@ class BangumiItem {
       airDate: airDate ?? this.airDate,
       totalEpisodes: totalEpisodes ?? this.totalEpisodes,
       tags: tags ?? this.tags,
+      alias: alias ?? this.alias,
       extraInfo: extraInfo ?? this.extraInfo,
     );
   }
 
   @override
   String toString() {
-    return 'BangumiItem{id: $id, type: $type, name: $name, nameCn: $nameCn, summary: $summary, airDate: $airDate, airWeekday: $airWeekday, rank: $rank, total: $total, score: $score, totalEpisodes: $totalEpisodes, count: $count, collection: $collection, images: $images, tags: $tags}';
+    return 'BangumiItem{id: $id, type: $type, name: $name, nameCn: $nameCn, summary: $summary, airDate: $airDate, airWeekday: $airWeekday, rank: $rank, total: $total, score: $score, totalEpisodes: $totalEpisodes, count: $count, collection: $collection, images: $images, tags: $tags, alias: $alias}';
   }
 }

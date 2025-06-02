@@ -1,21 +1,9 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:antlr4/antlr4.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:gif/gif.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import 'package:kostori/components/components.dart';
-import 'package:kostori/components/misc_components.dart';
-import 'package:kostori/foundation/app.dart';
 import 'package:kostori/bbcode/bbcode_base_listener.dart';
 import 'package:kostori/bbcode/bbcode_elements.dart';
 import 'package:kostori/bbcode/generated/BBCodeParser.dart';
@@ -34,7 +22,7 @@ class BBCodeWidget extends StatefulWidget {
 
 class _BBCodeWidgetState extends State<BBCodeWidget> {
   bool _isVisible = false;
-  bool _isSaving = false;
+  final bool _isSaving = false;
 
   Color? _parseColor(String hex) {
     if (hex.startsWith('#')) {

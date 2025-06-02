@@ -681,6 +681,8 @@ class SliverSearchBar extends StatefulWidget {
     this.onChanged,
     this.action,
     this.focusNode,
+    this.bangumiPage = false,
+    this.keywords,
   });
 
   final SearchBarController controller;
@@ -690,6 +692,10 @@ class SliverSearchBar extends StatefulWidget {
   final Widget? action;
 
   final FocusNode? focusNode;
+
+  final bool bangumiPage;
+
+  final List<String>? keywords;
 
   @override
   State<SliverSearchBar> createState() => _SliverSearchBarState();
@@ -724,13 +730,14 @@ class _SliverSearchBarState extends State<SliverSearchBar>
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverSearchBarDelegate(
-        editingController: _editingController,
-        controller: _controller,
-        topPadding: MediaQuery.of(context).padding.top,
-        onChanged: widget.onChanged,
-        action: widget.action,
-        focusNode: widget.focusNode,
-      ),
+          editingController: _editingController,
+          controller: _controller,
+          topPadding: MediaQuery.of(context).padding.top,
+          onChanged: widget.onChanged,
+          action: widget.action,
+          focusNode: widget.focusNode,
+          bangumiPage: widget.bangumiPage,
+          keywords: widget.keywords),
     );
   }
 }
@@ -748,6 +755,10 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
 
   final FocusNode? focusNode;
 
+  final bool bangumiPage;
+
+  final List<String>? keywords;
+
   const _SliverSearchBarDelegate({
     required this.editingController,
     required this.controller,
@@ -755,9 +766,69 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
     this.onChanged,
     this.action,
     this.focusNode,
+    this.bangumiPage = false,
+    this.keywords,
   });
 
   static const _kAppBarHeight = 52.0;
+
+  Future<String?> showKeywordsDialog(
+      BuildContext context, List<String> keywords) {
+    final scrollController = ScrollController();
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(20),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 320,
+              maxHeight: 500, // 根据需求调整
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '选择别名 (${keywords.length})',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  Material(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.transparent,
+                    child: ListView.builder(
+                      controller: scrollController,
+                      shrinkWrap: true,
+                      itemCount: keywords.length,
+                      itemBuilder: (context, index) {
+                        return InkWell(
+                          onTap: () => Navigator.pop(context, keywords[index]),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 16,
+                            ),
+                            child: Text(
+                              keywords[index],
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(
@@ -777,7 +848,20 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
       child: Row(
         children: [
           const SizedBox(width: 8),
-          const BackButton(),
+          IconButton(
+              onPressed: () => Navigator.maybePop(context),
+              icon: const Icon(Icons.arrow_back_ios_new)),
+          if (bangumiPage)
+            IconButton(
+                onPressed: () async {
+                  final selectedKeyword =
+                      await showKeywordsDialog(context, keywords ?? []);
+                  if (selectedKeyword != null) {
+                    controller.onSearch?.call(selectedKeyword);
+                    editingController.text = selectedKeyword;
+                  }
+                },
+                icon: const Icon(Icons.change_history)),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),

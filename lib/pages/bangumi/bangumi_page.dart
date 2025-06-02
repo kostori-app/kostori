@@ -25,10 +25,14 @@ class BangumiPage extends StatefulWidget {
   State<BangumiPage> createState() => _BangumiPageState();
 }
 
-class _BangumiPageState extends State<BangumiPage> {
+class _BangumiPageState extends State<BangumiPage>
+    with AutomaticKeepAliveClientMixin {
   final ScrollController scrollController = ScrollController();
   List<BangumiItem> bangumiItems = [];
   bool isLoadingMore = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -63,63 +67,63 @@ class _BangumiPageState extends State<BangumiPage> {
     if (mounted) setState(() {});
   }
 
-  Widget _bangumiTrending(BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
+  List<Widget> buildBangumiTrendingSlivers(BuildContext context) {
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        sliver: SliverToBoxAdapter(
+          child: SizedBox(
+            height: 56,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text('热度排行(${bangumiItems.length})', style: ts.s18),
+              ],
+            ).paddingHorizontal(16),
           ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            SizedBox(
-              height: 56,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text('热度排行(${bangumiItems.length})', style: ts.s18),
-                ],
-              ).paddingHorizontal(16),
-            ),
-            GridView.builder(
-              padding: const EdgeInsets.all(8),
-              physics: const NeverScrollableScrollPhysics(),
-              // 禁止内部滚动
-              shrinkWrap: true,
-              // 让GridView跟随内容高度
-              gridDelegate: SliverGridDelegateWithBangumiItems(true),
-              itemCount: bangumiItems.length,
-              itemBuilder: (context, index) {
-                return BangumiWidget.buildBriefMode(
-                    context, bangumiItems[index], 'Trending$index');
-              },
-            ),
-            if (isLoadingMore)
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Center(
-                  child: MiscComponents.placeholder(
-                      context, 40, 40, Colors.transparent),
-                ),
-              ),
-          ],
         ),
       ),
-    );
+
+      // Grid 部分
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverGrid(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              return bangumiItems.isNotEmpty
+                  ? BangumiWidget.buildBriefMode(
+                      context, bangumiItems[index], 'Trending$index')
+                  : null;
+            },
+            childCount: bangumiItems.isNotEmpty ? bangumiItems.length : 10,
+          ),
+          gridDelegate: SliverGridDelegateWithBangumiItems(true),
+        ),
+      ),
+
+      // 加载更多指示器
+      if (isLoadingMore)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Center(
+              child: MiscComponents.placeholder(
+                  context, 40, 40, Colors.transparent),
+            ),
+          ),
+        ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     Widget widget =
         SmoothCustomScrollView(controller: scrollController, slivers: [
       SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
       const _SearchBar(),
       const _Timetable(),
-      _bangumiTrending(context),
+      ...buildBangumiTrendingSlivers(context),
     ]);
     widget = AppScrollBar(
       topPadding: 82,

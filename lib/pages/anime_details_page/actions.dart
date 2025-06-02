@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 part of 'anime_page.dart';
 
 abstract mixin class _AnimePageActions {
@@ -16,20 +18,6 @@ abstract mixin class _AnimePageActions {
   bool isLiking = false;
 
   bool isLiked = false;
-
-  void likeOrUnlike() async {
-    if (isLiking) return;
-    isLiking = true;
-    update();
-    var res = await animeSource.likeOrUnlikeAnime!(anime.id, isLiked);
-    if (res.error) {
-      App.rootContext.showMessage(message: res.errorMessage!);
-    } else {
-      isLiked = !isLiked;
-    }
-    isLiking = false;
-    update();
-  }
 
   bool isAddToLocalFav = false;
 
@@ -579,19 +567,9 @@ abstract mixin class _AnimePageActions {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return PopUpWidgetScaffold(
                 title: anime.title,
-                body:
-                    Center(child: CircularProgressIndicator()), // Loading state
-              );
-            } else if (snapshot.hasError) {
-              return PopUpWidgetScaffold(
-                title: anime.title,
                 body: Center(
-                    child: Text('Error: ${snapshot.error}')), // Error state
-              );
-            } else if (!snapshot.hasData) {
-              return PopUpWidgetScaffold(
-                title: anime.title,
-                body: Center(child: Text('No data available')), // No data state
+                    child: MiscComponents.placeholder(context, 100, 100,
+                        Colors.transparent)), // Loading state
               );
             }
 
@@ -599,7 +577,8 @@ abstract mixin class _AnimePageActions {
             final allEpisodes = snapshot.data?[1] as List<EpisodeInfo>;
 
             // 获取当前周的剧集
-            final currentWeekEp = Utils.findCurrentWeekEpisode(allEpisodes);
+            final currentWeekEp =
+                Utils.findCurrentWeekEpisode(allEpisodes, bangumiItem);
 
             // 判断是否已全部播出（检查是否是最后一项）
             final isCompleted = currentWeekEp != null &&
@@ -622,7 +601,7 @@ abstract mixin class _AnimePageActions {
                             children: [
                               Padding(
                                   padding:
-                                      const EdgeInsets.symmetric(vertical: 16),
+                                      const EdgeInsets.symmetric(vertical: 2),
                                   child: LayoutBuilder(
                                       builder: (context, constraints) {
                                     double height = constraints.maxWidth / 2;
@@ -690,18 +669,19 @@ abstract mixin class _AnimePageActions {
                                                       bangumiItem != null)
                                                     Container(
                                                       padding:
-                                                          EdgeInsets.all(8.0),
+                                                          EdgeInsets.fromLTRB(
+                                                              8, 5, 8, 5),
                                                       decoration: BoxDecoration(
                                                         borderRadius:
                                                             BorderRadius
-                                                                .circular(16.0),
+                                                                .circular(8.0),
                                                         border: Border.all(
                                                           color: Theme.of(
                                                                   context)
                                                               .colorScheme
-                                                              .secondaryContainer
+                                                              .primary
                                                               .toOpacity(0.72),
-                                                          width: 2.0,
+                                                          width: 1.0,
                                                         ),
                                                       ),
                                                       child: Text(
@@ -711,13 +691,24 @@ abstract mixin class _AnimePageActions {
                                                   if (history?.bangumiId !=
                                                           null &&
                                                       bangumiItem != null)
-                                                    Text(
-                                                      isCompleted
-                                                          ? '全 ${bangumiItem.totalEpisodes} 话'
-                                                          : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
-                                                      style: TextStyle(
-                                                          fontSize: 14.0),
-                                                    ),
+                                                    (currentWeekEp?.sort !=
+                                                            null)
+                                                        ? Text(
+                                                            isCompleted
+                                                                ? '全 ${bangumiItem.totalEpisodes} 话'
+                                                                : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                            style: TextStyle(
+                                                              fontSize: 12.0,
+                                                            ),
+                                                          )
+                                                        : Text(
+                                                            '未开播',
+                                                            style: TextStyle(
+                                                                fontSize: 12.0,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                          ),
                                                   Spacer(),
                                                   if (history?.bangumiId !=
                                                           null &&
@@ -743,9 +734,9 @@ abstract mixin class _AnimePageActions {
                                                             width: 5,
                                                           ),
                                                           Container(
-                                                            padding:
-                                                                EdgeInsets.all(
-                                                                    2.0),
+                                                            padding: EdgeInsets
+                                                                .fromLTRB(
+                                                                    8, 5, 8, 5),
                                                             // 可选，设置内边距
                                                             decoration:
                                                                 BoxDecoration(
@@ -759,11 +750,11 @@ abstract mixin class _AnimePageActions {
                                                                 color: Theme.of(
                                                                         context)
                                                                     .colorScheme
-                                                                    .secondaryContainer
+                                                                    .primary
                                                                     .toOpacity(
                                                                         0.72),
                                                                 width:
-                                                                    2.0, // 设置边框宽度
+                                                                    1.0, // 设置边框宽度
                                                               ),
                                                             ),
                                                             child: Text(
@@ -817,7 +808,7 @@ abstract mixin class _AnimePageActions {
                                   bangumiItem != null)
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                      vertical: 16, horizontal: 16),
+                                      vertical: 2, horizontal: 16),
                                   child: Align(
                                     child: Row(
                                       children: [

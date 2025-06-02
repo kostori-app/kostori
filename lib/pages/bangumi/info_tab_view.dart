@@ -1,7 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
@@ -26,9 +25,9 @@ import 'package:text_scroll/text_scroll.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 
-import '../../components/bangumi_widget.dart';
-import 'bangumi_all_episode_page.dart';
-import 'bangumi_episode_info_page.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/pages/bangumi/bangumi_all_episode_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 
 class InfoTabView extends StatefulWidget {
   const InfoTabView({
@@ -357,7 +356,8 @@ class _InfoTabViewState extends State<InfoTabView>
                                               totalEpisodes: 0,
                                               score: 0,
                                               images: item.images,
-                                              tags: []),
+                                              tags: [],
+                                              alias: []),
                                         ));
                               },
                               borderRadius: BorderRadius.circular(12),

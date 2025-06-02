@@ -1,10 +1,8 @@
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -54,144 +52,57 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     }
   }
 
-  // 修改后的数据过滤方法
+  // 修改后的数据过滤方法（完整版）
   Future<void> filterExistingBangumiItems() async {
     try {
-      // 1. 获取所有番剧数据
+      // 1. 获取所有番剧数据并检查存在性
       final allItems = BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
       final allIds = allItems.map((item) => item.id.toString()).toList();
       final existenceMap =
           await BangumiManager().checkWhetherDataExistsBatch(allIds);
 
-      // 2. 批量获取所有番剧的剧集数据
-      final episodeRequests = <Future<Map<int, List<EpisodeInfo>>>>{};
+      // 2. 批量获取有效番剧的剧集数据（分批处理）
       final validItems = allItems
           .where((item) => existenceMap.containsKey(item.id.toString()))
           .toList();
+      final allEpisodesMap = await _fetchEpisodesInBatches(validItems);
 
-      // 分批请求（每批10个，避免过多并发）
-      for (var i = 0; i < validItems.length; i += 10) {
-        final batch = validItems.sublist(i, min(i + 10, validItems.length));
-        episodeRequests.add(_fetchBatchEpisodes(batch));
-      }
-
-      // 等待所有请求完成
-      final episodeResults = await Future.wait(episodeRequests);
-      final allEpisodesMap = <int, List<EpisodeInfo>>{};
-      for (final result in episodeResults) {
-        allEpisodesMap.addAll(result);
-      }
-
-      // 2. 创建7天的空列表（周一至周日）
+      // 3. 创建并填充日历数据
       final newCalendar = List.generate(7, (_) => <BangumiItem>[]);
+      final now = DateTime.now();
+      final currentWeekInfo = Utils.getISOWeekNumber(now);
 
-      // 3. 遍历所有番剧，按播出时间归类
-      for (final item in allItems) {
-        // 跳过不存在的番剧
-        if (!existenceMap.containsKey(item.id.toString())) continue;
-
-        // 获取播出时间（优先使用existenceMap中的时间）
+      for (final item in validItems) {
         final airTimeStr = existenceMap[item.id.toString()] ?? item.airTime;
-        if (airTimeStr == null) continue; // 没有时间则跳过
+        if (airTimeStr == null) continue;
 
         try {
           final airTime = DateTime.parse(airTimeStr).toLocal();
           final weekday = airTime.weekday;
 
-          // 从批量获取的结果中取出当前番剧的剧集
-          final allEpisodes = allEpisodesMap[item.id];
-          Map<String, dynamic>? episodeExtraInfo;
-          if (allEpisodes != null && allEpisodes.isNotEmpty) {
-            final now = DateTime.now();
-
-            EpisodeInfo? currentWeekEpisode;
-            EpisodeInfo? nextWeekEpisode;
-            EpisodeInfo? lastPastEpisode;
-            int? nextWeekNumber;
-
-            for (final ep in allEpisodes) {
-              try {
-                final airDate = Utils.safeParseDate(ep.airDate);
-                if (airDate == null) {
-                  Log.addLog(LogLevel.warning, '日期解析', '剧集 ${ep.id} 无有效日期');
-                  continue;
-                }
-                final (currentYear, currentWeek) = Utils.getISOWeekNumber(now);
-                final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
-
-                // 仅处理同年份的剧集
-                if (airYear == currentYear) {
-                  if (airWeekNum == currentWeek) {
-                    currentWeekEpisode ??= ep; // 当前周剧集
-                  }
-                  // 未来周处理
-                  else if (airWeekNum > currentWeek) {
-                    if (nextWeekEpisode == null ||
-                        airWeekNum < nextWeekNumber!) {
-                      nextWeekNumber = airWeekNum;
-                      nextWeekEpisode = ep;
-                    }
-                  }
-                  // 过去周处理
-                  else {
-                    final lastPastWeek = lastPastEpisode != null
-                        ? Utils.getISOWeekNumber(DateFormat('yyyy-M-d')
-                                .parse(lastPastEpisode.airDate))
-                            .$2
-                        : 0;
-
-                    if (airWeekNum > lastPastWeek) {
-                      lastPastEpisode = ep;
-                    }
-                  }
-                }
-              } catch (e, s) {
-                Log.addLog(LogLevel.warning, 'parseDate',
-                    '${lastPastEpisode?.airDate} $e\n$s');
-              }
-            }
-
-            // 优先级：当前周 > 下一周 > 最近过去周
-            final resultEpisode =
-                currentWeekEpisode ?? nextWeekEpisode ?? lastPastEpisode;
-
-            // 如果找到有名称的集
-            if (resultEpisode != null) {
-              episodeExtraInfo = {
-                'episode_airdate': resultEpisode.airDate,
-                'episode_name': resultEpisode.name,
-                'episode_name_cn': resultEpisode.nameCn,
-                'episode_ep': resultEpisode.sort,
-              };
-            }
-          }
-
-          // 创建增强的item
-          final enrichedItem = item.copyWith(
-            airTime: airTimeStr,
-            extraInfo: episodeExtraInfo,
+          // 处理剧集数据（关键修改：使用airTime判断周一5点前）
+          final episodeInfo = _processEpisodeInfo(
+            episodes: allEpisodesMap[item.id],
+            airTime: airTime, // 传入解析后的番剧播出时间
+            now: now,
+            currentWeekInfo: currentWeekInfo,
           );
 
-          // 添加到对应的星期组
+          // 创建增强版番剧条目
+          final enrichedItem = item.copyWith(
+            airTime: airTimeStr,
+            extraInfo: episodeInfo,
+          );
+
           newCalendar[weekday - 1].add(enrichedItem);
         } catch (e, s) {
-          Log.addLog(LogLevel.error, '解析时间', '${item.id}, $airTimeStr\n$e\n$s');
+          Log.addLog(LogLevel.error, '处理番剧时间',
+              'ID:${item.id}, 时间:$airTimeStr\n$e\n$s');
         }
       }
 
-      // 4. 按播出时间排序
-      for (var dayList in newCalendar) {
-        dayList.sort((a, b) {
-          final timeA = a.airTime;
-          final timeB = b.airTime;
-          if (timeA == null && timeB == null) return 0;
-          if (timeA == null) return 1;
-          if (timeB == null) return -1;
-          return _parseTime(timeA).compareTo(_parseTime(timeB));
-        });
-      }
-
-      // 5. 过滤空日期
+      // 4. 排序并过滤空日期
+      _sortCalendarByTime(newCalendar);
       final filteredCalendar =
           newCalendar.where((day) => day.isNotEmpty).toList();
 
@@ -199,26 +110,136 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         setState(() => bangumiCalendar = filteredCalendar);
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'processing bangumi calendar', '$e\n$s');
+      Log.addLog(LogLevel.error, '处理番剧日历', '$e\n$s');
       if (mounted) setState(() => bangumiCalendar = []);
     }
   }
 
-  // 批量获取剧集的方法
+// 批量获取剧集数据（每批10个）
+  Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
+      List<BangumiItem> items) async {
+    final result = <int, List<EpisodeInfo>>{};
+    for (var i = 0; i < items.length; i += 10) {
+      final batch = items.sublist(i, min(i + 10, items.length));
+      try {
+        result.addAll(await _fetchBatchEpisodes(batch));
+      } catch (e, s) {
+        Log.addLog(LogLevel.warning, '获取剧集批次${i ~/ 10 + 1}失败', '$e\n$s');
+      }
+    }
+    return result;
+  }
+
+// 处理剧集信息（关键修改：使用番剧airTime判断周一5点前）
+  Map<String, dynamic>? _processEpisodeInfo({
+    required List<EpisodeInfo>? episodes,
+    required DateTime airTime, // 番剧的实际播出时间
+    required DateTime now,
+    required (int, int) currentWeekInfo, // (year, week)
+  }) {
+    if (episodes == null || episodes.isEmpty) return null;
+
+    // 判断是否需要调整周数（周一5点前属于上周）
+    final isMondayBefore5AM = airTime.weekday == DateTime.monday &&
+        (airTime.hour < 5 || !_hasTimeComponent(airTime));
+
+    EpisodeInfo? currentWeekEp;
+    EpisodeInfo? nextWeekEp;
+    EpisodeInfo? lastPastEp;
+    int? nextWeekNum;
+
+    for (final ep in episodes) {
+      try {
+        final airDate = Utils.safeParseDate(ep.airDate);
+        if (airDate == null) {
+          // Log.addLog(LogLevel.error, '无效日期', '剧集${ep.id}无有效日期');
+          continue;
+        }
+
+        final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
+        final (currentYear, currentWeek) = currentWeekInfo;
+
+        if (airYear != currentYear) continue;
+
+        // 应用周数调整（基于番剧的airTime判断）
+        final adjustedWeek = isMondayBefore5AM
+            ? (airWeekNum == 1 ? 52 : airWeekNum + 1) // 处理跨年
+            : airWeekNum;
+
+        if (adjustedWeek == currentWeek) {
+          currentWeekEp ??= ep;
+        } else if (adjustedWeek > currentWeek) {
+          if (nextWeekEp == null || adjustedWeek < nextWeekNum!) {
+            nextWeekNum = adjustedWeek;
+            nextWeekEp = ep;
+          }
+        } else {
+          final lastPastWeek = lastPastEp != null
+              ? Utils.getISOWeekNumber(
+                      DateFormat('yyyy-M-d').parse(lastPastEp.airDate))
+                  .$2
+              : 0;
+          if (adjustedWeek > lastPastWeek) {
+            lastPastEp = ep;
+          }
+        }
+      } catch (e, s) {
+        Log.addLog(LogLevel.warning, '处理剧集日期', '${ep.airDate} $e\n$s');
+      }
+    }
+
+    final resultEp = currentWeekEp ?? nextWeekEp ?? lastPastEp;
+    return resultEp != null
+        ? {
+            'episode_airdate': resultEp.airDate,
+            'episode_name': resultEp.name,
+            'episode_name_cn': resultEp.nameCn,
+            'episode_ep': resultEp.sort,
+          }
+        : null;
+  }
+
+// 检查DateTime是否包含时间成分
+  bool _hasTimeComponent(DateTime dt) =>
+      dt.hour != 0 || dt.minute != 0 || dt.second != 0;
+
+// 按播出时间排序
+  void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
+    for (final dayList in calendar) {
+      dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
+    }
+  }
+
+// 时间字符串比较
+  int _compareTimeStrings(String? a, String? b) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return _parseTime(a).compareTo(_parseTime(b));
+  }
+
+// 解析时间（仅比较时分）
+  DateTime _parseTime(String timeStr) {
+    try {
+      final dt = DateTime.parse(timeStr).toLocal();
+      return DateTime(2000, 1, 1, dt.hour, dt.minute);
+    } catch (e) {
+      return DateTime(2000, 1, 1); // 解析失败默认值
+    }
+  }
+
+// 批量获取剧集（保持原有实现）
   Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
       List<BangumiItem> batch) async {
     final result = <int, List<EpisodeInfo>>{};
-    final now = Utils.formatDate(DateTime.now());
-
+    final nowStr = Utils.formatDate(DateTime.now());
     final lastUpdateTime = appdata.settings['getBangumiAllEpInfoTime'];
 
-    if (lastUpdateTime != null && lastUpdateTime == now) {
+    if (lastUpdateTime != null && lastUpdateTime == nowStr) {
       await Future.wait(batch.map((item) async {
         try {
           final episodes = await BangumiManager().allEpInfoFind(item.id);
-          if (episodes.isNotEmpty) {
-            result[item.id] = episodes;
-          }
+          if (episodes.isNotEmpty) result[item.id] = episodes;
         } catch (e, s) {
           Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
         }
@@ -228,31 +249,18 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         await Future.wait(batch.map((item) async {
           try {
             final episodes = await Bangumi.getBangumiEpisodeAllByID(item.id);
-            if (episodes.isNotEmpty) {
-              result[item.id] = episodes;
-            }
+            if (episodes.isNotEmpty) result[item.id] = episodes;
           } catch (e) {
             Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e');
           }
         }));
-        appdata.settings['getBangumiAllEpInfoTime'] = now;
+        appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
         appdata.saveData();
       } catch (e, s) {
         Log.addLog(LogLevel.warning, '批量获取剧集', '$e\n$s');
       }
     }
-
     return result;
-  }
-
-// 辅助方法：解析时间用于排序
-  DateTime _parseTime(String timeStr) {
-    try {
-      final dt = DateTime.parse(timeStr).toLocal();
-      return DateTime(2000, 1, 1, dt.hour, dt.minute); // 仅比较时分
-    } catch (e) {
-      return DateTime(2000, 1, 1); // 解析失败默认值
-    }
   }
 
   /// 星期列表
@@ -602,29 +610,30 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                     Text(
                                       '${bangumiItem.score}',
                                       style: TextStyle(
-                                        fontSize: imageWidth * 0.14,
+                                        fontSize: imageWidth * 0.16,
                                       ),
                                     ),
                                     SizedBox(
                                       width: 5,
                                     ),
                                     Container(
-                                      padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                                      padding: EdgeInsets.fromLTRB(
+                                          8, 5, 8, 5), // 可选，设置内边距
                                       decoration: BoxDecoration(
                                         borderRadius:
                                             BorderRadius.circular(8), // 设置圆角半径
                                         border: Border.all(
                                           color: Theme.of(context)
                                               .colorScheme
-                                              .secondaryContainer
+                                              .primary
                                               .toOpacity(0.72),
-                                          width: 2.0, // 设置边框宽度
+                                          width: 1.0, // 设置边框宽度
                                         ),
                                       ),
                                       child: Text(
                                         Utils.getRatingLabel(bangumiItem.score),
                                         style: TextStyle(
-                                          fontSize: imageWidth * 0.08,
+                                          fontSize: imageWidth * 0.12,
                                         ),
                                       ),
                                     ),
@@ -643,12 +652,12 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                               const Icon(
                                             Icons.star_rounded,
                                           ),
-                                          itemSize: imageWidth * 0.12,
+                                          itemSize: imageWidth * 0.14,
                                         ),
                                         Text(
                                           '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
                                           style: TextStyle(
-                                              fontSize: imageWidth * 0.06),
+                                              fontSize: imageWidth * 0.1),
                                         )
                                       ],
                                     ),

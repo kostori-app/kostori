@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -9,7 +11,6 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:rhttp/rhttp.dart' as rhttp;
 
 import 'package:webdav_client/webdav_client.dart' hide File;
 

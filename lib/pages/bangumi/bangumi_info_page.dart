@@ -3,10 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/history.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kostori/components/bean/appbar/drag_to_move_bar.dart' as dtb;
-import 'package:kostori/network/network_img_layer.dart';
+import 'package:kostori/components/network_img_layer.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/bangumi/info_tab_view.dart';
 
@@ -114,16 +115,22 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     });
   }
 
+  Future<void> queryBangumiHistory(int id) async {
+    infoController.bangumiHistory = HistoryManager().bangumiByIDFind(id);
+  }
+
   @override
   void initState() {
     super.initState();
+    infoController.bangumiHistory.clear();
+    infoController.characterList.clear();
+    infoController.commentsList.clear();
+    infoController.staffList.clear();
     infoController.bangumiItem = bangumiItem;
     infoController.allEpisodes = [];
     queryBangumiEpisodeByID(bangumiId);
     queryBangumiInfoByID(bangumiId);
-    infoController.characterList.clear();
-    infoController.commentsList.clear();
-    infoController.staffList.clear();
+    queryBangumiHistory(bangumiId);
     infoTabController = TabController(length: 4, vsync: this);
     infoTabController.addListener(() {
       int index = infoTabController.index;
@@ -145,6 +152,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
 
   @override
   void dispose() {
+    infoController.bangumiHistory.clear();
     infoController.characterList.clear();
     infoController.commentsList.clear();
     infoController.staffList.clear();
@@ -284,6 +292,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                       allEpisodes: infoController.allEpisodes,
                                       isLoading: infoController.isLoading,
                                       heroTag: widget.heroTag,
+                                      infoController: infoController,
                                     ),
                                   ),
                                 ),

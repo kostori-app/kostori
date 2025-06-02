@@ -1599,21 +1599,16 @@ class _BangumiCardState extends State<BangumiCard> {
           width: 5,
         ),
         Container(
-          padding: EdgeInsets.all(2.0), // 可选，设置内边距
+          padding: EdgeInsets.fromLTRB(8, 5, 8, 5), // 可选，设置内边距
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8), // 设置圆角半径
             border: Border.all(
-              color: Theme.of(context)
-                  .colorScheme
-                  .secondaryContainer
-                  .toOpacity(0.72),
-              width: 2.0, // 设置边框宽度
+              color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
+              width: 1.0, // 设置边框宽度
             ),
           ),
           child: Text(Utils.getRatingLabel(bangumiItem.score),
-              style: TextStyle(
-                fontSize: 10.0,
-              )),
+              style: TextStyle(fontSize: 10.0, fontWeight: FontWeight.bold)),
         ),
         SizedBox(
           width: 4,
@@ -1665,7 +1660,7 @@ class _BangumiCardState extends State<BangumiCard> {
 
             backgroundImage = Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 color: Theme.of(context).colorScheme.secondaryContainer,
               ),
               clipBehavior: Clip.antiAlias,
@@ -1685,7 +1680,7 @@ class _BangumiCardState extends State<BangumiCard> {
 
             foregroundImage = Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 color: Theme.of(context).colorScheme.secondaryContainer,
               ),
               clipBehavior: Clip.antiAlias,
@@ -1718,7 +1713,7 @@ class _BangumiCardState extends State<BangumiCard> {
                               child: foregroundImage,
                             ),
                             Positioned(
-                              bottom: 50,
+                              bottom: App.isAndroid ? 42 : 46,
                               right: 8,
                               child: ClipRRect(
                                 // 确保圆角区域也能正确裁剪模糊效果
@@ -1731,8 +1726,11 @@ class _BangumiCardState extends State<BangumiCard> {
                                         filter: ui.ImageFilter.blur(
                                             sigmaX: 10, sigmaY: 10),
                                         child: Container(
-                                          color: Colors.black
-                                              .toOpacity(0.3), // 必须有一个子容器
+                                          color: context.brightness ==
+                                                  Brightness.light
+                                              ? Colors.white.toOpacity(0.3)
+                                              : Colors.black
+                                                  .toOpacity(0.3), // 必须有一个子容器
                                         ),
                                       ),
                                     ),
@@ -1751,7 +1749,7 @@ class _BangumiCardState extends State<BangumiCard> {
                               ),
                             ),
                             Positioned(
-                              bottom: 8,
+                              bottom: 4,
                               right: 4,
                               child: ClipRRect(
                                 // 确保圆角区域也能正确裁剪模糊效果
@@ -1764,8 +1762,11 @@ class _BangumiCardState extends State<BangumiCard> {
                                         filter: ui.ImageFilter.blur(
                                             sigmaX: 10, sigmaY: 10),
                                         child: Container(
-                                          color: Colors.black
-                                              .toOpacity(0.3), // 必须有一个子容器
+                                          color: context.brightness ==
+                                                  Brightness.light
+                                              ? Colors.white.toOpacity(0.3)
+                                              : Colors.black
+                                                  .toOpacity(0.3), // 必须有一个子容器
                                         ),
                                       ),
                                     ),
@@ -1793,10 +1794,12 @@ class _BangumiCardState extends State<BangumiCard> {
                                 : bangumiItem.name,
                             style: TextStyle(
                               fontSize: 16,
-                              color: Colors.white, // 文字颜色可能需要调整
+                              fontWeight: FontWeight.bold,
                               shadows: [
                                 Shadow(
-                                  color: Colors.black,
+                                  color: context.brightness == Brightness.light
+                                      ? Colors.white.toOpacity(0.3)
+                                      : Colors.black.toOpacity(0.3),
                                   blurRadius: 2,
                                 ),
                               ],

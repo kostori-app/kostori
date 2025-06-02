@@ -1,16 +1,13 @@
 import 'dart:ui';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/foundation/bangumi/character/character_comments_card.dart';
-import 'package:photo_view/photo_view.dart';
 
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/components/error_widget.dart';
-import 'package:kostori/foundation/image_loader/cached_image.dart';
 
 import '../../components/bangumi_widget.dart';
 

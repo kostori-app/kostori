@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element_parameter
+
 part of 'settings_page.dart';
 
 class _SwitchSetting extends StatefulWidget {

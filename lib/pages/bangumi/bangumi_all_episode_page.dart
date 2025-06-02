@@ -6,7 +6,7 @@ import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../foundation/bangumi/episode/episode_item.dart';
-import '../../network/network_img_layer.dart';
+import '../../components/network_img_layer.dart';
 import 'bangumi_episode_info_page.dart';
 import 'info_controller.dart';
 

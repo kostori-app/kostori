@@ -1,6 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -36,7 +36,7 @@ class BangumiWidget {
           Text(
             '${bangumiItem.score}',
             style: TextStyle(
-              fontSize: 16.0,
+              fontSize: App.isAndroid ? 13 : 16.0,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -52,11 +52,13 @@ class BangumiWidget {
                 itemBuilder: (context, index) => const Icon(
                   Icons.star_rounded,
                 ),
-                itemSize: 14.0,
+                itemSize: App.isAndroid ? 12 : 14.0,
               ),
               Text(
                 '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
-                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    fontSize: App.isAndroid ? 7 : 9,
+                    fontWeight: FontWeight.bold),
               )
             ],
           ),
@@ -107,7 +109,7 @@ class BangumiWidget {
                           child: image,
                         ),
                         Positioned(
-                          bottom: 44,
+                          bottom: App.isAndroid ? 34 : 40,
                           right: 4,
                           child: ClipRRect(
                             // 确保圆角区域也能正确裁剪模糊效果
@@ -120,8 +122,11 @@ class BangumiWidget {
                                     filter: ui.ImageFilter.blur(
                                         sigmaX: 10, sigmaY: 10),
                                     child: Container(
-                                      color: Colors.black
-                                          .toOpacity(0.3), // 必须有一个子容器
+                                      color:
+                                          context.brightness == Brightness.light
+                                              ? Colors.white.toOpacity(0.3)
+                                              : Colors.black
+                                                  .toOpacity(0.3), // 必须有一个子容器
                                     ),
                                   ),
                                 ),
@@ -141,7 +146,7 @@ class BangumiWidget {
                           ),
                         ),
                         Positioned(
-                          bottom: 8,
+                          bottom: 4,
                           right: 4,
                           child: ClipRRect(
                             // 确保圆角区域也能正确裁剪模糊效果
@@ -154,12 +159,14 @@ class BangumiWidget {
                                     filter: ui.ImageFilter.blur(
                                         sigmaX: 10, sigmaY: 10),
                                     child: Container(
-                                      color: Colors.black
-                                          .toOpacity(0.3), // 必须有一个子容器
+                                      color:
+                                          context.brightness == Brightness.light
+                                              ? Colors.white.toOpacity(0.3)
+                                              : Colors.black
+                                                  .toOpacity(0.3), // 必须有一个子容器
                                     ),
                                   ),
                                 ),
-                                // 原有背景（带透明度）
                                 // 原有内容（需要在模糊层之上）
                                 Padding(
                                   padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
@@ -177,7 +184,7 @@ class BangumiWidget {
                     child: Text(
                       bangumiItem.nameCn,
                       style: const TextStyle(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.bold,
                         overflow: TextOverflow.ellipsis,
                       ),
                       maxLines: 1,
@@ -543,6 +550,9 @@ class BangumiWidget {
       height: height,
       memCacheWidth: memCacheWidth,
       memCacheHeight: memCacheHeight,
+      fadeOutDuration: const Duration(milliseconds: 120),
+      fadeInDuration: const Duration(milliseconds: 120),
+      filterQuality: FilterQuality.high,
       progressIndicatorBuilder: (context, url, downloadProgress) {
         final progress = downloadProgress.progress ?? 0.0;
         return Stack(
@@ -602,7 +612,7 @@ class BangumiWidget {
       },
       errorWidget: (BuildContext context, String url, Object error) =>
           MiscComponents.placeholder(context, width, height),
-      cacheManager: customDiskCache,
+      // cacheManager: customDiskCache,
     );
   }
 

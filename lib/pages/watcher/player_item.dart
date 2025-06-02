@@ -361,8 +361,9 @@ class _PlayerItemState extends State<PlayerItem>
                                                     .currentPosition
                                                     .inSeconds -
                                                 10;
-                                            if (targetPosition < 0)
+                                            if (targetPosition < 0) {
                                               targetPosition = 0;
+                                            }
                                             try {
                                               if (widget.playerController
                                                       .playerTimer !=

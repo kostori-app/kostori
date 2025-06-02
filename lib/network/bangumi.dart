@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, empty_catches
+
 import 'dart:math';
 
 import 'package:kostori/foundation/app.dart';
@@ -284,6 +286,8 @@ class Bangumi {
       var res = await getBangumiInfoByID(id);
       if (res != null) {
         BangumiManager().addBnagumiBinding(res);
+        Log.addLog(
+            LogLevel.info, 'bangumiGetBangumiInfoBind', 'bind${id}successful');
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'bangumiGetBangumiInfoBind', '$e\n$s');

@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:antlr4/antlr4.dart';
 
 import 'BBCodeParser.dart';
@@ -8,6 +10,7 @@ abstract class BBCodeListener extends ParseTreeListener {
   /// Enter a parse tree produced by [BBCodeParser.document].
   /// [ctx] the parse tree
   void enterDocument(DocumentContext ctx);
+
   /// Exit a parse tree produced by [BBCodeParser.document].
   /// [ctx] the parse tree
   void exitDocument(DocumentContext ctx);
@@ -15,6 +18,7 @@ abstract class BBCodeListener extends ParseTreeListener {
   /// Enter a parse tree produced by [BBCodeParser.element].
   /// [ctx] the parse tree
   void enterElement(ElementContext ctx);
+
   /// Exit a parse tree produced by [BBCodeParser.element].
   /// [ctx] the parse tree
   void exitElement(ElementContext ctx);
@@ -22,6 +26,7 @@ abstract class BBCodeListener extends ParseTreeListener {
   /// Enter a parse tree produced by [BBCodeParser.tag].
   /// [ctx] the parse tree
   void enterTag(TagContext ctx);
+
   /// Exit a parse tree produced by [BBCodeParser.tag].
   /// [ctx] the parse tree
   void exitTag(TagContext ctx);
@@ -29,6 +34,7 @@ abstract class BBCodeListener extends ParseTreeListener {
   /// Enter a parse tree produced by [BBCodeParser.plain].
   /// [ctx] the parse tree
   void enterPlain(PlainContext ctx);
+
   /// Exit a parse tree produced by [BBCodeParser.plain].
   /// [ctx] the parse tree
   void exitPlain(PlainContext ctx);
@@ -36,6 +42,7 @@ abstract class BBCodeListener extends ParseTreeListener {
   /// Enter a parse tree produced by [BBCodeParser.bgm].
   /// [ctx] the parse tree
   void enterBgm(BgmContext ctx);
+
   /// Exit a parse tree produced by [BBCodeParser.bgm].
   /// [ctx] the parse tree
   void exitBgm(BgmContext ctx);
@@ -43,6 +50,7 @@ abstract class BBCodeListener extends ParseTreeListener {
   /// Enter a parse tree produced by [BBCodeParser.sticker].
   /// [ctx] the parse tree
   void enterSticker(StickerContext ctx);
+
   /// Exit a parse tree produced by [BBCodeParser.sticker].
   /// [ctx] the parse tree
   void exitSticker(StickerContext ctx);

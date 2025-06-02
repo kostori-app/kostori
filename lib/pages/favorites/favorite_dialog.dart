@@ -136,12 +136,10 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                   } else if (selectedLocalFolders.length == 1 &&
                                       selectedLocalFolders
                                           .contains(widget.favPage.folder)) {
-                                    for (var s in selectedLocalFolders) {
-                                      LocalFavoritesManager().deleteAnimeWithId(
-                                          widget.favPage.folder as String,
-                                          a.id,
-                                          (a as FavoriteItem).type);
-                                    }
+                                    LocalFavoritesManager().deleteAnimeWithId(
+                                        widget.favPage.folder as String,
+                                        a.id,
+                                        (a as FavoriteItem).type);
                                   } else {
                                     // 执行添加操作
                                     for (var s in selectedLocalFolders

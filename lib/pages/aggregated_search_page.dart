@@ -9,9 +9,15 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:shimmer_animation/shimmer_animation.dart";
 
 class AggregatedSearchPage extends StatefulWidget {
-  const AggregatedSearchPage({super.key, required this.keyword});
+  const AggregatedSearchPage(
+      {super.key,
+      required this.keyword,
+      this.keywords,
+      this.bangumiPage = false});
 
   final String keyword;
+  final List<String>? keywords;
+  final bool bangumiPage;
 
   @override
   State<AggregatedSearchPage> createState() => _AggregatedSearchPageState();
@@ -53,7 +59,10 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(slivers: [
-      SliverSearchBar(controller: controller),
+      SliverSearchBar(
+          controller: controller,
+          bangumiPage: widget.bangumiPage,
+          keywords: widget.keywords),
       SliverList(
         key: ValueKey(_keyword),
         delegate: SliverChildBuilderDelegate(

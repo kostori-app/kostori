@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:dio/dio.dart';
 
 import 'app_dio.dart';
 
