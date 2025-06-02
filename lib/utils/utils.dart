@@ -92,14 +92,22 @@ class Utils {
           }
 
           // 记录所有年份中最接近当前日期的过去剧集
+          // 记录所有年份中最接近当前日期的过去剧集
           if (airDate.isBefore(now)) {
-            if (lastPastEpisode == null ||
-                airDate.isAfter(DateTime.parse(lastPastEpisode.airDate))) {
+            if (lastPastEpisode == null) {
               lastPastEpisode = ep;
+            } else {
+              final lastAirDate = DateTime.parse(lastPastEpisode.airDate);
+              if (airDate.isAfter(lastAirDate)) {
+                lastPastEpisode = ep;
+              } else if (airDate.isAtSameMomentAs(lastAirDate)) {
+                // 如果时间一样，优先取后面的项（即覆盖）
+                lastPastEpisode = ep;
+              }
             }
           }
         } catch (e) {
-          Log.addLog(LogLevel.warning, 'dateParse', '解析日期失败: ${ep.airDate}');
+          // Log.addLog(LogLevel.warning, 'dateParse', '解析日期失败: ${ep.airDate}');
         }
       }
 

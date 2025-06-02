@@ -77,7 +77,17 @@ class _BangumiPageState extends State<BangumiPage>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('热度排行(${bangumiItems.length})', style: ts.s18),
+                Text('热度排行', style: ts.s18),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('${bangumiItems.length}', style: ts.s12),
+                ),
               ],
             ).paddingHorizontal(16),
           ),

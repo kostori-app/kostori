@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:kostori/network/bangumi.dart';
-import 'package:kostori/foundation/bangumi/character/character_comments_card.dart';
+import 'package:kostori/components/bean/card/character_comments_card.dart';
 
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';

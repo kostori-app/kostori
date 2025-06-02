@@ -12,6 +12,8 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 
+import 'favorites.dart';
+
 typedef HistoryType = AnimeType;
 
 abstract mixin class HistoryMixin {
@@ -422,6 +424,36 @@ class HistoryManager with ChangeNotifier {
 
   void clearHistory() {
     _db.execute("delete from history;");
+    _db.execute("delete from progress;");
+    updateCache();
+    notifyListeners();
+  }
+
+  void clearUnfavoritedHistory() {
+    _db.execute('BEGIN TRANSACTION;');
+    try {
+      final idAndTypes = _db.select("""
+      select id, type from history;
+    """);
+      for (var element in idAndTypes) {
+        final id = element["id"] as String;
+        final type = AnimeType(element["type"] as int);
+        if (!LocalFavoritesManager().isExist(id, type)) {
+          _db.execute("""
+          delete from history
+          where id == ? and type == ?;
+        """, [id, type.value]);
+          _db.execute("""
+          delete from progress
+          where id == ? and type == ?;
+        """, [id, type.value]);
+        }
+      }
+      _db.execute('COMMIT;');
+    } catch (e) {
+      _db.execute('ROLLBACK;');
+      rethrow;
+    }
     updateCache();
     notifyListeners();
   }
@@ -524,5 +556,24 @@ class HistoryManager with ChangeNotifier {
   void close() {
     isInitialized = false;
     _db.dispose();
+  }
+
+  void batchDeleteHistories(List<AnimeID> histories) {
+    if (histories.isEmpty) return;
+    _db.execute('BEGIN TRANSACTION;');
+    try {
+      for (var history in histories) {
+        _db.execute("""
+          delete from history
+          where id == ? and type == ?;
+        """, [history.id, history.type.value]);
+      }
+      _db.execute('COMMIT;');
+    } catch (e) {
+      _db.execute('ROLLBACK;');
+      rethrow;
+    }
+    updateCache();
+    notifyListeners();
   }
 }

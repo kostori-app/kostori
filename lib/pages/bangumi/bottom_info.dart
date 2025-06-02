@@ -15,7 +15,7 @@ import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:kostori/components/bean/card/character_card.dart';
-import 'package:kostori/foundation/bangumi/episode/episode_comments_sheet.dart';
+import 'package:kostori/components/bean/card/episode_comments_sheet.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/components/error_widget.dart';
 

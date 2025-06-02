@@ -108,43 +108,44 @@ class BangumiWidget {
                         Positioned.fill(
                           child: image,
                         ),
-                        Positioned(
-                          bottom: App.isAndroid ? 34 : 40,
-                          right: 4,
-                          child: ClipRRect(
-                            // 确保圆角区域也能正确裁剪模糊效果
-                            borderRadius: BorderRadius.circular(8),
-                            child: Stack(
-                              children: [
-                                // 毛玻璃滤镜层
-                                Positioned.fill(
-                                  child: BackdropFilter(
-                                    filter: ui.ImageFilter.blur(
-                                        sigmaX: 10, sigmaY: 10),
-                                    child: Container(
-                                      color:
-                                          context.brightness == Brightness.light
-                                              ? Colors.white.toOpacity(0.3)
-                                              : Colors.black
-                                                  .toOpacity(0.3), // 必须有一个子容器
+                        if (bangumiItem.airDate.isNotEmpty)
+                          Positioned(
+                            bottom: App.isAndroid ? 34 : 40,
+                            right: 4,
+                            child: ClipRRect(
+                              // 确保圆角区域也能正确裁剪模糊效果
+                              borderRadius: BorderRadius.circular(8),
+                              child: Stack(
+                                children: [
+                                  // 毛玻璃滤镜层
+                                  Positioned.fill(
+                                    child: BackdropFilter(
+                                      filter: ui.ImageFilter.blur(
+                                          sigmaX: 10, sigmaY: 10),
+                                      child: Container(
+                                        color: context.brightness ==
+                                                Brightness.light
+                                            ? Colors.white.toOpacity(0.3)
+                                            : Colors.black
+                                                .toOpacity(0.3), // 必须有一个子容器
+                                      ),
                                     ),
                                   ),
-                                ),
-                                // 原有内容（需要在模糊层之上）
-                                Padding(
-                                  padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-                                  child: Text(
-                                    bangumiItem.airDate,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                                  // 原有内容（需要在模糊层之上）
+                                  Padding(
+                                    padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+                                    child: Text(
+                                      bangumiItem.airDate,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                         Positioned(
                           bottom: 4,
                           right: 4,
@@ -252,6 +253,9 @@ class BangumiWidget {
 
   static Widget _bangumiDescription(
       BuildContext context, BangumiItem bangumiItem) {
+    final now = DateTime.now();
+    final air = Utils.safeParseDate(bangumiItem.airDate);
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         bangumiItem.nameCn,
@@ -273,15 +277,74 @@ class BangumiWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
-      Text(
-        '${bangumiItem.airDate} • 全${bangumiItem.totalEpisodes}话',
-        style: TextStyle(
-          // fontSize: imageWidth * 0.12,
-          fontWeight: FontWeight.bold,
-          height: 1.2,
-        ),
-        maxLines: 3,
-        overflow: TextOverflow.ellipsis,
+      Row(
+        children: [
+          if (bangumiItem.airDate.isNotEmpty)
+            Text(
+              bangumiItem.airDate,
+              style: TextStyle(
+                // fontSize: imageWidth * 0.12,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (bangumiItem.airDate.isNotEmpty)
+            Text(
+              ' • ',
+              style: TextStyle(
+                // fontSize: imageWidth * 0.12,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+          (bangumiItem.totalEpisodes > 0)
+              ? (air != null)
+                  ? (air.compareTo(now) < 0)
+                      ? Text(
+                          '全${bangumiItem.totalEpisodes}话',
+                          style: TextStyle(
+                            // fontSize: imageWidth * 0.12,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : Text(
+                          '未开播',
+                          style: TextStyle(
+                            // fontSize: imageWidth * 0.12,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                  : Text(
+                      '未开播',
+                      style: TextStyle(
+                        // fontSize: imageWidth * 0.12,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    )
+              : Text(
+                  '未开播',
+                  style: TextStyle(
+                    // fontSize: imageWidth * 0.12,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+        ],
       ),
       const Spacer(),
       // 评分信息
@@ -559,7 +622,8 @@ class BangumiWidget {
           alignment: Alignment.center,
           children: [
             // 原占位图
-            MiscComponents.placeholder(context, width, height),
+            MiscComponents.placeholder(
+                context, width, height, Colors.transparent),
             // 半透明黑色蒙层
             Container(
               // width: width,
@@ -611,7 +675,8 @@ class BangumiWidget {
         Log.addLog(LogLevel.error, 'image', e.toString());
       },
       errorWidget: (BuildContext context, String url, Object error) =>
-          MiscComponents.placeholder(context, width, height),
+          MiscComponents.placeholder(
+              context, width, height, Colors.transparent),
       // cacheManager: customDiskCache,
     );
   }

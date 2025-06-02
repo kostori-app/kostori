@@ -25,6 +25,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     favPage.folderList = this;
     folders = LocalFavoritesManager().folderNames;
     appdata.settings.addListener(updateFolders);
+    LocalFavoritesManager().addListener(updateFolders);
     super.initState();
   }
 
@@ -32,6 +33,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
   void dispose() {
     super.dispose();
     appdata.settings.removeListener(updateFolders);
+    LocalFavoritesManager().removeListener(updateFolders);
   }
 
   @override

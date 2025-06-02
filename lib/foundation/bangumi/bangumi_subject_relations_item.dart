@@ -20,14 +20,12 @@ class BangumiSRI {
     required this.images,
   });
 
-  /// 工厂构造函数：从 JSON 创建实例
   factory BangumiSRI.fromJson(Map<String, dynamic> json) {
     return BangumiSRI(
       id: json['id'],
       type: json['type'] ?? '2',
       name: json['name'] ?? '',
       nameCn: json['name_cn'] ?? '',
-      // 防止 null
       relation: json['relation'] ?? '',
       images: Map<String, String>.from(
         json['images'] ??

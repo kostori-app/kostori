@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/io.dart';
 
+import 'log.dart';
+
 class Appdata with Init {
   Appdata._create();
 
@@ -109,20 +111,29 @@ class Appdata with Init {
     if (!await file.exists()) {
       return;
     }
-    var json = jsonDecode(await file.readAsString());
-    for (var key in (json['settings'] as Map<String, dynamic>).keys) {
-      if (json['settings'][key] != null) {
-        settings[key] = json['settings'][key];
+    try {
+      var json = jsonDecode(await file.readAsString());
+      for (var key in (json['settings'] as Map<String, dynamic>).keys) {
+        if (json['settings'][key] != null) {
+          settings[key] = json['settings'][key];
+        }
       }
+      searchHistory = List.from(json['searchHistory']);
+    } catch (e) {
+      Log.error("Appdata", "Failed to load appdata", e);
+      Log.info("Appdata", "Resetting appdata");
+      file.deleteIgnoreError();
     }
-    searchHistory = List.from(json['searchHistory']);
-    var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
-    if (await implicitDataFile.exists()) {
-      try {
+    try {
+      var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
+      if (await implicitDataFile.exists()) {
         implicitData = jsonDecode(await implicitDataFile.readAsString());
-      } catch (_) {
-        // ignore
       }
+    } catch (e) {
+      Log.error("Appdata", "Failed to load implicit data", e);
+      Log.info("Appdata", "Resetting implicit data");
+      var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
+      implicitDataFile.deleteIgnoreError();
     }
   }
 }
@@ -180,7 +191,9 @@ class Settings with ChangeNotifier {
 
   operator []=(String key, dynamic value) {
     _data[key] = value;
-    notifyListeners();
+    if (key != "dataVersion") {
+      notifyListeners();
+    }
   }
 
   @override

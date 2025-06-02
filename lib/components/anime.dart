@@ -402,14 +402,14 @@ class AnimeTile extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                    child: TextScroll(
+                    child: Text(
                       anime.title.replaceAll('\n', ''),
-                      mode: TextScrollMode.endless,
                       style: const TextStyle(
                         fontWeight: FontWeight.w500,
                       ),
-                      delayBefore: Duration(milliseconds: 500),
-                      velocity: const Velocity(pixelsPerSecond: Offset(40, 0)),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

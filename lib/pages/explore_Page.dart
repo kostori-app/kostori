@@ -208,23 +208,23 @@ class _ExplorePageState extends State<ExplorePage>
             ],
           ),
         ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 150),
-            reverseDuration: const Duration(milliseconds: 150),
-            child: showFB ? buildFAB() : const SizedBox(),
-            transitionBuilder: (widget, animation) {
-              var tween = Tween<Offset>(
-                  begin: const Offset(0, 1), end: const Offset(0, 0));
-              return SlideTransition(
-                position: tween.animate(animation),
-                child: widget,
-              );
-            },
-          ),
-        )
+        // Positioned(
+        //   right: 16,
+        //   bottom: 16,
+        //   child: AnimatedSwitcher(
+        //     duration: const Duration(milliseconds: 150),
+        //     reverseDuration: const Duration(milliseconds: 150),
+        //     child: showFB ? buildFAB() : const SizedBox(),
+        //     transitionBuilder: (widget, animation) {
+        //       var tween = Tween<Offset>(
+        //           begin: const Offset(0, 1), end: const Offset(0, 0));
+        //       return SlideTransition(
+        //         position: tween.animate(animation),
+        //         child: widget,
+        //       );
+        //     },
+        //   ),
+        // )
       ],
     );
   }
@@ -309,15 +309,22 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
         },
       );
     } else if (data.loadMixed != null) {
-      return _MixedExplorePage(
-        data,
-        animeSourceKey,
-        key: const PageStorageKey("anime_list"),
-        controller: scrollController,
-        refreshHandlerCallback: (c) {
-          refreshHandler = c;
-        },
-      );
+      return AppScrollBar(
+          // topPadding: 10,
+          controller: scrollController,
+          child: ScrollConfiguration(
+            behavior:
+                ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            child: _MixedExplorePage(
+              data,
+              animeSourceKey,
+              key: const PageStorageKey("anime_list"),
+              controller: scrollController,
+              refreshHandlerCallback: (c) {
+                refreshHandler = c;
+              },
+            ),
+          ));
     } else {
       return const Center(
         child: Text("Empty Page"),

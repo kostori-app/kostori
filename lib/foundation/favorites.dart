@@ -368,7 +368,7 @@ class LocalFavoritesManager with ChangeNotifier {
     });
   }
 
-  /// Start a new isolate to get the comics in the folder
+  /// Start a new isolate to get the animes in the folder
   Future<List<FavoriteItem>> getFolderAnimesAsync(
       String folder, FavoriteSortType sortType) {
     return _getFolderAnimesAsync(folder, _db.handle, sortType);
@@ -590,6 +590,151 @@ class LocalFavoritesManager with ChangeNotifier {
     notifyListeners();
   }
 
+  void batchMoveFavorites(
+      String sourceFolder, String targetFolder, List<FavoriteItem> items) {
+    _modifiedAfterLastCache = true;
+
+    if (!existsFolder(sourceFolder)) {
+      throw Exception("Source folder does not exist");
+    }
+    if (!existsFolder(targetFolder)) {
+      throw Exception("Target folder does not exist");
+    }
+
+    _db.execute("BEGIN TRANSACTION");
+    var displayOrder = maxValue(targetFolder) + 1;
+    try {
+      for (var item in items) {
+        _db.execute("""
+          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
+          select id, name, author, type, tags, cover_path, time, ?
+          from "$sourceFolder"
+          where id == ? and type == ?;
+        """, [displayOrder, item.id, item.type.value]);
+
+        _db.execute("""
+          delete from "$sourceFolder"
+          where id == ? and type == ?;
+        """, [item.id, item.type.value]);
+
+        displayOrder++;
+      }
+      notifyListeners();
+    } catch (e) {
+      Log.error("Batch Move Favorites", e.toString());
+      _db.execute("ROLLBACK");
+      return;
+    }
+    _db.execute("COMMIT");
+
+    // Update counts
+    if (counts[targetFolder] == null) {
+      counts[targetFolder] = count(targetFolder);
+    } else {
+      counts[targetFolder] = counts[targetFolder]! + items.length;
+    }
+
+    if (counts[sourceFolder] != null) {
+      counts[sourceFolder] = counts[sourceFolder]! - items.length;
+    } else {
+      counts[sourceFolder] = count(sourceFolder);
+    }
+
+    notifyListeners();
+  }
+
+  void batchCopyFavorites(
+      String sourceFolder, String targetFolder, List<FavoriteItem> items) {
+    _modifiedAfterLastCache = true;
+
+    if (!existsFolder(sourceFolder)) {
+      throw Exception("Source folder does not exist");
+    }
+    if (!existsFolder(targetFolder)) {
+      throw Exception("Target folder does not exist");
+    }
+
+    _db.execute("BEGIN TRANSACTION");
+    var displayOrder = maxValue(targetFolder) + 1;
+    try {
+      for (var item in items) {
+        _db.execute("""
+          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
+          select id, name, author, type, tags, cover_path, time, ?
+          from "$sourceFolder"
+          where id == ? and type == ?;
+        """, [displayOrder, item.id, item.type.value]);
+
+        displayOrder++;
+      }
+      notifyListeners();
+    } catch (e) {
+      Log.error("Batch Copy Favorites", e.toString());
+      _db.execute("ROLLBACK");
+      return;
+    }
+
+    _db.execute("COMMIT");
+
+    // Update counts
+    if (counts[targetFolder] == null) {
+      counts[targetFolder] = count(targetFolder);
+    } else {
+      counts[targetFolder] = counts[targetFolder]! + items.length;
+    }
+
+    notifyListeners();
+  }
+
+  void batchDeleteAnimes(String folder, List<FavoriteItem> animes) {
+    _modifiedAfterLastCache = true;
+    _db.execute("BEGIN TRANSACTION");
+    try {
+      for (var anime in animes) {
+        LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
+        _db.execute("""
+          delete from "$folder"
+          where id == ? and type == ?;
+        """, [anime.id, anime.type.value]);
+      }
+      if (counts[folder] != null) {
+        counts[folder] = counts[folder]! - animes.length;
+      } else {
+        counts[folder] = count(folder);
+      }
+    } catch (e) {
+      Log.error("Batch Delete Animes", e.toString());
+      _db.execute("ROLLBACK");
+      return;
+    }
+    _db.execute("COMMIT");
+    notifyListeners();
+  }
+
+  void batchDeleteAnimesInAllFolders(List<AnimeID> animes) {
+    _modifiedAfterLastCache = true;
+    _db.execute("BEGIN TRANSACTION");
+    var folderNames = _getFolderNamesWithDB();
+    try {
+      for (var anime in animes) {
+        LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
+        for (var folder in folderNames) {
+          _db.execute("""
+            delete from "$folder"
+            where id == ? and type == ?;
+          """, [anime.id, anime.type.value]);
+        }
+      }
+    } catch (e) {
+      Log.error("Batch Delete Animes in All Folders", e.toString());
+      _db.execute("ROLLBACK");
+      return;
+    }
+    initCounts();
+    _db.execute("COMMIT");
+    notifyListeners();
+  }
+
   /// delete a folder
   void deleteFolder(String name) {
     _modifiedAfterLastCache = true;
@@ -602,12 +747,6 @@ class LocalFavoritesManager with ChangeNotifier {
     """, [name]);
     counts.remove(name);
     notifyListeners();
-  }
-
-  void deleteAnime(String folder, FavoriteItem anime) {
-    _modifiedAfterLastCache = true;
-    deleteAnimeWithId(folder, anime.id, anime.type);
-    initCounts();
   }
 
   void deleteAnimeWithId(String folder, String id, AnimeType type) {
@@ -642,18 +781,6 @@ class LocalFavoritesManager with ChangeNotifier {
     await init();
   }
 
-  void reorder(List<FavoriteItem> newFolder, String folder) async {
-    if (!existsFolder(folder)) {
-      throw Exception("Failed to reorder: folder not found");
-    }
-    deleteFolder(folder);
-    createFolder(folder);
-    for (int i = 0; i < newFolder.length; i++) {
-      addAnime(folder, newFolder[i], i);
-    }
-    notifyListeners();
-  }
-
   void rename(String before, String after) {
     if (folderNames.contains(after)) {
       throw "Name already exists!";
@@ -675,6 +802,8 @@ class LocalFavoritesManager with ChangeNotifier {
       set folder_name = ?
       where folder_name == ?;
     """, [after, before]);
+    counts[after] = counts[before] ?? 0;
+    counts.remove(before);
     notifyListeners();
   }
 

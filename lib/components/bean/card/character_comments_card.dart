@@ -3,7 +3,7 @@ import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import '../comment/comment_item.dart';
+import '../../../foundation/bangumi/comment/comment_item.dart';
 
 class CharacterCommentsCard extends StatelessWidget {
   CharacterCommentsCard({

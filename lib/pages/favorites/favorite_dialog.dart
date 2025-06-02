@@ -126,12 +126,16 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                   if (selectedLocalFolders.length > 1 &&
                                       selectedLocalFolders
                                           .contains(widget.favPage.folder)) {
-                                    for (var s in selectedLocalFolders) {
-                                      LocalFavoritesManager().moveFavorite(
-                                          widget.favPage.folder as String,
-                                          s,
-                                          a.id,
-                                          (a as FavoriteItem).type);
+                                    var animes = widget.selectedAnimes.keys
+                                        .map((e) => e as FavoriteItem)
+                                        .toList();
+                                    for (var f in selectedLocalFolders) {
+                                      LocalFavoritesManager()
+                                          .batchMoveFavorites(
+                                        widget.favPage.folder as String,
+                                        f,
+                                        animes,
+                                      );
                                     }
                                   } else if (selectedLocalFolders.length == 1 &&
                                       selectedLocalFolders
@@ -144,18 +148,17 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                     // 执行添加操作
                                     for (var s in selectedLocalFolders
                                         .where((f) => !added.contains(f))) {
-                                      LocalFavoritesManager().addAnime(
-                                        s,
-                                        FavoriteItem(
-                                          id: a.id,
-                                          name: a.title,
-                                          coverPath: a.cover,
-                                          author: a.subtitle ?? '',
-                                          type:
-                                              AnimeType((a.sourceKey.hashCode)),
-                                          tags: a.tags ?? [],
-                                        ),
-                                      );
+                                      var animes = widget.selectedAnimes.keys
+                                          .map((e) => e as FavoriteItem)
+                                          .toList();
+                                      for (var f in selectedLocalFolders) {
+                                        LocalFavoritesManager()
+                                            .batchCopyFavorites(
+                                          widget.favPage.folder as String,
+                                          f,
+                                          animes,
+                                        );
+                                      }
                                     }
                                   }
                                 }

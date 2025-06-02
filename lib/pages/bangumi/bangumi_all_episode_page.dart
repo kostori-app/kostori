@@ -5,10 +5,10 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../foundation/bangumi/episode/episode_item.dart';
-import '../../components/network_img_layer.dart';
-import 'bangumi_episode_info_page.dart';
-import 'info_controller.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/components/network_img_layer.dart';
+import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
 
 class BangumiAllEpisodePage extends StatefulWidget {
   final List<EpisodeInfo> allEpisodes;

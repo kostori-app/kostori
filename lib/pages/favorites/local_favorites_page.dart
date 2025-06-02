@@ -123,16 +123,33 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
 
   void selectAll() {
     setState(() {
-      selectedAnimes = animes.asMap().map((k, v) => MapEntry(v, true));
+      if (searchMode) {
+        selectedAnimes = searchResults.asMap().map((k, v) => MapEntry(v, true));
+      } else {
+        selectedAnimes = animes.asMap().map((k, v) => MapEntry(v, true));
+      }
     });
   }
 
   void invertSelection() {
     setState(() {
-      animes.asMap().forEach((k, v) {
-        selectedAnimes[v] = !selectedAnimes.putIfAbsent(v, () => false);
-      });
-      selectedAnimes.removeWhere((k, v) => !v);
+      if (searchMode) {
+        for (var c in searchResults) {
+          if (selectedAnimes.containsKey(c)) {
+            selectedAnimes.remove(c);
+          } else {
+            selectedAnimes[c] = true;
+          }
+        }
+      } else {
+        for (var c in animes) {
+          if (selectedAnimes.containsKey(c)) {
+            selectedAnimes.remove(c);
+          } else {
+            selectedAnimes[c] = true;
+          }
+        }
+      }
     });
   }
 
@@ -541,14 +558,10 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
   }
 
   void _deleteAnimeWithId() {
-    for (var a in selectedAnimes.keys) {
-      LocalFavoritesManager().deleteAnimeWithId(
-        widget.folder,
-        a.id,
-        (a as FavoriteItem).type,
-      );
-    }
-    updateAnimes();
+    var toBeDeleted =
+        selectedAnimes.keys.map((e) => e as FavoriteItem).toList();
+    LocalFavoritesManager().batchDeleteAnimes(widget.folder, toBeDeleted);
+    // updateAnimes();
     _cancel();
   }
 }
