@@ -1,4 +1,9 @@
-# kostori
+<div style="text-align: center;">
+  <a href="https://github.com/kostori-app" target="_blank">
+    <img width="160" src="https://raw.githubusercontent.com/kostori-app/kostori/refs/heads/master/images/app_icon.png" alt="logo">
+  </a>
+  <h3 style="font-size: 28px;">kostori</h3>
+</div>
 
 A new Flutter project.
 
