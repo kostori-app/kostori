@@ -18,6 +18,8 @@ import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 
 import 'package:kostori/components/misc_components.dart';
 
+import 'bangumi_subject_tab_page.dart';
+
 class BangumiPage extends StatefulWidget {
   const BangumiPage({super.key});
 
@@ -88,6 +90,12 @@ class _BangumiPageState extends State<BangumiPage>
                   ),
                   child: Text('${bangumiItems.length}', style: ts.s12),
                 ),
+                const Spacer(),
+                IconButton(
+                    onPressed: () {
+                      context.to(() => BangumiSubjectTabPage());
+                    },
+                    icon: Icon(Icons.messenger_outline))
               ],
             ).paddingHorizontal(16),
           ),
@@ -102,10 +110,11 @@ class _BangumiPageState extends State<BangumiPage>
             (context, index) {
               return bangumiItems.isNotEmpty
                   ? BangumiWidget.buildBriefMode(
-                      context, bangumiItems[index], 'Trending$index')
+                      context, bangumiItems[index], 'Trending$index',
+                      showPlaceholder: false)
                   : null;
             },
-            childCount: bangumiItems.isNotEmpty ? bangumiItems.length : 10,
+            childCount: bangumiItems.length,
           ),
           gridDelegate: SliverGridDelegateWithBangumiItems(true),
         ),

@@ -95,6 +95,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
                             child: EpisodeCommentsCard(
                               commentItem:
                                   infoController.episodeCommentsList[index],
+                              replyIndex: index,
                             ),
                           ),
                         ),

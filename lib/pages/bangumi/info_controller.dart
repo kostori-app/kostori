@@ -14,6 +14,10 @@ import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 
+import '../../foundation/bangumi/reviews/reviews_item.dart';
+import '../../foundation/bangumi/topics/topics_info_item.dart';
+import '../../foundation/bangumi/topics/topics_item.dart';
+
 part 'info_controller.g.dart';
 
 class InfoController = _InfoController with _$InfoController;
@@ -26,7 +30,7 @@ abstract class _InfoController with Store {
 
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
-  final List<String> tabs = <String>['概览', '吐槽', '角色', '制作'];
+  final List<String> tabs = <String>['概览', '吐槽', '讨论', '日志', '角色', '制作'];
 
   List<BangumiSRI> bangumiSRI = [];
 
@@ -37,6 +41,18 @@ abstract class _InfoController with Store {
 
   @observable
   var commentsList = ObservableList<CommentItem>();
+
+  @observable
+  var topicsList = ObservableList<TopicsItem>();
+
+  @observable
+  var topicsLatestList = ObservableList<TopicsInfoItem>();
+
+  @observable
+  var topicsTrendingList = ObservableList<TopicsInfoItem>();
+
+  @observable
+  var reviewsList = ObservableList<ReviewsItem>();
 
   @observable
   var characterList = ObservableList<CharacterItem>();
@@ -76,6 +92,42 @@ abstract class _InfoController with Store {
     });
   }
 
+  Future<void> queryBangumiTopicsByID(int id, {int offset = 0}) async {
+    if (offset == 0) {
+      topicsList.clear();
+    }
+    await Bangumi.getTopicsByID(id, offset: offset).then((value) {
+      topicsList.addAll(value.topicsList);
+    });
+  }
+
+  Future<void> queryBangumiTopicsLatestByID({int offset = 0}) async {
+    if (offset == 0) {
+      topicsLatestList.clear();
+    }
+    await Bangumi.getTopicsLatestByID(offset: offset).then((value) {
+      topicsLatestList.addAll(value);
+    });
+  }
+
+  Future<void> queryBangumiTopicsTrendingByID({int offset = 0}) async {
+    if (offset == 0) {
+      topicsTrendingList.clear();
+    }
+    await Bangumi.getTopicsTrendingByID(offset: offset).then((value) {
+      topicsTrendingList.addAll(value);
+    });
+  }
+
+  Future<void> queryBangumiReviewsByID(int id, {int offset = 0}) async {
+    if (offset == 0) {
+      reviewsList.clear();
+    }
+    await Bangumi.getReviewsByID(id, offset: offset).then((value) {
+      reviewsList.addAll(value.reviewsList);
+    });
+  }
+
   Future<void> queryBangumiCharactersByID(int id) async {
     characterList.clear();
     await Bangumi.getCharatersByID(id).then((value) {
@@ -91,7 +143,7 @@ abstract class _InfoController with Store {
       characterList.sort((a, b) =>
           relationValue[a.relation]!.compareTo(relationValue[b.relation]!));
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'queryBangumiCharactersByID', '$e\n$s');
     }
   }
 

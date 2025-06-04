@@ -3,7 +3,7 @@ import 'package:kostori/foundation/bangumi/user_item.dart';
 class ReviewsItem {
   final Entry entry;
   final int id;
-  final ReviewsUser user;
+  final InfoUser user;
 
   ReviewsItem({
     required this.entry,
@@ -15,7 +15,7 @@ class ReviewsItem {
     return ReviewsItem(
       entry: Entry.fromJson(json['entry']),
       id: json['id'],
-      user: ReviewsUser.fromJson(json['user']),
+      user: InfoUser.fromJson(json['user']),
     );
   }
 

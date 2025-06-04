@@ -8,6 +8,7 @@ import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
+import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
@@ -22,8 +23,13 @@ import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 
-import '../../components/bangumi_widget.dart';
-import 'bangumi_search_page.dart' show BangumiSearchPage;
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart'
+    show BangumiSearchPage;
+
+import '../../components/bean/card/reviews_card.dart';
+import '../../components/bean/card/topics_card.dart';
+import '../../foundation/bangumi/topics/topics_item.dart';
 
 class _StatItem {
   final String key;
@@ -55,17 +61,27 @@ class BottomInfoState extends State<BottomInfo>
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   bool commentsIsLoading = false;
+  bool topicsIsLoading = false;
+  bool reviewsIsLoading = false;
   bool charactersIsLoading = false;
   bool commentsQueryTimeout = false;
+  bool topicsQueryTimeout = false;
+  bool reviewsQueryTimeout = false;
   bool charactersQueryTimeout = false;
   bool staffIsLoading = false;
   bool staffQueryTimeout = false;
+
+  double _previousPixels = 0;
 
   final maxWidth = 950.0;
   bool fullIntro = false;
   bool fullTag = false;
 
   int? get bangumiId => widget.bangumiId;
+
+  List<TopicsItem> get topicsList => widget.infoController.topicsList;
+
+  List<ReviewsItem> get reviewsList => widget.infoController.reviewsList;
 
   @override
   void initState() {
@@ -80,7 +96,8 @@ class BottomInfoState extends State<BottomInfo>
     infoController.commentsList.clear();
     infoController.staffList.clear();
     infoController.episodeCommentsList.clear();
-    infoTabController = TabController(length: 5, vsync: this);
+    infoTabController =
+        TabController(length: infoController.tabs.length + 1, vsync: this);
     infoTabController.addListener(() {
       int index = infoTabController.index;
       if (index == 1 &&
@@ -88,15 +105,20 @@ class BottomInfoState extends State<BottomInfo>
           !commentsIsLoading) {
         loadMoreComments();
       }
-      // if (index == 2) {
-      //   loadComments(infoController.episode);
-      // }
-      if (index == 3 &&
+      if (index == 3 && infoController.topicsList.isEmpty && !topicsIsLoading) {
+        loadMoreTopics();
+      }
+      if (index == 4 &&
+          infoController.reviewsList.isEmpty &&
+          !reviewsIsLoading) {
+        loadMoreReviews();
+      }
+      if (index == 5 &&
           infoController.characterList.isEmpty &&
           !charactersIsLoading) {
         loadCharacters();
       }
-      if (index == 4 && infoController.staffList.isEmpty && !staffIsLoading) {
+      if (index == 6 && infoController.staffList.isEmpty && !staffIsLoading) {
         loadStaff();
       }
     });
@@ -184,6 +206,52 @@ class BottomInfoState extends State<BottomInfo>
       if (infoController.commentsList.isNotEmpty && mounted) {
         setState(() {
           commentsIsLoading = false;
+        });
+      }
+    });
+  }
+
+  Future<void> loadMoreTopics({int offset = 0}) async {
+    if (topicsIsLoading) return;
+    setState(() {
+      topicsIsLoading = true;
+      topicsQueryTimeout = false;
+    });
+    infoController
+        .queryBangumiTopicsByID(infoController.bangumiItem.id, offset: offset)
+        .then((_) {
+      if (infoController.topicsList.isEmpty && mounted) {
+        setState(() {
+          topicsIsLoading = false;
+          topicsQueryTimeout = true;
+        });
+      }
+      if (infoController.topicsList.isNotEmpty && mounted) {
+        setState(() {
+          topicsIsLoading = false;
+        });
+      }
+    });
+  }
+
+  Future<void> loadMoreReviews({int offset = 0}) async {
+    if (reviewsIsLoading) return;
+    setState(() {
+      reviewsIsLoading = true;
+      reviewsQueryTimeout = false;
+    });
+    infoController
+        .queryBangumiReviewsByID(infoController.bangumiItem.id, offset: offset)
+        .then((_) {
+      if (infoController.reviewsList.isEmpty && mounted) {
+        setState(() {
+          reviewsIsLoading = false;
+          reviewsQueryTimeout = true;
+        });
+      }
+      if (infoController.reviewsList.isNotEmpty && mounted) {
+        setState(() {
+          reviewsIsLoading = false;
         });
       }
     });
@@ -623,14 +691,14 @@ class BottomInfoState extends State<BottomInfo>
                 if (commentsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '获取失败，请重试',
+                      errMsg: '好像没人发呢...',
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadMoreComments(
                                 offset: infoController.commentsList.length);
                           },
-                          text: '重试',
+                          text: '重新加载',
                         ),
                       ],
                     ),
@@ -656,7 +724,209 @@ class BottomInfoState extends State<BottomInfo>
                     );
                   },
                 );
-              })
+              }),
+              if (commentsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                          context, 40, 40, Colors.transparent),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget get topicsListBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return NotificationListener<ScrollEndNotification>(
+          onNotification: (scrollEnd) {
+            final metrics = scrollEnd.metrics;
+            final isScrollingDown = metrics.pixels > _previousPixels;
+            _previousPixels = metrics.pixels;
+
+            if (isScrollingDown &&
+                metrics.pixels >= metrics.maxScrollExtent - 200) {
+              loadMoreTopics(offset: infoController.topicsList.length);
+            }
+            return true;
+          },
+          child: CustomScrollView(
+            scrollBehavior: const ScrollBehavior().copyWith(
+              scrollbars: false,
+            ),
+            key: PageStorageKey<String>('讨论'),
+            slivers: <Widget>[
+              SliverLayoutBuilder(builder: (context, _) {
+                if (topicsList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: topicsList.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: TopicsCard(
+                              topicsItem: topicsList[index],
+                              isBottom: true,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (topicsQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: '好像没人发呢...',
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            loadMoreTopics();
+                          },
+                          text: '重新加载',
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: Skeletonizer.zone(
+                          child: ListTile(
+                            leading: Bone.circle(size: 36),
+                            title: Bone.text(width: 100),
+                            subtitle: Bone.text(width: 80),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+              if (topicsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                          context, 40, 40, Colors.transparent),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget get reviewsListBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return NotificationListener<ScrollEndNotification>(
+          onNotification: (scrollEnd) {
+            final metrics = scrollEnd.metrics;
+            final isScrollingDown = metrics.pixels > _previousPixels;
+            _previousPixels = metrics.pixels;
+
+            if (isScrollingDown &&
+                metrics.pixels >= metrics.maxScrollExtent - 200) {
+              loadMoreReviews(offset: infoController.reviewsList.length);
+            }
+            return true;
+          },
+          child: CustomScrollView(
+            scrollBehavior: const ScrollBehavior().copyWith(
+              scrollbars: false,
+            ),
+            key: PageStorageKey<String>('日志'),
+            slivers: <Widget>[
+              SliverLayoutBuilder(builder: (context, _) {
+                if (reviewsList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: reviewsList.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: ReviewsCard(
+                              reviewsItem: reviewsList[index],
+                              isBottom: true,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (reviewsQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: '好像没人发呢...',
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            loadMoreReviews();
+                          },
+                          text: '重新加载',
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: Skeletonizer.zone(
+                          child: ListTile(
+                            leading: Bone.circle(size: 36),
+                            title: Bone.text(width: 100),
+                            subtitle: Bone.text(width: 80),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+              if (reviewsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                          context, 40, 40, Colors.transparent),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -812,7 +1082,7 @@ class BottomInfoState extends State<BottomInfo>
   Widget build(BuildContext context) {
     super.build(context);
     return DefaultTabController(
-      length: 5,
+      length: 7,
       child: Scaffold(
         body: Column(
           children: [
@@ -825,8 +1095,10 @@ class BottomInfoState extends State<BottomInfo>
                     Tab(text: 'Details'.tl),
                     Tab(text: 'Comments'.tl),
                     Tab(text: 'Comment'.tl),
+                    Tab(text: 'Topics'.tl),
+                    Tab(text: 'Reviews'.tl),
                     Tab(text: 'Characters'.tl),
-                    Tab(text: 'staffList'.tl),
+                    Tab(text: 'StaffList'.tl),
                   ],
                 ),
               ),
@@ -849,6 +1121,8 @@ class BottomInfoState extends State<BottomInfo>
                     episode: WatcherState.currentState!.episode,
                     infoController: infoController,
                   ),
+                  topicsListBody,
+                  reviewsListBody,
                   charactersListBody,
                   staffListBody
                 ],

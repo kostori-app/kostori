@@ -29,14 +29,23 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/pages/bangumi/bangumi_all_episode_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 
+import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
+
+import '../../components/bean/card/reviews_card.dart';
+import '../../components/bean/card/topics_card.dart';
+import '../../components/misc_components.dart';
+import '../../foundation/bangumi/reviews/reviews_item.dart';
+
 class InfoTabView extends StatefulWidget {
   const InfoTabView({
     super.key,
     required this.commentsQueryTimeout,
+    required this.topicsQueryTimeout,
     required this.charactersQueryTimeout,
     required this.staffQueryTimeout,
     required this.tabController,
     required this.loadMoreComments,
+    required this.loadMoreTopics,
     required this.loadCharacters,
     required this.loadStaff,
     required this.bangumiItem,
@@ -47,13 +56,25 @@ class InfoTabView extends StatefulWidget {
     required this.staffList,
     required this.isLoading,
     required this.infoController,
+    required this.reviewsQueryTimeout,
+    required this.loadMoreReviews,
+    required this.commentsIsLoading,
+    required this.topicsIsLoading,
+    required this.reviewsIsLoading,
   });
 
+  final bool commentsIsLoading;
+  final bool topicsIsLoading;
+  final bool reviewsIsLoading;
   final bool commentsQueryTimeout;
+  final bool topicsQueryTimeout;
+  final bool reviewsQueryTimeout;
   final bool charactersQueryTimeout;
   final bool staffQueryTimeout;
   final TabController tabController;
   final Future<void> Function({int offset}) loadMoreComments;
+  final Future<void> Function({int offset}) loadMoreTopics;
+  final Future<void> Function({int offset}) loadMoreReviews;
   final Future<void> Function() loadCharacters;
   final Future<void> Function() loadStaff;
   final BangumiItem bangumiItem;
@@ -75,7 +96,15 @@ class _InfoTabViewState extends State<InfoTabView>
   bool fullIntro = false;
   bool fullTag = false;
 
+  InfoController get infoController => widget.infoController;
+
   bool get count => areAllValuesZero(widget.bangumiItem.count!);
+
+  List<TopicsItem> get topicsList => widget.infoController.topicsList;
+
+  List<ReviewsItem> get reviewsList => widget.infoController.reviewsList;
+
+  double _previousPixels = 0;
 
   bool areAllValuesZero(Map<String, int> countMap) {
     return countMap.values.every((value) => value == 0);
@@ -200,9 +229,21 @@ class _InfoTabViewState extends State<InfoTabView>
                 if (widget.allEpisodes.isNotEmpty) ...[
                   Row(
                     children: [
-                      Text('剧集 (${widget.allEpisodes.length})',
+                      Text('剧集',
                           style: TextStyle(
                               fontSize: 24, fontWeight: FontWeight.bold)),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child:
+                            Text('${widget.allEpisodes.length}', style: ts.s12),
+                      ),
                       const Spacer(),
                       TextButton(
                           onPressed: () {
@@ -221,74 +262,103 @@ class _InfoTabViewState extends State<InfoTabView>
                     children: [
                       // 先显示最多15个
                       ...widget.allEpisodes.take(15).map((episode) {
+                        double intensity = (episode.comment / 100)
+                            .clamp(0.3, 1.0); // 转换为 0~1 范围
                         return SizedBox(
-                          width: 50,
-                          height: 50,
-                          child: Card(
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color:
-                                    context.colorScheme.onSurface.withAlpha(25),
-                                width: 2,
-                              ),
-                            ),
-                            color: Theme.of(context).colorScheme.surface,
-                            shadowColor: Theme.of(context).shadowColor,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                context.to(() => BangumiEpisodeInfoPage(
-                                      episode: episode,
-                                      infoController: widget.infoController,
-                                    ));
-                              },
-                              onLongPress: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return AlertDialog(
-                                      content: ConstrainedBox(
-                                        constraints:
-                                            const BoxConstraints(maxWidth: 320),
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
-                                              style: const TextStyle(
-                                                  fontSize: 24,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            if (episode.nameCn.isNotEmpty)
-                                              Text(
-                                                  "ep${episode.sort}.${episode.name}"),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                Text("放送时间：${episode.airDate}"),
-                                                const SizedBox(width: 8),
-                                                Text("时长：${episode.duration}"),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(episode.desc),
-                                          ],
-                                        ),
+                            width: 50,
+                            height: 50,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Card(
+                                    elevation: 1,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: BorderSide(
+                                        color: context.colorScheme.onSurface
+                                            .withAlpha(25),
+                                        width: 2,
                                       ),
-                                    );
-                                  },
-                                );
-                              },
-                              child: Center(
-                                child: Text(episode.sort.toString()),
-                              ),
-                            ),
-                          ),
-                        );
+                                    ),
+                                    color:
+                                        Theme.of(context).colorScheme.surface,
+                                    shadowColor: Theme.of(context).shadowColor,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () {
+                                        context.to(() => BangumiEpisodeInfoPage(
+                                              episode: episode,
+                                              infoController:
+                                                  widget.infoController,
+                                            ));
+                                      },
+                                      onLongPress: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return AlertDialog(
+                                              content: ConstrainedBox(
+                                                constraints:
+                                                    const BoxConstraints(
+                                                        maxWidth: 320),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                                      style: const TextStyle(
+                                                          fontSize: 24,
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    ),
+                                                    if (episode
+                                                        .nameCn.isNotEmpty)
+                                                      Text(
+                                                          "ep${episode.sort}.${episode.name}"),
+                                                    const SizedBox(height: 8),
+                                                    Row(
+                                                      children: [
+                                                        Text(
+                                                            "放送时间：${episode.airDate}"),
+                                                        const SizedBox(
+                                                            width: 8),
+                                                        Text(
+                                                            "时长：${episode.duration}"),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(episode.desc),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                      child: Center(
+                                        child: Text(episode.sort.toString()),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                    width: 30,
+                                    decoration: BoxDecoration(
+                                      borderRadius:
+                                          BorderRadius.circular(12.0), // 设置圆角半径
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary
+                                            .toOpacity(intensity),
+                                        width: 2.0, // 设置边框宽度
+                                      ),
+                                    ))
+                              ],
+                            ));
                       }),
 
                       // 如果超过15个，显示一个“...”的卡片
@@ -539,14 +609,14 @@ class _InfoTabViewState extends State<InfoTabView>
                 if (widget.commentsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '获取失败，请重试',
+                      errMsg: '好像没人发呢...',
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             widget.loadMoreComments(
                                 offset: widget.commentsList.length);
                           },
-                          text: '重试',
+                          text: '重新加载',
                         ),
                       ],
                     ),
@@ -572,7 +642,215 @@ class _InfoTabViewState extends State<InfoTabView>
                     );
                   },
                 );
-              })
+              }),
+              if (widget.commentsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                          context, 40, 40, Colors.transparent),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget get topicsListBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return NotificationListener<ScrollEndNotification>(
+          onNotification: (scrollEnd) {
+            final metrics = scrollEnd.metrics;
+            final isScrollingDown = metrics.pixels > _previousPixels;
+            _previousPixels = metrics.pixels;
+
+            if (isScrollingDown &&
+                metrics.pixels >= metrics.maxScrollExtent - 200) {
+              widget.loadMoreTopics(offset: infoController.topicsList.length);
+            }
+            return true;
+          },
+          child: CustomScrollView(
+            scrollBehavior: const ScrollBehavior().copyWith(
+              scrollbars: false,
+            ),
+            key: PageStorageKey<String>('讨论'),
+            slivers: <Widget>[
+              SliverOverlapInjector(
+                handle:
+                    NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+              ),
+              SliverLayoutBuilder(builder: (context, _) {
+                if (topicsList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: topicsList.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: TopicsCard(
+                              topicsItem: topicsList[index],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (widget.topicsQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: '好像没人发呢...',
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            widget.loadMoreTopics();
+                          },
+                          text: '重新加载',
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: Skeletonizer.zone(
+                          child: ListTile(
+                            leading: Bone.circle(size: 36),
+                            title: Bone.text(width: 100),
+                            subtitle: Bone.text(width: 80),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+              if (widget.topicsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                          context, 40, 40, Colors.transparent),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget get reviewsListBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return NotificationListener<ScrollEndNotification>(
+          onNotification: (scrollEnd) {
+            final metrics = scrollEnd.metrics;
+            final isScrollingDown = metrics.pixels > _previousPixels;
+            _previousPixels = metrics.pixels;
+
+            if (isScrollingDown &&
+                metrics.pixels >= metrics.maxScrollExtent - 200) {
+              widget.loadMoreReviews(offset: infoController.reviewsList.length);
+            }
+            return true;
+          },
+          child: CustomScrollView(
+            scrollBehavior: const ScrollBehavior().copyWith(
+              scrollbars: false,
+            ),
+            key: PageStorageKey<String>('日志'),
+            slivers: <Widget>[
+              SliverOverlapInjector(
+                handle:
+                    NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+              ),
+              SliverLayoutBuilder(builder: (context, _) {
+                if (reviewsList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: reviewsList.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: ReviewsCard(
+                              reviewsItem: reviewsList[index],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (widget.reviewsQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: '好像没人发呢...',
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            widget.loadMoreReviews();
+                          },
+                          text: '重新加载',
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: Skeletonizer.zone(
+                          child: ListTile(
+                            leading: Bone.circle(size: 36),
+                            title: Bone.text(width: 100),
+                            subtitle: Bone.text(width: 80),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              }),
+              if (widget.reviewsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                          context, 40, 40, Colors.transparent),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -589,6 +867,9 @@ class _InfoTabViewState extends State<InfoTabView>
           ),
           key: PageStorageKey<String>('角色'),
           slivers: <Widget>[
+            SliverOverlapInjector(
+              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+            ),
             SliverLayoutBuilder(builder: (context, _) {
               if (widget.characterList.isNotEmpty) {
                 return SliverList.builder(
@@ -661,6 +942,9 @@ class _InfoTabViewState extends State<InfoTabView>
           ),
           key: PageStorageKey<String>('制作'),
           slivers: <Widget>[
+            SliverOverlapInjector(
+              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+            ),
             SliverLayoutBuilder(builder: (context, _) {
               if (widget.staffList.isNotEmpty) {
                 return SliverList.builder(
@@ -760,6 +1044,8 @@ class _InfoTabViewState extends State<InfoTabView>
           },
         ),
         commentsListBody,
+        topicsListBody,
+        reviewsListBody,
         charactersListBody,
         staffListBody,
       ],

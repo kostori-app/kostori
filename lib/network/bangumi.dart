@@ -20,6 +20,12 @@ import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 
+import '../foundation/bangumi/reviews/reviews_comments_item.dart';
+import '../foundation/bangumi/reviews/reviews_info_item.dart';
+import '../foundation/bangumi/reviews/reviews_response.dart';
+import '../foundation/bangumi/topics/topics_info_item.dart';
+import '../foundation/bangumi/topics/topics_response.dart';
+
 class Bangumi {
   static Future<List<BangumiItem>> bangumiPostSearch(String keyword,
       {List<String> tags = const [],
@@ -232,10 +238,172 @@ class Bangumi {
           options: Options(headers: bangumiHTTPHeader));
       final jsonData = res.data;
       characterResponse = CharacterResponse.fromJson(jsonData);
-    } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getCharatersByID', '$e');
     }
     return characterResponse;
+  }
+
+  static Future<TopicsResponse> getTopicsByID(int id, {int offset = 0}) async {
+    TopicsResponse topicsResponse = TopicsResponse.fromTemplate();
+    var params = <String, dynamic>{'offset': offset, 'limit': 20};
+    try {
+      final res = await Request().get(
+          Api.formatUrl(Api.bangumiTopicsByIDNext, [id]),
+          data: params,
+          options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data['data'];
+      topicsResponse = TopicsResponse.fromJson(jsonData);
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getTopicsByID', '$e');
+    }
+    return topicsResponse;
+  }
+
+  static Future<TopicsInfoItem?> getTopicsInfoByID(int id) async {
+    try {
+      final res = await Request().get('${Api.bangumiTopicsInfoByIDNext}$id',
+          options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data;
+      if (res.statusCode == 200) {
+        TopicsInfoItem topicsInfoItem = TopicsInfoItem.fromJson(jsonData);
+        return topicsInfoItem;
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getTopicsInfoByID', '$e');
+    }
+    return null;
+  }
+
+  static Future<List<TopicsInfoItem>> getTopicsLatestByID(
+      {int offset = 0}) async {
+    List<TopicsInfoItem> topicsInfoItems = [];
+    var params = <String, dynamic>{'offset': offset, 'limit': 100};
+    try {
+      final res = await Request().get(Api.bangumiTopicsLatestByIDNext,
+          data: params, options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data['data'];
+      if (res.statusCode == 200 && jsonData is List) {
+        for (dynamic json in jsonData) {
+          try {
+            TopicsInfoItem topicsInfoItem = TopicsInfoItem.fromJson(json);
+            if (topicsInfoItem.subject.type == 2) {
+              topicsInfoItems.add(topicsInfoItem);
+            }
+          } catch (e, s) {
+            Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e\n$s');
+          }
+        }
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e');
+    }
+    return topicsInfoItems;
+  }
+
+  static Future<List<TopicsInfoItem>> getTopicsTrendingByID(
+      {int offset = 0}) async {
+    List<TopicsInfoItem> topicsInfoItems = [];
+    var params = <String, dynamic>{'offset': offset, 'limit': 100};
+    try {
+      final res = await Request().get(Api.bangumiTopicsTrendingByIDNext,
+          data: params, options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data['data'];
+      if (res.statusCode == 200 && jsonData is List) {
+        for (dynamic json in jsonData) {
+          try {
+            TopicsInfoItem topicsInfoItem = TopicsInfoItem.fromJson(json);
+            if (topicsInfoItem.subject.type == 2) {
+              topicsInfoItems.add(topicsInfoItem);
+            }
+          } catch (e, s) {
+            Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e\n$s');
+          }
+        }
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e');
+    }
+    return topicsInfoItems;
+  }
+
+  static Future<ReviewsResponse> getReviewsByID(int id,
+      {int offset = 0}) async {
+    ReviewsResponse reviewsResponse = ReviewsResponse.fromTemplate();
+    var params = <String, dynamic>{'offset': offset, 'limit': 20};
+    try {
+      final res = await Request().get(
+          Api.formatUrl(Api.bangumiReviewsByIDNext, [id]),
+          data: params,
+          options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data['data'];
+      reviewsResponse = ReviewsResponse.fromJson(jsonData);
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getReviewsByID', '$e');
+    }
+    return reviewsResponse;
+  }
+
+  static Future<ReviewsInfoItem?> getReviewsInfoByID(int id) async {
+    try {
+      final res = await Request().get('${Api.bangumiReviewsInfoByIDNext}$id',
+          options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data;
+      if (res.statusCode == 200) {
+        ReviewsInfoItem reviewsInfoItem = ReviewsInfoItem.fromJson(jsonData);
+        return reviewsInfoItem;
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getReviewsInfoByID', '$e');
+    }
+    return null;
+  }
+
+  static Future<List<ReviewsCommentsItem>> getReviewsCommentsByID(
+      int id) async {
+    List<ReviewsCommentsItem> reviewsCommentsItem = [];
+    try {
+      final res = await Request().get(
+        Api.formatUrl(Api.bangumiReviewsCommentsByIDNext, [id]),
+        options: Options(headers: bangumiHTTPHeader),
+      );
+      final jsonData = res.data;
+      if (res.statusCode == 200 && jsonData is List) {
+        for (var json in jsonData) {
+          try {
+            reviewsCommentsItem.add(ReviewsCommentsItem.fromJson(json));
+          } catch (e) {
+            Log.addLog(LogLevel.error, 'getReviewsCommentsByID', '$e');
+          }
+        }
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getReviewsCommentsByID', '$e');
+    }
+    return reviewsCommentsItem;
+  }
+
+  static Future<List<BangumiItem>> getReviewsSubjectsByID(int id) async {
+    List<BangumiItem> bangumiReviewsSubjects = [];
+    try {
+      var res = await Request().get(
+          Api.formatUrl(Api.bangumiReviewsSubjectsByIDNext, [id]),
+          options: Options(headers: bangumiHTTPHeader));
+      final jsonData = res.data;
+      for (dynamic json in jsonData) {
+        try {
+          BangumiItem bangumiItem = BangumiItem.fromJson(json);
+          if (bangumiItem.type == 2) {
+            bangumiReviewsSubjects.add(bangumiItem);
+          }
+        } catch (e, s) {
+          Log.addLog(LogLevel.error, 'getReviewsSubjectsByID', '$e\n$s');
+        }
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'getReviewsSubjectsByID', '$e\n$s');
+    }
+    return bangumiReviewsSubjects;
   }
 
   //获取新番时间表
@@ -255,13 +423,13 @@ class Bangumi {
               bangumiList.add(bangumiItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+            Log.addLog(LogLevel.error, 'getCalendar', '$e\n$s');
           }
         }
         bangumiCalendar.add(bangumiList);
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'getCalendar', '$e\n$s');
     }
     return bangumiCalendar;
   }

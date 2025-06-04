@@ -61,6 +61,14 @@ class Api {
   static const String bangumiTopicsInfoByIDNext =
       'https://next.bgm.tv/p1/subjects/-/topics/';
 
+  // 最新讨论版
+  static const String bangumiTopicsLatestByIDNext =
+      'https://next.bgm.tv/p1/subjects/-/topics';
+
+  // 热门讨论版
+  static const String bangumiTopicsTrendingByIDNext =
+      'https://next.bgm.tv/p1/trending/subjects/topics';
+
   // 日志列表
   static const String bangumiReviewsByIDNext =
       'https://next.bgm.tv/p1/subjects/{0}/reviews';

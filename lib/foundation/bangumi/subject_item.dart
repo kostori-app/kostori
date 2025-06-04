@@ -20,13 +20,25 @@ class Subject {
   });
 
   factory Subject.fromJson(Map<String, dynamic> json) => Subject(
-        id: json['id'],
-        images: Images.fromJson(json['images']),
-        locked: json['locked'],
-        name: json['name'],
-        nameCN: json['nameCN'],
-        nsfw: json['nsfw'],
-        type: json['type'],
+        id: json['id'] ?? 0,
+        images: (json['images'] != null)
+            ? Images.fromJson(json['images'])
+            : Images.empty(),
+        locked: json['locked'] ?? false,
+        name: json['name'] ?? '',
+        nameCN: json['nameCN'] ?? '',
+        nsfw: json['nsfw'] ?? false,
+        type: json['type'] ?? 0,
+      );
+
+  factory Subject.empty() => Subject(
+        id: 0,
+        images: Images.empty(),
+        locked: false,
+        name: '',
+        nameCN: '',
+        nsfw: false,
+        type: 0,
       );
 
   Map<String, dynamic> toJson() => {

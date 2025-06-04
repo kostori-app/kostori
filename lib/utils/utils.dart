@@ -238,11 +238,11 @@ class Utils {
 
   // 时间显示，刚刚，x分钟前
   static String dateFormat(timeStamp, {formatType = 'list'}) {
-// 当前时间
+    // 当前时间
     int time = (DateTime.now().millisecondsSinceEpoch / 1000).round();
-// 对比
+    // 对比
     int distance = (time - timeStamp).toInt();
-// 当前年日期
+    // 当前年日期
     String currentYearStr = 'MM月DD日 hh:mm';
     String lastYearStr = 'YY年MM月DD日 hh:mm';
     if (formatType == 'detail') {

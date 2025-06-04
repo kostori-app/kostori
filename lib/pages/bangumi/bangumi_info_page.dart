@@ -15,6 +15,10 @@ import 'package:kostori/components/bean/card/bangumi_info_card.dart';
 
 import 'package:kostori/foundation/log.dart';
 
+import '../../components/components.dart';
+import '../../components/share_widget.dart';
+import '../../foundation/app.dart';
+
 class BangumiInfoPage extends StatefulWidget {
   const BangumiInfoPage({
     super.key,
@@ -36,8 +40,12 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
   final InfoController infoController = InfoController();
 
   bool commentsIsLoading = false;
+  bool topicsIsLoading = false;
+  bool reviewsIsLoading = false;
   bool charactersIsLoading = false;
   bool commentsQueryTimeout = false;
+  bool topicsQueryTimeout = false;
+  bool reviewsQueryTimeout = false;
   bool charactersQueryTimeout = false;
   bool staffIsLoading = false;
   bool staffQueryTimeout = false;
@@ -115,6 +123,52 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     });
   }
 
+  Future<void> loadMoreTopics({int offset = 0}) async {
+    if (topicsIsLoading) return;
+    setState(() {
+      topicsIsLoading = true;
+      topicsQueryTimeout = false;
+    });
+    infoController
+        .queryBangumiTopicsByID(infoController.bangumiItem.id, offset: offset)
+        .then((_) {
+      if (infoController.topicsList.isEmpty && mounted) {
+        setState(() {
+          topicsIsLoading = false;
+          topicsQueryTimeout = true;
+        });
+      }
+      if (infoController.topicsList.isNotEmpty && mounted) {
+        setState(() {
+          topicsIsLoading = false;
+        });
+      }
+    });
+  }
+
+  Future<void> loadMoreReviews({int offset = 0}) async {
+    if (reviewsIsLoading) return;
+    setState(() {
+      reviewsIsLoading = true;
+      reviewsQueryTimeout = false;
+    });
+    infoController
+        .queryBangumiReviewsByID(infoController.bangumiItem.id, offset: offset)
+        .then((_) {
+      if (infoController.reviewsList.isEmpty && mounted) {
+        setState(() {
+          reviewsIsLoading = false;
+          reviewsQueryTimeout = true;
+        });
+      }
+      if (infoController.reviewsList.isNotEmpty && mounted) {
+        setState(() {
+          reviewsIsLoading = false;
+        });
+      }
+    });
+  }
+
   Future<void> queryBangumiHistory(int id) async {
     infoController.bangumiHistory = HistoryManager().bangumiByIDFind(id);
   }
@@ -126,12 +180,15 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController.characterList.clear();
     infoController.commentsList.clear();
     infoController.staffList.clear();
+    infoController.topicsList.clear();
+    infoController.reviewsList.clear();
     infoController.bangumiItem = bangumiItem;
     infoController.allEpisodes = [];
     queryBangumiEpisodeByID(bangumiId);
     queryBangumiInfoByID(bangumiId);
     queryBangumiHistory(bangumiId);
-    infoTabController = TabController(length: 4, vsync: this);
+    infoTabController =
+        TabController(length: infoController.tabs.length, vsync: this);
     infoTabController.addListener(() {
       int index = infoTabController.index;
       if (index == 1 &&
@@ -139,12 +196,20 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
           !commentsIsLoading) {
         loadMoreComments();
       }
-      if (index == 2 &&
+      if (index == 2 && infoController.topicsList.isEmpty && !topicsIsLoading) {
+        loadMoreTopics();
+      }
+      if (index == 3 &&
+          infoController.reviewsList.isEmpty &&
+          !reviewsIsLoading) {
+        loadMoreReviews();
+      }
+      if (index == 4 &&
           infoController.characterList.isEmpty &&
           !charactersIsLoading) {
         loadCharacters();
       }
-      if (index == 3 && infoController.staffList.isEmpty && !staffIsLoading) {
+      if (index == 5 && infoController.staffList.isEmpty && !staffIsLoading) {
         loadStaff();
       }
     });
@@ -155,6 +220,8 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController.bangumiHistory.clear();
     infoController.characterList.clear();
     infoController.commentsList.clear();
+    infoController.topicsList.clear();
+    infoController.reviewsList.clear();
     infoController.staffList.clear();
     infoTabController.dispose();
     super.dispose();
@@ -176,6 +243,20 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
     }
+  }
+
+  void shareImage() {
+    showPopUpWidget(
+      App.rootContext,
+      StatefulBuilder(builder: (context, setState) {
+        return ShareWidget(
+          id: bangumiId,
+          title: bangumiItem.nameCn.isNotEmpty
+              ? bangumiItem.nameCn
+              : bangumiItem.name,
+        );
+      }),
+    );
   }
 
   @override
@@ -213,6 +294,13 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                         icon: Icon(Icons.arrow_back_ios_new),
                       ),
                       actions: [
+                        IconButton(
+                          onPressed: () {
+                            shareImage();
+                          },
+                          icon: const Icon(Icons.share),
+                        ),
+                        SizedBox(width: 8),
                         IconButton(
                           onPressed: () {
                             launchUrl(
@@ -322,9 +410,13 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                   bangumiSRI: infoController.bangumiSRI,
                   allEpisodes: infoController.allEpisodes,
                   commentsQueryTimeout: commentsQueryTimeout,
+                  topicsQueryTimeout: topicsQueryTimeout,
+                  reviewsQueryTimeout: reviewsQueryTimeout,
                   charactersQueryTimeout: charactersQueryTimeout,
                   staffQueryTimeout: staffQueryTimeout,
                   loadMoreComments: loadMoreComments,
+                  loadMoreTopics: loadMoreTopics,
+                  loadMoreReviews: loadMoreReviews,
                   loadCharacters: loadCharacters,
                   loadStaff: loadStaff,
                   commentsList: infoController.commentsList,
@@ -332,6 +424,9 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                   staffList: infoController.staffList,
                   isLoading: infoController.isLoading,
                   infoController: infoController,
+                  commentsIsLoading: commentsIsLoading,
+                  topicsIsLoading: topicsIsLoading,
+                  reviewsIsLoading: reviewsIsLoading,
                 );
               }),
             ),

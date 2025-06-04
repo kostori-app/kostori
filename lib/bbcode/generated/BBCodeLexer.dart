@@ -1,4 +1,4 @@
-// ignore_for_file: file_names, prefer_function_declarations_over_variables, non_constant_identifier_names, use_super_parameters
+// ignore_for_file: file_names, prefer_function_declarations_over_variables, non_constant_identifier_names, use_super_parameters, constant_identifier_names
 
 import 'package:antlr4/antlr4.dart';
 
@@ -10,40 +10,32 @@ class BBCodeLexer extends Lexer {
       _ATN.numberOfDecisions, (i) => DFA(_ATN.getDecisionState(i), i));
   static final PredictionContextCache _sharedContextCache =
       PredictionContextCache();
-  static const int
-      // ignore: constant_identifier_names
-      TOKEN_T__0 = 1,
+  static const int TOKEN_T__0 = 1,
       TOKEN_T__1 = 2,
       TOKEN_T__2 = 3,
       TOKEN_T__3 = 4,
       TOKEN_T__4 = 5,
-      // ignore: constant_identifier_names
       TOKEN_T__5 = 6,
       TOKEN_T__6 = 7,
       TOKEN_T__7 = 8,
       TOKEN_T__8 = 9,
       TOKEN_T__9 = 10,
-      // ignore: constant_identifier_names
       TOKEN_T__10 = 11,
       TOKEN_T__11 = 12,
       TOKEN_T__12 = 13,
       TOKEN_T__13 = 14,
-      // ignore: constant_identifier_names
       TOKEN_T__14 = 15,
       TOKEN_T__15 = 16,
       TOKEN_T__16 = 17,
       TOKEN_T__17 = 18,
-      // ignore: constant_identifier_names
       TOKEN_T__18 = 19,
       TOKEN_T__19 = 20,
       TOKEN_T__20 = 21,
       TOKEN_T__21 = 22,
-      // ignore: constant_identifier_names
       TOKEN_T__22 = 23,
       TOKEN_T__23 = 24,
       TOKEN_T__24 = 25,
       TOKEN_T__25 = 26,
-      // ignore: constant_identifier_names
       TOKEN_T__26 = 27,
       TOKEN_STRING = 28;
   @override

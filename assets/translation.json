@@ -252,7 +252,7 @@
     "Cache cleared": "缓存已清除",
     "Disabled": "已禁用",
     "WebDAV Auto Sync": "WebDAV 自动同步",
-    "staffList": "制作",
+    "StaffList": "制作",
     "OK": "确定",
     "@a to add • @b to remove": "@a 项添加 • @b 项删除",
     "@a to add • @b to remove • @c to move": "@a 项添加 • @b 项删除 • @c 项移动",
@@ -264,7 +264,11 @@
     "Refresh": "刷新",
     "Favorite actions": "操作收藏",
     "All Episodes": "全部剧集",
-    "Clear Unfavorited": "清除未收藏"
+    "Clear Unfavorited": "清除未收藏",
+    "Topics": "讨论",
+    "Reviews": "日志",
+    "TopicsLatest": "最新讨论",
+    "TopicsTrending": "热门讨论"
   },
   "zh_TW": {
     "Home": "首頁",

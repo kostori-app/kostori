@@ -12,9 +12,10 @@ import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 
 class BBCodeWidget extends StatefulWidget {
-  const BBCodeWidget({super.key, required this.bbcode});
+  const BBCodeWidget({super.key, required this.bbcode, this.showImg = true});
 
   final String bbcode;
+  final bool showImg;
 
   @override
   State<BBCodeWidget> createState() => _BBCodeWidgetState();
@@ -136,6 +137,18 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                   ),
                 );
               } else if (e is BBCodeImg) {
+                if (!widget.showImg) return const WidgetSpan(child: SizedBox());
+                String getFullImageUrl(String url,
+                    {String baseUrl = 'https://lain.bgm.tv/pic/photo/g/'}) {
+                  if (url.startsWith('http')) {
+                    return url;
+                  } else {
+                    return baseUrl + url;
+                  }
+                }
+
+                String img = getFullImageUrl(e.imageUrl);
+
                 return WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: Stack(
@@ -146,15 +159,14 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                         child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () {
-                              Log.addLog(LogLevel.info, 'imageUrl', e.imageUrl);
+                              Log.addLog(LogLevel.info, 'imageUrl', img);
                               BangumiWidget.showImagePreview(
-                                  context, e.imageUrl, '', e.imageUrl);
+                                  context, img, '', img);
                             },
-                            onLongPress: () => _showSaveDialog(e.imageUrl),
+                            onLongPress: () => _showSaveDialog(img),
                             child: Hero(
-                              tag: e.imageUrl,
-                              child: BangumiWidget.kostoriImage(
-                                  context, e.imageUrl),
+                              tag: img,
+                              child: BangumiWidget.kostoriImage(context, img),
                             )),
                       ),
                       if (_isSaving) const CircularProgressIndicator(),

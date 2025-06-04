@@ -203,7 +203,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                 ? Tooltip(
                     message: "Back".tl,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back),
+                      icon: const Icon(Icons.arrow_back_ios_new),
                       onPressed: () => Navigator.maybePop(context),
                     ),
                   )

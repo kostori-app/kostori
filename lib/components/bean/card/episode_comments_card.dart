@@ -6,20 +6,17 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../../foundation/bangumi/comment/comment_item.dart';
 
 class EpisodeCommentsCard extends StatelessWidget {
-  EpisodeCommentsCard({
-    super.key,
-    required this.commentItem,
-  }) {
+  EpisodeCommentsCard(
+      {super.key, required this.commentItem, required this.replyIndex}) {
     isBone = false;
   }
 
-  EpisodeCommentsCard.bone({
-    super.key,
-  }) {
+  EpisodeCommentsCard.bone({super.key}) {
     isBone = true;
     commentItem = null;
   }
 
+  late final int replyIndex;
   late final EpisodeCommentItem? commentItem;
   late final bool isBone;
 
@@ -33,10 +30,10 @@ class EpisodeCommentsCard extends StatelessWidget {
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Bone.circle(size: 36),
-                const SizedBox(width: 8),
-                const Column(
+              children: const [
+                Bone.circle(size: 36),
+                SizedBox(width: 8),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Bone.text(width: 80),
@@ -46,15 +43,17 @@ class EpisodeCommentsCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             const Bone.multiText(lines: 2),
-            Divider(thickness: 0.5, indent: 10, endIndent: 10),
+            const Divider(thickness: 0.5, indent: 10, endIndent: 10),
           ],
         ),
       );
     }
+
+    final id = commentItem!.comment.user.id;
+
     return SelectionArea(
-      // color: Theme.of(context).colorScheme.secondaryContainer,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -71,60 +70,130 @@ class EpisodeCommentsCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(commentItem!.comment.user.nickname),
-                    Text(Utils.dateFormat(commentItem!.comment.createdAt)),
+                    Row(
+                      children: [
+                        Text(Utils.dateFormat(commentItem!.comment.createdAt)),
+                        const SizedBox(
+                          width: 4,
+                        ),
+                        Text('#${replyIndex + 1}')
+                      ],
+                    )
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 8),
             BBCodeWidget(bbcode: commentItem!.comment.comment),
+
+            /// 子评论（楼中楼）
             if (commentItem!.replies.isNotEmpty)
-              ListView.builder(
-                // Don't know why but ohos has bottom padding,
-                // needs to set to 0 manually.
-                padding: const EdgeInsets.only(bottom: 0),
-                physics: const NeverScrollableScrollPhysics(),
-                shrinkWrap: true,
-                itemCount: commentItem!.replies.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(left: 48),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Divider(
-                          color: Theme.of(context).dividerColor.withAlpha(60),
-                        ),
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundImage: NetworkImage(commentItem!
-                                  .replies[index].user.avatar.large),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(commentItem!.replies[index].user.nickname),
-                                Text(
-                                  Utils.dateFormat(
-                                      commentItem!.replies[index].createdAt),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        BBCodeWidget(
-                            bbcode: commentItem!.replies[index].comment),
-                      ],
-                    ),
-                  );
-                },
+              _ChildRepliesList(
+                replies: commentItem!.replies,
+                id: id,
               ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ChildRepliesList extends StatefulWidget {
+  const _ChildRepliesList({
+    required this.replies,
+    required this.id,
+  });
+
+  final List<EpisodeComment> replies;
+  final int id;
+
+  @override
+  State<_ChildRepliesList> createState() => _ChildRepliesListState();
+}
+
+class _ChildRepliesListState extends State<_ChildRepliesList> {
+  bool _showAll = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final int total = widget.replies.length;
+    final int maxDisplay = 3;
+    final int displayCount =
+        _showAll ? total : (total > maxDisplay ? maxDisplay : total);
+
+    if (total < 1) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...List.generate(displayCount, (index) {
+          final reply = widget.replies[index];
+          return Padding(
+            padding: const EdgeInsets.only(left: 48.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(
+                  color: Theme.of(context).dividerColor.withAlpha(60),
+                ),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundImage: NetworkImage(reply.user.avatar.large),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(reply.user.nickname),
+                        Row(
+                          children: [
+                            Text(Utils.dateFormat(reply.createdAt)),
+                            const SizedBox(width: 4),
+                            Text('#${index + 1}'),
+                            if (reply.creatorID == widget.id)
+                              Container(
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text('层主'),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                BBCodeWidget(bbcode: reply.comment),
+              ],
+            ),
+          );
+        }),
+
+        /// 展开 / 收起按钮
+        if (total > maxDisplay)
+          Padding(
+            padding: const EdgeInsets.only(left: 48, top: 4, right: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => _showAll = !_showAll),
+                  child: Text(_showAll ? '收起' : '展开 ($total)'),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

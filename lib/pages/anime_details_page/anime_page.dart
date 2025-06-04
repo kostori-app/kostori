@@ -37,6 +37,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import '../../components/bangumi_widget.dart';
+import '../../components/share_widget.dart';
 import '../bangumi/info_controller.dart';
 
 part 'actions.dart';

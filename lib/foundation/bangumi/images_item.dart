@@ -14,12 +14,15 @@ class Images {
   });
 
   factory Images.fromJson(Map<String, dynamic> json) => Images(
-        common: json['common'],
-        grid: json['grid'],
-        large: json['large'],
-        medium: json['medium'],
-        small: json['small'],
+        common: json['common'] ?? '',
+        grid: json['grid'] ?? '',
+        large: json['large'] ?? '',
+        medium: json['medium'] ?? '',
+        small: json['small'] ?? '',
       );
+
+  factory Images.empty() =>
+      Images(common: '', grid: '', large: '', medium: '', small: '');
 
   Map<String, dynamic> toJson() => {
         'common': common,

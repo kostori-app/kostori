@@ -25,10 +25,12 @@ class DataSync with ChangeNotifier {
     }
     LocalFavoritesManager().addListener(onDataChanged);
     AnimeSourceManager().addListener(onDataChanged);
-    Future.delayed(const Duration(seconds: 1), () {
-      var controller = WindowFrame.of(App.rootContext);
-      controller.addCloseListener(_handleWindowClose);
-    });
+    if (App.isDesktop) {
+      Future.delayed(const Duration(seconds: 1), () {
+        var controller = WindowFrame.of(App.rootContext);
+        controller.addCloseListener(_handleWindowClose);
+      });
+    }
   }
 
   void onDataChanged() {

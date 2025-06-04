@@ -1,6 +1,7 @@
-import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/creator_item.dart';
 import 'package:kostori/foundation/bangumi/subject_item.dart';
+
+import '../user_item.dart';
 
 class TopicsInfoItem {
   final int createdAt;
@@ -33,19 +34,26 @@ class TopicsInfoItem {
 
   factory TopicsInfoItem.fromJson(Map<String, dynamic> json) {
     return TopicsInfoItem(
-      createdAt: json['createdAt'],
-      creator: Creator.fromJson(json['creator']),
-      creatorID: json['creatorID'],
-      display: json['display'],
-      id: json['id'],
-      parentID: json['parentID'],
-      replyCount: json['replyCount'],
-      state: json['state'],
-      title: json['title'],
-      updatedAt: json['updatedAt'],
-      replies:
-          (json['replies'] as List).map((e) => TopicReply.fromJson(e)).toList(),
-      subject: Subject.fromJson(json['subject']),
+      createdAt: json['createdAt'] ?? 0,
+      creator: json['creator'] != null
+          ? Creator.fromJson(json['creator'] as Map<String, dynamic>)
+          : Creator.empty(),
+      creatorID: json['creatorID'] ?? 0,
+      display: json['display'] ?? 0,
+      id: json['id'] ?? 0,
+      parentID: json['parentID'] ?? 0,
+      replyCount: json['replyCount'] ?? 0,
+      state: json['state'] ?? 0,
+      title: json['title'] ?? '',
+      updatedAt: json['updatedAt'] ?? 0,
+      replies: (json['replies'] as List?)?.map((e) {
+            // 安全处理嵌套回复的 null
+            return TopicReply.fromJson(e as Map<String, dynamic>? ?? {});
+          }).toList() ??
+          [],
+      subject: json['subject'] != null
+          ? Subject.fromJson(json['subject'] as Map<String, dynamic>)
+          : Subject.empty(), // 也要创建默认值
     );
   }
 
@@ -90,18 +98,22 @@ class TopicReply {
   });
 
   factory TopicReply.fromJson(Map<String, dynamic> json) => TopicReply(
-        content: json['content'],
-        createdAt: json['createdAt'],
-        creator: Creator.fromJson(json['creator']),
-        creatorID: json['creatorID'],
-        id: json['id'],
-        reactions: (json['reactions'] as List)
-            .map((e) => Reaction.fromJson(e))
-            .toList(),
-        state: json['state'],
-        replies: (json['replies'] as List)
-            .map((e) => TopicReply.fromJson(e))
-            .toList(),
+        content: json['content'] ?? '',
+        createdAt: json['createdAt'] ?? 0,
+        creator: json['creator'] != null
+            ? Creator.fromJson(json['creator'] as Map<String, dynamic>)
+            : Creator.empty(),
+        creatorID: json['creatorID'] ?? 0,
+        id: json['id'] ?? 0,
+        reactions: (json['reactions'] as List?)?.map((e) {
+              return Reaction.fromJson(e as Map<String, dynamic>? ?? {});
+            }).toList() ??
+            [],
+        state: json['state'] ?? 0,
+        replies: (json['replies'] as List?)
+                ?.map((e) => TopicReply.fromJson(e))
+                .toList() ??
+            [],
       );
 
   Map<String, dynamic> toJson() => {
@@ -126,8 +138,10 @@ class Reaction {
   });
 
   factory Reaction.fromJson(Map<String, dynamic> json) => Reaction(
-        users: (json['users'] as List).map((e) => User.fromJson(e)).toList(),
-        value: json['value'],
+        users:
+            (json['users'] as List?)?.map((e) => User.fromJson(e)).toList() ??
+                [],
+        value: json['value'] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {

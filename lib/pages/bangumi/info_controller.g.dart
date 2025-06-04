@@ -41,6 +41,70 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
+  late final _$topicsListAtom =
+      Atom(name: '_InfoController.topicsList', context: context);
+
+  @override
+  ObservableList<TopicsItem> get topicsList {
+    _$topicsListAtom.reportRead();
+    return super.topicsList;
+  }
+
+  @override
+  set topicsList(ObservableList<TopicsItem> value) {
+    _$topicsListAtom.reportWrite(value, super.topicsList, () {
+      super.topicsList = value;
+    });
+  }
+
+  late final _$topicsLatestListAtom =
+      Atom(name: '_InfoController.topicsLatestList', context: context);
+
+  @override
+  ObservableList<TopicsInfoItem> get topicsLatestList {
+    _$topicsLatestListAtom.reportRead();
+    return super.topicsLatestList;
+  }
+
+  @override
+  set topicsLatestList(ObservableList<TopicsInfoItem> value) {
+    _$topicsLatestListAtom.reportWrite(value, super.topicsLatestList, () {
+      super.topicsLatestList = value;
+    });
+  }
+
+  late final _$topicsTrendingListAtom =
+      Atom(name: '_InfoController.topicsTrendingList', context: context);
+
+  @override
+  ObservableList<TopicsInfoItem> get topicsTrendingList {
+    _$topicsTrendingListAtom.reportRead();
+    return super.topicsTrendingList;
+  }
+
+  @override
+  set topicsTrendingList(ObservableList<TopicsInfoItem> value) {
+    _$topicsTrendingListAtom.reportWrite(value, super.topicsTrendingList, () {
+      super.topicsTrendingList = value;
+    });
+  }
+
+  late final _$reviewsListAtom =
+      Atom(name: '_InfoController.reviewsList', context: context);
+
+  @override
+  ObservableList<ReviewsItem> get reviewsList {
+    _$reviewsListAtom.reportRead();
+    return super.reviewsList;
+  }
+
+  @override
+  set reviewsList(ObservableList<ReviewsItem> value) {
+    _$reviewsListAtom.reportWrite(value, super.reviewsList, () {
+      super.reviewsList = value;
+    });
+  }
+
   late final _$characterListAtom =
       Atom(name: '_InfoController.characterList', context: context);
 
@@ -94,6 +158,10 @@ mixin _$InfoController on _InfoController, Store {
     return '''
 isLoading: ${isLoading},
 commentsList: ${commentsList},
+topicsList: ${topicsList},
+topicsLatestList: ${topicsLatestList},
+topicsTrendingList: ${topicsTrendingList},
+reviewsList: ${reviewsList},
 characterList: ${characterList},
 staffList: ${staffList},
 episodeCommentsList: ${episodeCommentsList}

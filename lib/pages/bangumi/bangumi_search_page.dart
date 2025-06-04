@@ -16,6 +16,8 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/utils.dart';
 
+import '../../components/components.dart';
+
 class BangumiSearchPage extends StatefulWidget {
   const BangumiSearchPage({super.key, this.tag});
 
@@ -418,7 +420,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         (context, index) {
           return useBriefMode
               ? BangumiWidget.buildBriefMode(
-                  context, bangumiItems[index], 'search')
+                  context, bangumiItems[index], 'search',
+                  showPlaceholder: false)
               : BangumiWidget.buildDetailedMode(
                   context, bangumiItems[index], 'search');
         },
@@ -624,17 +627,15 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   Widget _sliverAppBar(BuildContext context) {
-    return SliverAppBar(
-      title: const Text("搜索"),
-      // style: AppbarStyle.blur,
-      bottom: PreferredSize(
+    return SliverAppbar(
+      title: PreferredSize(
         preferredSize: const Size.fromHeight(80),
         child: ClipRect(
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
-              color: context.colorScheme.surface.toOpacity(0.22),
-              padding: EdgeInsets.all(16),
+              color: Colors.transparent,
+              padding: EdgeInsets.fromLTRB(0, 10, 60, 6),
               child: TextField(
                 decoration: InputDecoration(
                   filled: true,
@@ -642,7 +643,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   hintText: '输入关键词...',
                   prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 onSubmitted: (value) async {
@@ -662,19 +663,6 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
           ),
         ),
       ),
-      backgroundColor: Colors.transparent,
-      flexibleSpace: ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-              color: Theme.of(context).colorScheme.surface.toOpacity(0.22)),
-        ),
-      ),
-      pinned: true,
-      floating: true,
-      elevation: 0,
-      snap: true,
-      // expandedHeight: 150, // 调整这个值以适应内容
     );
   }
 
@@ -770,7 +758,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    Widget widget = Scaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _scrollController.animateTo(
@@ -812,6 +800,17 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         ),
       ),
     );
+
+    widget = AppScrollBar(
+      topPadding: 82,
+      controller: _scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
+
+    return widget;
   }
 }
 

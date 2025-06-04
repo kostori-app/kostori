@@ -222,6 +222,9 @@ class AppScrollBar extends StatefulWidget {
 class _AppScrollBarState extends State<AppScrollBar> {
   late final ScrollController _scrollController;
 
+  bool showScrollbar = true;
+  Timer? _hideTimer;
+
   double minExtent = 0;
   double maxExtent = 0;
   double position = 0;
@@ -240,6 +243,15 @@ class _AppScrollBarState extends State<AppScrollBar> {
     Future.microtask(onChanged);
     _dragGestureRecognizer = VerticalDragGestureRecognizer()
       ..onUpdate = onUpdate;
+    _restartHideTimer();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(onChanged);
+    _hideTimer?.cancel();
+    _dragGestureRecognizer.dispose();
+    super.dispose();
   }
 
   void onUpdate(DragUpdateDetails details) {
@@ -257,17 +269,33 @@ class _AppScrollBarState extends State<AppScrollBar> {
     ));
   }
 
+  void _restartHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          showScrollbar = false;
+        });
+      }
+    });
+  }
+
   void onChanged() {
     if (_scrollController.positions.isEmpty) return;
     var position = _scrollController.position;
-    if (position.minScrollExtent != minExtent ||
-        position.maxScrollExtent != maxExtent ||
-        position.pixels != this.position) {
+
+    bool extentChanged = position.minScrollExtent != minExtent ||
+        position.maxScrollExtent != maxExtent;
+    bool pixelChanged = (position.pixels - this.position).abs() > 0.5;
+
+    if (extentChanged || pixelChanged) {
       setState(() {
         minExtent = position.minScrollExtent;
         maxExtent = position.maxScrollExtent;
         this.position = position.pixels;
+        showScrollbar = true;
       });
+      _restartHideTimer();
     }
   }
 
@@ -291,34 +319,39 @@ class _AppScrollBarState extends State<AppScrollBar> {
             Positioned(
               top: top + widget.topPadding,
               right: 0,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Listener(
-                  behavior: HitTestBehavior.translucent,
-                  onPointerDown: (event) {
-                    _dragGestureRecognizer.addPointer(event);
-                  },
-                  child: SizedBox(
-                    width: _scrollIndicatorSize / 2,
-                    height: _scrollIndicatorSize,
-                    child: CustomPaint(
-                      painter: _ScrollIndicatorPainter(
-                        backgroundColor: context.colorScheme.surface,
-                        shadowColor: context.colorScheme.shadow,
+              child: AnimatedOpacity(
+                opacity: showScrollbar ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerDown: (event) {
+                      _dragGestureRecognizer.addPointer(event);
+                      _restartHideTimer(); // 手动拖动时也应重启定时器
+                    },
+                    child: SizedBox(
+                      width: _scrollIndicatorSize / 2,
+                      height: _scrollIndicatorSize,
+                      child: CustomPaint(
+                        painter: _ScrollIndicatorPainter(
+                          backgroundColor: context.colorScheme.surface,
+                          shadowColor: context.colorScheme.shadow,
+                        ),
+                        child: Column(
+                          children: [
+                            const Spacer(),
+                            Icon(Icons.arrow_drop_up, size: 18),
+                            Icon(Icons.arrow_drop_down, size: 18),
+                            const Spacer(),
+                          ],
+                        ).paddingLeft(4),
                       ),
-                      child: Column(
-                        children: [
-                          const Spacer(),
-                          Icon(Icons.arrow_drop_up, size: 18),
-                          Icon(Icons.arrow_drop_down, size: 18),
-                          const Spacer(),
-                        ],
-                      ).paddingLeft(4),
                     ),
                   ),
                 ),
               ),
-            ),
+            )
           ],
         );
       },

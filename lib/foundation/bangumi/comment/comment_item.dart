@@ -1,70 +1,4 @@
-class UserAvatar {
-  final String small;
-  final String medium;
-  final String large;
-
-  UserAvatar({
-    required this.small,
-    required this.medium,
-    required this.large,
-  });
-
-  factory UserAvatar.fromJson(Map<String, dynamic> json) {
-    return UserAvatar(
-      small: json['small'] ?? '',
-      medium: json['medium'] ?? '',
-      large: json['large'] ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'small': small,
-      'medium': medium,
-      'large': large,
-    };
-  }
-}
-
-class User {
-  final int id;
-  final String username;
-  final String nickname;
-  final UserAvatar avatar;
-  final String sign;
-  final int joinedAt;
-
-  User({
-    required this.id,
-    required this.username,
-    required this.nickname,
-    required this.avatar,
-    required this.sign,
-    required this.joinedAt,
-  });
-
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] ?? 0,
-      username: json['username'] ?? '',
-      nickname: json['nickname'] ?? '',
-      avatar: UserAvatar.fromJson(json['avatar'] as Map<String, dynamic>),
-      sign: json['sign'] ?? '',
-      joinedAt: json['joinedAt'] ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'username': username,
-      'nickname': nickname,
-      'avatar': avatar.toJson(),
-      'sign': sign,
-      'joinedAt': joinedAt,
-    };
-  }
-}
+import '../user_item.dart';
 
 class Comment {
   final int rate;
@@ -95,7 +29,7 @@ class Comment {
 }
 
 class CommentItem {
-  final User user;
+  final InfoUser user;
   final Comment comment;
 
   CommentItem({
@@ -105,7 +39,7 @@ class CommentItem {
 
   factory CommentItem.fromJson(Map<String, dynamic> json) {
     return CommentItem(
-      user: User.fromJson(json['user']),
+      user: InfoUser.fromJson(json['user']),
       comment: Comment.fromJson(json),
     );
   }
@@ -119,21 +53,23 @@ class CommentItem {
 }
 
 class EpisodeComment {
-  final User user;
+  final InfoUser user;
   final String comment;
   final int createdAt;
+  final int creatorID;
 
-  EpisodeComment({
-    required this.user,
-    required this.comment,
-    required this.createdAt,
-  });
+  EpisodeComment(
+      {required this.user,
+      required this.comment,
+      required this.createdAt,
+      required this.creatorID});
 
   factory EpisodeComment.fromJson(Map<String, dynamic> json) {
     return EpisodeComment(
-      user: User.fromJson(json['user']),
+      user: InfoUser.fromJson(json['user']),
       comment: json['content'] ?? '',
       createdAt: json['createdAt'] ?? 0,
+      creatorID: json['creatorID'] ?? 0,
     );
   }
 
@@ -142,6 +78,7 @@ class EpisodeComment {
       'user': user.toJson(),
       'content': comment,
       'createdAt': createdAt,
+      'creatorID': creatorID
     };
   }
 }
@@ -169,7 +106,7 @@ class EpisodeCommentItem {
 }
 
 class CharacterComment {
-  final User user;
+  final InfoUser user;
   final String comment;
   final int createdAt;
 
@@ -181,7 +118,7 @@ class CharacterComment {
 
   factory CharacterComment.fromJson(Map<String, dynamic> json) {
     return CharacterComment(
-      user: User.fromJson(json['user']),
+      user: InfoUser.fromJson(json['user']),
       comment: json['content'] ?? '',
       createdAt: json['createdAt'] ?? 0,
     );

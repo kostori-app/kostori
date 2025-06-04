@@ -13,7 +13,7 @@ class ReviewsInfoItem {
   final String title;
   final int type;
   final int updatedAt;
-  final ReviewsUser user;
+  final InfoUser user;
   final int views;
 
   ReviewsInfoItem({
@@ -47,7 +47,7 @@ class ReviewsInfoItem {
       title: json['title'],
       type: json['type'],
       updatedAt: json['updatedAt'],
-      user: ReviewsUser.fromJson(json['user']),
+      user: InfoUser.fromJson(json['user']),
       views: json['views'],
     );
   }

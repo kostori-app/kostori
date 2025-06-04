@@ -146,19 +146,16 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                         (a as FavoriteItem).type);
                                   } else {
                                     // 执行添加操作
-                                    for (var s in selectedLocalFolders
-                                        .where((f) => !added.contains(f))) {
-                                      var animes = widget.selectedAnimes.keys
-                                          .map((e) => e as FavoriteItem)
-                                          .toList();
-                                      for (var f in selectedLocalFolders) {
-                                        LocalFavoritesManager()
-                                            .batchCopyFavorites(
-                                          widget.favPage.folder as String,
-                                          f,
-                                          animes,
-                                        );
-                                      }
+                                    var animes = widget.selectedAnimes.keys
+                                        .map((e) => e as FavoriteItem)
+                                        .toList();
+                                    for (var f in selectedLocalFolders) {
+                                      LocalFavoritesManager()
+                                          .batchCopyFavorites(
+                                        widget.favPage.folder as String,
+                                        f,
+                                        animes,
+                                      );
                                     }
                                   }
                                 }

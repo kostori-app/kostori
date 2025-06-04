@@ -6,7 +6,6 @@ import 'dart:ui' as ui;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:get/get.dart';
 import 'package:gif/gif.dart';
@@ -27,7 +26,8 @@ import 'package:kostori/components/components.dart';
 
 class BangumiWidget {
   static Widget buildBriefMode(
-      BuildContext context, BangumiItem bangumiItem, String heroTag) {
+      BuildContext context, BangumiItem bangumiItem, String heroTag,
+      {bool showPlaceholder = true}) {
     Widget score() {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -88,7 +88,9 @@ class BangumiWidget {
                 tag: '$heroTag-${bangumiItem.id}',
                 child: BangumiWidget.kostoriImage(
                     context, bangumiItem.images['large']!,
-                    width: constraints.maxWidth, height: height),
+                    width: constraints.maxWidth,
+                    height: height,
+                    showPlaceholder: showPlaceholder),
               ),
             );
 
@@ -121,7 +123,7 @@ class BangumiWidget {
                                   Positioned.fill(
                                     child: BackdropFilter(
                                       filter: ui.ImageFilter.blur(
-                                          sigmaX: 10, sigmaY: 10),
+                                          sigmaX: 3, sigmaY: 3),
                                       child: Container(
                                         color: context.brightness ==
                                                 Brightness.light
@@ -158,7 +160,7 @@ class BangumiWidget {
                                 Positioned.fill(
                                   child: BackdropFilter(
                                     filter: ui.ImageFilter.blur(
-                                        sigmaX: 10, sigmaY: 10),
+                                        sigmaX: 3, sigmaY: 3),
                                     child: Container(
                                       color:
                                           context.brightness == Brightness.light
@@ -584,7 +586,7 @@ class BangumiWidget {
   }
 
   static Widget kostoriImage(BuildContext context, String imageUrl,
-      {double width = 100, double height = 100}) {
+      {double width = 100, double height = 100, bool showPlaceholder = true}) {
     //// We need this to shink memory usage
     int? memCacheWidth, memCacheHeight;
     double aspectRatio = (width / height).toDouble();
@@ -622,8 +624,9 @@ class BangumiWidget {
           alignment: Alignment.center,
           children: [
             // 原占位图
-            MiscComponents.placeholder(
-                context, width, height, Colors.transparent),
+            if (showPlaceholder)
+              MiscComponents.placeholder(
+                  context, width, height, Colors.transparent),
             // 半透明黑色蒙层
             Container(
               // width: width,
@@ -672,25 +675,11 @@ class BangumiWidget {
         );
       },
       errorListener: (e) {
-        Log.addLog(LogLevel.error, 'image', e.toString());
+        Log.addLog(LogLevel.error, 'kostoriImage', e.toString());
       },
       errorWidget: (BuildContext context, String url, Object error) =>
-          MiscComponents.placeholder(
-              context, width, height, Colors.transparent),
+          MiscComponents.placeholder(context, 25, 25, Colors.transparent),
       // cacheManager: customDiskCache,
     );
   }
-
-  static final customDiskCache = CacheManager(
-    Config(
-      'kostoryCacheKey', // 🗝️ 1. 缓存 key/命名空间
-      stalePeriod: const Duration(days: 30), // ⏳ 2. 过期时间（多久后重新下载）
-      maxNrOfCacheObjects: 200, // 📦 3. 最大缓存文件数
-      repo: JsonCacheInfoRepository(
-        // 🧾 4. 缓存元信息持久化方式
-        databaseName: 'kostoriCache', //     SQLite 数据库名
-      ),
-      fileService: HttpFileService(), // 🌐 5. 下载服务（支持代理/自定义）
-    ),
-  );
 }
