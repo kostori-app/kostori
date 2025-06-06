@@ -39,108 +39,23 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Install dependencies
+      - name: install dependencies
         run: |
           choco install yq -y
           pip install httpx
-
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           flutter-version-file: pubspec.yaml
           architecture: x64
-
-      - uses: dart-lang/setup-dart@v1
-
-      - name: Activate msix
-        run: dart pub global activate msix
-
-      - name: Enable Git longpaths
-        run: git config --system core.longpaths true
-
-      - name: Flutter build windows
+      - name: build
         run: |
           flutter pub get
-          flutter build windows
-
-      # === Build unsigned zip/exe installer ===
-      - name: Build Installer or Zip (exe/zip)
-        run: python windows/build.py
-
-      # === Upload unsigned zip (for signing) ===
-      - name: Upload unsigned zip artifact
-        uses: actions/upload-artifact@v4
-        id: unsigned-windows-zip-artifacts
+          python windows/build.py
+      - uses: actions/upload-artifact@v4
         with:
-          name: windows_unsigned_zip
-          path: build/windows/Kostori-*.zip
-
-      # === Upload unsigned exe artifact ===
-      - name: Upload unsigned exe artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows_unsigned_exe
-          path: build/windows/Kostori-*.exe # Assuming build.py generates a .exe
-
-      # === SignPath sign zip ===
-      - run: New-Item -Path "build/windows/zip_signed_output" -ItemType Directory
-      - name: Sign windows zip
-        uses: signpath/github-action-submit-signing-request@v1.1
-        with:
-          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          organization-id: 'fa047255-4772-4be1-b14f-5cfa62635877'
-          project-slug: 'Kazumi'
-          signing-policy-slug: 'release-signing'
-          artifact-configuration-slug: 'Packet'
-          github-artifact-id: '${{ steps.unsigned-windows-zip-artifacts.outputs.artifact-id }}'
-          wait-for-completion: true
-          output-artifact-directory: 'build/windows/zip_signed_output'
-
-      - name: Upload signed zip artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows_zip_signed_outputs
-          path: build/windows/zip_signed_output/*.zip
-
-      # === Unzip the signed zip to replace Release for .msix build ===
-      - name: Replace Unpacked Artifact with Signed Artifact
-        run: |
-          $tag = "${{ github.ref_name }}"
-          # The exact path to the signed zip might need adjustment based on SignPath's output naming.
-          # Assuming it keeps the original filename with a potential prefix/suffix.
-          Expand-Archive -Path "build/windows/zip_signed_output/Kostori_windows_${tag}.zip" -DestinationPath "build/windows/x64/runner/Release" -Force
-
-      # === Build unsigned .msix ===
-      - name: Build unsigned msix
-        run: dart run msix:create
-
-      - name: Upload unsigned msix artifact
-        uses: actions/upload-artifact@v4
-        id: unsigned-windows-msix-artifacts
-        with:
-          name: windows_msix_outputs
-          path: build/windows/x64/runner/Release/*.msix
-
-      # === SignPath sign .msix ===
-      - run: New-Item -Path "build/windows/msix_signed_output" -ItemType Directory
-      - name: Sign windows msix
-        uses: signpath/github-action-submit-signing-request@v1.1
-        with:
-          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          organization-id: 'fa047255-4772-4be1-b14f-5cfa62635877'
-          project-slug: 'Kazumi'
-          signing-policy-slug: 'release-signing'
-          artifact-configuration-slug: 'MSIX'
-          github-artifact-id: '${{ steps.unsigned-windows-msix-artifacts.outputs.artifact-id }}'
-          wait-for-completion: true
-          output-artifact-directory: 'build/windows/msix_signed_output'
-
-      - name: Upload signed msix artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows_msix_signed_outputs
-          path: build/windows/msix_signed_output/*.msix
+          name: windows_build
+          path: build/windows/Kostori-*
 
   Release:
     runs-on: ubuntu-22.04
@@ -162,6 +77,5 @@ jobs:
             outputs/*.apk
             outputs/*.zip
             outputs/*.exe
-            outputs/*.msix
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
