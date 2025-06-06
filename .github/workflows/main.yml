@@ -39,7 +39,7 @@ jobs:
   Build_Windows:
     name: "Release for Windows"
     runs-on: "windows-latest"
-    needs: [ flutter-build-android ]
+    needs: [ Build_Android ]
     permissions: write-all
 
     steps:
