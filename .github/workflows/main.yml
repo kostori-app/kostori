@@ -51,8 +51,7 @@ jobs:
           flutter-version-file: pubspec.yaml
           architecture: x64
 
-      - name: Setup Dart (for msix)
-        uses: dart-lang/setup-dart@v1
+      - uses: dart-lang/setup-dart@v1
 
       - name: Activate msix
         run: dart pub global activate msix
@@ -72,7 +71,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows_build
-          path: build/windows/Kostori-*
+          path: |
+            build/windows/Kostori-*.exe
+            build/windows/Kostori-*.zip
 
       - name: Build .msix package
         run: dart run msix:create
