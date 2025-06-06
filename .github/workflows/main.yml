@@ -78,4 +78,8 @@ jobs:
             outputs/*.zip
             outputs/*.exe
         env:
+<<<<<<< HEAD
           GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
+=======
+          GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
+>>>>>>> b5fbfa134e0bc36e5a84df64461aae52652dda52
