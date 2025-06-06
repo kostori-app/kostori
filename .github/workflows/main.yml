@@ -64,11 +64,11 @@ jobs:
           flutter pub get
           flutter build windows
 
-      # === 构建未签名 zip/exe 安装包 ===
+      # === Build unsigned zip/exe installer ===
       - name: Build Installer or Zip (exe/zip)
         run: python windows/build.py
 
-      # === 上传未签名 zip（供签名用）===
+      # === Upload unsigned zip (for signing) ===
       - name: Upload unsigned zip artifact
         uses: actions/upload-artifact@v4
         id: unsigned-windows-zip-artifacts
@@ -76,7 +76,14 @@ jobs:
           name: windows_unsigned_zip
           path: build/windows/Kostori-*.zip
 
-      # === SignPath 签名 zip ===
+      # === Upload unsigned exe artifact ===
+      - name: Upload unsigned exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows_unsigned_exe
+          path: build/windows/Kostori-*.exe # Assuming build.py generates a .exe
+
+      # === SignPath sign zip ===
       - run: New-Item -Path "build/windows/zip_signed_output" -ItemType Directory
       - name: Sign windows zip
         uses: signpath/github-action-submit-signing-request@v1.1
@@ -96,13 +103,15 @@ jobs:
           name: windows_zip_signed_outputs
           path: build/windows/zip_signed_output/*.zip
 
-      # === 解压签名后的 zip 替换 Release 用于构建 .msix ===
+      # === Unzip the signed zip to replace Release for .msix build ===
       - name: Replace Unpacked Artifact with Signed Artifact
         run: |
           $tag = "${{ github.ref_name }}"
+          # The exact path to the signed zip might need adjustment based on SignPath's output naming.
+          # Assuming it keeps the original filename with a potential prefix/suffix.
           Expand-Archive -Path "build/windows/zip_signed_output/Kostori_windows_${tag}.zip" -DestinationPath "build/windows/x64/runner/Release" -Force
 
-      # === 构建未签名 .msix ===
+      # === Build unsigned .msix ===
       - name: Build unsigned msix
         run: dart run msix:create
 
@@ -113,7 +122,7 @@ jobs:
           name: windows_msix_outputs
           path: build/windows/x64/runner/Release/*.msix
 
-      # === SignPath 签名 .msix ===
+      # === SignPath sign .msix ===
       - run: New-Item -Path "build/windows/msix_signed_output" -ItemType Directory
       - name: Sign windows msix
         uses: signpath/github-action-submit-signing-request@v1.1
