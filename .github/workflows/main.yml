@@ -20,7 +20,7 @@ jobs:
           STORE_FILE: ${{ secrets.ANDROID_KEYSTORE }}
           PROPERTY_FILE: ${{ secrets.ANDROID_KEY_PROPERTIES }}
         run: |
-          echo "$STORE_FILE" | base64 --decode > android/keystore.jks
+          echo "$STORE_FILE" | base64 --decode > android/app/keystore.jks
           echo "$PROPERTY_FILE" > android/key.properties
       - uses: actions/setup-java@v4
         with:
@@ -39,23 +39,71 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      - name: install dependencies
+
+      - name: Install dependencies
         run: |
           choco install yq -y
           pip install httpx
+
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
           flutter-version-file: pubspec.yaml
           architecture: x64
-      - name: build
+
+      - name: Setup Dart (for msix)
+        uses: dart-lang/setup-dart@v1
+
+      - name: Activate msix
+        run: dart pub global activate msix
+
+      - name: Enable Git longpaths (optional)
+        run: git config --system core.longpaths true
+
+      - name: Flutter build windows
         run: |
           flutter pub get
-          python windows/build.py
-      - uses: actions/upload-artifact@v4
+          flutter build windows
+
+      - name: Build Installer or Zip (exe/zip)
+        run: python windows/build.py
+
+      - name: Upload exe or zip artifact
+        uses: actions/upload-artifact@v4
         with:
           name: windows_build
           path: build/windows/Kostori-*
+
+      - name: Build .msix package
+        run: dart run msix:create
+
+      - name: Upload unsigned .msix artifact
+        uses: actions/upload-artifact@v4
+        id: unsigned-windows-msix-artifacts
+        with:
+          name: windows_msix_outputs
+          path: build/windows/x64/runner/Release/*.msix
+
+      - name: Create directory for signed output
+        run: New-Item -Path "build/windows/msix_signed_output" -ItemType Directory
+
+      - name: Sign .msix via SignPath
+        uses: signpath/github-action-submit-signing-request@v1.1
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: 'ef5813e3-663f-4988-932d-7347304db90b'
+          project-slug: 'kostori'
+          signing-policy-slug: 'kostori'
+          artifact-configuration-slug: 'MSIX'
+          github-artifact-id: '${{ steps.unsigned-windows-msix-artifacts.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'build/windows/msix_signed_output'
+
+      - name: Upload signed .msix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed_windows_msix
+          path: build/windows/msix_signed_output/Kostori-*.msix
 
   Release:
     runs-on: ubuntu-22.04
@@ -77,5 +125,6 @@ jobs:
             outputs/*.apk
             outputs/*.zip
             outputs/*.exe
+            outputs/*.msix
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
