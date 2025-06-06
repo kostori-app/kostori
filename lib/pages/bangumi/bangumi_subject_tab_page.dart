@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -120,6 +119,7 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
             return true;
           },
           child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             scrollBehavior: const ScrollBehavior().copyWith(
               scrollbars: false,
             ),
@@ -216,6 +216,7 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
             return true;
           },
           child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             scrollBehavior: const ScrollBehavior().copyWith(
               scrollbars: false,
             ),
@@ -297,33 +298,75 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-        child: DefaultTabController(
+    return DefaultTabController(
       length: 2,
       child: Scaffold(
+        appBar: AppBar(
+          title: Text('热点'.tl),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
         body: Column(
           children: [
             PreferredSize(
-              preferredSize: Size.fromHeight(kToolbarHeight),
-              child: Material(
-                child: TabBar(
-                  controller: infoTabController,
-                  tabs: [
-                    Tab(text: 'TopicsLatest'.tl),
-                    Tab(text: 'TopicsTrending'.tl),
-                  ],
-                ),
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxWidth: 300), // 你想要的最大宽度
+                    child: TabBar(
+                      controller: infoTabController,
+                      isScrollable: true,
+                      indicatorColor: Theme.of(context).colorScheme.primary,
+                      tabs: [
+                        Tab(text: 'TopicsLatest'.tl),
+                        Tab(text: 'TopicsTrending'.tl),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            Expanded(child: Observer(builder: (context) {
-              return TabBarView(
+            Expanded(
+              child: TabBarView(
                 controller: infoTabController,
-                children: [topicsLatestListBody, topicsTrendingListBody],
-              );
-            })),
+                children: [
+                  RefreshIndicator(
+                    onRefresh: () async {
+                      await loadMoreTopicsLatest();
+                    },
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverFillRemaining(
+                          hasScrollBody: true,
+                          child: topicsLatestListBody,
+                        ),
+                      ],
+                    ),
+                  ),
+                  RefreshIndicator(
+                    onRefresh: () async {
+                      await loadMoreTopicsTrending();
+                    },
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverFillRemaining(
+                          hasScrollBody: true,
+                          child: topicsTrendingListBody,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
           ],
         ),
       ),
-    ));
+    );
   }
 }

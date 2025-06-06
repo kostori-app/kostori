@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../bbcode/bbcode_widget.dart';
 import '../../components/components.dart';
 import '../../foundation/widget_utils.dart';
+import '../../utils/utils.dart';
 
 class BangumiEpisodeInfoPage extends StatefulWidget {
   const BangumiEpisodeInfoPage(
@@ -85,12 +86,13 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                        "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                         style: const TextStyle(
                             fontSize: 24, fontWeight: FontWeight.bold),
                       ),
                       if (episode.nameCn.isNotEmpty)
-                        Text("ep${episode.sort}.${episode.name}"),
+                        Text(
+                            "${Utils.readType(episode.type)}${episode.sort}.${episode.name}"),
                       const SizedBox(height: 8),
                       Row(
                         children: [

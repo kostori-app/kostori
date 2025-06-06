@@ -1,6 +1,7 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -26,8 +27,8 @@ def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
-    namespace 'com.axlmly.kostori'
-    compileSdk flutter.compileSdkVersion
+    namespace = 'com.axlmly.kostori'
+    compileSdk = flutter.compileSdkVersion
     ndkVersion "28.0.13004108"
 
     splits {
@@ -43,7 +44,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17
     }
@@ -56,7 +56,6 @@ android {
             keyPassword keystoreProperties['keyPassword']
         }
         release {
-
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
             storeFile file(keystoreProperties['storeFile'])
@@ -66,45 +65,46 @@ android {
 
     defaultConfig {
         applicationId = "com.axlmly.kostori"
-        minSdkVersion flutter.minSdkVersion
+
+        minSdk = flutter.minSdkVersion
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
-        minSdk = flutter.minSdkVersion
     }
 
     buildTypes {
         release {
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            minifyEnabled true
+            shrinkResources true
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
             }
             signingConfig signingConfigs.release
-            applicationVariants.all { variant ->
-                variant.outputs.all { output ->
-                    def abi = output.getFilter(com.android.build.OutputFile.ABI)
-                    if (abi != null) {   // null for the universal-debug, universal-release variants
-                        outputFileName = "Kostori-${variant.versionName}-${abi}.apk"
-                        def abiVersionCode = project.ext.abiCodes.get(abi)
-                        if (abiVersionCode != null) {
-                            versionCodeOverride = variant.versionCode * 10 + abiVersionCode
-                        }
-                    } else {
-                        outputFileName = "Kostori-${variant.versionName}.apk"
-                        versionCodeOverride = variant.versionCode * 10
-                    }
-                }
-            }
         }
         debug {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86_64"
             }
             signingConfig signingConfigs.debug
-            applicationVariants.all { variant ->
-                variant.outputs.all { output ->
-                    versionCodeOverride = variant.versionCode * 10 + 4
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def abi = output.getFilter(com.android.build.OutputFile.ABI)
+            if (variant.buildType.name == "release") {
+                if (abi != null) {
+                    outputFileName = "Kostori-${variant.versionName}-${abi}.apk"
+                    def abiVersionCode = project.ext.abiCodes.get(abi)
+                    if (abiVersionCode != null) {
+                        versionCodeOverride = variant.versionCode * 10 + abiVersionCode
+                    }
+                } else {
+                    outputFileName = "Kostori-${variant.versionName}.apk"
+                    versionCodeOverride = variant.versionCode * 10
                 }
+            } else if (variant.buildType.name == "debug") {
+                versionCodeOverride = variant.versionCode * 10 + 4
             }
         }
     }
@@ -118,7 +118,7 @@ android {
 }
 
 flutter {
-    source '../..'
+    source = "../.."
 }
 
 dependencies {

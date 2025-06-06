@@ -111,6 +111,8 @@ class _InfoTabViewState extends State<InfoTabView>
   }
 
   Widget get infoBody {
+    double standardDeviation = Utils.getDeviation(widget.bangumiItem.total,
+        widget.bangumiItem.count!.values.toList(), widget.bangumiItem.score);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -128,55 +130,84 @@ class _InfoTabViewState extends State<InfoTabView>
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                LayoutBuilder(builder: (context, constraints) {
-                  final span = TextSpan(text: widget.bangumiItem.summary);
-                  final tp =
-                      TextPainter(text: span, textDirection: TextDirection.ltr);
-                  tp.layout(maxWidth: constraints.maxWidth);
-                  final numLines = tp.computeLineMetrics().length;
-                  if (numLines > 7) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        SizedBox(
-                          // make intro expandable
-                          height: fullIntro ? null : 120,
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: SelectableText(
-                            widget.bangumiItem.summary,
-                            textAlign: TextAlign.start,
-                            scrollBehavior: const ScrollBehavior().copyWith(
-                              scrollbars: false,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    final span = TextSpan(text: widget.bangumiItem.summary);
+                    final tp = TextPainter(
+                        text: span, textDirection: TextDirection.ltr);
+                    tp.layout(maxWidth: constraints.maxWidth);
+                    final numLines = tp.computeLineMetrics().length;
+                    if (numLines > 7) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          SizedBox(
+                            // make intro expandable
+                            height: fullIntro ? null : 120,
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: SelectableText(
+                              widget.bangumiItem.summary,
+                              textAlign: TextAlign.start,
+                              scrollBehavior: const ScrollBehavior().copyWith(
+                                scrollbars: false,
+                              ),
+                              scrollPhysics: NeverScrollableScrollPhysics(),
+                              selectionHeightStyle: ui.BoxHeightStyle.max,
                             ),
-                            scrollPhysics: NeverScrollableScrollPhysics(),
-                            selectionHeightStyle: ui.BoxHeightStyle.max,
                           ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              fullIntro = !fullIntro;
-                            });
-                          },
-                          child: Text(fullIntro ? '加载更少' : '加载更多'),
-                        ),
-                      ],
-                    );
-                  } else {
-                    return SelectableText(
-                      widget.bangumiItem.summary,
-                      textAlign: TextAlign.start,
-                      scrollPhysics: NeverScrollableScrollPhysics(),
-                      selectionHeightStyle: ui.BoxHeightStyle.max,
-                    );
-                  }
-                }),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                fullIntro = !fullIntro;
+                              });
+                            },
+                            child: Text(fullIntro ? '加载更少' : '加载更多'),
+                          ),
+                        ],
+                      );
+                    } else {
+                      return SelectableText(
+                        widget.bangumiItem.summary,
+                        textAlign: TextAlign.start,
+                        scrollPhysics: NeverScrollableScrollPhysics(),
+                        selectionHeightStyle: ui.BoxHeightStyle.max,
+                      );
+                    }
+                  }),
+                ),
                 const SizedBox(height: 8),
-                Text('标签',
-                    style:
-                        TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                Center(
+                  child: Container(
+                    width: 120,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.toOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text('标签',
+                        style: TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold)),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${widget.bangumiItem.tags.length}',
+                          style: ts.s12),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8.0,
@@ -225,8 +256,19 @@ class _InfoTabViewState extends State<InfoTabView>
                       ),
                   ],
                 ),
-                const SizedBox(height: 8),
                 if (widget.allEpisodes.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Text('剧集',
@@ -262,8 +304,8 @@ class _InfoTabViewState extends State<InfoTabView>
                     children: [
                       // 先显示最多15个
                       ...widget.allEpisodes.take(15).map((episode) {
-                        double intensity = (episode.comment / 100)
-                            .clamp(0.3, 1.0); // 转换为 0~1 范围
+                        double intensity = (episode.comment / 300)
+                            .clamp(0.1, 1.0); // 转换为 0~1 范围
                         return SizedBox(
                             width: 50,
                             height: 50,
@@ -308,7 +350,7 @@ class _InfoTabViewState extends State<InfoTabView>
                                                       CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
-                                                      "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                                      "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                                                       style: const TextStyle(
                                                           fontSize: 24,
                                                           fontWeight:
@@ -317,7 +359,7 @@ class _InfoTabViewState extends State<InfoTabView>
                                                     if (episode
                                                         .nameCn.isNotEmpty)
                                                       Text(
-                                                          "ep${episode.sort}.${episode.name}"),
+                                                          "${Utils.readType(episode.type)}${episode.sort}.${episode.name}"),
                                                     const SizedBox(height: 8),
                                                     Row(
                                                       children: [
@@ -396,9 +438,36 @@ class _InfoTabViewState extends State<InfoTabView>
                 ],
                 if (widget.bangumiSRI.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text('关联条目',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Text('关联条目',
+                          style: TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold)),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child:
+                            Text('${widget.bangumiSRI.length}', style: ts.s12),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 240, // 根据卡片高度调整
@@ -484,18 +553,80 @@ class _InfoTabViewState extends State<InfoTabView>
                       },
                     ),
                   ),
+                  if (MediaQuery.sizeOf(context).width <= 1200 &&
+                      !widget.isLoading &&
+                      widget.bangumiItem.total > 20) ...[
+                    const SizedBox(height: 8),
+                    Center(
+                      child: Container(
+                        width: 120,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.toOpacity(0.4),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ]
                 ],
                 if (MediaQuery.sizeOf(context).width <= 1200 &&
                     !widget.isLoading &&
                     widget.bangumiItem.total > 20) ...[
                   const SizedBox(height: 8),
-                  Text('评分统计图',
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  LineChatPage(
-                    bangumiItem: widget.bangumiItem,
+                  Row(
+                    children: [
+                      Text('评分统计图',
+                          style: TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold)),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color:
+                              Theme.of(context).colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child:
+                            Text('${widget.bangumiItem.score}', style: ts.s12),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            infoController.showLineChart =
+                                !infoController.showLineChart;
+                          });
+                        },
+                        icon: Icon(infoController.showLineChart
+                            ? Icons.show_chart
+                            : Icons.bar_chart),
+                        label:
+                            Text(infoController.showLineChart ? '折线图' : '柱状图'),
+                      ),
+                      Text('${widget.bangumiItem.total} votes')
+                    ],
                   ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    child: Row(
+                      children: [
+                        Text('标准差: ${standardDeviation.toStringAsFixed(2)}',
+                            style: TextStyle(fontSize: 12)),
+                        const SizedBox(
+                          width: 8,
+                        ),
+                        Text(Utils.getDispute(standardDeviation),
+                            style: TextStyle(fontSize: 12))
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  infoController.showLineChart
+                      ? LineChatPage(bangumiItem: widget.bangumiItem)
+                      : BangumiBarChartPage(bangumiItem: widget.bangumiItem),
                 ]
               ],
             ),

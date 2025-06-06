@@ -69,7 +69,8 @@ class AnimatedImage extends StatefulWidget {
   State<AnimatedImage> createState() => _AnimatedImageState();
 }
 
-class _AnimatedImageState extends State<AnimatedImage> with WidgetsBindingObserver {
+class _AnimatedImageState extends State<AnimatedImage>
+    with WidgetsBindingObserver {
   ImageStream? _imageStream;
   ImageInfo? _imageInfo;
   ImageChunkEvent? _loadingProgress;
@@ -140,7 +141,8 @@ class _AnimatedImageState extends State<AnimatedImage> with WidgetsBindingObserv
   }
 
   void _updateInvertColors() {
-    _invertColors = MediaQuery.maybeInvertColorsOf(context) ?? SemanticsBinding.instance.accessibilityFeatures.invertColors;
+    _invertColors = MediaQuery.maybeInvertColorsOf(context) ??
+        SemanticsBinding.instance.accessibilityFeatures.invertColors;
   }
 
   void _resolveImage() {
@@ -148,9 +150,12 @@ class _AnimatedImageState extends State<AnimatedImage> with WidgetsBindingObserv
       context: _scrollAwareContext,
       imageProvider: widget.image,
     );
-    final ImageStream newStream = provider.resolve(createLocalImageConfiguration(
+    final ImageStream newStream =
+        provider.resolve(createLocalImageConfiguration(
       context,
-      size: widget.width != null && widget.height != null ? Size(widget.width!, widget.height!) : null,
+      size: widget.width != null && widget.height != null
+          ? Size(widget.width!, widget.height!)
+          : null,
     ));
     _updateSourceStream(newStream);
   }
@@ -192,7 +197,8 @@ class _AnimatedImageState extends State<AnimatedImage> with WidgetsBindingObserv
 
   void _replaceImage({required ImageInfo? info}) {
     final ImageInfo? oldImageInfo = _imageInfo;
-    SchedulerBinding.instance.addPostFrameCallback((_) => oldImageInfo?.dispose());
+    SchedulerBinding.instance
+        .addPostFrameCallback((_) => oldImageInfo?.dispose());
     _imageInfo = info;
   }
 
@@ -250,7 +256,9 @@ class _AnimatedImageState extends State<AnimatedImage> with WidgetsBindingObserv
       return;
     }
 
-    if (keepStreamAlive && _completerHandle == null && _imageStream?.completer != null) {
+    if (keepStreamAlive &&
+        _completerHandle == null &&
+        _imageStream?.completer != null) {
       _completerHandle = _imageStream!.completer!.keepAlive();
     }
 
@@ -306,8 +314,71 @@ class _AnimatedImageState extends State<AnimatedImage> with WidgetsBindingObserv
           child: result,
         );
       }
+    } else if (_loadingProgress != null) {
+      final expected = _loadingProgress!.expectedTotalBytes;
+      final loaded = _loadingProgress!.cumulativeBytesLoaded;
+      double progress = 0.0;
+      if (expected != null && expected > 0) {
+        progress = loaded / expected;
+      }
+
+      result = Stack(
+        alignment: Alignment.center,
+        children: [
+          if (true) // 你控制是否显示占位图
+            MiscComponents.placeholder(
+              context,
+              widget.width ?? 100,
+              widget.height ?? 100,
+              Colors.transparent,
+            ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.toOpacity(0.4),
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          SizedBox(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: 1,
+                  valueColor: AlwaysStoppedAnimation(Colors.white24),
+                  strokeWidth: 4,
+                ),
+                CircularProgressIndicator(
+                  value: progress,
+                  valueColor: AlwaysStoppedAnimation(Colors.lightBlueAccent),
+                  strokeWidth: 4,
+                ),
+                Text(
+                  '${(progress * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                    // color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 0),
+                        blurRadius: 3,
+                        color: Colors.black54,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
     } else {
-      result = const Center();
+      // 默认加载状态（无进度信息）
+      result = MiscComponents.placeholder(
+        context,
+        widget.width ?? 100,
+        widget.height ?? 100,
+        Colors.transparent,
+      );
     }
 
     return AnimatedSwitcher(
@@ -322,9 +393,11 @@ class _AnimatedImageState extends State<AnimatedImage> with WidgetsBindingObserv
     super.debugFillProperties(description);
     description.add(DiagnosticsProperty<ImageStream>('stream', _imageStream));
     description.add(DiagnosticsProperty<ImageInfo>('pixels', _imageInfo));
-    description.add(DiagnosticsProperty<ImageChunkEvent>('loadingProgress', _loadingProgress));
+    description.add(DiagnosticsProperty<ImageChunkEvent>(
+        'loadingProgress', _loadingProgress));
     description.add(DiagnosticsProperty<int>('frameNumber', _frameNumber));
-    description.add(DiagnosticsProperty<bool>('wasSynchronouslyLoaded', _wasSynchronouslyLoaded));
+    description.add(DiagnosticsProperty<bool>(
+        'wasSynchronouslyLoaded', _wasSynchronouslyLoaded));
   }
 }
 

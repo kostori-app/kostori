@@ -59,39 +59,82 @@ class EpisodeCommentsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage:
-                      NetworkImage(commentItem!.comment.user.avatar.large),
-                ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(commentItem!.comment.user.nickname),
-                    Row(
-                      children: [
-                        Text(Utils.dateFormat(commentItem!.comment.createdAt)),
-                        const SizedBox(
-                          width: 4,
-                        ),
-                        Text('#${replyIndex + 1}')
-                      ],
-                    )
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            BBCodeWidget(bbcode: commentItem!.comment.comment),
-
-            /// 子评论（楼中楼）
-            if (commentItem!.replies.isNotEmpty)
-              _ChildRepliesList(
-                replies: commentItem!.replies,
-                id: id,
+            if (commentItem!.comment.state == 0) ...[
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage:
+                        NetworkImage(commentItem!.comment.user.avatar.large),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(commentItem!.comment.user.nickname),
+                      Row(
+                        children: [
+                          Text(
+                              Utils.dateFormat(commentItem!.comment.createdAt)),
+                          const SizedBox(
+                            width: 4,
+                          ),
+                          Text('#${replyIndex + 1}')
+                        ],
+                      )
+                    ],
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+              BBCodeWidget(bbcode: commentItem!.comment.comment),
+
+              /// 子评论（楼中楼）
+              if (commentItem!.replies.isNotEmpty)
+                _ChildRepliesList(
+                  replies: commentItem!.replies,
+                  id: id,
+                ),
+            ],
+            if (commentItem!.comment.state == 6)
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage(
+                            commentItem!.comment.user.avatar.large),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              commentItem!.comment.user.nickname,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              '删除了回复',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
           ],
         ),
       ),

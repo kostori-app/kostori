@@ -42,6 +42,10 @@ class Api {
   static const String characterInfoByCharacterIDNext =
       'https://next.bgm.tv/p1/characters/{0}';
 
+  // 角色关联
+  static const String characterCastsByCharacterIDNext =
+      'https://next.bgm.tv/p1/characters/{0}/casts';
+
   // 制作
   static const String bangumiStaffByIDNext =
       'https://next.bgm.tv/p1/subjects/{0}/staffs/persons';

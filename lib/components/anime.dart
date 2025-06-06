@@ -1655,7 +1655,7 @@ class _BangumiCardState extends State<BangumiCard> {
               context,
               image!,
               width: constraints.maxWidth,
-              height: constraints.maxHeight * 0.85,
+              height: constraints.maxHeight,
             );
 
             backgroundImage = Container(
@@ -1720,18 +1720,43 @@ class _BangumiCardState extends State<BangumiCard> {
                                 borderRadius: BorderRadius.circular(8),
                                 child: Stack(
                                   children: [
-                                    // 毛玻璃滤镜层
                                     Positioned.fill(
-                                      child: BackdropFilter(
-                                        filter: ui.ImageFilter.blur(
-                                            sigmaX: 10, sigmaY: 10),
-                                        child: Container(
-                                          color: context.brightness ==
-                                                  Brightness.light
-                                              ? Colors.white.toOpacity(0.3)
-                                              : Colors.black
-                                                  .toOpacity(0.3), // 必须有一个子容器
-                                        ),
+                                      child: Stack(
+                                        children: [
+                                          // 背景噪声图（建议用半透明 PNG 或 SVG）
+                                          Positioned.fill(
+                                            child: Opacity(
+                                              opacity: 0.6,
+                                              child: Image.asset(
+                                                'assets/img/noise.png',
+                                                // 模拟毛玻璃颗粒的纹理图
+                                                fit: BoxFit.cover,
+                                                color: context.brightness ==
+                                                        Brightness.light
+                                                    ? Colors.white
+                                                        .toOpacity(0.3)
+                                                    : Colors.black
+                                                        .toOpacity(0.3),
+                                                colorBlendMode:
+                                                    BlendMode.srcOver,
+                                              ),
+                                            ),
+                                          ),
+
+                                          // 渐变遮罩（调整透明度过渡）
+                                          Positioned.fill(
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: context.brightness ==
+                                                        Brightness.light
+                                                    ? Colors.white
+                                                        .toOpacity(0.3)
+                                                    : Colors.black
+                                                        .toOpacity(0.3),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                     // 原有内容（需要在模糊层之上）
@@ -1756,21 +1781,46 @@ class _BangumiCardState extends State<BangumiCard> {
                                 borderRadius: BorderRadius.circular(8),
                                 child: Stack(
                                   children: [
-                                    // 毛玻璃滤镜层
                                     Positioned.fill(
-                                      child: BackdropFilter(
-                                        filter: ui.ImageFilter.blur(
-                                            sigmaX: 10, sigmaY: 10),
-                                        child: Container(
-                                          color: context.brightness ==
-                                                  Brightness.light
-                                              ? Colors.white.toOpacity(0.3)
-                                              : Colors.black
-                                                  .toOpacity(0.3), // 必须有一个子容器
-                                        ),
+                                      child: Stack(
+                                        children: [
+                                          // 背景噪声图（建议用半透明 PNG 或 SVG）
+                                          Positioned.fill(
+                                            child: Opacity(
+                                              opacity: 0.6,
+                                              child: Image.asset(
+                                                'assets/img/noise.png',
+                                                // 模拟毛玻璃颗粒的纹理图
+                                                fit: BoxFit.cover,
+                                                color: context.brightness ==
+                                                        Brightness.light
+                                                    ? Colors.white
+                                                        .toOpacity(0.3)
+                                                    : Colors.black
+                                                        .toOpacity(0.3),
+                                                colorBlendMode:
+                                                    BlendMode.srcOver,
+                                              ),
+                                            ),
+                                          ),
+
+                                          // 渐变遮罩（调整透明度过渡）
+                                          Positioned.fill(
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: context.brightness ==
+                                                        Brightness.light
+                                                    ? Colors.white
+                                                        .toOpacity(0.3)
+                                                    : Colors.black
+                                                        .toOpacity(0.3),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    // 原有背景（带透明度）
+
                                     // 原有内容（需要在模糊层之上）
                                     Padding(
                                       padding: EdgeInsets.fromLTRB(8, 4, 8, 4),

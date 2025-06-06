@@ -18,6 +18,7 @@ import 'package:kostori/foundation/log.dart';
 import '../../components/components.dart';
 import '../../components/share_widget.dart';
 import '../../foundation/app.dart';
+import '../../network/bangumi.dart';
 
 class BangumiInfoPage extends StatefulWidget {
   const BangumiInfoPage({
@@ -186,6 +187,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController.allEpisodes = [];
     queryBangumiEpisodeByID(bangumiId);
     queryBangumiInfoByID(bangumiId);
+    Bangumi.getBangumiInfoBind(bangumiId);
     queryBangumiHistory(bangumiId);
     infoTabController =
         TabController(length: infoController.tabs.length, vsync: this);
@@ -251,9 +253,6 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
       StatefulBuilder(builder: (context, setState) {
         return ShareWidget(
           id: bangumiId,
-          title: bangumiItem.nameCn.isNotEmpty
-              ? bangumiItem.nameCn
-              : bangumiItem.name,
         );
       }),
     );

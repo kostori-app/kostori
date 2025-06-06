@@ -22,38 +22,99 @@ class TopicsInfoCommentsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(
-                      topicsInfoItem.replies[replyIndex].creator.avatar.large),
+            if (topicsInfoItem.replies[replyIndex].state == 0) ...[
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundImage: NetworkImage(topicsInfoItem
+                        .replies[replyIndex].creator.avatar.large),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(topicsInfoItem.replies[replyIndex].creator.nickname),
+                      Row(
+                        children: [
+                          Text(Utils.dateFormat(
+                              topicsInfoItem.replies[replyIndex].createdAt)),
+                          const SizedBox(
+                            width: 4,
+                          ),
+                          Text('#${replyIndex + 1}'),
+                          if (topicsInfoItem.replies[replyIndex].creatorID ==
+                              topicsInfoItem.creatorID)
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text('贴主'),
+                            ),
+                        ],
+                      )
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              BBCodeWidget(bbcode: topicsInfoItem.replies[replyIndex].content),
+              _ChildRepliesList(
+                replies: topicsInfoItem.replies[replyIndex].replies,
+                masterId: topicsInfoItem.creatorID,
+                id: topicsInfoItem.replies[replyIndex].creatorID,
+              ),
+            ],
+            if (topicsInfoItem.replies[replyIndex].state == 6)
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(topicsInfoItem.replies[replyIndex].creator.nickname),
-                    Row(
-                      children: [
-                        Text(Utils.dateFormat(
-                            topicsInfoItem.replies[replyIndex].createdAt)),
-                        const SizedBox(
-                          width: 4,
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: NetworkImage(
+                          topicsInfoItem
+                              .replies[replyIndex].creator.avatar.large,
                         ),
-                        Text('#${replyIndex + 1}')
-                      ],
-                    )
-                  ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              topicsInfoItem
+                                  .replies[replyIndex].creator.nickname,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              '删除了回复',
+                              style: TextStyle(
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            BBCodeWidget(bbcode: topicsInfoItem.replies[replyIndex].content),
-            _ChildRepliesList(
-              replies: topicsInfoItem.replies[replyIndex].replies,
-              masterId: topicsInfoItem.creatorID,
-              id: topicsInfoItem.replies[replyIndex].creatorID,
-            ),
+              )
           ],
         ),
       ),

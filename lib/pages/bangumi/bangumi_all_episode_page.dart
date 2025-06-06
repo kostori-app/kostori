@@ -10,6 +10,8 @@ import 'package:kostori/components/network_img_layer.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 
+import '../../utils/utils.dart';
+
 class BangumiAllEpisodePage extends StatefulWidget {
   final List<EpisodeInfo> allEpisodes;
   final InfoController infoController;
@@ -169,14 +171,14 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                            "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                                             style: const TextStyle(
                                                 fontSize: 24,
                                                 fontWeight: FontWeight.bold),
                                           ),
                                           if (episode.nameCn.isNotEmpty)
                                             Text(
-                                                "ep${episode.sort}.${episode.name}"),
+                                                "${Utils.readType(episode.type)}${episode.sort}.${episode.name}"),
                                           const SizedBox(height: 8),
                                           Row(
                                             children: [
@@ -198,7 +200,7 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 16, vertical: 12),
                               child: Text(
-                                "ep${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                                 style: const TextStyle(
                                     fontSize: 24, fontWeight: FontWeight.bold),
                               ),

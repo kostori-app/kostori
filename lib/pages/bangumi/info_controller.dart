@@ -36,6 +36,8 @@ abstract class _InfoController with Store {
 
   List<History> bangumiHistory = [];
 
+  bool showLineChart = false;
+
   @observable
   bool isLoading = false;
 
@@ -106,7 +108,10 @@ abstract class _InfoController with Store {
       topicsLatestList.clear();
     }
     await Bangumi.getTopicsLatestByID(offset: offset).then((value) {
-      topicsLatestList.addAll(value);
+      final existingIds = topicsLatestList.map((e) => e.id).toSet();
+      final newItems =
+          value.where((item) => !existingIds.contains(item.id)).toList();
+      topicsLatestList.addAll(newItems);
     });
   }
 
@@ -115,7 +120,10 @@ abstract class _InfoController with Store {
       topicsTrendingList.clear();
     }
     await Bangumi.getTopicsTrendingByID(offset: offset).then((value) {
-      topicsTrendingList.addAll(value);
+      final existingIds = topicsTrendingList.map((e) => e.id).toSet();
+      final newItems =
+          value.where((item) => !existingIds.contains(item.id)).toList();
+      topicsTrendingList.addAll(newItems);
     });
   }
 

@@ -16,6 +16,7 @@ import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 
 import '../../components/bangumi_widget.dart';
+import '../../components/misc_components.dart';
 
 class BangumiCalendarPage extends StatefulWidget {
   const BangumiCalendarPage({super.key});
@@ -80,20 +81,34 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           final airTime = DateTime.parse(airTimeStr).toLocal();
           final weekday = airTime.weekday;
 
-          // 处理剧集数据（关键修改：使用airTime判断周一5点前）
-          final episodeInfo = _processEpisodeInfo(
-            episodes: allEpisodesMap[item.id],
-            airTime: airTime, // 传入解析后的番剧播出时间
+          final episodes = allEpisodesMap[item.id];
+          final episodeResult = _processEpisodeInfo(
+            episodes: episodes,
+            airTime: airTime,
             now: now,
             currentWeekInfo: currentWeekInfo,
+            bangumiItem: item,
           );
 
-          // 创建增强版番剧条目
+          if (episodeResult == null) continue;
+
+          final isLastEpisode = episodes != null &&
+              episodeResult['episode_ep'] == episodes.last.sort;
+          final episodeAirDate =
+              Utils.safeParseDate(episodeResult['episode_airdate']);
+          final episodeWeek = episodeAirDate != null
+              ? Utils.getISOWeekNumber(episodeAirDate).$2
+              : -1;
+
+          // 剔除非本周的最后一集条目
+          if (isLastEpisode && episodeWeek != currentWeekInfo.$2) {
+            continue;
+          }
+
           final enrichedItem = item.copyWith(
             airTime: airTimeStr,
-            extraInfo: episodeInfo,
+            extraInfo: episodeResult,
           );
-
           newCalendar[weekday - 1].add(enrichedItem);
         } catch (e, s) {
           Log.addLog(LogLevel.error, '处理番剧时间',
@@ -115,7 +130,40 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     }
   }
 
-// 批量获取剧集数据（每批10个）
+  Map<String, dynamic>? _processEpisodeInfo({
+    required List<EpisodeInfo>? episodes,
+    required DateTime airTime,
+    required DateTime now,
+    required (int, int) currentWeekInfo,
+    required BangumiItem
+        bangumiItem, // 需要传入bangumiItem用于调用findCurrentWeekEpisode
+  }) {
+    if (episodes == null || episodes.isEmpty) return null;
+
+    final currentWeekEp = Utils.findCurrentWeekEpisode(episodes, bangumiItem);
+
+    if (currentWeekEp == null) return null;
+
+    // 是否为最后一集
+    final isLast = episodes.last.sort == currentWeekEp.sort;
+
+    return {
+      'episode_airdate': currentWeekEp.airDate,
+      'episode_name': currentWeekEp.name,
+      'episode_name_cn': currentWeekEp.nameCn,
+      'episode_ep': currentWeekEp.sort,
+      'isLastEpisode': isLast,
+    };
+  }
+
+// 按播出时间排序
+  void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
+    for (final dayList in calendar) {
+      dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
+    }
+  }
+
+  // 批量获取剧集数据（每批10个）
   Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
       List<BangumiItem> items) async {
     final result = <int, List<EpisodeInfo>>{};
@@ -128,86 +176,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       }
     }
     return result;
-  }
-
-// 处理剧集信息（关键修改：使用番剧airTime判断周一5点前）
-  Map<String, dynamic>? _processEpisodeInfo({
-    required List<EpisodeInfo>? episodes,
-    required DateTime airTime, // 番剧的实际播出时间
-    required DateTime now,
-    required (int, int) currentWeekInfo, // (year, week)
-  }) {
-    if (episodes == null || episodes.isEmpty) return null;
-
-    // 判断是否需要调整周数（周一5点前属于上周）
-    final isMondayBefore5AM = airTime.weekday == DateTime.monday &&
-        (airTime.hour < 5 || !_hasTimeComponent(airTime));
-
-    EpisodeInfo? currentWeekEp;
-    EpisodeInfo? nextWeekEp;
-    EpisodeInfo? lastPastEp;
-    int? nextWeekNum;
-
-    for (final ep in episodes) {
-      try {
-        final airDate = Utils.safeParseDate(ep.airDate);
-        if (airDate == null) {
-          // Log.addLog(LogLevel.error, '无效日期', '剧集${ep.id}无有效日期');
-          continue;
-        }
-
-        final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
-        final (currentYear, currentWeek) = currentWeekInfo;
-
-        if (airYear != currentYear) continue;
-
-        // 应用周数调整（基于番剧的airTime判断）
-        final adjustedWeek = isMondayBefore5AM
-            ? (airWeekNum == 1 ? 52 : airWeekNum + 1) // 处理跨年
-            : airWeekNum;
-
-        if (adjustedWeek == currentWeek) {
-          currentWeekEp ??= ep;
-        } else if (adjustedWeek > currentWeek) {
-          if (nextWeekEp == null || adjustedWeek < nextWeekNum!) {
-            nextWeekNum = adjustedWeek;
-            nextWeekEp = ep;
-          }
-        } else {
-          final lastPastWeek = lastPastEp != null
-              ? Utils.getISOWeekNumber(
-                      DateFormat('yyyy-M-d').parse(lastPastEp.airDate))
-                  .$2
-              : 0;
-          if (adjustedWeek > lastPastWeek) {
-            lastPastEp = ep;
-          }
-        }
-      } catch (e, s) {
-        Log.addLog(LogLevel.warning, '处理剧集日期', '${ep.airDate} $e\n$s');
-      }
-    }
-
-    final resultEp = currentWeekEp ?? nextWeekEp ?? lastPastEp;
-    return resultEp != null
-        ? {
-            'episode_airdate': resultEp.airDate,
-            'episode_name': resultEp.name,
-            'episode_name_cn': resultEp.nameCn,
-            'episode_ep': resultEp.sort,
-          }
-        : null;
-  }
-
-// 检查DateTime是否包含时间成分
-  bool _hasTimeComponent(DateTime dt) =>
-      dt.hour != 0 || dt.minute != 0 || dt.second != 0;
-
-// 按播出时间排序
-  void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
-    for (final dayList in calendar) {
-      dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
-    }
   }
 
 // 时间字符串比较
@@ -370,7 +338,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(strokeWidth: 2),
+          MiscComponents.placeholder(context, 100, 100, Colors.transparent),
           const SizedBox(height: 16),
           Text('正在加载时间表数据...', style: Theme.of(context).textTheme.bodyMedium),
         ],

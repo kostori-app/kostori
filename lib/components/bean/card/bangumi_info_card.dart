@@ -222,10 +222,18 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
     );
   }
 
+  final count = [];
+
   @override
   Widget build(BuildContext context) {
     final bool showRightButton = MediaQuery.of(context).size.width >= 626;
     final bool showBottomButton = !showRightButton; // 确保互斥
+    double standardDeviation = Utils.getDeviation(
+        widget.bangumiItem.total,
+        (widget.bangumiItem.count != null)
+            ? widget.bangumiItem.count!.values.toList()
+            : count,
+        widget.bangumiItem.score);
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: 950, maxHeight: 300),
       child: Row(
@@ -359,14 +367,18 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                             ),
                                           SizedBox(width: 4.0),
                                           (currentWeekEp?.sort != null)
-                                              ? Text(
+                                              ? Expanded(
+                                                  child: Text(
                                                   isCompleted
                                                       ? '全 ${bangumiItem.totalEpisodes} 话'
                                                       : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
                                                   style: TextStyle(
                                                     fontSize: 12.0,
                                                   ),
-                                                )
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ))
                                               : Text(
                                                   '未开播',
                                                   style: TextStyle(
@@ -588,13 +600,65 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '评分统计图',
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold),
+                      Row(
+                        children: [
+                          Text('评分统计图',
+                              style: TextStyle(
+                                  fontSize: 24, fontWeight: FontWeight.bold)),
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .secondaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text('${bangumiItem.score}', style: ts.s12),
+                          ),
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                infoController.showLineChart =
+                                    !infoController.showLineChart;
+                              });
+                            },
+                            icon: Icon(infoController.showLineChart
+                                ? Icons.show_chart
+                                : Icons.bar_chart),
+                            label: Text(
+                                infoController.showLineChart ? '折线图' : '柱状图'),
+                          ),
+                          Text('${widget.bangumiItem.total} votes')
+                        ],
                       ),
-                      Spacer(),
-                      voteBarChart
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        child: Row(
+                          children: [
+                            Text('标准差: ${standardDeviation.toStringAsFixed(2)}',
+                                style: TextStyle(fontSize: 12)),
+                            const SizedBox(
+                              width: 8,
+                            ),
+                            Text(Utils.getDispute(standardDeviation),
+                                style: TextStyle(fontSize: 12))
+                          ],
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 8,
+                      ),
+                      // Spacer(),
+                      Expanded(
+                        child: infoController.showLineChart
+                            ? LineChatPage(bangumiItem: widget.bangumiItem)
+                            : BangumiBarChartPage(
+                                bangumiItem: widget.bangumiItem),
+                      )
                     ],
                   ),
                 ),

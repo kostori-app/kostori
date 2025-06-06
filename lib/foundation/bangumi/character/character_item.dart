@@ -57,7 +57,9 @@ class CharacterItem {
       id: json['id'] ?? 0,
       type: json['type'] ?? 0,
       name: json['name'] ?? '',
-      relation: json['relation'] ?? '未知',
+      relation: (json['relation'] != '' && json['relation'] != null)
+          ? json['relation']
+          : '未知',
       avator: CharacterAvator.fromJson(json['images'] as Map<String, dynamic>),
       actorList: resActorList,
     );

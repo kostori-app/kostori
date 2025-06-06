@@ -57,12 +57,14 @@ class EpisodeComment {
   final String comment;
   final int createdAt;
   final int creatorID;
+  final int state;
 
   EpisodeComment(
       {required this.user,
       required this.comment,
       required this.createdAt,
-      required this.creatorID});
+      required this.creatorID,
+      required this.state});
 
   factory EpisodeComment.fromJson(Map<String, dynamic> json) {
     return EpisodeComment(
@@ -70,6 +72,7 @@ class EpisodeComment {
       comment: json['content'] ?? '',
       createdAt: json['createdAt'] ?? 0,
       creatorID: json['creatorID'] ?? 0,
+      state: json['state'] ?? 0,
     );
   }
 
@@ -109,11 +112,13 @@ class CharacterComment {
   final InfoUser user;
   final String comment;
   final int createdAt;
+  final int creatorID;
 
   CharacterComment({
     required this.user,
     required this.comment,
     required this.createdAt,
+    required this.creatorID,
   });
 
   factory CharacterComment.fromJson(Map<String, dynamic> json) {
@@ -121,6 +126,7 @@ class CharacterComment {
       user: InfoUser.fromJson(json['user']),
       comment: json['content'] ?? '',
       createdAt: json['createdAt'] ?? 0,
+      creatorID: json['creatorID'] ?? 0,
     );
   }
 

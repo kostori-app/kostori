@@ -1,19 +1,7 @@
 allprojects {
-
     repositories {
         google()
         mavenCentral()
-    }
-}
-
-buildscript {
-    repositories {
-        google()  // 必须添加 google() 仓库
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.0'  // 确保添加 Gradle 插件
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.5.30'  // Kotlin 插件
     }
 }
 

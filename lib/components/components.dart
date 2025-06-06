@@ -34,6 +34,7 @@ import 'package:text_scroll/text_scroll.dart';
 
 import '../utils/utils.dart';
 import 'bangumi_widget.dart';
+import 'misc_components.dart';
 
 part 'image.dart';
 

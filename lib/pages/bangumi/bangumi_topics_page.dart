@@ -31,7 +31,9 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
 
   Future<void> queryBangumiTopicsInfoByID(int id) async {
     topicsInfoItem = await Bangumi.getTopicsInfoByID(id);
-    isLoading = false;
+    if (topicsInfoItem != null) {
+      isLoading = false;
+    }
     if (mounted) setState(() {});
   }
 

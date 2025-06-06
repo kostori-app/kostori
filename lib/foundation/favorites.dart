@@ -469,24 +469,6 @@ class LocalFavoritesManager with ChangeNotifier {
     return name;
   }
 
-  void linkFolderToNetwork(String folder, String source, String networkFolder) {
-    _db.execute("""
-      insert or replace into folder_sync (folder_name, source_key, source_folder)
-      values (?, ?, ?);
-    """, [folder, source, networkFolder]);
-  }
-
-  (String?, String?) findLinked(String folder) {
-    var res = _db.select("""
-      select * from folder_sync
-      where folder_name == ?;
-    """, [folder]);
-    if (res.isEmpty) {
-      return (null, null);
-    }
-    return (res.first["source_key"], res.first["source_folder"]);
-  }
-
   bool animeExists(String folder, String id, AnimeType type) {
     var res = _db.select("""
       select * from "$folder"

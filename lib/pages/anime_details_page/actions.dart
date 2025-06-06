@@ -556,7 +556,6 @@ abstract mixin class _AnimePageActions {
 
         return ShareWidget(
           id: history!.bangumiId as int,
-          title: anime.title,
         );
       }),
     );

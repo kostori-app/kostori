@@ -115,6 +115,7 @@ class AppDio with DioMixin {
     interceptors.add(NetworkCacheManager());
     interceptors.add(CloudflareInterceptor());
     interceptors.add(MyLogInterceptor());
+    interceptors.add(RetryInterceptor(dio: this));
   }
 
   static final Map<String, bool> _requests = {};
@@ -203,7 +204,8 @@ class RHttpAdapter implements HttpClientAdapter {
   ) async {
     if (options.headers['User-Agent'] == null &&
         options.headers['user-agent'] == null) {
-      options.headers['User-Agent'] = "kostori/v${App.version}";
+      options.headers['User-Agent'] =
+          "kostori/v${App.version} (Android) (https://github.com/kostori-app/kostori)";
     }
 
     var res = await rhttp.Rhttp.request(
@@ -256,5 +258,47 @@ class RHttpAdapter implements HttpClientAdapter {
         "Invalid Status Code 429: Too many requests. Please try again later.",
       _ => "Invalid Status Code $statusCode",
     };
+  }
+}
+
+class RetryInterceptor extends Interceptor {
+  final Dio dio;
+  final int maxRetries;
+  final Duration retryDelay;
+
+  RetryInterceptor({
+    required this.dio,
+    this.maxRetries = 2,
+    this.retryDelay = const Duration(seconds: 2),
+  });
+
+  @override
+  Future<void> onError(
+      DioException err, ErrorInterceptorHandler handler) async {
+    var shouldRetry = _shouldRetryOn(err);
+    var extra = err.requestOptions.extra;
+    var retryCount = (extra["__retry_count__"] as int?) ?? 0;
+
+    if (shouldRetry && retryCount < maxRetries) {
+      await Future.delayed(retryDelay);
+      final newOptions = err.requestOptions;
+      newOptions.extra = Map.from(newOptions.extra)
+        ..["__retry_count__"] = retryCount + 1;
+      try {
+        final response = await dio.fetch(newOptions);
+        return handler.resolve(response);
+      } catch (e) {
+        return handler.reject(e as DioException);
+      }
+    }
+
+    return handler.next(err);
+  }
+
+  bool _shouldRetryOn(DioException err) {
+    return err.type == DioExceptionType.connectionTimeout ||
+        err.type == DioExceptionType.receiveTimeout ||
+        err.type == DioExceptionType.sendTimeout ||
+        err.type == DioExceptionType.unknown;
   }
 }

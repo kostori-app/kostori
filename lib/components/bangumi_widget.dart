@@ -1,7 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -17,12 +16,14 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/extension.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/components/components.dart';
+
+import '../foundation/image_loader/cached_image.dart';
+import 'misc_components.dart';
 
 class BangumiWidget {
   static Widget buildBriefMode(
@@ -119,18 +120,38 @@ class BangumiWidget {
                               borderRadius: BorderRadius.circular(8),
                               child: Stack(
                                 children: [
-                                  // 毛玻璃滤镜层
                                   Positioned.fill(
-                                    child: BackdropFilter(
-                                      filter: ui.ImageFilter.blur(
-                                          sigmaX: 3, sigmaY: 3),
-                                      child: Container(
-                                        color: context.brightness ==
-                                                Brightness.light
-                                            ? Colors.white.toOpacity(0.3)
-                                            : Colors.black
-                                                .toOpacity(0.3), // 必须有一个子容器
-                                      ),
+                                    child: Stack(
+                                      children: [
+                                        // 背景噪声图（建议用半透明 PNG 或 SVG）
+                                        Positioned.fill(
+                                          child: Opacity(
+                                            opacity: 0.6,
+                                            child: Image.asset(
+                                              'assets/img/noise.png',
+                                              // 模拟毛玻璃颗粒的纹理图
+                                              fit: BoxFit.cover,
+                                              color: context.brightness ==
+                                                      Brightness.light
+                                                  ? Colors.white.toOpacity(0.3)
+                                                  : Colors.black.toOpacity(0.3),
+                                              colorBlendMode: BlendMode.srcOver,
+                                            ),
+                                          ),
+                                        ),
+
+                                        // 渐变遮罩（调整透明度过渡）
+                                        Positioned.fill(
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: context.brightness ==
+                                                      Brightness.light
+                                                  ? Colors.white.toOpacity(0.3)
+                                                  : Colors.black.toOpacity(0.3),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                   // 原有内容（需要在模糊层之上）
@@ -156,18 +177,38 @@ class BangumiWidget {
                             borderRadius: BorderRadius.circular(8),
                             child: Stack(
                               children: [
-                                // 毛玻璃滤镜层
                                 Positioned.fill(
-                                  child: BackdropFilter(
-                                    filter: ui.ImageFilter.blur(
-                                        sigmaX: 3, sigmaY: 3),
-                                    child: Container(
-                                      color:
-                                          context.brightness == Brightness.light
-                                              ? Colors.white.toOpacity(0.3)
-                                              : Colors.black
-                                                  .toOpacity(0.3), // 必须有一个子容器
-                                    ),
+                                  child: Stack(
+                                    children: [
+                                      // 背景噪声图（建议用半透明 PNG 或 SVG）
+                                      Positioned.fill(
+                                        child: Opacity(
+                                          opacity: 0.6,
+                                          child: Image.asset(
+                                            'assets/img/noise.png',
+                                            // 模拟毛玻璃颗粒的纹理图
+                                            fit: BoxFit.cover,
+                                            color: context.brightness ==
+                                                    Brightness.light
+                                                ? Colors.white.toOpacity(0.3)
+                                                : Colors.black.toOpacity(0.3),
+                                            colorBlendMode: BlendMode.srcOver,
+                                          ),
+                                        ),
+                                      ),
+
+                                      // 渐变遮罩（调整透明度过渡）
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: context.brightness ==
+                                                    Brightness.light
+                                                ? Colors.white.toOpacity(0.3)
+                                                : Colors.black.toOpacity(0.3),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 // 原有内容（需要在模糊层之上）
@@ -258,6 +299,21 @@ class BangumiWidget {
     final now = DateTime.now();
     final air = Utils.safeParseDate(bangumiItem.airDate);
 
+    String status;
+    if (bangumiItem.totalEpisodes > 0) {
+      if (air != null && air.isBefore(now)) {
+        status = '全${bangumiItem.totalEpisodes}话';
+      } else {
+        status = '未开播';
+      }
+    } else {
+      if (air != null && air.isBefore(now)) {
+        status = '已完结';
+      } else {
+        status = '未开播';
+      }
+    }
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(
         bangumiItem.nameCn,
@@ -303,49 +359,16 @@ class BangumiWidget {
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
-          (bangumiItem.totalEpisodes > 0)
-              ? (air != null)
-                  ? (air.compareTo(now) < 0)
-                      ? Text(
-                          '全${bangumiItem.totalEpisodes}话',
-                          style: TextStyle(
-                            // fontSize: imageWidth * 0.12,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      : Text(
-                          '未开播',
-                          style: TextStyle(
-                            // fontSize: imageWidth * 0.12,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                  : Text(
-                      '未开播',
-                      style: TextStyle(
-                        // fontSize: imageWidth * 0.12,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    )
-              : Text(
-                  '未开播',
-                  style: TextStyle(
-                    // fontSize: imageWidth * 0.12,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          Text(
+            status,
+            style: TextStyle(
+              // fontSize: imageWidth * 0.12,
+              fontWeight: FontWeight.bold,
+              height: 1.2,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          )
         ],
       ),
       const Spacer(),
@@ -413,13 +436,14 @@ class BangumiWidget {
   static void showImagePreview(
       BuildContext context, String url, String title, String heroTag) {
     try {
+      ImageProvider img = CachedImageProvider(url, sourceKey: 'bangumi');
       Navigator.push(
         context,
         MaterialPageRoute(
             builder: (_) => AnnotatedRegion<SystemUiOverlayStyle>(
                   value: SystemUiOverlayStyle.light, // 状态栏内容为亮色（白色）
                   child: Scaffold(
-                    extendBodyBehindAppBar: false, // 允许内容延伸至状态栏
+                    extendBodyBehindAppBar: true, // 允许内容延伸至状态栏
                     backgroundColor: Colors.black,
                     body: Stack(
                       children: [
@@ -436,7 +460,7 @@ class BangumiWidget {
                               controller.scale = scale > 1.0 ? 1.0 : 2.5;
                             },
                             child: Image(
-                              image: CachedNetworkImageProvider(url),
+                              image: img,
                               fit: BoxFit.contain,
                             ),
                           ),
@@ -517,10 +541,9 @@ class BangumiWidget {
       BuildContext context, String imageUrl) async {
     try {
       context.showMessage(message: '正在保存图片...');
-      final dio = Dio();
-      final response = await dio.get<Uint8List>(
+      final response = await AppDio().request<Uint8List>(
         imageUrl,
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(method: 'GET', responseType: ResponseType.bytes),
       );
 
       if (App.isAndroid) {
@@ -585,9 +608,27 @@ class BangumiWidget {
         : 'bangumi_${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 
-  static Widget kostoriImage(BuildContext context, String imageUrl,
-      {double width = 100, double height = 100, bool showPlaceholder = true}) {
-    //// We need this to shink memory usage
+  // 全局记录加载失败的图片 URL
+  static final Set<String> _failedImageUrls = {};
+
+  // 添加全部重置方法（可选）
+  static void resetAllFailedImages() {
+    _failedImageUrls.clear();
+  }
+
+  static Widget kostoriImage(
+    BuildContext context,
+    String imageUrl, {
+    double width = 100,
+    double height = 100,
+    bool showPlaceholder = true,
+  }) {
+    if (_failedImageUrls.contains(imageUrl)) {
+      return MiscComponents.placeholder(
+          context, width, height, Colors.transparent);
+    }
+
+    //   //// We need this to shink memory usage
     int? memCacheWidth, memCacheHeight;
     double aspectRatio = (width / height).toDouble();
 
@@ -608,78 +649,135 @@ class BangumiWidget {
       memCacheWidth = width.toInt();
     }
 
-    return CachedNetworkImage(
-      imageUrl: imageUrl,
-      fit: BoxFit.cover,
+    ImageProvider? findImageProvider() {
+      ImageProvider image;
+      image = CachedImageProvider(imageUrl, sourceKey: 'bangumi');
+
+      return image;
+    }
+
+    var image = findImageProvider();
+    if (image == null) {
+      return const SizedBox();
+    }
+
+    return AnimatedImage(
+      image: image,
       width: width,
       height: height,
-      memCacheWidth: memCacheWidth,
-      memCacheHeight: memCacheHeight,
-      fadeOutDuration: const Duration(milliseconds: 120),
-      fadeInDuration: const Duration(milliseconds: 120),
+      fit: BoxFit.cover,
       filterQuality: FilterQuality.high,
-      progressIndicatorBuilder: (context, url, downloadProgress) {
-        final progress = downloadProgress.progress ?? 0.0;
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            // 原占位图
-            if (showPlaceholder)
-              MiscComponents.placeholder(
-                  context, width, height, Colors.transparent),
-            // 半透明黑色蒙层
-            Container(
-              // width: width,
-              // height: height,
-              decoration: BoxDecoration(
-                color: Colors.black.toOpacity(0.4),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            // 环形进度条，带背景圈
-            SizedBox(
-              // width: width / 2,
-              // height: height / 2,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    value: 1,
-                    valueColor: AlwaysStoppedAnimation(Colors.white24),
-                    strokeWidth: 4,
-                  ),
-                  CircularProgressIndicator(
-                    value: progress,
-                    valueColor: AlwaysStoppedAnimation(Colors.lightBlueAccent),
-                    strokeWidth: 4,
-                  ),
-                  // 中间文字
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          offset: Offset(0, 0),
-                          blurRadius: 3,
-                          color: Colors.black54,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-      errorListener: (e) {
-        Log.addLog(LogLevel.error, 'kostoriImage', e.toString());
-      },
-      errorWidget: (BuildContext context, String url, Object error) =>
-          MiscComponents.placeholder(context, 25, 25, Colors.transparent),
-      // cacheManager: customDiskCache,
+      cacheWidth: memCacheWidth,
+      cacheHeight: memCacheHeight,
     );
   }
+
+// static Widget kostoriImage(BuildContext context, String imageUrl,
+//     {double width = 100, double height = 100, bool showPlaceholder = true})
+// {
+//   // 检查是否已记录为失败图片
+//   if (_failedImageUrls.contains(imageUrl)) {
+//     return MiscComponents.placeholder(
+//         context, width, height, Colors.transparent);
+//   }
+//   //// We need this to shink memory usage
+//   int? memCacheWidth, memCacheHeight;
+//   double aspectRatio = (width / height).toDouble();
+//
+//   void setMemCacheSizes() {
+//     if (aspectRatio > 1) {
+//       memCacheHeight = height.cacheSize(context);
+//     } else if (aspectRatio < 1) {
+//       memCacheWidth = width.cacheSize(context);
+//     } else {
+//       memCacheWidth = width.cacheSize(context);
+//       memCacheHeight = height.cacheSize(context);
+//     }
+//   }
+//
+//   setMemCacheSizes();
+//
+//   if (memCacheWidth == null && memCacheHeight == null) {
+//     memCacheWidth = width.toInt();
+//   }
+//
+//   return CachedNetworkImage(
+//     imageUrl: imageUrl,
+//     fit: BoxFit.cover,
+//     width: width,
+//     height: height,
+//     memCacheWidth: memCacheWidth,
+//     memCacheHeight: memCacheHeight,
+//     fadeOutDuration: const Duration(milliseconds: 120),
+//     fadeInDuration: const Duration(milliseconds: 120),
+//     filterQuality: FilterQuality.high,
+//     progressIndicatorBuilder: (context, url, downloadProgress) {
+//       final progress = downloadProgress.progress ?? 0.0;
+//       return Stack(
+//         alignment: Alignment.center,
+//         children: [
+//           // 原占位图
+//           if (showPlaceholder)
+//             MiscComponents.placeholder(
+//                 context, width, height, Colors.transparent),
+//           // 半透明黑色蒙层
+//           Container(
+//             // width: width,
+//             // height: height,
+//             decoration: BoxDecoration(
+//               color: Colors.black.toOpacity(0.4),
+//               borderRadius: BorderRadius.circular(12),
+//             ),
+//           ),
+//           // 环形进度条，带背景圈
+//           SizedBox(
+//             // width: width / 2,
+//             // height: height / 2,
+//             child: Stack(
+//               alignment: Alignment.center,
+//               children: [
+//                 CircularProgressIndicator(
+//                   value: 1,
+//                   valueColor: AlwaysStoppedAnimation(Colors.white24),
+//                   strokeWidth: 4,
+//                 ),
+//                 CircularProgressIndicator(
+//                   value: progress,
+//                   valueColor: AlwaysStoppedAnimation(Colors.lightBlueAccent),
+//                   strokeWidth: 4,
+//                 ),
+//                 // 中间文字
+//                 Text(
+//                   '${(progress * 100).toStringAsFixed(0)}%',
+//                   style: TextStyle(
+//                     color: Colors.white,
+//                     fontWeight: FontWeight.bold,
+//                     shadows: [
+//                       Shadow(
+//                         offset: Offset(0, 0),
+//                         blurRadius: 3,
+//                         color: Colors.black54,
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ],
+//       );
+//     },
+//     errorListener: (e) {
+//       Log.addLog(LogLevel.error, 'kostoriImage', e.toString());
+//     },
+//     errorWidget: (BuildContext context, String url, Object error) {
+//       // 记录失败 URL
+//       if (!_failedImageUrls.contains(url)) {
+//         _failedImageUrls.add(url);
+//       }
+//       return MiscComponents.placeholder(
+//           context, width, height, Colors.transparent);
+//     },
+//   );
+// }
 }

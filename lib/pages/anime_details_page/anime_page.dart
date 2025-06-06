@@ -1,19 +1,15 @@
 // ignore_for_file: unused_element_parameter
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
-import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:kostori/components/components.dart';
@@ -29,9 +25,7 @@ import 'package:kostori/foundation/res.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
-import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;

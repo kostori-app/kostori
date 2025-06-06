@@ -4,7 +4,7 @@
 #define MyAppName "Kostori"
 #define MyAppVersion "{{version}}"
 #define MyAppPublisher "AXLMLY"
-#define MyAppURL ""
+#define MyAppURL "https://github.com/kostori-app/kostori"
 #define MyAppExeName "kostori.exe"
 #define RootPath "{{root_path}}"
 
@@ -30,6 +30,8 @@ SetupIconFile={#RootPath}\windows\runner\resources\app_icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesAllowed=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

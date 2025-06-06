@@ -92,7 +92,6 @@ class Utils {
           }
 
           // 记录所有年份中最接近当前日期的过去剧集
-          // 记录所有年份中最接近当前日期的过去剧集
           if (airDate.isBefore(now)) {
             if (lastPastEpisode == null) {
               lastPastEpisode = ep;
@@ -155,18 +154,27 @@ class Utils {
     if (dateStr == null) return null;
 
     try {
+      // 支持中文格式，如 "2016年1月13日"
+      final zhDateReg = RegExp(r'^(\d{4})年(\d{1,2})月(\d{1,2})日$');
+      final zhMatch = zhDateReg.firstMatch(dateStr);
+      if (zhMatch != null) {
+        final year = int.parse(zhMatch.group(1)!);
+        final month = int.parse(zhMatch.group(2)!);
+        final day = int.parse(zhMatch.group(3)!);
+        return DateTime(year, month, day);
+      }
+
       // 处理纯年份（如 "2099"）
       if (RegExp(r'^\d{4}$').hasMatch(dateStr)) {
         return DateTime(int.parse(dateStr));
       }
 
-      // 处理带分隔符的日期（兼容 -/ 等分隔符和不带前导零的数字）
+      // 处理带分隔符的日期（兼容 - / 等分隔符 和不带前导零的数字）
       final parts = dateStr.split(RegExp(r'[-/]'));
       if (parts.isNotEmpty && parts.length <= 3) {
         final year = int.parse(parts[0]);
         final month = parts.length >= 2 ? int.parse(parts[1]) : 1;
         final day = parts.length >= 3 ? int.parse(parts[2]) : 1;
-
         return DateTime(year, month, day);
       }
 
@@ -371,6 +379,54 @@ class Utils {
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'Invalid time format', '$rawTime\n$e\n$s');
       return const SizedBox.shrink();
+    }
+  }
+
+  //标准差
+  static double getDeviation(
+      dynamic total, List<dynamic> count, dynamic score) {
+    if (total == 0 || count.isEmpty) return 0;
+
+    final scores = count.reversed.toList(); // 反转评分列表（从10分到1分）
+    return calculateSD(
+        scores, double.parse(score.toString()), double.parse(total.toString()));
+  }
+
+  /// 计算标准差
+  static double calculateSD(List<dynamic> scores, double score, double n) {
+    double sd = 0;
+    for (var i = 0; i < scores.length; i++) {
+      final item = scores[i];
+      if (item == 0) continue;
+      sd += (10 - i - score) * (10 - i - score) * item;
+    }
+    return sqrt(sd / n);
+  }
+
+  /// 根据标准差数值返回争议程度的标签
+  static String getDispute(double deviation) {
+    if (deviation == 0) return '-';
+    if (deviation < 1) return '异口同声';
+    if (deviation < 1.15) return '基本一致';
+    if (deviation < 1.3) return '略有分歧';
+    if (deviation < 1.45) return '莫衷一是';
+    if (deviation < 1.6) return '各执一词';
+    if (deviation < 1.75) return '你死我活';
+    return '厨黑大战';
+  }
+
+  static String readType(type) {
+    switch (type) {
+      case 0:
+        return 'ep';
+      case 1:
+        return 'sp';
+      case 2:
+        return 'op';
+      case 3:
+        return 'ed';
+      default:
+        return '';
     }
   }
 }

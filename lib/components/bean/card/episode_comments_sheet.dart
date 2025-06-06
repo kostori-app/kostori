@@ -6,6 +6,8 @@ import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/components/bean/card/episode_comments_card.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
+import '../../components.dart';
+
 class EpisodeCommentsSheet extends StatefulWidget {
   const EpisodeCommentsSheet(
       {super.key,
@@ -273,23 +275,34 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
   @override
   Widget build(BuildContext context) {
     final int episode = widget.episode;
-    return Scaffold(
-      body: RefreshIndicator(
-        key: _refreshIndicatorKey,
-        onRefresh: () async {
-          await widget.loadComments(ep == 0 ? episode : ep);
-          if (mounted) setState(() {});
-        },
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: commentsInfo),
-            SliverFillRemaining(
-              hasScrollBody: true,
-              child: episodeCommentsBody,
-            ),
-          ],
+
+    return SmoothCustomScrollView(
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          floating: true,
+          snap: true,
+          automaticallyImplyLeading: false,
+          elevation: 4,
+          titleSpacing: 0,
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          title: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: commentsInfo,
+          ),
         ),
-      ),
+        SliverFillRemaining(
+          hasScrollBody: true,
+          child: RefreshIndicator(
+            key: _refreshIndicatorKey,
+            onRefresh: () async {
+              await widget.loadComments(ep == 0 ? episode : ep);
+              if (mounted) setState(() {});
+            },
+            child: episodeCommentsBody,
+          ),
+        ),
+      ],
     );
   }
 }
