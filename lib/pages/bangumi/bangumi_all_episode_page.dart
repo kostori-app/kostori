@@ -6,7 +6,6 @@ import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-import 'package:kostori/components/network_img_layer.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 
@@ -51,14 +50,11 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                           stops: [0.8, 1],
                         ).createShader(bounds);
                       },
-                      child: NetworkImgLayer(
-                        src:
-                            widget.infoController.bangumiItem.images['large'] ??
-                                '',
+                      child: Image.network(
+                        widget.infoController.bangumiItem.images['large'] ?? '',
+                        fit: BoxFit.cover,
                         width: boxConstraints.maxWidth,
                         height: boxConstraints.maxHeight,
-                        fadeInDuration: const Duration(milliseconds: 0),
-                        fadeOutDuration: const Duration(milliseconds: 0),
                       ),
                     ),
                   );

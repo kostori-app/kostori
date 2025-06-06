@@ -7,7 +7,6 @@ import 'package:kostori/foundation/history.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kostori/components/bean/appbar/drag_to_move_bar.dart' as dtb;
-import 'package:kostori/components/network_img_layer.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/bangumi/info_tab_view.dart';
 
@@ -348,17 +347,14 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                                   stops: [0.8, 1],
                                                 ).createShader(bounds);
                                               },
-                                              child: NetworkImgLayer(
-                                                src: infoController.bangumiItem
+                                              child: Image.network(
+                                                infoController.bangumiItem
                                                         .images['large'] ??
                                                     '',
+                                                fit: BoxFit.cover,
                                                 width: boxConstraints.maxWidth,
                                                 height:
                                                     boxConstraints.maxHeight,
-                                                fadeInDuration: const Duration(
-                                                    milliseconds: 0),
-                                                fadeOutDuration: const Duration(
-                                                    milliseconds: 0),
                                               ),
                                             ),
                                           );
