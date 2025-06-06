@@ -14,7 +14,6 @@ dependencies:
   #音乐视频进度条
   audio_video_progress_bar: ^2.0.2
   battery_plus: ^6.2.0
-  cached_network_image: ^3.4.1
   collection: ^1.19.0
   cookie_jar: any
   crypto: ^3.0.6
