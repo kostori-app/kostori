@@ -37,9 +37,7 @@ jobs:
 
   #windows
   Build_Windows:
-    name: "Release for Windows"
     runs-on: "windows-latest"
-    needs: [ Build_Android ]
     permissions: write-all
 
     steps:
@@ -88,11 +86,12 @@ jobs:
         uses: signpath/github-action-submit-signing-request@v1.1
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          organization-id: "ef5813e3-663f-4988-932d-7347304db90b"
-          project-slug: "Kostori"
-          signing-policy-slug: "kostori"
+          organization-id: 'ef5813e3-663f-4988-932d-7347304db90b'
+          project-slug: 'kostori'
+          signing-policy-slug: 'kostori'
           artifact-configuration-slug: 'Packet'
           github-artifact-id: '${{ steps.unsigned-windows-zip-artifacts.outputs.artifact-id }}'
+          github-token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
           wait-for-completion: true
           output-artifact-directory: 'build/windows/zip_signed_output'
 
@@ -121,11 +120,12 @@ jobs:
         uses: signpath/github-action-submit-signing-request@v1.1
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          organization-id: "ef5813e3-663f-4988-932d-7347304db90b"
-          project-slug: "Kostori"
-          signing-policy-slug: "kostori"
+          organization-id: 'ef5813e3-663f-4988-932d-7347304db90b'
+          project-slug: 'kostori'
+          signing-policy-slug: 'kostori'
           artifact-configuration-slug: 'MSIX'
           github-artifact-id: '${{ steps.unsigned-windows-msix-artifacts.outputs.artifact-id }}'
+          github-token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
           wait-for-completion: true
           output-artifact-directory: 'build/windows/msix_signed_output'
 
