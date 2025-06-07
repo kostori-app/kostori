@@ -6,35 +6,6 @@ on:
     types: [ published ]
 
 jobs:
-  Build_Android:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          flutter-version-file: pubspec.yaml
-          architecture: x64
-      - name: Decode and install certificate
-        env:
-          STORE_FILE: ${{ secrets.ANDROID_KEYSTORE }}
-          PROPERTY_FILE: ${{ secrets.ANDROID_KEY_PROPERTIES }}
-        run: |
-          echo "$STORE_FILE" | base64 --decode > android/app/keystore.jks
-          echo "$PROPERTY_FILE" > android/key.properties
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'oracle'
-          java-version: '17'
-      - name: Check rust-toolchain.toml
-        run: rustup show
-      - run: flutter pub get
-      - run: flutter build apk --release
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apks
-          path: build/app/outputs/apk/release
-
   #windows
   Build_Windows:
     runs-on: "windows-latest"
@@ -43,36 +14,26 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
-
       - run: |
           $tag = "${{ github.ref }}".Replace('refs/tags/', '')
           echo "tag=$(echo $tag)" >> $env:GITHUB_ENV
-
       - run: echo "Kostori_windows_${env:tag}.zip build progress"
-
       - run: choco install yq
-
       - name: Enable Git longpaths
         run: git config --system core.longpaths true
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2.16.0
         with:
           channel: stable
           flutter-version-file: pubspec.yaml
-
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
-
+          java-version: '18'
       - run: flutter pub get
-
       - run: flutter build windows
-
       - run: Compress-Archive build/windows/x64/runner/Release/* Kostori_windows_${env:tag}.zip
-
       - name: Upload windows outputs
         uses: actions/upload-artifact@v4
         id: unsigned-windows-zip-artifacts
@@ -89,10 +50,9 @@ jobs:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 'ef5813e3-663f-4988-932d-7347304db90b'
           project-slug: 'kostori'
-          signing-policy-slug: 'release-signing'
+          signing-policy-slug: 'kostori'
           artifact-configuration-slug: 'Packet'
           github-artifact-id: '${{ steps.unsigned-windows-zip-artifacts.outputs.artifact-id }}'
-          github-token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
           wait-for-completion: true
           output-artifact-directory: 'build/windows/zip_signed_output'
 
@@ -125,10 +85,9 @@ jobs:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 'ef5813e3-663f-4988-932d-7347304db90b'
           project-slug: 'kostori'
-          signing-policy-slug: 'release-signing'
+          signing-policy-slug: 'kostori'
           artifact-configuration-slug: 'MSIX'
           github-artifact-id: '${{ steps.unsigned-windows-msix-artifacts.outputs.artifact-id }}'
-          github-token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
           wait-for-completion: true
           output-artifact-directory: 'build/windows/msix_signed_output'
 
@@ -138,6 +97,35 @@ jobs:
         with:
           name: windows_msix_signed_outputs
           path: build/windows/msix_signed_output/*.msix
+
+  Build_Android:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version-file: pubspec.yaml
+          architecture: x64
+      - name: Decode and install certificate
+        env:
+          STORE_FILE: ${{ secrets.ANDROID_KEYSTORE }}
+          PROPERTY_FILE: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          echo "$STORE_FILE" | base64 --decode > android/app/keystore.jks
+          echo "$PROPERTY_FILE" > android/key.properties
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+      - name: Check rust-toolchain.toml
+        run: rustup show
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apks
+          path: build/app/outputs/apk/release
 
   Release:
     runs-on: ubuntu-22.04

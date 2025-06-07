@@ -151,18 +151,20 @@ flutter_launcher_icons:
 
 msix_config:
   display_name: Kostori
-  publisher_display_name: AXLMLY
-  identity_name: com.axlmly.kostori
-  sign_msix: false
-  msix_version: 1.1.8.0
-  trim_logo: true
-  store: false
+  execution_alias: kostori
+  publisher: CN=SignPath Foundation, O=SignPath Foundation, L=Lewes, S=Delaware, C=US
   logo_path: images\app_icon.ico
   capabilities: internetClient, anime
   languages: en-us, zh-cn, zh-tw
-  execution_alias: kostori
-  publisher: CN=阿修罗米莉亚, C=CN
-  output_name: kostori-1.1.8.0
+  sign_msix: false
+  install_certificate: false
+  build_windows: false
+  trim_logo: true
+  #  store: false
+  #  publisher_display_name: AXLMLY
+  #  identity_name: com.axlmly.kostori
+  #  msix_version: 1.1.8.0
+  #  output_name: kostori-1.1.8.0
 
 flutter:
   uses-material-design: true
