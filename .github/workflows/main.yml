@@ -6,35 +6,6 @@ on:
     types: [ published ]
 
 jobs:
-  Build_Android:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          flutter-version-file: pubspec.yaml
-          architecture: x64
-      - name: Decode and install certificate
-        env:
-          STORE_FILE: ${{ secrets.ANDROID_KEYSTORE }}
-          PROPERTY_FILE: ${{ secrets.ANDROID_KEY_PROPERTIES }}
-        run: |
-          echo "$STORE_FILE" | base64 --decode > android/app/keystore.jks
-          echo "$PROPERTY_FILE" > android/key.properties
-      - uses: actions/setup-java@v4
-        with:
-          distribution: 'oracle'
-          java-version: '17'
-      - name: Check rust-toolchain.toml
-        run: rustup show
-      - run: flutter pub get
-      - run: flutter build apk --release
-      - uses: actions/upload-artifact@v4
-        with:
-          name: apks
-          path: build/app/outputs/apk/release
-
   #windows
   Build_Windows:
     runs-on: "windows-latest"
@@ -126,6 +97,35 @@ jobs:
         with:
           name: windows_msix_signed_outputs
           path: build/windows/msix_signed_output/*.msix
+
+  Build_Android:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          flutter-version-file: pubspec.yaml
+          architecture: x64
+      - name: Decode and install certificate
+        env:
+          STORE_FILE: ${{ secrets.ANDROID_KEYSTORE }}
+          PROPERTY_FILE: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          echo "$STORE_FILE" | base64 --decode > android/app/keystore.jks
+          echo "$PROPERTY_FILE" > android/key.properties
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+      - name: Check rust-toolchain.toml
+        run: rustup show
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apks
+          path: build/app/outputs/apk/release
 
   Release:
     runs-on: ubuntu-22.04
