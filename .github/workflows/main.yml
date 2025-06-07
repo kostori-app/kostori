@@ -81,6 +81,7 @@ jobs:
           path: |
             Kostori_windows_*.zip
 
+      # Sign Zip
       - run: New-Item -Path "build/windows/zip_signed_output" -ItemType Directory
       - name: sign windows zip
         uses: signpath/github-action-submit-signing-request@v1.1
@@ -88,7 +89,7 @@ jobs:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 'ef5813e3-663f-4988-932d-7347304db90b'
           project-slug: 'kostori'
-          signing-policy-slug: 'kostori'
+          signing-policy-slug: 'release-signing'
           artifact-configuration-slug: 'Packet'
           github-artifact-id: '${{ steps.unsigned-windows-zip-artifacts.outputs.artifact-id }}'
           github-token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
@@ -105,16 +106,18 @@ jobs:
       - name: Replace Unpacked Artifact with Signed Artifact
         run: Expand-Archive -Path "build/windows/zip_signed_output/Kostori_windows_${env:tag}_signed.zip" -DestinationPath "build/windows/x64/runner/Release" -Force
 
+      # Build Unsigned MSIX
       - name: Build unsigned msix
         run: dart run msix:create
-
-      - name: Upload windows msix outputs (unsigned)
+      - name: Upload windows msix outputs
         uses: actions/upload-artifact@v4
         id: unsigned-windows-msix-artifacts
         with:
           name: windows_msix_outputs_unsigned
-          path: build/windows/x64/runner/Release/kostori.msix
+          path: |
+            build/windows/x64/runner/Release/kostori.msix
 
+      # Sign MSIX
       - run: New-Item -Path "build/windows/msix_signed_output" -ItemType Directory
       - name: sign windows msix
         uses: signpath/github-action-submit-signing-request@v1.1
@@ -122,7 +125,7 @@ jobs:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: 'ef5813e3-663f-4988-932d-7347304db90b'
           project-slug: 'kostori'
-          signing-policy-slug: 'kostori'
+          signing-policy-slug: 'release-signing'
           artifact-configuration-slug: 'MSIX'
           github-artifact-id: '${{ steps.unsigned-windows-msix-artifacts.outputs.artifact-id }}'
           github-token: '${{ secrets.ACTION_GITHUB_TOKEN }}'
@@ -131,7 +134,7 @@ jobs:
 
       - name: Upload windows msix signed outputs
         uses: actions/upload-artifact@v4
-        id: signed-windows-msix-artifacts_final
+        id: signed-windows-msix-artifacts
         with:
           name: windows_msix_signed_outputs
           path: build/windows/msix_signed_output/*.msix
