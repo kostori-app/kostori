@@ -55,6 +55,8 @@ jobs:
           github-artifact-id: '${{ steps.unsigned-windows-zip-artifacts.outputs.artifact-id }}'
           wait-for-completion: true
           output-artifact-directory: 'build/windows/zip_signed_output'
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
 
       - name: Upload windows zip signed outputs
         uses: actions/upload-artifact@v4
@@ -90,6 +92,8 @@ jobs:
           github-artifact-id: '${{ steps.unsigned-windows-msix-artifacts.outputs.artifact-id }}'
           wait-for-completion: true
           output-artifact-directory: 'build/windows/msix_signed_output'
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
 
       - name: Upload windows msix signed outputs
         uses: actions/upload-artifact@v4
