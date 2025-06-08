@@ -353,7 +353,6 @@ class _TimetableState extends State<_Timetable> {
     return _parseTime(a).compareTo(_parseTime(b));
   }
 
-// placeholder：你已有的批量拉取剧集方法
   Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
       List<BangumiItem> batch) async {
     final result = <int, List<EpisodeInfo>>{};

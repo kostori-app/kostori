@@ -336,6 +336,9 @@ class BottomInfoState extends State<BottomInfo>
     var bangumiItem = infoController.bangumiItem;
     var allEpisodes = infoController.allEpisodes;
 
+    double standardDeviation = Utils.getDeviation(bangumiItem.total,
+        bangumiItem.count!.values.toList(), bangumiItem.score);
+
     // 获取当前周的剧集
     final currentWeekEp =
         Utils.findCurrentWeekEpisode(allEpisodes, bangumiItem);
@@ -354,270 +357,428 @@ class BottomInfoState extends State<BottomInfo>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  double height =
-                      constraints.maxWidth * (App.isDesktop ? 9 / 16 : 9 / 16);
-                  double width = height * 0.72;
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    double height = constraints.maxWidth *
+                        (App.isDesktop ? 9 / 16 : 9 / 16);
+                    double width = height * 0.72;
 
-                  return Container(
-                    width: constraints.maxWidth,
-                    height: height,
-                    padding: EdgeInsets.all(2),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: BangumiWidget.kostoriImage(
-                              context, bangumiItem.images['large']!,
-                              width: width, height: height),
-                        ),
-                        // SizedBox(width: 12.0),
-                        Expanded(
-                            child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                bangumiItem.nameCn,
-                                style: TextStyle(
-                                    fontSize: width * 1 / 10,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              Text(bangumiItem.name,
+                    return Container(
+                      width: constraints.maxWidth,
+                      height: height,
+                      padding: EdgeInsets.all(2),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: BangumiWidget.kostoriImage(
+                                context, bangumiItem.images['large']!,
+                                width: width, height: height),
+                          ),
+                          // SizedBox(width: 12.0),
+                          Expanded(
+                              child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  bangumiItem.nameCn,
                                   style: TextStyle(
-                                    fontSize: width * 1 / 24,
-                                  )),
-                              SizedBox(height: 12.0),
-                              Container(
-                                padding: EdgeInsets.all(8.0),
-                                // 可选，设置内边距
-                                decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.circular(16.0), // 设置圆角半径
-                                  border: Border.all(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer
-                                        .toOpacity(0.72),
-                                    width: 2.0, // 设置边框宽度
+                                      fontSize: width * 1 / 10,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Text(bangumiItem.name,
+                                    style: TextStyle(
+                                      fontSize: width * 1 / 24,
+                                    )),
+                                SizedBox(height: 12.0),
+                                Container(
+                                  padding: EdgeInsets.all(8.0),
+                                  // 可选，设置内边距
+                                  decoration: BoxDecoration(
+                                    borderRadius:
+                                        BorderRadius.circular(16.0), // 设置圆角半径
+                                    border: Border.all(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer
+                                          .toOpacity(0.72),
+                                      width: 2.0, // 设置边框宽度
+                                    ),
+                                  ),
+                                  child: Text(
+                                    bangumiItem.airDate,
                                   ),
                                 ),
-                                child: Text(
-                                  bangumiItem.airDate,
-                                ),
-                              ),
-                              SizedBox(height: 12.0),
-                              Text(
-                                isCompleted
-                                    ? '全 ${bangumiItem.totalEpisodes} 话'
-                                    : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
-                                style: TextStyle(fontSize: 14.0),
-                              ),
-                              Spacer(),
-                              Align(
-                                alignment: Alignment.bottomRight,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      '${bangumiItem.score}',
-                                      style: TextStyle(
-                                        fontSize: 32.0,
+                                SizedBox(height: 12.0),
+                                (currentWeekEp?.sort != null)
+                                    ? Text(
+                                        isCompleted
+                                            ? '全 ${bangumiItem.totalEpisodes} 话'
+                                            : currentWeekEp?.sort ==
+                                                    currentWeekEp?.ep
+                                                ? '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
+                                                : '连载至 ${currentWeekEp?.ep} (${currentWeekEp?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : Text(
+                                        '未开播',
+                                        style: TextStyle(
+                                            fontSize: 12.0,
+                                            fontWeight: FontWeight.bold),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: 5,
-                                    ),
-                                    Container(
-                                      padding: EdgeInsets.all(2.0),
-                                      // 可选，设置内边距
-                                      decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(8), // 设置圆角半径
-                                        border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondaryContainer
-                                              .toOpacity(0.72),
-                                          width: 2.0, // 设置边框宽度
+                                Spacer(),
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${bangumiItem.score}',
+                                        style: TextStyle(
+                                          fontSize: 32.0,
                                         ),
                                       ),
-                                      child: Text(
-                                        Utils.getRatingLabel(bangumiItem.score),
+                                      SizedBox(
+                                        width: 5,
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: 4,
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end, // 右对齐
-                                      children: [
-                                        RatingBarIndicator(
-                                          itemCount: 5,
-                                          rating:
-                                              bangumiItem.score.toDouble() / 2,
-                                          itemBuilder: (context, index) =>
-                                              const Icon(
-                                            Icons.star_rounded,
+                                      Container(
+                                        padding: EdgeInsets.all(2.0),
+                                        // 可选，设置内边距
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                              8), // 设置圆角半径
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .secondaryContainer
+                                                .toOpacity(0.72),
+                                            width: 2.0, // 设置边框宽度
                                           ),
-                                          itemSize: 20.0,
                                         ),
-                                        Text(
-                                          '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
-                                          style: TextStyle(fontSize: 12),
-                                        )
-                                      ],
-                                    ),
-                                  ],
+                                        child: Text(
+                                          Utils.getRatingLabel(
+                                              bangumiItem.score),
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 4,
+                                      ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end, // 右对齐
+                                        children: [
+                                          RatingBarIndicator(
+                                            itemCount: 5,
+                                            rating:
+                                                bangumiItem.score.toDouble() /
+                                                    2,
+                                            itemBuilder: (context, index) =>
+                                                const Icon(
+                                              Icons.star_rounded,
+                                            ),
+                                            itemSize: 20.0,
+                                          ),
+                                          Text(
+                                            '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                                            style: TextStyle(fontSize: 12),
+                                          )
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        )),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Align(
-                child: _buildStatsRow(context),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              Divider(),
-              Text(
-                '简介',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              LayoutBuilder(builder: (context, constraints) {
-                final span = TextSpan(text: bangumiItem.summary);
-                final tp =
-                    TextPainter(text: span, textDirection: TextDirection.ltr);
-                tp.layout(maxWidth: constraints.maxWidth);
-                final numLines = tp.computeLineMetrics().length;
-                if (numLines > 7) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        // make intro expandable
-                        height: fullIntro ? null : 120,
-                        width: MediaQuery.sizeOf(context).width > maxWidth
-                            ? maxWidth
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: SelectableText(
-                          bangumiItem.summary,
-                          textAlign: TextAlign.start,
-                          scrollBehavior: const ScrollBehavior().copyWith(
-                            scrollbars: false,
-                          ),
-                          scrollPhysics: NeverScrollableScrollPhysics(),
-                          selectionHeightStyle: ui.BoxHeightStyle.max,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          setState(() {
-                            fullIntro = !fullIntro;
-                          });
-                        },
-                        child: Text(fullIntro ? '加载更少' : '加载更多'),
-                      ),
-                    ],
-                  );
-                } else {
-                  return SelectableText(
-                    bangumiItem.summary,
-                    textAlign: TextAlign.start,
-                    scrollPhysics: NeverScrollableScrollPhysics(),
-                    selectionHeightStyle: ui.BoxHeightStyle.max,
-                  );
-                }
-              }),
-              SizedBox(
-                height: 12,
-              ),
-              Divider(),
-              Text(
-                '标签',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(
-                height: 12,
-              ),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: Utils.isDesktop() ? 8 : 0,
-                children: [
-                  // 显示标签列表
-                  ...List<Widget>.generate(
-                    fullTag
-                        ? bangumiItem.tags.length
-                        : min(12, bangumiItem.tags.length), // 根据状态决定显示数量
-                    (int index) => ActionChip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('${bangumiItem.tags[index].name} '),
-                          Text(
-                            '${bangumiItem.tags[index].count}',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
+                              ],
                             ),
-                          ),
+                          )),
                         ],
                       ),
-                      onPressed: () {
-                        // 标签点击逻辑
-                        context.to(() => BangumiSearchPage(
-                            tag: bangumiItem.tags[index].name));
-                      },
-                    ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  child: _buildStatsRow(context),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-
-                  // 添加展开/收起按钮
-                  if (bangumiItem.tags.length > 12) // 只有标签数量超过12时才显示按钮
-                    ActionChip(
-                      label: Text(
-                        fullTag ? '收起 -' : '更多 +', // 根据状态显示不同文本
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          fullTag = !fullTag; // 切换状态
-                        });
-                      },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '简介',
+                      style:
+                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
-                ],
+                    SizedBox(
+                      height: 8,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: LayoutBuilder(builder: (context, constraints) {
+                        final span = TextSpan(text: bangumiItem.summary);
+                        final tp = TextPainter(
+                            text: span, textDirection: TextDirection.ltr);
+                        tp.layout(maxWidth: constraints.maxWidth);
+                        final numLines = tp.computeLineMetrics().length;
+                        if (numLines > 7) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              SizedBox(
+                                // make intro expandable
+                                height: fullIntro ? null : 120,
+                                width:
+                                    MediaQuery.sizeOf(context).width > maxWidth
+                                        ? maxWidth
+                                        : MediaQuery.sizeOf(context).width - 32,
+                                child: SelectableText(
+                                  bangumiItem.summary,
+                                  textAlign: TextAlign.start,
+                                  scrollBehavior:
+                                      const ScrollBehavior().copyWith(
+                                    scrollbars: false,
+                                  ),
+                                  scrollPhysics: NeverScrollableScrollPhysics(),
+                                  selectionHeightStyle: ui.BoxHeightStyle.max,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    fullIntro = !fullIntro;
+                                  });
+                                },
+                                child: Text(fullIntro ? '加载更少' : '加载更多'),
+                              ),
+                            ],
+                          );
+                        } else {
+                          return SelectableText(
+                            bangumiItem.summary,
+                            textAlign: TextAlign.start,
+                            scrollPhysics: NeverScrollableScrollPhysics(),
+                            selectionHeightStyle: ui.BoxHeightStyle.max,
+                          );
+                        }
+                      }),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 12),
-              Divider(),
-              Text(
-                '评分统计图',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
-              SizedBox(
-                height: 12,
+              const SizedBox(height: 8),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text('标签',
+                            style: TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold)),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child:
+                              Text('${bangumiItem.tags.length}', style: ts.s12),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: 12,
+                    ),
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: Utils.isDesktop() ? 8 : 0,
+                      children: [
+                        // 显示标签列表
+                        ...List<Widget>.generate(
+                          fullTag
+                              ? bangumiItem.tags.length
+                              : min(12, bangumiItem.tags.length), // 根据状态决定显示数量
+                          (int index) => ActionChip(
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('${bangumiItem.tags[index].name} '),
+                                Text(
+                                  '${bangumiItem.tags[index].count}',
+                                  style: TextStyle(
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onPressed: () {
+                              // 标签点击逻辑
+                              context.to(() => BangumiSearchPage(
+                                  tag: bangumiItem.tags[index].name));
+                            },
+                          ),
+                        ),
+
+                        // 添加展开/收起按钮
+                        if (bangumiItem.tags.length > 12) // 只有标签数量超过12时才显示按钮
+                          ActionChip(
+                            label: Text(
+                              fullTag ? '收起 -' : '更多 +', // 根据状态显示不同文本
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                fullTag = !fullTag; // 切换状态
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              LineChatPage(
-                bangumiItem: bangumiItem,
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
+              const SizedBox(height: 8),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text('评分统计图',
+                            style: TextStyle(
+                                fontSize: 24, fontWeight: FontWeight.bold)),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('${bangumiItem.score}', style: ts.s12),
+                        ),
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              infoController.showLineChart =
+                                  !infoController.showLineChart;
+                            });
+                          },
+                          icon: Icon(infoController.showLineChart
+                              ? Icons.show_chart
+                              : Icons.bar_chart),
+                          label: Text(
+                              infoController.showLineChart ? '折线图' : '柱状图'),
+                        ),
+                        Text('${bangumiItem.total} votes')
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                child: Row(
+                  children: [
+                    Text('标准差: ${standardDeviation.toStringAsFixed(2)}',
+                        style: TextStyle(fontSize: 12)),
+                    const SizedBox(
+                      width: 8,
+                    ),
+                    Text(Utils.getDispute(standardDeviation),
+                        style: TextStyle(fontSize: 12))
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                child: infoController.showLineChart
+                    ? LineChatPage(bangumiItem: bangumiItem)
+                    : BangumiBarChartPage(bangumiItem: bangumiItem),
+              ),
+              const SizedBox(height: 16),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),

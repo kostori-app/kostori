@@ -165,6 +165,20 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                     widget.updateAnimes();
                                     widget.cancel();
                                   });
+                                  showCenter(
+                                      seconds: 1,
+                                      icon: Gif(
+                                        image:
+                                            AssetImage('assets/img/check.gif'),
+                                        height: 80,
+                                        fps: 120,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        autostart: Autostart.once,
+                                      ),
+                                      message: '操作成功',
+                                      context: context);
                                   Navigator.of(context).pop();
                                 }
                               },

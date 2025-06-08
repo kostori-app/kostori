@@ -186,10 +186,11 @@ class _ShareWidgetState extends State<ShareWidget> {
     final currentWeekEp =
         Utils.findCurrentWeekEpisode(allEpisodes, bangumiItem);
 
-    // 判断是否已全部播出（检查是否是最后一项）
+    final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
+
     final isCompleted = currentWeekEp != null &&
-        allEpisodes.isNotEmpty &&
-        currentWeekEp == allEpisodes.last;
+        type0Episodes.isNotEmpty &&
+        currentWeekEp == type0Episodes.last;
 
     return PopUpWidgetScaffold(
       title: '截图分享',
@@ -204,6 +205,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                   color: Theme.of(context).scaffoldBackgroundColor,
                   child: Column(
                     children: [
+                      const SizedBox(height: 40.0),
                       Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: LayoutBuilder(builder: (context, constraints) {
@@ -328,7 +330,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                             Text(
                               '简介',
                               style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.bold),
+                                  fontSize: 24, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -354,29 +356,24 @@ class _ShareWidgetState extends State<ShareWidget> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 6, horizontal: 16),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Text('标签',
-                                    style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold)),
-                                Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text('${bangumiItem.tags.length}',
-                                      style: ts.s12),
-                                ),
-                              ],
+                            Text('标签',
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold)),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .secondaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text('${bangumiItem.tags.length}',
+                                  style: ts.s12),
                             ),
                           ],
                         ),

@@ -78,15 +78,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void updateHistory() async {
     var newHistory =
         HistoryManager().find(widget.id, AnimeType(widget.sourceKey.hashCode));
+    if (!isUpdateBangumiBind && history?.bangumiId != null) {
+      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+      isUpdateBangumiBind = true;
+    }
     if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||
         newHistory?.lastWatchTime != history?.lastWatchTime) {
       history = newHistory;
       if (history?.bangumiId == null) {
         updateBangumiId();
-      }
-      if (!isUpdateBangumiBind && history?.bangumiId != null) {
-        Bangumi.getBangumiInfoBind(history!.bangumiId as int);
-        isUpdateBangumiBind = true;
       }
       update();
     }
@@ -308,7 +308,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                     child: InkWell(
                       borderRadius: BorderRadius.circular(8),
                       onTap: () {
-                        history?.bangumiId == null
+                        (history?.bangumiId == null || bangumiItem == null)
                             ? BangumiWidget.showImagePreview(
                                 context,
                                 anime.cover,
