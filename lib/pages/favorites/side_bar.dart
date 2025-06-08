@@ -103,13 +103,6 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
           Text("Local".tl),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.search),
-            color: context.colorScheme.primary,
-            onPressed: () {
-              context.to(() => const LocalSearchPage());
-            },
-          ),
-          IconButton(
             icon: const Icon(Icons.add),
             color: context.colorScheme.primary,
             onPressed: () {

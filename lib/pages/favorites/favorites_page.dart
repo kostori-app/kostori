@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
@@ -22,8 +23,6 @@ part 'favorite_actions.dart';
 part 'side_bar.dart';
 
 part 'local_favorites_page.dart';
-
-part 'local_search_page.dart';
 
 part 'favorite_dialog.dart';
 

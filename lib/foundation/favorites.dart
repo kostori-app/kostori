@@ -854,15 +854,28 @@ class LocalFavoritesManager with ChangeNotifier {
     return animes;
   }
 
-  List<FavoriteItemWithFolderInfo> search(String keyword) {
+  List<FavoriteItemWithFolderInfo> search(String keyword,
+      [FavoriteSortType sortType = FavoriteSortType.displayOrderAsc]) {
     var keywordList = keyword.split(" ");
     keyword = keywordList.first;
     var animes = <FavoriteItemWithFolderInfo>[];
+    // 解析排序类型
+    final orderBy = switch (sortType) {
+      FavoriteSortType.nameAsc => 'name ASC',
+      FavoriteSortType.nameDesc => 'name DESC',
+      FavoriteSortType.timeAsc => 'time ASC',
+      FavoriteSortType.timeDesc => 'time DESC',
+      FavoriteSortType.displayOrderAsc => 'display_order ASC',
+      FavoriteSortType.displayOrderDesc => 'display_order DESC',
+      FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
+      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC'
+    };
     for (var table in folderNames) {
       keyword = "%$keyword%";
       var res = _db.select("""
         SELECT * FROM "$table" 
-        WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?;
+        WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?
+        ORDER BY $orderBy;
       """, [keyword, keyword, keyword]);
       for (var anime in res) {
         animes.add(

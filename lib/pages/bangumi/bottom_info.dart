@@ -418,12 +418,26 @@ class BottomInfoState extends State<BottomInfo>
                                   ),
                                 ),
                                 SizedBox(height: 12.0),
-                                Text(
-                                  isCompleted
-                                      ? '全 ${bangumiItem.totalEpisodes} 话'
-                                      : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
-                                  style: TextStyle(fontSize: 14.0),
-                                ),
+                                (currentWeekEp?.sort != null)
+                                    ? Text(
+                                        isCompleted
+                                            ? '全 ${bangumiItem.totalEpisodes} 话'
+                                            : currentWeekEp?.sort ==
+                                                    currentWeekEp?.ep
+                                                ? '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
+                                                : '连载至 ${currentWeekEp?.ep} (${currentWeekEp?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      )
+                                    : Text(
+                                        '未开播',
+                                        style: TextStyle(
+                                            fontSize: 12.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
                                 Spacer(),
                                 Align(
                                   alignment: Alignment.bottomRight,
@@ -600,7 +614,8 @@ class BottomInfoState extends State<BottomInfo>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Text('标签',
                             style: TextStyle(

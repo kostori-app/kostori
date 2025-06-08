@@ -371,7 +371,10 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                   child: Text(
                                                   isCompleted
                                                       ? '全 ${bangumiItem.totalEpisodes} 话'
-                                                      : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                      : currentWeekEp?.sort ==
+                                                              currentWeekEp?.ep
+                                                          ? '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
+                                                          : '连载至 ${currentWeekEp?.ep} (${currentWeekEp?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
                                                   style: TextStyle(
                                                     fontSize: 12.0,
                                                   ),

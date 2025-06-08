@@ -31,6 +31,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
   String keyword = "";
 
   bool searchMode = false;
+  bool searchAllMode = false;
 
   bool multiSelectMode = false;
 
@@ -48,9 +49,25 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
         searchResults = animes;
       } else {
         searchResults = [];
-        for (var comic in animes) {
-          if (matchKeyword(keyword, comic)) {
-            searchResults.add(comic);
+        for (var anime in animes) {
+          if (matchKeyword(keyword, anime)) {
+            searchResults.add(anime);
+          }
+        }
+      }
+    });
+  }
+
+  void updateSearchAllResult() {
+    setState(() {
+      animes = LocalFavoritesManager().search(keyword, sortType);
+      if (keyword.trim().isEmpty) {
+        searchResults = animes;
+      } else {
+        searchResults = [];
+        for (var anime in animes) {
+          if (matchKeyword(keyword, anime)) {
+            searchResults.add(anime);
           }
         }
       }
@@ -245,7 +262,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
     Widget body = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
-        if (!searchMode && !multiSelectMode)
+        if (!searchAllMode && !searchMode && !multiSelectMode)
           SliverAppbar(
             style: context.width < changePoint
                 ? AppbarStyle.shadow
@@ -278,6 +295,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                       keyword = "";
                       searchMode = true;
                       updateSearchResult();
+                    });
+                  },
+                  onLongPress: () {
+                    setState(() {
+                      keyword = "";
+                      searchAllMode = true;
+                      updateSearchAllResult();
                     });
                   },
                 ),
@@ -444,13 +468,44 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage> {
                 updateSearchResult();
               },
             ).paddingBottom(8).paddingRight(8),
+          )
+        else if (searchAllMode)
+          SliverAppbar(
+            style: context.width < changePoint
+                ? AppbarStyle.shadow
+                : AppbarStyle.blur,
+            leading: Tooltip(
+              message: "Cancel".tl,
+              child: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    searchAllMode = false;
+                    animes = LocalFavoritesManager()
+                        .getAllAnimes(widget.folder, sortType);
+                  });
+                },
+              ),
+            ),
+            title: TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: "Search All".tl,
+                border: UnderlineInputBorder(),
+              ),
+              onChanged: (v) {
+                keyword = v;
+                updateSearchAllResult();
+              },
+            ).paddingBottom(8).paddingRight(8),
           ),
         if (isLoading)
           SliverToBoxAdapter(
             child: SizedBox(
               height: 200,
               child: Center(
-                child: MiscComponents.placeholder(context, 200, 200),
+                child: MiscComponents.placeholder(
+                    context, 200, 200, Colors.transparent),
               ),
             ),
           )

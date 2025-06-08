@@ -92,16 +92,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
           if (episodeResult == null) continue;
 
-          final isLastEpisode = episodes != null &&
-              episodeResult['episode_ep'] == episodes.last.sort;
-          final episodeAirDate =
-              Utils.safeParseDate(episodeResult['episode_airdate']);
-          final episodeWeek = episodeAirDate != null
-              ? Utils.getISOWeekNumber(episodeAirDate).$2
-              : -1;
-
-          // 剔除非本周的最后一集条目
-          if (isLastEpisode && episodeWeek != currentWeekInfo.$2) {
+          // 剔除“最后一集且无后续集且非本周”的番剧
+          if (episodeResult['isFinalEpisode'] == true &&
+              episodeResult['hasNextEpisodes'] == false &&
+              episodeResult['isCurrentWeek'] == false) {
             continue;
           }
 
@@ -140,19 +134,37 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
   }) {
     if (episodes == null || episodes.isEmpty) return null;
 
+    final (currentYear, currentWeek) = currentWeekInfo;
+
+    // 取所有 type==0 的剧集（通常是主线剧集）
+    final type0Episodes = episodes.where((ep) => ep.type == 0).toList();
+    if (type0Episodes.isEmpty) return null;
+
+    // 最后一集（type0中最后一集）
+    final finalEpisode = type0Episodes.last;
+
     final currentWeekEp = Utils.findCurrentWeekEpisode(episodes, bangumiItem);
 
-    if (currentWeekEp == null) return null;
+    // 判断当前集数是否为最后一集
+    final isFinalEpisode =
+        currentWeekEp != null && currentWeekEp.sort == finalEpisode.sort;
 
-    // 是否为最后一集
-    final isLast = episodes.last.sort == currentWeekEp.sort;
+    // 判断是否为当前周
+    final airWeek = Utils.getISOWeekNumber(airTime).$2;
+    final isCurrentWeek = currentWeek == airWeek;
+
+    // 判断是否还有后续集数（finalEpisode不是最后一集时为true）
+    final maxSort =
+        type0Episodes.map((e) => e.sort).reduce((a, b) => a > b ? a : b);
 
     return {
-      'episode_airdate': currentWeekEp.airDate,
-      'episode_name': currentWeekEp.name,
-      'episode_name_cn': currentWeekEp.nameCn,
-      'episode_ep': currentWeekEp.sort,
-      'isLastEpisode': isLast,
+      'episode_airdate': currentWeekEp?.airDate,
+      'episode_name': currentWeekEp?.name,
+      'episode_name_cn': currentWeekEp?.nameCn,
+      'episode_ep': currentWeekEp?.sort,
+      'isCurrentWeek': isCurrentWeek,
+      'isFinalEpisode': isFinalEpisode,
+      'hasNextEpisodes': finalEpisode.sort < maxSort,
     };
   }
 
