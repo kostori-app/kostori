@@ -589,7 +589,7 @@ class LocalFavoritesManager with ChangeNotifier {
       for (var item in items) {
         _db.execute("""
           insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
-          select id, name, author, type, tags, cover_path, time, ?
+          select id, name, author, type, tags, cover_path, time, recently_watched, ?
           from "$sourceFolder"
           where id == ? and type == ?;
         """, [displayOrder, item.id, item.type.value]);
@@ -642,7 +642,7 @@ class LocalFavoritesManager with ChangeNotifier {
       for (var item in items) {
         _db.execute("""
           insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
-          select id, name, author, type, tags, cover_path, time, ?
+          select id, name, author, type, tags, cover_path, time, recently_watched, ?
           from "$sourceFolder"
           where id == ? and type == ?;
         """, [displayOrder, item.id, item.type.value]);
