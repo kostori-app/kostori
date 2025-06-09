@@ -32,6 +32,7 @@ import 'dart:ui' as ui;
 
 import '../../components/bangumi_widget.dart';
 import '../../components/share_widget.dart';
+import '../../utils/data_sync.dart';
 import '../bangumi/info_controller.dart';
 
 part 'actions.dart';
@@ -127,6 +128,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     HistoryManager().removeListener(updateHistory);
     // HistoryManager().removeListener(updateBangumiBind);
     BangumiManager().removeListener(updateBangumiBind);
+    Future.microtask(() {
+      DataSync().onDataChanged();
+    });
     super.dispose();
   }
 
@@ -716,7 +720,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           title: Text("Related".tl),
         ),
       ),
-      SliverGridAnimes(animes: anime.recommend!),
+      SliverGridAnimes(
+        animes: anime.recommend!,
+        isRecommend: true,
+      ),
     ]);
   }
 }

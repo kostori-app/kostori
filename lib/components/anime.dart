@@ -18,6 +18,7 @@ class AnimeTile extends StatelessWidget {
   const AnimeTile({
     super.key,
     required this.anime,
+    this.isRecommend = false,
     this.enableLongPressed = true,
     this.enableFavorite = true,
     this.enableHistory = false,
@@ -36,6 +37,8 @@ class AnimeTile extends StatelessWidget {
 
   final bool enableHistory;
 
+  final bool isRecommend;
+
   final String? badge;
 
   final List<MenuEntry>? menuOptions;
@@ -51,13 +54,24 @@ class AnimeTile extends StatelessWidget {
       onTap!();
       return;
     }
-    App.mainNavigatorKey?.currentContext?.to(() => AnimePage(
-          id: anime.id,
-          sourceKey: anime.sourceKey,
-          cover: anime.cover,
-          title: anime.title,
-          heroID: heroID,
-        ));
+    if (isRecommend) {
+      App.mainNavigatorKey?.currentContext?.toReplacement(() => AnimePage(
+            id: anime.id,
+            sourceKey: anime.sourceKey,
+            cover: anime.cover,
+            title: anime.title,
+            heroID: heroID,
+          ));
+    } else {
+      App.mainNavigatorKey?.currentContext?.to(() => AnimePage(
+            id: anime.id,
+            sourceKey: anime.sourceKey,
+            cover: anime.cover,
+            title: anime.title,
+            heroID: heroID,
+          ));
+    }
+
     LocalFavoritesManager()
         .updateRecentlyWatched(anime.id, AnimeType(anime.sourceKey.hashCode));
   }
@@ -111,11 +125,11 @@ class AnimeTile extends StatelessWidget {
             addFavorite(anime);
           },
         ),
-        MenuEntry(
-          icon: Icons.block,
-          text: 'Block'.tl,
-          onClick: () => block(context),
-        ),
+        // MenuEntry(
+        //   icon: Icons.block,
+        //   text: 'Block'.tl,
+        //   onClick: () => block(context),
+        // ),
         ...?menuOptions,
       ],
     );
@@ -685,7 +699,8 @@ class SliverGridAnimes extends StatefulWidget {
       this.onLongPressed,
       this.selections,
       this.enableFavorite,
-      this.enableHistory});
+      this.enableHistory,
+      this.isRecommend});
 
   final List<Anime> animes;
 
@@ -704,6 +719,8 @@ class SliverGridAnimes extends StatefulWidget {
   final bool? enableFavorite;
 
   final bool? enableHistory;
+
+  final bool? isRecommend;
 
   @override
   State<SliverGridAnimes> createState() => _SliverGridAnimesState();
@@ -768,16 +785,18 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
   @override
   Widget build(BuildContext context) {
     return _SliverGridAnimes(
-        animes: animes,
-        heroIDs: heroIDs,
-        selection: widget.selections,
-        onLastItemBuild: widget.onLastItemBuild,
-        badgeBuilder: widget.badgeBuilder,
-        menuBuilder: widget.menuBuilder,
-        onTap: widget.onTap,
-        onLongPressed: widget.onLongPressed,
-        enableFavorite: widget.enableFavorite,
-        enableHistory: widget.enableHistory);
+      animes: animes,
+      heroIDs: heroIDs,
+      selection: widget.selections,
+      onLastItemBuild: widget.onLastItemBuild,
+      badgeBuilder: widget.badgeBuilder,
+      menuBuilder: widget.menuBuilder,
+      onTap: widget.onTap,
+      onLongPressed: widget.onLongPressed,
+      enableFavorite: widget.enableFavorite,
+      enableHistory: widget.enableHistory,
+      isRecommend: widget.isRecommend,
+    );
   }
 }
 
@@ -792,7 +811,8 @@ class _SliverGridAnimes extends StatelessWidget {
       this.onLongPressed,
       this.selection,
       this.enableFavorite,
-      this.enableHistory});
+      this.enableHistory,
+      this.isRecommend});
 
   final List<Anime> animes;
 
@@ -814,6 +834,8 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final bool? enableHistory;
 
+  final bool? isRecommend;
+
   @override
   Widget build(BuildContext context) {
     return SliverGrid(
@@ -827,6 +849,7 @@ class _SliverGridAnimes extends StatelessWidget {
               selection == null ? false : selection![animes[index]] ?? false;
           var anime = AnimeTile(
             anime: animes[index],
+            isRecommend: isRecommend ?? false,
             enableFavorite: enableFavorite ?? true,
             enableHistory: enableHistory ?? false,
             badge: badge,

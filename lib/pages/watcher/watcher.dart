@@ -121,8 +121,6 @@ class WatcherState extends State<Watcher>
     history = widget.history;
     progress = Progress.fromModel(
         model: widget.anime, episode: 0, road: 0, progressInMilli: 0);
-
-    Log.addLog(LogLevel.info, "历史", "$history");
     Future.microtask(() {
       updateHistory();
     });
@@ -149,9 +147,6 @@ class WatcherState extends State<Watcher>
     observerController.controller?.dispose();
     playerController.dispose();
     updateHistoryTimer.cancel();
-    Future.microtask(() {
-      DataSync().onDataChanged();
-    });
     playerController.disposeReaderWindow();
     super.dispose();
   }
