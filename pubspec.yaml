@@ -152,7 +152,8 @@ flutter_launcher_icons:
 msix_config:
   display_name: Kostori
   execution_alias: kostori
-  publisher: CN=SignPath Foundation, O=SignPath Foundation, L=Lewes, S=Delaware, C=US
+  publisher: CN=阿修罗米莉亚, C=CN
+  #  publisher: CN=SignPath Foundation, O=SignPath Foundation, L=Lewes, S=Delaware, C=US
   logo_path: images\app_icon.ico
   capabilities: internetClient, anime
   languages: en-us, zh-cn, zh-tw
