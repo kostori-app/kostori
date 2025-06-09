@@ -14,10 +14,13 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
-      - run: |
+
+      - name: Get tag name and set as environment variable # 添加此步骤以获取 tag
+        run: |
           $tag = "${{ github.ref }}".Replace('refs/tags/', '')
           echo "tag=$(echo $tag)" >> $env:GITHUB_ENV
-      - run: echo "Kostori_windows_${env:tag}.zip build progress"
+
+      - run: echo "Kostori-windows-${{ env.tag }}.zip build progress" # 更新这里的输出信息
       - run: choco install yq
       - name: Enable Git longpaths
         run: git config --system core.longpaths true
@@ -33,24 +36,30 @@ jobs:
           java-version: '18'
       - run: flutter pub get
       - run: flutter build windows
-      - run: Compress-Archive build/windows/x64/runner/Release/* Kostori_windows_${env:tag}.zip
+
+      - name: Compress and Rename Windows Zip
+        run: Compress-Archive build/windows/x64/runner/Release/* Kostori-windows-${{ env.tag }}.zip
+
       - name: Upload windows zip outputs
         uses: actions/upload-artifact@v4
         with:
           name: Kostori_windows_zip
           path: |
-            Kostori_windows_*.zip
+            Kostori-windows-*.zip
 
       # Build MSIX
       - name: Build msix
         run: dart run msix:create
+
+      - name: Move and Rename Windows MSIX
+        run: mv build/windows/x64/runner/Release/kostori.msix Kostori-windows-${{ env.tag }}.msix
+
       - name: Upload windows msix outputs
         uses: actions/upload-artifact@v4
         with:
           name: Kostori_windows_msix
           path: |
-            build/windows/x64/runner/Release/kostori.msix
-
+            Kostori-windows-*.msix
   #Android
   Build_Android:
     runs-on: ubuntu-22.04
@@ -85,6 +94,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [ Build_Android, Build_Windows ]
     if: github.event_name == 'release'
+
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -95,26 +105,20 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Kostori_windows_zip
-          path: ./temp_zip # 下载到临时目录
-
-      - name: Rename Windows Zip
-        run: mv ./temp_zip/Kostori_windows_*.zip Kostori_windows_${{ env.tag }}.zip
+          path: outputs
 
       - name: Download Windows MSIX
         uses: actions/download-artifact@v4
         with:
           name: Kostori_windows_msix
-          path: ./temp_msix
-
-      - name: Rename Windows MSIX
-        run: mv ./temp_msix/kostori.msix Kostori_windows_${{ env.tag }}.msix
+          path: outputs
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           files: |
             outputs/*.apk
-            Kostori_windows_*.zip
-            Kostori_windows_*.msix
+            outputs/Kostori-windows-*.zip
+            outputs/Kostori-windows-*.msix
         env:
           GITHUB_TOKEN: ${{ secrets.ACTION_GITHUB_TOKEN }}
