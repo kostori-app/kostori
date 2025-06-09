@@ -157,13 +157,13 @@ msix_config:
   logo_path: images\app_icon.ico
   capabilities: internetClient, anime
   languages: en-us, zh-cn, zh-tw
-  sign_msix: false
+  sign_msix: true
   install_certificate: false
   build_windows: false
   trim_logo: true
-  #  store: false
-  #  publisher_display_name: AXLMLY
-  #  identity_name: com.axlmly.kostori
+  store: false
+  publisher_display_name: AXLMLY
+  identity_name: com.axlmly.kostori
   #  msix_version: 1.1.8.0
   #  output_name: kostori-1.1.8.0
 
