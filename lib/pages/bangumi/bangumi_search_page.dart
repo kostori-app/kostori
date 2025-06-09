@@ -226,7 +226,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                           BoxConstraints(maxWidth: 500, maxHeight: 600),
                       decoration: BoxDecoration(
                         color: context.colorScheme.surface.toOpacity(0.22),
-                        borderRadius: BorderRadius.circular(24), // 👈 设置圆角半径
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

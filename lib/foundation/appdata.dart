@@ -183,6 +183,7 @@ class Settings with ChangeNotifier {
     'getBangumiAllEpInfoTime': null,
     'animeSourceListUrl': Api.kostoriConfig,
     'gitMirror': false,
+    'initialPage': '0',
   };
 
   operator [](String key) {

@@ -10,7 +10,9 @@ class AboutSettings extends StatefulWidget {
 }
 
 class _AboutSettingsState extends State<AboutSettings> {
-  bool isCheckingUpdate = false;
+  bool isCheckingAppUpdate = false;
+  bool isCheckingBangumiDataUpdate = false;
+  bool isCheckingBangumiDataReset = false;
 
   @override
   Widget build(BuildContext context) {
@@ -50,15 +52,15 @@ class _AboutSettingsState extends State<AboutSettings> {
         ListTile(
           title: Text("Check for updates".tl),
           trailing: Button.filled(
-            isLoading: isCheckingUpdate,
+            isLoading: isCheckingAppUpdate,
             child: Text("Check".tl),
             onPressed: () {
               setState(() {
-                isCheckingUpdate = true;
+                isCheckingAppUpdate = true;
               });
               checkUpdateUi().then((value) {
                 setState(() {
-                  isCheckingUpdate = false;
+                  isCheckingAppUpdate = false;
                 });
               });
             },
@@ -68,15 +70,15 @@ class _AboutSettingsState extends State<AboutSettings> {
           title: const Text("Bangumi-data"),
           subtitle: Text(appdata.settings['bangumiDataVer']),
           trailing: Button.filled(
-            isLoading: isCheckingUpdate,
+            isLoading: isCheckingBangumiDataUpdate,
             child: Text("Check".tl),
             onPressed: () {
               setState(() {
-                isCheckingUpdate = true;
+                isCheckingBangumiDataUpdate = true;
               });
               Bangumi.checkBangumiData().then((value) {
                 setState(() {
-                  isCheckingUpdate = false;
+                  isCheckingBangumiDataUpdate = false;
                 });
               });
             },
@@ -85,15 +87,15 @@ class _AboutSettingsState extends State<AboutSettings> {
         ListTile(
           title: Text("Reset Bangumi-data".tl),
           trailing: Button.filled(
-            isLoading: isCheckingUpdate,
+            isLoading: isCheckingBangumiDataReset,
             child: Text("Reset".tl),
             onPressed: () {
               setState(() {
-                isCheckingUpdate = true;
+                isCheckingBangumiDataReset = true;
               });
               Bangumi.resetBangumiData().then((value) {
                 setState(() {
-                  isCheckingUpdate = false;
+                  isCheckingBangumiDataReset = false;
                 });
               });
             },
@@ -122,46 +124,50 @@ class _AboutSettingsState extends State<AboutSettings> {
   }
 }
 
-Future<bool> checkUpdate() async {
+Future<Map<bool, String?>> checkUpdate() async {
   try {
     var res = await AppDio().get(
         "https://raw.githubusercontent.com/kostori-app/kostori/refs/heads/master/pubspec.yaml");
     if (res.statusCode == 200) {
-      var data = loadYaml(res.data);
+      final data = loadYaml(res.data);
       if (data["version"] != null) {
-        return _compareVersion(data["version"].split("+")[0], App.version);
+        String fetchedVersion = data["version"].split("+")[0];
+        bool hasNew = _compareVersion(fetchedVersion, App.version);
+        return {hasNew: fetchedVersion}; // 返回 Map
       }
     }
-    return false;
+    return {false: null}; // 返回 Map
   } catch (e, s) {
     App.rootContext.showMessage(message: '检查更新失败...');
-    Log.addLog(LogLevel.error, "检查更新", '$e\n$s');
-    return false;
+    Log.addLog(LogLevel.error, "checkUpdate", '$e\n$s');
+    return {false: null}; // 返回 Map
   }
 }
 
 Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true]) async {
   var value = await checkUpdate();
-  if (value) {
+  if (value.containsKey(true)) {
     showDialog(
-        context: App.rootContext,
-        builder: (context) {
-          return ContentDialog(
-            title: "New version available".tl,
-            content: Text(
-                "A new version is available. Do you want to update now?".tl),
-            actions: [
-              Button.text(
-                onPressed: () {
-                  Navigator.pop(context);
-                  launchUrlString(
-                      "https://github.com/kostori-app/kostori/releases");
-                },
-                child: Text("Update".tl),
-              ),
-            ],
-          );
-        });
+      context: App.rootContext,
+      builder: (context) {
+        return ContentDialog(
+          title: "New version available".tl,
+          content: Text(
+            "Discover the new version @v".tlParams({"v": value.values}),
+          ),
+          actions: [
+            Button.text(
+              onPressed: () {
+                Navigator.pop(context);
+                launchUrlString(
+                    "https://github.com/kostori-app/kostori/releases");
+              },
+              child: Text("Update".tl),
+            ),
+          ],
+        );
+      },
+    );
   } else if (showMessageIfNoUpdate) {
     App.rootContext.showMessage(message: "No new version available".tl);
   }
