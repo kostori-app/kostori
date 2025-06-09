@@ -429,6 +429,11 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   }
 
+  void clearProgress() {
+    _db.execute("delete from progress;");
+    notifyListeners();
+  }
+
   void clearUnfavoritedHistory() {
     _db.execute('BEGIN TRANSACTION;');
     try {
@@ -462,6 +467,10 @@ class HistoryManager with ChangeNotifier {
     _db.execute("""
       delete from history
       where id == ? and type == ?;
+    """, [id, type.value]);
+    _db.execute("""
+      delete from progress
+      where historyId == ? and type == ?;
     """, [id, type.value]);
     updateCache();
     notifyListeners();

@@ -30,7 +30,6 @@
     "Details": "详情",
     "Copy Title": "复制标题",
     "Add to favorites": "添加到收藏",
-    "Episodes": "播放列表",
     "Error": "错误",
     "Retry": "重试",
     "Folders": "文件夹",
@@ -198,7 +197,6 @@
     "Added @count animes to download queue.": "已添加 @count 本番剧到下载队列",
     "Ignore Certificate Errors": "忽略证书错误",
     "Authorization Required": "需要身份验证",
-    "Play All Episodes": "播放列表",
     "Sync": "同步",
     "The folder is Linked to @source": "文件夹已关联到 @source",
     "Source Folder": "源收藏夹",
@@ -274,7 +272,10 @@
     "Discover the new version @v": "发现新版本 @v",
     "Following": "追番",
     "Me": "个人",
-    "Initial Page": "初始页面"
+    "Initial Page": "初始页面",
+    "Playlist": "播放列表",
+    "Clear Progress": "清除进度",
+    "Are you sure you want to clear your progress?": "确定要清除您的全部进度吗？"
   },
   "zh_TW": {
     "Home": "首頁",

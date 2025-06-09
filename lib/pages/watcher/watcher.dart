@@ -15,7 +15,6 @@ import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
-import 'package:kostori/utils/data_sync.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 
@@ -124,7 +123,6 @@ class WatcherState extends State<Watcher>
     Future.microtask(() {
       updateHistory();
     });
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     if (history != null && history!.lastWatchEpisode != 0) {
       loadInfo(
           history!.lastWatchEpisode, history!.lastRoad.toInt()); // 这里传入初始集数
@@ -190,8 +188,8 @@ class WatcherState extends State<Watcher>
     try {
       var progressFind = await HistoryManager().progressFind(widget.anime.id,
           AnimeType(widget.anime.sourceKey.hashCode), episode - 1, road);
-      Log.addLog(LogLevel.info, "加载找寻参数",
-          "${widget.anime.id}\n${AnimeType(widget.anime.sourceKey.hashCode).value}\n${episode - 1}\n$road");
+      // Log.addLog(LogLevel.info, "加载找寻参数",
+      //     "${widget.anime.id}\n${AnimeType(widget.anime.sourceKey.hashCode).value}\n${episode - 1}\n$road");
       playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
       history?.watchEpisode.add(episode); // 记录观看的集数
@@ -204,11 +202,8 @@ class WatcherState extends State<Watcher>
       } else {
         time = progressFind!.progressInMilli;
       }
-      Log.addLog(LogLevel.info, "本集时间", "$progressFind!.progressInMilli");
       var res = await type.animeSource!.loadAnimePages!(
           widget.wid, ep?.keys.elementAt(episode - 1));
-      Log.addLog(LogLevel.info, "载入上次观看时间", "$time");
-      Log.addLog(LogLevel.info, "视频链接", res);
       await _play(res, episode, time);
       loaded = episodeIndex;
       playerController.playing = true;
@@ -240,7 +235,7 @@ class WatcherState extends State<Watcher>
       }
       var res = await type.animeSource!.loadAnimePages!(
           widget.wid, ep?.keys.elementAt(episode - 1));
-      Log.addLog(LogLevel.info, "视频链接", res);
+      // Log.addLog(LogLevel.info, "视频链接", res);
       await _play(res, episode, time);
       loaded = episodeIndex;
 

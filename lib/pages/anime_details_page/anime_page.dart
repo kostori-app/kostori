@@ -117,7 +117,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void initState() {
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
-    // HistoryManager().addListener(updateBangumiBind);
     BangumiManager().addListener(updateBangumiBind);
     super.initState();
   }
@@ -126,7 +125,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
-    // HistoryManager().removeListener(updateBangumiBind);
     BangumiManager().removeListener(updateBangumiBind);
     Future.microtask(() {
       DataSync().onDataChanged();
@@ -144,12 +142,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   Future<void> updateBangumiId() async {
     var res = await Bangumi.combinedBangumiSearch(anime.title);
-    // 如果列表为空，返回 null
     if (res.isEmpty) {
       return;
     } else {
-      // 返回第一个BangumiItem的id
-      history?.bangumiId = res.first.id; // 假设 BangumiItem 有一个 id 属性
+      history?.bangumiId = res.first.id;
       HistoryManager().addHistoryAsync(history!);
     }
   }
@@ -189,13 +185,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 episode: anime.episode,
                 anime: anime,
                 history: History.fromModel(
-                  model: anime,
-                  lastWatchEpisode: history?.lastWatchEpisode ?? 1,
-                  lastWatchTime: history?.lastWatchTime ?? 0,
-                  lastRoad: history?.lastRoad ?? 0,
-                  allEpisode: anime.episode!.length,
-                  bangumiId: history?.bangumiId,
-                ),
+                    model: anime,
+                    lastWatchEpisode: history?.lastWatchEpisode ?? 1,
+                    lastWatchTime: history?.lastWatchTime ?? 0,
+                    lastRoad: history?.lastRoad ?? 0,
+                    allEpisode: anime.episode!.length,
+                    bangumiId: history?.bangumiId,
+                    watchEpisode: history?.watchEpisode),
               ),
               ...buildTitle(),
               buildDescription(),
@@ -707,7 +703,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (anime.episode == null) {
       return const SliverPadding(padding: EdgeInsets.zero);
     }
-    return const _AnimeEpisodes();
+    return _AnimeEpisodes(
+      history: history,
+    );
   }
 
   Widget buildRecommend() {
