@@ -114,7 +114,7 @@ class _AboutSettingsState extends State<AboutSettings> {
           title: const Text("Github"),
           trailing: const Icon(Icons.open_in_new),
           onTap: () {
-            launchUrlString("https://github.com/kostori-app");
+            launchUrlString("https://github.com/kostori-app/kostori");
           },
         ).toSliver(),
       ],
