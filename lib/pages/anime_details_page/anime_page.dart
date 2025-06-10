@@ -66,7 +66,7 @@ class AnimePage extends StatefulWidget {
 }
 
 class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
-    with _AnimePageActions {
+    with _AnimePageActions, TickerProviderStateMixin {
   bool showAppbarTitle = false;
 
   var scrollController = ScrollController();
@@ -129,6 +129,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     Future.microtask(() {
       DataSync().onDataChanged();
     });
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -170,33 +171,32 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   Widget buildContent(BuildContext context, AnimeDetails data) {
-    return Stack(
+    Widget widget = Stack(
       children: [
-        // 主内容 SmoothCustomScrollView
         Positioned.fill(
-          child: SmoothCustomScrollView(
+          child: NestedScrollView(
             controller: scrollController,
-            slivers: [
-              SliverPadding(padding: EdgeInsets.only(top: 28)),
-              Watcher(
-                type: anime.animeType,
-                wid: anime.id,
-                name: anime.title,
-                episode: anime.episode,
-                anime: anime,
-                history: History.fromModel(
-                    model: anime,
-                    lastWatchEpisode: history?.lastWatchEpisode ?? 1,
-                    lastWatchTime: history?.lastWatchTime ?? 0,
-                    lastRoad: history?.lastRoad ?? 0,
-                    allEpisode: anime.episode!.length,
-                    bangumiId: history?.bangumiId,
-                    watchEpisode: history?.watchEpisode),
-              ),
-              animeTab(scrollController),
-              SliverPadding(
-                  padding: EdgeInsets.only(bottom: context.padding.bottom)),
-            ],
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverPadding(padding: EdgeInsets.only(top: 28)),
+                Watcher(
+                  type: anime.animeType,
+                  wid: anime.id,
+                  name: anime.title,
+                  episode: anime.episode,
+                  anime: anime,
+                  history: History.fromModel(
+                      model: anime,
+                      lastWatchEpisode: history?.lastWatchEpisode ?? 1,
+                      lastWatchTime: history?.lastWatchTime ?? 0,
+                      lastRoad: history?.lastRoad ?? 0,
+                      allEpisode: anime.episode!.length,
+                      bangumiId: history?.bangumiId,
+                      watchEpisode: history?.watchEpisode),
+                ),
+              ];
+            },
+            body: animeTab(),
           ),
         ),
         AnimatedPositioned(
@@ -209,6 +209,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         ),
       ],
     );
+    widget = AppScrollBar(
+      topPadding: 82,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
+    return widget;
   }
 
   @override
@@ -232,55 +241,43 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     isFavorite = anime.isFavorite ?? false;
   }
 
-  Widget animeTab(ScrollController scrollController) {
-    return SliverToBoxAdapter(
-        child: SizedBox(
-      height: MediaQuery.of(context).size.height * 1.1,
-      child: DefaultTabController(
-        length: 3,
-        child: Scaffold(
-          body: Column(
-            children: [
-              TabBar(
-                isScrollable: true,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                // indicatorSize: TabBarIndicatorSize.label,
-                // dividerColor: Colors.transparent,
-                tabAlignment: TabAlignment.center,
-                tabs: [
-                  Tab(text: '基本信息'.tl),
-                  Tab(text: '全部剧集'.tl),
-                  Tab(text: '关联条目'.tl),
-                ],
-              ),
-              Expanded(
-                child: TabBarView(
-                  children: [
-                    CustomScrollView(
-                      slivers: [
-                        ...buildTitle(),
-                        buildDescription(),
-                        buildInfo(),
-                      ],
-                    ),
-                    CustomScrollView(
-                      slivers: [
-                        buildEpisodes(),
-                      ],
-                    ),
-                    CustomScrollView(
-                      slivers: [
-                        buildRecommend(),
-                      ],
-                    )
-                  ],
-                ),
-              )
+  Widget animeTab() {
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            tabAlignment: TabAlignment.center,
+            tabs: [
+              Tab(text: '基本信息'.tl),
+              Tab(text: '全部剧集'.tl),
+              Tab(text: '关联条目'.tl),
             ],
           ),
-        ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    ...buildTitle(),
+                    buildDescription(),
+                    buildInfo(),
+                  ],
+                ),
+                CustomScrollView(
+                  slivers: [buildEpisodes()],
+                ),
+                CustomScrollView(
+                  slivers: [buildRecommend()],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-    ));
+    );
   }
 
   Widget buildTop() {
