@@ -562,7 +562,7 @@ class BottomInfoState extends State<BottomInfo>
                                     fullIntro = !fullIntro;
                                   });
                                 },
-                                child: Text(fullIntro
+                                child: Text(!fullIntro
                                     ? 'Show more +'.tl
                                     : 'Show less -'.tl),
                               ),

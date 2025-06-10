@@ -14,6 +14,7 @@ import 'package:kostori/components/bean/card/bangumi_info_card.dart';
 
 import 'package:kostori/foundation/log.dart';
 
+import '../../components/bangumi_widget.dart';
 import '../../components/components.dart';
 import '../../components/share_widget.dart';
 import '../../foundation/app.dart';
@@ -347,11 +348,11 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                                   stops: [0.8, 1],
                                                 ).createShader(bounds);
                                               },
-                                              child: Image.network(
+                                              child: BangumiWidget.kostoriImage(
+                                                context,
                                                 infoController.bangumiItem
                                                         .images['large'] ??
                                                     '',
-                                                fit: BoxFit.cover,
                                                 width: boxConstraints.maxWidth,
                                                 height:
                                                     boxConstraints.maxHeight,

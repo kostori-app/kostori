@@ -117,14 +117,12 @@ class BangumiWidget {
                             bottom: App.isAndroid ? 34 : 40,
                             right: 4,
                             child: ClipRRect(
-                              // 确保圆角区域也能正确裁剪模糊效果
                               borderRadius: BorderRadius.circular(8),
                               child: Stack(
                                 children: [
                                   Positioned.fill(
                                     child: Stack(
                                       children: [
-                                        // 背景噪声图（建议用半透明 PNG 或 SVG）
                                         Positioned.fill(
                                           child: Opacity(
                                             opacity: 0.6,
@@ -140,7 +138,6 @@ class BangumiWidget {
                                             ),
                                           ),
                                         ),
-
                                         // 渐变遮罩（调整透明度过渡）
                                         Positioned.fill(
                                           child: Container(
@@ -174,14 +171,12 @@ class BangumiWidget {
                           bottom: 4,
                           right: 4,
                           child: ClipRRect(
-                            // 确保圆角区域也能正确裁剪模糊效果
                             borderRadius: BorderRadius.circular(8),
                             child: Stack(
                               children: [
                                 Positioned.fill(
                                   child: Stack(
                                     children: [
-                                      // 背景噪声图（建议用半透明 PNG 或 SVG）
                                       Positioned.fill(
                                         child: Opacity(
                                           opacity: 0.6,

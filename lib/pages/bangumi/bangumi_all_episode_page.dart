@@ -9,6 +9,7 @@ import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 
+import '../../components/bangumi_widget.dart';
 import '../../utils/utils.dart';
 
 class BangumiAllEpisodePage extends StatefulWidget {
@@ -50,9 +51,9 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                           stops: [0.8, 1],
                         ).createShader(bounds);
                       },
-                      child: Image.network(
+                      child: BangumiWidget.kostoriImage(
+                        context,
                         widget.infoController.bangumiItem.images['large'] ?? '',
-                        fit: BoxFit.cover,
                         width: boxConstraints.maxWidth,
                         height: boxConstraints.maxHeight,
                       ),

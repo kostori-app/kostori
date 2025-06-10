@@ -164,8 +164,9 @@ class _InfoTabViewState extends State<InfoTabView>
                                 fullIntro = !fullIntro;
                               });
                             },
-                            child: Text(
-                                fullIntro ? 'Show less -'.tl : 'Show more +'),
+                            child: Text(!fullIntro
+                                ? 'Show more +'.tl
+                                : 'Show less -'.tl),
                           ),
                         ],
                       );
