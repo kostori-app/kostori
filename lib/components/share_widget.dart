@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -205,7 +206,20 @@ class _ShareWidgetState extends State<ShareWidget> {
                   color: Theme.of(context).scaffoldBackgroundColor,
                   child: Column(
                     children: [
-                      const SizedBox(height: 40.0),
+                      SizedBox(
+                        height: 100.0,
+                        child: SvgPicture.asset(
+                          'assets/img/header_pattern.svg',
+                          fit: BoxFit.fill,
+                          colorFilter: ColorFilter.mode(
+                            Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .toOpacity(0.72),
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                      ),
                       Padding(
                           padding: const EdgeInsets.symmetric(vertical: 2),
                           child: LayoutBuilder(builder: (context, constraints) {
@@ -483,17 +497,23 @@ class _ShareWidgetState extends State<ShareWidget> {
                             : BangumiBarChartPage(bangumiItem: bangumiItem),
                       ),
                       const SizedBox(height: 16),
-                      Center(
-                        child: Container(
-                          width: 120,
-                          height: 2,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.toOpacity(0.4),
-                            borderRadius: BorderRadius.circular(4),
+                      SizedBox(
+                        height: 100.0,
+                        child: Transform.scale(
+                          scaleY: -1, // 上下翻转
+                          child: SvgPicture.asset(
+                            'assets/img/header_pattern.svg',
+                            fit: BoxFit.fill,
+                            colorFilter: ColorFilter.mode(
+                              Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .toOpacity(0.72),
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
