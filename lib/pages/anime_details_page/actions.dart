@@ -360,7 +360,8 @@ abstract mixin class _AnimePageActions {
                                         itemSize: 20.0,
                                       ),
                                       Text(
-                                        '${item.total} 人评 | #${item.rank}',
+                                        '@t reviews | #@r'.tlParams(
+                                            {'r': item.rank, 't': item.total}),
                                         style: TextStyle(fontSize: 12),
                                       )
                                     ],
@@ -517,7 +518,7 @@ abstract mixin class _AnimePageActions {
                             ),
                           ),
                           Text(
-                            '简介',
+                            'Introduction'.tl,
                             style: ts.s18,
                           ),
                           Padding(

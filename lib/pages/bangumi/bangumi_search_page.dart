@@ -557,7 +557,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       color: Colors.transparent,
       child: Row(
         children: [
-          Text('已展示 ${bangumiItems.length} 个结果'),
+          Text('Showing @l results'.tlParams({'l': bangumiItems.length})),
           const SizedBox(width: 8),
           IconButton(
               onPressed: () {
@@ -567,7 +567,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 endDate = '';
                 setState(() {});
               },
-              tooltip: "清除标签".tl,
+              tooltip: "Clear Tags".tl,
               icon: const Icon(Icons.clear_all)),
           IconButton(
               onPressed: () {
@@ -579,14 +579,14 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               onPressed: () {
                 _showAirEndDateDialog(context);
               },
-              tooltip: "选择时间".tl,
+              tooltip: "Select Time".tl,
               icon: Icon(Icons.calendar_today)),
           IconButton(
               onPressed: () {
                 useBriefMode = !useBriefMode;
                 setState(() {});
               },
-              tooltip: "布局切换".tl,
+              tooltip: "Switch Layout".tl,
               icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda)),
           PopupMenuButton<String>(
             icon: Row(
@@ -640,7 +640,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Theme.of(context).cardColor,
-                  hintText: '输入关键词...',
+                  hintText: 'Enter keywords...'.tl,
                   prefixIcon: Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

@@ -31,14 +31,6 @@ import '../../components/bean/card/reviews_card.dart';
 import '../../components/bean/card/topics_card.dart';
 import '../../foundation/bangumi/topics/topics_item.dart';
 
-class _StatItem {
-  final String key;
-  final String label;
-  final Color? color;
-
-  _StatItem(this.key, this.label, this.color);
-}
-
 class BottomInfo extends StatefulWidget {
   const BottomInfo({
     super.key,
@@ -291,35 +283,6 @@ class BottomInfoState extends State<BottomInfo>
     });
   }
 
-  Widget _buildStatsRow(BuildContext context) {
-    final collection = infoController.bangumiItem.collection!; // 提前解构，避免重复访问
-    final total =
-        collection.values.fold<int>(0, (sum, val) => sum + (val)); // 计算总数
-
-    // 定义统计数据项（类型 + 显示文本 + 颜色）
-    final stats = [
-      _StatItem('doing', '在看', Theme.of(context).colorScheme.primary),
-      _StatItem('collect', '看过', Theme.of(context).colorScheme.error),
-      _StatItem('wish', '想看', Colors.blueAccent),
-      _StatItem('on_hold', '搁置', null), // 默认文本颜色
-      _StatItem('dropped', '抛弃', Colors.grey),
-    ];
-
-    return Row(
-      children: [
-        ...stats.expand((stat) => [
-              Text('${collection[stat.key]} ${stat.label}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: stat.color,
-                  )),
-              const Text(' / '),
-            ]),
-        Text('$total 总计数', style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-
   Widget get infoBodyBone {
     return LayoutBuilder(builder: (context, constraints) {
       double height = constraints.maxHeight;
@@ -421,11 +384,28 @@ class BottomInfoState extends State<BottomInfo>
                                 (currentWeekEp?.sort != null)
                                     ? Text(
                                         isCompleted
-                                            ? '全 ${bangumiItem.totalEpisodes} 话'
+                                            ? 'Full @b episodes released'
+                                                .tlParams({
+                                                'b': bangumiItem.totalEpisodes
+                                              })
                                             : currentWeekEp?.sort ==
                                                     currentWeekEp?.ep
-                                                ? '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
-                                                : '连载至 ${currentWeekEp?.ep} (${currentWeekEp?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                ? 'Up to ep @s • Total @t eps planned'
+                                                    .tlParams({
+                                                    's': currentWeekEp?.sort
+                                                        as int,
+                                                    't': bangumiItem
+                                                        .totalEpisodes
+                                                  })
+                                                : 'Up to ep @e (@s) • Total @t eps planned'
+                                                    .tlParams({
+                                                    'e': currentWeekEp?.ep
+                                                        as int,
+                                                    's': currentWeekEp?.sort
+                                                        as int,
+                                                    't': bangumiItem
+                                                        .totalEpisodes
+                                                  }),
                                         style: TextStyle(
                                           fontSize: 12.0,
                                         ),
@@ -433,7 +413,7 @@ class BottomInfoState extends State<BottomInfo>
                                         overflow: TextOverflow.ellipsis,
                                       )
                                     : Text(
-                                        '未开播',
+                                        'Not Yet Airing'.tl,
                                         style: TextStyle(
                                             fontSize: 12.0,
                                             fontWeight: FontWeight.bold),
@@ -493,7 +473,10 @@ class BottomInfoState extends State<BottomInfo>
                                             itemSize: 20.0,
                                           ),
                                           Text(
-                                            '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                                            '@t reviews | #@r'.tlParams({
+                                              'r': bangumiItem.rank,
+                                              't': bangumiItem.total
+                                            }),
                                             style: TextStyle(fontSize: 12),
                                           )
                                         ],
@@ -513,7 +496,8 @@ class BottomInfoState extends State<BottomInfo>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Align(
-                  child: _buildStatsRow(context),
+                  child: BangumiWidget.buildStatsRow(
+                      context, infoController.bangumiItem),
                 ),
               ),
               const SizedBox(height: 8),
@@ -535,7 +519,7 @@ class BottomInfoState extends State<BottomInfo>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '简介',
+                      'Introduction'.tl,
                       style:
                           TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
@@ -578,7 +562,9 @@ class BottomInfoState extends State<BottomInfo>
                                     fullIntro = !fullIntro;
                                   });
                                 },
-                                child: Text(fullIntro ? '加载更少' : '加载更多'),
+                                child: Text(fullIntro
+                                    ? 'Show more +'.tl
+                                    : 'Show less -'.tl),
                               ),
                             ],
                           );
@@ -617,7 +603,7 @@ class BottomInfoState extends State<BottomInfo>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text('标签',
+                        Text('Tags'.tl,
                             style: TextStyle(
                                 fontSize: 24, fontWeight: FontWeight.bold)),
                         Container(
@@ -673,7 +659,9 @@ class BottomInfoState extends State<BottomInfo>
                         if (bangumiItem.tags.length > 12) // 只有标签数量超过12时才显示按钮
                           ActionChip(
                             label: Text(
-                              fullTag ? '收起 -' : '更多 +', // 根据状态显示不同文本
+                              fullTag
+                                  ? 'Show less -'.tl
+                                  : 'Show more +'.tl, // 根据状态显示不同文本
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.primary,
                               ),
@@ -709,7 +697,7 @@ class BottomInfoState extends State<BottomInfo>
                   children: [
                     Row(
                       children: [
-                        Text('评分统计图',
+                        Text('Rating Statistics Chart'.tl,
                             style: TextStyle(
                                 fontSize: 24, fontWeight: FontWeight.bold)),
                         Container(
@@ -734,8 +722,9 @@ class BottomInfoState extends State<BottomInfo>
                           icon: Icon(infoController.showLineChart
                               ? Icons.show_chart
                               : Icons.bar_chart),
-                          label: Text(
-                              infoController.showLineChart ? '折线图' : '柱状图'),
+                          label: Text(infoController.showLineChart
+                              ? 'Line Chart'.tl
+                              : 'Bar Chart'.tl),
                         ),
                         Text('${bangumiItem.total} votes')
                       ],
@@ -749,7 +738,9 @@ class BottomInfoState extends State<BottomInfo>
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                 child: Row(
                   children: [
-                    Text('标准差: ${standardDeviation.toStringAsFixed(2)}',
+                    Text(
+                        'Standard Deviation: @s'.tlParams(
+                            {'s': standardDeviation.toStringAsFixed(2)}),
                         style: TextStyle(fontSize: 12)),
                     const SizedBox(
                       width: 8,
@@ -852,14 +843,14 @@ class BottomInfoState extends State<BottomInfo>
                 if (commentsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadMoreComments(
                                 offset: infoController.commentsList.length);
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -949,13 +940,13 @@ class BottomInfoState extends State<BottomInfo>
                 if (topicsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadMoreTopics();
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -1045,13 +1036,13 @@ class BottomInfoState extends State<BottomInfo>
                 if (reviewsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadMoreReviews();
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -1128,13 +1119,13 @@ class BottomInfoState extends State<BottomInfo>
               if (charactersQueryTimeout) {
                 return SliverFillRemaining(
                   child: GeneralErrorWidget(
-                    errMsg: '获取失败，请重试',
+                    errMsg: 'Failed to load, please try again.'.tl,
                     actions: [
                       GeneralErrorButton(
                         onPressed: () {
                           loadCharacters();
                         },
-                        text: '重试',
+                        text: 'Reload'.tl,
                       ),
                     ],
                   ),
@@ -1200,13 +1191,13 @@ class BottomInfoState extends State<BottomInfo>
               if (staffQueryTimeout) {
                 return SliverFillRemaining(
                   child: GeneralErrorWidget(
-                    errMsg: '获取失败，请重试',
+                    errMsg: 'Failed to load, please try again.'.tl,
                     actions: [
                       GeneralErrorButton(
                         onPressed: () {
                           loadStaff();
                         },
-                        text: '重试',
+                        text: 'Reload'.tl,
                       ),
                     ],
                   ),

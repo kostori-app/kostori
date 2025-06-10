@@ -149,13 +149,13 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                 if (topicsLatestQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadMoreTopicsLatest();
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -246,13 +246,13 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                 if (topicsTrendingQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadMoreTopicsLatest();
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),

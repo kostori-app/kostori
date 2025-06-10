@@ -126,7 +126,7 @@ class _InfoTabViewState extends State<InfoTabView>
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Text(
-                  '简介',
+                  'Introduction'.tl,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -164,7 +164,8 @@ class _InfoTabViewState extends State<InfoTabView>
                                 fullIntro = !fullIntro;
                               });
                             },
-                            child: Text(fullIntro ? '加载更少' : '加载更多'),
+                            child: Text(
+                                fullIntro ? 'Show less -'.tl : 'Show more +'),
                           ),
                         ],
                       );
@@ -192,7 +193,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Text('标签',
+                    Text('Tags'.tl,
                         style: TextStyle(
                             fontSize: 24, fontWeight: FontWeight.bold)),
                     Container(
@@ -243,7 +244,7 @@ class _InfoTabViewState extends State<InfoTabView>
                     if (widget.bangumiItem.tags.length > 12)
                       ActionChip(
                         label: Text(
-                          fullTag ? '收起 -' : '更多 +',
+                          fullTag ? 'Show less -'.tl : 'Show more +'.tl,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -271,7 +272,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Text('剧集',
+                      Text('All Episodes'.tl,
                           style: TextStyle(
                               fontSize: 24, fontWeight: FontWeight.bold)),
                       Container(
@@ -299,8 +300,6 @@ class _InfoTabViewState extends State<InfoTabView>
                   ),
                   const SizedBox(height: 8),
                   Wrap(
-                    // spacing: 2,
-                    // runSpacing: 2,
                     children: [
                       // 先显示最多15个
                       ...widget.allEpisodes.take(15).map((episode) {
@@ -364,11 +363,16 @@ class _InfoTabViewState extends State<InfoTabView>
                                                     Row(
                                                       children: [
                                                         Text(
-                                                            "放送时间：${episode.airDate}"),
+                                                            "Broadcast Time: @a"
+                                                                .tlParams({
+                                                          'a': episode.airDate
+                                                        })),
                                                         const SizedBox(
                                                             width: 8),
-                                                        Text(
-                                                            "时长：${episode.duration}"),
+                                                        Text("Time: @s"
+                                                            .tlParams({
+                                                          's': episode.duration
+                                                        })),
                                                       ],
                                                     ),
                                                     const SizedBox(height: 8),
@@ -451,7 +455,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Text('关联条目',
+                      Text('Linked Items'.tl,
                           style: TextStyle(
                               fontSize: 24, fontWeight: FontWeight.bold)),
                       Container(
@@ -576,7 +580,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Text('评分统计图',
+                      Text('Rating Statistics Chart'.tl,
                           style: TextStyle(
                               fontSize: 24, fontWeight: FontWeight.bold)),
                       Container(
@@ -601,8 +605,9 @@ class _InfoTabViewState extends State<InfoTabView>
                         icon: Icon(infoController.showLineChart
                             ? Icons.show_chart
                             : Icons.bar_chart),
-                        label:
-                            Text(infoController.showLineChart ? '折线图' : '柱状图'),
+                        label: Text(infoController.showLineChart
+                            ? 'Line Chart'.tl
+                            : 'Bar Chart'.tl),
                       ),
                       Text('${widget.bangumiItem.total} votes')
                     ],
@@ -613,7 +618,9 @@ class _InfoTabViewState extends State<InfoTabView>
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     child: Row(
                       children: [
-                        Text('标准差: ${standardDeviation.toStringAsFixed(2)}',
+                        Text(
+                            'Standard Deviation: @s'.tlParams(
+                                {'s': standardDeviation.toStringAsFixed(2)}),
                             style: TextStyle(fontSize: 12)),
                         const SizedBox(
                           width: 8,
@@ -740,14 +747,14 @@ class _InfoTabViewState extends State<InfoTabView>
                 if (widget.commentsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             widget.loadMoreComments(
                                 offset: widget.commentsList.length);
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -840,13 +847,13 @@ class _InfoTabViewState extends State<InfoTabView>
                 if (widget.topicsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             widget.loadMoreTopics();
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -939,13 +946,13 @@ class _InfoTabViewState extends State<InfoTabView>
                 if (widget.reviewsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '好像没人发呢...',
+                      errMsg: "Nobody's posted anything yet...".tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             widget.loadMoreReviews();
                           },
-                          text: '重新加载',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -1025,13 +1032,13 @@ class _InfoTabViewState extends State<InfoTabView>
               if (widget.charactersQueryTimeout) {
                 return SliverFillRemaining(
                   child: GeneralErrorWidget(
-                    errMsg: '获取失败，请重试',
+                    errMsg: 'Failed to load, please try again.'.tl,
                     actions: [
                       GeneralErrorButton(
                         onPressed: () {
                           widget.loadCharacters();
                         },
-                        text: '重试',
+                        text: 'Reload'.tl,
                       ),
                     ],
                   ),
@@ -1100,13 +1107,13 @@ class _InfoTabViewState extends State<InfoTabView>
               if (widget.staffQueryTimeout) {
                 return SliverFillRemaining(
                   child: GeneralErrorWidget(
-                    errMsg: '获取失败，请重试',
+                    errMsg: 'Failed to load, please try again.'.tl,
                     actions: [
                       GeneralErrorButton(
                         onPressed: () {
                           widget.loadStaff();
                         },
-                        text: '重试',
+                        text: 'Reload'.tl,
                       ),
                     ],
                   ),

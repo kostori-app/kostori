@@ -461,7 +461,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                       itemSize: 20.0,
                                     ),
                                     Text(
-                                      '${bangumiItem!.total} 人评 | #${bangumiItem!.rank}',
+                                      '@t reviews | #@r'.tlParams({
+                                        'r': bangumiItem!.rank,
+                                        't': bangumiItem!.total
+                                      }),
                                       style: TextStyle(fontSize: 12),
                                     )
                                   ],

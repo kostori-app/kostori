@@ -571,7 +571,18 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
-                                '第 ${bangumiItem.extraInfo?['episode_ep']} 话 ${(bangumiItem.extraInfo?['episode_name_cn'].isEmpty ?? true) ? (bangumiItem.extraInfo?['episode_name']) ?? '' : bangumiItem.extraInfo?['episode_name_cn']}',
+                                'Episode @e: @n'.tlParams({
+                                  'e': bangumiItem.extraInfo?['episode_ep'],
+                                  'n': (bangumiItem
+                                              .extraInfo?['episode_name_cn']
+                                              .isEmpty ??
+                                          true)
+                                      ? (bangumiItem
+                                              .extraInfo?['episode_name']) ??
+                                          ''
+                                      : bangumiItem
+                                          .extraInfo?['episode_name_cn']
+                                }),
                                 style: TextStyle(
                                   fontSize: imageWidth * 0.12,
                                   // color: Colors.grey[600],
@@ -635,7 +646,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                           itemSize: imageWidth * 0.14,
                                         ),
                                         Text(
-                                          '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                                          '@t reviews | #@r'.tlParams({
+                                            'r': bangumiItem.rank,
+                                            't': bangumiItem.total
+                                          }),
                                           style: TextStyle(
                                               fontSize: imageWidth * 0.1),
                                         )

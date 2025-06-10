@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../bbcode/bbcode_widget.dart';
@@ -160,8 +161,8 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
                                 ),
                                 const SizedBox(height: 16),
                                 if (bangumiReviewsSubjects.isNotEmpty) ...[
-                                  const Text(
-                                    '关联条目',
+                                  Text(
+                                    'Linked Items'.tl,
                                     style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold),

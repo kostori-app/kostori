@@ -47,14 +47,6 @@ Future<void> captureAndSave() async {
   }
 }
 
-class _StatItem {
-  final String key;
-  final String label;
-  final Color? color;
-
-  _StatItem(this.key, this.label, this.color);
-}
-
 class ShareWidget extends StatefulWidget {
   const ShareWidget({super.key, required this.id});
 
@@ -132,42 +124,14 @@ class _ShareWidgetState extends State<ShareWidget> {
                 itemSize: 20.0,
               ),
               Text(
-                '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                '@t reviews | #@r'
+                    .tlParams({'r': bangumiItem.rank, 't': bangumiItem.total}),
                 style: TextStyle(fontSize: 12),
               )
             ],
           ),
         ],
       ),
-    );
-  }
-
-  Widget buildStatsRow(BuildContext context) {
-    final collection = bangumiItem.collection; // 提前解构，避免重复访问
-    final total =
-        collection?.values.fold<int>(0, (sum, val) => sum + (val)); // 计算总数
-
-    // 定义统计数据项（类型 + 显示文本 + 颜色）
-    final stats = [
-      _StatItem('doing', '在看', Theme.of(context).colorScheme.primary),
-      _StatItem('collect', '看过', Theme.of(context).colorScheme.error),
-      _StatItem('wish', '想看', Colors.blueAccent),
-      _StatItem('on_hold', '搁置', null), // 默认文本颜色
-      _StatItem('dropped', '抛弃', Colors.grey),
-    ];
-
-    return Row(
-      children: [
-        ...stats.expand((stat) => [
-              Text('${collection?[stat.key]} ${stat.label}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: stat.color,
-                  )),
-              const Text(' / '),
-            ]),
-        Text('$total 总计数', style: const TextStyle(fontSize: 12)),
-      ],
     );
   }
 
@@ -300,7 +264,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                                                   ),
                                                 )
                                               : Text(
-                                                  '未开播',
+                                                  'Not Yet Airing'.tl,
                                                   style: TextStyle(
                                                       fontSize: 12.0,
                                                       fontWeight:
@@ -320,7 +284,8 @@ class _ShareWidgetState extends State<ShareWidget> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 2, horizontal: 16),
                         child: Align(
-                          child: buildStatsRow(context),
+                          child:
+                              BangumiWidget.buildStatsRow(context, bangumiItem),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -342,7 +307,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '简介',
+                              'Introduction'.tl,
                               style: TextStyle(
                                   fontSize: 24, fontWeight: FontWeight.bold),
                             ),
@@ -373,7 +338,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                            Text('标签',
+                            Text('Tags'.tl,
                                 style: TextStyle(
                                     fontSize: 24, fontWeight: FontWeight.bold)),
                             Container(
@@ -437,7 +402,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                           children: [
                             Row(
                               children: [
-                                Text('评分统计图',
+                                Text('Rating Statistics Chart'.tl,
                                     style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold)),
@@ -464,7 +429,9 @@ class _ShareWidgetState extends State<ShareWidget> {
                                   icon: Icon(showLineChart
                                       ? Icons.show_chart
                                       : Icons.bar_chart),
-                                  label: Text(showLineChart ? '折线图' : '柱状图'),
+                                  label: Text(showLineChart
+                                      ? 'Line Chart'.tl
+                                      : 'Bar Chart'.tl),
                                 ),
                                 Text('${bangumiItem.total} votes')
                               ],
@@ -478,7 +445,10 @@ class _ShareWidgetState extends State<ShareWidget> {
                             horizontal: 16, vertical: 2),
                         child: Row(
                           children: [
-                            Text('标准差: ${standardDeviation.toStringAsFixed(2)}',
+                            Text(
+                                'Standard Deviation: @s'.tlParams({
+                                  's': standardDeviation.toStringAsFixed(2)
+                                }),
                                 style: TextStyle(fontSize: 12)),
                             const SizedBox(
                               width: 8,

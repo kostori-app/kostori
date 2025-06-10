@@ -14,6 +14,7 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/extension.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
@@ -55,7 +56,8 @@ class BangumiWidget {
                 itemSize: App.isAndroid ? 12 : 14.0,
               ),
               Text(
-                '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                '@t reviews | #@r'
+                    .tlParams({'r': bangumiItem.rank, 't': bangumiItem.total}),
                 style: TextStyle(
                     fontSize: App.isAndroid ? 7 : 9,
                     fontWeight: FontWeight.bold),
@@ -303,13 +305,13 @@ class BangumiWidget {
       if (air != null && air.isBefore(now)) {
         status = '全${bangumiItem.totalEpisodes}话';
       } else {
-        status = '未开播';
+        status = 'Not Yet Airing'.tl;
       }
     } else {
       if (air != null && air.isBefore(now)) {
         status = '已完结';
       } else {
-        status = '未开播';
+        status = 'Not Yet Airing'.tl;
       }
     }
 
@@ -421,7 +423,8 @@ class BangumiWidget {
                   itemSize: 16.0,
                 ),
                 Text(
-                  '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                  '@t reviews | #@r'.tlParams(
+                      {'r': bangumiItem.rank, 't': bangumiItem.total}),
                   style: TextStyle(fontSize: 10),
                 )
               ],
@@ -430,6 +433,36 @@ class BangumiWidget {
         ),
       ),
     ]);
+  }
+
+  static Widget buildStatsRow(BuildContext context, BangumiItem bangumiItem) {
+    final collection = bangumiItem.collection!; // 提前解构，避免重复访问
+    final total =
+        collection.values.fold<int>(0, (sum, val) => sum + (val)); // 计算总数
+
+    // 定义统计数据项（类型 + 显示文本 + 颜色）
+    final stats = [
+      StatItem('doing', 'doing'.tl, Theme.of(context).colorScheme.primary),
+      StatItem('collect', 'collect'.tl, Theme.of(context).colorScheme.error),
+      StatItem('wish', 'wish'.tl, Colors.blueAccent),
+      StatItem('on_hold', 'on hold'.tl, null), // 默认文本颜色
+      StatItem('dropped', 'dropped'.tl, Colors.grey),
+    ];
+
+    return Row(
+      children: [
+        ...stats.expand((stat) => [
+              Text('${collection[stat.key]} ${stat.label}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: stat.color,
+                  )),
+              const Text(' / '),
+            ]),
+        Text('@t Total count'.tlParams({'t': total}),
+            style: const TextStyle(fontSize: 12)),
+      ],
+    );
   }
 
   static void showImagePreview(
@@ -779,4 +812,12 @@ class BangumiWidget {
 //     },
 //   );
 // }
+}
+
+class StatItem {
+  final String key;
+  final String label;
+  final Color? color;
+
+  StatItem(this.key, this.label, this.color);
 }
