@@ -214,7 +214,23 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
             ),
           ),
 
-        const SliverToBoxAdapter(child: Divider()), // 添加分割线
+        SliverToBoxAdapter(
+            child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Center(
+              child: Container(
+                width: 120,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: Colors.grey.toOpacity(0.4),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        )), // 添加分割线
       ],
     );
   }

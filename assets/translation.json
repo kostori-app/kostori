@@ -307,7 +307,8 @@
     "Profile Information": "基本信息",
     "Character Introduction": "角色简介",
     "Voice Actor: @c": "声优: @c",
-    "Episode @e: @n": "第 @e 话 @n"
+    "Episode @e: @n": "第 @e 话 @n",
+    "hotspot": "热点"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

@@ -193,11 +193,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                     bangumiId: history?.bangumiId,
                     watchEpisode: history?.watchEpisode),
               ),
-              ...buildTitle(),
-              buildDescription(),
-              buildInfo(),
-              buildEpisodes(),
-              buildRecommend(),
+              animeTab(scrollController),
               SliverPadding(
                   padding: EdgeInsets.only(bottom: context.padding.bottom)),
             ],
@@ -234,6 +230,57 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   Future<void> onDataLoaded() async {
     isLiked = anime.isLiked ?? false;
     isFavorite = anime.isFavorite ?? false;
+  }
+
+  Widget animeTab(ScrollController scrollController) {
+    return SliverToBoxAdapter(
+        child: SizedBox(
+      height: MediaQuery.of(context).size.height * 1.1,
+      child: DefaultTabController(
+        length: 3,
+        child: Scaffold(
+          body: Column(
+            children: [
+              TabBar(
+                isScrollable: true,
+                indicatorColor: Theme.of(context).colorScheme.primary,
+                // indicatorSize: TabBarIndicatorSize.label,
+                // dividerColor: Colors.transparent,
+                tabAlignment: TabAlignment.center,
+                tabs: [
+                  Tab(text: '基本信息'.tl),
+                  Tab(text: '全部剧集'.tl),
+                  Tab(text: '关联条目'.tl),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    CustomScrollView(
+                      slivers: [
+                        ...buildTitle(),
+                        buildDescription(),
+                        buildInfo(),
+                      ],
+                    ),
+                    CustomScrollView(
+                      slivers: [
+                        buildEpisodes(),
+                      ],
+                    ),
+                    CustomScrollView(
+                      slivers: [
+                        buildRecommend(),
+                      ],
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    ));
   }
 
   Widget buildTop() {
@@ -541,6 +588,18 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     return SliverToBoxAdapter(
       child: Column(
         children: [
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              width: 120,
+              height: 2,
+              decoration: BoxDecoration(
+                color: Colors.grey.toOpacity(0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           ListTile(
             title: Text("Description".tl),
           ),
@@ -549,7 +608,17 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             child: SelectableText(anime.description!).fixWidth(double.infinity),
           ),
           const SizedBox(height: 16),
-          const Divider(),
+          Center(
+            child: Container(
+              width: 120,
+              height: 2,
+              decoration: BoxDecoration(
+                color: Colors.grey.toOpacity(0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -695,8 +764,18 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 buildTag(text: anime.updateTime!),
               ],
             ),
-          const SizedBox(height: 12),
-          const Divider(),
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              width: 120,
+              height: 2,
+              decoration: BoxDecoration(
+                color: Colors.grey.toOpacity(0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );

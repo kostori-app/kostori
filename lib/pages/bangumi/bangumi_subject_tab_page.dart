@@ -302,7 +302,7 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('热点'.tl),
+          title: Text('hotspot'.tl),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new),
             onPressed: () => Navigator.of(context).pop(),
@@ -310,26 +310,15 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
         ),
         body: Column(
           children: [
-            PreferredSize(
-              preferredSize: const Size.fromHeight(kToolbarHeight),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(maxWidth: 300), // 你想要的最大宽度
-                    child: TabBar(
-                      controller: infoTabController,
-                      isScrollable: true,
-                      indicatorColor: Theme.of(context).colorScheme.primary,
-                      tabs: [
-                        Tab(text: 'TopicsLatest'.tl),
-                        Tab(text: 'TopicsTrending'.tl),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            TabBar(
+              controller: infoTabController,
+              isScrollable: true,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              tabAlignment: TabAlignment.center,
+              tabs: [
+                Tab(text: 'TopicsLatest'.tl),
+                Tab(text: 'TopicsTrending'.tl),
+              ],
             ),
             Expanded(
               child: TabBarView(
