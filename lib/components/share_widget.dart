@@ -171,10 +171,11 @@ class _ShareWidgetState extends State<ShareWidget> {
                   child: Column(
                     children: [
                       SizedBox(
-                        height: 100.0,
+                        height: 64.0,
+                        width: 320,
                         child: SvgPicture.asset(
                           'assets/img/header_pattern.svg',
-                          fit: BoxFit.fill,
+                          fit: BoxFit.cover,
                           colorFilter: ColorFilter.mode(
                             Theme.of(context)
                                 .colorScheme
@@ -466,21 +467,19 @@ class _ShareWidgetState extends State<ShareWidget> {
                             ? LineChatPage(bangumiItem: bangumiItem)
                             : BangumiBarChartPage(bangumiItem: bangumiItem),
                       ),
-                      const SizedBox(height: 16),
+                      // const SizedBox(height: 16),
                       SizedBox(
-                        height: 100.0,
-                        child: Transform.scale(
-                          scaleY: -1, // 上下翻转
-                          child: SvgPicture.asset(
-                            'assets/img/header_pattern.svg',
-                            fit: BoxFit.fill,
-                            colorFilter: ColorFilter.mode(
-                              Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .toOpacity(0.72),
-                              BlendMode.srcIn,
-                            ),
+                        height: 64.0,
+                        // width: 320,
+                        child: SvgPicture.asset(
+                          'assets/img/bottom_pattern.svg',
+                          fit: BoxFit.cover,
+                          colorFilter: ColorFilter.mode(
+                            Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .toOpacity(0.72),
+                            BlendMode.srcIn,
                           ),
                         ),
                       ),
