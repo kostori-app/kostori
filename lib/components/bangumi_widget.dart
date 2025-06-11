@@ -298,13 +298,14 @@ class BangumiWidget {
     String status;
     if (bangumiItem.totalEpisodes > 0) {
       if (air != null && air.isBefore(now)) {
-        status = '全${bangumiItem.totalEpisodes}话';
+        status = 'Full @b episodes released'
+            .tlParams({'b': bangumiItem.totalEpisodes});
       } else {
         status = 'Not Yet Airing'.tl;
       }
     } else {
       if (air != null && air.isBefore(now)) {
-        status = '已完结';
+        status = '';
       } else {
         status = 'Not Yet Airing'.tl;
       }
@@ -341,10 +342,8 @@ class BangumiWidget {
                 fontWeight: FontWeight.bold,
                 height: 1.2,
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
-          if (bangumiItem.airDate.isNotEmpty)
+          if (bangumiItem.airDate.isNotEmpty && status != '')
             Text(
               ' • ',
               style: TextStyle(
@@ -352,19 +351,18 @@ class BangumiWidget {
                 fontWeight: FontWeight.bold,
                 height: 1.2,
               ),
-              maxLines: 3,
+            ),
+          if (status != '')
+            Text(
+              status,
+              style: TextStyle(
+                // fontSize: imageWidth * 0.12,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-            ),
-          Text(
-            status,
-            style: TextStyle(
-              // fontSize: imageWidth * 0.12,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          )
+            )
         ],
       ),
       const Spacer(),

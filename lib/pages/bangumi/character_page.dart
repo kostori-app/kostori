@@ -401,15 +401,15 @@ class _CharacterPageState extends State<CharacterPage> {
               builder: (context, _) {
                 if (characterCastsList.isNotEmpty) {
                   Map<String, int> relationValue = {
-                    '主角': 1,
-                    '配角': 2,
-                    '客串': 3,
+                    'Main character'.tl: 1,
+                    'Supporting character'.tl: 2,
+                    'Cameo'.tl: 3,
                   };
                   String? getRelationName(int type) {
                     return relationValue.entries
                         .firstWhere(
                           (entry) => entry.value == type,
-                          orElse: () => const MapEntry('未知', -1),
+                          orElse: () => MapEntry('Unknown'.tl, -1),
                         )
                         .key;
                   }

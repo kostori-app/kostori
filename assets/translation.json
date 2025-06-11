@@ -308,7 +308,12 @@
     "Character Introduction": "角色简介",
     "Voice Actor: @c": "声优: @c",
     "Episode @e: @n": "第 @e 话 @n",
-    "hotspot": "热点"
+    "hotspot": "热点",
+    "Completed": "已完结",
+    "Main character": "主角",
+    "Supporting character": "配角",
+    "Cameo": "客串",
+    "Unknown": "未知"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",
