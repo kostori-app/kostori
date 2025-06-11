@@ -61,8 +61,6 @@ powered by media-kit.
 
 Thank you all for supporting this project.
 
-## Star History
-
 <a href="https://www.star-history.com/#kostori-app/kostori&Date">
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=kostori-app/kostori&type=Date&theme=dark" />
