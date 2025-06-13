@@ -510,9 +510,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 ElevatedButton(
                   onPressed: () async {
                     if (air == null && end == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("请选择日期")),
-                      );
+                      App.rootContext.showMessage(message: '请选择日期');
                       return;
                     }
 

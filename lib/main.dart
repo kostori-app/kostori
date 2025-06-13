@@ -7,6 +7,7 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
@@ -27,7 +28,11 @@ void main(List<String> args) {
     runZonedGuarded(() async {
       WidgetsFlutterBinding.ensureInitialized();
       await init();
-      runApp(const MyApp());
+      runApp(
+        ProviderScope(
+          child: MyApp(),
+        ),
+      );
       if (App.isDesktop) {
         await windowManager.ensureInitialized();
         windowManager.waitUntilReadyToShow().then((_) async {

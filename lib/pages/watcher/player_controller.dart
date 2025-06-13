@@ -371,7 +371,7 @@ abstract class _PlayerController with Store {
               Log.addLog(LogLevel.info, 'image图片路径', image);
               final file = File(image);
               Uint8List data = await file.readAsBytes();
-              Share.shareFile(data: data, filename: name, mime: 'image/jpeg');
+              Share.shareFile(data: data, filename: name, mime: 'image/png');
             },
             child: Container(
               width: 160,

@@ -1,11 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:get/get.dart';
 import 'package:gif/gif.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:kostori/foundation/app.dart';
@@ -23,6 +20,7 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/components/components.dart';
 
 import '../foundation/image_loader/cached_image.dart';
+import '../utils/io.dart';
 import 'misc_components.dart';
 
 class BangumiWidget {
@@ -461,105 +459,112 @@ class BangumiWidget {
   static void showImagePreview(
       BuildContext context, String url, String title, String heroTag) {
     try {
-      ImageProvider img = CachedImageProvider(url, sourceKey: 'bangumi');
+      // 判断是否是本地文件（兼容 Windows、Android、iOS、macOS、Linux）
+      final isLocal = File(url).existsSync();
+
+      final ImageProvider img = isLocal
+          ? FileImage(File(url))
+          : CachedImageProvider(url, sourceKey: 'bangumi');
+
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) => AnnotatedRegion<SystemUiOverlayStyle>(
-                  value: SystemUiOverlayStyle.light, // 状态栏内容为亮色（白色）
-                  child: Scaffold(
-                    extendBodyBehindAppBar: true, // 允许内容延伸至状态栏
-                    backgroundColor: Colors.black,
-                    body: Stack(
-                      children: [
-                        PhotoView.customChild(
-                          minScale: PhotoViewComputedScale.contained,
-                          maxScale: PhotoViewComputedScale.covered * 3,
-                          heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
-                          backgroundDecoration:
-                              const BoxDecoration(color: Colors.black),
-                          child: GestureDetector(
-                            onDoubleTapDown: (details) {
-                              final controller = PhotoViewController();
-                              final scale = controller.scale ?? 1.0;
-                              controller.scale = scale > 1.0 ? 1.0 : 2.5;
-                            },
-                            child: Image(
-                              image: img,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                        SafeArea(
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: const BoxDecoration(
-                              color: Colors.transparent,
-                            ),
-                            child: Row(
-                              children: [
-                                // 返回按钮 + 模糊背景
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.toOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: IconButton(
-                                    icon: const Icon(Icons.arrow_back_ios_new,
-                                        color: Colors.white),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ),
-
-                                const SizedBox(width: 8),
-
-                                // 标题 + 模糊背景
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.toOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-
-                                const Spacer(),
-
-                                // 下载按钮 + 模糊背景
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.toOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: IconButton(
-                                    icon: const Icon(Icons.download,
-                                        color: Colors.white),
-                                    onPressed: () {
-                                      saveImageToGallery(context, url);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ).paddingSymmetric(horizontal: 12, vertical: 8),
+          builder: (_) => AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle.light,
+            child: Scaffold(
+              extendBodyBehindAppBar: true,
+              backgroundColor: Colors.black,
+              body: Stack(
+                children: [
+                  PhotoView.customChild(
+                    minScale: PhotoViewComputedScale.contained,
+                    maxScale: PhotoViewComputedScale.covered * 3,
+                    heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
+                    backgroundDecoration:
+                        const BoxDecoration(color: Colors.black),
+                    child: Image(
+                      image: img,
+                      fit: BoxFit.contain,
+                    ),
                   ),
-                )),
+                  SafeArea(
+                    child: Container(
+                      height: 56,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Row(
+                        children: [
+                          _iconBackground(
+                            icon: Icons.arrow_back_ios_new,
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          const SizedBox(width: 8),
+                          _textBackground(title),
+                          const Spacer(),
+                          !isLocal
+                              ? _iconBackground(
+                                  icon: Icons.download,
+                                  onPressed: () {
+                                    saveImageToGallery(context, url);
+                                  },
+                                )
+                              : _iconBackground(
+                                  icon: Icons.share,
+                                  onPressed: () async {
+                                    final file = File(url);
+                                    Uint8List data = await file.readAsBytes();
+                                    Share.shareFile(
+                                        data: data,
+                                        filename: heroTag,
+                                        mime: 'image/png');
+                                  },
+                                ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ).padding(
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+          ),
+        ),
       );
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'showImagePreview', '$e\n$s');
     }
+  }
+
+  static Widget _iconBackground(
+      {required IconData icon, required VoidCallback onPressed}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.toOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  static Widget _textBackground(String title) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.toOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   static Future<void> saveImageToGallery(

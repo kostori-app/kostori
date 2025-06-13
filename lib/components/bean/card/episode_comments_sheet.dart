@@ -6,6 +6,7 @@ import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/components/bean/card/episode_comments_card.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 
+import '../../../foundation/app.dart';
 import '../../components.dart';
 
 class EpisodeCommentsSheet extends StatefulWidget {
@@ -248,15 +249,13 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
                 final inputText = textController.text.trim();
 
                 if (inputText.isEmpty) {
-                  ScaffoldMessenger.of(context)
-                      .showSnackBar(const SnackBar(content: Text('请输入集数')));
+                  App.rootContext.showMessage(message: '请输入集数');
                   return;
                 }
 
                 final episode = int.tryParse(inputText) ?? 0;
                 if (episode <= 0 || episode > 999) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('请输入1-999之间的有效集数')));
+                  App.rootContext.showMessage(message: '请输入1-999之间的有效集数');
                   return;
                 }
 
