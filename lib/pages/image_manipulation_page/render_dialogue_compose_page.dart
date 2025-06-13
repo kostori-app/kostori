@@ -240,11 +240,9 @@ class _RenderDialogueComposePageState
       painter.paint(canvas, fullSize);
       final picture = recorder.endRecording();
 
-      // 生成最终图像（考虑 devicePixelRatio，避免导出模糊）
-      final dpr = MediaQuery.of(context).devicePixelRatio;
       final image = await picture.toImage(
-        (fullSize.width * dpr).ceil(),
-        (fullSize.height * dpr).ceil(),
+        fullSize.width.ceil(),
+        fullSize.height.ceil(),
       );
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) throw Exception("生成图片数据失败");
@@ -667,48 +665,52 @@ class _RenderDialogueComposePageState
             child: Container(
               color: Colors.black.toOpacity(0.35),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (!isReorderMode && !isCroppingMode)
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.color_lens),
-                      label: const Text("边框颜色"),
-                      onPressed: _showBorderSettings,
-                    ),
-                  const SizedBox(width: 20),
-                  if (!isCroppingMode)
-                    ElevatedButton.icon(
-                      icon: Icon(isReorderMode ? Icons.check : Icons.sort),
-                      label: Text(isReorderMode ? "完成排序" : "排序图片"),
-                      onPressed: () {
-                        setState(() {
-                          isReorderMode = !isReorderMode;
-                        });
-                      },
-                    ),
-                  const SizedBox(width: 20),
-                  if (!isReorderMode)
-                    ElevatedButton.icon(
-                      icon: Icon(isCroppingMode ? Icons.check : Icons.crop),
-                      label: Text(isCroppingMode ? "完成裁剪" : "裁剪图片"),
-                      onPressed: () {
-                        setState(() {
-                          isCroppingMode = !isCroppingMode;
-                        });
-                      },
-                    ),
-                  const SizedBox(width: 20),
-                  if (!isReorderMode && !isCroppingMode)
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: const Text("保存长图"),
-                      onPressed: () => _captureAndSaveLongImage(context),
-                    ),
-                ],
+              child: SingleChildScrollView(
+                // 👈 添加横向滑动
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (!isReorderMode && !isCroppingMode)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.color_lens),
+                        label: const Text("边框颜色"),
+                        onPressed: _showBorderSettings,
+                      ),
+                    const SizedBox(width: 20),
+                    if (!isCroppingMode)
+                      ElevatedButton.icon(
+                        icon: Icon(isReorderMode ? Icons.check : Icons.sort),
+                        label: Text(isReorderMode ? "完成排序" : "排序图片"),
+                        onPressed: () {
+                          setState(() {
+                            isReorderMode = !isReorderMode;
+                          });
+                        },
+                      ),
+                    const SizedBox(width: 20),
+                    if (!isReorderMode)
+                      ElevatedButton.icon(
+                        icon: Icon(isCroppingMode ? Icons.check : Icons.crop),
+                        label: Text(isCroppingMode ? "完成裁剪" : "裁剪图片"),
+                        onPressed: () {
+                          setState(() {
+                            isCroppingMode = !isCroppingMode;
+                          });
+                        },
+                      ),
+                    const SizedBox(width: 20),
+                    if (!isReorderMode && !isCroppingMode)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.save),
+                        label: const Text("保存长图"),
+                        onPressed: () => _captureAndSaveLongImage(context),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
+          )
         ],
       ),
     );

@@ -550,6 +550,10 @@ class BangumiWidget {
   }
 
   static Widget _textBackground(String title) {
+    // 限制最多显示 10 个字符，超出则用 ...
+    final displayTitle =
+        title.length > 10 ? '${title.substring(0, 10)}...' : title;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -557,7 +561,7 @@ class BangumiWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        title,
+        displayTitle,
         style: const TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w600,

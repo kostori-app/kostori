@@ -308,14 +308,20 @@ class _ImageManipulationState extends State<_ImageManipulation> {
                             BangumiWidget.showImagePreview(
                                 context,
                                 file.path,
-                                file.path.split('\\').last,
-                                file.path.split('\\').last);
+                                App.isAndroid
+                                    ? file.path.split('/').last
+                                    : file.path.split('\\').last,
+                                App.isAndroid
+                                    ? file.path.split('/').last
+                                    : file.path.split('\\').last);
                           },
                           child: SizedBox(
                             width: 300 * 1.8,
                             height: 300,
                             child: Hero(
-                                tag: file.path.split('/').last,
+                                tag: App.isAndroid
+                                    ? file.path.split('/').last
+                                    : file.path.split('\\').last,
                                 child: Image.file(
                                   file,
                                   fit: BoxFit.cover,
