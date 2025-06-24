@@ -308,9 +308,9 @@ class BottomInfoState extends State<BottomInfo>
 
     final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
 
-    final isCompleted = currentWeekEp != null &&
+    final isCompleted = currentWeekEp.values.first != null &&
         type0Episodes.isNotEmpty &&
-        currentWeekEp == type0Episodes.last;
+        currentWeekEp.values.first == type0Episodes.last;
 
     return SelectionArea(
       child: Padding(
@@ -381,28 +381,30 @@ class BottomInfoState extends State<BottomInfo>
                                   ),
                                 ),
                                 SizedBox(height: 12.0),
-                                (currentWeekEp?.sort != null)
+                                (currentWeekEp.values.first?.sort != null)
                                     ? Text(
                                         isCompleted
                                             ? 'Full @b episodes released'
                                                 .tlParams({
                                                 'b': bangumiItem.totalEpisodes
                                               })
-                                            : currentWeekEp?.sort ==
-                                                    currentWeekEp?.ep
+                                            : currentWeekEp
+                                                        .values.first?.sort ==
+                                                    currentWeekEp
+                                                        .values.first?.ep
                                                 ? 'Up to ep @s • Total @t eps planned'
                                                     .tlParams({
-                                                    's': currentWeekEp?.sort
-                                                        as int,
+                                                    's': currentWeekEp.values
+                                                        .first?.sort as int,
                                                     't': bangumiItem
                                                         .totalEpisodes
                                                   })
                                                 : 'Up to ep @e (@s) • Total @t eps planned'
                                                     .tlParams({
-                                                    'e': currentWeekEp?.ep
-                                                        as int,
-                                                    's': currentWeekEp?.sort
-                                                        as int,
+                                                    'e': currentWeekEp.values
+                                                        .first?.ep as int,
+                                                    's': currentWeekEp.values
+                                                        .first?.sort as int,
                                                     't': bangumiItem
                                                         .totalEpisodes
                                                   }),

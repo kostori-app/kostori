@@ -342,43 +342,53 @@ class _InfoTabViewState extends State<InfoTabView>
                                               content: ConstrainedBox(
                                                 constraints:
                                                     const BoxConstraints(
-                                                        maxWidth: 320),
-                                                child: Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
-                                                      style: const TextStyle(
+                                                        maxWidth: 420),
+                                                child: SingleChildScrollView(
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                                        style: const TextStyle(
                                                           fontSize: 24,
                                                           fontWeight:
-                                                              FontWeight.bold),
-                                                    ),
-                                                    if (episode
-                                                        .nameCn.isNotEmpty)
-                                                      Text(
-                                                          "${Utils.readType(episode.type)}${episode.sort}.${episode.name}"),
-                                                    const SizedBox(height: 8),
-                                                    Row(
-                                                      children: [
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      if (episode
+                                                          .nameCn.isNotEmpty)
                                                         Text(
+                                                          "${Utils.readType(episode.type)}${episode.sort}.${episode.name}",
+                                                        ),
+                                                      const SizedBox(height: 8),
+                                                      Row(
+                                                        children: [
+                                                          Text(
                                                             "Broadcast Time: @a"
                                                                 .tlParams({
-                                                          'a': episode.airDate
-                                                        })),
-                                                        const SizedBox(
-                                                            width: 8),
-                                                        Text("Time: @s"
-                                                            .tlParams({
-                                                          's': episode.duration
-                                                        })),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Text(episode.desc),
-                                                  ],
+                                                              'a': episode
+                                                                  .airDate
+                                                            }),
+                                                          ),
+                                                          const SizedBox(
+                                                              width: 8),
+                                                          Text(
+                                                            "Time: @s"
+                                                                .tlParams({
+                                                              's': episode
+                                                                  .duration
+                                                            }),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      Text(episode.desc),
+                                                    ],
+                                                  ),
                                                 ),
                                               ),
                                             );

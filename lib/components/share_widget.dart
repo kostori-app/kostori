@@ -153,9 +153,9 @@ class _ShareWidgetState extends State<ShareWidget> {
 
     final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
 
-    final isCompleted = currentWeekEp != null &&
+    final isCompleted = currentWeekEp.values.first != null &&
         type0Episodes.isNotEmpty &&
-        currentWeekEp == type0Episodes.last;
+        currentWeekEp.values.first == type0Episodes.last;
 
     return PopUpWidgetScaffold(
       title: '截图分享',
@@ -255,11 +255,12 @@ class _ShareWidgetState extends State<ShareWidget> {
                                             child: Text(bangumiItem.airDate),
                                           ),
                                           SizedBox(height: 12.0),
-                                          (currentWeekEp?.sort != null)
+                                          (currentWeekEp.values.first?.sort !=
+                                                  null)
                                               ? Text(
                                                   isCompleted
                                                       ? '全 ${bangumiItem.totalEpisodes} 话'
-                                                      : '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                      : '连载至 ${currentWeekEp.values.first?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
                                                   style: TextStyle(
                                                     fontSize: 12.0,
                                                   ),

@@ -225,9 +225,9 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                     final type0Episodes =
                         allEpisodes.where((ep) => ep.type == 0).toList();
 
-                    final isCompleted = currentWeekEp != null &&
+                    final isCompleted = currentWeekEp.values.first != null &&
                         type0Episodes.isNotEmpty &&
-                        currentWeekEp == type0Episodes.last;
+                        currentWeekEp.values.first == type0Episodes.last;
 
                     return Container(
                       width: MediaQuery.of(context).size.width,
@@ -330,15 +330,22 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                           FontWeight.bold)),
                                             ),
                                           SizedBox(width: 4.0),
-                                          (currentWeekEp?.sort != null)
+                                          (currentWeekEp.values.first?.sort !=
+                                                  null)
                                               ? Expanded(
                                                   child: Text(
                                                   isCompleted
                                                       ? '全 ${bangumiItem.totalEpisodes} 话'
-                                                      : currentWeekEp?.sort ==
-                                                              currentWeekEp?.ep
-                                                          ? '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
-                                                          : '连载至 ${currentWeekEp?.ep} (${currentWeekEp?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                      : currentWeekEp
+                                                                  .values
+                                                                  .first
+                                                                  ?.sort ==
+                                                              currentWeekEp
+                                                                  .values
+                                                                  .first
+                                                                  ?.ep
+                                                          ? '连载至 ${currentWeekEp.values.first?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
+                                                          : '连载至 ${currentWeekEp.values.first?.ep} (${currentWeekEp.values.first?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
                                                   style: TextStyle(
                                                     fontSize: 12.0,
                                                   ),

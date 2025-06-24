@@ -141,27 +141,34 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     // 最后一集（type0中最后一集）
     final finalEpisode = type0Episodes.last;
 
-    final currentWeekEp = Utils.findCurrentWeekEpisode(episodes, bangumiItem);
+    final currentWeekEp =
+        Utils.findCurrentWeekEpisode(episodes, bangumiItem, true);
 
     // 判断当前集数是否为最后一集
-    final isFinalEpisode =
-        currentWeekEp != null && currentWeekEp.sort == finalEpisode.sort;
+    final isFinalEpisode = currentWeekEp.values.first != null &&
+        currentWeekEp.values.first?.sort == finalEpisode.sort;
 
-    final airTime = Utils.safeParseDate(currentWeekEp?.airDate);
+    final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
 
     // 判断是否为当前周
     final airWeek = Utils.getISOWeekNumber(airTime!).$2;
-    final isCurrentWeek = currentWeek == airWeek;
+    bool isCurrentWeek = currentWeek == airWeek;
+
+    if (currentWeekEp.keys.first == true && isCurrentWeek == false) {
+      if (currentWeek == airWeek + 1) {
+        isCurrentWeek = true;
+      }
+    }
 
     // 判断是否还有后续集数（finalEpisode不是最后一集时为true）
     final maxSort =
         type0Episodes.map((e) => e.sort).reduce((a, b) => a > b ? a : b);
 
     return {
-      'episode_airdate': currentWeekEp?.airDate,
-      'episode_name': currentWeekEp?.name,
-      'episode_name_cn': currentWeekEp?.nameCn,
-      'episode_ep': currentWeekEp?.sort,
+      'episode_airdate': currentWeekEp.values.first?.airDate,
+      'episode_name': currentWeekEp.values.first?.name,
+      'episode_name_cn': currentWeekEp.values.first?.nameCn,
+      'episode_ep': currentWeekEp.values.first?.sort,
       'isCurrentWeek': isCurrentWeek,
       'isFinalEpisode': isFinalEpisode,
       'hasNextEpisodes': finalEpisode.sort < maxSort,
@@ -317,11 +324,18 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         child: Scaffold(
             appBar: AppBar(
               title: Text('Timetable'.tl),
+              leading: IconButton(
+                onPressed: () {
+                  Navigator.maybePop(context);
+                },
+                icon: Icon(Icons.arrow_back_ios_new),
+              ),
               bottom: TabBar(
                 controller: controller,
                 tabs: getTabs(),
                 isScrollable: true,
                 indicatorColor: Theme.of(context).colorScheme.primary,
+                tabAlignment: TabAlignment.center,
               ),
             ),
             body: Center(

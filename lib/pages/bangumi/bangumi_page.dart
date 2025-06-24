@@ -312,14 +312,20 @@ class _TimetableState extends State<_Timetable> {
     final currentWeekEp = Utils.findCurrentWeekEpisode(episodes, bangumiItem);
 
     // 判断当前集数是否为最后一集
-    final isFinalEpisode =
-        currentWeekEp != null && currentWeekEp.sort == finalEpisode.sort;
+    final isFinalEpisode = currentWeekEp.values.first != null &&
+        currentWeekEp.values.first?.sort == finalEpisode.sort;
 
-    final airTime = Utils.safeParseDate(currentWeekEp?.airDate);
+    final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
 
     // 判断是否为当前周
     final airWeek = Utils.getISOWeekNumber(airTime!).$2;
-    final isCurrentWeek = currentWeek == airWeek;
+    bool isCurrentWeek = currentWeek == airWeek;
+
+    if (currentWeekEp.keys.first == true && isCurrentWeek == false) {
+      if (currentWeek == airWeek + 1) {
+        isCurrentWeek = true;
+      }
+    }
 
     // 判断是否还有后续集数（finalEpisode不是最后一集时为true）
     final maxSort =
