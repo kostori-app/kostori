@@ -32,16 +32,18 @@ class BangumiWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '${bangumiItem.score}',
-            style: TextStyle(
-              fontSize: App.isAndroid ? 13 : 16.0,
-              fontWeight: FontWeight.bold,
+          if (bangumiItem.total >= 20) ...[
+            Text(
+              '${bangumiItem.score}',
+              style: TextStyle(
+                fontSize: App.isAndroid ? 13 : 16.0,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          SizedBox(
-            width: 4,
-          ),
+            SizedBox(
+              width: 4,
+            ),
+          ],
           Column(
             crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
             children: [
@@ -371,37 +373,39 @@ class BangumiWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              '${bangumiItem.score}',
-              style: TextStyle(
-                fontSize: 24.0,
-              ),
-            ),
-            SizedBox(
-              width: 5,
-            ),
-            Container(
-              padding: EdgeInsets.all(2.0), // 可选，设置内边距
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8), // 设置圆角半径
-                border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .secondaryContainer
-                      .toOpacity(0.72),
-                  width: 2.0, // 设置边框宽度
-                ),
-              ),
-              child: Text(
-                Utils.getRatingLabel(bangumiItem.score),
+            if (bangumiItem.total >= 20) ...[
+              Text(
+                '${bangumiItem.score}',
                 style: TextStyle(
-                  fontSize: 12.0,
+                  fontSize: 24.0,
                 ),
               ),
-            ),
-            SizedBox(
-              width: 4,
-            ),
+              SizedBox(
+                width: 5,
+              ),
+              Container(
+                padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8), // 设置圆角半径
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .secondaryContainer
+                        .toOpacity(0.72),
+                    width: 2.0, // 设置边框宽度
+                  ),
+                ),
+                child: Text(
+                  Utils.getRatingLabel(bangumiItem.score),
+                  style: TextStyle(
+                    fontSize: 12.0,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 4,
+              ),
+            ],
             Column(
               crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
               children: [

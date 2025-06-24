@@ -392,40 +392,43 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.center,
                                           children: [
-                                            Text(
-                                              '${bangumiItem.score}',
-                                              style: TextStyle(
-                                                  fontSize: 24.0,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            SizedBox(
-                                              width: 5,
-                                            ),
-                                            Container(
-                                              padding: EdgeInsets.fromLTRB(
-                                                  8, 5, 8, 5), // 可选，设置内边距
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        8), // 设置圆角半径
-                                                border: Border.all(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                      .toOpacity(0.72),
-                                                  width: 1.0, // 设置边框宽度
-                                                ),
+                                            if (bangumiItem.total >= 20) ...[
+                                              Text(
+                                                '${bangumiItem.score}',
+                                                style: TextStyle(
+                                                    fontSize: 24.0,
+                                                    fontWeight:
+                                                        FontWeight.bold),
                                               ),
-                                              child: Text(
-                                                  Utils.getRatingLabel(
-                                                      bangumiItem.score),
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                            ),
-                                            SizedBox(
-                                              width: 4,
-                                            ),
+                                              SizedBox(
+                                                width: 5,
+                                              ),
+                                              Container(
+                                                padding: EdgeInsets.fromLTRB(
+                                                    8, 5, 8, 5), // 可选，设置内边距
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8), // 设置圆角半径
+                                                  border: Border.all(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                        .toOpacity(0.72),
+                                                    width: 1.0, // 设置边框宽度
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                    Utils.getRatingLabel(
+                                                        bangumiItem.score),
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold)),
+                                              ),
+                                              SizedBox(
+                                                width: 4,
+                                              ),
+                                            ],
                                             Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.end, // 右对齐

@@ -17,6 +17,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/utils.dart';
 
 import '../../components/components.dart';
+import '../../foundation/appdata.dart';
 
 class BangumiSearchPage extends StatefulWidget {
   const BangumiSearchPage({super.key, this.tag});
@@ -44,6 +45,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
 
   String airDate = '';
   String endDate = '';
+
+  final TextEditingController _controller = TextEditingController();
+  bool _showSearchHistory = false;
 
   final List<String> options = [
     '最佳匹配',
@@ -624,38 +628,111 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     );
   }
 
+  Future<void> _performSearch(String value) async {
+    value = value.trim();
+    if (value.isEmpty) return;
+
+    _controller.text = value;
+    keyword = value;
+
+    // 保存历史，去重
+    appdata.addSearchHistory(value);
+    appdata.saveData();
+
+    setState(() {
+      _isLoading = true;
+      _showSearchHistory = false;
+    });
+
+    final newItems = await bangumiSearch();
+    bangumiItems = newItems;
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Widget _searchHistorySliver() {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final item = appdata.searchHistory[index];
+          return ListTile(
+            leading: const Icon(Icons.history),
+            title: Text(item),
+            onTap: () => _performSearch(item),
+            trailing: IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                appdata.removeSearchHistory(item);
+                appdata.saveData();
+                setState(() {});
+              },
+            ),
+          );
+        },
+        childCount: appdata.searchHistory.length,
+      ),
+    );
+  }
+
   Widget _sliverAppBar(BuildContext context) {
     return SliverAppbar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new),
+        onPressed: () {
+          if (_showSearchHistory) {
+            setState(() {
+              _showSearchHistory = false;
+            });
+          } else {
+            Navigator.of(context).pop();
+          }
+        },
+      ),
+      actions: [
+        if (_showSearchHistory)
+          IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              setState(() {
+                _showSearchHistory = false;
+              });
+            },
+          )
+      ],
       title: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
+        preferredSize: const Size.fromHeight(120),
         child: ClipRect(
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
             child: Container(
               color: Colors.transparent,
-              padding: EdgeInsets.fromLTRB(0, 10, 60, 6),
+              padding: EdgeInsets.fromLTRB(0, 6, 12, 6),
               child: TextField(
+                controller: _controller,
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Theme.of(context).cardColor,
                   hintText: 'Enter keywords...'.tl,
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onSubmitted: (value) async {
-                  keyword = value;
+                onTap: () {
                   setState(() {
-                    _isLoading = true;
-                  });
-                  final newItems = await bangumiSearch();
-                  bangumiItems = newItems;
-                  setState(() {
-                    _isLoading = false;
+                    _showSearchHistory = true;
                   });
                 },
-                // onChanged: (value) => searchQuery = value,
+                onChanged: (value) {
+                  setState(() {
+                    _showSearchHistory = true;
+                  });
+                },
+                onSubmitted: (value) async {
+                  await _performSearch(value);
+                },
               ),
             ),
           ),
@@ -774,15 +851,19 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             controller: _scrollController,
             slivers: [
               _sliverAppBar(context),
-              ..._buildTagCategories(),
-              if (tags.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: _tagsWidget(context),
-                ),
-              if (airDate.isNotEmpty || endDate.isNotEmpty)
-                _dataTagsWidget(context),
-              SliverToBoxAdapter(child: _toolBoxWidget(context)),
-              _buildContentListSliver(),
+              if (_showSearchHistory && appdata.searchHistory.isNotEmpty)
+                _searchHistorySliver(),
+              if (!_showSearchHistory) ...[
+                ..._buildTagCategories(),
+                if (tags.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: _tagsWidget(context),
+                  ),
+                if (airDate.isNotEmpty || endDate.isNotEmpty)
+                  _dataTagsWidget(context),
+                SliverToBoxAdapter(child: _toolBoxWidget(context)),
+                _buildContentListSliver(),
+              ],
               if (_isLoading)
                 SliverToBoxAdapter(
                   child: Padding(

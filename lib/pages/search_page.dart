@@ -174,7 +174,7 @@ class _SearchPageState extends State<SearchPage> {
       duration: const Duration(milliseconds: 200),
       child: buildSearchOptions(),
     );
-    yield _SearchHistory(search);
+    yield SearchHistory(search);
   }
 
   Widget buildSearchTarget() {
@@ -349,16 +349,16 @@ class SearchOptionWidget extends StatelessWidget {
   }
 }
 
-class _SearchHistory extends StatefulWidget {
-  const _SearchHistory(this.search);
+class SearchHistory extends StatefulWidget {
+  const SearchHistory(this.search, {super.key});
 
   final void Function(String) search;
 
   @override
-  State<_SearchHistory> createState() => _SearchHistoryState();
+  State<SearchHistory> createState() => SearchHistoryState();
 }
 
-class _SearchHistoryState extends State<_SearchHistory> {
+class SearchHistoryState extends State<SearchHistory> {
   @override
   Widget build(BuildContext context) {
     return SliverList(

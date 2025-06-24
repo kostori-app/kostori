@@ -85,33 +85,35 @@ class _ShareWidgetState extends State<ShareWidget> {
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '${bangumiItem.score}',
-            style: TextStyle(
-              fontSize: 32.0,
-            ),
-          ),
-          SizedBox(
-            width: 5,
-          ),
-          Container(
-            padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
-            // 可选，设置内边距
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              // 设置圆角半径
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                width: 1.0, // 设置边框宽度
+          if (bangumiItem.total >= 20) ...[
+            Text(
+              '${bangumiItem.score}',
+              style: TextStyle(
+                fontSize: 32.0,
               ),
             ),
-            child: Text(
-              Utils.getRatingLabel(bangumiItem.score),
+            SizedBox(
+              width: 5,
             ),
-          ),
-          SizedBox(
-            width: 4,
-          ),
+            Container(
+              padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
+              // 可选，设置内边距
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                // 设置圆角半径
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                  width: 1.0, // 设置边框宽度
+                ),
+              ),
+              child: Text(
+                Utils.getRatingLabel(bangumiItem.score),
+              ),
+            ),
+            SizedBox(
+              width: 4,
+            ),
+          ],
           Column(
             crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
             children: [
@@ -238,22 +240,23 @@ class _ShareWidgetState extends State<ShareWidget> {
                                                 fontSize: 12,
                                               )),
                                           const SizedBox(height: 16),
-                                          Container(
-                                            padding:
-                                                EdgeInsets.fromLTRB(8, 5, 8, 5),
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(8.0),
-                                              border: Border.all(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
-                                                    .toOpacity(0.72),
-                                                width: 1.0,
+                                          if (bangumiItem.airDate.isNotEmpty)
+                                            Container(
+                                              padding: EdgeInsets.fromLTRB(
+                                                  8, 5, 8, 5),
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(8.0),
+                                                border: Border.all(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary
+                                                      .toOpacity(0.72),
+                                                  width: 1.0,
+                                                ),
                                               ),
+                                              child: Text(bangumiItem.airDate),
                                             ),
-                                            child: Text(bangumiItem.airDate),
-                                          ),
                                           SizedBox(height: 12.0),
                                           (currentWeekEp.values.first?.sort !=
                                                   null)
@@ -384,90 +387,94 @@ class _ShareWidgetState extends State<ShareWidget> {
                               );
                             }).toList()),
                       ),
-                      const SizedBox(height: 8),
-                      Center(
-                        child: Container(
-                          width: 120,
-                          height: 2,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.toOpacity(0.4),
-                            borderRadius: BorderRadius.circular(4),
+
+                      if (bangumiItem.total >= 20) ...[
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Container(
+                            width: 120,
+                            height: 2,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.toOpacity(0.4),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 6, horizontal: 16),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text('Rating Statistics Chart'.tl,
-                                    style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold)),
-                                Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer,
-                                    borderRadius: BorderRadius.circular(8),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 6, horizontal: 16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text('Rating Statistics Chart'.tl,
+                                      style: TextStyle(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.bold)),
+                                  Container(
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text('${bangumiItem.score}',
+                                        style: ts.s12),
                                   ),
-                                  child: Text('${bangumiItem.score}',
-                                      style: ts.s12),
-                                ),
-                                TextButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      showLineChart = !showLineChart;
-                                    });
-                                  },
-                                  icon: Icon(showLineChart
-                                      ? Icons.show_chart
-                                      : Icons.bar_chart),
-                                  label: Text(showLineChart
-                                      ? 'Line Chart'.tl
-                                      : 'Bar Chart'.tl),
-                                ),
-                                Text('${bangumiItem.total} votes')
-                              ],
-                            ),
-                          ],
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        showLineChart = !showLineChart;
+                                      });
+                                    },
+                                    icon: Icon(showLineChart
+                                        ? Icons.show_chart
+                                        : Icons.bar_chart),
+                                    label: Text(showLineChart
+                                        ? 'Line Chart'.tl
+                                        : 'Bar Chart'.tl),
+                                  ),
+                                  Text('${bangumiItem.total} votes')
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 2),
-                        child: Row(
-                          children: [
-                            Text(
-                                'Standard Deviation: @s'.tlParams({
-                                  's': standardDeviation.toStringAsFixed(2)
-                                }),
-                                style: TextStyle(fontSize: 12)),
-                            const SizedBox(
-                              width: 8,
-                            ),
-                            Text(Utils.getDispute(standardDeviation),
-                                style: TextStyle(fontSize: 12))
-                          ],
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 2),
+                          child: Row(
+                            children: [
+                              Text(
+                                  'Standard Deviation: @s'.tlParams({
+                                    's': standardDeviation.toStringAsFixed(2)
+                                  }),
+                                  style: TextStyle(fontSize: 12)),
+                              const SizedBox(
+                                width: 8,
+                              ),
+                              Text(Utils.getDispute(standardDeviation),
+                                  style: TextStyle(fontSize: 12))
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 2),
-                        child: showLineChart
-                            ? LineChatPage(bangumiItem: bangumiItem)
-                            : BangumiBarChartPage(bangumiItem: bangumiItem),
-                      ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 2),
+                          child: showLineChart
+                              ? LineChatPage(bangumiItem: bangumiItem)
+                              : BangumiBarChartPage(bangumiItem: bangumiItem),
+                        ),
+                      ],
+
                       // const SizedBox(height: 16),
                       SizedBox(
                         height: 64.0,
