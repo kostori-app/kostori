@@ -256,7 +256,6 @@ class _TimetableState extends State<_Timetable> {
 
           final episodeInfo = _processEpisodeInfo(
             episodes: allEpisodesMap[item.id],
-            airTime: airTime,
             now: today,
             currentWeekInfo: Utils.getISOWeekNumber(today),
             bangumiItem: item,
@@ -294,7 +293,6 @@ class _TimetableState extends State<_Timetable> {
 // 判断是否“本周最后一集”，并返回本周剧集信息
   Map<String, dynamic>? _processEpisodeInfo({
     required List<EpisodeInfo>? episodes,
-    required DateTime airTime,
     required DateTime now,
     required (int, int) currentWeekInfo,
     required BangumiItem bangumiItem,
@@ -317,8 +315,10 @@ class _TimetableState extends State<_Timetable> {
     final isFinalEpisode =
         currentWeekEp != null && currentWeekEp.sort == finalEpisode.sort;
 
+    final airTime = Utils.safeParseDate(currentWeekEp?.airDate);
+
     // 判断是否为当前周
-    final airWeek = Utils.getISOWeekNumber(airTime).$2;
+    final airWeek = Utils.getISOWeekNumber(airTime!).$2;
     final isCurrentWeek = currentWeek == airWeek;
 
     // 判断是否还有后续集数（finalEpisode不是最后一集时为true）

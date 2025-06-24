@@ -24,10 +24,15 @@ class Utils {
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
   static bool isSmallScreen(BuildContext context) =>
-      MediaQuery.of(context).size.width < 850;
+      MediaQuery
+          .of(context)
+          .size
+          .width < 850;
 
   static String dur2str(Duration duration) {
-    return '${duration.inHours.toString().padLeft(2, '0')}:${duration.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(duration.inSeconds.remainder(60)).toString().padLeft(2, '0')}';
+    return '${duration.inHours.toString().padLeft(2, '0')}:${duration.inMinutes
+        .remainder(60).toString().padLeft(2, '0')}:${(duration.inSeconds
+        .remainder(60)).toString().padLeft(2, '0')}';
   }
 
   static String durationToString(Duration duration) {
@@ -47,8 +52,8 @@ class Utils {
     return directory.path;
   }
 
-  static EpisodeInfo? findCurrentWeekEpisode(
-      List<EpisodeInfo> allEpisodes, BangumiItem bangumiItem) {
+  static EpisodeInfo? findCurrentWeekEpisode(List<EpisodeInfo> allEpisodes,
+      BangumiItem bangumiItem, [bool calendar = false]) {
     if (allEpisodes.isEmpty) return null;
 
     final now = DateTime.now();
@@ -59,7 +64,7 @@ class Utils {
 
     // 获取番剧的标准播出时间
     String? bangumiDataAirTime =
-        BangumiManager().findbangumiDataByID(bangumiItem.id);
+    BangumiManager().findbangumiDataByID(bangumiItem.id);
     final bangumiAirTime = bangumiDataAirTime != null
         ? DateTime.tryParse(bangumiDataAirTime)?.toLocal()
         : null;
@@ -71,7 +76,6 @@ class Utils {
 
     EpisodeInfo? currentWeekEpisode;
     EpisodeInfo? lastPastEpisode; // 现在会记录所有年份中最近的过去剧集
-    bool foundCurrentWeekButNotAired = false;
 
     try {
       for (final ep in targetEpisodes) {
@@ -82,14 +86,14 @@ class Utils {
 
           // 应用周数调整
           final adjustedWeekNum = shouldAdjustWeek
-              ? (airWeekNum == 1 ? 52 : airWeekNum + 1)
+              ? calendar
+              ? (airWeekNum == 1 ? 52 : airWeekNum - 1)
+              : (airWeekNum == 1 ? 52 : airWeekNum + 1)
               : airWeekNum;
 
           // 判断是否当前周但未播出
           if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
-            if (airDate.isAfter(now)) {
-              foundCurrentWeekButNotAired = true;
-            } else {
+            if (!airDate.isAfter(now)) {
               currentWeekEpisode ??= ep;
             }
           }
@@ -117,8 +121,7 @@ class Utils {
       // 1. 当前周已播出的剧集
       // 2. 如果当前周有剧集但未播出，返回最近的过去剧集（不限年份）
       // 3. 没有则返回null
-      return currentWeekEpisode ??
-          (foundCurrentWeekButNotAired ? lastPastEpisode : lastPastEpisode);
+      return currentWeekEpisode ?? lastPastEpisode;
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');
       return null;
@@ -128,7 +131,7 @@ class Utils {
   static String getRandomUA() {
     final random = Random();
     String randomElement =
-        userAgentsList[random.nextInt(userAgentsList.length)];
+    userAgentsList[random.nextInt(userAgentsList.length)];
     return randomElement;
   }
 
@@ -211,15 +214,15 @@ class Utils {
     if (weekNumber < 1) {
       // 属于前一年的最后一周（52或53周）
       final prevYearLastWeek =
-          getISOWeekNumber(DateTime(date.year - 1, 12, 28) // 12月28日肯定在最后一周
-              );
+      getISOWeekNumber(DateTime(date.year - 1, 12, 28) // 12月28日肯定在最后一周
+      );
       return (date.year - 1, prevYearLastWeek.$2);
     } else if (weekNumber > 52) {
       // 检查是否真的有53周（某些年份有53周）
       final dec28 = DateTime(date.year, 12, 28);
       final weekOfDec28 =
-          ((int.parse(DateFormat("D").format(dec28)) - dec28.weekday + 10) ~/
-              7);
+      ((int.parse(DateFormat("D").format(dec28)) - dec28.weekday + 10) ~/
+          7);
 
       if (weekNumber > weekOfDec28) {
         // 属于下一年的第一周
@@ -250,7 +253,9 @@ class Utils {
   // 时间显示，刚刚，x分钟前
   static String dateFormat(timeStamp, {formatType = 'list'}) {
     // 当前时间
-    int time = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+    int time = (DateTime
+        .now()
+        .millisecondsSinceEpoch / 1000).round();
     // 对比
     int distance = (time - timeStamp).toInt();
     // 当前年日期
@@ -271,8 +276,12 @@ class Utils {
       return '${(distance / 60).floor()}分钟前';
     } else if (distance <= 43200) {
       return '${(distance / 60 / 60).floor()}小时前';
-    } else if (DateTime.fromMillisecondsSinceEpoch(time * 1000).year ==
-        DateTime.fromMillisecondsSinceEpoch(timeStamp * 1000).year) {
+    } else if (DateTime
+        .fromMillisecondsSinceEpoch(time * 1000)
+        .year ==
+        DateTime
+            .fromMillisecondsSinceEpoch(timeStamp * 1000)
+            .year) {
       return CustomStamp_str(
           timestamp: timeStamp,
           date: currentYearStr,
@@ -288,14 +297,15 @@ class Utils {
   }
 
   // 时间戳转时间
-  static String CustomStamp_str(
-      {int? timestamp, // 为空则显示当前时间
-      String? date, // 显示格式，比如：'YY年MM月DD日 hh:mm:ss'
-      bool toInt = true, // 去除0开头
-      String? formatType}) {
-    timestamp ??= (DateTime.now().millisecondsSinceEpoch / 1000).round();
+  static String CustomStamp_str({int? timestamp, // 为空则显示当前时间
+    String? date, // 显示格式，比如：'YY年MM月DD日 hh:mm:ss'
+    bool toInt = true, // 去除0开头
+    String? formatType}) {
+    timestamp ??= (DateTime
+        .now()
+        .millisecondsSinceEpoch / 1000).round();
     String timeStr =
-        (DateTime.fromMillisecondsSinceEpoch(timestamp * 1000)).toString();
+    (DateTime.fromMillisecondsSinceEpoch(timestamp * 1000)).toString();
 
     dynamic dateArr = timeStr.split(' ')[0];
     dynamic timeArr = timeStr.split(' ')[1];
@@ -333,18 +343,24 @@ class Utils {
         .replaceAll('hh', hh)
         .replaceAll('mm', mm)
         .replaceAll('ss', ss);
-    if (int.parse(YY) == DateTime.now().year &&
-        int.parse(MM) == DateTime.now().month) {
+    if (int.parse(YY) == DateTime
+        .now()
+        .year &&
+        int.parse(MM) == DateTime
+            .now()
+            .month) {
       // 当天
-      if (int.parse(DD) == DateTime.now().day) {
+      if (int.parse(DD) == DateTime
+          .now()
+          .day) {
         return '今天';
       }
     }
     return date;
   }
 
-  static String buildShadersAbsolutePath(
-      String baseDirectory, List<String> shaders) {
+  static String buildShadersAbsolutePath(String baseDirectory,
+      List<String> shaders) {
     List<String> absolutePaths = shaders.map((shader) {
       return path.join(baseDirectory, shader);
     }).toList();
@@ -386,8 +402,8 @@ class Utils {
   }
 
   //标准差
-  static double getDeviation(
-      dynamic total, List<dynamic> count, dynamic score) {
+  static double getDeviation(dynamic total, List<dynamic> count,
+      dynamic score) {
     if (total == 0 || count.isEmpty) return 0;
 
     final scores = count.reversed.toList(); // 反转评分列表（从10分到1分）
@@ -433,9 +449,11 @@ class Utils {
     }
   }
 
-  static Future<void> saveLongImage(
-      BuildContext context, Uint8List imageData) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+  static Future<void> saveLongImage(BuildContext context,
+      Uint8List imageData) async {
+    final timestamp = DateTime
+        .now()
+        .millisecondsSinceEpoch;
     try {
       if (App.isAndroid) {
         final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
@@ -450,7 +468,10 @@ class Utils {
               image: const AssetImage('assets/img/check.gif'),
               height: 80,
               fps: 120,
-              color: Theme.of(context).colorScheme.primary,
+              color: Theme
+                  .of(context)
+                  .colorScheme
+                  .primary,
               autostart: Autostart.once,
             ),
             message: '保存成功',
@@ -482,7 +503,10 @@ class Utils {
             image: const AssetImage('assets/img/check.gif'),
             height: 80,
             fps: 120,
-            color: Theme.of(context).colorScheme.primary,
+            color: Theme
+                .of(context)
+                .colorScheme
+                .primary,
             autostart: Autostart.once,
           ),
           message: '保存成功',

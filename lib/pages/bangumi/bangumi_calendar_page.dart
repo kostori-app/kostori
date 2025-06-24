@@ -53,7 +53,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     }
   }
 
-  // 修改后的数据过滤方法（完整版）
   Future<void> filterExistingBangumiItems() async {
     try {
       // 1. 获取所有番剧数据并检查存在性
@@ -68,7 +67,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           .toList();
       final allEpisodesMap = await _fetchEpisodesInBatches(validItems);
 
-      // 3. 创建并填充日历数据
+      // 3. 创建并填充日历数据（固定 7 天）
       final newCalendar = List.generate(7, (_) => <BangumiItem>[]);
       final now = DateTime.now();
       final currentWeekInfo = Utils.getISOWeekNumber(now);
@@ -84,7 +83,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           final episodes = allEpisodesMap[item.id];
           final episodeResult = _processEpisodeInfo(
             episodes: episodes,
-            airTime: airTime,
             now: now,
             currentWeekInfo: currentWeekInfo,
             bangumiItem: item,
@@ -96,6 +94,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           if (episodeResult['isFinalEpisode'] == true &&
               episodeResult['hasNextEpisodes'] == false &&
               episodeResult['isCurrentWeek'] == false) {
+            // print("被跳过周的airtime");
+            // print(airTime);
+            // print(currentWeekInfo);
+            // print(item);
             continue;
           }
 
@@ -110,13 +112,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         }
       }
 
-      // 4. 排序并过滤空日期
       _sortCalendarByTime(newCalendar);
-      final filteredCalendar =
-          newCalendar.where((day) => day.isNotEmpty).toList();
 
       if (mounted) {
-        setState(() => bangumiCalendar = filteredCalendar);
+        setState(() => bangumiCalendar = newCalendar);
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, '处理番剧日历', '$e\n$s');
@@ -126,7 +125,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
   Map<String, dynamic>? _processEpisodeInfo({
     required List<EpisodeInfo>? episodes,
-    required DateTime airTime,
     required DateTime now,
     required (int, int) currentWeekInfo,
     required BangumiItem
@@ -149,8 +147,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     final isFinalEpisode =
         currentWeekEp != null && currentWeekEp.sort == finalEpisode.sort;
 
+    final airTime = Utils.safeParseDate(currentWeekEp?.airDate);
+
     // 判断是否为当前周
-    final airWeek = Utils.getISOWeekNumber(airTime).$2;
+    final airWeek = Utils.getISOWeekNumber(airTime!).$2;
     final isCurrentWeek = currentWeek == airWeek;
 
     // 判断是否还有后续集数（finalEpisode不是最后一集时为true）
@@ -375,33 +375,33 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       List<List<BangumiItem>> bangumiCalendar, Orientation orientation) {
     final List<Widget> listViewList = [];
     final DateTime currentTime = DateTime.now().toLocal(); // 当前本地时间
-    final String currentTimeStr =
-        DateFormat('HH:mm').format(currentTime); // 当前时间（HH:mm）
-    final int currentWeekday = currentTime.weekday; // 当前星期几（1=周一, 7=周日）
+    final String currentTimeStr = DateFormat('HH:mm').format(currentTime);
+    final int currentWeekday = currentTime.weekday; // 1 ~ 7
 
     for (int weekday = 1; weekday <= 7; weekday++) {
-      final bangumiList = bangumiCalendar[weekday - 1]; // 获取对应星期几的列表
-      if (bangumiList.isEmpty) continue;
+      final bangumiList = bangumiCalendar[weekday - 1];
+
+      if (bangumiList.isEmpty) {
+        listViewList.add(
+          const Center(child: Text('这一天没有番剧')),
+        );
+        continue;
+      }
 
       int lastPastIndex = -1;
-
-      // 1. 预处理：找到最后一个早于当前时间的卡片索引
       for (int i = 0; i < bangumiList.length; i++) {
         final item = bangumiList[i];
         if (item.airTime == null) continue;
-
         try {
-          // 提取时间部分（HH:mm）
           final itemTimeStr = _extractTimeFromISO(item.airTime!);
           if (itemTimeStr.compareTo(currentTimeStr) < 0) {
-            lastPastIndex = i; // 更新为最后一个符合条件的索引
+            lastPastIndex = i;
           }
         } catch (e, s) {
           Log.addLog(LogLevel.error, '时间解析', '$e\n$s');
         }
       }
 
-      // 2. 计算是否需要插入横线（仅在当前日期的 Tab 中插入）
       final bool shouldInsertDivider = weekday == currentWeekday;
 
       listViewList.add(
@@ -410,44 +410,41 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (BuildContext context, int index) {
-                  // 3. 插入横线逻辑
                   if (shouldInsertDivider && index == lastPastIndex + 1) {
                     return _buildCurrentTimeDivider(currentTime);
                   }
 
-                  // 4. 调整卡片索引
                   final adjustedIndex =
                       shouldInsertDivider && index > lastPastIndex
                           ? index - 1
                           : index;
 
-                  // 5. 边界检查
                   if (adjustedIndex >= bangumiList.length) return null;
 
                   return InkWell(
                     borderRadius: BorderRadius.circular(24),
                     onTap: () async {
-                      App.mainNavigatorKey?.currentContext
-                          ?.to(() => BangumiInfoPage(
-                                bangumiItem: bangumiList[adjustedIndex],
-                                heroTag: 'calendar',
-                              ));
+                      App.mainNavigatorKey?.currentContext?.to(
+                        () => BangumiInfoPage(
+                          bangumiItem: bangumiList[adjustedIndex],
+                          heroTag: 'calendar',
+                        ),
+                      );
                     },
                     child: bangumiCalendarCard(
                         context, bangumiList[adjustedIndex]),
                   );
                 },
-                childCount: bangumiList.isEmpty
-                    ? 0
-                    : (shouldInsertDivider
-                        ? bangumiList.length + 1
-                        : bangumiList.length),
+                childCount: shouldInsertDivider
+                    ? bangumiList.length + 1
+                    : bangumiList.length,
               ),
             ),
           ],
         ),
       );
     }
+
     return listViewList;
   }
 
