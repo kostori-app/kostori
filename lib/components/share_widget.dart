@@ -606,9 +606,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                     const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
                 child: GridView.builder(
                   shrinkWrap: true,
-                  // ✅ 必须加这个才能在嵌套滚动时正常布局
                   physics: NeverScrollableScrollPhysics(),
-                  // ✅ 禁止它自己滚动
                   itemCount: keyList.length,
                   gridDelegate:
                       SliverGridDelegateWithBangumiItems(widget.useBriefMode!),

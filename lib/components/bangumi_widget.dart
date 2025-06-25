@@ -18,6 +18,7 @@ import 'package:photo_view/photo_view.dart';
 
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/components/components.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 import '../foundation/image_loader/cached_image.dart';
 import '../utils/io.dart';
@@ -479,77 +480,190 @@ class BangumiWidget {
   }
 
   static void showImagePreview(
-      BuildContext context, String url, String title, String heroTag) {
+    BuildContext context,
+    String url,
+    String title,
+    String heroTag, {
+    List<File>? allUrls,
+    int? initialIndex,
+  }) {
     try {
-      // 判断是否是本地文件（兼容 Windows、Android、iOS、macOS、Linux）
       final isLocal = File(url).existsSync();
 
-      final ImageProvider img = isLocal
-          ? FileImage(File(url))
-          : CachedImageProvider(url, sourceKey: 'bangumi');
+      // 计算初始索引
+      int initIndex = 0;
+      if (allUrls != null && allUrls.isNotEmpty) {
+        initIndex = initialIndex ??
+            allUrls
+                .indexWhere((f) => f.path == url)
+                .clamp(0, allUrls.length - 1);
+      }
+
+      final pageController = PageController(initialPage: initIndex);
+      final urls = ValueNotifier<List<File>>(allUrls ?? []);
+      final currentIndex = ValueNotifier<int>(initIndex);
+
+      final ImageProvider img =
+          isLocal ? FileImage(File(url)) : NetworkImage(url);
 
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
-            child: Scaffold(
-              extendBodyBehindAppBar: true,
-              backgroundColor: Colors.black,
-              body: Stack(
-                children: [
-                  PhotoView.customChild(
-                    minScale: PhotoViewComputedScale.contained,
-                    maxScale: PhotoViewComputedScale.covered * 3,
-                    heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
-                    backgroundDecoration:
-                        const BoxDecoration(color: Colors.black),
-                    child: Image(
-                      image: img,
-                      fit: BoxFit.contain,
+          builder: (_) => StatefulBuilder(builder: (context, setState) {
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light,
+              child: Scaffold(
+                extendBodyBehindAppBar: true,
+                backgroundColor: Colors.black,
+                body: Stack(
+                  children: [
+                    ValueListenableBuilder<List<File>>(
+                      valueListenable: urls,
+                      builder: (context, imageList, _) {
+                        if (imageList.length > 1) {
+                          return PhotoViewGallery.builder(
+                            itemCount: imageList.length,
+                            pageController: pageController,
+                            backgroundDecoration:
+                                const BoxDecoration(color: Colors.black),
+                            onPageChanged: (i) => currentIndex.value = i,
+                            builder: (context, i) {
+                              final file = imageList[i];
+                              return PhotoViewGalleryPageOptions(
+                                imageProvider: FileImage(file),
+                                heroAttributes:
+                                    PhotoViewHeroAttributes(tag: file.path),
+                                minScale: PhotoViewComputedScale.contained,
+                                maxScale: PhotoViewComputedScale.covered * 3,
+                              );
+                            },
+                          );
+                        } else {
+                          return PhotoView.customChild(
+                            minScale: PhotoViewComputedScale.contained,
+                            maxScale: PhotoViewComputedScale.covered * 3,
+                            heroAttributes:
+                                PhotoViewHeroAttributes(tag: heroTag),
+                            backgroundDecoration:
+                                const BoxDecoration(color: Colors.black),
+                            child: Image(
+                              image: img,
+                              fit: BoxFit.contain,
+                            ),
+                          );
+                        }
+                      },
                     ),
-                  ),
-                  SafeArea(
-                    child: Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          _iconBackground(
-                            icon: Icons.arrow_back_ios_new,
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 8),
-                          _textBackground(title),
-                          const Spacer(),
-                          !isLocal
-                              ? _iconBackground(
-                                  icon: Icons.download,
-                                  onPressed: () {
-                                    saveImageToGallery(context, url);
-                                  },
-                                )
-                              : _iconBackground(
-                                  icon: Icons.share,
-                                  onPressed: () async {
-                                    final file = File(url);
-                                    Uint8List data = await file.readAsBytes();
-                                    Share.shareFile(
-                                        data: data,
-                                        filename: heroTag,
-                                        mime: 'image/png');
-                                  },
-                                ),
-                        ],
+                    SafeArea(
+                      child: Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            _iconBackground(
+                              icon: Icons.arrow_back_ios_new,
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const SizedBox(width: 8),
+                            _textBackground(title),
+                            const Spacer(),
+                            ValueListenableBuilder<int>(
+                              valueListenable: currentIndex,
+                              builder: (context, index, _) {
+                                if (urls.value.isEmpty && !isLocal) {
+                                  return const SizedBox();
+                                }
+
+                                final currentFile = urls.value.isNotEmpty
+                                    ? urls.value[index]
+                                    : File(url);
+
+                                final localExists = currentFile.existsSync();
+
+                                return Row(
+                                  children: [
+                                    _iconBackground(
+                                      icon: Icons.share,
+                                      onPressed: () async {
+                                        final file = File(url);
+                                        Uint8List data =
+                                            await file.readAsBytes();
+                                        Share.shareFile(
+                                            data: data,
+                                            filename: heroTag,
+                                            mime: 'image/png');
+                                      },
+                                    ),
+                                    const SizedBox(width: 8),
+                                    if (localExists)
+                                      _iconBackground(
+                                        icon: Icons.delete,
+                                        onPressed: () async {
+                                          showConfirmDialog(
+                                            context: App.rootContext,
+                                            title: "确认删除该图片?".tl,
+                                            content: '删除后将无法恢复',
+                                            btnColor: context.colorScheme.error,
+                                            onConfirm: () async {
+                                              try {
+                                                await currentFile.delete();
+
+                                                if (urls.value.isNotEmpty) {
+                                                  urls.value.removeAt(index);
+
+                                                  if (urls.value.isEmpty) {
+                                                    Navigator.pop(context);
+                                                    return;
+                                                  }
+
+                                                  final newIndex = index >=
+                                                          urls.value.length
+                                                      ? urls.value.length - 1
+                                                      : index;
+
+                                                  currentIndex.value = newIndex;
+                                                  urls.value = [
+                                                    ...urls.value
+                                                  ]; // 触发刷新
+
+                                                  WidgetsBinding.instance
+                                                      .addPostFrameCallback(
+                                                          (_) {
+                                                    if (pageController
+                                                        .hasClients) {
+                                                      pageController
+                                                          .jumpToPage(newIndex);
+                                                    }
+                                                  });
+                                                } else {
+                                                  Navigator.pop(
+                                                      context); // 单图直接关闭
+                                                }
+                                              } catch (e) {
+                                                Log.addLog(LogLevel.error,
+                                                    '删除失败', e.toString());
+                                                App.rootContext.showMessage(
+                                                    message: '删除失败: $e');
+                                              }
+                                            },
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ).padding(
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ],
+                ).padding(
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
               ),
-            ),
-          ),
+            );
+          }),
         ),
       );
     } catch (e, s) {

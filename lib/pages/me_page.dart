@@ -1,7 +1,7 @@
-import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/translations.dart';
@@ -174,26 +174,21 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
   }
 }
 
-class _ImageManipulation extends StatefulWidget {
+class _ImageManipulation extends ConsumerStatefulWidget {
   const _ImageManipulation();
 
   @override
-  State<_ImageManipulation> createState() => _ImageManipulationState();
+  ConsumerState<_ImageManipulation> createState() => _ImageManipulationState();
 }
 
-class _ImageManipulationState extends State<_ImageManipulation> {
-  List<File> images = [];
-
+class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
   @override
   void initState() {
     super.initState();
-    loadImages();
-  }
-
-  void loadImages() async {
-    final files = await loadKostoriImages();
-    setState(() {
-      images = files;
+    // 延迟执行避免在构建期间修改provider
+    Future.microtask(() async {
+      final files = await loadKostoriImages();
+      ref.read(imagesProvider.notifier).setImages(files);
     });
   }
 
@@ -204,9 +199,7 @@ class _ImageManipulationState extends State<_ImageManipulation> {
       directory = (await KostoriFolder.checkPermissionAndPrepareFolder())!;
     } else {
       final folderDirectory = await getApplicationDocumentsDirectory();
-      // 目标文件夹路径
       final folderPath = '${folderDirectory.path}/Kostori';
-      // 检查文件夹是否存在，如果不存在则创建它
       final folder = Directory(folderPath);
       if (!await folder.exists()) {
         await folder.create(recursive: true);
@@ -229,7 +222,6 @@ class _ImageManipulationState extends State<_ImageManipulation> {
           ext.endsWith('.gif');
     }).toList();
 
-    // 按文件修改时间降序排列（越新的排前面）
     files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
 
     return files;
@@ -237,6 +229,8 @@ class _ImageManipulationState extends State<_ImageManipulation> {
 
   @override
   Widget build(BuildContext context) {
+    final images = ref.watch(imagesProvider);
+
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -249,8 +243,10 @@ class _ImageManipulationState extends State<_ImageManipulation> {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () async {
-            context.to((() => ImageManipulationPage()));
+          onTap: () {
+            context.to(() => ImageManipulationPage(
+                  initialImages: images,
+                ));
           },
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             SizedBox(
@@ -272,10 +268,7 @@ class _ImageManipulationState extends State<_ImageManipulation> {
                   ),
                   const Spacer(),
                   const Icon(Icons.calendar_month),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  // Text('Timetable'.tl)
+                  const SizedBox(width: 10),
                 ],
               ),
             ).paddingHorizontal(16),
@@ -293,16 +286,17 @@ class _ImageManipulationState extends State<_ImageManipulation> {
                 ),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: min(images.length, 10),
+                  itemCount: images.length > 10 ? 10 : images.length,
                   itemBuilder: (context, index) {
                     final file = images[index];
                     return Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 4),
                       child: Card(
                         margin: const EdgeInsets.all(8),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
-                        clipBehavior: Clip.antiAlias, // 必须设置，才能裁剪圆角 + 显示水波纹
+                        clipBehavior: Clip.antiAlias,
                         child: InkWell(
                           onTap: () {
                             BangumiWidget.showImagePreview(
@@ -313,7 +307,10 @@ class _ImageManipulationState extends State<_ImageManipulation> {
                                     : file.path.split('\\').last,
                                 App.isAndroid
                                     ? file.path.split('/').last
-                                    : file.path.split('\\').last);
+                                    : file.path.split('\\').last,
+                                allUrls: images,
+                                initialIndex: index);
+                            // provider管理，不用调用loadImages
                           },
                           child: SizedBox(
                             width: 300 * 1.8,

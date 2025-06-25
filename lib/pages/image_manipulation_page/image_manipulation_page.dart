@@ -1,23 +1,148 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/image_manipulation_page/render_dialogue_compose_page.dart';
 import 'package:kostori/pages/image_manipulation_page/render_horizontal_pic_page.dart';
 import 'package:kostori/pages/image_manipulation_page/render_long_pic_page.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../components/bangumi_widget.dart';
 import '../../components/components.dart';
 import '../../foundation/consts.dart';
 import '../../foundation/log.dart';
 import '../../utils/io.dart';
 
-class ImageManipulationPage extends StatefulWidget {
-  const ImageManipulationPage({super.key});
+final imagesProvider = StateNotifierProvider<ImagesNotifier, List<File>>((ref) {
+  return ImagesNotifier();
+});
 
-  @override
-  State<ImageManipulationPage> createState() => _ImageManipulationPageState();
+class ImagesNotifier extends StateNotifier<List<File>> {
+  ImagesNotifier() : super([]);
+
+  void setImages(List<File> imgs) => state = imgs;
+
+  Future<void> loadImages() async {
+    // 调用你那个加载图片文件夹的方法
+    final files = await loadKostoriImages();
+    state = files;
+  }
+
+  Future<List<File>> loadKostoriImages() async {
+    Directory directory;
+
+    if (App.isAndroid) {
+      directory = (await KostoriFolder.checkPermissionAndPrepareFolder())!;
+    } else {
+      final folderDirectory = await getApplicationDocumentsDirectory();
+      final folderPath = '${folderDirectory.path}/Kostori';
+      final folder = Directory(folderPath);
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+        Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+      }
+      directory = folder;
+    }
+
+    if (!await directory.exists()) {
+      return [];
+    }
+
+    final files =
+        directory.listSync(recursive: false).whereType<File>().where((file) {
+      final ext = file.path.toLowerCase();
+      return ext.endsWith('.jpg') ||
+          ext.endsWith('.jpeg') ||
+          ext.endsWith('.png') ||
+          ext.endsWith('.webp') ||
+          ext.endsWith('.gif');
+    }).toList();
+
+    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+
+    return files;
+  }
+
+  void deleteIndexes(List<int> indexes) {
+    final newList = [...state];
+    // 从大到小删除，防止索引错乱
+    indexes.sort((a, b) => b.compareTo(a));
+    for (var i in indexes) {
+      try {
+        newList[i].deleteSync();
+        newList.removeAt(i);
+      } catch (e) {
+        // 处理异常或打印日志
+      }
+    }
+    state = newList;
+  }
 }
 
-class _ImageManipulationPageState extends State<ImageManipulationPage> {
+final multiSelectModeProvider = StateProvider<bool>((ref) => false);
+final selectedIndexesProvider = StateProvider<Set<int>>((ref) => {});
+
+class ImageManipulationPage extends ConsumerStatefulWidget {
+  final List<File> initialImages;
+
+  const ImageManipulationPage({required this.initialImages, super.key});
+
+  @override
+  ConsumerState<ImageManipulationPage> createState() =>
+      _ImageManipulationPageState();
+}
+
+class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
+  @override
+  void initState() {
+    super.initState();
+    // 初始化图片
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(imagesProvider.notifier).setImages(widget.initialImages);
+    });
+  }
+
+  void _onTapImage(int index) {
+    final multiSelect = ref.read(multiSelectModeProvider);
+    if (multiSelect) {
+      final selected = Set<int>.from(ref.read(selectedIndexesProvider));
+      if (selected.contains(index)) {
+        selected.remove(index);
+        if (selected.isEmpty) {
+          ref.read(multiSelectModeProvider.notifier).state = false;
+        }
+      } else {
+        selected.add(index);
+      }
+      ref.read(selectedIndexesProvider.notifier).state = selected;
+    } else {
+      final images = ref.read(imagesProvider);
+      final file = images[index];
+      BangumiWidget.showImagePreview(
+        context,
+        file.path,
+        App.isAndroid ? file.path.split('/').last : file.path.split('\\').last,
+        App.isAndroid ? file.path.split('/').last : file.path.split('\\').last,
+        allUrls: images,
+        initialIndex: index,
+      );
+    }
+  }
+
+  void _onLongPressImage(int index) {
+    if (!ref.read(multiSelectModeProvider)) {
+      ref.read(multiSelectModeProvider.notifier).state = true;
+      ref.read(selectedIndexesProvider.notifier).state = {index};
+    }
+  }
+
+  void _deleteSelected() {
+    final selected = ref.read(selectedIndexesProvider).toList();
+    ref.read(imagesProvider.notifier).deleteIndexes(selected);
+    ref.read(selectedIndexesProvider.notifier).state = {};
+    ref.read(multiSelectModeProvider.notifier).state = false;
+  }
+
   Widget _buildCard({
     required IconData icon,
     required String title,
@@ -50,21 +175,114 @@ class _ImageManipulationPageState extends State<ImageManipulationPage> {
     );
   }
 
+  Widget _buildGrid() {
+    final images = ref.watch(imagesProvider);
+    final multiSelect = ref.watch(multiSelectModeProvider);
+    final selectedIndexes = ref.watch(selectedIndexesProvider);
+
+    if (images.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.all(8),
+      sliver: SliverGrid(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: App.isAndroid ? 4 : 5,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final file = images[index];
+            final isSelected = selectedIndexes.contains(index);
+
+            return GestureDetector(
+              onTap: () => _onTapImage(index),
+              onLongPress: () => _onLongPressImage(index),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Hero(
+                    tag: App.isAndroid
+                        ? file.path.split('/').last
+                        : file.path.split('\\').last,
+                    child: Image.file(file, fit: BoxFit.cover),
+                  ),
+                  if (multiSelect)
+                    Container(
+                        color: isSelected ? Colors.black45 : Colors.black26),
+                  if (multiSelect)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Icon(
+                        isSelected
+                            ? Icons.check_circle
+                            : Icons.radio_button_unchecked,
+                        color: isSelected ? Colors.greenAccent : Colors.white70,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+          childCount: images.length,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final multiSelect = ref.watch(multiSelectModeProvider);
+    final selectedIndexes = ref.watch(selectedIndexesProvider);
+    final images = ref.watch(imagesProvider);
+
     var widget = SmoothCustomScrollView(slivers: [
-      SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
-      SliverAppbar(title: Text('图片操作')),
+      SliverAppbar(
+        title: multiSelect
+            ? Text('${selectedIndexes.length} 张已选')
+            : Text('图片操作(${images.length})'),
+        actions: [
+          if (multiSelect) ...[
+            TextButton.icon(
+              onPressed: () {
+                ref.read(multiSelectModeProvider.notifier).state = false;
+                ref.read(selectedIndexesProvider.notifier).state = {};
+              },
+              icon: const Icon(Icons.clear),
+              label: Text('Cancel'.tl),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                showConfirmDialog(
+                  context: App.rootContext,
+                  title: "Delete".tl,
+                  content: '删除${selectedIndexes.length}张图片',
+                  btnColor: context.colorScheme.error,
+                  onConfirm: () {
+                    _deleteSelected();
+                  },
+                );
+              },
+              icon: const Icon(Icons.delete, color: Colors.red),
+              label: Text('Delete'.tl, style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ],
+      ),
       SliverToBoxAdapter(
         child: _buildCard(
           icon: Icons.photo,
           title: '拼长图',
           onTap: () {
-            context.to((() => SelectImagesPage(
+            context.to(() => SelectImagesPage(
                 maxSelection: 9,
                 onSelected: (selectedImages) {
-                  context.to((() => RenderLongPicPage(images: selectedImages)));
-                })));
+                  context.to(() => RenderLongPicPage(images: selectedImages));
+                }));
           },
         ),
       ),
@@ -73,12 +291,12 @@ class _ImageManipulationPageState extends State<ImageManipulationPage> {
           icon: Icons.image,
           title: '拼横图',
           onTap: () {
-            context.to((() => SelectImagesPage(
+            context.to(() => SelectImagesPage(
                 maxSelection: 9,
                 onSelected: (selectedImages) {
                   context.to(
-                      (() => RenderHorizontalPicPage(images: selectedImages)));
-                })));
+                      () => RenderHorizontalPicPage(images: selectedImages));
+                }));
           },
         ),
       ),
@@ -87,22 +305,16 @@ class _ImageManipulationPageState extends State<ImageManipulationPage> {
           icon: Icons.extension,
           title: '拼台词',
           onTap: () {
-            context.to((() => SelectImagesPage(
+            context.to(() => SelectImagesPage(
                 maxSelection: 9,
                 onSelected: (selectedImages) {
-                  context.to((() =>
-                      RenderDialogueComposePage(images: selectedImages)));
-                })));
+                  context.to(
+                      () => RenderDialogueComposePage(images: selectedImages));
+                }));
           },
         ),
       ),
-      // SliverToBoxAdapter(
-      //   child: _buildCard(
-      //     icon: Icons.grid_view,
-      //     title: '拼网格',
-      //     onTap: () {},
-      //   ),
-      // ),
+      _buildGrid()
     ]);
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
@@ -189,8 +401,13 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: Appbar(
         title: const Text('选择图片'),
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.maybePop(context),
+        ),
         actions: [
           if (selectedImages.isNotEmpty)
             IconButton(
@@ -204,8 +421,8 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(8),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: App.isAndroid ? 4 : 5,
           childAspectRatio: 1,
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,

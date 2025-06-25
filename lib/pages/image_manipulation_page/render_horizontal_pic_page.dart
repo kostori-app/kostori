@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../components/components.dart';
 import '../../foundation/app.dart';
 import '../../utils/utils.dart';
+import 'image_manipulation_page.dart';
 
 class HorizontalImagePainter extends CustomPainter {
   final List<ui.Image> images;
@@ -115,12 +117,14 @@ class _RenderHorizontalPicPageState
   late List<File> imageList;
 
   final showOuterBorderProvider = StateProvider<bool>((ref) => false);
-  final outerBorderColorProvider = StateProvider<Color>((ref) => Colors.black);
-  final outerBorderWidthProvider = StateProvider<double>((ref) => 2.0);
-  final outerBorderRadiusProvider = StateProvider<double>((ref) => 8.0);
+  final outerBorderColorProvider =
+      StateProvider<Color>((ref) => Color(0xFF6677ff));
+  final outerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
+  final outerBorderRadiusProvider = StateProvider<double>((ref) => 20.0);
   final showInnerBordersProvider = StateProvider<bool>((ref) => false);
-  final innerBorderColorProvider = StateProvider<Color>((ref) => Colors.black);
-  final innerBorderWidthProvider = StateProvider<double>((ref) => 1.0);
+  final innerBorderColorProvider =
+      StateProvider<Color>((ref) => Color(0xFF6677ff));
+  final innerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
 
   @override
   void initState() {
@@ -214,6 +218,8 @@ class _RenderHorizontalPicPageState
       if (byteData != null) {
         final bytes = byteData.buffer.asUint8List();
         await Utils.saveLongImage(context, bytes);
+        final notifier = ref.read(imagesProvider.notifier);
+        await notifier.loadImages();
         App.rootContext.showMessage(message: '保存成功');
       }
     } catch (e) {
@@ -276,11 +282,11 @@ class _RenderHorizontalPicPageState
                         ref.read(outerBorderColorProvider.notifier).state = c;
                         setModalState(() {});
                       }),
-                      _buildSlider("外边框粗细", outerBorderWidth, 0, 60, (v) {
+                      _buildSlider("外边框粗细", outerBorderWidth, 0, 120, (v) {
                         ref.read(outerBorderWidthProvider.notifier).state = v;
                         setModalState(() {});
                       }),
-                      _buildSlider("外边框圆角", outerBorderRadius, 0, 60, (v) {
+                      _buildSlider("外边框圆角", outerBorderRadius, 0, 120, (v) {
                         ref.read(outerBorderRadiusProvider.notifier).state = v;
                         setModalState(() {});
                       }),
@@ -302,7 +308,7 @@ class _RenderHorizontalPicPageState
                         ref.read(innerBorderColorProvider.notifier).state = c;
                         setModalState(() {});
                       }),
-                      _buildSlider("内边框粗细", innerBorderWidth, 0, 60, (v) {
+                      _buildSlider("内边框粗细", innerBorderWidth, 0, 120, (v) {
                         ref.read(innerBorderWidthProvider.notifier).state = v;
                         setModalState(() {});
                       }),
@@ -450,6 +456,7 @@ class _RenderHorizontalPicPageState
         }
 
         final images = snapshot.data!;
+        if (images.isEmpty) return const SizedBox();
 
         final showOuterBorder = ref.watch(showOuterBorderProvider);
         final outerBorderWidth = ref.watch(outerBorderWidthProvider);
@@ -457,42 +464,57 @@ class _RenderHorizontalPicPageState
         final showInnerBorders = ref.watch(showInnerBordersProvider);
         final innerBorderWidth = ref.watch(innerBorderWidthProvider);
 
-        final maxHeight = 300.0;
+        // 👇 计算 contentHeight（最小高度）
+        final contentHeight = images
+            .map((img) => img.height)
+            .reduce((a, b) => a < b ? a : b)
+            .toDouble();
 
-        final contentHeight =
-            maxHeight - (showOuterBorder ? 2 * outerBorderWidth : 0);
+        // 👇 每张图按 contentHeight 缩放的宽度
+        final contentWidths = images
+            .map((img) => img.width * (contentHeight / img.height))
+            .toList();
 
-        double totalWidth = 0;
-        for (var img in images) {
-          final scale = contentHeight / img.height;
-          totalWidth += img.width * scale;
-        }
+        // 👇 内边框宽度总和
+        final totalInnerBorders = showInnerBorders && images.length > 1
+            ? (images.length - 1) * innerBorderWidth
+            : 0.0;
 
-        if (showInnerBorders && images.length > 1) {
-          totalWidth += innerBorderWidth * (images.length - 1);
-        }
+        // 👇 内容总宽度（不含外边框）
+        final totalWidth =
+            contentWidths.fold(0.0, (sum, w) => sum + w) + totalInnerBorders;
 
-        if (showOuterBorder) {
-          totalWidth += 2 * outerBorderWidth;
-        }
+        // 👇 含外边框
+        final fullWidth =
+            showOuterBorder ? totalWidth + 2 * outerBorderWidth : totalWidth;
+        final fullHeight = showOuterBorder
+            ? contentHeight + 2 * outerBorderWidth
+            : contentHeight;
 
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            child: SizedBox(
-              width: totalWidth,
-              // height: fullHeight.toDouble(),
-              child: CustomPaint(
-                painter: HorizontalImagePainter(
-                  images: images,
-                  showOuterBorder: showOuterBorder,
-                  outerBorderColor: ref.read(outerBorderColorProvider),
-                  outerBorderWidth: outerBorderWidth,
-                  outerBorderRadius: outerBorderRadius,
-                  showInnerBorders: showInnerBorders,
-                  innerBorderColor: ref.read(innerBorderColorProvider),
-                  innerBorderWidth: innerBorderWidth,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: totalWidth / 4),
+              child: FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: fullWidth,
+                  height: fullHeight,
+                  child: CustomPaint(
+                    size: Size(fullWidth, fullHeight),
+                    painter: HorizontalImagePainter(
+                      images: images,
+                      showOuterBorder: showOuterBorder,
+                      outerBorderColor: ref.read(outerBorderColorProvider),
+                      outerBorderWidth: outerBorderWidth,
+                      outerBorderRadius: outerBorderRadius,
+                      showInnerBorders: showInnerBorders,
+                      innerBorderColor: ref.read(innerBorderColorProvider),
+                      innerBorderWidth: innerBorderWidth,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -505,21 +527,36 @@ class _RenderHorizontalPicPageState
   Widget _buildBottomButtons() {
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Container(
-        color: Colors.black.toOpacity(0.5),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            ElevatedButton(
-              onPressed: _showBorderSettings,
-              child: const Text('边框颜色'),
-            ),
-            ElevatedButton(
-              onPressed: () => _captureAndSaveLongImage(context),
-              child: const Text('保存长图'),
-            ),
-          ],
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.black.toOpacity(0.35),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _showBorderSettings,
+                      child: const Text('边框颜色'),
+                    ),
+                    const SizedBox(
+                      width: 20,
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _captureAndSaveLongImage(context),
+                      child: const Text('保存长图'),
+                    ),
+                  ],
+                ),
+              )),
         ),
       ),
     );
@@ -528,22 +565,18 @@ class _RenderHorizontalPicPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
+        appBar: Appbar(
           title: const Text('水平拼接长图渲染'),
+          backgroundColor: Colors.transparent,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new),
+            onPressed: () => Navigator.maybePop(context),
+          ),
         ),
         body: Stack(
           children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: 300.0),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: _buildPreview(),
-                    )
-                  ],
-                ),
-              ),
+            Positioned.fill(
+              child: _buildPreview(),
             ),
             _buildBottomButtons()
           ],

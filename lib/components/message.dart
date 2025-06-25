@@ -409,7 +409,7 @@ class ContentDialog extends StatelessWidget {
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: Text("Later".tl),
+                child: Text("Cancel".tl),
               ),
               const Spacer(),
               ...actions

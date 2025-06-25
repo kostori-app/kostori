@@ -6,8 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../components/components.dart';
 import '../../foundation/app.dart';
 import '../../utils/utils.dart';
+import 'image_manipulation_page.dart';
 
 class LongImagePainter extends CustomPainter {
   final List<ui.Image> images;
@@ -225,6 +227,8 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
       if (byteData != null) {
         final bytes = byteData.buffer.asUint8List();
         await Utils.saveLongImage(context, bytes);
+        final notifier = ref.read(imagesProvider.notifier);
+        await notifier.loadImages();
         App.rootContext.showMessage(message: '保存成功');
       }
     } catch (e) {
@@ -535,35 +539,48 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   Widget _buildBottomButtons() {
     return Align(
       alignment: Alignment.bottomCenter,
-      child: Container(
-        color: Colors.black.toOpacity(0.5),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (!isReorderMode)
-              ElevatedButton(
-                onPressed: _showBorderSettings,
-                child: const Text('边框颜色'),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.black.toOpacity(0.35),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!isReorderMode)
+                    ElevatedButton(
+                      onPressed: _showBorderSettings,
+                      child: const Text('边框颜色'),
+                    ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() => isReorderMode = !isReorderMode);
+                    },
+                    child: Text(isReorderMode ? '完成排序' : '进入排序'),
+                  ),
+                  const SizedBox(
+                    width: 20,
+                  ),
+                  if (!isReorderMode)
+                    ElevatedButton(
+                      onPressed: () => _captureAndSaveLongImage(context),
+                      child: const Text('保存长图'),
+                    ),
+                ],
               ),
-            const SizedBox(
-              width: 20,
             ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() => isReorderMode = !isReorderMode);
-              },
-              child: Text(isReorderMode ? '完成排序' : '进入排序'),
-            ),
-            const SizedBox(
-              width: 20,
-            ),
-            if (!isReorderMode)
-              ElevatedButton(
-                onPressed: () => _captureAndSaveLongImage(context),
-                child: const Text('保存长图'),
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -572,13 +589,19 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('生成长图')),
+      appBar: Appbar(
+        title: const Text('生成长图'),
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new),
+          onPressed: () => Navigator.maybePop(context),
+        ),
+      ),
       body: Stack(
         children: [
           Center(
             child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 650.0 // 设置最大宽度为800
-                  ),
+              constraints: BoxConstraints(maxWidth: 650.0),
               child: Stack(
                 children: [
                   Positioned.fill(
