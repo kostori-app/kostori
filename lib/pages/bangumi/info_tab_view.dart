@@ -589,6 +589,17 @@ class _InfoTabViewState extends State<InfoTabView>
                     !widget.isLoading &&
                     widget.bangumiItem.total > 20) ...[
                   const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
                       Text('Rating Statistics Chart'.tl,

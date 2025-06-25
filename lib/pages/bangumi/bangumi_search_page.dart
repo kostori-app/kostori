@@ -42,6 +42,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   String sort = 'rank';
 
   bool _isLoading = false;
+  bool _showFab = false;
 
   String airDate = '';
   String endDate = '';
@@ -101,6 +102,13 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   Future<void> _loadMoreData() async {
+    // 当滚动位置超过 200 像素时显示 FAB
+    final bool showFab = _scrollController.offset > 200;
+    if (showFab != _showFab) {
+      setState(() {
+        _showFab = showFab;
+      });
+    }
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
         !_isLoading &&
@@ -559,7 +567,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       color: Colors.transparent,
       child: Row(
         children: [
-          Text('Showing @l results'.tlParams({'l': bangumiItems.length})),
+          if (bangumiItems.isNotEmpty)
+            Text('Showing @l results'.tlParams({'l': bangumiItems.length})),
           const SizedBox(width: 8),
           IconButton(
               onPressed: () {
@@ -699,7 +708,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 _showSearchHistory = false;
               });
             },
-          )
+          ),
+        IconButton(
+          icon: const Icon(Icons.share),
+          onPressed: () {},
+        ),
       ],
       title: PreferredSize(
         preferredSize: const Size.fromHeight(120),
@@ -834,16 +847,18 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   @override
   Widget build(BuildContext context) {
     Widget widget = Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _scrollController.animateTo(
-            0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        },
-        child: const Icon(Icons.arrow_upward),
-      ),
+      floatingActionButton: _showFab
+          ? FloatingActionButton(
+              onPressed: () {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              },
+              child: const Icon(Icons.arrow_upward),
+            )
+          : null,
       body: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),

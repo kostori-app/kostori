@@ -144,9 +144,13 @@ Future<Map<bool, String?>> checkUpdate() async {
   }
 }
 
-Future<void> checkUpdateUi([bool showMessageIfNoUpdate = true]) async {
+Future<void> checkUpdateUi(
+    [bool showMessageIfNoUpdate = true, bool delay = false]) async {
   var value = await checkUpdate();
   if (value.containsKey(true)) {
+    if (delay) {
+      await Future.delayed(const Duration(seconds: 2));
+    }
     showDialog(
       context: App.rootContext,
       builder: (context) {
