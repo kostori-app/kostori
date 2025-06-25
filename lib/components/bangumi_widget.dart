@@ -26,7 +26,9 @@ import 'misc_components.dart';
 class BangumiWidget {
   static Widget buildBriefMode(
       BuildContext context, BangumiItem bangumiItem, String heroTag,
-      {bool showPlaceholder = true}) {
+      {bool showPlaceholder = true,
+      void Function(BangumiItem)? onTap,
+      void Function(BangumiItem)? onLongPressed}) {
     Widget score() {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -99,11 +101,19 @@ class BangumiWidget {
             return InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
-                      bangumiItem: bangumiItem,
-                      heroTag: heroTag,
-                    ));
+                if (onTap != null) {
+                  onTap(bangumiItem);
+                } else {
+                  App.mainNavigatorKey?.currentContext
+                      ?.to(() => BangumiInfoPage(
+                            bangumiItem: bangumiItem,
+                            heroTag: heroTag,
+                          ));
+                }
               },
+              onLongPress: onLongPressed != null
+                  ? () => onLongPressed(bangumiItem)
+                  : null,
               child: Column(
                 children: [
                   Expanded(
@@ -238,7 +248,9 @@ class BangumiWidget {
   }
 
   static Widget buildDetailedMode(
-      BuildContext context, BangumiItem bangumiItem, String heroTag) {
+      BuildContext context, BangumiItem bangumiItem, String heroTag,
+      {void Function(BangumiItem)? onTap,
+      void Function(BangumiItem)? onLongPressed}) {
     return LayoutBuilder(builder: (context, constrains) {
       final height = constrains.maxHeight - 16;
 
@@ -268,11 +280,17 @@ class BangumiWidget {
       return InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
-            App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
-                  bangumiItem: bangumiItem,
-                  heroTag: heroTag,
-                ));
+            if (onTap != null) {
+              onTap(bangumiItem);
+            } else {
+              App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
+                    bangumiItem: bangumiItem,
+                    heroTag: heroTag,
+                  ));
+            }
           },
+          onLongPress:
+              onLongPressed != null ? () => onLongPressed(bangumiItem) : null,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
             child: Row(

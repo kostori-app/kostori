@@ -17,6 +17,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/utils.dart';
 
 import '../../components/components.dart';
+import '../../components/share_widget.dart';
 import '../../foundation/appdata.dart';
 
 class BangumiSearchPage extends StatefulWidget {
@@ -33,9 +34,13 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   final maxWidth = 1250.0;
   List<String> tags = [];
   List<BangumiItem> bangumiItems = [];
+  Map<BangumiItem, bool> selectedBangumiItems = {};
 
   bool useBriefMode = false;
   bool displayLabels = false;
+  bool multiSelectMode = false;
+
+  int? lastSelectedIndex;
 
   String keyword = '';
 
@@ -112,7 +117,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     if (_scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
         !_isLoading &&
-        bangumiItems.length >= 20) {
+        bangumiItems.length >= 20 &&
+        !multiSelectMode) {
       setState(() {
         _isLoading = true;
       });
@@ -425,17 +431,110 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     );
   }
 
+  void _checkExitSelectMode() {
+    if (selectedBangumiItems.isEmpty) {
+      setState(() {
+        multiSelectMode = false;
+      });
+    }
+  }
+
   // 内容列表（根据选中标签过滤）
   Widget _buildContentListSliver() {
+    void onTap(a) {
+      setState(() {
+        if (selectedBangumiItems.containsKey(a)) {
+          selectedBangumiItems.remove(a);
+          _checkExitSelectMode();
+        } else {
+          selectedBangumiItems[a] = true;
+        }
+        lastSelectedIndex = bangumiItems.indexOf(a);
+      });
+    }
+
+    void onLongPressed(a) {
+      setState(() {
+        if (!multiSelectMode) {
+          multiSelectMode = true;
+          if (!selectedBangumiItems.containsKey(a)) {
+            selectedBangumiItems[a] = true;
+          }
+          lastSelectedIndex = bangumiItems.indexOf(a);
+        } else {
+          if (lastSelectedIndex != null) {
+            int start = lastSelectedIndex!;
+            int end = bangumiItems.indexOf(a);
+            if (start > end) {
+              int temp = start;
+              start = end;
+              end = temp;
+            }
+
+            for (int i = start; i <= end; i++) {
+              if (i == lastSelectedIndex) continue;
+
+              var bangumiItem = bangumiItems[i];
+              if (selectedBangumiItems.containsKey(bangumiItem)) {
+                selectedBangumiItems.remove(bangumiItem);
+              } else {
+                selectedBangumiItems[bangumiItem] = true;
+              }
+            }
+          }
+          lastSelectedIndex = bangumiItems.indexOf(a);
+        }
+        _checkExitSelectMode();
+      });
+    }
+
     return SliverGrid(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
-          return useBriefMode
+          var isSelected = selectedBangumiItems == {}
+              ? false
+              : selectedBangumiItems[bangumiItems[index]] ?? false;
+          var bangumi = useBriefMode
               ? BangumiWidget.buildBriefMode(
-                  context, bangumiItems[index], 'search',
-                  showPlaceholder: false)
+                  context,
+                  bangumiItems[index],
+                  'search',
+                  showPlaceholder: false,
+                  onTap: multiSelectMode
+                      ? (a) {
+                          onTap(a);
+                        }
+                      : null,
+                  onLongPressed: (a) {
+                    onLongPressed(a);
+                  },
+                )
               : BangumiWidget.buildDetailedMode(
-                  context, bangumiItems[index], 'search');
+                  context, bangumiItems[index], 'search',
+                  onTap: multiSelectMode
+                      ? (a) {
+                          onTap(a);
+                        }
+                      : null, onLongPressed: (a) {
+                  onLongPressed(a);
+                });
+
+          if (selectedBangumiItems.isEmpty) {
+            return bangumi;
+          }
+          return AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Theme.of(context)
+                        .colorScheme
+                        .secondaryContainer
+                        .toOpacity(0.72)
+                    : null,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(4),
+              child: bangumi);
         },
         childCount: bangumiItems.length,
       ),
@@ -637,6 +736,70 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     );
   }
 
+  Widget _multiSelectBoxWidget(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16),
+      width: MediaQuery.of(context).size.width - 30,
+      color: Colors.transparent,
+      child: Row(
+        children: [
+          if (bangumiItems.isNotEmpty)
+            Text("Selected @c animes"
+                .tlParams({"c": selectedBangumiItems.length})),
+          const SizedBox(width: 8),
+          IconButton(
+              onPressed: () {
+                selectedBangumiItems.clear();
+                multiSelectMode = false;
+                setState(() {});
+              },
+              tooltip: "Clear Tags".tl,
+              icon: const Icon(Icons.clear_all)),
+          const Spacer(),
+          IconButton(
+              onPressed: () {
+                setState(() {
+                  selectedBangumiItems =
+                      bangumiItems.asMap().map((k, v) => MapEntry(v, true));
+                });
+              },
+              tooltip: "Select All".tl,
+              icon: Icon(Icons.select_all)),
+          IconButton(
+              onPressed: () {
+                setState(() {
+                  selectedBangumiItems.clear();
+                  multiSelectMode = false;
+                });
+              },
+              tooltip: "Deselect".tl,
+              icon: Icon(Icons.deselect)),
+          IconButton(
+              onPressed: () {
+                setState(() {
+                  for (var b in bangumiItems) {
+                    if (selectedBangumiItems.containsKey(b)) {
+                      selectedBangumiItems.remove(b);
+                    } else {
+                      selectedBangumiItems[b] = true;
+                    }
+                  }
+                });
+              },
+              tooltip: "Invert Selection".tl,
+              icon: Icon(Icons.flip)),
+          IconButton(
+              onPressed: () {
+                useBriefMode = !useBriefMode;
+                setState(() {});
+              },
+              tooltip: "Switch Layout".tl,
+              icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda)),
+        ],
+      ),
+    );
+  }
+
   Future<void> _performSearch(String value) async {
     value = value.trim();
     if (value.isEmpty) return;
@@ -709,10 +872,21 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               });
             },
           ),
-        IconButton(
-          icon: const Icon(Icons.share),
-          onPressed: () {},
-        ),
+        if (multiSelectMode)
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () {
+              showPopUpWidget(
+                App.rootContext,
+                StatefulBuilder(builder: (context, setState) {
+                  return ShareWidget(
+                    selectedBangumiItems: selectedBangumiItems,
+                    useBriefMode: useBriefMode,
+                  );
+                }),
+              );
+            },
+          ),
       ],
       title: PreferredSize(
         preferredSize: const Size.fromHeight(120),
@@ -876,7 +1050,10 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   ),
                 if (airDate.isNotEmpty || endDate.isNotEmpty)
                   _dataTagsWidget(context),
-                SliverToBoxAdapter(child: _toolBoxWidget(context)),
+                if (!multiSelectMode)
+                  SliverToBoxAdapter(child: _toolBoxWidget(context)),
+                if (multiSelectMode)
+                  SliverToBoxAdapter(child: _multiSelectBoxWidget(context)),
                 _buildContentListSliver(),
               ],
               if (_isLoading)
@@ -904,7 +1081,22 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       ),
     );
 
-    return widget;
+    return PopScope(
+      canPop: !multiSelectMode && !_showSearchHistory,
+      onPopInvokedWithResult: (didPop, result) {
+        if (multiSelectMode) {
+          setState(() {
+            multiSelectMode = false;
+            selectedBangumiItems.clear();
+          });
+        } else if (_showSearchHistory) {
+          setState(() {
+            _showSearchHistory = false;
+          });
+        }
+      },
+      child: widget,
+    );
   }
 }
 
