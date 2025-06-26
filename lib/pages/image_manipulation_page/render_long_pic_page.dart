@@ -120,12 +120,14 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   bool isReorderMode = false;
 
   final showOuterBorderProvider = StateProvider<bool>((ref) => false);
-  final outerBorderColorProvider = StateProvider<Color>((ref) => Colors.black);
-  final outerBorderWidthProvider = StateProvider<double>((ref) => 2.0);
-  final outerBorderRadiusProvider = StateProvider<double>((ref) => 8.0);
+  final outerBorderColorProvider =
+      StateProvider<Color>((ref) => Color(0xFF6677ff));
+  final outerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
+  final outerBorderRadiusProvider = StateProvider<double>((ref) => 20.0);
   final showInnerBordersProvider = StateProvider<bool>((ref) => false);
-  final innerBorderColorProvider = StateProvider<Color>((ref) => Colors.black);
-  final innerBorderWidthProvider = StateProvider<double>((ref) => 1.0);
+  final innerBorderColorProvider =
+      StateProvider<Color>((ref) => Color(0xFF6677ff));
+  final innerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
 
   final ScrollController _scrollController = ScrollController();
 
@@ -311,11 +313,11 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
                         ref.read(outerBorderColorProvider.notifier).state = c;
                         setModalState(() {});
                       }),
-                      _buildSlider("外边框粗细", outerBorderWidth, 0, 60, (v) {
+                      _buildSlider("外边框粗细", outerBorderWidth, 0, 120, (v) {
                         ref.read(outerBorderWidthProvider.notifier).state = v;
                         setModalState(() {});
                       }),
-                      _buildSlider("外边框圆角", outerBorderRadius, 0, 60, (v) {
+                      _buildSlider("外边框圆角", outerBorderRadius, 0, 120, (v) {
                         ref.read(outerBorderRadiusProvider.notifier).state = v;
                         setModalState(() {});
                       }),
@@ -337,7 +339,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
                         ref.read(innerBorderColorProvider.notifier).state = c;
                         setModalState(() {});
                       }),
-                      _buildSlider("内边框粗细", innerBorderWidth, 0, 60, (v) {
+                      _buildSlider("内边框粗细", innerBorderWidth, 0, 120, (v) {
                         ref.read(innerBorderWidthProvider.notifier).state = v;
                         setModalState(() {});
                       }),
@@ -472,9 +474,6 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   }
 
   Widget _buildMainCanvasPreview() {
-    // 你可以适当控制这个最大宽度，比如从 ref 或常量中读取
-    const maxWidth = 650.0;
-
     final showOuterBorder = ref.watch(showOuterBorderProvider);
     final outerBorderColor = ref.watch(outerBorderColorProvider);
     final outerBorderWidth = ref.watch(outerBorderWidthProvider);
@@ -492,40 +491,48 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         }
 
         final images = snapshot.data!;
-        final contentWidth =
-            maxWidth - (showOuterBorder ? 2 * outerBorderWidth : 0);
 
-        double totalHeight = 0;
-        for (var img in images) {
-          final scale = contentWidth / img.width;
-          totalHeight += img.height * scale;
-        }
+        // 原地计算尺寸逻辑（与 _captureAndSaveLongImage 相同）
+        final contentWidth = images
+            .map((img) => img.width)
+            .reduce((a, b) => a < b ? a : b)
+            .toDouble();
+        final contentHeights = images
+            .map((img) => img.height * (contentWidth / img.width))
+            .toList();
+        final totalInnerBorders =
+            showInnerBorders ? (images.length - 1) * innerBorderWidth : 0.0;
+        final totalHeight =
+            contentHeights.fold(0.0, (a, b) => a + b) + totalInnerBorders;
 
-        if (showInnerBorders && images.length > 1) {
-          totalHeight += innerBorderWidth * (images.length - 1);
-        }
+        final fullWidth = showOuterBorder
+            ? contentWidth + outerBorderWidth * 2
+            : contentWidth;
+        final fullHeight =
+            showOuterBorder ? totalHeight + outerBorderWidth * 2 : totalHeight;
 
-        if (showOuterBorder) {
-          totalHeight += 2 * outerBorderWidth;
-        }
-
-        return Center(
-          child: SingleChildScrollView(
+        return SingleChildScrollView(
+          child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: maxWidth),
-              child: SizedBox(
-                width: maxWidth,
-                height: totalHeight,
-                child: CustomPaint(
-                  painter: LongImagePainter(
-                    images: images,
-                    showOuterBorder: showOuterBorder,
-                    outerBorderColor: outerBorderColor,
-                    outerBorderWidth: outerBorderWidth,
-                    outerBorderRadius: outerBorderRadius,
-                    showInnerBorders: showInnerBorders,
-                    innerBorderColor: innerBorderColor,
-                    innerBorderWidth: innerBorderWidth,
+              constraints: const BoxConstraints(maxWidth: 650),
+              child: FittedBox(
+                fit: BoxFit.contain,
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: fullWidth,
+                  height: fullHeight,
+                  child: CustomPaint(
+                    size: Size(fullWidth, fullHeight),
+                    painter: LongImagePainter(
+                      images: images,
+                      showOuterBorder: showOuterBorder,
+                      outerBorderColor: outerBorderColor,
+                      outerBorderWidth: outerBorderWidth,
+                      outerBorderRadius: outerBorderRadius,
+                      showInnerBorders: showInnerBorders,
+                      innerBorderColor: innerBorderColor,
+                      innerBorderWidth: innerBorderWidth,
+                    ),
                   ),
                 ),
               ),
@@ -599,20 +606,17 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
       ),
       body: Stack(
         children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: 650.0),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: isReorderMode
-                        ? _buildReorderView()
-                        : _buildMainCanvasPreview(),
-                  ),
-                ],
+          if (isReorderMode)
+            Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: 650),
+                child: _buildReorderView(),
               ),
             ),
-          ),
+          if (!isReorderMode)
+            Positioned.fill(
+              child: _buildMainCanvasPreview(),
+            ),
           _buildBottomButtons(),
         ],
       ),

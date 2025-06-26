@@ -437,11 +437,11 @@ class _RenderDialogueComposePageState
                         ref.read(outerBorderColorProvider.notifier).state = c;
                         setModalState(() {});
                       }),
-                      _buildSlider("外边框粗细", outerBorderWidth, 0, 80, (v) {
+                      _buildSlider("外边框粗细", outerBorderWidth, 0, 120, (v) {
                         ref.read(outerBorderWidthProvider.notifier).state = v;
                         setModalState(() {});
                       }),
-                      _buildSlider("外边框圆角", outerBorderRadius, 0, 80, (v) {
+                      _buildSlider("外边框圆角", outerBorderRadius, 0, 120, (v) {
                         ref.read(outerBorderRadiusProvider.notifier).state = v;
                         setModalState(() {});
                       }),
@@ -756,6 +756,204 @@ class _RenderDialogueComposePageState
     );
   }
 
+  Widget _buildBottomButtons() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8), // 这里调节模糊强度
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black.toOpacity(0.35),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (!isReorderMode && !isCroppingMode) ...[
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.color_lens),
+                      label: const Text("边框颜色"),
+                      onPressed: _showBorderSettings,
+                    ),
+                    const SizedBox(width: 20)
+                  ],
+                  if (!isCroppingMode)
+                    ElevatedButton.icon(
+                      icon: Icon(isReorderMode ? Icons.check : Icons.sort),
+                      label: Text(isReorderMode ? "完成排序" : "排序图片"),
+                      onPressed: () {
+                        setState(() {
+                          isReorderMode = !isReorderMode;
+                        });
+                      },
+                    ),
+                  if (!isReorderMode && !isCroppingMode)
+                    const SizedBox(width: 20),
+                  if (!isReorderMode) ...[
+                    ElevatedButton.icon(
+                      icon: Icon(isCroppingMode ? Icons.check : Icons.crop),
+                      label: Text(isCroppingMode ? "完成裁剪" : "裁剪图片"),
+                      onPressed: () {
+                        setState(() {
+                          isCroppingMode = !isCroppingMode;
+                        });
+                      },
+                    )
+                  ],
+                  if (isCroppingMode) ...[
+                    const SizedBox(width: 20),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.vertical_align_center),
+                      label: const Text("统一高度"),
+                      onPressed: () {
+                        double targetHeight =
+                            cropHeights.length > 1 ? cropHeights[1] : 120.0;
+                        final controller = TextEditingController(
+                            text: targetHeight.toStringAsFixed(0));
+
+                        showGeneralDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          barrierLabel: '设置统一高度',
+                          barrierColor: Colors.black.toOpacity(0.3),
+                          // 遮罩半透明黑
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) {
+                            return Center(
+                              child: BackdropFilter(
+                                filter: ui.ImageFilter.blur(
+                                    sigmaX: 8, sigmaY: 8), // 背景模糊
+                                child: Material(
+                                  color: Colors.black
+                                      .toOpacity(0.3), // 对话框背景半透明，配合模糊更佳
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    width: 650,
+                                    padding: const EdgeInsets.all(16),
+                                    child: StatefulBuilder(
+                                      builder: (context, setStates) {
+                                        void updateHeight(double value) {
+                                          targetHeight =
+                                              value.clamp(0.0, 5000.0);
+
+                                          final newText =
+                                              targetHeight.toStringAsFixed(0);
+
+                                          if (controller.text != newText) {
+                                            controller.text = newText;
+                                            controller.selection =
+                                                TextSelection.fromPosition(
+                                                    TextPosition(
+                                                        offset:
+                                                            newText.length));
+                                          }
+                                        }
+
+                                        return Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              "设置统一高度",
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleLarge,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Slider(
+                                              min: 10.0,
+                                              max: 1080.0,
+                                              value: targetHeight.clamp(
+                                                  50.0, 1080.0),
+                                              onChanged: (value) {
+                                                setStates(
+                                                    () => updateHeight(value));
+                                              },
+                                            ),
+                                            const SizedBox(height: 20),
+                                            TextField(
+                                              controller: controller,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              decoration: const InputDecoration(
+                                                labelText: '高度（px）',
+                                                border: OutlineInputBorder(),
+                                                isDense: true,
+                                                contentPadding:
+                                                    EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 8),
+                                              ),
+                                              onChanged: (value) {
+                                                final parsed =
+                                                    double.tryParse(value);
+                                                if (parsed != null) {
+                                                  setStates(() =>
+                                                      updateHeight(parsed));
+                                                }
+                                              },
+                                            ),
+                                            const SizedBox(height: 24),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.end,
+                                              children: [
+                                                TextButton(
+                                                  child: const Text("取消"),
+                                                  onPressed: () =>
+                                                      Navigator.of(context)
+                                                          .pop(),
+                                                ),
+                                                ElevatedButton(
+                                                  child: const Text("应用"),
+                                                  onPressed: () {
+                                                    for (int i = 1;
+                                                        i < cropHeights.length;
+                                                        i++) {
+                                                      cropHeights[i] =
+                                                          targetHeight;
+                                                    }
+                                                    setState(() {});
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    )
+                  ],
+                  if (!isReorderMode && !isCroppingMode) ...[
+                    const SizedBox(width: 20),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.save),
+                      label: const Text("保存长图"),
+                      onPressed: () => _captureAndSaveLongImage(context),
+                    )
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -784,211 +982,7 @@ class _RenderDialogueComposePageState
                       : _buildMainCanvasPreview(),
             ),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8), // 这里调节模糊强度
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.toOpacity(0.35),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(16)),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (!isReorderMode && !isCroppingMode)
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.color_lens),
-                            label: const Text("边框颜色"),
-                            onPressed: _showBorderSettings,
-                          ),
-                        const SizedBox(width: 20),
-                        if (!isCroppingMode)
-                          ElevatedButton.icon(
-                            icon:
-                                Icon(isReorderMode ? Icons.check : Icons.sort),
-                            label: Text(isReorderMode ? "完成排序" : "排序图片"),
-                            onPressed: () {
-                              setState(() {
-                                isReorderMode = !isReorderMode;
-                              });
-                            },
-                          ),
-                        const SizedBox(width: 20),
-                        if (!isReorderMode)
-                          ElevatedButton.icon(
-                            icon:
-                                Icon(isCroppingMode ? Icons.check : Icons.crop),
-                            label: Text(isCroppingMode ? "完成裁剪" : "裁剪图片"),
-                            onPressed: () {
-                              setState(() {
-                                isCroppingMode = !isCroppingMode;
-                              });
-                            },
-                          ),
-                        if (isCroppingMode) ...[
-                          const SizedBox(width: 20),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.vertical_align_center),
-                            label: const Text("统一高度"),
-                            onPressed: () {
-                              double targetHeight = cropHeights.length > 1
-                                  ? cropHeights[1]
-                                  : 120.0;
-                              final controller = TextEditingController(
-                                  text: targetHeight.toStringAsFixed(0));
-
-                              showGeneralDialog(
-                                context: context,
-                                barrierDismissible: true,
-                                barrierLabel: '设置统一高度',
-                                barrierColor: Colors.black.toOpacity(0.3),
-                                // 遮罩半透明黑
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) {
-                                  return Center(
-                                    child: BackdropFilter(
-                                      filter: ui.ImageFilter.blur(
-                                          sigmaX: 8, sigmaY: 8), // 背景模糊
-                                      child: Material(
-                                        color: Colors.black
-                                            .toOpacity(0.3), // 对话框背景半透明，配合模糊更佳
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          width: 650,
-                                          padding: const EdgeInsets.all(16),
-                                          child: StatefulBuilder(
-                                            builder: (context, setStates) {
-                                              void updateHeight(double value) {
-                                                targetHeight =
-                                                    value.clamp(0.0, 5000.0);
-
-                                                final newText = targetHeight
-                                                    .toStringAsFixed(0);
-
-                                                if (controller.text !=
-                                                    newText) {
-                                                  controller.text = newText;
-                                                  controller.selection =
-                                                      TextSelection.fromPosition(
-                                                          TextPosition(
-                                                              offset: newText
-                                                                  .length));
-                                                }
-                                              }
-
-                                              return Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    "设置统一高度",
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleLarge,
-                                                  ),
-                                                  const SizedBox(height: 16),
-                                                  Slider(
-                                                    min: 10.0,
-                                                    max: 1080.0,
-                                                    value: targetHeight.clamp(
-                                                        50.0, 1080.0),
-                                                    onChanged: (value) {
-                                                      setStates(() =>
-                                                          updateHeight(value));
-                                                    },
-                                                  ),
-                                                  const SizedBox(height: 20),
-                                                  TextField(
-                                                    controller: controller,
-                                                    keyboardType:
-                                                        TextInputType.number,
-                                                    decoration:
-                                                        const InputDecoration(
-                                                      labelText: '高度（px）',
-                                                      border:
-                                                          OutlineInputBorder(),
-                                                      isDense: true,
-                                                      contentPadding:
-                                                          EdgeInsets.symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 8),
-                                                    ),
-                                                    onChanged: (value) {
-                                                      final parsed =
-                                                          double.tryParse(
-                                                              value);
-                                                      if (parsed != null) {
-                                                        setStates(() =>
-                                                            updateHeight(
-                                                                parsed));
-                                                      }
-                                                    },
-                                                  ),
-                                                  const SizedBox(height: 24),
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.end,
-                                                    children: [
-                                                      TextButton(
-                                                        child: const Text("取消"),
-                                                        onPressed: () =>
-                                                            Navigator.of(
-                                                                    context)
-                                                                .pop(),
-                                                      ),
-                                                      ElevatedButton(
-                                                        child: const Text("应用"),
-                                                        onPressed: () {
-                                                          for (int i = 1;
-                                                              i <
-                                                                  cropHeights
-                                                                      .length;
-                                                              i++) {
-                                                            cropHeights[i] =
-                                                                targetHeight;
-                                                          }
-                                                          setState(() {});
-                                                          Navigator.of(context)
-                                                              .pop();
-                                                        },
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          )
-                        ],
-                        const SizedBox(width: 20),
-                        if (!isReorderMode && !isCroppingMode)
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.save),
-                            label: const Text("保存长图"),
-                            onPressed: () => _captureAndSaveLongImage(context),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          )
+          _buildBottomButtons()
         ],
       ),
     );

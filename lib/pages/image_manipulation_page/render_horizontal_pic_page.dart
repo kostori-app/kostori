@@ -442,7 +442,7 @@ class _RenderHorizontalPicPageState
     );
   }
 
-  Widget _buildPreview() {
+  Widget _buildMainCanvasPreview() {
     return FutureBuilder<List<ui.Image>>(
       future: _loadUiImages(),
       builder: (context, snapshot) {
@@ -576,7 +576,7 @@ class _RenderHorizontalPicPageState
         body: Stack(
           children: [
             Positioned.fill(
-              child: _buildPreview(),
+              child: _buildMainCanvasPreview(),
             ),
             _buildBottomButtons()
           ],

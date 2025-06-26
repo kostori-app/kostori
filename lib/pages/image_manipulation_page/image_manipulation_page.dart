@@ -81,6 +81,7 @@ class ImagesNotifier extends StateNotifier<List<File>> {
 
 final multiSelectModeProvider = StateProvider<bool>((ref) => false);
 final selectedIndexesProvider = StateProvider<Set<int>>((ref) => {});
+final lastSelectedIndexProvider = StateProvider<int?>((ref) => null);
 
 class ImageManipulationPage extends ConsumerStatefulWidget {
   final List<File> initialImages;
@@ -130,9 +131,40 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
   }
 
   void _onLongPressImage(int index) {
-    if (!ref.read(multiSelectModeProvider)) {
+    final isMulti = ref.read(multiSelectModeProvider);
+    final selected = ref.read(selectedIndexesProvider);
+    final lastIndex = ref.read(lastSelectedIndexProvider);
+
+    if (!isMulti) {
       ref.read(multiSelectModeProvider.notifier).state = true;
       ref.read(selectedIndexesProvider.notifier).state = {index};
+      ref.read(lastSelectedIndexProvider.notifier).state = index;
+    } else {
+      if (lastIndex != null) {
+        final selectedSet = Set<int>.from(selected);
+        int start = lastIndex;
+        int end = index;
+        if (start > end) {
+          final temp = start;
+          start = end;
+          end = temp;
+        }
+
+        for (int i = start; i <= end; i++) {
+          if (selectedSet.contains(i)) {
+            selectedSet.remove(i);
+          } else {
+            selectedSet.add(i);
+          }
+        }
+        if (selectedSet.isEmpty) {
+          ref.read(multiSelectModeProvider.notifier).state = false;
+        }
+
+        ref.read(selectedIndexesProvider.notifier).state = selectedSet;
+      }
+
+      ref.read(lastSelectedIndexProvider.notifier).state = index;
     }
   }
 
@@ -177,7 +209,6 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
 
   Widget _buildGrid() {
     final images = ref.watch(imagesProvider);
-    final multiSelect = ref.watch(multiSelectModeProvider);
     final selectedIndexes = ref.watch(selectedIndexesProvider);
 
     if (images.isEmpty) {
@@ -185,7 +216,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
     }
 
     return SliverPadding(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       sliver: SliverGrid(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: App.isAndroid ? 4 : 5,
@@ -198,33 +229,40 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
             final file = images[index];
             final isSelected = selectedIndexes.contains(index);
 
-            return GestureDetector(
-              onTap: () => _onTapImage(index),
-              onLongPress: () => _onLongPressImage(index),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Hero(
-                    tag: App.isAndroid
-                        ? file.path.split('/').last
-                        : file.path.split('\\').last,
-                    child: Image.file(file, fit: BoxFit.cover),
+            return Padding(
+              padding: const EdgeInsets.all(4),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.outline.toOpacity(0.72)
+                        : null,
                   ),
-                  if (multiSelect)
-                    Container(
-                        color: isSelected ? Colors.black45 : Colors.black26),
-                  if (multiSelect)
-                    Positioned(
-                      right: 4,
-                      top: 4,
-                      child: Icon(
-                        isSelected
-                            ? Icons.check_circle
-                            : Icons.radio_button_unchecked,
-                        color: isSelected ? Colors.greenAccent : Colors.white70,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => _onTapImage(index),
+                        onLongPress: () => _onLongPressImage(index),
+                        child: Hero(
+                          tag: App.isAndroid
+                              ? file.path.split('/').last
+                              : file.path.split('\\').last,
+                          child: Image.file(
+                            file,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
                     ),
-                ],
+                  ),
+                ),
               ),
             );
           },
@@ -249,11 +287,41 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
           if (multiSelect) ...[
             TextButton.icon(
               onPressed: () {
+                final allIndexes =
+                    Set<int>.from(List.generate(images.length, (i) => i));
+                ref.read(selectedIndexesProvider.notifier).state = allIndexes;
+              },
+              icon: const Icon(Icons.select_all),
+              label: Text('Select All'.tl),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                final images = ref.read(imagesProvider);
+                final current = ref.read(selectedIndexesProvider);
+                final toggled = <int>{};
+
+                for (int i = 0; i < images.length; i++) {
+                  if (!current.contains(i)) {
+                    toggled.add(i);
+                  }
+                }
+
+                if (toggled.isEmpty) {
+                  ref.read(multiSelectModeProvider.notifier).state = false;
+                }
+
+                ref.read(selectedIndexesProvider.notifier).state = toggled;
+              },
+              icon: const Icon(Icons.flip),
+              label: Text('Invert Selection'.tl),
+            ),
+            TextButton.icon(
+              onPressed: () {
                 ref.read(multiSelectModeProvider.notifier).state = false;
                 ref.read(selectedIndexesProvider.notifier).state = {};
               },
-              icon: const Icon(Icons.clear),
-              label: Text('Cancel'.tl),
+              icon: const Icon(Icons.deselect),
+              label: Text('Deselect'.tl),
             ),
             TextButton.icon(
               onPressed: () {
