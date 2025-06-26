@@ -8,6 +8,7 @@ import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/utils/translations.dart';
 
 import '../../components/bangumi_widget.dart';
 import '../../foundation/bangumi/character/character_casts_item.dart';
@@ -144,13 +145,13 @@ class _CharacterPageState extends State<CharacterPage> {
                     )
                   : (characterFullItem.id == 0
                       ? GeneralErrorWidget(
-                          errMsg: '什么都没有找到 (´;ω;`)',
+                          errMsg: "Nobody's posted anything yet...".tl,
                           actions: [
                             GeneralErrorButton(
                               onPressed: () {
                                 loadCharacter();
                               },
-                              text: '点击重试',
+                              text: 'Reload'.tl,
                             ),
                           ],
                         )
@@ -218,7 +219,7 @@ class _CharacterPageState extends State<CharacterPage> {
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 8.0),
                                           child: Text(
-                                            '基本信息',
+                                            'Profile Information'.tl,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .titleSmall
@@ -239,7 +240,7 @@ class _CharacterPageState extends State<CharacterPage> {
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 8.0),
                                           child: Text(
-                                            '角色简介',
+                                            'Character Introduction'.tl,
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .titleSmall
@@ -340,13 +341,13 @@ class _CharacterPageState extends State<CharacterPage> {
                 if (commentsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '获取失败，请重试',
+                      errMsg: 'Failed to load, please try again.'.tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadComments();
                           },
-                          text: '重试',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),
@@ -400,15 +401,15 @@ class _CharacterPageState extends State<CharacterPage> {
               builder: (context, _) {
                 if (characterCastsList.isNotEmpty) {
                   Map<String, int> relationValue = {
-                    '主角': 1,
-                    '配角': 2,
-                    '客串': 3,
+                    'Main character'.tl: 1,
+                    'Supporting character'.tl: 2,
+                    'Cameo'.tl: 3,
                   };
                   String? getRelationName(int type) {
                     return relationValue.entries
                         .firstWhere(
                           (entry) => entry.value == type,
-                          orElse: () => const MapEntry('未知', -1),
+                          orElse: () => MapEntry('Unknown'.tl, -1),
                         )
                         .key;
                   }
@@ -477,7 +478,22 @@ class _CharacterPageState extends State<CharacterPage> {
                                                           height: 4,
                                                         ),
                                                         Text(
-                                                          '声优: ${characterCastsList[index].actors[0].nameCN.isNotEmpty ? characterCastsList[index].actors[0].nameCN : characterCastsList[index].actors[0].name}',
+                                                          'Voice Actor: @c'
+                                                              .tlParams({
+                                                            'c': characterCastsList[
+                                                                        index]
+                                                                    .actors[0]
+                                                                    .nameCN
+                                                                    .isNotEmpty
+                                                                ? characterCastsList[
+                                                                        index]
+                                                                    .actors[0]
+                                                                    .nameCN
+                                                                : characterCastsList[
+                                                                        index]
+                                                                    .actors[0]
+                                                                    .name
+                                                          }),
                                                           style:
                                                               const TextStyle(
                                                             fontSize: 12,
@@ -526,13 +542,13 @@ class _CharacterPageState extends State<CharacterPage> {
                 if (characterCastsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: '获取失败，请重试',
+                      errMsg: 'Failed to load, please try again.'.tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadComments();
                           },
-                          text: '重试',
+                          text: 'Reload'.tl,
                         ),
                       ],
                     ),

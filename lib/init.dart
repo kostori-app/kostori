@@ -96,8 +96,7 @@ Future<void> _checkAppUpdates() async {
   await Bangumi.getCalendarData();
   await Bangumi.checkBangumiData();
   if (appdata.settings['checkUpdateOnStart']) {
-    await Future.delayed(const Duration(milliseconds: 300));
-    await checkUpdateUi(false);
+    await checkUpdateUi(false, true);
   }
 }
 

@@ -4,14 +4,18 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/file_type.dart';
 import 'package:path/path.dart' as p;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart' as s;
 import 'package:file_selector/file_selector.dart' as file_selector;
+
+import '../foundation/log.dart';
 
 export 'dart:io';
 export 'dart:typed_data';
@@ -459,4 +463,44 @@ class FileSelectResult {
   }
 
   String get name => File(path).name;
+}
+
+class KostoriFolder {
+  static Future<Directory?> checkPermissionAndPrepareFolder() async {
+    // 1. 检查并请求权限
+    Permission permission = Permission.manageExternalStorage;
+    var status = await permission.status;
+
+    if (!status.isGranted) {
+      status = await permission.request();
+      if (!status.isGranted) {
+        if (status.isPermanentlyDenied) {
+          await openAppSettings();
+        }
+        Log.addLog(LogLevel.warning, '权限请求失败', '权限请求失败');
+        return null;
+      }
+    }
+
+    // 2. 获取 Pictures 目录路径
+    Directory? picturesDir =
+        await AbsolutePath.absoluteDirectory(dirType: DirectoryType.pictures);
+
+    if (picturesDir == null) {
+      Log.addLog(LogLevel.error, '获取 Pictures 目录失败', '');
+      return null;
+    }
+
+    // 3. 构建目标文件夹路径
+    final folderPath = '${picturesDir.path}/Kostori';
+    final folder = Directory(folderPath);
+
+    // 4. 如果文件夹不存在则创建
+    if (!await folder.exists()) {
+      await folder.create(recursive: true);
+      Log.addLog(LogLevel.info, '创建文件夹成功', folderPath);
+    }
+
+    return folder;
+  }
 }

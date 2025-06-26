@@ -32,22 +32,6 @@ class _ExploreSettingsState extends State<ExploreSettings> {
           title: "Explore Pages".tl,
           builder: setExplorePagesWidget,
         ).toSliver(),
-        _PopupWindowSetting(
-          title: "Network Favorite Pages".tl,
-          builder: () {
-            var pages = <String, String>{};
-            for (var c in AnimeSource.all()) {
-              if (c.favoriteData != null) {
-                pages[c.favoriteData!.key] = c.favoriteData!.title;
-              }
-            }
-            return _MultiPagesFilter(
-              title: "Network Favorite Pages".tl,
-              settingsIndex: "favorites",
-              pages: pages,
-            );
-          },
-        ).toSliver(),
         _SwitchSetting(
           title: "Show favorite status on anime tile".tl,
           settingKey: "showFavoriteStatusOnTile",
@@ -55,10 +39,6 @@ class _ExploreSettingsState extends State<ExploreSettings> {
         _SwitchSetting(
           title: "Show history on anime tile".tl,
           settingKey: "showHistoryStatusOnTile",
-        ).toSliver(),
-        _PopupWindowSetting(
-          title: "Keyword blocking".tl,
-          builder: () => const _ManageBlockingWordView(),
         ).toSliver(),
         SelectSetting(
           title: "Default Search Target".tl,
@@ -73,7 +53,18 @@ class _ExploreSettingsState extends State<ExploreSettings> {
               return map;
             }()),
           },
-        ).toSliver()
+        ).toSliver(),
+        SelectSetting(
+          title: "Initial Page".tl,
+          settingKey: "initialPage",
+          optionTranslation: {
+            '0': "Me".tl,
+            '1': "Bangumi".tl,
+            '2': "Following".tl,
+            '3': "History".tl,
+            '4': "Explore".tl,
+          },
+        ).toSliver(),
       ],
     );
   }

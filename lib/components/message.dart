@@ -385,52 +385,83 @@ class ContentDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           title != null
-              ? Appbar(
-                  leading: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: dismissible ? context.pop : null,
+              ? Padding(
+                  padding:
+                      const EdgeInsets.only(left: 24.0, top: 24, bottom: 12),
+                  child: Text(
+                    title!,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  title: Text(title!),
-                  backgroundColor: Colors.transparent,
                 )
               : const SizedBox.shrink(),
-          this.content,
+          Padding(
+            padding: const EdgeInsets.only(left: 24.0),
+            child: this.content,
+          ),
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
-            children: actions,
+            children: [
+              const SizedBox(
+                width: 24,
+              ),
+              Button.text(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text("Cancel".tl),
+              ),
+              const Spacer(),
+              ...actions
+            ],
           ).paddingRight(12),
-          const SizedBox(height: 16),
+          const SizedBox(
+            height: 24,
+          )
         ],
       ),
     );
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: context.brightness == Brightness.dark
-            ? BorderSide(color: context.colorScheme.outlineVariant)
-            : BorderSide.none,
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: context.brightness == Brightness.dark
+              ? Colors.white.toOpacity(0.1)
+              : Colors.black.toOpacity(0.1), // 或其他颜色
+          width: 1.0, // 线宽
+        ),
       ),
       insetPadding: context.width < 400
           ? const EdgeInsets.symmetric(horizontal: 4)
           : const EdgeInsets.symmetric(horizontal: 16),
       elevation: 2,
       shadowColor: context.colorScheme.shadow,
-      backgroundColor: context.colorScheme.surface,
-      child: AnimatedSize(
-        duration: const Duration(milliseconds: 200),
-        alignment: Alignment.topCenter,
-        child: IntrinsicWidth(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: 600,
-              minWidth: math.min(400, context.width - 16),
-            ),
-            child: MediaQuery.removePadding(
-              removeTop: true,
-              removeBottom: true,
-              context: context,
-              child: content,
+      backgroundColor: context.colorScheme.surface.toOpacity(0.3),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16), // 可选：增加圆角
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3), // 模糊强度
+          child: Container(
+            decoration: BoxDecoration(
+                color: context.colorScheme.surface.toOpacity(0.22),
+                borderRadius: BorderRadius.circular(24)),
+            child: AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              alignment: Alignment.topCenter,
+              child: IntrinsicWidth(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 600,
+                    minWidth: math.min(400, context.width - 16),
+                  ),
+                  child: MediaQuery.removePadding(
+                    removeTop: true,
+                    removeBottom: true,
+                    context: context,
+                    child: content,
+                  ),
+                ),
+              ),
             ),
           ),
         ),

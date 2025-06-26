@@ -165,6 +165,34 @@ class _HistoryPageState extends State<HistoryPage> {
             },
           ),
         ),
+      ),
+      Tooltip(
+        message: 'Clear Progress'.tl,
+        child: Flyout(
+          controller: controller,
+          flyoutBuilder: (context) {
+            return FlyoutContent(
+              title: 'Clear Progress'.tl,
+              content: Text('Are you sure you want to clear your progress?'.tl),
+              actions: [
+                Button.filled(
+                  color: context.colorScheme.error,
+                  onPressed: () {
+                    HistoryManager().clearProgress();
+                    context.pop();
+                  },
+                  child: Text('Clear'.tl),
+                ),
+              ],
+            );
+          },
+          child: IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: () {
+              controller.show();
+            },
+          ),
+        ),
       )
     ];
 

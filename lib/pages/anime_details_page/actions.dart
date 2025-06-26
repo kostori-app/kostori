@@ -360,7 +360,8 @@ abstract mixin class _AnimePageActions {
                                         itemSize: 20.0,
                                       ),
                                       Text(
-                                        '${item.total} 人评 | #${item.rank}',
+                                        '@t reviews | #@r'.tlParams(
+                                            {'r': item.rank, 't': item.total}),
                                         style: TextStyle(fontSize: 12),
                                       )
                                     ],
@@ -434,123 +435,8 @@ abstract mixin class _AnimePageActions {
       App.rootContext,
       StatefulBuilder(builder: (context, setState) {
         if (history!.bangumiId == null) {
-          return PopUpWidgetScaffold(
-            title: anime.title,
-            body: Column(
-              children: [
-                RepaintBoundary(
-                  key: repaintKey,
-                  child: Padding(
-                    padding:
-                        EdgeInsets.only(bottom: context.padding.bottom + 16),
-                    child: Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(width: 16),
-                                //封面
-                                Material(
-                                  color: Colors.transparent,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color:
-                                          context.colorScheme.primaryContainer,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    height: 256,
-                                    width: 256 * 0.72,
-                                    clipBehavior: Clip.antiAlias,
-                                    child: AnimatedImage(
-                                      image: CachedImageProvider(
-                                        anime.cover,
-                                        sourceKey: anime.sourceKey,
-                                      ),
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        //标题
-                                        Text(
-                                          anime.title,
-                                          style: ts.s20,
-                                        ),
-                                        if (anime.subTitle != null)
-                                          SelectableText(anime.subTitle!,
-                                              style: ts.s14),
-                                        //源名称
-                                        Text(
-                                          (AnimeSource.find(anime.sourceKey)
-                                                  ?.name) ??
-                                              '',
-                                          style: ts.s12,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        if (history?.bangumiId == null)
-                                          Text(
-                                            anime.tags.entries.map((entry) {
-                                              // 对每个键值对，创建一个字符串表示形式
-                                              return '${entry.key}: ${entry.value.join(', ')}';
-                                            }).join('\n'), // 用换行符分隔每个键值对
-                                            style: ts.s12,
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const Divider(),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '简介',
-                            style: ts.s18,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: SelectableText(anime.description!)
-                                .fixWidth(double.infinity),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                Spacer(), // 使用 Spacer 将按钮区域移至弹出框外
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Spacer(),
-                      FilledButton(
-                        onPressed: () {
-                          captureAndSave();
-                          App.rootContext.pop();
-                        },
-                        child: Text('Share'.tl),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          return ShareWidget(
+            anime: anime,
           );
         }
 

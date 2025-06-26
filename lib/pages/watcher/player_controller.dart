@@ -124,6 +124,7 @@ abstract class _PlayerController with Store {
   Timer? playerTimer;
 
   OverlayEntry? _overlayEntry;
+  Timer? _overlayTimer;
 
   Timer getPlayerTimer() {
     return Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -248,6 +249,8 @@ abstract class _PlayerController with Store {
   }
 
   void dispose() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
     player.dispose(); // 释放播放器资源
   }
 
@@ -357,10 +360,16 @@ abstract class _PlayerController with Store {
   }
 
   void showScreenshotPopup(BuildContext context, String image, String name) {
-    _overlayEntry = OverlayEntry(
+    _overlayTimer?.cancel();
+    _overlayTimer = null;
+
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+
+    final entry = OverlayEntry(
       builder: (context) => Positioned(
-        right: isFullScreen ? 60 : 60, // 水平偏移调整
-        top: isFullScreen ? 70 : 90, // 在按钮下方显示
+        right: isFullScreen ? 60 : 60,
+        top: isFullScreen ? 70 : 90,
         child: Material(
           elevation: 8,
           color: Colors.black.toOpacity(0.5),
@@ -370,37 +379,36 @@ abstract class _PlayerController with Store {
               pause;
               Log.addLog(LogLevel.info, 'image图片路径', image);
               final file = File(image);
-              Uint8List data = await file.readAsBytes();
-              Share.shareFile(data: data, filename: name, mime: 'image/jpeg');
+              final data = await file.readAsBytes();
+              Share.shareFile(data: data, filename: name, mime: 'image/png');
             },
             child: Container(
               width: 160,
               height: 90,
-              padding: EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                // color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                // border: Border.all(color: Colors.grey),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Expanded(
-                      child: Stack(children: [
-                    Positioned.fill(
-                      child: Image.file(
-                        File(image),
-                        // width: 160,
-                        // height: 90,
-                        fit: BoxFit.cover,
-                      ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Image.file(
+                            File(image),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Text('点击分享', style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
                     ),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Text('点击分享', style: TextStyle(fontSize: 12)),
-                    )
-                  ])),
-                  SizedBox(height: 4),
+                  ),
+                  const SizedBox(height: 4),
                 ],
               ),
             ),
@@ -409,11 +417,17 @@ abstract class _PlayerController with Store {
       ),
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
+    _overlayEntry = entry;
+    Overlay.of(context).insert(entry);
 
-    if (context.mounted) {
-      Timer(Duration(seconds: 3), () => _overlayEntry?.remove());
-    }
+    // 启动新定时器，并保存引用
+    _overlayTimer = Timer(const Duration(seconds: 3), () {
+      if (_overlayEntry?.mounted ?? false) {
+        _overlayEntry?.remove();
+        _overlayEntry = null;
+      }
+      _overlayTimer = null; // 清除定时器引用
+    });
   }
 }
 

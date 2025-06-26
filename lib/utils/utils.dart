@@ -1,9 +1,9 @@
 // ignore_for_file: non_constant_identifier_names
 
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:gif/gif.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -12,7 +12,10 @@ import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../components/components.dart';
+import '../foundation/app.dart';
 import '../foundation/bangumi/bangumi_item.dart';
+import 'io.dart';
 
 class Utils {
   Utils._();
@@ -44,15 +47,16 @@ class Utils {
     return directory.path;
   }
 
-  static EpisodeInfo? findCurrentWeekEpisode(
-      List<EpisodeInfo> allEpisodes, BangumiItem bangumiItem) {
-    if (allEpisodes.isEmpty) return null;
+  static Map<bool, EpisodeInfo?> findCurrentWeekEpisode(
+      List<EpisodeInfo> allEpisodes, BangumiItem bangumiItem,
+      [bool calendar = false]) {
+    if (allEpisodes.isEmpty) return {false: null};
 
     final now = DateTime.now();
     final currentWeek = getISOWeekNumber(now);
     final targetEpisodes = allEpisodes.where((e) => e.type == 0).toList();
 
-    if (targetEpisodes.isEmpty) return null;
+    if (targetEpisodes.isEmpty) return {false: null};
 
     // 获取番剧的标准播出时间
     String? bangumiDataAirTime =
@@ -68,7 +72,6 @@ class Utils {
 
     EpisodeInfo? currentWeekEpisode;
     EpisodeInfo? lastPastEpisode; // 现在会记录所有年份中最近的过去剧集
-    bool foundCurrentWeekButNotAired = false;
 
     try {
       for (final ep in targetEpisodes) {
@@ -84,10 +87,14 @@ class Utils {
 
           // 判断是否当前周但未播出
           if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
-            if (airDate.isAfter(now)) {
-              foundCurrentWeekButNotAired = true;
+            if (calendar) {
+              if (airDate.isAfter(now)) {
+                currentWeekEpisode ??= ep;
+              }
             } else {
-              currentWeekEpisode ??= ep;
+              if (!airDate.isAfter(now)) {
+                currentWeekEpisode ??= ep;
+              }
             }
           }
 
@@ -114,11 +121,12 @@ class Utils {
       // 1. 当前周已播出的剧集
       // 2. 如果当前周有剧集但未播出，返回最近的过去剧集（不限年份）
       // 3. 没有则返回null
-      return currentWeekEpisode ??
-          (foundCurrentWeekButNotAired ? lastPastEpisode : lastPastEpisode);
+      return (currentWeekEpisode != null)
+          ? {shouldAdjustWeek: currentWeekEpisode}
+          : {shouldAdjustWeek: lastPastEpisode};
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');
-      return null;
+      return {false: null};
     }
   }
 
@@ -427,6 +435,69 @@ class Utils {
         return 'ed';
       default:
         return '';
+    }
+  }
+
+  static Future<void> saveLongImage(
+      BuildContext context, Uint8List imageData) async {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    try {
+      if (App.isAndroid) {
+        final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
+        if (folder != null) {
+          final file = File('${folder.path}/拼图_$timestamp.png');
+          await file.writeAsBytes(imageData);
+
+          // 调用弹窗/提示等
+          showCenter(
+            seconds: 1,
+            icon: Gif(
+              image: const AssetImage('assets/img/check.gif'),
+              height: 80,
+              fps: 120,
+              color: Theme.of(context).colorScheme.primary,
+              autostart: Autostart.once,
+            ),
+            message: '保存成功',
+            context: context,
+          );
+
+          Log.addLog(LogLevel.info, '保存长图成功', file.path);
+        } else {
+          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+        }
+      } else {
+        final directory = await getApplicationDocumentsDirectory();
+        final folderPath = '${directory.path}/Kostori';
+        final folder = Directory(folderPath);
+        if (!await folder.exists()) {
+          await folder.create(recursive: true);
+          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+        } else {
+          Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
+        }
+
+        final filePath = '$folderPath/拼图_$timestamp.png';
+        final file = File(filePath);
+        await file.writeAsBytes(imageData);
+
+        showCenter(
+          seconds: 1,
+          icon: Gif(
+            image: const AssetImage('assets/img/check.gif'),
+            height: 80,
+            fps: 120,
+            color: Theme.of(context).colorScheme.primary,
+            autostart: Autostart.once,
+          ),
+          message: '保存成功',
+          context: context,
+        );
+
+        Log.addLog(LogLevel.info, '保存长图成功', filePath);
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, '保存长图失败', '$e');
     }
   }
 }

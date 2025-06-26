@@ -11,6 +11,7 @@ import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
 
+import '../foundation/appdata.dart';
 import 'me_page.dart';
 
 class MainPage extends StatefulWidget {
@@ -42,6 +43,7 @@ class _MainPageState extends State<MainPage> {
     _observer = NaviObserver();
     _navigatorKey = GlobalKey();
     App.mainNavigatorKey = _navigatorKey;
+    index = int.tryParse(appdata.settings['initialPage'].toString()) ?? 0;
     super.initState();
   }
 
@@ -66,31 +68,32 @@ class _MainPageState extends State<MainPage> {
   @override
   Widget build(BuildContext context) {
     return NaviPane(
+      initialPage: index,
       observer: _observer,
       navigatorKey: _navigatorKey!,
       paneItems: [
         PaneItemEntry(
-          label: '个人',
+          label: 'Me'.tl,
           icon: Icons.person_outline,
           activeIcon: Icons.person,
         ),
         PaneItemEntry(
-          label: '番组计划',
+          label: 'Bangumi'.tl,
           icon: Icons.account_balance_outlined,
           activeIcon: Icons.account_balance,
         ),
         PaneItemEntry(
-          label: '追番',
+          label: 'Following'.tl,
           icon: Icons.star_border,
           activeIcon: Icons.star,
         ),
         PaneItemEntry(
-          label: '历史',
+          label: 'History'.tl,
           icon: Icons.history_toggle_off,
           activeIcon: Icons.history,
         ),
         PaneItemEntry(
-          label: '探索',
+          label: 'Explore'.tl,
           icon: Icons.explore_outlined,
           activeIcon: Icons.explore_rounded,
         ),

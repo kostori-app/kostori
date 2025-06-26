@@ -32,6 +32,7 @@ import 'dart:ui' as ui;
 
 import '../../components/bangumi_widget.dart';
 import '../../components/share_widget.dart';
+import '../../utils/data_sync.dart';
 import '../bangumi/info_controller.dart';
 
 part 'actions.dart';
@@ -65,7 +66,7 @@ class AnimePage extends StatefulWidget {
 }
 
 class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
-    with _AnimePageActions {
+    with _AnimePageActions, TickerProviderStateMixin {
   bool showAppbarTitle = false;
 
   var scrollController = ScrollController();
@@ -116,7 +117,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void initState() {
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
-    // HistoryManager().addListener(updateBangumiBind);
     BangumiManager().addListener(updateBangumiBind);
     super.initState();
   }
@@ -125,8 +125,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
-    // HistoryManager().removeListener(updateBangumiBind);
     BangumiManager().removeListener(updateBangumiBind);
+    Future.microtask(() {
+      DataSync().onDataChanged();
+    });
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -140,12 +143,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   Future<void> updateBangumiId() async {
     var res = await Bangumi.combinedBangumiSearch(anime.title);
-    // 如果列表为空，返回 null
     if (res.isEmpty) {
       return;
     } else {
-      // 返回第一个BangumiItem的id
-      history?.bangumiId = res.first.id; // 假设 BangumiItem 有一个 id 属性
+      history?.bangumiId = res.first.id;
       HistoryManager().addHistoryAsync(history!);
     }
   }
@@ -170,37 +171,32 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   Widget buildContent(BuildContext context, AnimeDetails data) {
-    return Stack(
+    Widget widget = Stack(
       children: [
-        // 主内容 SmoothCustomScrollView
         Positioned.fill(
-          child: SmoothCustomScrollView(
+          child: NestedScrollView(
             controller: scrollController,
-            slivers: [
-              SliverPadding(padding: EdgeInsets.only(top: 28)),
-              Watcher(
-                type: anime.animeType,
-                wid: anime.id,
-                name: anime.title,
-                episode: anime.episode,
-                anime: anime,
-                history: History.fromModel(
-                  model: anime,
-                  lastWatchEpisode: history?.lastWatchEpisode ?? 1,
-                  lastWatchTime: history?.lastWatchTime ?? 0,
-                  lastRoad: history?.lastRoad ?? 0,
-                  allEpisode: anime.episode!.length,
-                  bangumiId: history?.bangumiId,
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverPadding(padding: EdgeInsets.only(top: 28)),
+                Watcher(
+                  type: anime.animeType,
+                  wid: anime.id,
+                  name: anime.title,
+                  episode: anime.episode,
+                  anime: anime,
+                  history: History.fromModel(
+                      model: anime,
+                      lastWatchEpisode: history?.lastWatchEpisode ?? 1,
+                      lastWatchTime: history?.lastWatchTime ?? 0,
+                      lastRoad: history?.lastRoad ?? 0,
+                      allEpisode: anime.episode!.length,
+                      bangumiId: history?.bangumiId,
+                      watchEpisode: history?.watchEpisode),
                 ),
-              ),
-              ...buildTitle(),
-              buildDescription(),
-              buildInfo(),
-              buildEpisodes(),
-              buildRecommend(),
-              SliverPadding(
-                  padding: EdgeInsets.only(bottom: context.padding.bottom)),
-            ],
+              ];
+            },
+            body: animeTab(),
           ),
         ),
         AnimatedPositioned(
@@ -213,6 +209,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         ),
       ],
     );
+    widget = AppScrollBar(
+      topPadding: 82,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
+    return widget;
   }
 
   @override
@@ -234,6 +239,45 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   Future<void> onDataLoaded() async {
     isLiked = anime.isLiked ?? false;
     isFavorite = anime.isFavorite ?? false;
+  }
+
+  Widget animeTab() {
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            tabAlignment: TabAlignment.center,
+            tabs: [
+              Tab(text: '基本信息'.tl),
+              Tab(text: '全部剧集'.tl),
+              Tab(text: '关联条目'.tl),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    ...buildTitle(),
+                    buildDescription(),
+                    buildInfo(),
+                  ],
+                ),
+                CustomScrollView(
+                  slivers: [buildEpisodes()],
+                ),
+                CustomScrollView(
+                  slivers: [buildRecommend()],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget buildTop() {
@@ -461,7 +505,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                       itemSize: 20.0,
                                     ),
                                     Text(
-                                      '${bangumiItem!.total} 人评 | #${bangumiItem!.rank}',
+                                      '@t reviews | #@r'.tlParams({
+                                        'r': bangumiItem!.rank,
+                                        't': bangumiItem!.total
+                                      }),
                                       style: TextStyle(fontSize: 12),
                                     )
                                   ],
@@ -538,6 +585,18 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     return SliverToBoxAdapter(
       child: Column(
         children: [
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              width: 120,
+              height: 2,
+              decoration: BoxDecoration(
+                color: Colors.grey.toOpacity(0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           ListTile(
             title: Text("Description".tl),
           ),
@@ -546,7 +605,17 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             child: SelectableText(anime.description!).fixWidth(double.infinity),
           ),
           const SizedBox(height: 16),
-          const Divider(),
+          Center(
+            child: Container(
+              width: 120,
+              height: 2,
+              decoration: BoxDecoration(
+                color: Colors.grey.toOpacity(0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -692,8 +761,18 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 buildTag(text: anime.updateTime!),
               ],
             ),
-          const SizedBox(height: 12),
-          const Divider(),
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              width: 120,
+              height: 2,
+              decoration: BoxDecoration(
+                color: Colors.grey.toOpacity(0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -703,7 +782,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (anime.episode == null) {
       return const SliverPadding(padding: EdgeInsets.zero);
     }
-    return const _AnimeEpisodes();
+    return _AnimeEpisodes(
+      history: history,
+    );
   }
 
   Widget buildRecommend() {
@@ -716,7 +797,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           title: Text("Related".tl),
         ),
       ),
-      SliverGridAnimes(animes: anime.recommend!),
+      SliverGridAnimes(
+        animes: anime.recommend!,
+        isRecommend: true,
+      ),
     ]);
   }
 }

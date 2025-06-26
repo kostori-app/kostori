@@ -1,7 +1,9 @@
 part of 'anime_page.dart';
 
 class _AnimeEpisodes extends StatefulWidget {
-  const _AnimeEpisodes();
+  const _AnimeEpisodes({this.history});
+
+  final History? history;
 
   @override
   State<_AnimeEpisodes> createState() => _AnimeEpisodesState();
@@ -9,6 +11,7 @@ class _AnimeEpisodes extends StatefulWidget {
 
 class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   late _AnimePageState state;
+  late History? history;
 
   // 当前播放列表的索引，默认为0
   int playList = 0;
@@ -18,15 +21,32 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   bool showAll = false;
 
   @override
+  void initState() {
+    super.initState();
+    history = widget.history;
+    if (history != null) {
+      playList = history!.lastRoad;
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     state = context.findAncestorStateOfType<_AnimePageState>()!;
     super.didChangeDependencies();
   }
 
   @override
+  void didUpdateWidget(covariant _AnimeEpisodes oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    setState(() {
+      history = widget.history;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     // 获取所有播放列表（例如，ep1, ep2, ep3...）
-    state.anime.episode?.keys.toList();
+    // state.anime.episode?.keys.toList();
     final episodeValues = state.anime.episode?.values.elementAt(playList);
 
     currentEps = episodeValues!;
@@ -45,7 +65,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
           child: ListTile(
             title: Row(
               children: [
-                Text("Episodes".tl),
+                Text("Playlist".tl),
                 const SizedBox(width: 5),
                 SizedBox(
                   height: 34,
@@ -58,7 +78,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                           context: context,
                           builder: (context) {
                             return AlertDialog(
-                              title: const Text('播放列表'),
+                              title: Text('Playlist'.tl),
                               content: StatefulBuilder(builder:
                                   (BuildContext context,
                                       StateSetter innerSetState) {
@@ -141,12 +161,14 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
               var key = currentEps.keys.elementAt(i); // 获取集数名称
               var value = currentEps[key]!; // 获取集数内容
               bool visited =
-                  (state.history?.watchEpisode ?? const {}).contains(i + 1);
+                  (history?.watchEpisode ?? const {}).contains(i + 1);
 
               return Padding(
                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
                 child: Material(
-                  color: context.colorScheme.surfaceContainer,
+                  color: !visited
+                      ? context.colorScheme.surfaceContainer
+                      : Theme.of(context).colorScheme.primary.toOpacity(0.3),
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
                   child: InkWell(
                     onTap: () => state.watch(i + 1, playList),
@@ -192,7 +214,23 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
             ),
           ),
 
-        const SliverToBoxAdapter(child: Divider()), // 添加分割线
+        SliverToBoxAdapter(
+            child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Center(
+              child: Container(
+                width: 120,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: Colors.grey.toOpacity(0.4),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        )), // 添加分割线
       ],
     );
   }

@@ -1,11 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:get/get.dart';
 import 'package:gif/gif.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:kostori/foundation/app.dart';
@@ -14,35 +11,42 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/extension.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/components/components.dart';
+import 'package:photo_view/photo_view_gallery.dart';
 
 import '../foundation/image_loader/cached_image.dart';
+import '../utils/io.dart';
 import 'misc_components.dart';
 
 class BangumiWidget {
   static Widget buildBriefMode(
       BuildContext context, BangumiItem bangumiItem, String heroTag,
-      {bool showPlaceholder = true}) {
+      {bool showPlaceholder = true,
+      void Function(BangumiItem)? onTap,
+      void Function(BangumiItem)? onLongPressed}) {
     Widget score() {
       return Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '${bangumiItem.score}',
-            style: TextStyle(
-              fontSize: App.isAndroid ? 13 : 16.0,
-              fontWeight: FontWeight.bold,
+          if (bangumiItem.total >= 20) ...[
+            Text(
+              '${bangumiItem.score}',
+              style: TextStyle(
+                fontSize: App.isAndroid ? 13 : 16.0,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          SizedBox(
-            width: 4,
-          ),
+            SizedBox(
+              width: 4,
+            ),
+          ],
           Column(
             crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
             children: [
@@ -55,7 +59,8 @@ class BangumiWidget {
                 itemSize: App.isAndroid ? 12 : 14.0,
               ),
               Text(
-                '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                '@t reviews | #@r'
+                    .tlParams({'r': bangumiItem.rank, 't': bangumiItem.total}),
                 style: TextStyle(
                     fontSize: App.isAndroid ? 7 : 9,
                     fontWeight: FontWeight.bold),
@@ -97,11 +102,19 @@ class BangumiWidget {
             return InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () {
-                App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
-                      bangumiItem: bangumiItem,
-                      heroTag: heroTag,
-                    ));
+                if (onTap != null) {
+                  onTap(bangumiItem);
+                } else {
+                  App.mainNavigatorKey?.currentContext
+                      ?.to(() => BangumiInfoPage(
+                            bangumiItem: bangumiItem,
+                            heroTag: heroTag,
+                          ));
+                }
               },
+              onLongPress: onLongPressed != null
+                  ? () => onLongPressed(bangumiItem)
+                  : null,
               child: Column(
                 children: [
                   Expanded(
@@ -115,14 +128,12 @@ class BangumiWidget {
                             bottom: App.isAndroid ? 34 : 40,
                             right: 4,
                             child: ClipRRect(
-                              // 确保圆角区域也能正确裁剪模糊效果
                               borderRadius: BorderRadius.circular(8),
                               child: Stack(
                                 children: [
                                   Positioned.fill(
                                     child: Stack(
                                       children: [
-                                        // 背景噪声图（建议用半透明 PNG 或 SVG）
                                         Positioned.fill(
                                           child: Opacity(
                                             opacity: 0.6,
@@ -138,7 +149,6 @@ class BangumiWidget {
                                             ),
                                           ),
                                         ),
-
                                         // 渐变遮罩（调整透明度过渡）
                                         Positioned.fill(
                                           child: Container(
@@ -172,14 +182,12 @@ class BangumiWidget {
                           bottom: 4,
                           right: 4,
                           child: ClipRRect(
-                            // 确保圆角区域也能正确裁剪模糊效果
                             borderRadius: BorderRadius.circular(8),
                             child: Stack(
                               children: [
                                 Positioned.fill(
                                   child: Stack(
                                     children: [
-                                      // 背景噪声图（建议用半透明 PNG 或 SVG）
                                       Positioned.fill(
                                         child: Opacity(
                                           opacity: 0.6,
@@ -241,7 +249,9 @@ class BangumiWidget {
   }
 
   static Widget buildDetailedMode(
-      BuildContext context, BangumiItem bangumiItem, String heroTag) {
+      BuildContext context, BangumiItem bangumiItem, String heroTag,
+      {void Function(BangumiItem)? onTap,
+      void Function(BangumiItem)? onLongPressed}) {
     return LayoutBuilder(builder: (context, constrains) {
       final height = constrains.maxHeight - 16;
 
@@ -271,11 +281,17 @@ class BangumiWidget {
       return InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () {
-            App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
-                  bangumiItem: bangumiItem,
-                  heroTag: heroTag,
-                ));
+            if (onTap != null) {
+              onTap(bangumiItem);
+            } else {
+              App.mainNavigatorKey?.currentContext?.to(() => BangumiInfoPage(
+                    bangumiItem: bangumiItem,
+                    heroTag: heroTag,
+                  ));
+            }
           },
+          onLongPress:
+              onLongPressed != null ? () => onLongPressed(bangumiItem) : null,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
             child: Row(
@@ -301,15 +317,16 @@ class BangumiWidget {
     String status;
     if (bangumiItem.totalEpisodes > 0) {
       if (air != null && air.isBefore(now)) {
-        status = '全${bangumiItem.totalEpisodes}话';
+        status = 'Full @b episodes released'
+            .tlParams({'b': bangumiItem.totalEpisodes});
       } else {
-        status = '未开播';
+        status = 'Not Yet Airing'.tl;
       }
     } else {
       if (air != null && air.isBefore(now)) {
-        status = '已完结';
+        status = '';
       } else {
-        status = '未开播';
+        status = 'Not Yet Airing'.tl;
       }
     }
 
@@ -344,10 +361,8 @@ class BangumiWidget {
                 fontWeight: FontWeight.bold,
                 height: 1.2,
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
-          if (bangumiItem.airDate.isNotEmpty)
+          if (bangumiItem.airDate.isNotEmpty && status != '')
             Text(
               ' • ',
               style: TextStyle(
@@ -355,19 +370,18 @@ class BangumiWidget {
                 fontWeight: FontWeight.bold,
                 height: 1.2,
               ),
-              maxLines: 3,
+            ),
+          if (status != '')
+            Text(
+              status,
+              style: TextStyle(
+                // fontSize: imageWidth * 0.12,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-            ),
-          Text(
-            status,
-            style: TextStyle(
-              // fontSize: imageWidth * 0.12,
-              fontWeight: FontWeight.bold,
-              height: 1.2,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          )
+            )
         ],
       ),
       const Spacer(),
@@ -378,37 +392,39 @@ class BangumiWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              '${bangumiItem.score}',
-              style: TextStyle(
-                fontSize: 24.0,
-              ),
-            ),
-            SizedBox(
-              width: 5,
-            ),
-            Container(
-              padding: EdgeInsets.all(2.0), // 可选，设置内边距
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8), // 设置圆角半径
-                border: Border.all(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .secondaryContainer
-                      .toOpacity(0.72),
-                  width: 2.0, // 设置边框宽度
-                ),
-              ),
-              child: Text(
-                Utils.getRatingLabel(bangumiItem.score),
+            if (bangumiItem.total >= 20) ...[
+              Text(
+                '${bangumiItem.score}',
                 style: TextStyle(
-                  fontSize: 12.0,
+                  fontSize: 24.0,
                 ),
               ),
-            ),
-            SizedBox(
-              width: 4,
-            ),
+              SizedBox(
+                width: 5,
+              ),
+              Container(
+                padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8), // 设置圆角半径
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .secondaryContainer
+                        .toOpacity(0.72),
+                    width: 2.0, // 设置边框宽度
+                  ),
+                ),
+                child: Text(
+                  Utils.getRatingLabel(bangumiItem.score),
+                  style: TextStyle(
+                    fontSize: 12.0,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 4,
+              ),
+            ],
             Column(
               crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
               children: [
@@ -421,7 +437,8 @@ class BangumiWidget {
                   itemSize: 16.0,
                 ),
                 Text(
-                  '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                  '@t reviews | #@r'.tlParams(
+                      {'r': bangumiItem.rank, 't': bangumiItem.total}),
                   style: TextStyle(fontSize: 10),
                 )
               ],
@@ -432,108 +449,262 @@ class BangumiWidget {
     ]);
   }
 
+  static Widget buildStatsRow(BuildContext context, BangumiItem bangumiItem) {
+    final collection = bangumiItem.collection!; // 提前解构，避免重复访问
+    final total =
+        collection.values.fold<int>(0, (sum, val) => sum + (val)); // 计算总数
+
+    // 定义统计数据项（类型 + 显示文本 + 颜色）
+    final stats = [
+      StatItem('doing', 'doing'.tl, Theme.of(context).colorScheme.primary),
+      StatItem('collect', 'collect'.tl, Theme.of(context).colorScheme.error),
+      StatItem('wish', 'wish'.tl, Colors.blueAccent),
+      StatItem('on_hold', 'on hold'.tl, null), // 默认文本颜色
+      StatItem('dropped', 'dropped'.tl, Colors.grey),
+    ];
+
+    return Row(
+      children: [
+        ...stats.expand((stat) => [
+              Text('${collection[stat.key]} ${stat.label}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: stat.color,
+                  )),
+              const Text(' / '),
+            ]),
+        Text('@t Total count'.tlParams({'t': total}),
+            style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
   static void showImagePreview(
-      BuildContext context, String url, String title, String heroTag) {
+    BuildContext context,
+    String url,
+    String title,
+    String heroTag, {
+    List<File>? allUrls,
+    int? initialIndex,
+  }) {
     try {
-      ImageProvider img = CachedImageProvider(url, sourceKey: 'bangumi');
+      final isLocal = File(url).existsSync();
+
+      // 计算初始索引
+      int initIndex = 0;
+      if (allUrls != null && allUrls.isNotEmpty) {
+        initIndex = initialIndex ??
+            allUrls
+                .indexWhere((f) => f.path == url)
+                .clamp(0, allUrls.length - 1);
+      }
+
+      final pageController = PageController(initialPage: initIndex);
+      final urls = ValueNotifier<List<File>>(allUrls ?? []);
+      final currentIndex = ValueNotifier<int>(initIndex);
+
+      final ImageProvider img =
+          isLocal ? FileImage(File(url)) : NetworkImage(url);
+
       Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (_) => AnnotatedRegion<SystemUiOverlayStyle>(
-                  value: SystemUiOverlayStyle.light, // 状态栏内容为亮色（白色）
-                  child: Scaffold(
-                    extendBodyBehindAppBar: true, // 允许内容延伸至状态栏
-                    backgroundColor: Colors.black,
-                    body: Stack(
-                      children: [
-                        PhotoView.customChild(
-                          minScale: PhotoViewComputedScale.contained,
-                          maxScale: PhotoViewComputedScale.covered * 3,
-                          heroAttributes: PhotoViewHeroAttributes(tag: heroTag),
-                          backgroundDecoration:
-                              const BoxDecoration(color: Colors.black),
-                          child: GestureDetector(
-                            onDoubleTapDown: (details) {
-                              final controller = PhotoViewController();
-                              final scale = controller.scale ?? 1.0;
-                              controller.scale = scale > 1.0 ? 1.0 : 2.5;
+          builder: (_) => StatefulBuilder(builder: (context, setState) {
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle.light,
+              child: Scaffold(
+                extendBodyBehindAppBar: true,
+                backgroundColor: Colors.black,
+                body: Stack(
+                  children: [
+                    ValueListenableBuilder<List<File>>(
+                      valueListenable: urls,
+                      builder: (context, imageList, _) {
+                        if (imageList.length > 1) {
+                          return PhotoViewGallery.builder(
+                            itemCount: imageList.length,
+                            pageController: pageController,
+                            backgroundDecoration:
+                                const BoxDecoration(color: Colors.black),
+                            onPageChanged: (i) => currentIndex.value = i,
+                            builder: (context, i) {
+                              final file = imageList[i];
+                              return PhotoViewGalleryPageOptions(
+                                imageProvider: FileImage(file),
+                                heroAttributes:
+                                    PhotoViewHeroAttributes(tag: file.path),
+                                minScale: PhotoViewComputedScale.contained,
+                                maxScale: PhotoViewComputedScale.covered * 3,
+                              );
                             },
+                          );
+                        } else {
+                          return PhotoView.customChild(
+                            minScale: PhotoViewComputedScale.contained,
+                            maxScale: PhotoViewComputedScale.covered * 3,
+                            heroAttributes:
+                                PhotoViewHeroAttributes(tag: heroTag),
+                            backgroundDecoration:
+                                const BoxDecoration(color: Colors.black),
                             child: Image(
                               image: img,
                               fit: BoxFit.contain,
                             ),
-                          ),
-                        ),
-                        SafeArea(
-                          child: Container(
-                            height: 56,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: const BoxDecoration(
-                              color: Colors.transparent,
+                          );
+                        }
+                      },
+                    ),
+                    SafeArea(
+                      child: Container(
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            _iconBackground(
+                              icon: Icons.arrow_back_ios_new,
+                              onPressed: () => Navigator.pop(context),
                             ),
-                            child: Row(
-                              children: [
-                                // 返回按钮 + 模糊背景
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.toOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: IconButton(
-                                    icon: const Icon(Icons.arrow_back_ios_new,
-                                        color: Colors.white),
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                ),
+                            const SizedBox(width: 8),
+                            _textBackground(title),
+                            const Spacer(),
+                            ValueListenableBuilder<int>(
+                              valueListenable: currentIndex,
+                              builder: (context, index, _) {
+                                if (urls.value.isEmpty && !isLocal) {
+                                  return const SizedBox();
+                                }
 
-                                const SizedBox(width: 8),
+                                final currentFile = urls.value.isNotEmpty
+                                    ? urls.value[index]
+                                    : File(url);
 
-                                // 标题 + 模糊背景
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.toOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    title,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                final localExists = currentFile.existsSync();
+
+                                return Row(
+                                  children: [
+                                    _iconBackground(
+                                      icon: Icons.share,
+                                      onPressed: () async {
+                                        final file = File(url);
+                                        Uint8List data =
+                                            await file.readAsBytes();
+                                        Share.shareFile(
+                                            data: data,
+                                            filename: heroTag,
+                                            mime: 'image/png');
+                                      },
                                     ),
-                                  ),
-                                ),
+                                    const SizedBox(width: 8),
+                                    if (localExists)
+                                      _iconBackground(
+                                        icon: Icons.delete,
+                                        onPressed: () async {
+                                          showConfirmDialog(
+                                            context: App.rootContext,
+                                            title: "确认删除该图片?".tl,
+                                            content: '删除后将无法恢复',
+                                            btnColor: context.colorScheme.error,
+                                            onConfirm: () async {
+                                              try {
+                                                await currentFile.delete();
 
-                                const Spacer(),
+                                                if (urls.value.isNotEmpty) {
+                                                  urls.value.removeAt(index);
 
-                                // 下载按钮 + 模糊背景
-                                Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.toOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: IconButton(
-                                    icon: const Icon(Icons.download,
-                                        color: Colors.white),
-                                    onPressed: () {
-                                      saveImageToGallery(context, url);
-                                    },
-                                  ),
-                                ),
-                              ],
+                                                  if (urls.value.isEmpty) {
+                                                    Navigator.pop(context);
+                                                    return;
+                                                  }
+
+                                                  final newIndex = index >=
+                                                          urls.value.length
+                                                      ? urls.value.length - 1
+                                                      : index;
+
+                                                  currentIndex.value = newIndex;
+                                                  urls.value = [
+                                                    ...urls.value
+                                                  ]; // 触发刷新
+
+                                                  WidgetsBinding.instance
+                                                      .addPostFrameCallback(
+                                                          (_) {
+                                                    if (pageController
+                                                        .hasClients) {
+                                                      pageController
+                                                          .jumpToPage(newIndex);
+                                                    }
+                                                  });
+                                                } else {
+                                                  Navigator.pop(
+                                                      context); // 单图直接关闭
+                                                }
+                                              } catch (e) {
+                                                Log.addLog(LogLevel.error,
+                                                    '删除失败', e.toString());
+                                                App.rootContext.showMessage(
+                                                    message: '删除失败: $e');
+                                              }
+                                            },
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                );
+                              },
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ).paddingSymmetric(horizontal: 12, vertical: 8),
-                  ),
-                )),
+                      ),
+                    ),
+                  ],
+                ).padding(
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            );
+          }),
+        ),
       );
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'showImagePreview', '$e\n$s');
     }
+  }
+
+  static Widget _iconBackground(
+      {required IconData icon, required VoidCallback onPressed}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.toOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  static Widget _textBackground(String title) {
+    // 限制最多显示 10 个字符，超出则用 ...
+    final displayTitle =
+        title.length > 10 ? '${title.substring(0, 10)}...' : title;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.toOpacity(0.3),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        displayTitle,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   static Future<void> saveImageToGallery(
@@ -779,4 +950,12 @@ class BangumiWidget {
 //     },
 //   );
 // }
+}
+
+class StatItem {
+  final String key;
+  final String label;
+  final Color? color;
+
+  StatItem(this.key, this.label, this.color);
 }

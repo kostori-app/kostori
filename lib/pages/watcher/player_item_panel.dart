@@ -1,19 +1,17 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gif/gif.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -62,26 +60,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   Timer? timer;
   String formattedTime = '';
   String saveAddress = '';
-
-  // 将图片保存到相册
-  Future<void> _saveImageToGallery(Uint8List imageData, int timestamp) async {
-    try {
-      // 使用 image_gallery_saver 插件保存图片
-      final result = await ImageGallerySaverPlus.saveImage(imageData,
-          name: '${WatcherState.currentState!.widget.anime.title}_$timestamp');
-      Log.addLog(LogLevel.info, '图片路径', '$result');
-      // Get pictures directory
-      Directory? picturesDir =
-          await AbsolutePath.absoluteDirectory(dirType: DirectoryType.pictures);
-      setState(() {
-        saveAddress =
-            '${picturesDir?.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.jpg';
-      });
-      Log.addLog(LogLevel.info, '图片路径', saveAddress);
-    } on PlatformException catch (e) {
-      Log.addLog(LogLevel.error, '图片路径', '$e');
-    }
-  }
 
   void _showPlaybackSpeedDialog(BuildContext context) {
     showDialog(
@@ -449,25 +427,39 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     final timestamp = DateTime.now().millisecondsSinceEpoch;
                     context.showMessage(message: '正在截图中...'.tl);
                     if (App.isAndroid) {
+                      Uint8List? screenData =
+                          await widget.playerController.player.screenshot();
                       try {
-                        Uint8List? screenData =
-                            await widget.playerController.player.screenshot();
-                        await _saveImageToGallery(screenData!, timestamp);
-                        widget.playerController.showScreenshotPopup(
-                            context,
-                            saveAddress,
-                            '${WatcherState.currentState!.widget.anime.title}_$timestamp.jpg');
-                        showCenter(
-                            seconds: 1,
-                            icon: Gif(
-                              image: AssetImage('assets/img/check.gif'),
-                              height: 80,
-                              fps: 120,
-                              color: Theme.of(context).colorScheme.primary,
-                              autostart: Autostart.once,
-                            ),
-                            message: '截图成功',
-                            context: context);
+                        final folder = await KostoriFolder
+                            .checkPermissionAndPrepareFolder();
+                        if (folder != null) {
+                          final file = File(
+                              '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png');
+                          await file.writeAsBytes(screenData!);
+                          setState(() {
+                            saveAddress =
+                                '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
+                          });
+                          widget.playerController.showScreenshotPopup(
+                              context,
+                              saveAddress,
+                              '${WatcherState.currentState!.widget.anime.title}_$timestamp.png');
+                          showCenter(
+                              seconds: 1,
+                              icon: Gif(
+                                image: AssetImage('assets/img/check.gif'),
+                                height: 80,
+                                fps: 120,
+                                color: Theme.of(context).colorScheme.primary,
+                                autostart: Autostart.once,
+                              ),
+                              message: '截图成功',
+                              context: context);
+                          Log.addLog(LogLevel.info, '保存文件成功', '');
+                        } else {
+                          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+                        }
+                        // await _saveImageToGallery(screenData!, timestamp);
                       } catch (e) {
                         Log.addLog(LogLevel.error, '截图失败', '$e');
                       }
@@ -479,7 +471,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         final directory =
                             await getApplicationDocumentsDirectory();
                         // 目标文件夹路径
-                        final folderPath = '${directory.path}/Screenshots';
+                        final folderPath = '${directory.path}/Kostori';
                         // 检查文件夹是否存在，如果不存在则创建它
                         final folder = Directory(folderPath);
                         if (!await folder.exists()) {

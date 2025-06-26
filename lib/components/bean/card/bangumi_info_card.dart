@@ -7,6 +7,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/pages/line_chart_page.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
 import 'package:kostori/pages/aggregated_search_page.dart';
@@ -16,14 +17,6 @@ import '../../../foundation/anime_type.dart';
 import '../../../foundation/favorites.dart';
 import '../../../pages/anime_details_page/anime_page.dart';
 import '../../../pages/bangumi/info_controller.dart';
-
-class _StatItem {
-  final String key;
-  final String label;
-  final Color? color;
-
-  _StatItem(this.key, this.label, this.color);
-}
 
 class BangumiInfoCardV extends StatefulWidget {
   const BangumiInfoCardV(
@@ -54,35 +47,6 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
   Widget get voteBarChart => LineChatPage(
         bangumiItem: widget.bangumiItem,
       );
-
-  Widget _buildStatsRow(BuildContext context) {
-    final collection = bangumiItem.collection!; // 提前解构，避免重复访问
-    final total =
-        collection.values.fold<int>(0, (sum, val) => sum + (val)); // 计算总数
-
-    // 定义统计数据项（类型 + 显示文本 + 颜色）
-    final stats = [
-      _StatItem('doing', '在看', Theme.of(context).colorScheme.primary),
-      _StatItem('collect', '看过', Theme.of(context).colorScheme.error),
-      _StatItem('wish', '想看', Colors.blueAccent),
-      _StatItem('on_hold', '搁置', null), // 默认文本颜色
-      _StatItem('dropped', '抛弃', Colors.grey),
-    ];
-
-    return Row(
-      children: [
-        ...stats.expand((stat) => [
-              Text('${collection[stat.key]} ${stat.label}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: stat.color,
-                  )),
-              const Text(' / '),
-            ]),
-        Text('$total 总计数', style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
 
   void showBangumiHistoryPagePickerDialog(
     BuildContext context,
@@ -261,9 +225,9 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                     final type0Episodes =
                         allEpisodes.where((ep) => ep.type == 0).toList();
 
-                    final isCompleted = currentWeekEp != null &&
+                    final isCompleted = currentWeekEp.values.first != null &&
                         type0Episodes.isNotEmpty &&
-                        currentWeekEp == type0Episodes.last;
+                        currentWeekEp.values.first == type0Episodes.last;
 
                     return Container(
                       width: MediaQuery.of(context).size.width,
@@ -366,15 +330,22 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                           FontWeight.bold)),
                                             ),
                                           SizedBox(width: 4.0),
-                                          (currentWeekEp?.sort != null)
+                                          (currentWeekEp.values.first?.sort !=
+                                                  null)
                                               ? Expanded(
                                                   child: Text(
                                                   isCompleted
                                                       ? '全 ${bangumiItem.totalEpisodes} 话'
-                                                      : currentWeekEp?.sort ==
-                                                              currentWeekEp?.ep
-                                                          ? '连载至 ${currentWeekEp?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
-                                                          : '连载至 ${currentWeekEp?.ep} (${currentWeekEp?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
+                                                      : currentWeekEp
+                                                                  .values
+                                                                  .first
+                                                                  ?.sort ==
+                                                              currentWeekEp
+                                                                  .values
+                                                                  .first
+                                                                  ?.ep
+                                                          ? '连载至 ${currentWeekEp.values.first?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
+                                                          : '连载至 ${currentWeekEp.values.first?.ep} (${currentWeekEp.values.first?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
                                                   style: TextStyle(
                                                     fontSize: 12.0,
                                                   ),
@@ -383,7 +354,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                       TextOverflow.ellipsis,
                                                 ))
                                               : Text(
-                                                  '未开播',
+                                                  'Not Yet Airing'.tl,
                                                   style: TextStyle(
                                                       fontSize: 12.0,
                                                       fontWeight:
@@ -421,40 +392,43 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.center,
                                           children: [
-                                            Text(
-                                              '${bangumiItem.score}',
-                                              style: TextStyle(
-                                                  fontSize: 24.0,
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            SizedBox(
-                                              width: 5,
-                                            ),
-                                            Container(
-                                              padding: EdgeInsets.fromLTRB(
-                                                  8, 5, 8, 5), // 可选，设置内边距
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        8), // 设置圆角半径
-                                                border: Border.all(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .primary
-                                                      .toOpacity(0.72),
-                                                  width: 1.0, // 设置边框宽度
-                                                ),
+                                            if (bangumiItem.total >= 20) ...[
+                                              Text(
+                                                '${bangumiItem.score}',
+                                                style: TextStyle(
+                                                    fontSize: 24.0,
+                                                    fontWeight:
+                                                        FontWeight.bold),
                                               ),
-                                              child: Text(
-                                                  Utils.getRatingLabel(
-                                                      bangumiItem.score),
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                            ),
-                                            SizedBox(
-                                              width: 4,
-                                            ),
+                                              SizedBox(
+                                                width: 5,
+                                              ),
+                                              Container(
+                                                padding: EdgeInsets.fromLTRB(
+                                                    8, 5, 8, 5), // 可选，设置内边距
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          8), // 设置圆角半径
+                                                  border: Border.all(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary
+                                                        .toOpacity(0.72),
+                                                    width: 1.0, // 设置边框宽度
+                                                  ),
+                                                ),
+                                                child: Text(
+                                                    Utils.getRatingLabel(
+                                                        bangumiItem.score),
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold)),
+                                              ),
+                                              SizedBox(
+                                                width: 4,
+                                              ),
+                                            ],
                                             Column(
                                               crossAxisAlignment:
                                                   CrossAxisAlignment.end, // 右对齐
@@ -472,7 +446,10 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                   itemSize: 20.0,
                                                 ),
                                                 Text(
-                                                  '${bangumiItem.total} 人评 | #${bangumiItem.rank}',
+                                                  '@t reviews | #@r'.tlParams({
+                                                    'r': bangumiItem.rank,
+                                                    't': bangumiItem.total
+                                                  }),
                                                   style:
                                                       TextStyle(fontSize: 12),
                                                 )
@@ -547,7 +524,8 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                   children: [
                     (bangumiItem.collection != null && !widget.isLoading)
                         ? Align(
-                            child: _buildStatsRow(context),
+                            child: BangumiWidget.buildStatsRow(
+                                context, infoController.bangumiItem),
                           )
                         : Padding(
                             padding: const EdgeInsets.all(4.0),
@@ -605,7 +583,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                     children: [
                       Row(
                         children: [
-                          Text('评分统计图',
+                          Text('Rating Statistics Chart'.tl,
                               style: TextStyle(
                                   fontSize: 24, fontWeight: FontWeight.bold)),
                           Container(
@@ -630,8 +608,9 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                             icon: Icon(infoController.showLineChart
                                 ? Icons.show_chart
                                 : Icons.bar_chart),
-                            label: Text(
-                                infoController.showLineChart ? '折线图' : '柱状图'),
+                            label: Text(infoController.showLineChart
+                                ? 'Line Chart'.tl
+                                : 'Bar Chart'.tl),
                           ),
                           Text('${widget.bangumiItem.total} votes')
                         ],
@@ -642,7 +621,10 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                             horizontal: 8, vertical: 2),
                         child: Row(
                           children: [
-                            Text('标准差: ${standardDeviation.toStringAsFixed(2)}',
+                            Text(
+                                'Standard Deviation: @s'.tlParams({
+                                  's': standardDeviation.toStringAsFixed(2)
+                                }),
                                 style: TextStyle(fontSize: 12)),
                             const SizedBox(
                               width: 8,
