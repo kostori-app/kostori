@@ -4,11 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/network/bangumi.dart';
-import 'package:rhttp/rhttp.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:rhttp/rhttp.dart';
+
 import 'foundation/anime_source/anime_source.dart';
 import 'foundation/app.dart';
 import 'foundation/appdata.dart';
@@ -82,22 +83,22 @@ void _checkOldConfigs() {
 }
 
 Future<void> _checkAppUpdates() async {
-  var lastCheck = appdata.implicitData['lastCheckUpdate'] ?? 0;
-  if (appdata.settings['bangumiDataVer'] == null) {
-    await Bangumi.checkBangumiData();
-  }
-  var now = DateTime.now().millisecondsSinceEpoch;
-  if (now - lastCheck < 24 * 60 * 60 * 1000) {
-    return;
-  }
-  appdata.implicitData['lastCheckUpdate'] = now;
-  appdata.writeImplicitData();
+  // var lastCheck = appdata.implicitData['lastCheckUpdate'] ?? 0;
+  // if (appdata.settings['bangumiDataVer'] == null) {
+  //   await Bangumi.checkBangumiData();
+  // }
+  // var now = DateTime.now().millisecondsSinceEpoch;
+  // if (now - lastCheck < 24 * 60 * 60 * 1000) {
+  //   return;
+  // }
+  // appdata.implicitData['lastCheckUpdate'] = now;
+  // appdata.writeImplicitData();
   AnimeSourceSettings.checkAnimeSourceUpdate();
   await Bangumi.getCalendarData();
   await Bangumi.checkBangumiData();
-  if (appdata.settings['checkUpdateOnStart']) {
-    await checkUpdateUi(false, true);
-  }
+  // if (appdata.settings['checkUpdateOnStart']) {
+  await checkUpdateUi(true, true);
+  // }
 }
 
 void checkUpdates() {

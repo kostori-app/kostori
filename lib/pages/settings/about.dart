@@ -40,12 +40,10 @@ class _AboutSettingsState extends State<AboutSettings> {
         Column(
           children: [
             const SizedBox(height: 8),
+            Text("V${App.version}", style: const TextStyle(fontSize: 16)),
             Text(
-              "V${App.version}",
-              style: const TextStyle(fontSize: 16),
+              "Kostori is a free and open-source app for anime watching.".tl,
             ),
-            Text(
-                "Kostori is a free and open-source app for anime watching.".tl),
             const SizedBox(height: 8),
           ],
         ).toSliver(),
@@ -127,7 +125,8 @@ class _AboutSettingsState extends State<AboutSettings> {
 Future<Map<bool, String?>> checkUpdate() async {
   try {
     var res = await AppDio().get(
-        "https://raw.githubusercontent.com/kostori-app/kostori/refs/heads/master/pubspec.yaml");
+      "https://raw.githubusercontent.com/kostori-app/kostori/refs/heads/master/pubspec.yaml",
+    );
     if (res.statusCode == 200) {
       final data = loadYaml(res.data);
       if (data["version"] != null) {
@@ -144,8 +143,10 @@ Future<Map<bool, String?>> checkUpdate() async {
   }
 }
 
-Future<void> checkUpdateUi(
-    [bool showMessageIfNoUpdate = true, bool delay = false]) async {
+Future<void> checkUpdateUi([
+  bool showMessageIfNoUpdate = true,
+  bool delay = false,
+]) async {
   var value = await checkUpdate();
   if (value.containsKey(true)) {
     if (delay) {
@@ -164,7 +165,8 @@ Future<void> checkUpdateUi(
               onPressed: () {
                 Navigator.pop(context);
                 launchUrlString(
-                    "https://github.com/kostori-app/kostori/releases");
+                  "https://github.com/kostori-app/kostori/releases",
+                );
               },
               child: Text("Update".tl),
             ),

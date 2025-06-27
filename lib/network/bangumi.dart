@@ -5,19 +5,17 @@ import 'dart:math';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/network/api.dart';
-import 'package:kostori/network/app_dio.dart';
-
-import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/bangumi/staff/staff_response.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_response.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_response.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-
-import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
+import 'package:kostori/foundation/bangumi/staff/staff_response.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/network/api.dart';
+import 'package:kostori/network/app_dio.dart';
 
 import '../foundation/bangumi/character/character_casts_item.dart';
 import '../foundation/bangumi/reviews/reviews_comments_item.dart';
@@ -27,13 +25,15 @@ import '../foundation/bangumi/topics/topics_info_item.dart';
 import '../foundation/bangumi/topics/topics_response.dart';
 
 class Bangumi {
-  static Future<List<BangumiItem>> bangumiPostSearch(String keyword,
-      {List<String> tags = const [],
-      bool nsfw = false,
-      String sort = 'rank',
-      int offset = 0,
-      String airDate = '',
-      String endDate = ''}) async {
+  static Future<List<BangumiItem>> bangumiPostSearch(
+    String keyword, {
+    List<String> tags = const [],
+    bool nsfw = false,
+    String sort = 'rank',
+    int offset = 0,
+    String airDate = '',
+    String endDate = '',
+  }) async {
     List<BangumiItem> bangumiList = [];
 
     var params = <String, dynamic>{
@@ -47,18 +47,20 @@ class Bangumi {
           if (airDate.isNotEmpty) '>=$airDate',
           if (endDate.isNotEmpty) '<$endDate',
         ],
-        "nsfw": nsfw
+        "nsfw": nsfw,
       },
     };
 
     try {
       final res = await AppDio().request(
-          Api.formatUrl(Api.bangumiRankSearch, [20, offset]),
-          data: params,
-          options: Options(
-              method: 'POST',
-              headers: bangumiHTTPHeader,
-              contentType: 'application/json'));
+        Api.formatUrl(Api.bangumiRankSearch, [20, offset]),
+        data: params,
+        options: Options(
+          method: 'POST',
+          headers: bangumiHTTPHeader,
+          contentType: 'application/json',
+        ),
+      );
       final jsonData = res.data;
       final jsonList = jsonData['data'];
       for (dynamic jsonItem in jsonList) {
@@ -83,19 +85,28 @@ class Bangumi {
     List<BangumiItem> bangumiList = [];
 
     var key = keyword.replaceAll(
-        RegExp(r'[^\w\s\u4e00-\u9fa5\u3040-\u309F\u30A0-\u30FF]'), '');
+      RegExp(r'[^\w\s\u4e00-\u9fa5\u3040-\u309F\u30A0-\u30FF]'),
+      '',
+    );
     try {
-      var res = await AppDio().request(("${Api.bangumiBySearch}$key"),
-          options: Options(
-              method: 'GET',
-              headers: bangumiHTTPHeader,
-              contentType: 'application/json'));
+      var res = await AppDio().request(
+        ("${Api.bangumiBySearch}$key"),
+        options: Options(
+          method: 'GET',
+          headers: bangumiHTTPHeader,
+          contentType: 'application/json',
+        ),
+      );
       if (res.data['code'] == 404) {
         await Future.delayed(Duration(seconds: 1));
         key = key.substring(0, 5);
-        res = await AppDio().get(("${Api.bangumiBySearch}$key"),
-            options: Options(
-                headers: bangumiHTTPHeader, contentType: 'application/json'));
+        res = await AppDio().get(
+          ("${Api.bangumiBySearch}$key"),
+          options: Options(
+            headers: bangumiHTTPHeader,
+            contentType: 'application/json',
+          ),
+        );
       }
       final jsonData = res.data;
       final jsonList = jsonData["list"];
@@ -119,13 +130,18 @@ class Bangumi {
 
   static Future<List<BangumiItem>> combinedBangumiSearch(String keyword) async {
     try {
-      final results = await Future.wait([
-        bangumiPostSearch(keyword).timeout(const Duration(seconds: 10)),
-        bangumiGetSearch(keyword).timeout(const Duration(seconds: 10)),
-      ]).catchError((e, s) {
-        Log.addLog(LogLevel.warning, 'bangumi', 'Partial search failed: $e');
-        return [<BangumiItem>[], <BangumiItem>[]];
-      });
+      final results =
+          await Future.wait([
+            bangumiPostSearch(keyword).timeout(const Duration(seconds: 10)),
+            bangumiGetSearch(keyword).timeout(const Duration(seconds: 10)),
+          ]).catchError((e, s) {
+            Log.addLog(
+              LogLevel.warning,
+              'bangumi',
+              'Partial search failed: $e',
+            );
+            return [<BangumiItem>[], <BangumiItem>[]];
+          });
 
       final combinedList = [...results[0], ...results[1]];
       final uniqueItems = <int, BangumiItem>{};
@@ -134,10 +150,12 @@ class Bangumi {
       int calculateCharacterMatchScore(String keyword, String text) {
         if (text.isEmpty) return 0;
 
-        final keywordChars =
-            keyword.runes.map((rune) => String.fromCharCode(rune)).toList();
-        final textChars =
-            text.runes.map((rune) => String.fromCharCode(rune)).toList();
+        final keywordChars = keyword.runes
+            .map((rune) => String.fromCharCode(rune))
+            .toList();
+        final textChars = text.runes
+            .map((rune) => String.fromCharCode(rune))
+            .toList();
 
         int matchCount = 0;
         for (final char in keywordChars) {
@@ -187,8 +205,10 @@ class Bangumi {
 
   static Future<BangumiItem?> getBangumiInfoByID(int id) async {
     try {
-      final res = await AppDio().request(Api.bangumiInfoByID + id.toString(),
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        Api.bangumiInfoByID + id.toString(),
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       return BangumiItem.fromJson(res.data);
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'getBangumiInfoByID', '$e\n$s');
@@ -199,8 +219,10 @@ class Bangumi {
   static Future<List<BangumiSRI>> getBangumiSRIByID(int id) async {
     List<BangumiSRI> bangumiList = [];
     try {
-      final res = await AppDio().request('${Api.bangumiInfoByID}$id/subjects',
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        '${Api.bangumiInfoByID}$id/subjects',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonList = res.data;
       for (dynamic jsonItem in jsonList) {
         if (jsonItem is Map<String, dynamic>) {
@@ -220,13 +242,16 @@ class Bangumi {
     return bangumiList;
   }
 
-  static Future<CommentResponse> getBangumiCommentsByID(int id,
-      {int offset = 0}) async {
+  static Future<CommentResponse> getBangumiCommentsByID(
+    int id, {
+    int offset = 0,
+  }) async {
     CommentResponse commentResponse = CommentResponse.fromTemplate();
     try {
       final res = await AppDio().request(
-          '${Api.bangumiInfoByIDNext}$id/comments?offset=$offset&limit=20',
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        '${Api.bangumiInfoByIDNext}$id/comments?offset=$offset&limit=20',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       commentResponse = CommentResponse.fromJson(jsonData);
     } catch (e, s) {
@@ -238,8 +263,10 @@ class Bangumi {
   static Future<CharacterResponse> getCharatersByID(int id) async {
     CharacterResponse characterResponse = CharacterResponse.fromTemplate();
     try {
-      final res = await AppDio().request('${Api.bangumiInfoByID}$id/characters',
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        '${Api.bangumiInfoByID}$id/characters',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       characterResponse = CharacterResponse.fromJson(jsonData);
     } catch (e) {
@@ -253,9 +280,10 @@ class Bangumi {
     var params = <String, dynamic>{'offset': offset, 'limit': 20};
     try {
       final res = await AppDio().request(
-          Api.formatUrl(Api.bangumiTopicsByIDNext, [id]),
-          queryParameters: params,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        Api.formatUrl(Api.bangumiTopicsByIDNext, [id]),
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data['data'];
       topicsResponse = TopicsResponse.fromJson(jsonData);
     } catch (e) {
@@ -266,8 +294,10 @@ class Bangumi {
 
   static Future<TopicsInfoItem?> getTopicsInfoByID(int id) async {
     try {
-      final res = await AppDio().request('${Api.bangumiTopicsInfoByIDNext}$id',
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        '${Api.bangumiTopicsInfoByIDNext}$id',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       if (res.statusCode == 404) return null;
       TopicsInfoItem topicsInfoItem = TopicsInfoItem.fromJson(jsonData);
@@ -278,14 +308,17 @@ class Bangumi {
     return null;
   }
 
-  static Future<List<TopicsInfoItem>> getTopicsLatestByID(
-      {int offset = 0}) async {
+  static Future<List<TopicsInfoItem>> getTopicsLatestByID({
+    int offset = 0,
+  }) async {
     List<TopicsInfoItem> topicsInfoItems = [];
     var params = <String, dynamic>{'offset': offset, 'limit': 100};
     try {
-      final res = await AppDio().request(Api.bangumiTopicsLatestByIDNext,
-          queryParameters: params,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        Api.bangumiTopicsLatestByIDNext,
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data['data'];
       if (res.statusCode == 200 && jsonData is List) {
         for (dynamic json in jsonData) {
@@ -305,14 +338,17 @@ class Bangumi {
     return topicsInfoItems;
   }
 
-  static Future<List<TopicsInfoItem>> getTopicsTrendingByID(
-      {int offset = 0}) async {
+  static Future<List<TopicsInfoItem>> getTopicsTrendingByID({
+    int offset = 0,
+  }) async {
     List<TopicsInfoItem> topicsInfoItems = [];
     var params = <String, dynamic>{'offset': offset, 'limit': 100};
     try {
-      final res = await AppDio().request(Api.bangumiTopicsTrendingByIDNext,
-          queryParameters: params,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        Api.bangumiTopicsTrendingByIDNext,
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data['data'];
       if (res.statusCode == 200 && jsonData is List) {
         for (dynamic json in jsonData) {
@@ -332,15 +368,18 @@ class Bangumi {
     return topicsInfoItems;
   }
 
-  static Future<ReviewsResponse> getReviewsByID(int id,
-      {int offset = 0}) async {
+  static Future<ReviewsResponse> getReviewsByID(
+    int id, {
+    int offset = 0,
+  }) async {
     ReviewsResponse reviewsResponse = ReviewsResponse.fromTemplate();
     var params = <String, dynamic>{'offset': offset, 'limit': 20};
     try {
       final res = await AppDio().request(
-          Api.formatUrl(Api.bangumiReviewsByIDNext, [id]),
-          queryParameters: params,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        Api.formatUrl(Api.bangumiReviewsByIDNext, [id]),
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data['data'];
       reviewsResponse = ReviewsResponse.fromJson(jsonData);
     } catch (e) {
@@ -351,8 +390,10 @@ class Bangumi {
 
   static Future<ReviewsInfoItem?> getReviewsInfoByID(int id) async {
     try {
-      final res = await AppDio().request('${Api.bangumiReviewsInfoByIDNext}$id',
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        '${Api.bangumiReviewsInfoByIDNext}$id',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       if (res.statusCode == 200) {
         ReviewsInfoItem reviewsInfoItem = ReviewsInfoItem.fromJson(jsonData);
@@ -365,7 +406,8 @@ class Bangumi {
   }
 
   static Future<List<ReviewsCommentsItem>> getReviewsCommentsByID(
-      int id) async {
+    int id,
+  ) async {
     List<ReviewsCommentsItem> reviewsCommentsItem = [];
     try {
       final res = await AppDio().request(
@@ -392,8 +434,9 @@ class Bangumi {
     List<BangumiItem> bangumiReviewsSubjects = [];
     try {
       var res = await AppDio().request(
-          Api.formatUrl(Api.bangumiReviewsSubjectsByIDNext, [id]),
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        Api.formatUrl(Api.bangumiReviewsSubjectsByIDNext, [id]),
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       for (dynamic json in jsonData) {
         try {
@@ -415,8 +458,10 @@ class Bangumi {
   static Future<List<List<BangumiItem>>> getCalendar() async {
     List<List<BangumiItem>> bangumiCalendar = [];
     try {
-      var res = await AppDio().request(Api.bangumiCalendar,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      var res = await AppDio().request(
+        Api.bangumiCalendar,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       for (dynamic jsonDayList in jsonData) {
         List<BangumiItem> bangumiList = [];
@@ -444,10 +489,7 @@ class Bangumi {
       var res = await getCalendar();
       BangumiManager().clearBnagumiCalendar();
       for (dynamic jsonlist in res) {
-        for (dynamic json in jsonlist) {
-          var bangumiItem = json;
-          BangumiManager().addBangumiCalendar(bangumiItem);
-        }
+        BangumiManager().batchAddBangumiCalendar(jsonlist);
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'bangumiGetCalendarData', '$e\n$s');
@@ -458,9 +500,12 @@ class Bangumi {
     try {
       var res = await getBangumiInfoByID(id);
       if (res != null) {
-        BangumiManager().addBnagumiBinding(res);
+        BangumiManager().addBangumiBinding(res);
         Log.addLog(
-            LogLevel.info, 'bangumiGetBangumiInfoBind', 'bind${id}successful');
+          LogLevel.info,
+          'bangumiGetBangumiInfoBind',
+          'bind${id}successful',
+        );
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'bangumiGetBangumiInfoBind', '$e\n$s');
@@ -501,26 +546,39 @@ class Bangumi {
           : bangumiDataList;
 
       // 7. 数据库操作（插入最后100条）
-      await BangumiManager().addBulkBangumiData(last100Items);
+      BangumiManager().batchAddBangumiData(last100Items);
     } on DioException catch (e, s) {
       Log.addLog(
-          LogLevel.error, 'bangumi', 'Network error: ${e.message}\nStack: $s');
+        LogLevel.error,
+        'getBangumiData',
+        'Network error: ${e.message}\nStack: $s',
+      );
     } on FormatException catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi',
-          'Data parsing failed: ${e.message}\nStack: $s');
+      Log.addLog(
+        LogLevel.error,
+        'getBangumiData',
+        'Data parsing failed: ${e.message}\nStack: $s',
+      );
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', 'Unexpected error: $e\nStack: $s');
+      Log.addLog(
+        LogLevel.error,
+        'getBangumiData',
+        'Unexpected error: $e\nStack: $s',
+      );
     }
   }
 
-// 解析方法保持不变
+  // 解析方法保持不变
   static List<BangumiData> parseBangumiDataList(List<dynamic> jsonList) {
     return jsonList.map<BangumiData>((json) {
       try {
         return BangumiData.fromJson(json);
       } catch (e, s) {
         Log.addLog(
-            LogLevel.error, 'bangumi', 'Failed to parse item: $e\nStack: $s');
+          LogLevel.error,
+          'parseBangumiDataList',
+          'Failed to parse item: $e\nStack: $s',
+        );
         throw FormatException('Invalid BangumiData item');
       }
     }).toList();
@@ -528,27 +586,40 @@ class Bangumi {
 
   static Future<void> checkBangumiData() async {
     try {
-      var res = await AppDio().request(Api.checkBangumiDataUrl,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      var res = await AppDio().request(
+        Api.checkBangumiDataUrl,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       if (appdata.settings['bangumiDataVer'] != jsonData['tag_name']) {
         Log.addLog(
-            LogLevel.info, 'checkBangumiData', '${jsonData['tag_name']}');
+          LogLevel.info,
+          'checkBangumiData',
+          '${jsonData['tag_name']}',
+        );
         BangumiManager().clearBangumiData();
         await getBangumiData();
         App.rootContext.showMessage(
-            message:
-                'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}');
-        Log.addLog(LogLevel.info, 'checkBangumiData',
-            '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}');
+          message:
+              'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}',
+        );
+        Log.addLog(
+          LogLevel.info,
+          'checkBangumiData',
+          '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
+        );
         appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
         appdata.saveData();
-        Log.addLog(LogLevel.info, 'bangumiDataVer',
-            '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}');
+        Log.addLog(
+          LogLevel.info,
+          'bangumiDataVer',
+          '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}',
+        );
       } else {
         App.rootContext.showMessage(
-            message:
-                '当前bangumiData数据版本: ${appdata.settings['bangumiDataVer']} 已是最新');
+          message:
+              '当前bangumiData数据版本: ${appdata.settings['bangumiDataVer']} 已是最新',
+        );
       }
     } catch (e, s) {
       App.rootContext.showMessage(message: 'bangumiData更新失败...');
@@ -558,8 +629,10 @@ class Bangumi {
 
   static Future<void> resetBangumiData() async {
     try {
-      var res = await AppDio().request(Api.checkBangumiDataUrl,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      var res = await AppDio().request(
+        Api.checkBangumiDataUrl,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       Log.addLog(LogLevel.info, 'bangumi', '${jsonData['tag_name']}');
       BangumiManager().clearBangumiData();
@@ -568,14 +641,21 @@ class Bangumi {
       await getBangumiData();
       await getCalendarData();
       App.rootContext.showMessage(
-          message:
-              'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}');
-      Log.addLog(LogLevel.info, 'bangumi',
-          '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}');
+        message:
+            'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}',
+      );
+      Log.addLog(
+        LogLevel.info,
+        'bangumi',
+        '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
+      );
       appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
       appdata.saveData();
-      Log.addLog(LogLevel.info, 'bangumi',
-          '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}');
+      Log.addLog(
+        LogLevel.info,
+        'bangumi',
+        '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}',
+      );
     } catch (e, s) {
       App.rootContext.showMessage(message: 'bangumiData重置失败...');
       Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
@@ -586,8 +666,9 @@ class Bangumi {
     StaffResponse staffResponse = StaffResponse.fromTemplate();
     try {
       final res = await AppDio().request(
-          Api.formatUrl(Api.bangumiStaffByIDNext, [id]),
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        Api.formatUrl(Api.bangumiStaffByIDNext, [id]),
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       staffResponse = StaffResponse.fromJson(jsonData);
     } catch (e) {}
@@ -599,12 +680,14 @@ class Bangumi {
     var params = <String, dynamic>{
       'subject_id': id,
       'offset': episode - 1,
-      'limit': 1
+      'limit': 1,
     };
     try {
-      final res = await AppDio().request(Api.bangumiEpisodeByID,
-          queryParameters: params,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        Api.bangumiEpisodeByID,
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data['data'][0];
       episodeInfo = EpisodeInfo.fromJson(jsonData);
     } catch (e, s) {
@@ -615,13 +698,13 @@ class Bangumi {
 
   static Future<EpisodeInfo> getBangumiEpisodeByEpID(int id) async {
     EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
-    var params = <String, dynamic>{
-      'episode_id': id,
-    };
+    var params = <String, dynamic>{'episode_id': id};
     try {
-      final res = await AppDio().request(Api.bangumiEpisodeByID,
-          queryParameters: params,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+      final res = await AppDio().request(
+        Api.bangumiEpisodeByID,
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data['data'][0];
       episodeInfo = EpisodeInfo.fromJson(jsonData);
     } catch (e, s) {
@@ -652,13 +735,15 @@ class Bangumi {
   }
 
   static Future<EpisodeCommentResponse> getBangumiCommentsByEpisodeID(
-      int id) async {
+    int id,
+  ) async {
     EpisodeCommentResponse commentResponse =
         EpisodeCommentResponse.fromTemplate();
     try {
       final res = await AppDio().request(
-          '${Api.bangumiEpisodeByIDNext}$id/comments',
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        '${Api.bangumiEpisodeByIDNext}$id/comments',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       commentResponse = EpisodeCommentResponse.fromJson(jsonData);
     } catch (e, s) {
@@ -668,13 +753,15 @@ class Bangumi {
   }
 
   static Future<CharacterCommentResponse> getCharacterCommentsByCharacterID(
-      int id) async {
+    int id,
+  ) async {
     CharacterCommentResponse commentResponse =
         CharacterCommentResponse.fromTemplate();
     try {
       final res = await AppDio().request(
-          '${Api.bangumiCharacterByIDNext}$id/comments',
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        '${Api.bangumiCharacterByIDNext}$id/comments',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       commentResponse = CharacterCommentResponse.fromJson(jsonData);
     } catch (e, s) {
@@ -687,8 +774,9 @@ class Bangumi {
     CharacterFullItem characterFullItem = CharacterFullItem.fromTemplate();
     try {
       final res = await AppDio().request(
-          Api.formatUrl(Api.characterInfoByCharacterIDNext, [id]),
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        Api.formatUrl(Api.characterInfoByCharacterIDNext, [id]),
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data;
       characterFullItem = CharacterFullItem.fromJson(jsonData);
     } catch (e, s) {
@@ -697,8 +785,10 @@ class Bangumi {
     return characterFullItem;
   }
 
-  static Future<List<CharacterCastsItem>> getCharacterCastsByCharacterID(int id,
-      {int offset = 0}) async {
+  static Future<List<CharacterCastsItem>> getCharacterCastsByCharacterID(
+    int id, {
+    int offset = 0,
+  }) async {
     List<CharacterCastsItem> characterCastsItems = [];
     var params = <String, dynamic>{
       'subjectType': 2,
@@ -707,13 +797,15 @@ class Bangumi {
     };
     try {
       final res = await AppDio().request(
-          Api.formatUrl(Api.characterCastsByCharacterIDNext, [id]),
-          queryParameters: params,
-          options: Options(method: 'GET', headers: bangumiHTTPHeader));
+        Api.formatUrl(Api.characterCastsByCharacterIDNext, [id]),
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
       final jsonData = res.data['data'];
       for (dynamic jsonItem in jsonData) {
-        CharacterCastsItem characterCastsItem =
-            CharacterCastsItem.fromJson(jsonItem);
+        CharacterCastsItem characterCastsItem = CharacterCastsItem.fromJson(
+          jsonItem,
+        );
         if (characterCastsItem.subject.type == 2) {
           characterCastsItems.add(characterCastsItem);
         }
@@ -724,8 +816,11 @@ class Bangumi {
     return characterCastsItems;
   }
 
-  static Future<List<BangumiItem>> getBangumiTrendsList(
-      {int type = 2, int limit = 24, int offset = 0}) async {
+  static Future<List<BangumiItem>> getBangumiTrendsList({
+    int type = 2,
+    int limit = 24,
+    int offset = 0,
+  }) async {
     List<BangumiItem> bangumiList = [];
     var params = <String, dynamic>{
       'type': type,
@@ -733,12 +828,15 @@ class Bangumi {
       'offset': offset,
     };
     try {
-      final res = await AppDio().request(Api.bangumiTrendingByNext,
-          queryParameters: params,
-          options: Options(
-              method: 'GET',
-              headers: bangumiHTTPHeader,
-              contentType: 'application/json'));
+      final res = await AppDio().request(
+        Api.bangumiTrendingByNext,
+        queryParameters: params,
+        options: Options(
+          method: 'GET',
+          headers: bangumiHTTPHeader,
+          contentType: 'application/json',
+        ),
+      );
       final jsonData = res.data;
       final jsonList = jsonData['data'];
       for (dynamic jsonItem in jsonList) {
