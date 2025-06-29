@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/bangumi/bangumi_page.dart';
@@ -48,19 +47,11 @@ class _MainPageState extends State<MainPage> {
   }
 
   final _pages = [
-    const MePage(
-      key: PageStorageKey('me'),
-    ),
-    const BangumiPage(
-      key: PageStorageKey('bangumi'),
-    ),
-    const FavoritesPage(
-      key: PageStorageKey('favorites'),
-    ),
+    const MePage(key: PageStorageKey('me')),
+    const BangumiPage(key: PageStorageKey('bangumi')),
+    const FavoritesPage(key: PageStorageKey('favorites')),
     const HistoryPage(key: PageStorageKey('history')),
-    const ExplorePage(
-      key: PageStorageKey('explore'),
-    ),
+    const ExplorePage(key: PageStorageKey('explore')),
   ];
 
   var index = 0;
@@ -112,13 +103,16 @@ class _MainPageState extends State<MainPage> {
           onTap: () {
             to(() => const SettingsPage(), preventDuplicate: true);
           },
-        )
+        ),
       ],
       pageBuilder: (index) {
         return _pages[index];
       },
-      onPageChanged: (index) {
+      onPageChanged: (i) {
         HapticFeedback.selectionClick();
+        setState(() {
+          index = i;
+        });
       },
     );
   }

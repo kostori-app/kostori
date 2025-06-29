@@ -119,13 +119,19 @@ class WatcherState extends State<Watcher>
     });
     history = widget.history;
     progress = Progress.fromModel(
-        model: widget.anime, episode: 0, road: 0, progressInMilli: 0);
+      model: widget.anime,
+      episode: 0,
+      road: 0,
+      progressInMilli: 0,
+    );
     Future.microtask(() {
       updateHistory();
     });
     if (history != null && history!.lastWatchEpisode != 0) {
       loadInfo(
-          history!.lastWatchEpisode, history!.lastRoad.toInt()); // 这里传入初始集数
+        history!.lastWatchEpisode,
+        history!.lastRoad.toInt(),
+      ); // 这里传入初始集数
     }
     currentRoad = 0;
     _initializeProgress();
@@ -135,7 +141,7 @@ class WatcherState extends State<Watcher>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    playerController.initReaderWindow();
+    playerController.initWindow();
   }
 
   int? bangumiId;
@@ -145,7 +151,7 @@ class WatcherState extends State<Watcher>
     observerController.controller?.dispose();
     playerController.dispose();
     updateHistoryTimer.cancel();
-    playerController.disposeReaderWindow();
+    playerController.disposeWindow();
     super.dispose();
   }
 
@@ -162,15 +168,16 @@ class WatcherState extends State<Watcher>
         history?.watchEpisode.add(episode); // 记录观看的集数
       } else {
         showCenter(
-            seconds: 3,
-            icon: Gif(
-              image: AssetImage('assets/img/warning.gif'),
-              height: 64,
-              fps: 120,
-              autostart: Autostart.once,
-            ),
-            message: '没有更多剧集可播放',
-            context: context);
+          seconds: 3,
+          icon: Gif(
+            image: AssetImage('assets/img/warning.gif'),
+            height: 64,
+            fps: 120,
+            autostart: Autostart.once,
+          ),
+          message: '没有更多剧集可播放',
+          context: context,
+        );
         Log.addLog(LogLevel.info, "下一集", "没有更多剧集可播放");
       }
     });
@@ -186,8 +193,12 @@ class WatcherState extends State<Watcher>
     Log.addLog(LogLevel.info, "加载集数", "$episodeIndex");
     episode = episodeIndex; // 更新逻辑中的当前集数
     try {
-      var progressFind = await HistoryManager().progressFind(widget.anime.id,
-          AnimeType(widget.anime.sourceKey.hashCode), episode - 1, road);
+      var progressFind = await HistoryManager().progressFind(
+        widget.anime.id,
+        AnimeType(widget.anime.sourceKey.hashCode),
+        episode - 1,
+        road,
+      );
       // Log.addLog(LogLevel.info, "加载找寻参数",
       //     "${widget.anime.id}\n${AnimeType(widget.anime.sourceKey.hashCode).value}\n${episode - 1}\n$road");
       playerController.currentRoad = road;
@@ -203,7 +214,9 @@ class WatcherState extends State<Watcher>
         time = progressFind!.progressInMilli;
       }
       var res = await type.animeSource!.loadAnimePages!(
-          widget.wid, ep?.keys.elementAt(episode - 1));
+        widget.wid,
+        ep?.keys.elementAt(episode - 1),
+      );
       await _play(res, episode, time);
       loaded = episodeIndex;
       playerController.playing = true;
@@ -220,10 +233,11 @@ class WatcherState extends State<Watcher>
     Log.addLog(LogLevel.error, "加载集数", "$episodeIndex");
     try {
       var progressFind = await HistoryManager().progressFind(
-          widget.anime.id,
-          AnimeType(widget.anime.sourceKey.hashCode),
-          episode - 1,
-          playerController.currentRoad);
+        widget.anime.id,
+        AnimeType(widget.anime.sourceKey.hashCode),
+        episode - 1,
+        playerController.currentRoad,
+      );
       playerController.currentEpisoded = episodeIndex;
       history?.watchEpisode.add(episode); // 记录观看的集数
       progress?.episode = episode - 1;
@@ -234,7 +248,9 @@ class WatcherState extends State<Watcher>
         time = 0;
       }
       var res = await type.animeSource!.loadAnimePages!(
-          widget.wid, ep?.keys.elementAt(episode - 1));
+        widget.wid,
+        ep?.keys.elementAt(episode - 1),
+      );
       // Log.addLog(LogLevel.info, "视频链接", res);
       await _play(res, episode, time);
       loaded = episodeIndex;
@@ -269,8 +285,9 @@ class WatcherState extends State<Watcher>
         // and the player will not seek properlly.
         await sub.cancel();
 
-        await playerController.player
-            .seek(Duration(milliseconds: currentPlaybackTime));
+        await playerController.player.seek(
+          Duration(milliseconds: currentPlaybackTime),
+        );
         completer.complete(0);
       }
     });
@@ -298,30 +315,28 @@ class WatcherState extends State<Watcher>
           ? Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16.0),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.width * 0.45,
-                      maxWidth: MediaQuery.of(context).size.width,
-                    ),
-                    child: VideoPage(
-                      playerController: playerController,
-                    ),
-                  )),
+                borderRadius: BorderRadius.circular(16.0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.width * 0.45,
+                    maxWidth: MediaQuery.of(context).size.width,
+                  ),
+                  child: VideoPage(playerController: playerController),
+                ),
+              ),
             )
           : Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8.0),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.width * 0.6,
-                      maxWidth: MediaQuery.of(context).size.width,
-                    ),
-                    child: VideoPage(
-                      playerController: playerController,
-                    ),
-                  )),
+                borderRadius: BorderRadius.circular(8.0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.width * 0.6,
+                    maxWidth: MediaQuery.of(context).size.width,
+                  ),
+                  child: VideoPage(playerController: playerController),
+                ),
+              ),
             ),
     );
   }
@@ -367,8 +382,9 @@ class WatcherState extends State<Watcher>
   void updateHistory() {
     if (history != null) {
       history!.lastWatchEpisode = episode;
-      history!.allEpisode =
-          widget.episode!.values.elementAt(playerController.currentRoad).length;
+      history!.allEpisode = widget.episode!.values
+          .elementAt(playerController.currentRoad)
+          .length;
       _updateHistoryTimer?.cancel();
       _updateHistoryTimer = Timer(const Duration(seconds: 1), () {
         HistoryManager().addHistoryAsync(history!);
