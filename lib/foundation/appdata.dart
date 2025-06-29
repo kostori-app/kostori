@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/init.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/io.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'log.dart';
 
@@ -58,10 +58,7 @@ class Appdata with Init {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'settings': settings._data,
-      'searchHistory': searchHistory,
-    };
+    return {'settings': settings._data, 'searchHistory': searchHistory};
   }
 
   /// Following fields are related to device-specific data and should not be synced.
@@ -104,10 +101,7 @@ class Appdata with Init {
   @override
   Future<void> doInit() async {
     var dataPath = (await getApplicationSupportDirectory()).path;
-    var file = File(FilePath.join(
-      dataPath,
-      'appdata.json',
-    ));
+    var file = File(FilePath.join(dataPath, 'appdata.json'));
     if (!await file.exists()) {
       return;
     }
@@ -184,6 +178,7 @@ class Settings with ChangeNotifier {
     'animeSourceListUrl': Api.kostoriConfig,
     'gitMirror': false,
     'initialPage': '0',
+    'debugInfo': false,
   };
 
   operator [](String key) {

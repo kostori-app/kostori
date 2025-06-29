@@ -10,44 +10,47 @@ class EpisodeInfo {
   String duration;
   String desc;
 
-  EpisodeInfo(
-      {required this.id,
-      required this.sort,
-      required this.ep,
-      required this.comment,
-      required this.type,
-      required this.name,
-      required this.nameCn,
-      required this.airDate,
-      required this.duration,
-      required this.desc});
+  EpisodeInfo({
+    required this.id,
+    required this.sort,
+    required this.ep,
+    required this.comment,
+    required this.type,
+    required this.name,
+    required this.nameCn,
+    required this.airDate,
+    required this.duration,
+    required this.desc,
+  });
 
   factory EpisodeInfo.fromJson(Map<String, dynamic> json) {
     return EpisodeInfo(
-        id: json['id'] ?? 0,
-        sort: json['sort'] ?? 0,
-        type: json['type'] ?? 0,
-        name: json['name'] ?? '',
-        nameCn: json['name_cn'] ?? '',
-        airDate: json['airdate'] ?? '',
-        duration: json['duration'] ?? '',
-        desc: json['desc'] ?? '',
-        ep: json['ep'] ?? 0,
-        comment: json['comment'] ?? 0);
+      id: json['id'] ?? 0,
+      sort: json['sort'] ?? 0,
+      type: json['type'] ?? 0,
+      name: json['name'] ?? '',
+      nameCn: json['name_cn'] ?? '',
+      airDate: json['airdate'] ?? '',
+      duration: json['duration'] ?? '',
+      desc: json['desc'] ?? '',
+      ep: json['ep'] ?? 0,
+      comment: json['comment'] ?? 0,
+    );
   }
 
   factory EpisodeInfo.fromTemplate() {
     return EpisodeInfo(
-        id: 0,
-        sort: 0,
-        type: 0,
-        name: '',
-        nameCn: '',
-        airDate: '',
-        duration: '',
-        desc: '',
-        ep: 0,
-        comment: 0);
+      id: 0,
+      sort: 0,
+      type: 0,
+      name: '',
+      nameCn: '',
+      airDate: '',
+      duration: '',
+      desc: '',
+      ep: 0,
+      comment: 0,
+    );
   }
 
   void reset() {
@@ -74,5 +77,21 @@ class EpisodeInfo {
       default:
         return '';
     }
+  }
+
+  @override
+  String toString() {
+    return 'EpisodeInfo('
+        'id: $id, '
+        'sort: $sort, '
+        'ep: $ep, '
+        'comment: $comment, '
+        'type: $type (${readType()}), '
+        'name: "$name", '
+        'nameCn: "$nameCn", '
+        'airDate: "$airDate", '
+        'duration: "$duration", '
+        'desc: "$desc"'
+        ')';
   }
 }

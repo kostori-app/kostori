@@ -102,6 +102,6 @@ Future<void> _checkAppUpdates() async {
 }
 
 void checkUpdates() {
-  _checkAppUpdates();
+  _checkAppUpdates().wait();
   // FollowUpdatesService.initChecker();
 }

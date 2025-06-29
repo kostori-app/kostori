@@ -514,13 +514,11 @@ class Bangumi {
 
   static Future<void> getBangumiData() async {
     try {
-      // 1. 发起网络请求
       final response = await AppDio().request(
         Api.bangumiDataUrl,
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
 
-      // 2. 校验响应数据格式
       final responseData = response.data;
       if (responseData is! Map<String, dynamic> ||
           responseData['items'] is! List) {
@@ -528,24 +526,19 @@ class Bangumi {
         return;
       }
 
-      // 3. 获取原始数据列表
       final itemsList = responseData['items'] as List;
 
-      // 4. 空数据直接跳过
       if (itemsList.isEmpty) {
         Log.addLog(LogLevel.error, 'bangumi', 'Received empty data list');
         return;
       }
 
-      // 5. 解析数据
       final bangumiDataList = parseBangumiDataList(itemsList);
 
-      // 6. 截取最后100条数据
-      final last100Items = bangumiDataList.length > 100
-          ? bangumiDataList.sublist(bangumiDataList.length - 100)
+      final last100Items = bangumiDataList.length > 300
+          ? bangumiDataList.sublist(bangumiDataList.length - 300)
           : bangumiDataList;
 
-      // 7. 数据库操作（插入最后100条）
       BangumiManager().batchAddBangumiData(last100Items);
     } on DioException catch (e, s) {
       Log.addLog(
@@ -568,7 +561,6 @@ class Bangumi {
     }
   }
 
-  // 解析方法保持不变
   static List<BangumiData> parseBangumiDataList(List<dynamic> jsonList) {
     return jsonList.map<BangumiData>((json) {
       try {
@@ -637,6 +629,7 @@ class Bangumi {
       Log.addLog(LogLevel.info, 'bangumi', '${jsonData['tag_name']}');
       BangumiManager().clearBangumiData();
       BangumiManager().clearBnagumiCalendar();
+      appdata.settings['getBangumiAllEpInfoTime'] = null;
       Log.addLog(LogLevel.info, 'bangumi', 'Cleared bangumi data successfully');
       await getBangumiData();
       await getCalendarData();

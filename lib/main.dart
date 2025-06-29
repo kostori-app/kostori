@@ -23,13 +23,12 @@ import 'init.dart';
 import 'pages/main_page.dart';
 
 void main(List<String> args) {
-  // debugPaintSizeEnabled = true;
-  MediaKit.ensureInitialized();
   if (runWebViewTitleBarWidget(args)) return;
   overrideIO(() {
     runZonedGuarded(
       () async {
         WidgetsFlutterBinding.ensureInitialized();
+        MediaKit.ensureInitialized();
         await init();
         runApp(ProviderScope(child: MyApp()));
         if (App.isDesktop) {
@@ -74,6 +73,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     App.registerForceRebuild(forceRebuild);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        statusBarColor: Colors.transparent,
+      ),
+    );
     WidgetsBinding.instance.addObserver(this);
     checkUpdates();
     super.initState();

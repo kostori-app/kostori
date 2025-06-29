@@ -1,19 +1,16 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/foundation/log.dart';
-import 'package:kostori/utils/translations.dart';
-
-import 'package:kostori/utils/utils.dart';
-import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
 
 import '../../components/bangumi_widget.dart';
 import '../../components/misc_components.dart';
@@ -38,7 +35,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     super.initState();
     int weekday = DateTime.now().weekday - 1;
     controller = TabController(
-        vsync: this, length: getTabs().length, initialIndex: weekday);
+      vsync: this,
+      length: getTabs().length,
+      initialIndex: weekday,
+    );
     _initializeData(); // 修改初始化方法
   }
 
@@ -58,8 +58,9 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       // 1. 获取所有番剧数据并检查存在性
       final allItems = BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
       final allIds = allItems.map((item) => item.id.toString()).toList();
-      final existenceMap =
-          await BangumiManager().checkWhetherDataExistsBatch(allIds);
+      final existenceMap = await BangumiManager().checkWhetherDataExistsBatch(
+        allIds,
+      );
 
       // 2. 批量获取有效番剧的剧集数据（分批处理）
       final validItems = allItems
@@ -71,6 +72,8 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       final newCalendar = List.generate(7, (_) => <BangumiItem>[]);
       final now = DateTime.now();
       final currentWeekInfo = Utils.getISOWeekNumber(now);
+      debugPrint('validItems 长度是: ${validItems.length}');
+      debugPrint('allEpisodesMap 长度是: ${allEpisodesMap.length}');
 
       for (final item in validItems) {
         final airTimeStr = existenceMap[item.id.toString()] ?? item.airTime;
@@ -81,6 +84,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           final weekday = airTime.weekday;
 
           final episodes = allEpisodesMap[item.id];
+
           final episodeResult = _processEpisodeInfo(
             episodes: episodes,
             now: now,
@@ -94,10 +98,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           if (episodeResult['isFinalEpisode'] == true &&
               episodeResult['hasNextEpisodes'] == false &&
               episodeResult['isCurrentWeek'] == false) {
-            // print("被跳过周的airtime");
-            // print(airTime);
-            // print(currentWeekInfo);
-            // print(item);
             continue;
           }
 
@@ -107,8 +107,11 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
           );
           newCalendar[weekday - 1].add(enrichedItem);
         } catch (e, s) {
-          Log.addLog(LogLevel.error, '处理番剧时间',
-              'ID:${item.id}, 时间:$airTimeStr\n$e\n$s');
+          Log.addLog(
+            LogLevel.error,
+            '处理番剧时间',
+            'ID:${item.id}, 时间:$airTimeStr\n$e\n$s',
+          );
         }
       }
 
@@ -127,10 +130,11 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     required List<EpisodeInfo>? episodes,
     required DateTime now,
     required (int, int) currentWeekInfo,
-    required BangumiItem
-        bangumiItem, // 需要传入bangumiItem用于调用findCurrentWeekEpisode
+    required BangumiItem bangumiItem,
   }) {
-    if (episodes == null || episodes.isEmpty) return null;
+    if (episodes == null || episodes.isEmpty) {
+      return null;
+    }
 
     final (currentYear, currentWeek) = currentWeekInfo;
 
@@ -141,11 +145,15 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     // 最后一集（type0中最后一集）
     final finalEpisode = type0Episodes.last;
 
-    final currentWeekEp =
-        Utils.findCurrentWeekEpisode(episodes, bangumiItem, true);
+    final currentWeekEp = Utils.findCurrentWeekEpisode(
+      episodes,
+      bangumiItem,
+      true,
+    );
 
     // 判断当前集数是否为最后一集
-    final isFinalEpisode = currentWeekEp.values.first != null &&
+    final isFinalEpisode =
+        currentWeekEp.values.first != null &&
         currentWeekEp.values.first?.sort == finalEpisode.sort;
 
     final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
@@ -161,8 +169,9 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     }
 
     // 判断是否还有后续集数（finalEpisode不是最后一集时为true）
-    final maxSort =
-        type0Episodes.map((e) => e.sort).reduce((a, b) => a > b ? a : b);
+    final maxSort = type0Episodes
+        .map((e) => e.sort)
+        .reduce((a, b) => a > b ? a : b);
 
     return {
       'episode_airdate': currentWeekEp.values.first?.airDate,
@@ -175,29 +184,47 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     };
   }
 
-// 按播出时间排序
+  // 按播出时间排序
   void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
     for (final dayList in calendar) {
       dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
     }
   }
 
-  // 批量获取剧集数据（每批10个）
   Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
-      List<BangumiItem> items) async {
+    List<BangumiItem> items,
+  ) async {
     final result = <int, List<EpisodeInfo>>{};
-    for (var i = 0; i < items.length; i += 10) {
-      final batch = items.sublist(i, min(i + 10, items.length));
-      try {
-        result.addAll(await _fetchBatchEpisodes(batch));
-      } catch (e, s) {
-        Log.addLog(LogLevel.warning, '获取剧集批次${i ~/ 10 + 1}失败', '$e\n$s');
+    const int batchSize = 10;
+    final nowStr = Utils.formatDate(DateTime.now());
+    final lastUpdateTime = appdata.settings['getBangumiAllEpInfoTime'];
+
+    if (lastUpdateTime != nowStr) {
+      for (var i = 0; i < items.length; i += batchSize) {
+        final batch = items.sublist(
+          i,
+          (i + batchSize) > items.length ? items.length : (i + batchSize),
+        );
+
+        try {
+          final batchResult = await _fetchBatchEpisodes(batch);
+          debugPrint('批次${i ~/ batchSize + 1}请求返回数量: ${batchResult.length}');
+          result.addAll(batchResult);
+        } catch (e, s) {
+          Log.addLog(LogLevel.error, '获取剧集批次${i ~/ batchSize + 1}失败', '$e\n$s');
+        }
       }
+
+      appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
+      appdata.saveData();
+    } else {
+      final batchResult = await _fetchBatchEpisodes(items);
+      result.addAll(batchResult);
     }
+
     return result;
   }
 
-// 时间字符串比较
   int _compareTimeStrings(String? a, String? b) {
     if (a == null && b == null) return 0;
     if (a == null) return 1;
@@ -205,7 +232,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     return _parseTime(a).compareTo(_parseTime(b));
   }
 
-// 解析时间（仅比较时分）
   DateTime _parseTime(String timeStr) {
     try {
       final dt = DateTime.parse(timeStr).toLocal();
@@ -215,34 +241,37 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     }
   }
 
-// 批量获取剧集（保持原有实现）
   Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
-      List<BangumiItem> batch) async {
+    List<BangumiItem> batch,
+  ) async {
     final result = <int, List<EpisodeInfo>>{};
     final nowStr = Utils.formatDate(DateTime.now());
     final lastUpdateTime = appdata.settings['getBangumiAllEpInfoTime'];
 
-    if (lastUpdateTime != null && lastUpdateTime == nowStr) {
-      await Future.wait(batch.map((item) async {
-        try {
-          final episodes = await BangumiManager().allEpInfoFind(item.id);
-          if (episodes.isNotEmpty) result[item.id] = episodes;
-        } catch (e, s) {
-          Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
-        }
-      }));
+    if (lastUpdateTime == nowStr) {
+      await Future.wait(
+        batch.map((item) async {
+          try {
+            final episodes = await BangumiManager().allEpInfoFind(item.id);
+            if (episodes.isNotEmpty) result[item.id] = episodes;
+          } catch (e, s) {
+            Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
+          }
+        }),
+      );
     } else {
       try {
-        await Future.wait(batch.map((item) async {
-          try {
-            final episodes = await Bangumi.getBangumiEpisodeAllByID(item.id);
-            if (episodes.isNotEmpty) result[item.id] = episodes;
-          } catch (e) {
-            Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e');
-          }
-        }));
-        appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
-        appdata.saveData();
+        await Future.wait(
+          batch.map((item) async {
+            try {
+              final episodes = await Bangumi.getBangumiEpisodeAllByID(item.id);
+              debugPrint(item.id.toString());
+              if (episodes.isNotEmpty) result[item.id] = episodes;
+            } catch (e) {
+              Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e');
+            }
+          }),
+        );
       } catch (e, s) {
         Log.addLog(LogLevel.warning, '批量获取剧集', '$e\n$s');
       }
@@ -258,8 +287,9 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     DateTime currentDate = DateTime.now();
     List<Tab> tabs = [];
     for (int i = 0; i < 7; i++) {
-      DateTime weekday = currentDate
-          .add(Duration(days: i - currentDate.weekday + 1)); // 当前周的日期
+      DateTime weekday = currentDate.add(
+        Duration(days: i - currentDate.weekday + 1),
+      ); // 当前周的日期
       String formattedDate = '${weekday.month}月${weekday.day}日'; // 格式化日期
       String dayOfWeek = '';
 
@@ -314,14 +344,15 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
   @override
   Widget build(BuildContext context) {
-    return OrientationBuilder(builder: (context, orientation) {
-      return PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (bool didPop, Object? result) {
-          if (didPop) return;
-          context.pop();
-        },
-        child: Scaffold(
+    return OrientationBuilder(
+      builder: (context, orientation) {
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (bool didPop, Object? result) {
+            if (didPop) return;
+            context.pop();
+          },
+          child: Scaffold(
             appBar: AppBar(
               title: Text('Timetable'.tl),
               leading: IconButton(
@@ -340,22 +371,22 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
             ),
             body: Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: 950.0 // 设置最大宽度为800
-                    ),
+                constraints: BoxConstraints(
+                  maxWidth: 950.0, // 设置最大宽度为800
+                ),
                 child: _buildBody(orientation),
               ),
-            ) // 修改body构建方式
-            ),
-      );
-    });
+            ), // 修改body构建方式
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildBody(Orientation orientation) {
     return Padding(
       padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
-      child: _isLoading
-          ? _buildLoadingIndicator() // 加载状态
-          : renderBody(orientation), // 原始内容
+      child: _isLoading ? _buildLoadingIndicator() : renderBody(orientation),
     );
   }
 
@@ -379,14 +410,14 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         children: contentList(bangumiCalendar, orientation),
       );
     } else {
-      return const Center(
-        child: Text('数据还没有更新 (´;ω;`)'),
-      );
+      return const Center(child: Text('数据还没有更新 (´;ω;`)'));
     }
   }
 
   List<Widget> contentList(
-      List<List<BangumiItem>> bangumiCalendar, Orientation orientation) {
+    List<List<BangumiItem>> bangumiCalendar,
+    Orientation orientation,
+  ) {
     final List<Widget> listViewList = [];
     final DateTime currentTime = DateTime.now().toLocal(); // 当前本地时间
     final String currentTimeStr = DateFormat('HH:mm').format(currentTime);
@@ -396,9 +427,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       final bangumiList = bangumiCalendar[weekday - 1];
 
       if (bangumiList.isEmpty) {
-        listViewList.add(
-          const Center(child: Text('这一天没有番剧')),
-        );
+        listViewList.add(const Center(child: Text('这一天没有番剧')));
         continue;
       }
 
@@ -430,8 +459,8 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
                   final adjustedIndex =
                       shouldInsertDivider && index > lastPastIndex
-                          ? index - 1
-                          : index;
+                      ? index - 1
+                      : index;
 
                   if (adjustedIndex >= bangumiList.length) return null;
 
@@ -446,7 +475,9 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                       );
                     },
                     child: bangumiCalendarCard(
-                        context, bangumiList[adjustedIndex]),
+                      context,
+                      bangumiList[adjustedIndex],
+                    ),
                   );
                 },
                 childCount: shouldInsertDivider
@@ -462,7 +493,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     return listViewList;
   }
 
-// 从 ISO 8601 时间中提取时间部分（HH:mm）
+  // 从 ISO 8601 时间中提取时间部分（HH:mm）
   String _extractTimeFromISO(String isoTime) {
     try {
       final dateTime = DateTime.parse(isoTime).toLocal();
@@ -473,7 +504,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     }
   }
 
-// 构建当前时间分割线
+  // 构建当前时间分割线
   Widget _buildCurrentTimeDivider(DateTime currentTime) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -483,8 +514,12 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         final dividerThickness = constraints.maxWidth * 0.005; // 分割线厚度（基于父容器宽度）
 
         return Padding(
-          padding:
-              const EdgeInsets.only(top: 0, left: 24, right: 24, bottom: 12),
+          padding: const EdgeInsets.only(
+            top: 0,
+            left: 24,
+            right: 24,
+            bottom: 12,
+          ),
           child: Row(
             children: [
               Icon(
@@ -528,157 +563,174 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                LayoutBuilder(builder: (context, constraints) {
-                  final imageHeight = constraints.maxWidth * 6 / 16;
-                  return SizedBox(
-                    child: Utils.buildTimeIndicator(
-                        bangumiItem.airTime, imageHeight),
-                  );
-                }),
-                LayoutBuilder(builder: (context, constraints) {
-                  final imageHeight = constraints.maxWidth * 6 / 16;
-                  final imageWidth = imageHeight * 0.72;
-                  return SizedBox(
-                    height: imageHeight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 图片部分
-                        ClipRRect(
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final imageHeight = constraints.maxWidth * 6 / 16;
+                    return SizedBox(
+                      child: Utils.buildTimeIndicator(
+                        bangumiItem.airTime,
+                        imageHeight,
+                      ),
+                    );
+                  },
+                ),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final imageHeight = constraints.maxWidth * 6 / 16;
+                    final imageWidth = imageHeight * 0.72;
+                    return SizedBox(
+                      height: imageHeight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 图片部分
+                          ClipRRect(
                             borderRadius: BorderRadius.circular(24),
                             child: Hero(
                               tag: 'calendar-${bangumiItem.id}',
                               child: BangumiWidget.kostoriImage(
-                                  context, bangumiItem.images['large']!,
-                                  width: imageWidth, height: imageHeight),
-                            )),
-                        const SizedBox(width: 16),
-                        // 信息部分
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 标题
-                              Text(
-                                bangumiItem.nameCn,
-                                style: TextStyle(
-                                  fontSize: imageWidth * 0.12,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.2,
-                                ),
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
+                                context,
+                                bangumiItem.images['large']!,
+                                width: imageWidth,
+                                height: imageHeight,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                bangumiItem.name,
-                                style: TextStyle(
-                                  fontSize: imageWidth * 0.08,
-                                  // color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // 信息部分
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // 标题
+                                Text(
+                                  bangumiItem.nameCn,
+                                  style: TextStyle(
+                                    fontSize: imageWidth * 0.12,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.2,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                'Episode @e: @n'.tlParams({
-                                  'e': bangumiItem.extraInfo?['episode_ep'],
-                                  'n': (bangumiItem
-                                              .extraInfo?['episode_name_cn']
-                                              .isEmpty ??
-                                          true)
-                                      ? (bangumiItem
-                                              .extraInfo?['episode_name']) ??
-                                          ''
-                                      : bangumiItem
-                                          .extraInfo?['episode_name_cn']
-                                }),
-                                style: TextStyle(
-                                  fontSize: imageWidth * 0.12,
-                                  // color: Colors.grey[600],
+                                const SizedBox(height: 4),
+                                Text(
+                                  bangumiItem.name,
+                                  style: TextStyle(
+                                    fontSize: imageWidth * 0.08,
+                                    // color: Colors.grey[600],
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const Spacer(),
-                              // 评分信息
-                              Align(
-                                alignment: Alignment.bottomRight,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    if (bangumiItem.total >= 20) ...[
-                                      Text(
-                                        '${bangumiItem.score}',
-                                        style: TextStyle(
-                                          fontSize: imageWidth * 0.16,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5,
-                                      ),
-                                      Container(
-                                        padding: EdgeInsets.fromLTRB(
-                                            8, 5, 8, 5), // 可选，设置内边距
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                              8), // 设置圆角半径
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .toOpacity(0.72),
-                                            width: 1.0, // 设置边框宽度
-                                          ),
-                                        ),
-                                        child: Text(
-                                          Utils.getRatingLabel(
-                                              bangumiItem.score),
+                                Text(
+                                  'Episode @e: @n'.tlParams({
+                                    'e':
+                                        bangumiItem.extraInfo?['episode_ep'] ??
+                                        0,
+                                    'n':
+                                        (bangumiItem
+                                                .extraInfo?['episode_name_cn']
+                                                .isEmpty ??
+                                            true)
+                                        ? (bangumiItem
+                                                  .extraInfo?['episode_name']) ??
+                                              ''
+                                        : bangumiItem
+                                                  .extraInfo?['episode_name_cn'] ??
+                                              '',
+                                  }),
+                                  style: TextStyle(
+                                    fontSize: imageWidth * 0.12,
+                                    // color: Colors.grey[600],
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const Spacer(),
+                                // 评分信息
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      if (bangumiItem.total >= 20) ...[
+                                        Text(
+                                          '${bangumiItem.score}',
                                           style: TextStyle(
-                                            fontSize: imageWidth * 0.12,
+                                            fontSize: imageWidth * 0.16,
                                           ),
                                         ),
-                                      ),
-                                      SizedBox(
-                                        width: 4,
+                                        SizedBox(width: 5),
+                                        Container(
+                                          padding: EdgeInsets.fromLTRB(
+                                            8,
+                                            5,
+                                            8,
+                                            5,
+                                          ), // 可选，设置内边距
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ), // 设置圆角半径
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .toOpacity(0.72),
+                                              width: 1.0, // 设置边框宽度
+                                            ),
+                                          ),
+                                          child: Text(
+                                            Utils.getRatingLabel(
+                                              bangumiItem.score,
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: imageWidth * 0.12,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                      ],
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end, // 右对齐
+                                        children: [
+                                          RatingBarIndicator(
+                                            itemCount: 5,
+                                            rating:
+                                                bangumiItem.score.toDouble() /
+                                                2,
+                                            itemBuilder: (context, index) =>
+                                                const Icon(Icons.star_rounded),
+                                            itemSize: imageWidth * 0.14,
+                                          ),
+                                          Text(
+                                            '@t reviews | #@r'.tlParams({
+                                              'r': bangumiItem.rank,
+                                              't': bangumiItem.total,
+                                            }),
+                                            style: TextStyle(
+                                              fontSize: imageWidth * 0.1,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end, // 右对齐
-                                      children: [
-                                        RatingBarIndicator(
-                                          itemCount: 5,
-                                          rating:
-                                              bangumiItem.score.toDouble() / 2,
-                                          itemBuilder: (context, index) =>
-                                              const Icon(
-                                            Icons.star_rounded,
-                                          ),
-                                          itemSize: imageWidth * 0.14,
-                                        ),
-                                        Text(
-                                          '@t reviews | #@r'.tlParams({
-                                            'r': bangumiItem.rank,
-                                            't': bangumiItem.total
-                                          }),
-                                          style: TextStyle(
-                                              fontSize: imageWidth * 0.1),
-                                        )
-                                      ],
-                                    ),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           );
