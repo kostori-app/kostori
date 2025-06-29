@@ -12,3 +12,4 @@ key.properties
 **/*.keystore
 **/*.jks
 /app/.cxx/
+/java_pid70368.hprof
