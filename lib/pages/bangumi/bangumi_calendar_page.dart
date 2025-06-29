@@ -28,7 +28,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
   List<List<BangumiItem>> bangumiCalendar = [];
 
-  bool _isLoading = true; // 新增加载状态标识
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -39,7 +39,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       length: getTabs().length,
       initialIndex: weekday,
     );
-    _initializeData(); // 修改初始化方法
+    _initializeData();
   }
 
   // 新增初始化方法
@@ -361,6 +361,20 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                 },
                 icon: Icon(Icons.arrow_back_ios_new),
               ),
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    appdata.settings['getBangumiAllEpInfoTime'] = null;
+                    appdata.saveData();
+                    setState(() {
+                      _isLoading = true;
+                      _initializeData();
+                    });
+                  },
+                  icon: Icon(Icons.restart_alt),
+                  tooltip: '刷新状态',
+                ),
+              ],
               bottom: TabBar(
                 controller: controller,
                 tabs: getTabs(),
@@ -371,9 +385,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
             ),
             body: Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: 950.0, // 设置最大宽度为800
-                ),
+                constraints: BoxConstraints(maxWidth: 950.0),
                 child: _buildBody(orientation),
               ),
             ), // 修改body构建方式
