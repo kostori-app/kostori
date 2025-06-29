@@ -9,16 +9,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/pages/auth_page.dart';
+import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
+
 import 'components/components.dart';
+import 'components/window_frame.dart';
+import 'foundation/app.dart';
 import 'foundation/appdata.dart';
 import 'foundation/log.dart';
 import 'init.dart';
 import 'pages/main_page.dart';
-import 'components/window_frame.dart';
-import 'foundation/app.dart';
 
 void main(List<String> args) {
   // debugPaintSizeEnabled = true;
@@ -83,6 +85,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      debugPrint("应用进入后台");
+      Future.microtask(() {
+        DataSync().onDataChanged();
+      });
+    } else if (state == AppLifecycleState.resumed) {
+      debugPrint("应用回到前台");
+    } else if (state == AppLifecycleState.inactive) {
+      debugPrint("应用处于非活动状态");
+      if (App.isDesktop) {
+        Future.microtask(() {
+          DataSync().onDataChanged();
+        });
+      }
+    }
     if (!App.isMobile || !appdata.settings['authorizationRequired']) {
       return;
     }
@@ -238,8 +255,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           ],
           builder: (context, widget) {
             final isPaddingCheckError =
-                MediaQuery.of(context).viewPadding.top <= 0 ||
-                MediaQuery.of(context).viewPadding.top > 50;
+                MediaQuery.of(context).padding.top <= 0 ||
+                MediaQuery.of(context).padding.top > 80;
 
             ErrorWidget.builder = (details) {
               Log.error(
@@ -264,11 +281,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ),
                 );
               }
+              //有点问题,只能暂时解决
               if (isPaddingCheckError) {
                 return MediaQuery(
                   data: MediaQuery.of(context).copyWith(
-                    viewPadding: const EdgeInsets.only(top: 25, bottom: 35),
-                    padding: const EdgeInsets.only(top: 25, bottom: 35),
+                    padding: MediaQuery.of(context).padding.copyWith(top: 24),
                   ),
                   child: _SystemUiProvider(
                     Material(
