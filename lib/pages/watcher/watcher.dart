@@ -230,7 +230,7 @@ class WatcherState extends State<Watcher>
   void loadNextlVideo(int episodeIndex) async {
     ep = widget.anime.episode?.values.elementAt(playerController.currentRoad);
     episode = episodeIndex; // 更新逻辑中的当前集数
-    Log.addLog(LogLevel.error, "加载集数", "$episodeIndex");
+    Log.addLog(LogLevel.info, "加载集数", "$episodeIndex");
     try {
       var progressFind = await HistoryManager().progressFind(
         widget.anime.id,

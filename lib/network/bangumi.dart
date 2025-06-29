@@ -535,8 +535,8 @@ class Bangumi {
 
       final bangumiDataList = parseBangumiDataList(itemsList);
 
-      final last100Items = bangumiDataList.length > 300
-          ? bangumiDataList.sublist(bangumiDataList.length - 300)
+      final last100Items = bangumiDataList.length > 200
+          ? bangumiDataList.sublist(bangumiDataList.length - 200)
           : bangumiDataList;
 
       BangumiManager().batchAddBangumiData(last100Items);
@@ -773,7 +773,7 @@ class Bangumi {
       final jsonData = res.data;
       characterFullItem = CharacterFullItem.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      Log.addLog(LogLevel.error, 'getCharacterByCharacterID', '$e\n$s');
     }
     return characterFullItem;
   }
