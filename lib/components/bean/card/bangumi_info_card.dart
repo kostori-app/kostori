@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
-
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
-
-import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../foundation/anime_type.dart';
@@ -19,13 +17,14 @@ import '../../../pages/anime_details_page/anime_page.dart';
 import '../../../pages/bangumi/info_controller.dart';
 
 class BangumiInfoCardV extends StatefulWidget {
-  const BangumiInfoCardV(
-      {super.key,
-      required this.bangumiItem,
-      required this.isLoading,
-      required this.allEpisodes,
-      this.heroTag,
-      required this.infoController});
+  const BangumiInfoCardV({
+    super.key,
+    required this.bangumiItem,
+    required this.isLoading,
+    required this.allEpisodes,
+    this.heroTag,
+    required this.infoController,
+  });
 
   final BangumiItem bangumiItem;
   final List<EpisodeInfo> allEpisodes;
@@ -44,13 +43,9 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
 
   List<EpisodeInfo> get allEpisodes => widget.allEpisodes;
 
-  Widget get voteBarChart => LineChatPage(
-        bangumiItem: widget.bangumiItem,
-      );
+  Widget get voteBarChart => LineChatPage(bangumiItem: widget.bangumiItem);
 
-  void showBangumiHistoryPagePickerDialog(
-    BuildContext context,
-  ) {
+  void showBangumiHistoryPagePickerDialog(BuildContext context) {
     final scrollController = ScrollController();
 
     showDialog(
@@ -81,13 +76,16 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                         return InkWell(
                           onTap: () {
                             Navigator.pop(context);
-                            App.mainNavigatorKey?.currentContext?.to(() =>
-                                AnimePage(
-                                    id: history.id,
-                                    sourceKey: history.sourceKey));
+                            App.mainNavigatorKey?.currentContext?.to(
+                              () => AnimePage(
+                                id: history.id,
+                                sourceKey: history.sourceKey,
+                              ),
+                            );
                             LocalFavoritesManager().updateRecentlyWatched(
-                                history.id,
-                                AnimeType(history.sourceKey.hashCode));
+                              history.id,
+                              AnimeType(history.sourceKey.hashCode),
+                            );
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Padding(
@@ -102,29 +100,29 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: BangumiWidget.kostoriImage(
-                                      context, history.cover,
-                                      width: 200 * 0.72, height: 200),
+                                    context,
+                                    history.cover,
+                                    width: 200 * 0.72,
+                                    height: 200,
+                                  ),
                                 ),
-                                const SizedBox(
-                                  width: 8,
-                                ),
+                                const SizedBox(width: 8),
                                 Expanded(
-                                    child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    Text(history.title),
-                                    const SizedBox(
-                                      height: 4,
-                                    ),
-                                    Text(history.sourceKey),
-                                    const SizedBox(
-                                      height: 4,
-                                    ),
-                                    Text(
-                                        '上次看到: 第 ${history.lastWatchEpisode} 话'),
-                                  ],
-                                ))
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      Text(history.title),
+                                      const SizedBox(height: 4),
+                                      Text(history.sourceKey),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '上次看到: 第 ${history.lastWatchEpisode} 话',
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -148,13 +146,15 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
         FilledButton.tonal(
           onPressed: () {
             final context = App.mainNavigatorKey!.currentContext!;
-            context.to(() => AggregatedSearchPage(
-                  keyword: bangumiItem.nameCn.isEmpty
-                      ? bangumiItem.name
-                      : bangumiItem.nameCn,
-                  bangumiPage: true,
-                  keywords: bangumiItem.alias,
-                ));
+            context.to(
+              () => AggregatedSearchPage(
+                keyword: bangumiItem.nameCn.isEmpty
+                    ? bangumiItem.name
+                    : bangumiItem.nameCn,
+                bangumiPage: true,
+                keywords: bangumiItem.alias,
+              ),
+            );
           },
           style: FilledButton.styleFrom(
             minimumSize: const Size(80, 40),
@@ -193,11 +193,12 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
     final bool showRightButton = MediaQuery.of(context).size.width >= 626;
     final bool showBottomButton = !showRightButton; // 确保互斥
     double standardDeviation = Utils.getDeviation(
-        widget.bangumiItem.total,
-        (widget.bangumiItem.count != null)
-            ? widget.bangumiItem.count!.values.toList()
-            : count,
-        widget.bangumiItem.score);
+      widget.bangumiItem.total,
+      (widget.bangumiItem.count != null)
+          ? widget.bangumiItem.count!.values.toList()
+          : count,
+      widget.bangumiItem.score,
+    );
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: 950, maxHeight: 300),
       child: Row(
@@ -206,26 +207,32 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
         children: [
           ConstrainedBox(
             constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width <= 550 ? 450 : 475),
+              maxWidth: MediaQuery.of(context).size.width <= 550 ? 450 : 475,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    double height = MediaQuery.of(context).size.width <=
+                    double height =
+                        MediaQuery.of(context).size.width <=
                             constraints.maxWidth + 150
                         ? 230
                         : 280;
                     double width = height * 0.72;
                     // 获取当前周的剧集
-                    final currentWeekEp =
-                        Utils.findCurrentWeekEpisode(allEpisodes, bangumiItem);
+                    final currentWeekEp = Utils.findCurrentWeekEpisode(
+                      allEpisodes,
+                      bangumiItem,
+                    );
 
-                    final type0Episodes =
-                        allEpisodes.where((ep) => ep.type == 0).toList();
+                    final type0Episodes = allEpisodes
+                        .where((ep) => ep.type == 0)
+                        .toList();
 
-                    final isCompleted = currentWeekEp.values.first != null &&
+                    final isCompleted =
+                        currentWeekEp.values.first != null &&
                         type0Episodes.isNotEmpty &&
                         currentWeekEp.values.first == type0Episodes.last;
 
@@ -240,22 +247,27 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                           InkWell(
                             onTap: () {
                               BangumiWidget.showImagePreview(
-                                  context,
-                                  widget.bangumiItem.images['large']!,
-                                  widget.bangumiItem.nameCn,
-                                  '${widget.heroTag}-${widget.bangumiItem.id}');
+                                context,
+                                widget.bangumiItem.images['large']!,
+                                widget.bangumiItem.nameCn,
+                                '${widget.heroTag}-${widget.bangumiItem.id}',
+                              );
                             },
-                            borderRadius:
-                                BorderRadius.circular(12), // 水波纹保持一致圆角
+                            borderRadius: BorderRadius.circular(
+                              12,
+                            ), // 水波纹保持一致圆角
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Hero(
                                 tag: (widget.heroTag == null)
                                     ? widget.bangumiItem.id
                                     : '${widget.heroTag}-${widget.bangumiItem.id}',
-                                child: BangumiWidget.kostoriImage(context,
-                                    widget.bangumiItem.images['large']!,
-                                    width: width, height: height),
+                                child: BangumiWidget.kostoriImage(
+                                  context,
+                                  widget.bangumiItem.images['large']!,
+                                  width: width,
+                                  height: height,
+                                ),
                               ),
                             ),
                           ),
@@ -269,10 +281,12 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                               children: [
                                 GestureDetector(
                                   onLongPress: () {
-                                    Clipboard.setData(ClipboardData(
-                                        text: bangumiItem.nameCn));
-                                    App.rootContext
-                                        .showMessage(message: '已复制到剪贴板.');
+                                    Clipboard.setData(
+                                      ClipboardData(text: bangumiItem.nameCn),
+                                    );
+                                    App.rootContext.showMessage(
+                                      message: '已复制到剪贴板.',
+                                    );
                                   },
                                   child: Text(
                                     bangumiItem.nameCn,
@@ -287,15 +301,15 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                 GestureDetector(
                                   onLongPress: () {
                                     Clipboard.setData(
-                                        ClipboardData(text: bangumiItem.name));
-                                    App.rootContext
-                                        .showMessage(message: '已复制到剪贴板.');
+                                      ClipboardData(text: bangumiItem.name),
+                                    );
+                                    App.rootContext.showMessage(
+                                      message: '已复制到剪贴板.',
+                                    );
                                   },
                                   child: Text(
                                     bangumiItem.name,
-                                    style: TextStyle(
-                                      fontSize: width * 1 / 24,
-                                    ),
+                                    style: TextStyle(fontSize: width * 1 / 24),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -309,12 +323,17 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                           if (bangumiItem.airDate.isNotEmpty)
                                             Container(
                                               padding: EdgeInsets.fromLTRB(
-                                                  8, 5, 8, 5),
+                                                8,
+                                                5,
+                                                8,
+                                                5,
+                                              ),
                                               // 可选，设置内边距
                                               decoration: BoxDecoration(
                                                 borderRadius:
                                                     BorderRadius.circular(
-                                                        8.0), // 设置圆角半径
+                                                      8.0,
+                                                    ), // 设置圆角半径
                                                 color: Colors.transparent,
                                                 border: Border.all(
                                                   color: Theme.of(context)
@@ -324,42 +343,19 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                   width: 1.0, // 设置边框宽度
                                                 ),
                                               ),
-                                              child: Text(bangumiItem.airDate,
-                                                  style: TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold)),
+                                              child: Text(
+                                                bangumiItem.airDate,
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
                                             ),
                                           SizedBox(width: 4.0),
-                                          (currentWeekEp.values.first?.sort !=
-                                                  null)
-                                              ? Expanded(
-                                                  child: Text(
-                                                  isCompleted
-                                                      ? '全 ${bangumiItem.totalEpisodes} 话'
-                                                      : currentWeekEp
-                                                                  .values
-                                                                  .first
-                                                                  ?.sort ==
-                                                              currentWeekEp
-                                                                  .values
-                                                                  .first
-                                                                  ?.ep
-                                                          ? '连载至 ${currentWeekEp.values.first?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话'
-                                                          : '连载至 ${currentWeekEp.values.first?.ep} (${currentWeekEp.values.first?.sort}) • 预定全 ${bangumiItem.totalEpisodes} 话',
-                                                  style: TextStyle(
-                                                    fontSize: 12.0,
-                                                  ),
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ))
-                                              : Text(
-                                                  'Not Yet Airing'.tl,
-                                                  style: TextStyle(
-                                                      fontSize: 12.0,
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
+                                          BangumiWidget.bangumiTimeText(
+                                            bangumiItem,
+                                            currentWeekEp,
+                                            isCompleted,
+                                          ),
                                         ],
                                       )
                                     : Padding(
@@ -370,14 +366,18 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                 CrossAxisAlignment.start,
                                             children: [
                                               Skeletonizer.zone(
-                                                  child: Bone.text(
-                                                      fontSize: 12, width: 60)),
-                                              const SizedBox(
-                                                width: 8,
+                                                child: Bone.text(
+                                                  fontSize: 12,
+                                                  width: 60,
+                                                ),
                                               ),
+                                              const SizedBox(width: 8),
                                               Skeletonizer.zone(
-                                                  child: Bone.text(
-                                                      fontSize: 12, width: 60)),
+                                                child: Bone.text(
+                                                  fontSize: 12,
+                                                  width: 60,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -396,20 +396,23 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                               Text(
                                                 '${bangumiItem.score}',
                                                 style: TextStyle(
-                                                    fontSize: 24.0,
-                                                    fontWeight:
-                                                        FontWeight.bold),
+                                                  fontSize: 24.0,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
                                               ),
-                                              SizedBox(
-                                                width: 5,
-                                              ),
+                                              SizedBox(width: 5),
                                               Container(
                                                 padding: EdgeInsets.fromLTRB(
-                                                    8, 5, 8, 5), // 可选，设置内边距
+                                                  8,
+                                                  5,
+                                                  8,
+                                                  5,
+                                                ), // 可选，设置内边距
                                                 decoration: BoxDecoration(
                                                   borderRadius:
                                                       BorderRadius.circular(
-                                                          8), // 设置圆角半径
+                                                        8,
+                                                      ), // 设置圆角半径
                                                   border: Border.all(
                                                     color: Theme.of(context)
                                                         .colorScheme
@@ -419,15 +422,15 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                   ),
                                                 ),
                                                 child: Text(
-                                                    Utils.getRatingLabel(
-                                                        bangumiItem.score),
-                                                    style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold)),
+                                                  Utils.getRatingLabel(
+                                                    bangumiItem.score,
+                                                  ),
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                               ),
-                                              SizedBox(
-                                                width: 4,
-                                              ),
+                                              SizedBox(width: 4),
                                             ],
                                             Column(
                                               crossAxisAlignment:
@@ -435,24 +438,26 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                               children: [
                                                 RatingBarIndicator(
                                                   itemCount: 5,
-                                                  rating: bangumiItem.score
+                                                  rating:
+                                                      bangumiItem.score
                                                           .toDouble() /
                                                       2,
                                                   itemBuilder:
                                                       (context, index) =>
                                                           const Icon(
-                                                    Icons.star_rounded,
-                                                  ),
+                                                            Icons.star_rounded,
+                                                          ),
                                                   itemSize: 20.0,
                                                 ),
                                                 Text(
                                                   '@t reviews | #@r'.tlParams({
                                                     'r': bangumiItem.rank,
-                                                    't': bangumiItem.total
+                                                    't': bangumiItem.total,
                                                   }),
-                                                  style:
-                                                      TextStyle(fontSize: 12),
-                                                )
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ],
@@ -468,23 +473,25 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                 CrossAxisAlignment.end,
                                             children: [
                                               Skeletonizer.zone(
-                                                  child: Bone.text(
-                                                      fontSize: 10,
-                                                      width: 120)),
+                                                child: Bone.text(
+                                                  fontSize: 10,
+                                                  width: 120,
+                                                ),
+                                              ),
                                               const SizedBox(height: 4),
                                               Skeletonizer.zone(
-                                                  child: Bone.text(
-                                                      fontSize: 10,
-                                                      width: 120)),
+                                                child: Bone.text(
+                                                  fontSize: 10,
+                                                  width: 120,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                         ),
                                       ),
                                 if (showRightButton) ...[
                                   // Spacer(),
-                                  SizedBox(
-                                    height: 4,
-                                  ),
+                                  SizedBox(height: 4),
                                   (!widget.isLoading)
                                       ? _button()
                                       : Padding(
@@ -495,16 +502,18 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                                   CrossAxisAlignment.start,
                                               children: [
                                                 Skeletonizer.zone(
-                                                    child: Bone.text(
-                                                        fontSize: 24,
-                                                        width: 60)),
-                                                const SizedBox(
-                                                  width: 8,
+                                                  child: Bone.text(
+                                                    fontSize: 24,
+                                                    width: 60,
+                                                  ),
                                                 ),
+                                                const SizedBox(width: 8),
                                                 Skeletonizer.zone(
-                                                    child: Bone.text(
-                                                        fontSize: 24,
-                                                        width: 120)),
+                                                  child: Bone.text(
+                                                    fontSize: 24,
+                                                    width: 120,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -519,31 +528,16 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                   },
                 ),
                 Expanded(
-                    child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    (bangumiItem.collection != null && !widget.isLoading)
-                        ? Align(
-                            child: BangumiWidget.buildStatsRow(
-                                context, infoController.bangumiItem),
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.all(4.0),
-                            child: SizedBox(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Skeletonizer.zone(
-                                      child:
-                                          Bone.text(fontSize: 10, width: 240)),
-                                ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      (bangumiItem.collection != null && !widget.isLoading)
+                          ? Align(
+                              child: BangumiWidget.buildStatsRow(
+                                context,
+                                infoController.bangumiItem,
                               ),
-                            ),
-                          ),
-                    if (showBottomButton) ...[
-                      Spacer(),
-                      (!widget.isLoading)
-                          ? _button()
+                            )
                           : Padding(
                               padding: const EdgeInsets.all(4.0),
                               child: SizedBox(
@@ -551,104 +545,154 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Skeletonizer.zone(
-                                        child:
-                                            Bone.text(fontSize: 24, width: 60)),
-                                    const SizedBox(
-                                      width: 8,
+                                      child: Bone.text(
+                                        fontSize: 10,
+                                        width: 240,
+                                      ),
                                     ),
-                                    Skeletonizer.zone(
-                                        child: Bone.text(
-                                            fontSize: 24, width: 120)),
                                   ],
                                 ),
                               ),
-                            ), // 底部按钮
+                            ),
+                      if (showBottomButton) ...[
+                        Spacer(),
+                        (!widget.isLoading)
+                            ? _button()
+                            : Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: SizedBox(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Skeletonizer.zone(
+                                        child: Bone.text(
+                                          fontSize: 24,
+                                          width: 60,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Skeletonizer.zone(
+                                        child: Bone.text(
+                                          fontSize: 24,
+                                          width: 120,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ), // 底部按钮
+                      ],
                     ],
-                  ],
-                ))
+                  ),
+                ),
               ],
             ),
           ),
           Expanded(
-              child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (MediaQuery.sizeOf(context).width >= 1200 &&
-                  !widget.isLoading &&
-                  widget.bangumiItem.total > 20)
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: 400, maxHeight: 300),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (MediaQuery.sizeOf(context).width >= 1200 &&
+                      !widget.isLoading &&
+                      widget.bangumiItem.total > 20)
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 400,
+                        maxHeight: 300,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Rating Statistics Chart'.tl,
-                              style: TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold)),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                          Row(
+                            children: [
+                              Text(
+                                'Rating Statistics Chart'.tl,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${bangumiItem.score}',
+                                  style: ts.s12,
+                                ),
+                              ),
+                              TextButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    infoController.showLineChart =
+                                        !infoController.showLineChart;
+                                  });
+                                },
+                                icon: Icon(
+                                  infoController.showLineChart
+                                      ? Icons.show_chart
+                                      : Icons.bar_chart,
+                                ),
+                                label: Text(
+                                  infoController.showLineChart
+                                      ? 'Line Chart'.tl
+                                      : 'Bar Chart'.tl,
+                                ),
+                              ),
+                              Text('${widget.bangumiItem.total} votes'),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .secondaryContainer,
-                              borderRadius: BorderRadius.circular(8),
+                              horizontal: 8,
+                              vertical: 2,
                             ),
-                            child: Text('${bangumiItem.score}', style: ts.s12),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Standard Deviation: @s'.tlParams({
+                                    's': standardDeviation.toStringAsFixed(2),
+                                  }),
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  Utils.getDispute(standardDeviation),
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
                           ),
-                          TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                infoController.showLineChart =
-                                    !infoController.showLineChart;
-                              });
-                            },
-                            icon: Icon(infoController.showLineChart
-                                ? Icons.show_chart
-                                : Icons.bar_chart),
-                            label: Text(infoController.showLineChart
-                                ? 'Line Chart'.tl
-                                : 'Bar Chart'.tl),
+                          const SizedBox(height: 8),
+                          // Spacer(),
+                          Expanded(
+                            child: infoController.showLineChart
+                                ? LineChatPage(bangumiItem: widget.bangumiItem)
+                                : BangumiBarChartPage(
+                                    bangumiItem: widget.bangumiItem,
+                                  ),
                           ),
-                          Text('${widget.bangumiItem.total} votes')
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
-                        child: Row(
-                          children: [
-                            Text(
-                                'Standard Deviation: @s'.tlParams({
-                                  's': standardDeviation.toStringAsFixed(2)
-                                }),
-                                style: TextStyle(fontSize: 12)),
-                            const SizedBox(
-                              width: 8,
-                            ),
-                            Text(Utils.getDispute(standardDeviation),
-                                style: TextStyle(fontSize: 12))
-                          ],
-                        ),
-                      ),
-                      const SizedBox(
-                        height: 8,
-                      ),
-                      // Spacer(),
-                      Expanded(
-                        child: infoController.showLineChart
-                            ? LineChatPage(bangumiItem: widget.bangumiItem)
-                            : BangumiBarChartPage(
-                                bangumiItem: widget.bangumiItem),
-                      )
-                    ],
-                  ),
-                ),
-            ]),
-          )),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );

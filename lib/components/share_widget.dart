@@ -32,16 +32,16 @@ Future<void> captureAndSave() async {
     RenderRepaintBoundary boundary =
         repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
 
-// 获取截图数据
+    // 获取截图数据
     ui.Image image = await boundary.toImage(pixelRatio: 3.0);
     ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     Uint8List uint8List = byteData!.buffer.asUint8List();
 
-// 保存文件
+    // 保存文件
     final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/popup_image.png');
     await file.writeAsBytes(uint8List);
-//     // 使用 shareFile 函数分享文件
+    //     // 使用 shareFile 函数分享文件
     Uint8List data = await file.readAsBytes();
     Share.shareFile(data: data, filename: 'image.jpg', mime: 'image/jpeg');
     Log.addLog(LogLevel.info, '截图保存', file.path);
@@ -113,15 +113,8 @@ class _ShareWidgetState extends State<ShareWidget> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (bangumiItem.total >= 20) ...[
-            Text(
-              '${bangumiItem.score}',
-              style: TextStyle(
-                fontSize: 32.0,
-              ),
-            ),
-            SizedBox(
-              width: 5,
-            ),
+            Text('${bangumiItem.score}', style: TextStyle(fontSize: 32.0)),
+            SizedBox(width: 5),
             Container(
               padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
               // 可选，设置内边距
@@ -133,13 +126,9 @@ class _ShareWidgetState extends State<ShareWidget> {
                   width: 1.0, // 设置边框宽度
                 ),
               ),
-              child: Text(
-                Utils.getRatingLabel(bangumiItem.score),
-              ),
+              child: Text(Utils.getRatingLabel(bangumiItem.score)),
             ),
-            SizedBox(
-              width: 4,
-            ),
+            SizedBox(width: 4),
           ],
           Column(
             crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
@@ -147,16 +136,16 @@ class _ShareWidgetState extends State<ShareWidget> {
               RatingBarIndicator(
                 itemCount: 5,
                 rating: bangumiItem.score.toDouble() / 2,
-                itemBuilder: (context, index) => const Icon(
-                  Icons.star_rounded,
-                ),
+                itemBuilder: (context, index) => const Icon(Icons.star_rounded),
                 itemSize: 20.0,
               ),
               Text(
-                '@t reviews | #@r'
-                    .tlParams({'r': bangumiItem.rank, 't': bangumiItem.total}),
+                '@t reviews | #@r'.tlParams({
+                  'r': bangumiItem.rank,
+                  't': bangumiItem.total,
+                }),
                 style: TextStyle(fontSize: 12),
-              )
+              ),
             ],
           ),
         ],
@@ -208,10 +197,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             //标题
-                            Text(
-                              anime.title,
-                              style: ts.s20,
-                            ),
+                            Text(anime.title, style: ts.s20),
                             if (anime.subTitle != null)
                               SelectableText(anime.subTitle!, style: ts.s14),
                             //源名称
@@ -221,10 +207,12 @@ class _ShareWidgetState extends State<ShareWidget> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              anime.tags.entries.map((entry) {
-                                // 对每个键值对，创建一个字符串表示形式
-                                return '${entry.key}: ${entry.value.join(', ')}';
-                              }).join('\n'), // 用换行符分隔每个键值对
+                              anime.tags.entries
+                                  .map((entry) {
+                                    // 对每个键值对，创建一个字符串表示形式
+                                    return '${entry.key}: ${entry.value.join(', ')}';
+                                  })
+                                  .join('\n'), // 用换行符分隔每个键值对
                               style: ts.s12,
                             ),
                           ],
@@ -235,15 +223,15 @@ class _ShareWidgetState extends State<ShareWidget> {
                   ],
                 ),
               ),
-              Text(
-                'Introduction'.tl,
-                style: ts.s18,
-              ),
+              Text('Introduction'.tl, style: ts.s18),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                child: SelectableText(anime.description!)
-                    .fixWidth(double.infinity),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
+                child: SelectableText(
+                  anime.description!,
+                ).fixWidth(double.infinity),
               ),
             ],
           ),
@@ -253,16 +241,22 @@ class _ShareWidgetState extends State<ShareWidget> {
   }
 
   Widget _bangumiInfoPage() {
-    double standardDeviation = Utils.getDeviation(bangumiItem.total,
-        bangumiItem.count!.values.toList(), bangumiItem.score);
+    double standardDeviation = Utils.getDeviation(
+      bangumiItem.total,
+      bangumiItem.count!.values.toList(),
+      bangumiItem.score,
+    );
 
     // 获取当前周的剧集
-    final currentWeekEp =
-        Utils.findCurrentWeekEpisode(allEpisodes, bangumiItem);
+    final currentWeekEp = Utils.findCurrentWeekEpisode(
+      allEpisodes,
+      bangumiItem,
+    );
 
     final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
 
-    final isCompleted = currentWeekEp.values.first != null &&
+    final isCompleted =
+        currentWeekEp.values.first != null &&
         type0Episodes.isNotEmpty &&
         currentWeekEp.values.first == type0Episodes.last;
     return RepaintBoundary(
@@ -286,8 +280,9 @@ class _ShareWidgetState extends State<ShareWidget> {
                 ),
               ),
               Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: LayoutBuilder(builder: (context, constraints) {
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
                     double height = constraints.maxWidth / 2;
                     double width = height * 0.72;
                     return Container(
@@ -310,15 +305,19 @@ class _ShareWidgetState extends State<ShareWidget> {
                               width: width,
                               clipBehavior: Clip.antiAlias,
                               child: BangumiWidget.kostoriImage(
-                                  context, bangumiItem.images['large']!,
-                                  width: width, height: height),
+                                context,
+                                bangumiItem.images['large']!,
+                                width: width,
+                                height: height,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -328,48 +327,39 @@ class _ShareWidgetState extends State<ShareWidget> {
                                         ? bangumiItem.nameCn
                                         : bangumiItem.name,
                                     style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold),
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  Text(bangumiItem.name,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                      )),
+                                  Text(
+                                    bangumiItem.name,
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   const SizedBox(height: 16),
                                   if (bangumiItem.airDate.isNotEmpty)
                                     Container(
                                       padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
                                       decoration: BoxDecoration(
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
+                                        borderRadius: BorderRadius.circular(
+                                          8.0,
+                                        ),
                                         border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .toOpacity(0.72),
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary.toOpacity(0.72),
                                           width: 1.0,
                                         ),
                                       ),
                                       child: Text(bangumiItem.airDate),
                                     ),
                                   SizedBox(height: 12.0),
-                                  (currentWeekEp.values.first?.sort != null)
-                                      ? Text(
-                                          isCompleted
-                                              ? '全 ${bangumiItem.totalEpisodes} 话'
-                                              : '连载至 ${currentWeekEp.values.first?.sort} • 预定全 ${bangumiItem.totalEpisodes} 话',
-                                          style: TextStyle(
-                                            fontSize: 12.0,
-                                          ),
-                                        )
-                                      : Text(
-                                          'Not Yet Airing'.tl,
-                                          style: TextStyle(
-                                              fontSize: 12.0,
-                                              fontWeight: FontWeight.bold),
-                                        ),
+                                  BangumiWidget.bangumiTimeText(
+                                    bangumiItem,
+                                    currentWeekEp,
+                                    isCompleted,
+                                  ),
                                   Spacer(),
-                                  score(context, bangumiItem)
+                                  score(context, bangumiItem),
                                 ],
                               ),
                             ),
@@ -377,10 +367,14 @@ class _ShareWidgetState extends State<ShareWidget> {
                         ],
                       ),
                     );
-                  })),
+                  },
+                ),
+              ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 2,
+                  horizontal: 16,
+                ),
                 child: Align(
                   child: BangumiWidget.buildStatsRow(context, bangumiItem),
                 ),
@@ -398,22 +392,28 @@ class _ShareWidgetState extends State<ShareWidget> {
               ),
               const SizedBox(height: 8),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Introduction'.tl,
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 24,
+                ),
                 child: BBCodeWidget(bbcode: bangumiItem.summary),
               ),
               const SizedBox(height: 8),
@@ -429,19 +429,27 @@ class _ShareWidgetState extends State<ShareWidget> {
               ),
               const SizedBox(height: 8),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text('Tags'.tl,
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Tags'.tl,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(8),
@@ -452,27 +460,32 @@ class _ShareWidgetState extends State<ShareWidget> {
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
+                ),
                 child: Wrap(
-                    spacing: 8.0,
-                    runSpacing: App.isDesktop ? 8 : 0,
-                    children: List<Widget>.generate(bangumiItem.tags.length,
-                        (int index) {
-                      return Chip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('${bangumiItem.tags[index].name} '),
-                            Text(
-                              '${bangumiItem.tags[index].count}',
-                              style: TextStyle(
-                                  color: Theme.of(context).colorScheme.primary),
+                  spacing: 8.0,
+                  runSpacing: App.isDesktop ? 8 : 0,
+                  children: List<Widget>.generate(bangumiItem.tags.length, (
+                    int index,
+                  ) {
+                    return Chip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${bangumiItem.tags[index].name} '),
+                          Text(
+                            '${bangumiItem.tags[index].count}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
                             ),
-                          ],
-                        ),
-                      );
-                    }).toList()),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
 
               if (bangumiItem.total >= 20) ...[
@@ -489,24 +502,32 @@ class _ShareWidgetState extends State<ShareWidget> {
                 ),
                 const SizedBox(height: 8),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Text('Rating Statistics Chart'.tl,
-                              style: TextStyle(
-                                  fontSize: 24, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Rating Statistics Chart'.tl,
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           Container(
                             margin: const EdgeInsets.symmetric(horizontal: 8),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .secondaryContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.secondaryContainer,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text('${bangumiItem.score}', style: ts.s12),
@@ -517,14 +538,16 @@ class _ShareWidgetState extends State<ShareWidget> {
                                 showLineChart = !showLineChart;
                               });
                             },
-                            icon: Icon(showLineChart
-                                ? Icons.show_chart
-                                : Icons.bar_chart),
-                            label: Text(showLineChart
-                                ? 'Line Chart'.tl
-                                : 'Bar Chart'.tl),
+                            icon: Icon(
+                              showLineChart
+                                  ? Icons.show_chart
+                                  : Icons.bar_chart,
+                            ),
+                            label: Text(
+                              showLineChart ? 'Line Chart'.tl : 'Bar Chart'.tl,
+                            ),
                           ),
-                          Text('${bangumiItem.total} votes')
+                          Text('${bangumiItem.total} votes'),
                         ],
                       ),
                     ],
@@ -532,26 +555,32 @@ class _ShareWidgetState extends State<ShareWidget> {
                 ),
                 const SizedBox(height: 12),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 2,
+                  ),
                   child: Row(
                     children: [
                       Text(
-                          'Standard Deviation: @s'.tlParams(
-                              {'s': standardDeviation.toStringAsFixed(2)}),
-                          style: TextStyle(fontSize: 12)),
-                      const SizedBox(
-                        width: 8,
+                        'Standard Deviation: @s'.tlParams({
+                          's': standardDeviation.toStringAsFixed(2),
+                        }),
+                        style: TextStyle(fontSize: 12),
                       ),
-                      Text(Utils.getDispute(standardDeviation),
-                          style: TextStyle(fontSize: 12))
+                      const SizedBox(width: 8),
+                      Text(
+                        Utils.getDispute(standardDeviation),
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 8),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 2,
+                  ),
                   child: showLineChart
                       ? LineChatPage(bangumiItem: bangumiItem)
                       : BangumiBarChartPage(bangumiItem: bangumiItem),
@@ -602,20 +631,30 @@ class _ShareWidgetState extends State<ShareWidget> {
                 ),
               ),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
                 child: GridView.builder(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
                   itemCount: keyList.length,
-                  gridDelegate:
-                      SliverGridDelegateWithBangumiItems(widget.useBriefMode!),
+                  gridDelegate: SliverGridDelegateWithBangumiItems(
+                    widget.useBriefMode!,
+                  ),
                   itemBuilder: (context, index) {
                     return widget.useBriefMode!
                         ? BangumiWidget.buildBriefMode(
-                            context, keyList[index], '', showPlaceholder: false)
+                            context,
+                            keyList[index],
+                            '',
+                            showPlaceholder: false,
+                          )
                         : BangumiWidget.buildDetailedMode(
-                            context, keyList[index], '');
+                            context,
+                            keyList[index],
+                            '',
+                          );
                   },
                 ),
               ),
@@ -663,11 +702,7 @@ class _ShareWidgetState extends State<ShareWidget> {
       title: '截图分享',
       body: Stack(
         children: [
-          Positioned.fill(
-            child: SingleChildScrollView(
-              child: _buildBody(),
-            ),
-          ),
+          Positioned.fill(child: SingleChildScrollView(child: _buildBody())),
           Positioned(
             bottom: 10,
             right: 10,
