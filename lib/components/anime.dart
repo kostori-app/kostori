@@ -345,6 +345,17 @@ class AnimeTile extends StatelessWidget {
             image = Hero(tag: "cover$heroID", child: image);
           }
 
+          final title = anime.title.replaceAll('\n', '');
+          const style = TextStyle(fontWeight: FontWeight.w500);
+
+          final textPainter = TextPainter(
+            text: TextSpan(text: title, style: style),
+            maxLines: 1,
+            textDirection: TextDirection.ltr,
+          )..layout(maxWidth: constraints.maxWidth);
+
+          final shouldScroll = textPainter.width > constraints.maxWidth * 3 / 4;
+
           return InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: _onTap,
@@ -422,12 +433,35 @@ class AnimeTile extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                  child: Text(
-                    anime.title.replaceAll('\n', ''),
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  child: SizedBox(
+                    height: 20,
+                    child: ClipRect(
+                      child: shouldScroll
+                          ? Marquee(
+                              text: title,
+                              style: style,
+                              scrollAxis: Axis.horizontal,
+                              blankSpace: 40.0,
+                              velocity: 40.0,
+                              // startPadding: 10.0,
+                              pauseAfterRound: Duration.zero,
+                              accelerationDuration: const Duration(
+                                milliseconds: 500,
+                              ),
+                              accelerationCurve: Curves.linear,
+                              decelerationDuration: const Duration(
+                                milliseconds: 500,
+                              ),
+                              decelerationCurve: Curves.easeOut,
+                            )
+                          : Text(
+                              title,
+                              style: style,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                    ),
                   ),
                 ),
               ],

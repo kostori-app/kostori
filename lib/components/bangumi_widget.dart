@@ -14,6 +14,7 @@ import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/extension.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
+import 'package:marquee/marquee.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -101,6 +102,19 @@ class BangumiWidget {
               ),
             ),
           );
+
+          final title = bangumiItem.nameCn == ''
+              ? bangumiItem.name
+              : bangumiItem.nameCn;
+          const style = TextStyle(fontWeight: FontWeight.w500);
+
+          final textPainter = TextPainter(
+            text: TextSpan(text: title, style: style),
+            maxLines: 1,
+            textDirection: TextDirection.ltr,
+          )..layout(maxWidth: constraints.maxWidth);
+
+          final shouldScroll = textPainter.width > constraints.maxWidth * 3 / 4;
 
           return InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -238,13 +252,35 @@ class BangumiWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                  child: Text(
-                    bangumiItem.nameCn,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      overflow: TextOverflow.ellipsis,
+                  child: SizedBox(
+                    height: 20,
+                    child: ClipRect(
+                      child: shouldScroll
+                          ? Marquee(
+                              text: title,
+                              style: style,
+                              scrollAxis: Axis.horizontal,
+                              blankSpace: 40.0,
+                              velocity: 40.0,
+                              // startPadding: 10.0,
+                              pauseAfterRound: Duration.zero,
+                              accelerationDuration: const Duration(
+                                milliseconds: 500,
+                              ),
+                              accelerationCurve: Curves.linear,
+                              decelerationDuration: const Duration(
+                                milliseconds: 500,
+                              ),
+                              decelerationCurve: Curves.easeOut,
+                            )
+                          : Text(
+                              title,
+                              style: style,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                     ),
-                    maxLines: 1,
                   ),
                 ),
               ],

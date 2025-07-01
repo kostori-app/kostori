@@ -2,17 +2,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kostori/components/bean/card/bangumi_info_card.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/history.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import 'package:kostori/components/bean/appbar/drag_to_move_bar.dart' as dtb;
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/bangumi/info_tab_view.dart';
-
-import 'package:kostori/components/bean/card/bangumi_info_card.dart';
-
-import 'package:kostori/foundation/log.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../components/bangumi_widget.dart';
 import '../../components/components.dart';
@@ -21,11 +17,7 @@ import '../../foundation/app.dart';
 import '../../network/bangumi.dart';
 
 class BangumiInfoPage extends StatefulWidget {
-  const BangumiInfoPage({
-    super.key,
-    required this.bangumiItem,
-    this.heroTag,
-  });
+  const BangumiInfoPage({super.key, required this.bangumiItem, this.heroTag});
 
   final BangumiItem bangumiItem;
   final String? heroTag;
@@ -64,18 +56,18 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController
         .queryBangumiCharactersByID(infoController.bangumiItem.id)
         .then((_) {
-      if (infoController.characterList.isEmpty && mounted) {
-        setState(() {
-          charactersIsLoading = false;
-          charactersQueryTimeout = true;
+          if (infoController.characterList.isEmpty && mounted) {
+            setState(() {
+              charactersIsLoading = false;
+              charactersQueryTimeout = true;
+            });
+          }
+          if (infoController.characterList.isNotEmpty && mounted) {
+            setState(() {
+              charactersIsLoading = false;
+            });
+          }
         });
-      }
-      if (infoController.characterList.isNotEmpty && mounted) {
-        setState(() {
-          charactersIsLoading = false;
-        });
-      }
-    });
   }
 
   Future<void> loadStaff() async {
@@ -84,9 +76,9 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
       staffIsLoading = true;
       staffQueryTimeout = false;
     });
-    infoController
-        .queryBangumiStaffsByID(infoController.bangumiItem.id)
-        .then((_) {
+    infoController.queryBangumiStaffsByID(infoController.bangumiItem.id).then((
+      _,
+    ) {
       if (infoController.staffList.isEmpty && mounted) {
         setState(() {
           staffIsLoading = false;
@@ -110,18 +102,18 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController
         .queryBangumiCommentsByID(infoController.bangumiItem.id, offset: offset)
         .then((_) {
-      if (infoController.commentsList.isEmpty && mounted) {
-        setState(() {
-          commentsIsLoading = false;
-          commentsQueryTimeout = true;
+          if (infoController.commentsList.isEmpty && mounted) {
+            setState(() {
+              commentsIsLoading = false;
+              commentsQueryTimeout = true;
+            });
+          }
+          if (infoController.commentsList.isNotEmpty && mounted) {
+            setState(() {
+              commentsIsLoading = false;
+            });
+          }
         });
-      }
-      if (infoController.commentsList.isNotEmpty && mounted) {
-        setState(() {
-          commentsIsLoading = false;
-        });
-      }
-    });
   }
 
   Future<void> loadMoreTopics({int offset = 0}) async {
@@ -133,18 +125,18 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController
         .queryBangumiTopicsByID(infoController.bangumiItem.id, offset: offset)
         .then((_) {
-      if (infoController.topicsList.isEmpty && mounted) {
-        setState(() {
-          topicsIsLoading = false;
-          topicsQueryTimeout = true;
+          if (infoController.topicsList.isEmpty && mounted) {
+            setState(() {
+              topicsIsLoading = false;
+              topicsQueryTimeout = true;
+            });
+          }
+          if (infoController.topicsList.isNotEmpty && mounted) {
+            setState(() {
+              topicsIsLoading = false;
+            });
+          }
         });
-      }
-      if (infoController.topicsList.isNotEmpty && mounted) {
-        setState(() {
-          topicsIsLoading = false;
-        });
-      }
-    });
   }
 
   Future<void> loadMoreReviews({int offset = 0}) async {
@@ -156,18 +148,18 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController
         .queryBangumiReviewsByID(infoController.bangumiItem.id, offset: offset)
         .then((_) {
-      if (infoController.reviewsList.isEmpty && mounted) {
-        setState(() {
-          reviewsIsLoading = false;
-          reviewsQueryTimeout = true;
+          if (infoController.reviewsList.isEmpty && mounted) {
+            setState(() {
+              reviewsIsLoading = false;
+              reviewsQueryTimeout = true;
+            });
+          }
+          if (infoController.reviewsList.isNotEmpty && mounted) {
+            setState(() {
+              reviewsIsLoading = false;
+            });
+          }
         });
-      }
-      if (infoController.reviewsList.isNotEmpty && mounted) {
-        setState(() {
-          reviewsIsLoading = false;
-        });
-      }
-    });
   }
 
   Future<void> queryBangumiHistory(int id) async {
@@ -189,8 +181,10 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     queryBangumiInfoByID(bangumiId);
     Bangumi.getBangumiInfoBind(bangumiId);
     queryBangumiHistory(bangumiId);
-    infoTabController =
-        TabController(length: infoController.tabs.length, vsync: this);
+    infoTabController = TabController(
+      length: infoController.tabs.length,
+      vsync: this,
+    );
     infoTabController.addListener(() {
       int index = infoTabController.index;
       if (index == 1 &&
@@ -250,78 +244,75 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
   void shareImage() {
     showPopUpWidget(
       App.rootContext,
-      StatefulBuilder(builder: (context, setState) {
-        return ShareWidget(
-          id: bangumiId,
-        );
-      }),
+      StatefulBuilder(
+        builder: (context, setState) {
+          return ShareWidget(id: bangumiId);
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-        canPop: true,
-        child: DefaultTabController(
-          length: infoController.tabs.length,
-          child: Scaffold(
-            body: NestedScrollView(
-              headerSliverBuilder:
-                  (BuildContext context, bool innerBoxIsScrolled) {
-                return <Widget>[
-                  SliverOverlapAbsorber(
-                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
-                        context),
-                    sliver: SliverAppBar.medium(
-                      title: dtb.DragToMoveArea(
-                        child: Container(
-                          width: double.infinity,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            infoController.bangumiItem.nameCn == ''
-                                ? infoController.bangumiItem.name
-                                : infoController.bangumiItem.nameCn,
-                          ),
-                        ),
-                      ),
-                      automaticallyImplyLeading: false,
-                      scrolledUnderElevation: 0.0,
-                      leading: IconButton(
+      canPop: true,
+      child: DefaultTabController(
+        length: infoController.tabs.length,
+        child: Scaffold(
+          body: NestedScrollView(
+            headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+              return <Widget>[
+                SliverOverlapAbsorber(
+                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                    context,
+                  ),
+                  sliver: SliverAppBar.medium(
+                    title: Text(
+                      infoController.bangumiItem.nameCn == ''
+                          ? infoController.bangumiItem.name
+                          : infoController.bangumiItem.nameCn,
+                    ),
+                    automaticallyImplyLeading: false,
+                    scrolledUnderElevation: 0.0,
+                    leading: IconButton(
+                      onPressed: () {
+                        Navigator.maybePop(context);
+                      },
+                      icon: Icon(Icons.arrow_back_ios_new),
+                    ),
+                    actions: [
+                      IconButton(
                         onPressed: () {
-                          Navigator.maybePop(context);
+                          shareImage();
                         },
-                        icon: Icon(Icons.arrow_back_ios_new),
+                        icon: const Icon(Icons.share),
                       ),
-                      actions: [
-                        IconButton(
-                          onPressed: () {
-                            shareImage();
-                          },
-                          icon: const Icon(Icons.share),
-                        ),
-                        SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () {
-                            launchUrl(
-                              Uri.parse(
-                                  'https://bangumi.tv/subject/${infoController.bangumiItem.id}'),
-                              mode: LaunchMode.externalApplication,
-                            );
-                          },
-                          icon: const Icon(Icons.open_in_browser_rounded),
-                        ),
-                        SizedBox(width: 8),
-                      ],
-                      toolbarHeight: kToolbarHeight,
-                      stretch: true,
-                      centerTitle: false,
-                      expandedHeight: 308 + kTextTabBarHeight + kToolbarHeight,
-                      collapsedHeight: kTextTabBarHeight +
-                          kToolbarHeight +
-                          MediaQuery.paddingOf(context).top,
-                      flexibleSpace: FlexibleSpaceBar(
-                        collapseMode: CollapseMode.pin,
-                        background: Observer(builder: (context) {
+                      SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () {
+                          launchUrl(
+                            Uri.parse(
+                              'https://bangumi.tv/subject/${infoController.bangumiItem.id}',
+                            ),
+                            mode: LaunchMode.externalApplication,
+                          );
+                        },
+                        icon: const Icon(Icons.open_in_browser_rounded),
+                      ),
+                      SizedBox(width: 8),
+                    ],
+                    toolbarHeight: kToolbarHeight,
+                    stretch: true,
+                    centerTitle: false,
+                    expandedHeight: 308 + kTextTabBarHeight + kToolbarHeight,
+                    collapsedHeight:
+                        kTextTabBarHeight +
+                        kToolbarHeight +
+                        MediaQuery.paddingOf(context).top,
+                    flexibleSpace: FlexibleSpaceBar(
+                      collapseMode: CollapseMode.pin,
+                      background: Observer(
+                        builder: (context) {
                           return Stack(
                             children: [
                               // No background image when loading to make loading looks better
@@ -335,7 +326,9 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                         builder: (context, boxConstraints) {
                                           return ImageFiltered(
                                             imageFilter: ImageFilter.blur(
-                                                sigmaX: 15.0, sigmaY: 15.0),
+                                              sigmaX: 15.0,
+                                              sigmaY: 15.0,
+                                            ),
                                             child: ShaderMask(
                                               shaderCallback: (Rect bounds) {
                                                 return const LinearGradient(
@@ -350,7 +343,8 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                               },
                                               child: BangumiWidget.kostoriImage(
                                                 context,
-                                                infoController.bangumiItem
+                                                infoController
+                                                        .bangumiItem
                                                         .images['large'] ??
                                                     '',
                                                 width: boxConstraints.maxWidth,
@@ -370,7 +364,11 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                   alignment: Alignment.topCenter,
                                   child: Padding(
                                     padding: const EdgeInsets.fromLTRB(
-                                        16, kToolbarHeight, 16, 0),
+                                      16,
+                                      kToolbarHeight,
+                                      16,
+                                      0,
+                                    ),
                                     child: BangumiInfoCardV(
                                       bangumiItem: infoController.bangumiItem,
                                       allEpisodes: infoController.allEpisodes,
@@ -380,26 +378,28 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                                     ),
                                   ),
                                 ),
-                              )
+                              ),
                             ],
                           );
-                        }),
-                      ),
-                      forceElevated: innerBoxIsScrolled,
-                      bottom: TabBar(
-                        controller: infoTabController,
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.center,
-                        dividerHeight: 0,
-                        tabs: infoController.tabs
-                            .map((name) => Tab(text: name))
-                            .toList(),
+                        },
                       ),
                     ),
+                    forceElevated: innerBoxIsScrolled,
+                    bottom: TabBar(
+                      controller: infoTabController,
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.center,
+                      dividerHeight: 0,
+                      tabs: infoController.tabs
+                          .map((name) => Tab(text: name))
+                          .toList(),
+                    ),
                   ),
-                ];
-              },
-              body: Observer(builder: (context) {
+                ),
+              ];
+            },
+            body: Observer(
+              builder: (context) {
                 return InfoTabView(
                   tabController: infoTabController,
                   bangumiItem: infoController.bangumiItem,
@@ -424,9 +424,11 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
                   topicsIsLoading: topicsIsLoading,
                   reviewsIsLoading: reviewsIsLoading,
                 );
-              }),
+              },
             ),
           ),
-        ));
+        ),
+      ),
+    );
   }
 }

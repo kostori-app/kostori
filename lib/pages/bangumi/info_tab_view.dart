@@ -2,34 +2,29 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
-import 'package:kostori/pages/bangumi/info_controller.dart';
-import 'package:kostori/utils/translations.dart';
-import 'package:skeletonizer/skeletonizer.dart';
-
-import 'package:kostori/components/error_widget.dart';
-import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
+import 'package:kostori/components/bean/card/comments_card.dart';
+import 'package:kostori/components/bean/card/staff_card.dart';
+import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
-import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
-import 'package:kostori/utils/utils.dart';
-
-import 'package:kostori/pages/line_chart_page.dart';
-import 'package:text_scroll/text_scroll.dart';
-
-import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
-import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
-
-import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/pages/bangumi/bangumi_all_episode_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
-
-import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
+import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
+import 'package:kostori/pages/line_chart_page.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:text_scroll/text_scroll.dart';
 
 import '../../components/bean/card/reviews_card.dart';
 import '../../components/bean/card/topics_card.dart';
@@ -111,8 +106,11 @@ class _InfoTabViewState extends State<InfoTabView>
   }
 
   Widget get infoBody {
-    double standardDeviation = Utils.getDeviation(widget.bangumiItem.total,
-        widget.bangumiItem.count!.values.toList(), widget.bangumiItem.score);
+    double standardDeviation = Utils.getDeviation(
+      widget.bangumiItem.total,
+      widget.bangumiItem.count!.values.toList(),
+      widget.bangumiItem.score,
+    );
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -132,53 +130,59 @@ class _InfoTabViewState extends State<InfoTabView>
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: LayoutBuilder(builder: (context, constraints) {
-                    final span = TextSpan(text: widget.bangumiItem.summary);
-                    final tp = TextPainter(
-                        text: span, textDirection: TextDirection.ltr);
-                    tp.layout(maxWidth: constraints.maxWidth);
-                    final numLines = tp.computeLineMetrics().length;
-                    if (numLines > 7) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          SizedBox(
-                            // make intro expandable
-                            height: fullIntro ? null : 120,
-                            width: MediaQuery.sizeOf(context).width > maxWidth
-                                ? maxWidth
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: SelectableText(
-                              widget.bangumiItem.summary,
-                              textAlign: TextAlign.start,
-                              scrollBehavior: const ScrollBehavior().copyWith(
-                                scrollbars: false,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final span = TextSpan(text: widget.bangumiItem.summary);
+                      final tp = TextPainter(
+                        text: span,
+                        textDirection: TextDirection.ltr,
+                      );
+                      tp.layout(maxWidth: constraints.maxWidth);
+                      final numLines = tp.computeLineMetrics().length;
+                      if (numLines > 7) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            SizedBox(
+                              // make intro expandable
+                              height: fullIntro ? null : 120,
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: SelectableText(
+                                widget.bangumiItem.summary,
+                                textAlign: TextAlign.start,
+                                scrollBehavior: const ScrollBehavior().copyWith(
+                                  scrollbars: false,
+                                ),
+                                scrollPhysics: NeverScrollableScrollPhysics(),
+                                selectionHeightStyle: ui.BoxHeightStyle.max,
                               ),
-                              scrollPhysics: NeverScrollableScrollPhysics(),
-                              selectionHeightStyle: ui.BoxHeightStyle.max,
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                fullIntro = !fullIntro;
-                              });
-                            },
-                            child: Text(!fullIntro
-                                ? 'Show more +'.tl
-                                : 'Show less -'.tl),
-                          ),
-                        ],
-                      );
-                    } else {
-                      return SelectableText(
-                        widget.bangumiItem.summary,
-                        textAlign: TextAlign.start,
-                        scrollPhysics: NeverScrollableScrollPhysics(),
-                        selectionHeightStyle: ui.BoxHeightStyle.max,
-                      );
-                    }
-                  }),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  fullIntro = !fullIntro;
+                                });
+                              },
+                              child: Text(
+                                !fullIntro
+                                    ? 'Show more +'.tl
+                                    : 'Show less -'.tl,
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return SelectableText(
+                          widget.bangumiItem.summary,
+                          textAlign: TextAlign.start,
+                          scrollPhysics: NeverScrollableScrollPhysics(),
+                          selectionHeightStyle: ui.BoxHeightStyle.max,
+                        );
+                      }
+                    },
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Center(
@@ -194,19 +198,27 @@ class _InfoTabViewState extends State<InfoTabView>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Text('Tags'.tl,
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Tags'.tl,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text('${widget.bangumiItem.tags.length}',
-                          style: ts.s12),
+                      child: Text(
+                        '${widget.bangumiItem.tags.length}',
+                        style: ts.s12,
+                      ),
                     ),
                   ],
                 ),
@@ -235,8 +247,11 @@ class _InfoTabViewState extends State<InfoTabView>
                         ),
                         onPressed: () {
                           // 标签点击逻辑
-                          context.to(() => BangumiSearchPage(
-                              tag: widget.bangumiItem.tags[index].name));
+                          context.to(
+                            () => BangumiSearchPage(
+                              tag: widget.bangumiItem.tags[index].name,
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -273,30 +288,42 @@ class _InfoTabViewState extends State<InfoTabView>
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Text('All Episodes'.tl,
-                          style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text(
+                        'All Episodes'.tl,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child:
-                            Text('${widget.allEpisodes.length}', style: ts.s12),
+                        child: Text(
+                          '${widget.allEpisodes.length}',
+                          style: ts.s12,
+                        ),
                       ),
                       const Spacer(),
                       TextButton(
-                          onPressed: () {
-                            context.to(() => BangumiAllEpisodePage(
-                                  allEpisodes: widget.allEpisodes,
-                                  infoController: widget.infoController,
-                                ));
-                          },
-                          child: Text('more'.tl))
+                        onPressed: () {
+                          context.to(
+                            () => BangumiAllEpisodePage(
+                              allEpisodes: widget.allEpisodes,
+                              infoController: widget.infoController,
+                            ),
+                          );
+                        },
+                        child: Text('more'.tl),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -304,118 +331,122 @@ class _InfoTabViewState extends State<InfoTabView>
                     children: [
                       // 先显示最多15个
                       ...widget.allEpisodes.take(15).map((episode) {
-                        double intensity = (episode.comment / 300)
-                            .clamp(0.1, 1.0); // 转换为 0~1 范围
+                        double intensity = (episode.comment / 300).clamp(
+                          0.1,
+                          1.0,
+                        ); // 转换为 0~1 范围
                         return SizedBox(
-                            width: 50,
-                            height: 50,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child: Card(
-                                    elevation: 1,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: context.colorScheme.onSurface
-                                            .withAlpha(25),
-                                        width: 2,
-                                      ),
+                          width: 50,
+                          height: 50,
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Card(
+                                  elevation: 1,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: context.colorScheme.onSurface
+                                          .withAlpha(25),
+                                      width: 2,
                                     ),
-                                    color:
-                                        Theme.of(context).colorScheme.surface,
-                                    shadowColor: Theme.of(context).shadowColor,
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(12),
-                                      onTap: () {
-                                        context.to(() => BangumiEpisodeInfoPage(
-                                              episode: episode,
-                                              infoController:
-                                                  widget.infoController,
-                                            ));
-                                      },
-                                      onLongPress: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) {
-                                            return AlertDialog(
-                                              content: ConstrainedBox(
-                                                constraints:
-                                                    const BoxConstraints(
-                                                        maxWidth: 420),
-                                                child: SingleChildScrollView(
-                                                  child: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
+                                  ),
+                                  color: Theme.of(context).colorScheme.surface,
+                                  shadowColor: Theme.of(context).shadowColor,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () {
+                                      context.to(
+                                        () => BangumiEpisodeInfoPage(
+                                          episode: episode,
+                                          infoController: widget.infoController,
+                                        ),
+                                      );
+                                    },
+                                    onLongPress: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) {
+                                          return AlertDialog(
+                                            content: ConstrainedBox(
+                                              constraints: const BoxConstraints(
+                                                maxWidth: 420,
+                                              ),
+                                              child: SingleChildScrollView(
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                                      style: const TextStyle(
+                                                        fontSize: 24,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    if (episode
+                                                        .nameCn
+                                                        .isNotEmpty)
                                                       Text(
-                                                        "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
-                                                        style: const TextStyle(
-                                                          fontSize: 24,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
+                                                        "${Utils.readType(episode.type)}${episode.sort}.${episode.name}",
                                                       ),
-                                                      if (episode
-                                                          .nameCn.isNotEmpty)
+                                                    const SizedBox(height: 8),
+                                                    Row(
+                                                      children: [
                                                         Text(
-                                                          "${Utils.readType(episode.type)}${episode.sort}.${episode.name}",
+                                                          "Broadcast Time: @a"
+                                                              .tlParams({
+                                                                'a': episode
+                                                                    .airDate,
+                                                              }),
                                                         ),
-                                                      const SizedBox(height: 8),
-                                                      Row(
-                                                        children: [
-                                                          Text(
-                                                            "Broadcast Time: @a"
-                                                                .tlParams({
-                                                              'a': episode
-                                                                  .airDate
-                                                            }),
-                                                          ),
-                                                          const SizedBox(
-                                                              width: 8),
-                                                          Text(
-                                                            "Time: @s"
-                                                                .tlParams({
-                                                              's': episode
-                                                                  .duration
-                                                            }),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      Text(episode.desc),
-                                                    ],
-                                                  ),
+                                                        const SizedBox(
+                                                          width: 8,
+                                                        ),
+                                                        Text(
+                                                          "Time: @s".tlParams({
+                                                            's': episode
+                                                                .duration,
+                                                          }),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(episode.desc),
+                                                  ],
                                                 ),
                                               ),
-                                            );
-                                          },
-                                        );
-                                      },
-                                      child: Center(
-                                        child: Text(episode.sort.toString()),
-                                      ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                    child: Center(
+                                      child: Text(episode.sort.toString()),
                                     ),
                                   ),
                                 ),
-                                Container(
-                                    width: 30,
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                          BorderRadius.circular(12.0), // 设置圆角半径
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .toOpacity(intensity),
-                                        width: 2.0, // 设置边框宽度
-                                      ),
-                                    ))
-                              ],
-                            ));
+                              ),
+                              Container(
+                                width: 30,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                    12.0,
+                                  ), // 设置圆角半径
+                                  border: Border.all(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary.toOpacity(intensity),
+                                    width: 2.0, // 设置边框宽度
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
                       }),
 
                       // 如果超过15个，显示一个“...”的卡片
@@ -428,8 +459,9 @@ class _InfoTabViewState extends State<InfoTabView>
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(
-                                color:
-                                    context.colorScheme.onSurface.withAlpha(25),
+                                color: context.colorScheme.onSurface.withAlpha(
+                                  25,
+                                ),
                                 width: 2,
                               ),
                             ),
@@ -438,13 +470,14 @@ class _InfoTabViewState extends State<InfoTabView>
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
                               onTap: () {
-                                context.to(() => BangumiAllEpisodePage(
+                                context.to(
+                                  () => BangumiAllEpisodePage(
                                     allEpisodes: widget.allEpisodes,
-                                    infoController: widget.infoController));
+                                    infoController: widget.infoController,
+                                  ),
+                                );
                               },
-                              child: const Center(
-                                child: Text('...'),
-                              ),
+                              child: const Center(child: Text('...')),
                             ),
                           ),
                         ),
@@ -466,20 +499,29 @@ class _InfoTabViewState extends State<InfoTabView>
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Text('Linked Items'.tl,
-                          style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Linked Items'.tl,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child:
-                            Text('${widget.bangumiSRI.length}', style: ts.s12),
+                        child: Text(
+                          '${widget.bangumiSRI.length}',
+                          style: ts.s12,
+                        ),
                       ),
                     ],
                   ),
@@ -493,97 +535,89 @@ class _InfoTabViewState extends State<InfoTabView>
                         final item = widget.bangumiSRI[index];
 
                         return Container(
-                            width: 140,
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            child: InkWell(
-                              onTap: () {
-                                App.mainNavigatorKey?.currentContext
-                                    ?.to(() => BangumiInfoPage(
-                                          bangumiItem: BangumiItem(
-                                              id: item.id,
-                                              type: 2,
-                                              name: item.name,
-                                              nameCn: item.nameCn,
-                                              summary: '',
-                                              airDate: '',
-                                              airWeekday: 1,
-                                              rank: 0,
-                                              total: 0,
-                                              totalEpisodes: 0,
-                                              score: 0,
-                                              images: item.images,
-                                              tags: [],
-                                              alias: []),
-                                        ));
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Card(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                          width: 140,
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          child: InkWell(
+                            onTap: () {
+                              App.mainNavigatorKey?.currentContext?.to(
+                                () => BangumiInfoPage(
+                                  bangumiItem: BangumiItem(
+                                    id: item.id,
+                                    type: 2,
+                                    name: item.name,
+                                    nameCn: item.nameCn,
+                                    summary: '',
+                                    airDate: '',
+                                    airWeekday: 1,
+                                    rank: 0,
+                                    total: 0,
+                                    totalEpisodes: 0,
+                                    score: 0,
+                                    images: item.images,
+                                    tags: [],
+                                    alias: [],
+                                  ),
                                 ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    // 封面图
-                                    ClipRRect(
-                                      borderRadius: const BorderRadius.vertical(
-                                          top: Radius.circular(12)),
-                                      child: BangumiWidget.kostoriImage(
-                                          context, item.images['large']!,
-                                          width: 140, height: 180),
-                                    ),
-
-                                    // 标题
-                                    Padding(
-                                        padding: const EdgeInsets.all(4.0),
-                                        child: Center(
-                                          child: TextScroll(
-                                            item.nameCn.isNotEmpty
-                                                ? item.nameCn
-                                                : item.name,
-                                            mode: TextScrollMode.endless,
-                                            textAlign: TextAlign.center,
-                                            delayBefore: const Duration(
-                                                milliseconds: 500),
-                                            velocity: const Velocity(
-                                                pixelsPerSecond: Offset(40, 0)),
-                                            style:
-                                                const TextStyle(fontSize: 14),
-                                          ),
-                                        )),
-                                    Padding(
-                                        padding: const EdgeInsets.all(2.0),
-                                        child: Center(
-                                          child: Text(
-                                            item.relation,
-                                            style:
-                                                const TextStyle(fontSize: 14),
-                                          ),
-                                        ))
-                                  ],
-                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            ));
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  // 封面图
+                                  ClipRRect(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(12),
+                                    ),
+                                    child: BangumiWidget.kostoriImage(
+                                      context,
+                                      item.images['large']!,
+                                      width: 140,
+                                      height: 180,
+                                    ),
+                                  ),
+
+                                  // 标题
+                                  Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Center(
+                                      child: TextScroll(
+                                        item.nameCn.isNotEmpty
+                                            ? item.nameCn
+                                            : item.name,
+                                        mode: TextScrollMode.endless,
+                                        textAlign: TextAlign.center,
+                                        delayBefore: const Duration(
+                                          milliseconds: 500,
+                                        ),
+                                        velocity: const Velocity(
+                                          pixelsPerSecond: Offset(40, 0),
+                                        ),
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(2.0),
+                                    child: Center(
+                                      child: Text(
+                                        item.relation,
+                                        style: const TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ),
-                  if (MediaQuery.sizeOf(context).width <= 1200 &&
-                      !widget.isLoading &&
-                      widget.bangumiItem.total > 20) ...[
-                    const SizedBox(height: 8),
-                    Center(
-                      child: Container(
-                        width: 120,
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.toOpacity(0.4),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ]
                 ],
                 if (MediaQuery.sizeOf(context).width <= 1200 &&
                     !widget.isLoading &&
@@ -602,20 +636,29 @@ class _InfoTabViewState extends State<InfoTabView>
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Text('Rating Statistics Chart'.tl,
-                          style: TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Rating Statistics Chart'.tl,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       Container(
                         margin: const EdgeInsets.symmetric(horizontal: 8),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child:
-                            Text('${widget.bangumiItem.score}', style: ts.s12),
+                        child: Text(
+                          '${widget.bangumiItem.score}',
+                          style: ts.s12,
+                        ),
                       ),
                       TextButton.icon(
                         onPressed: () {
@@ -624,31 +667,39 @@ class _InfoTabViewState extends State<InfoTabView>
                                 !infoController.showLineChart;
                           });
                         },
-                        icon: Icon(infoController.showLineChart
-                            ? Icons.show_chart
-                            : Icons.bar_chart),
-                        label: Text(infoController.showLineChart
-                            ? 'Line Chart'.tl
-                            : 'Bar Chart'.tl),
+                        icon: Icon(
+                          infoController.showLineChart
+                              ? Icons.show_chart
+                              : Icons.bar_chart,
+                        ),
+                        label: Text(
+                          infoController.showLineChart
+                              ? 'Line Chart'.tl
+                              : 'Bar Chart'.tl,
+                        ),
                       ),
-                      Text('${widget.bangumiItem.total} votes')
+                      Text('${widget.bangumiItem.total} votes'),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     child: Row(
                       children: [
                         Text(
-                            'Standard Deviation: @s'.tlParams(
-                                {'s': standardDeviation.toStringAsFixed(2)}),
-                            style: TextStyle(fontSize: 12)),
-                        const SizedBox(
-                          width: 8,
+                          'Standard Deviation: @s'.tlParams({
+                            's': standardDeviation.toStringAsFixed(2),
+                          }),
+                          style: TextStyle(fontSize: 12),
                         ),
-                        Text(Utils.getDispute(standardDeviation),
-                            style: TextStyle(fontSize: 12))
+                        const SizedBox(width: 8),
+                        Text(
+                          Utils.getDispute(standardDeviation),
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
@@ -656,7 +707,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   infoController.showLineChart
                       ? LineChatPage(bangumiItem: widget.bangumiItem)
                       : BangumiBarChartPage(bangumiItem: widget.bangumiItem),
-                ]
+                ],
               ],
             ),
           ),
@@ -689,7 +740,9 @@ class _InfoTabViewState extends State<InfoTabView>
                     spacing: 8.0,
                     runSpacing: 8.0,
                     children: List.generate(
-                        4, (_) => Bone.button(uniRadius: 8, height: 32)),
+                      4,
+                      (_) => Bone.button(uniRadius: 8, height: 32),
+                    ),
                   ),
                 ),
             ],
@@ -711,105 +764,118 @@ class _InfoTabViewState extends State<InfoTabView>
             return true;
           },
           child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('吐槽'),
             slivers: <Widget>[
               SliverOverlapInjector(
-                handle:
-                    NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
               ),
-              SliverLayoutBuilder(builder: (context, _) {
-                if (widget.commentsList.isNotEmpty) {
-                  return SliverList.separated(
-                    addAutomaticKeepAlives: false,
-                    itemCount: widget.commentsList.length,
-                    itemBuilder: (context, index) {
-                      return SafeArea(
-                        top: false,
-                        bottom: false,
-                        child: Center(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > maxWidth
-                                  ? maxWidth
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: CommentsCard(
-                                commentItem: widget.commentsList[index],
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (widget.commentsList.isNotEmpty) {
+                    return SliverList.separated(
+                      addAutomaticKeepAlives: false,
+                      itemCount: widget.commentsList.length,
+                      itemBuilder: (context, index) {
+                        return SafeArea(
+                          top: false,
+                          bottom: false,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: SizedBox(
+                                width:
+                                    MediaQuery.sizeOf(context).width > maxWidth
+                                    ? maxWidth
+                                    : MediaQuery.sizeOf(context).width - 32,
+                                child: CommentsCard(
+                                  commentItem: widget.commentsList[index],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    separatorBuilder: (BuildContext context, int index) {
+                        );
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return SafeArea(
+                          top: false,
+                          bottom: false,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: SizedBox(
+                                width:
+                                    MediaQuery.sizeOf(context).width > maxWidth
+                                    ? maxWidth
+                                    : MediaQuery.sizeOf(context).width - 32,
+                                child: Divider(
+                                  thickness: 0.5,
+                                  indent: 10,
+                                  endIndent: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (widget.commentsQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              widget.loadMoreComments(
+                                offset: widget.commentsList.length,
+                              );
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SliverList.builder(
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
                       return SafeArea(
                         top: false,
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.all(16),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > maxWidth
                                   ? maxWidth
                                   : MediaQuery.sizeOf(context).width - 32,
-                              child: Divider(
-                                  thickness: 0.5, indent: 10, endIndent: 10),
+                              child: CommentsCard.bone(),
                             ),
                           ),
                         ),
                       );
                     },
                   );
-                }
-                if (widget.commentsQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            widget.loadMoreComments(
-                                offset: widget.commentsList.length);
-                          },
-                          text: 'Reload'.tl,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return SliverList.builder(
-                  itemCount: 4,
-                  itemBuilder: (context, _) {
-                    return SafeArea(
-                      top: false,
-                      bottom: false,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > maxWidth
-                                ? maxWidth
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: CommentsCard.bone(),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                },
+              ),
               if (widget.commentsIsLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -836,79 +902,84 @@ class _InfoTabViewState extends State<InfoTabView>
             return true;
           },
           child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('讨论'),
             slivers: <Widget>[
               SliverOverlapInjector(
-                handle:
-                    NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
               ),
-              SliverLayoutBuilder(builder: (context, _) {
-                if (topicsList.isNotEmpty) {
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (topicsList.isNotEmpty) {
+                    return SliverList.builder(
+                      itemCount: topicsList.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: TopicsCard(topicsItem: topicsList[index]),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (widget.topicsQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              widget.loadMoreTopics();
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return SliverList.builder(
-                    itemCount: topicsList.length,
-                    itemBuilder: (context, index) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > maxWidth
-                                ? maxWidth
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: TopicsCard(
-                              topicsItem: topicsList[index],
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: Skeletonizer.zone(
+                            child: ListTile(
+                              leading: Bone.circle(size: 36),
+                              title: Bone.text(width: 100),
+                              subtitle: Bone.text(width: 80),
                             ),
                           ),
                         ),
                       );
                     },
                   );
-                }
-                if (widget.topicsQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            widget.loadMoreTopics();
-                          },
-                          text: 'Reload'.tl,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return SliverList.builder(
-                  itemCount: 4,
-                  itemBuilder: (context, _) {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width > maxWidth
-                            ? maxWidth
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                },
+              ),
               if (widget.topicsIsLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -935,29 +1006,121 @@ class _InfoTabViewState extends State<InfoTabView>
             return true;
           },
           child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('日志'),
             slivers: <Widget>[
               SliverOverlapInjector(
-                handle:
-                    NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                  context,
+                ),
               ),
-              SliverLayoutBuilder(builder: (context, _) {
-                if (reviewsList.isNotEmpty) {
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (reviewsList.isNotEmpty) {
+                    return SliverList.builder(
+                      itemCount: reviewsList.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: ReviewsCard(
+                                reviewsItem: reviewsList[index],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (widget.reviewsQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              widget.loadMoreReviews();
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return SliverList.builder(
-                    itemCount: reviewsList.length,
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: Skeletonizer.zone(
+                            child: ListTile(
+                              leading: Bone.circle(size: 36),
+                              title: Bone.text(width: 100),
+                              subtitle: Bone.text(width: 80),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              if (widget.reviewsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget get charactersListBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return CustomScrollView(
+          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
+          key: PageStorageKey<String>('角色'),
+          slivers: <Widget>[
+            SliverOverlapInjector(
+              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+            ),
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (widget.characterList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: widget.characterList.length,
                     itemBuilder: (context, index) {
                       return Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: SizedBox(
                             width: MediaQuery.sizeOf(context).width > maxWidth
                                 ? maxWidth
                                 : MediaQuery.sizeOf(context).width - 32,
-                            child: ReviewsCard(
-                              reviewsItem: reviewsList[index],
+                            child: CharacterCard(
+                              characterItem: widget.characterList[index],
                             ),
                           ),
                         ),
@@ -965,14 +1128,14 @@ class _InfoTabViewState extends State<InfoTabView>
                     },
                   );
                 }
-                if (widget.reviewsQueryTimeout) {
+                if (widget.charactersQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
+                      errMsg: 'Failed to load, please try again.'.tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
-                            widget.loadMoreReviews();
+                            widget.loadCharacters();
                           },
                           text: 'Reload'.tl,
                         ),
@@ -1000,93 +1163,8 @@ class _InfoTabViewState extends State<InfoTabView>
                     );
                   },
                 );
-              }),
-              if (widget.reviewsIsLoading)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget get charactersListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(
-            scrollbars: false,
-          ),
-          key: PageStorageKey<String>('角色'),
-          slivers: <Widget>[
-            SliverOverlapInjector(
-              handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+              },
             ),
-            SliverLayoutBuilder(builder: (context, _) {
-              if (widget.characterList.isNotEmpty) {
-                return SliverList.builder(
-                  itemCount: widget.characterList.length,
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: CharacterCard(
-                            characterItem: widget.characterList[index],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }
-              if (widget.charactersQueryTimeout) {
-                return SliverFillRemaining(
-                  child: GeneralErrorWidget(
-                    errMsg: 'Failed to load, please try again.'.tl,
-                    actions: [
-                      GeneralErrorButton(
-                        onPressed: () {
-                          widget.loadCharacters();
-                        },
-                        text: 'Reload'.tl,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return SliverList.builder(
-                itemCount: 4,
-                itemBuilder: (context, _) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width > maxWidth
-                          ? maxWidth
-                          : MediaQuery.sizeOf(context).width - 32,
-                      child: Skeletonizer.zone(
-                        child: ListTile(
-                          leading: Bone.circle(size: 36),
-                          title: Bone.text(width: 100),
-                          subtitle: Bone.text(width: 80),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
           ],
         );
       },
@@ -1097,71 +1175,71 @@ class _InfoTabViewState extends State<InfoTabView>
     return Builder(
       builder: (BuildContext context) {
         return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(
-            scrollbars: false,
-          ),
+          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
           key: PageStorageKey<String>('制作'),
           slivers: <Widget>[
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
             ),
-            SliverLayoutBuilder(builder: (context, _) {
-              if (widget.staffList.isNotEmpty) {
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (widget.staffList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: widget.staffList.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: StaffCard(
+                              staffFullItem: widget.staffList[index],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (widget.staffQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: 'Failed to load, please try again.'.tl,
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            widget.loadStaff();
+                          },
+                          text: 'Reload'.tl,
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return SliverList.builder(
-                  itemCount: widget.staffList.length,
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: StaffCard(
-                            staffFullItem: widget.staffList[index],
+                  itemCount: 8,
+                  itemBuilder: (context, _) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: Skeletonizer.zone(
+                          child: ListTile(
+                            leading: Bone.circle(size: 36),
+                            title: Bone.text(width: 100),
+                            subtitle: Bone.text(width: 80),
                           ),
                         ),
                       ),
                     );
                   },
                 );
-              }
-              if (widget.staffQueryTimeout) {
-                return SliverFillRemaining(
-                  child: GeneralErrorWidget(
-                    errMsg: 'Failed to load, please try again.'.tl,
-                    actions: [
-                      GeneralErrorButton(
-                        onPressed: () {
-                          widget.loadStaff();
-                        },
-                        text: 'Reload'.tl,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return SliverList.builder(
-                itemCount: 8,
-                itemBuilder: (context, _) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width > maxWidth
-                          ? maxWidth
-                          : MediaQuery.sizeOf(context).width - 32,
-                      child: Skeletonizer.zone(
-                        child: ListTile(
-                          leading: Bone.circle(size: 36),
-                          title: Bone.text(width: 100),
-                          subtitle: Bone.text(width: 80),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
+              },
+            ),
           ],
         );
       },
@@ -1189,8 +1267,9 @@ class _InfoTabViewState extends State<InfoTabView>
               key: PageStorageKey<String>('概览'),
               slivers: <Widget>[
                 SliverOverlapInjector(
-                  handle:
-                      NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+                  handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                    context,
+                  ),
                 ),
                 SliverToBoxAdapter(
                   child: SafeArea(
