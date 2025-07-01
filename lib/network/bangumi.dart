@@ -809,6 +809,19 @@ class Bangumi {
     return characterCastsItems;
   }
 
+  static Future<bool> isBangumiExists(int id) async {
+    try {
+      final res = await AppDio().request(
+        Api.bangumiInfoByID + id.toString(),
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
+      if (res.data['type'] == 2) {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
   static Future<List<BangumiItem>> getBangumiTrendsList({
     int type = 2,
     int limit = 24,
