@@ -614,7 +614,10 @@ class BangumiWidget {
                                   backgroundDecoration: const BoxDecoration(
                                     color: Colors.black,
                                   ),
-                                  child: Image(image: img, fit: BoxFit.contain),
+                                  child: AnimatedImage(
+                                    image: img,
+                                    fit: BoxFit.contain,
+                                  ),
                                 );
                               }
                             },
@@ -948,115 +951,6 @@ class BangumiWidget {
       cacheHeight: memCacheHeight,
     );
   }
-
-  // static Widget kostoriImage(BuildContext context, String imageUrl,
-  //     {double width = 100, double height = 100, bool showPlaceholder = true})
-  // {
-  //   // 检查是否已记录为失败图片
-  //   if (_failedImageUrls.contains(imageUrl)) {
-  //     return MiscComponents.placeholder(
-  //         context, width, height, Colors.transparent);
-  //   }
-  //   //// We need this to shink memory usage
-  //   int? memCacheWidth, memCacheHeight;
-  //   double aspectRatio = (width / height).toDouble();
-  //
-  //   void setMemCacheSizes() {
-  //     if (aspectRatio > 1) {
-  //       memCacheHeight = height.cacheSize(context);
-  //     } else if (aspectRatio < 1) {
-  //       memCacheWidth = width.cacheSize(context);
-  //     } else {
-  //       memCacheWidth = width.cacheSize(context);
-  //       memCacheHeight = height.cacheSize(context);
-  //     }
-  //   }
-  //
-  //   setMemCacheSizes();
-  //
-  //   if (memCacheWidth == null && memCacheHeight == null) {
-  //     memCacheWidth = width.toInt();
-  //   }
-  //
-  //   return CachedNetworkImage(
-  //     imageUrl: imageUrl,
-  //     fit: BoxFit.cover,
-  //     width: width,
-  //     height: height,
-  //     memCacheWidth: memCacheWidth,
-  //     memCacheHeight: memCacheHeight,
-  //     fadeOutDuration: const Duration(milliseconds: 120),
-  //     fadeInDuration: const Duration(milliseconds: 120),
-  //     filterQuality: FilterQuality.high,
-  //     progressIndicatorBuilder: (context, url, downloadProgress) {
-  //       final progress = downloadProgress.progress ?? 0.0;
-  //       return Stack(
-  //         alignment: Alignment.center,
-  //         children: [
-  //           // 原占位图
-  //           if (showPlaceholder)
-  //             MiscComponents.placeholder(
-  //                 context, width, height, Colors.transparent),
-  //           // 半透明黑色蒙层
-  //           Container(
-  //             // width: width,
-  //             // height: height,
-  //             decoration: BoxDecoration(
-  //               color: Colors.black.toOpacity(0.4),
-  //               borderRadius: BorderRadius.circular(12),
-  //             ),
-  //           ),
-  //           // 环形进度条，带背景圈
-  //           SizedBox(
-  //             // width: width / 2,
-  //             // height: height / 2,
-  //             child: Stack(
-  //               alignment: Alignment.center,
-  //               children: [
-  //                 CircularProgressIndicator(
-  //                   value: 1,
-  //                   valueColor: AlwaysStoppedAnimation(Colors.white24),
-  //                   strokeWidth: 4,
-  //                 ),
-  //                 CircularProgressIndicator(
-  //                   value: progress,
-  //                   valueColor: AlwaysStoppedAnimation(Colors.lightBlueAccent),
-  //                   strokeWidth: 4,
-  //                 ),
-  //                 // 中间文字
-  //                 Text(
-  //                   '${(progress * 100).toStringAsFixed(0)}%',
-  //                   style: TextStyle(
-  //                     color: Colors.white,
-  //                     fontWeight: FontWeight.bold,
-  //                     shadows: [
-  //                       Shadow(
-  //                         offset: Offset(0, 0),
-  //                         blurRadius: 3,
-  //                         color: Colors.black54,
-  //                       ),
-  //                     ],
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ],
-  //       );
-  //     },
-  //     errorListener: (e) {
-  //       Log.addLog(LogLevel.error, 'kostoriImage', e.toString());
-  //     },
-  //     errorWidget: (BuildContext context, String url, Object error) {
-  //       // 记录失败 URL
-  //       if (!_failedImageUrls.contains(url)) {
-  //         _failedImageUrls.add(url);
-  //       }
-  //       return MiscComponents.placeholder(
-  //           context, width, height, Colors.transparent);
-  //     },
-  //   );
-  // }
 }
 
 class StatItem {
