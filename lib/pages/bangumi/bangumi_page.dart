@@ -1,26 +1,22 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/bangumi/bangumi_item.dart';
-import 'package:kostori/utils/translations.dart';
-
-import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
-
-import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
-
-import 'package:kostori/components/misc_components.dart';
-
-import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-import 'package:kostori/utils/utils.dart';
 import 'package:kostori/pages/bangumi/bangumi_subject_tab_page.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
 
 class BangumiPage extends StatefulWidget {
   const BangumiPage({super.key});
@@ -64,8 +60,9 @@ class _BangumiPageState extends State<BangumiPage>
   Future<void> queryBangumiByTrend() async {
     isLoadingMore = true;
     setState(() {});
-    var result =
-        await Bangumi.getBangumiTrendsList(offset: bangumiItems.length);
+    var result = await Bangumi.getBangumiTrendsList(
+      offset: bangumiItems.length,
+    );
     bangumiItems.addAll(result);
     isLoadingMore = false;
     if (mounted) setState(() {});
@@ -84,8 +81,10 @@ class _BangumiPageState extends State<BangumiPage>
                 Text('热度排行', style: ts.s18),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(8),
@@ -94,10 +93,11 @@ class _BangumiPageState extends State<BangumiPage>
                 ),
                 const Spacer(),
                 IconButton(
-                    onPressed: () {
-                      context.to(() => BangumiSubjectTabPage());
-                    },
-                    icon: Icon(Icons.messenger_outline))
+                  onPressed: () {
+                    context.to(() => BangumiSubjectTabPage());
+                  },
+                  icon: Icon(Icons.messenger_outline),
+                ),
               ],
             ).paddingHorizontal(16),
           ),
@@ -108,16 +108,16 @@ class _BangumiPageState extends State<BangumiPage>
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverGrid(
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              return bangumiItems.isNotEmpty
-                  ? BangumiWidget.buildBriefMode(
-                      context, bangumiItems[index], 'Trending$index',
-                      showPlaceholder: false)
-                  : null;
-            },
-            childCount: bangumiItems.length,
-          ),
+          delegate: SliverChildBuilderDelegate((context, index) {
+            return bangumiItems.isNotEmpty
+                ? BangumiWidget.buildBriefMode(
+                    context,
+                    bangumiItems[index],
+                    'Trending$index',
+                    showPlaceholder: false,
+                  )
+                : null;
+          }, childCount: bangumiItems.length),
           gridDelegate: SliverGridDelegateWithBangumiItems(true),
         ),
       ),
@@ -129,7 +129,11 @@ class _BangumiPageState extends State<BangumiPage>
             padding: const EdgeInsets.all(16.0),
             child: Center(
               child: MiscComponents.placeholder(
-                  context, 40, 40, Colors.transparent),
+                context,
+                40,
+                40,
+                Colors.transparent,
+              ),
             ),
           ),
         ),
@@ -139,13 +143,15 @@ class _BangumiPageState extends State<BangumiPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    Widget widget =
-        SmoothCustomScrollView(controller: scrollController, slivers: [
-      SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
-      const _SearchBar(),
-      const _Timetable(),
-      ...buildBangumiTrendingSlivers(context),
-    ]);
+    Widget widget = SmoothCustomScrollView(
+      controller: scrollController,
+      slivers: [
+        SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
+        const _SearchBar(),
+        const _Timetable(),
+        ...buildBangumiTrendingSlivers(context),
+      ],
+    );
     widget = AppScrollBar(
       topPadding: 82,
       controller: scrollController,
@@ -261,20 +267,24 @@ class _TimetableState extends State<_Timetable> {
             bangumiItem: item,
           );
 
+          if (episodeInfo == null) continue;
+
           // 剔除“最后一集且无后续集且非本周”的番剧
-          if (episodeInfo?['isFinalEpisode'] == true &&
-              episodeInfo?['hasNextEpisodes'] == false &&
-              episodeInfo?['isCurrentWeek'] == false) {
+          if (episodeInfo['isFinalEpisode'] == true &&
+              episodeInfo['hasNextEpisodes'] == false &&
+              episodeInfo['isCurrentWeek'] == false) {
             continue;
           }
 
-          todayItems.add(item.copyWith(
-            airTime: airTimeStr,
-            extraInfo: episodeInfo,
-          ));
+          todayItems.add(
+            item.copyWith(airTime: airTimeStr, extraInfo: episodeInfo),
+          );
         } catch (e, s) {
-          Log.addLog(LogLevel.error, '解析airTime或处理剧集失败',
-              '${item.id}\n$airTimeStr\n$e\n$s');
+          Log.addLog(
+            LogLevel.error,
+            '解析airTime或处理剧集失败',
+            '${item.id}\n$airTimeStr\n$e\n$s',
+          );
         }
       }
 
@@ -290,7 +300,7 @@ class _TimetableState extends State<_Timetable> {
     }
   }
 
-// 判断是否“本周最后一集”，并返回本周剧集信息
+  // 判断是否“本周最后一集”，并返回本周剧集信息
   Map<String, dynamic>? _processEpisodeInfo({
     required List<EpisodeInfo>? episodes,
     required DateTime now,
@@ -312,13 +322,16 @@ class _TimetableState extends State<_Timetable> {
     final currentWeekEp = Utils.findCurrentWeekEpisode(episodes, bangumiItem);
 
     // 判断当前集数是否为最后一集
-    final isFinalEpisode = currentWeekEp.values.first != null &&
+    final isFinalEpisode =
+        currentWeekEp.values.first != null &&
         currentWeekEp.values.first?.sort == finalEpisode.sort;
 
     final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
 
+    if (airTime == null) return null;
+
     // 判断是否为当前周
-    final airWeek = Utils.getISOWeekNumber(airTime!).$2;
+    final airWeek = Utils.getISOWeekNumber(airTime).$2;
     bool isCurrentWeek = currentWeek == airWeek;
 
     if (currentWeekEp.keys.first == true && isCurrentWeek == false) {
@@ -328,8 +341,9 @@ class _TimetableState extends State<_Timetable> {
     }
 
     // 判断是否还有后续集数（finalEpisode不是最后一集时为true）
-    final maxSort =
-        type0Episodes.map((e) => e.sort).reduce((a, b) => a > b ? a : b);
+    final maxSort = type0Episodes
+        .map((e) => e.sort)
+        .reduce((a, b) => a > b ? a : b);
 
     return {
       'episode_airdate': finalEpisode.airDate,
@@ -342,7 +356,7 @@ class _TimetableState extends State<_Timetable> {
     };
   }
 
-// 辅助方法：比较 airTime 只保留时分排序
+  // 辅助方法：比较 airTime 只保留时分排序
   DateTime _parseTime(String timeStr) {
     try {
       final dt = DateTime.parse(timeStr).toLocal();
@@ -360,18 +374,21 @@ class _TimetableState extends State<_Timetable> {
   }
 
   Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
-      List<BangumiItem> batch) async {
+    List<BangumiItem> batch,
+  ) async {
     final result = <int, List<EpisodeInfo>>{};
 
     try {
-      await Future.wait(batch.map((item) async {
-        try {
-          final episodes = await BangumiManager().allEpInfoFind(item.id);
-          if (episodes.isNotEmpty) result[item.id] = episodes;
-        } catch (e, s) {
-          Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
-        }
-      }));
+      await Future.wait(
+        batch.map((item) async {
+          try {
+            final episodes = await BangumiManager().allEpInfoFind(item.id);
+            if (episodes.isNotEmpty) result[item.id] = episodes;
+          } catch (e, s) {
+            Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
+          }
+        }),
+      );
     } catch (e, s) {
       Log.addLog(LogLevel.warning, '批量获取剧集', '$e\n$s');
     }
@@ -387,7 +404,7 @@ class _TimetableState extends State<_Timetable> {
       '周四时间表',
       '周五时间表',
       '周六时间表',
-      '周日时间表'
+      '周日时间表',
     ];
     return weekdays[weekday - 1];
   }
@@ -413,68 +430,73 @@ class _TimetableState extends State<_Timetable> {
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () async {
-            App.mainNavigatorKey?.currentContext
-                ?.to(() => BangumiCalendarPage());
+            App.mainNavigatorKey?.currentContext?.to(
+              () => BangumiCalendarPage(),
+            );
           },
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            SizedBox(
-              height: 56,
-              child: Row(
-                children: [
-                  Center(
-                    child: Text(getWeekdayString(weekday), style: ts.s18),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 56,
+                child: Row(
+                  children: [
+                    Center(
+                      child: Text(getWeekdayString(weekday), style: ts.s18),
                     ),
-                    child: Text('${bangumiCalendar.length}', style: ts.s12),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.calendar_month),
-                  SizedBox(
-                    width: 10,
-                  ),
-                  Text('Timetable'.tl)
-                ],
-              ),
-            ).paddingHorizontal(16),
-            SizedBox(
-              height: 384,
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(
-                  scrollbars: true,
-                  dragDevices: {
-                    PointerDeviceKind.touch,
-                    PointerDeviceKind.mouse,
-                    PointerDeviceKind.stylus,
-                    PointerDeviceKind.trackpad,
-                  },
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${bangumiCalendar.length}', style: ts.s12),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.calendar_month),
+                    SizedBox(width: 10),
+                    Text('Timetable'.tl),
+                  ],
                 ),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: bangumiCalendar.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    return BangumiCard(
-                      bangumiItem: bangumiCalendar[index],
-                      onTap: () async {
-                        App.mainNavigatorKey?.currentContext
-                            ?.to(() => BangumiInfoPage(
-                                  bangumiItem: bangumiCalendar[index],
-                                  heroTag: 'Timetable',
-                                ));
-                      },
-                      heroTag: 'Timetable',
-                    ).paddingHorizontal(8).paddingVertical(2);
-                  },
-                ).paddingHorizontal(8).paddingVertical(16),
+              ).paddingHorizontal(16),
+              SizedBox(
+                height: 384,
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    scrollbars: true,
+                    dragDevices: {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.stylus,
+                      PointerDeviceKind.trackpad,
+                    },
+                  ),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: bangumiCalendar.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return BangumiCard(
+                        bangumiItem: bangumiCalendar[index],
+                        onTap: () async {
+                          App.mainNavigatorKey?.currentContext?.to(
+                            () => BangumiInfoPage(
+                              bangumiItem: bangumiCalendar[index],
+                              heroTag: 'Timetable',
+                            ),
+                          );
+                        },
+                        heroTag: 'Timetable',
+                      ).paddingHorizontal(8).paddingVertical(2);
+                    },
+                  ).paddingHorizontal(8).paddingVertical(16),
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );

@@ -158,8 +158,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
     final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
 
+    if (airTime == null) return null;
+
     // 判断是否为当前周
-    final airWeek = Utils.getISOWeekNumber(airTime!).$2;
+    final airWeek = Utils.getISOWeekNumber(airTime).$2;
     bool isCurrentWeek = currentWeek == airWeek;
 
     if (currentWeekEp.keys.first == true && isCurrentWeek == false) {
