@@ -826,27 +826,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
 
     if (RegExp(r'^\d+$').hasMatch(value)) {
       final res = await Bangumi.isBangumiExists(int.parse(value));
-      if (res) {
+      if (res.keys.first) {
         App.rootContext.showMessage(message: '正在跳转...');
-        context.to(
-          () => BangumiInfoPage(
-            bangumiItem: BangumiItem(
-              id: int.parse(value),
-              type: 2,
-              name: '',
-              nameCn: '',
-              summary: '',
-              airDate: '',
-              airWeekday: 0,
-              rank: 0,
-              total: 0,
-              totalEpisodes: 0,
-              score: 0,
-              images: {'large': ''},
-              tags: [],
-            ),
-          ),
-        );
+        context.to(() => BangumiInfoPage(bangumiItem: res.values.first!));
       } else {
         App.rootContext.showMessage(message: '查询失败');
       }

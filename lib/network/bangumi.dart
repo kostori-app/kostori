@@ -809,17 +809,17 @@ class Bangumi {
     return characterCastsItems;
   }
 
-  static Future<bool> isBangumiExists(int id) async {
+  static Future<Map<bool, BangumiItem?>> isBangumiExists(int id) async {
     try {
       final res = await AppDio().request(
         Api.bangumiInfoByID + id.toString(),
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       if (res.data['type'] == 2) {
-        return true;
+        return {true: BangumiItem.fromJson(res.data)};
       }
     } catch (e) {}
-    return false;
+    return {false: null};
   }
 
   static Future<List<BangumiItem>> getBangumiTrendsList({

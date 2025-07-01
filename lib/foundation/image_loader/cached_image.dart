@@ -39,13 +39,19 @@ class CachedImageProvider
         var file = File(url.substring(7));
         return file.readAsBytes();
       }
-      await for (var progress
-          in ImageDownloader.loadThumbnail(url, sourceKey, aid)) {
+
+      await for (var progress in ImageDownloader.loadThumbnail(
+        url,
+        sourceKey,
+        aid,
+      )) {
         checkStop();
-        chunkEvents.add(ImageChunkEvent(
-          cumulativeBytesLoaded: progress.currentBytes,
-          expectedTotalBytes: progress.totalBytes,
-        ));
+        chunkEvents.add(
+          ImageChunkEvent(
+            cumulativeBytesLoaded: progress.currentBytes,
+            expectedTotalBytes: progress.totalBytes,
+          ),
+        );
         if (progress.imageBytes != null) {
           return progress.imageBytes!;
         }
