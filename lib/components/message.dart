@@ -645,7 +645,7 @@ class _ToastEntry {
   }
 
   void updatePosition(int index) {
-    position = index * 64.0; // 每个 toast 高度+间距
+    position = index * 48.0; // 每个 toast 高度+间距
     overlayEntry.markNeedsBuild();
   }
 }
