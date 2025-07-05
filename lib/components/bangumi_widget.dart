@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:gif/gif.dart';
-import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -211,7 +210,6 @@ class BangumiWidget {
                                         opacity: 0.6,
                                         child: Image.asset(
                                           'assets/img/noise.png',
-                                          // 模拟毛玻璃颗粒的纹理图
                                           fit: BoxFit.cover,
                                           color:
                                               context.brightness ==
@@ -223,7 +221,6 @@ class BangumiWidget {
                                       ),
                                     ),
 
-                                    // 渐变遮罩（调整透明度过渡）
                                     Positioned.fill(
                                       child: Container(
                                         decoration: BoxDecoration(
@@ -238,7 +235,6 @@ class BangumiWidget {
                                   ],
                                 ),
                               ),
-                              // 原有内容（需要在模糊层之上）
                               Padding(
                                 padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
                                 child: score(),
@@ -612,189 +608,193 @@ class BangumiWidget {
                 child: Scaffold(
                   extendBodyBehindAppBar: true,
                   backgroundColor: Colors.black,
-                  body:
-                      Stack(
-                        children: [
-                          ValueListenableBuilder<List<File>>(
-                            valueListenable: urls,
-                            builder: (context, imageList, _) {
-                              if (imageList.length > 1) {
-                                return PhotoViewGallery.builder(
-                                  itemCount: imageList.length,
-                                  pageController: pageController,
-                                  backgroundDecoration: const BoxDecoration(
-                                    color: Colors.black,
+                  body: Stack(
+                    children: [
+                      ValueListenableBuilder<List<File>>(
+                        valueListenable: urls,
+                        builder: (context, imageList, _) {
+                          if (imageList.length > 1) {
+                            return PhotoViewGallery.builder(
+                              itemCount: imageList.length,
+                              pageController: pageController,
+                              backgroundDecoration: const BoxDecoration(
+                                color: Colors.black,
+                              ),
+                              onPageChanged: (i) => currentIndex.value = i,
+                              builder: (context, i) {
+                                final file = imageList[i];
+                                return PhotoViewGalleryPageOptions(
+                                  imageProvider: FileImage(file),
+                                  heroAttributes: PhotoViewHeroAttributes(
+                                    tag: file.path,
                                   ),
-                                  onPageChanged: (i) => currentIndex.value = i,
-                                  builder: (context, i) {
-                                    final file = imageList[i];
-                                    return PhotoViewGalleryPageOptions(
-                                      imageProvider: FileImage(file),
-                                      heroAttributes: PhotoViewHeroAttributes(
-                                        tag: file.path,
-                                      ),
-                                      minScale:
-                                          PhotoViewComputedScale.contained,
-                                      maxScale:
-                                          PhotoViewComputedScale.covered * 3,
-                                    );
-                                  },
-                                );
-                              } else {
-                                return PhotoView.customChild(
                                   minScale: PhotoViewComputedScale.contained,
                                   maxScale: PhotoViewComputedScale.covered * 3,
-                                  heroAttributes: PhotoViewHeroAttributes(
-                                    tag: heroTag,
-                                  ),
-                                  backgroundDecoration: const BoxDecoration(
-                                    color: Colors.black,
-                                  ),
-                                  child: AnimatedImage(
-                                    image: img,
-                                    fit: BoxFit.contain,
-                                  ),
                                 );
-                              }
-                            },
-                          ),
-                          SafeArea(
-                            child: Container(
-                              height: 56,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
+                              },
+                            );
+                          } else {
+                            return PhotoView.customChild(
+                              minScale: PhotoViewComputedScale.contained,
+                              maxScale: PhotoViewComputedScale.covered * 3,
+                              heroAttributes: PhotoViewHeroAttributes(
+                                tag: heroTag,
                               ),
-                              child: Row(
-                                children: [
-                                  _iconBackground(
-                                    icon: Icons.arrow_back_ios_new,
-                                    onPressed: () => Navigator.pop(context),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _textBackground(title),
-                                  const Spacer(),
-                                  ValueListenableBuilder<int>(
-                                    valueListenable: currentIndex,
-                                    builder: (context, index, _) {
-                                      if (urls.value.isEmpty && !isLocal) {
-                                        return const SizedBox();
-                                      }
+                              backgroundDecoration: const BoxDecoration(
+                                color: Colors.black,
+                              ),
+                              child: AnimatedImage(
+                                image: img,
+                                fit: BoxFit.contain,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      SafeArea(
+                        child: Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: [
+                              _iconBackground(
+                                icon: Icons.arrow_back_ios_new,
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              const SizedBox(width: 8),
+                              _textBackground(title),
+                              const Spacer(),
+                              isLocal
+                                  ? ValueListenableBuilder<int>(
+                                      valueListenable: currentIndex,
+                                      builder: (context, index, _) {
+                                        if (urls.value.isEmpty && !isLocal) {
+                                          return const SizedBox();
+                                        }
 
-                                      final currentFile = urls.value.isNotEmpty
-                                          ? urls.value[index]
-                                          : File(url);
+                                        final currentFile =
+                                            urls.value.isNotEmpty
+                                            ? urls.value[index]
+                                            : File(url);
 
-                                      final localExists = currentFile
-                                          .existsSync();
+                                        final localExists = currentFile
+                                            .existsSync();
 
-                                      return Row(
-                                        children: [
-                                          _iconBackground(
-                                            icon: Icons.share,
-                                            onPressed: () async {
-                                              final file = File(url);
-                                              Uint8List data = await file
-                                                  .readAsBytes();
-                                              Share.shareFile(
-                                                data: data,
-                                                filename: heroTag,
-                                                mime: 'image/png',
-                                              );
-                                            },
-                                          ),
-                                          const SizedBox(width: 8),
-                                          if (localExists)
+                                        return Row(
+                                          children: [
                                             _iconBackground(
-                                              icon: Icons.delete,
+                                              icon: Icons.share,
                                               onPressed: () async {
-                                                showConfirmDialog(
-                                                  context: App.rootContext,
-                                                  title: "确认删除该图片?".tl,
-                                                  content: '删除后将无法恢复',
-                                                  btnColor:
-                                                      context.colorScheme.error,
-                                                  onConfirm: () async {
-                                                    try {
-                                                      await currentFile
-                                                          .delete();
-
-                                                      if (urls
-                                                          .value
-                                                          .isNotEmpty) {
-                                                        urls.value.removeAt(
-                                                          index,
-                                                        );
-
-                                                        if (urls
-                                                            .value
-                                                            .isEmpty) {
-                                                          Navigator.pop(
-                                                            context,
-                                                          );
-                                                          return;
-                                                        }
-
-                                                        final newIndex =
-                                                            index >=
-                                                                urls
-                                                                    .value
-                                                                    .length
-                                                            ? urls
-                                                                      .value
-                                                                      .length -
-                                                                  1
-                                                            : index;
-
-                                                        currentIndex.value =
-                                                            newIndex;
-                                                        urls.value = [
-                                                          ...urls.value,
-                                                        ]; // 触发刷新
-
-                                                        WidgetsBinding.instance
-                                                            .addPostFrameCallback((
-                                                              _,
-                                                            ) {
-                                                              if (pageController
-                                                                  .hasClients) {
-                                                                pageController
-                                                                    .jumpToPage(
-                                                                      newIndex,
-                                                                    );
-                                                              }
-                                                            });
-                                                      } else {
-                                                        Navigator.pop(
-                                                          context,
-                                                        ); // 单图直接关闭
-                                                      }
-                                                    } catch (e) {
-                                                      Log.addLog(
-                                                        LogLevel.error,
-                                                        '删除失败',
-                                                        e.toString(),
-                                                      );
-                                                      App.rootContext
-                                                          .showMessage(
-                                                            message: '删除失败: $e',
-                                                          );
-                                                    }
-                                                  },
+                                                final file = File(url);
+                                                Uint8List data = await file
+                                                    .readAsBytes();
+                                                Share.shareFile(
+                                                  data: data,
+                                                  filename: heroTag,
+                                                  mime: 'image/png',
                                                 );
                                               },
                                             ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ),
+                                            const SizedBox(width: 8),
+                                            if (localExists)
+                                              _iconBackground(
+                                                icon: Icons.delete,
+                                                onPressed: () async {
+                                                  showConfirmDialog(
+                                                    context: App.rootContext,
+                                                    title: "确认删除该图片?".tl,
+                                                    content: '删除后将无法恢复',
+                                                    btnColor: context
+                                                        .colorScheme
+                                                        .error,
+                                                    onConfirm: () async {
+                                                      try {
+                                                        await currentFile
+                                                            .delete();
+
+                                                        if (urls
+                                                            .value
+                                                            .isNotEmpty) {
+                                                          urls.value.removeAt(
+                                                            index,
+                                                          );
+
+                                                          if (urls
+                                                              .value
+                                                              .isEmpty) {
+                                                            Navigator.pop(
+                                                              context,
+                                                            );
+                                                            return;
+                                                          }
+
+                                                          final newIndex =
+                                                              index >=
+                                                                  urls
+                                                                      .value
+                                                                      .length
+                                                              ? urls
+                                                                        .value
+                                                                        .length -
+                                                                    1
+                                                              : index;
+
+                                                          currentIndex.value =
+                                                              newIndex;
+                                                          urls.value = [
+                                                            ...urls.value,
+                                                          ]; // 触发刷新
+
+                                                          WidgetsBinding
+                                                              .instance
+                                                              .addPostFrameCallback((
+                                                                _,
+                                                              ) {
+                                                                if (pageController
+                                                                    .hasClients) {
+                                                                  pageController
+                                                                      .jumpToPage(
+                                                                        newIndex,
+                                                                      );
+                                                                }
+                                                              });
+                                                        } else {
+                                                          Navigator.pop(
+                                                            context,
+                                                          ); // 单图直接关闭
+                                                        }
+                                                      } catch (e) {
+                                                        Log.addLog(
+                                                          LogLevel.error,
+                                                          '删除失败',
+                                                          e.toString(),
+                                                        );
+                                                        App.rootContext
+                                                            .showMessage(
+                                                              message:
+                                                                  '删除失败: $e',
+                                                            );
+                                                      }
+                                                    },
+                                                  );
+                                                },
+                                              ),
+                                          ],
+                                        );
+                                      },
+                                    )
+                                  : _iconBackground(
+                                      icon: Icons.download,
+                                      onPressed: () {
+                                        saveImageToGallery(context, url);
+                                      },
+                                    ),
+                            ],
                           ),
-                        ],
-                      ).padding(
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
                       ),
+                    ],
+                  ).padding(const EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                 ),
               );
             },
@@ -823,10 +823,12 @@ class BangumiWidget {
   }
 
   static Widget _textBackground(String title) {
-    // 限制最多显示 10 个字符，超出则用 ...
-    final displayTitle = title.length > 10
-        ? '${title.substring(0, 10)}...'
-        : title;
+    const maxWidth = 240.0;
+    const style = TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.w600,
+      color: Colors.white,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -834,12 +836,43 @@ class BangumiWidget {
         color: Colors.black.toOpacity(0.3),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        displayTitle,
-        style: const TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: maxWidth, maxHeight: 24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final textPainter = TextPainter(
+              text: TextSpan(text: title, style: style),
+              maxLines: 1,
+              textDirection: TextDirection.ltr,
+            )..layout(maxWidth: constraints.maxWidth);
+
+            final shouldScroll =
+                title.length > 12 || textPainter.width > constraints.maxWidth;
+
+            return ClipRect(
+              child: shouldScroll
+                  ? Marquee(
+                      text: title,
+                      style: style,
+                      scrollAxis: Axis.horizontal,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      blankSpace: 40.0,
+                      velocity: 40.0,
+                      pauseAfterRound: Duration.zero,
+                      startPadding: 0.0,
+                      accelerationDuration: Duration(milliseconds: 300),
+                      accelerationCurve: Curves.linear,
+                      decelerationDuration: Duration(milliseconds: 300),
+                      decelerationCurve: Curves.linear,
+                    )
+                  : Text(
+                      title,
+                      style: style,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+            );
+          },
         ),
       ),
     );
@@ -857,14 +890,29 @@ class BangumiWidget {
       );
 
       if (App.isAndroid) {
-        final result = await ImageGallerySaverPlus.saveImage(
-          response.data!,
-          quality: 100,
-          name: _generateFilename(imageUrl),
-          isReturnImagePathOfIOS: true,
-        );
+        final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
+        if (folder != null) {
+          final file = File(
+            '${folder.path}/${_generateFilename(imageUrl)}.png',
+          );
+          await file.writeAsBytes(response.data!);
 
-        if (result == null || !(result['isSuccess'] as bool? ?? false)) {
+          // 调用弹窗/提示等
+          showCenter(
+            seconds: 1,
+            icon: Gif(
+              image: const AssetImage('assets/img/check.gif'),
+              height: 80,
+              fps: 120,
+              color: Theme.of(context).colorScheme.primary,
+              autostart: Autostart.once,
+            ),
+            message: '保存成功',
+            context: context,
+          );
+
+          Log.addLog(LogLevel.info, '保存长图成功', file.path);
+        } else {
           showCenter(
             seconds: 3,
             icon: Gif(
@@ -877,23 +925,35 @@ class BangumiWidget {
             message: '保存失败',
             context: context,
           );
+          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
         }
-
-        context.showMessage(message: '已保存到相册');
       } else {
-        // 其他平台：保存到应用文档目录
         final directory = await getApplicationDocumentsDirectory();
-        final folderPath = '${directory.path}/BangumiImages';
+        final folderPath = '${directory.path}/Kostori';
         final folder = Directory(folderPath);
 
         if (!await folder.exists()) {
           await folder.create(recursive: true);
+          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
         }
 
         final filePath = '$folderPath/${_generateFilename(imageUrl)}';
         await File(filePath).writeAsBytes(response.data!);
 
-        context.showMessage(message: '已保存到: $filePath');
+        showCenter(
+          seconds: 1,
+          icon: Gif(
+            image: const AssetImage('assets/img/check.gif'),
+            height: 80,
+            fps: 120,
+            color: Theme.of(context).colorScheme.primary,
+            autostart: Autostart.once,
+          ),
+          message: '保存成功',
+          context: context,
+        );
+
+        Log.addLog(LogLevel.info, 'saveImageToGallery', filePath);
       }
     } catch (e, s) {
       showCenter(
