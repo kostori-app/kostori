@@ -23,8 +23,8 @@ import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
+import 'package:marquee/marquee.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:text_scroll/text_scroll.dart';
 
 import '../../components/bean/card/reviews_card.dart';
 import '../../components/bean/card/topics_card.dart';
@@ -118,72 +118,156 @@ class _InfoTabViewState extends State<InfoTabView>
           width: MediaQuery.sizeOf(context).width > maxWidth
               ? maxWidth
               : MediaQuery.sizeOf(context).width - 32,
-          child: SelectionArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text(
-                  'Introduction'.tl,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final span = TextSpan(text: widget.bangumiItem.summary);
-                      final tp = TextPainter(
-                        text: span,
-                        textDirection: TextDirection.ltr,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Text(
+                'Introduction'.tl,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final span = TextSpan(text: widget.bangumiItem.summary);
+                    final tp = TextPainter(
+                      text: span,
+                      textDirection: TextDirection.ltr,
+                    );
+                    tp.layout(maxWidth: constraints.maxWidth);
+                    final numLines = tp.computeLineMetrics().length;
+                    if (numLines > 7) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          SizedBox(
+                            // make intro expandable
+                            height: fullIntro ? null : 120,
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: SelectableText(
+                              widget.bangumiItem.summary,
+                              textAlign: TextAlign.start,
+                              scrollBehavior: const ScrollBehavior().copyWith(
+                                scrollbars: false,
+                              ),
+                              scrollPhysics: NeverScrollableScrollPhysics(),
+                              selectionHeightStyle: ui.BoxHeightStyle.max,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                fullIntro = !fullIntro;
+                              });
+                            },
+                            child: Text(
+                              !fullIntro ? 'Show more +'.tl : 'Show less -'.tl,
+                            ),
+                          ),
+                        ],
                       );
-                      tp.layout(maxWidth: constraints.maxWidth);
-                      final numLines = tp.computeLineMetrics().length;
-                      if (numLines > 7) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              // make intro expandable
-                              height: fullIntro ? null : 120,
-                              width: MediaQuery.sizeOf(context).width > maxWidth
-                                  ? maxWidth
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: SelectableText(
-                                widget.bangumiItem.summary,
-                                textAlign: TextAlign.start,
-                                scrollBehavior: const ScrollBehavior().copyWith(
-                                  scrollbars: false,
-                                ),
-                                scrollPhysics: NeverScrollableScrollPhysics(),
-                                selectionHeightStyle: ui.BoxHeightStyle.max,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  fullIntro = !fullIntro;
-                                });
-                              },
-                              child: Text(
-                                !fullIntro
-                                    ? 'Show more +'.tl
-                                    : 'Show less -'.tl,
-                              ),
-                            ),
-                          ],
-                        );
-                      } else {
-                        return SelectableText(
-                          widget.bangumiItem.summary,
-                          textAlign: TextAlign.start,
-                          scrollPhysics: NeverScrollableScrollPhysics(),
-                          selectionHeightStyle: ui.BoxHeightStyle.max,
-                        );
-                      }
-                    },
+                    } else {
+                      return SelectableText(
+                        widget.bangumiItem.summary,
+                        textAlign: TextAlign.start,
+                        scrollPhysics: NeverScrollableScrollPhysics(),
+                        selectionHeightStyle: ui.BoxHeightStyle.max,
+                      );
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    'Tags'.tl,
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${widget.bangumiItem.tags.length}',
+                      style: ts.s12,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: Utils.isDesktop() ? 8 : 0,
+                children: [
+                  // 显示标签列表
+                  ...List<Widget>.generate(
+                    fullTag
+                        ? widget.bangumiItem.tags.length
+                        : min(12, widget.bangumiItem.tags.length), // 添加min限制
+                    (int index) => ActionChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('${widget.bangumiItem.tags[index].name} '),
+                          Text(
+                            '${widget.bangumiItem.tags[index].count}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      onPressed: () {
+                        // 标签点击逻辑
+                        context.to(
+                          () => BangumiSearchPage(
+                            tag: widget.bangumiItem.tags[index].name,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // 添加展开/收起按钮
+                  if (widget.bangumiItem.tags.length > 12)
+                    ActionChip(
+                      label: Text(
+                        fullTag ? 'Show less -'.tl : 'Show more +'.tl,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          fullTag = !fullTag;
+                        });
+                      },
+                    ),
+                ],
+              ),
+              if (widget.allEpisodes.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Center(
                   child: Container(
@@ -195,11 +279,11 @@ class _InfoTabViewState extends State<InfoTabView>
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Row(
                   children: [
                     Text(
-                      'Tags'.tl,
+                      'All Episodes'.tl,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -216,500 +300,417 @@ class _InfoTabViewState extends State<InfoTabView>
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${widget.bangumiItem.tags.length}',
+                        '${widget.allEpisodes.length}',
                         style: ts.s12,
                       ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        context.to(
+                          () => BangumiAllEpisodePage(
+                            allEpisodes: widget.allEpisodes,
+                            infoController: widget.infoController,
+                          ),
+                        );
+                      },
+                      child: Text('more'.tl),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Wrap(
-                  spacing: 8.0,
-                  runSpacing: Utils.isDesktop() ? 8 : 0,
                   children: [
-                    // 显示标签列表
-                    ...List<Widget>.generate(
-                      fullTag
-                          ? widget.bangumiItem.tags.length
-                          : min(12, widget.bangumiItem.tags.length), // 添加min限制
-                      (int index) => ActionChip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
+                    // 先显示最多15个
+                    ...widget.allEpisodes.take(15).map((episode) {
+                      double intensity = (episode.comment / 300).clamp(
+                        0.1,
+                        1.0,
+                      ); // 转换为 0~1 范围
+                      return SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: Column(
                           children: [
-                            Text('${widget.bangumiItem.tags[index].name} '),
-                            Text(
-                              '${widget.bangumiItem.tags[index].count}',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
+                            Expanded(
+                              child: Card(
+                                elevation: 1,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color: context.colorScheme.onSurface
+                                        .withAlpha(25),
+                                    width: 2,
+                                  ),
+                                ),
+                                color: Theme.of(context).colorScheme.surface,
+                                shadowColor: Theme.of(context).shadowColor,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () {
+                                    context.to(
+                                      () => BangumiEpisodeInfoPage(
+                                        episode: episode,
+                                        infoController: widget.infoController,
+                                      ),
+                                    );
+                                  },
+                                  onLongPress: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        return AlertDialog(
+                                          content: ConstrainedBox(
+                                            constraints: const BoxConstraints(
+                                              maxWidth: 420,
+                                            ),
+                                            child: SingleChildScrollView(
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
+                                                    style: const TextStyle(
+                                                      fontSize: 24,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  if (episode.nameCn.isNotEmpty)
+                                                    Text(
+                                                      "${Utils.readType(episode.type)}${episode.sort}.${episode.name}",
+                                                    ),
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        "Broadcast Time: @a"
+                                                            .tlParams({
+                                                              'a': episode
+                                                                  .airDate,
+                                                            }),
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        "Time: @s".tlParams({
+                                                          's': episode.duration,
+                                                        }),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(episode.desc),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: Center(
+                                    child: Text(episode.sort.toString()),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 30,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  12.0,
+                                ), // 设置圆角半径
+                                border: Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.toOpacity(intensity),
+                                  width: 2.0, // 设置边框宽度
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        onPressed: () {
-                          // 标签点击逻辑
-                          context.to(
-                            () => BangumiSearchPage(
-                              tag: widget.bangumiItem.tags[index].name,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                      );
+                    }),
 
-                    // 添加展开/收起按钮
-                    if (widget.bangumiItem.tags.length > 12)
-                      ActionChip(
-                        label: Text(
-                          fullTag ? 'Show less -'.tl : 'Show more +'.tl,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            fullTag = !fullTag;
-                          });
-                        },
-                      ),
-                  ],
-                ),
-                if (widget.allEpisodes.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        'All Episodes'.tl,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${widget.allEpisodes.length}',
-                          style: ts.s12,
-                        ),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () {
-                          context.to(
-                            () => BangumiAllEpisodePage(
-                              allEpisodes: widget.allEpisodes,
-                              infoController: widget.infoController,
-                            ),
-                          );
-                        },
-                        child: Text('more'.tl),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    children: [
-                      // 先显示最多15个
-                      ...widget.allEpisodes.take(15).map((episode) {
-                        double intensity = (episode.comment / 300).clamp(
-                          0.1,
-                          1.0,
-                        ); // 转换为 0~1 范围
-                        return SizedBox(
-                          width: 50,
-                          height: 50,
-                          child: Column(
-                            children: [
-                              Expanded(
-                                child: Card(
-                                  elevation: 1,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(
-                                      color: context.colorScheme.onSurface
-                                          .withAlpha(25),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  color: Theme.of(context).colorScheme.surface,
-                                  shadowColor: Theme.of(context).shadowColor,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(12),
-                                    onTap: () {
-                                      context.to(
-                                        () => BangumiEpisodeInfoPage(
-                                          episode: episode,
-                                          infoController: widget.infoController,
-                                        ),
-                                      );
-                                    },
-                                    onLongPress: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) {
-                                          return AlertDialog(
-                                            content: ConstrainedBox(
-                                              constraints: const BoxConstraints(
-                                                maxWidth: 420,
-                                              ),
-                                              child: SingleChildScrollView(
-                                                child: Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
-                                                      style: const TextStyle(
-                                                        fontSize: 24,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    if (episode
-                                                        .nameCn
-                                                        .isNotEmpty)
-                                                      Text(
-                                                        "${Utils.readType(episode.type)}${episode.sort}.${episode.name}",
-                                                      ),
-                                                    const SizedBox(height: 8),
-                                                    Row(
-                                                      children: [
-                                                        Text(
-                                                          "Broadcast Time: @a"
-                                                              .tlParams({
-                                                                'a': episode
-                                                                    .airDate,
-                                                              }),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 8,
-                                                        ),
-                                                        Text(
-                                                          "Time: @s".tlParams({
-                                                            's': episode
-                                                                .duration,
-                                                          }),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Text(episode.desc),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
-                                    child: Center(
-                                      child: Text(episode.sort.toString()),
-                                    ),
-                                  ),
-                                ),
+                    // 如果超过15个，显示一个“...”的卡片
+                    if (widget.allEpisodes.length > 15)
+                      SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: Card(
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: context.colorScheme.onSurface.withAlpha(
+                                25,
                               ),
-                              Container(
-                                width: 30,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    12.0,
-                                  ), // 设置圆角半径
-                                  border: Border.all(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary.toOpacity(intensity),
-                                    width: 2.0, // 设置边框宽度
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-
-                      // 如果超过15个，显示一个“...”的卡片
-                      if (widget.allEpisodes.length > 15)
-                        SizedBox(
-                          width: 50,
-                          height: 50,
-                          child: Card(
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: context.colorScheme.onSurface.withAlpha(
-                                  25,
-                                ),
-                                width: 2,
-                              ),
-                            ),
-                            color: Theme.of(context).colorScheme.surface,
-                            shadowColor: Theme.of(context).shadowColor,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                context.to(
-                                  () => BangumiAllEpisodePage(
-                                    allEpisodes: widget.allEpisodes,
-                                    infoController: widget.infoController,
-                                  ),
-                                );
-                              },
-                              child: const Center(child: Text('...')),
+                              width: 2,
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                ],
-                if (widget.bangumiSRI.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        'Linked Items'.tl,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${widget.bangumiSRI.length}',
-                          style: ts.s12,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 240, // 根据卡片高度调整
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: widget.bangumiSRI.length,
-                      itemBuilder: (context, index) {
-                        final item = widget.bangumiSRI[index];
-
-                        return Container(
-                          width: 140,
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          color: Theme.of(context).colorScheme.surface,
+                          shadowColor: Theme.of(context).shadowColor,
                           child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
                             onTap: () {
-                              App.mainNavigatorKey?.currentContext?.to(
-                                () => BangumiInfoPage(
-                                  bangumiItem: BangumiItem(
-                                    id: item.id,
-                                    type: 2,
-                                    name: item.name,
-                                    nameCn: item.nameCn,
-                                    summary: '',
-                                    airDate: '',
-                                    airWeekday: 1,
-                                    rank: 0,
-                                    total: 0,
-                                    totalEpisodes: 0,
-                                    score: 0,
-                                    images: item.images,
-                                    tags: [],
-                                    alias: [],
-                                  ),
+                              context.to(
+                                () => BangumiAllEpisodePage(
+                                  allEpisodes: widget.allEpisodes,
+                                  infoController: widget.infoController,
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Card(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // 封面图
-                                  ClipRRect(
-                                    borderRadius: const BorderRadius.vertical(
-                                      top: Radius.circular(12),
-                                    ),
-                                    child: BangumiWidget.kostoriImage(
-                                      context,
-                                      item.images['large']!,
-                                      width: 140,
-                                      height: 180,
-                                    ),
-                                  ),
+                            child: const Center(child: Text('...')),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+              if (widget.bangumiSRI.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 120,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.toOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      'Linked Items'.tl,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${widget.bangumiSRI.length}', style: ts.s12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 240, // 根据卡片高度调整
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: widget.bangumiSRI.length,
+                    itemBuilder: (context, index) {
+                      final item = widget.bangumiSRI[index];
+                      final title = item.nameCn == '' ? item.name : item.nameCn;
+                      const style = TextStyle(fontWeight: FontWeight.w500);
+                      final textPainter = TextPainter(
+                        text: TextSpan(text: title, style: style),
+                        maxLines: 1,
+                        textDirection: TextDirection.ltr,
+                      )..layout(maxWidth: 140);
 
-                                  // 标题
-                                  Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Center(
-                                      child: TextScroll(
-                                        item.nameCn.isNotEmpty
-                                            ? item.nameCn
-                                            : item.name,
-                                        mode: TextScrollMode.endless,
-                                        textAlign: TextAlign.center,
-                                        delayBefore: const Duration(
-                                          milliseconds: 500,
-                                        ),
-                                        velocity: const Velocity(
-                                          pixelsPerSecond: Offset(40, 0),
-                                        ),
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(2.0),
-                                    child: Center(
-                                      child: Text(
-                                        item.relation,
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                      final shouldScroll = textPainter.width > 140 * 3 / 4;
+
+                      return Container(
+                        width: 140,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        child: InkWell(
+                          onTap: () {
+                            App.mainNavigatorKey?.currentContext?.to(
+                              () => BangumiInfoPage(
+                                bangumiItem: BangumiItem(
+                                  id: item.id,
+                                  type: 2,
+                                  name: item.name,
+                                  nameCn: item.nameCn,
+                                  summary: '',
+                                  airDate: '',
+                                  airWeekday: 1,
+                                  rank: 0,
+                                  total: 0,
+                                  totalEpisodes: 0,
+                                  score: 0,
+                                  images: item.images,
+                                  tags: [],
+                                  alias: [],
+                                ),
                               ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // 封面图
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12),
+                                  ),
+                                  child: BangumiWidget.kostoriImage(
+                                    context,
+                                    item.images['large']!,
+                                    width: 140,
+                                    height: 180,
+                                  ),
+                                ),
+
+                                // 标题
+                                Padding(
+                                  padding: const EdgeInsets.all(4.0),
+                                  child: Center(
+                                    child: SizedBox(
+                                      height: 20,
+                                      child: shouldScroll
+                                          ? Marquee(
+                                              text: title,
+                                              style: style,
+                                              scrollAxis: Axis.horizontal,
+                                              blankSpace: 40.0,
+                                              velocity: 40.0,
+                                              // startPadding: 10.0,
+                                              pauseAfterRound: Duration.zero,
+                                              accelerationDuration:
+                                                  const Duration(
+                                                    milliseconds: 500,
+                                                  ),
+                                              accelerationCurve: Curves.linear,
+                                              decelerationDuration:
+                                                  const Duration(
+                                                    milliseconds: 500,
+                                                  ),
+                                              decelerationCurve: Curves.easeOut,
+                                            )
+                                          : Text(
+                                              title,
+                                              style: style,
+                                              textAlign: TextAlign.center,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                    ),
+                                  ),
+                                ),
+
+                                Padding(
+                                  padding: const EdgeInsets.all(2.0),
+                                  child: Center(
+                                    child: Text(
+                                      item.relation,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              if (MediaQuery.sizeOf(context).width <= 1200 &&
+                  !widget.isLoading &&
+                  widget.bangumiItem.total > 20) ...[
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 120,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.toOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                ],
-                if (MediaQuery.sizeOf(context).width <= 1200 &&
-                    !widget.isLoading &&
-                    widget.bangumiItem.total > 20) ...[
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      'Rating Statistics Chart'.tl,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${widget.bangumiItem.score}', style: ts.s12),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          infoController.showLineChart =
+                              !infoController.showLineChart;
+                        });
+                      },
+                      icon: Icon(
+                        infoController.showLineChart
+                            ? Icons.show_chart
+                            : Icons.bar_chart,
+                      ),
+                      label: Text(
+                        infoController.showLineChart
+                            ? 'Line Chart'.tl
+                            : 'Bar Chart'.tl,
+                      ),
+                    ),
+                    Text('${widget.bangumiItem.total} votes'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
                   ),
-                  const SizedBox(height: 16),
-                  Row(
+                  child: Row(
                     children: [
                       Text(
-                        'Rating Statistics Chart'.tl,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        'Standard Deviation: @s'.tlParams({
+                          's': standardDeviation.toStringAsFixed(2),
+                        }),
+                        style: TextStyle(fontSize: 12),
                       ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${widget.bangumiItem.score}',
-                          style: ts.s12,
-                        ),
+                      const SizedBox(width: 8),
+                      Text(
+                        Utils.getDispute(standardDeviation),
+                        style: TextStyle(fontSize: 12),
                       ),
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            infoController.showLineChart =
-                                !infoController.showLineChart;
-                          });
-                        },
-                        icon: Icon(
-                          infoController.showLineChart
-                              ? Icons.show_chart
-                              : Icons.bar_chart,
-                        ),
-                        label: Text(
-                          infoController.showLineChart
-                              ? 'Line Chart'.tl
-                              : 'Bar Chart'.tl,
-                        ),
-                      ),
-                      Text('${widget.bangumiItem.total} votes'),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Standard Deviation: @s'.tlParams({
-                            's': standardDeviation.toStringAsFixed(2),
-                          }),
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          Utils.getDispute(standardDeviation),
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  infoController.showLineChart
-                      ? LineChatPage(bangumiItem: widget.bangumiItem)
-                      : BangumiBarChartPage(bangumiItem: widget.bangumiItem),
-                ],
+                ),
+                const SizedBox(height: 8),
+                infoController.showLineChart
+                    ? LineChatPage(bangumiItem: widget.bangumiItem)
+                    : BangumiBarChartPage(bangumiItem: widget.bangumiItem),
               ],
-            ),
+            ],
           ),
         ),
       ),
