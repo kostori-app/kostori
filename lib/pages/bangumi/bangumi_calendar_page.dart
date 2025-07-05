@@ -511,10 +511,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
   String _extractTimeFromISO(String isoTime) {
     try {
       final dateTime = DateTime.parse(isoTime).toLocal();
-      return DateFormat('HH:mm').format(dateTime); // 提取并格式化时间部分
+      return DateFormat('HH:mm').format(dateTime);
     } catch (e, s) {
       Log.addLog(LogLevel.error, '时间解析', '$e\n$s');
-      return '00:00'; // 默认值
+      return '00:00';
     }
   }
 
@@ -522,10 +522,9 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
   Widget _buildCurrentTimeDivider(DateTime currentTime) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 动态计算尺寸
-        final iconSize = constraints.maxWidth * 0.06; // 图标大小（基于父容器宽度）
-        final textSize = constraints.maxWidth * 0.07; // 文本大小（基于父容器宽度）
-        final dividerThickness = constraints.maxWidth * 0.005; // 分割线厚度（基于父容器宽度）
+        final iconSize = constraints.maxWidth * 0.06;
+        final textSize = constraints.maxWidth * 0.07;
+        final dividerThickness = constraints.maxWidth * 0.005;
 
         return Padding(
           padding: const EdgeInsets.only(
