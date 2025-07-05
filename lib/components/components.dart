@@ -31,7 +31,6 @@ import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:marquee/marquee.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
-import 'package:text_scroll/text_scroll.dart';
 
 import '../utils/utils.dart';
 import 'bangumi_widget.dart';

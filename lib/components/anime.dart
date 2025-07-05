@@ -1740,6 +1740,18 @@ class _BangumiCardState extends State<BangumiCard> {
               clipBehavior: Clip.antiAlias,
               child: foregroundImage,
             );
+            final title = bangumiItem.nameCn == ''
+                ? bangumiItem.name
+                : bangumiItem.nameCn;
+            const style = TextStyle(fontWeight: FontWeight.w500);
+            final textPainter = TextPainter(
+              text: TextSpan(text: title, style: style),
+              maxLines: 1,
+              textDirection: TextDirection.ltr,
+            )..layout(maxWidth: constraints.maxWidth);
+
+            final shouldScroll =
+                textPainter.width > constraints.maxWidth * 3 / 4;
 
             return Stack(
               children: [
@@ -1907,28 +1919,31 @@ class _BangumiCardState extends State<BangumiCard> {
                             right: 4,
                             bottom: 4,
                           ),
-                          child: TextScroll(
-                            bangumiItem.nameCn != ''
-                                ? bangumiItem.nameCn
-                                : bangumiItem.name,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  color: context.brightness == Brightness.light
-                                      ? Colors.white.toOpacity(0.3)
-                                      : Colors.black.toOpacity(0.3),
-                                  blurRadius: 2,
+                          child: shouldScroll
+                              ? Marquee(
+                                  text: title,
+                                  style: style,
+                                  scrollAxis: Axis.horizontal,
+                                  blankSpace: 40.0,
+                                  velocity: 40.0,
+                                  // startPadding: 10.0,
+                                  pauseAfterRound: Duration.zero,
+                                  accelerationDuration: const Duration(
+                                    milliseconds: 500,
+                                  ),
+                                  accelerationCurve: Curves.linear,
+                                  decelerationDuration: const Duration(
+                                    milliseconds: 500,
+                                  ),
+                                  decelerationCurve: Curves.easeOut,
+                                )
+                              : Text(
+                                  title,
+                                  style: style,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ],
-                            ),
-                            mode: TextScrollMode.endless,
-                            delayBefore: Duration(milliseconds: 500),
-                            velocity: const Velocity(
-                              pixelsPerSecond: Offset(40, 0),
-                            ),
-                          ),
                         ),
                       ),
                     ],
