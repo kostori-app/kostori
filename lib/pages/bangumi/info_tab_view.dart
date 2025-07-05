@@ -522,7 +522,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         textDirection: TextDirection.ltr,
                       )..layout(maxWidth: 140);
 
-                      final shouldScroll = textPainter.width > 140 * 3 / 4;
+                      final shouldScroll = textPainter.width >= 140;
 
                       return Container(
                         width: 140,
@@ -582,20 +582,14 @@ class _InfoTabViewState extends State<InfoTabView>
                                               text: title,
                                               style: style,
                                               scrollAxis: Axis.horizontal,
-                                              blankSpace: 40.0,
+                                              blankSpace: 10.0,
                                               velocity: 40.0,
                                               // startPadding: 10.0,
                                               pauseAfterRound: Duration.zero,
                                               accelerationDuration:
-                                                  const Duration(
-                                                    milliseconds: 500,
-                                                  ),
-                                              accelerationCurve: Curves.linear,
+                                                  Duration.zero,
                                               decelerationDuration:
-                                                  const Duration(
-                                                    milliseconds: 500,
-                                                  ),
-                                              decelerationCurve: Curves.easeOut,
+                                                  Duration.zero,
                                             )
                                           : Text(
                                               title,

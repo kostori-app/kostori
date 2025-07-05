@@ -1750,8 +1750,7 @@ class _BangumiCardState extends State<BangumiCard> {
               textDirection: TextDirection.ltr,
             )..layout(maxWidth: constraints.maxWidth);
 
-            final shouldScroll =
-                textPainter.width > constraints.maxWidth * 3 / 4;
+            final shouldScroll = textPainter.width >= constraints.maxWidth - 30;
 
             return Stack(
               children: [
@@ -1924,18 +1923,12 @@ class _BangumiCardState extends State<BangumiCard> {
                                   text: title,
                                   style: style,
                                   scrollAxis: Axis.horizontal,
-                                  blankSpace: 40.0,
+                                  blankSpace: 10.0,
                                   velocity: 40.0,
                                   // startPadding: 10.0,
                                   pauseAfterRound: Duration.zero,
-                                  accelerationDuration: const Duration(
-                                    milliseconds: 500,
-                                  ),
-                                  accelerationCurve: Curves.linear,
-                                  decelerationDuration: const Duration(
-                                    milliseconds: 500,
-                                  ),
-                                  decelerationCurve: Curves.easeOut,
+                                  accelerationDuration: Duration.zero,
+                                  decelerationDuration: Duration.zero,
                                 )
                               : Text(
                                   title,
