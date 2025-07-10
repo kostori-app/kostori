@@ -167,6 +167,7 @@ abstract mixin class _AnimePageActions {
           builder: (context, setState) {
             // 更新搜索结果的函数
             Future<void> fetchSearchResults(String query) async {
+              FocusScope.of(context).unfocus();
               if (query.isEmpty) {
                 // 如果搜索框为空，则默认展示初始数据
                 res = await Bangumi.combinedBangumiSearch(anime.title);

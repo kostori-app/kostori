@@ -840,6 +840,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         App.rootContext.showMessage(message: '查询失败');
       }
     } else {
+      FocusScope.of(context).unfocus();
       _controller.text = value;
       keyword = value;
 
@@ -905,6 +906,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         onPressed: () {
           if (_showSearchHistory) {
             setState(() {
+              FocusScope.of(context).unfocus();
               keyword = '';
               _controller.clear();
               _showSearchHistory = false;
@@ -922,6 +924,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             icon: const Icon(Icons.clear),
             onPressed: () {
               setState(() {
+                FocusScope.of(context).unfocus();
                 keyword = '';
                 _controller.clear();
                 _showSearchHistory = false;
