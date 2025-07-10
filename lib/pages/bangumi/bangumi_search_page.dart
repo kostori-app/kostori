@@ -949,64 +949,70 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
           ),
       ],
       title: PreferredSize(
-        preferredSize: const Size.fromHeight(120),
+        preferredSize: const Size.fromHeight(60),
         child: ClipRect(
-          child: Container(
-            color: Colors.transparent,
-            padding: EdgeInsets.fromLTRB(0, 0, 12, 0),
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Theme.of(context).cardColor,
-                hintText: keyword.isNotEmpty ? keyword : 'Enter keywords...'.tl,
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: TextField(
+                controller: _controller,
+                style: const TextStyle(fontSize: 16),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  hintText: keyword.isNotEmpty
+                      ? keyword
+                      : 'Enter keywords...'.tl,
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
+                onTap: () {
+                  setState(() {
+                    _showSearchHistory = true;
+                  });
+                },
+                onChanged: (value) {
+                  setState(() {
+                    keyword = value;
+                    _showSearchSuggestions = true;
+                  });
+
+                  // 取消之前的防抖定时器
+                  _debounce?.cancel();
+
+                  _debounce = Timer(const Duration(seconds: 2), () async {
+                    if (value.trim().isEmpty) {
+                      setState(() {
+                        searchSuggestions = [];
+                      });
+                      return;
+                    }
+                    final int token = ++_searchToken; // 每次搜索加一个标记
+
+                    final results = await Bangumi.bangumiPostSearch(
+                      value,
+                      tags: tags,
+                      sort: 'match',
+                      airDate: airDate,
+                      endDate: endDate,
+                    );
+
+                    // 只处理最新的一次搜索结果
+                    if (token == _searchToken) {
+                      setState(() {
+                        searchSuggestions = results;
+                      });
+                    }
+                  });
+                },
+                onSubmitted: (value) async {
+                  await _performSearch(value);
+                },
               ),
-              onTap: () {
-                setState(() {
-                  _showSearchHistory = true;
-                });
-              },
-              onChanged: (value) {
-                setState(() {
-                  keyword = value;
-                  _showSearchSuggestions = true;
-                });
-
-                // 取消之前的防抖定时器
-                _debounce?.cancel();
-
-                _debounce = Timer(const Duration(seconds: 2), () async {
-                  if (value.trim().isEmpty) {
-                    setState(() {
-                      searchSuggestions = [];
-                    });
-                    return;
-                  }
-                  final int token = ++_searchToken; // 每次搜索加一个标记
-
-                  final results = await Bangumi.bangumiPostSearch(
-                    value,
-                    tags: tags,
-                    sort: 'match',
-                    airDate: airDate,
-                    endDate: endDate,
-                  );
-
-                  // 只处理最新的一次搜索结果
-                  if (token == _searchToken) {
-                    setState(() {
-                      searchSuggestions = results;
-                    });
-                  }
-                });
-              },
-              onSubmitted: (value) async {
-                await _performSearch(value);
-              },
             ),
           ),
         ),

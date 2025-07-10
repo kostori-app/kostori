@@ -58,10 +58,7 @@ abstract mixin class _AnimePageActions {
     if (folder is! String) {
       return;
     }
-    LocalFavoritesManager().addAnime(
-      folder,
-      _toFavoriteItem(),
-    );
+    LocalFavoritesManager().addAnime(folder, _toFavoriteItem());
     isAddToLocalFav = true;
     update();
     App.rootContext.showMessage(message: "Added".tl);
@@ -77,8 +74,10 @@ abstract mixin class _AnimePageActions {
         maxWidth: MediaQuery.of(context).size.width <= 600
             ? MediaQuery.of(context).size.width
             : (App.isDesktop)
-                ? MediaQuery.of(context).size.width * 9 / 16 // 设置最大宽度
-                : MediaQuery.of(context).size.width,
+            ? MediaQuery.of(context).size.width *
+                  9 /
+                  16 // 设置最大宽度
+            : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
@@ -88,33 +87,41 @@ abstract mixin class _AnimePageActions {
           children: [
             // 自定义顶部区域
             Container(
-              padding:
-                  EdgeInsets.only(left: 20, top: 12, right: 20, bottom: 12),
+              padding: EdgeInsets.only(
+                left: 20,
+                top: 12,
+                right: 20,
+                bottom: 12,
+              ),
               height: 60, // 自定义顶部区域高度
               decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(20)), // 圆角效果
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ), // 圆角效果
               ),
-              child: Row(children: [
-                const Image(
-                  image: AssetImage("images/app_icon.png"),
-                  filterQuality: FilterQuality.medium,
-                ),
-                Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    bangumiBottomInfoSelect(context);
-                  }, // 按钮点击事件
-                  child: Text('Match Bangumi ID'.tl), // 按钮文本
-                ),
-              ]),
+              child: Row(
+                children: [
+                  const Image(
+                    image: AssetImage("images/app_icon.png"),
+                    filterQuality: FilterQuality.medium,
+                  ),
+                  Spacer(),
+                  ElevatedButton(
+                    onPressed: () async {
+                      bangumiBottomInfoSelect(context);
+                    }, // 按钮点击事件
+                    child: Text('Match Bangumi ID'.tl), // 按钮文本
+                  ),
+                ],
+              ),
             ),
             // 下面是 BottomInfo 内容
             Expanded(
-                child: BottomInfo(
-              bangumiId: bangumiId,
-              infoController: infoController,
-            )),
+              child: BottomInfo(
+                bangumiId: bangumiId,
+                infoController: infoController,
+              ),
+            ),
           ],
         );
       },
@@ -127,16 +134,17 @@ abstract mixin class _AnimePageActions {
     // 如果 res 是 null 或者数据不正确，显示检索失败提示
     if (res.isEmpty) {
       showCenter(
-          seconds: 3,
-          icon: Gif(
-            image: AssetImage('assets/img/warning.gif'),
-            height: 64,
-            fps: 120,
-            // color: Theme.of(context).colorScheme.primary,
-            autostart: Autostart.once,
-          ),
-          message: '检索失败',
-          context: context);
+        seconds: 3,
+        icon: Gif(
+          image: AssetImage('assets/img/warning.gif'),
+          height: 64,
+          fps: 120,
+          // color: Theme.of(context).colorScheme.primary,
+          autostart: Autostart.once,
+        ),
+        message: '检索失败',
+        context: context,
+      );
     }
 
     // 显示 BottomSheet
@@ -146,7 +154,9 @@ abstract mixin class _AnimePageActions {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
         maxWidth: (App.isDesktop)
-            ? MediaQuery.of(context).size.width * 9 / 16 // 设置最大宽度
+            ? MediaQuery.of(context).size.width *
+                  9 /
+                  16 // 设置最大宽度
             : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
@@ -168,15 +178,16 @@ abstract mixin class _AnimePageActions {
               // 如果搜索结果为空，提示用户
               if (res.isEmpty) {
                 showCenter(
-                    seconds: 3,
-                    icon: Gif(
-                      image: AssetImage('assets/img/warning.gif'),
-                      height: 64,
-                      fps: 120,
-                      autostart: Autostart.once,
-                    ),
-                    message: '未找到相关结果，请尝试其他关键字',
-                    context: context);
+                  seconds: 3,
+                  icon: Gif(
+                    image: AssetImage('assets/img/warning.gif'),
+                    height: 64,
+                    fps: 120,
+                    autostart: Autostart.once,
+                  ),
+                  message: '未找到相关结果，请尝试其他关键字',
+                  context: context,
+                );
               }
 
               // 更新状态
@@ -186,7 +197,6 @@ abstract mixin class _AnimePageActions {
             return Scaffold(
               body: NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  // 固定在顶部的搜索框
                   SliverAppBar(
                     pinned: true,
                     floating: true,
@@ -197,22 +207,31 @@ abstract mixin class _AnimePageActions {
                       child: BackdropFilter(
                         filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                         child: Container(
-                            color: context.colorScheme.surface.toOpacity(0.22)),
+                          color: context.colorScheme.surface.toOpacity(0.22),
+                        ),
                       ),
                     ),
                     backgroundColor: Colors.transparent,
-                    title: TextField(
-                      decoration: InputDecoration(
-                        labelText: anime.title,
-                        hintText: '请输入关键字进行搜索',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12.0),
+                    title: SizedBox(
+                      height: 48,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: TextField(
+                          style: const TextStyle(fontSize: 16),
+                          decoration: InputDecoration(
+                            labelText: anime.title,
+                            hintText: 'Enter keywords...'.tl,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16.0),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                          ),
+                          onSubmitted: fetchSearchResults,
+                          onChanged: (value) => value,
                         ),
-                        filled: true,
-                        fillColor: Theme.of(context).cardColor,
                       ),
-                      onSubmitted: fetchSearchResults,
-                      onChanged: (value) => value,
                     ),
                   ),
                 ],
@@ -223,14 +242,17 @@ abstract mixin class _AnimePageActions {
         );
       },
     );
-    // 如果用户选择了某个项，执行相关操作
+
     if (selectedItem != null) {
       await handleSelection(context, selectedItem);
     }
   }
 
-  Widget _buildResultsList(BuildContext context, List<BangumiItem> items,
-      Function(String) onSearch) {
+  Widget _buildResultsList(
+    BuildContext context,
+    List<BangumiItem> items,
+    Function(String) onSearch,
+  ) {
     if (items.isEmpty) {
       return Center(child: Text('暂无搜索结果'));
     }
@@ -244,16 +266,19 @@ abstract mixin class _AnimePageActions {
           onTap: () {
             Navigator.pop(context, item); // 返回选中的项
           },
-          splashColor:
-              Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72),
-          highlightColor:
-              Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72),
+          splashColor: Theme.of(
+            context,
+          ).colorScheme.secondaryContainer.toOpacity(0.72),
+          highlightColor: Theme.of(
+            context,
+          ).colorScheme.secondaryContainer.toOpacity(0.72),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
             child: LayoutBuilder(
               builder: (context, constraints) {
-                double height = constraints.maxWidth *
+                double height =
+                    constraints.maxWidth *
                     (App.isDesktop
                         ? (constraints.maxWidth > 1024 ? 6 / 16 : 10 / 16)
                         : 10 / 16);
@@ -268,8 +293,11 @@ abstract mixin class _AnimePageActions {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: BangumiWidget.kostoriImage(
-                            context, item.images['large']!,
-                            width: width, height: height),
+                          context,
+                          item.images['large']!,
+                          width: width,
+                          height: height,
+                        ),
                       ),
                       SizedBox(width: 12.0),
                       Expanded(
@@ -290,25 +318,14 @@ abstract mixin class _AnimePageActions {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            Text(
-                              item.name,
-                              style: TextStyle(
-                                fontSize: 14.0,
-                              ),
-                            ),
-                            Text(
-                              '放送日期: ${item.airDate}',
-                            ),
-                            const SizedBox(
-                              height: 10,
-                            ),
+                            Text(item.name, style: TextStyle(fontSize: 14.0)),
+                            Text('放送日期: ${item.airDate}'),
+                            const SizedBox(height: 10),
                             Text(
                               item.summary,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12,
-                              ),
+                              style: TextStyle(fontSize: 12),
                             ),
                             const Spacer(),
                             Align(
@@ -319,18 +336,15 @@ abstract mixin class _AnimePageActions {
                                 children: [
                                   Text(
                                     '${item.score}',
-                                    style: TextStyle(
-                                      fontSize: 32.0,
-                                    ),
+                                    style: TextStyle(fontSize: 32.0),
                                   ),
-                                  SizedBox(
-                                    width: 5,
-                                  ),
+                                  SizedBox(width: 5),
                                   Container(
                                     padding: EdgeInsets.all(2.0), // 可选，设置内边距
                                     decoration: BoxDecoration(
-                                      borderRadius:
-                                          BorderRadius.circular(8), // 设置圆角半径
+                                      borderRadius: BorderRadius.circular(
+                                        8,
+                                      ), // 设置圆角半径
                                       border: Border.all(
                                         color: Theme.of(context)
                                             .colorScheme
@@ -343,9 +357,7 @@ abstract mixin class _AnimePageActions {
                                       Utils.getRatingLabel(item.score),
                                     ),
                                   ),
-                                  SizedBox(
-                                    width: 4,
-                                  ),
+                                  SizedBox(width: 4),
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.end, // 右对齐
@@ -354,16 +366,16 @@ abstract mixin class _AnimePageActions {
                                         itemCount: 5,
                                         rating: item.score.toDouble() / 2,
                                         itemBuilder: (context, index) =>
-                                            const Icon(
-                                          Icons.star_rounded,
-                                        ),
+                                            const Icon(Icons.star_rounded),
                                         itemSize: 20.0,
                                       ),
                                       Text(
-                                        '@t reviews | #@r'.tlParams(
-                                            {'r': item.rank, 't': item.total}),
+                                        '@t reviews | #@r'.tlParams({
+                                          'r': item.rank,
+                                          't': item.total,
+                                        }),
                                         style: TextStyle(fontSize: 12),
-                                      )
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -391,9 +403,7 @@ abstract mixin class _AnimePageActions {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Determine the binding: @a ?'.tlParams({
-            "a": item.name,
-          })),
+          title: Text('Determine the binding: @a ?'.tlParams({"a": item.name})),
           content: Text(item.airDate),
           actions: [
             TextButton(
@@ -405,8 +415,9 @@ abstract mixin class _AnimePageActions {
                     WatcherState.currentState!.bangumiId = item.id;
                     infoController.bangumiId = item.id;
                     BottomInfoState.currentState?.queryBangumiInfoByID(item.id);
-                    BottomInfoState.currentState
-                        ?.queryBangumiEpisodeByID(item.id);
+                    BottomInfoState.currentState?.queryBangumiEpisodeByID(
+                      item.id,
+                    );
                   }
                 } catch (e) {
                   Log.addLog(LogLevel.error, "绑定bangumiId", "$e");
@@ -433,17 +444,15 @@ abstract mixin class _AnimePageActions {
   void shareImage() {
     showPopUpWidget(
       App.rootContext,
-      StatefulBuilder(builder: (context, setState) {
-        if (history!.bangumiId == null) {
-          return ShareWidget(
-            anime: anime,
-          );
-        }
+      StatefulBuilder(
+        builder: (context, setState) {
+          if (history!.bangumiId == null) {
+            return ShareWidget(anime: anime);
+          }
 
-        return ShareWidget(
-          id: history!.bangumiId as int,
-        );
-      }),
+          return ShareWidget(id: history!.bangumiId as int);
+        },
+      ),
     );
   }
 
@@ -452,18 +461,18 @@ abstract mixin class _AnimePageActions {
   }
 
   void onTapTag(String tag, String namespace) {
-    var config = animeSource.handleClickTagEvent?.call(namespace, tag) ??
-        {
-          'action': 'search',
-          'keyword': tag,
-        };
+    var config =
+        animeSource.handleClickTagEvent?.call(namespace, tag) ??
+        {'action': 'search', 'keyword': tag};
     var context = App.mainNavigatorKey!.currentContext!;
     if (config['action'] == 'search') {
-      context.to(() => SearchResultPage(
-            text: config['keyword'] ?? '',
-            sourceKey: animeSource.key,
-            options: const [],
-          ));
+      context.to(
+        () => SearchResultPage(
+          text: config['keyword'] ?? '',
+          sourceKey: animeSource.key,
+          options: const [],
+        ),
+      );
     }
   }
 }
