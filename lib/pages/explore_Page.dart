@@ -1,17 +1,16 @@
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
-import 'package:kostori/foundation/global_state.dart';
-
-import 'package:kostori/pages/settings/anime_source_settings.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
-import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/pages/settings/anime_source_settings.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/translations.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -40,10 +39,7 @@ class _ExplorePageState extends State<ExplorePage>
     if (!pages.isEqualTo(explorePages)) {
       setState(() {
         pages = explorePages;
-        controller = TabController(
-          length: pages.length,
-          vsync: this,
-        );
+        controller = TabController(length: pages.length, vsync: this);
       });
     }
   }
@@ -70,10 +66,7 @@ class _ExplorePageState extends State<ExplorePage>
         .expand((e) => e.map((e) => e.title))
         .toList();
     pages = pages.where((e) => all.contains(e)).toList();
-    controller = TabController(
-      length: pages.length,
-      vsync: this,
-    );
+    controller = TabController(length: pages.length, vsync: this);
     appdata.settings.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
     super.initState();
@@ -100,23 +93,23 @@ class _ExplorePageState extends State<ExplorePage>
   }
 
   Widget buildFAB() => Material(
-        color: Colors.transparent,
-        child: FloatingActionButton(
-          key: const Key("FAB"),
-          onPressed: refresh,
-          child: const Icon(Icons.refresh),
-        ),
-      );
+    color: Colors.transparent,
+    child: FloatingActionButton(
+      key: const Key("FAB"),
+      onPressed: refresh,
+      child: const Icon(Icons.refresh),
+    ),
+  );
 
   Tab buildTab(String i) {
-    var animeSource = AnimeSource.all()
-        .firstWhere((e) => e.explorePages.any((e) => e.title == i));
+    var animeSource = AnimeSource.all().firstWhere(
+      (e) => e.explorePages.any((e) => e.title == i),
+    );
     return Tab(text: i.ts(animeSource.key), key: Key(i));
   }
 
-  Widget buildBody(String i) => Material(
-        child: _SingleExplorePage(i, key: PageStorageKey(i)),
-      );
+  Widget buildBody(String i) =>
+      Material(child: _SingleExplorePage(i, key: PageStorageKey(i)));
 
   Widget buildEmpty() {
     var msg = "No Explore Pages".tl;
@@ -168,27 +161,27 @@ class _ExplorePageState extends State<ExplorePage>
               Expanded(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (notifications) {
-                    if (notifications.metrics.axis == Axis.horizontal) {
-                      if (!showFB) {
-                        setState(() {
-                          showFB = true;
-                        });
-                      }
-                      return true;
-                    }
+                    // if (notifications.metrics.axis == Axis.horizontal) {
+                    //   if (!showFB) {
+                    //     setState(() {
+                    //       showFB = true;
+                    //     });
+                    //   }
+                    //   return true;
+                    // }
 
                     var current = notifications.metrics.pixels;
                     var overflow = notifications.metrics.outOfRange;
-                    if (current > location && current != 0 && showFB) {
-                      setState(() {
-                        showFB = false;
-                      });
-                    } else if ((current < location - 50 || current == 0) &&
-                        !showFB) {
-                      setState(() {
-                        showFB = true;
-                      });
-                    }
+                    // if (current > location && current != 0 && showFB) {
+                    //   setState(() {
+                    //     showFB = false;
+                    //   });
+                    // } else if ((current < location - 50 || current == 0) &&
+                    //     !showFB) {
+                    //   setState(() {
+                    //     showFB = true;
+                    //   });
+                    // }
                     if ((current > location || current < location - 50) &&
                         !overflow) {
                       location = current;
@@ -204,7 +197,7 @@ class _ExplorePageState extends State<ExplorePage>
                     ),
                   ),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -310,25 +303,23 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
       );
     } else if (data.loadMixed != null) {
       return AppScrollBar(
-          // topPadding: 10,
-          controller: scrollController,
-          child: ScrollConfiguration(
-            behavior:
-                ScrollConfiguration.of(context).copyWith(scrollbars: false),
-            child: _MixedExplorePage(
-              data,
-              animeSourceKey,
-              key: const PageStorageKey("anime_list"),
-              controller: scrollController,
-              refreshHandlerCallback: (c) {
-                refreshHandler = c;
-              },
-            ),
-          ));
-    } else {
-      return const Center(
-        child: Text("Empty Page"),
+        // topPadding: 10,
+        controller: scrollController,
+        child: ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: _MixedExplorePage(
+            data,
+            animeSourceKey,
+            key: const PageStorageKey("anime_list"),
+            controller: scrollController,
+            refreshHandlerCallback: (c) {
+              refreshHandler = c;
+            },
+          ),
+        ),
       );
+    } else {
+      return const Center(child: Text("Empty Page"));
     }
   }
 
@@ -355,8 +346,13 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
 }
 
 class _MixedExplorePage extends StatefulWidget {
-  const _MixedExplorePage(this.data, this.sourceKey,
-      {super.key, this.controller, required this.refreshHandlerCallback});
+  const _MixedExplorePage(
+    this.data,
+    this.sourceKey, {
+    super.key,
+    this.controller,
+    required this.refreshHandlerCallback,
+  });
 
   final ExplorePageData data;
 
@@ -387,9 +383,7 @@ class _MixedExplorePageState
     for (var part in data) {
       if (part is ExplorePagePart) {
         if (cache.isNotEmpty) {
-          yield SliverGridAnimes(
-            animes: (cache),
-          );
+          yield SliverGridAnimes(animes: (cache));
           yield const SliverToBoxAdapter(child: Divider());
           cache.clear();
         }
@@ -400,9 +394,7 @@ class _MixedExplorePageState
       }
     }
     if (cache.isNotEmpty) {
-      yield SliverGridAnimes(
-        animes: (cache),
-      );
+      yield SliverGridAnimes(animes: (cache));
     }
   }
 
@@ -433,7 +425,9 @@ class _MixedExplorePageState
 }
 
 Iterable<Widget> _buildExplorePagePart(
-    ExplorePagePart part, String sourceKey) sync* {
+  ExplorePagePart part,
+  String sourceKey,
+) sync* {
   Widget buildTitle(ExplorePagePart part) {
     return SliverToBoxAdapter(
       child: SizedBox(
@@ -444,8 +438,10 @@ Iterable<Widget> _buildExplorePagePart(
             children: [
               Text(
                 part.title,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const Spacer(),
               if (part.viewMore != null)
@@ -455,7 +451,7 @@ Iterable<Widget> _buildExplorePagePart(
                     part.viewMore!.jump(context);
                   },
                   child: Text("View more".tl),
-                )
+                ),
             ],
           ),
         ),
@@ -502,10 +498,10 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
   String? message;
 
   Map<String, dynamic> get state => {
-        "loading": loading,
-        "message": message,
-        "parts": parts,
-      };
+    "loading": loading,
+    "message": message,
+    "parts": parts,
+  };
 
   void restoreState(dynamic state) {
     if (state == null) return;
@@ -559,9 +555,7 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
   Widget build(BuildContext context) {
     if (loading) {
       load();
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     } else if (message != null) {
       return NetworkError(
         message: message!,

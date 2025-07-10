@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:antlr4/antlr4.dart';
+import 'package:flutter/material.dart';
 
 import 'bbcode_elements.dart';
 import 'generated/BBCodeListener.dart';
@@ -135,9 +135,12 @@ class BBCodeBaseListener implements BBCodeListener {
       case 'photo':
       case 'IMG':
       case 'img':
-        if (bbcode.isNotEmpty && bbcode[bbCodeTag.img!] is BBCodeText) {
-          bbcode[bbCodeTag.img!] =
-              BBCodeImg(imageUrl: bbcode[bbCodeTag.img!].text);
+        if (bbCodeTag.img! < bbcode.length &&
+            bbcode.isNotEmpty &&
+            bbcode[bbCodeTag.img!] is BBCodeText) {
+          bbcode[bbCodeTag.img!] = BBCodeImg(
+            imageUrl: bbcode[bbCodeTag.img!].text,
+          );
         }
         break;
       case 'MASK':

@@ -656,8 +656,9 @@ class BangumiWidget {
                                 onPressed: () => Navigator.pop(context),
                               ),
                               const SizedBox(width: 8),
-                              _textBackground(title),
-                              const Spacer(),
+                              Expanded(child: _textBackground(title)),
+                              // const Spacer(),
+                              const SizedBox(width: 8),
                               isLocal
                                   ? ValueListenableBuilder<int>(
                                       valueListenable: currentIndex,
@@ -817,9 +818,8 @@ class BangumiWidget {
   }
 
   static Widget _textBackground(String title) {
-    const maxWidth = 240.0;
     const style = TextStyle(
-      fontSize: 18,
+      fontSize: 24,
       fontWeight: FontWeight.w600,
       color: Colors.white,
     );
@@ -831,7 +831,7 @@ class BangumiWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: maxWidth, maxHeight: 24),
+        constraints: const BoxConstraints(maxHeight: 32),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final textPainter = TextPainter(
@@ -841,7 +841,7 @@ class BangumiWidget {
             )..layout(maxWidth: constraints.maxWidth);
 
             final shouldScroll =
-                title.length > 12 || textPainter.width > constraints.maxWidth;
+                textPainter.width >= constraints.maxWidth * 0.7;
 
             return ClipRect(
               child: shouldScroll
@@ -850,14 +850,11 @@ class BangumiWidget {
                       style: style,
                       scrollAxis: Axis.horizontal,
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      blankSpace: 40.0,
+                      blankSpace: 10.0,
                       velocity: 40.0,
                       pauseAfterRound: Duration.zero,
-                      startPadding: 0.0,
-                      accelerationDuration: Duration(milliseconds: 300),
-                      accelerationCurve: Curves.linear,
-                      decelerationDuration: Duration(milliseconds: 300),
-                      decelerationCurve: Curves.linear,
+                      accelerationDuration: Duration.zero,
+                      decelerationDuration: Duration.zero,
                     )
                   : Text(
                       title,

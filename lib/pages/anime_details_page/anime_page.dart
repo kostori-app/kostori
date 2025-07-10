@@ -1,34 +1,35 @@
 // ignore_for_file: unused_element_parameter
 
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
-import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/pages/aggregated_search_page.dart';
-import 'package:kostori/network/bangumi.dart';
-import 'package:kostori/foundation/bangumi/bangumi_item.dart';
-import 'package:kostori/pages/bangumi/bottom_info.dart';
-import 'package:kostori/utils/utils.dart';
-import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/aggregated_search_page.dart';
+import 'package:kostori/pages/bangumi/bottom_info.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
+import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import '../../components/bangumi_widget.dart';
 import '../../components/share_widget.dart';
@@ -37,9 +38,9 @@ import '../bangumi/info_controller.dart';
 
 part 'actions.dart';
 
-part 'favorite.dart';
-
 part 'episodes.dart';
+
+part 'favorite.dart';
 
 class AnimePage extends StatefulWidget {
   const AnimePage({
@@ -77,8 +78,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   BangumiItem? get bangumiItem => bangumiBindInfo;
 
   void updateHistory() async {
-    var newHistory =
-        HistoryManager().find(widget.id, AnimeType(widget.sourceKey.hashCode));
+    var newHistory = HistoryManager().find(
+      widget.id,
+      AnimeType(widget.sourceKey.hashCode),
+    );
     if (!isUpdateBangumiBind && history?.bangumiId != null) {
       Bangumi.getBangumiInfoBind(history!.bangumiId as int);
       isUpdateBangumiBind = true;
@@ -96,8 +99,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void updateBangumiBind() async {
     if (history?.bangumiId != null) {
       // Bangumi.getBangumiInfoBind(history!.bangumiId as int);
-      bangumiBindInfo =
-          await BangumiManager().bindFind(history!.bangumiId as int);
+      bangumiBindInfo = await BangumiManager().bindFind(
+        history!.bangumiId as int,
+      );
       update();
     }
   }
@@ -186,13 +190,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   episode: anime.episode,
                   anime: anime,
                   history: History.fromModel(
-                      model: anime,
-                      lastWatchEpisode: history?.lastWatchEpisode ?? 1,
-                      lastWatchTime: history?.lastWatchTime ?? 0,
-                      lastRoad: history?.lastRoad ?? 0,
-                      allEpisode: anime.episode!.length,
-                      bangumiId: history?.bangumiId,
-                      watchEpisode: history?.watchEpisode),
+                    model: anime,
+                    lastWatchEpisode: history?.lastWatchEpisode ?? 1,
+                    lastWatchTime: history?.lastWatchTime ?? 0,
+                    lastRoad: history?.lastRoad ?? 0,
+                    allEpisode: anime.episode!.length,
+                    bangumiId: history?.bangumiId,
+                    watchEpisode: history?.watchEpisode,
+                  ),
                 ),
               ];
             },
@@ -230,8 +235,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
-    history =
-        HistoryManager().find(widget.id, AnimeType(widget.sourceKey.hashCode));
+    history = HistoryManager().find(
+      widget.id,
+      AnimeType(widget.sourceKey.hashCode),
+    );
     return animeSource.loadAnimeInfo!(widget.id);
   }
 
@@ -260,18 +267,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             child: TabBarView(
               children: [
                 CustomScrollView(
-                  slivers: [
-                    ...buildTitle(),
-                    buildDescription(),
-                    buildInfo(),
-                  ],
+                  slivers: [...buildTitle(), buildDescription(), buildInfo()],
                 ),
-                CustomScrollView(
-                  slivers: [buildEpisodes()],
-                ),
-                CustomScrollView(
-                  slivers: [buildRecommend()],
-                ),
+                CustomScrollView(slivers: [buildEpisodes()]),
+                CustomScrollView(slivers: [buildRecommend()]),
               ],
             ),
           ),
@@ -287,10 +286,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         decoration: BoxDecoration(
           color: context.colorScheme.surface.toOpacity(0.82),
           border: Border(
-            bottom: BorderSide(
-              color: Colors.grey.toOpacity(0.5),
-              width: 0.5,
-            ),
+            bottom: BorderSide(color: Colors.grey.toOpacity(0.5), width: 0.5),
           ),
         ),
         child: Row(
@@ -324,10 +320,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     yield SliverLazyToBoxAdapter(
       child: Container(
-        constraints: const BoxConstraints(
-          maxWidth: 550,
-          maxHeight: 300,
-        ),
+        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 300),
         margin: const EdgeInsets.symmetric(vertical: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -357,12 +350,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                 context,
                                 anime.cover,
                                 anime.title,
-                                "cover${widget.heroID}")
+                                "cover${widget.heroID}",
+                              )
                             : BangumiWidget.showImagePreview(
                                 context,
                                 bangumiItem!.images['large']!,
                                 bangumiItem!.nameCn,
-                                "cover${widget.heroID}");
+                                "cover${widget.heroID}",
+                              );
                       },
                       child: Hero(
                         tag: "cover${widget.heroID}",
@@ -377,7 +372,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                 color: context.colorScheme.outlineVariant,
                                 blurRadius: 1,
                                 offset: const Offset(0, 1),
-                              )
+                              ),
                             ],
                           ),
                           clipBehavior: Clip.antiAlias,
@@ -403,9 +398,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                         GestureDetector(
                           onTap: () {
                             var context = App.mainNavigatorKey!.currentContext!;
-                            context.to(() => AggregatedSearchPage(
-                                  keyword: anime.title,
-                                ));
+                            context.to(
+                              () => AggregatedSearchPage(keyword: anime.title),
+                            );
                           },
                           onLongPress: () {
                             Clipboard.setData(ClipboardData(text: anime.title));
@@ -433,27 +428,31 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                           Align(
                             child: Row(
                               children: [
-                                Text('${bangumiItem?.collection?['doing']} 在看',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                    )),
+                                Text(
+                                  '${bangumiItem?.collection?['doing']} 在看',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                ),
                                 Text(' / '),
                                 Text(
-                                    '${bangumiItem?.collection?['collect']} 看过',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .error)),
+                                  '${bangumiItem?.collection?['collect']} 看过',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
                                 Text(' / '),
                                 Text(
-                                    '${bangumiItem?.collection?['dropped']} 抛弃',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    )),
+                                  '${bangumiItem?.collection?['dropped']} 抛弃',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -464,18 +463,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                               mainAxisAlignment: MainAxisAlignment.start,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Text(
-                                  '${bangumiItem?.score}',
-                                  style: ts.s24,
-                                ),
-                                SizedBox(
-                                  width: 5,
-                                ),
+                                Text('${bangumiItem?.score}', style: ts.s24),
+                                SizedBox(width: 5),
                                 Container(
                                   padding: EdgeInsets.all(2.0), // 可选，设置内边距
                                   decoration: BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.circular(8), // 设置圆角半径
+                                    borderRadius: BorderRadius.circular(
+                                      8,
+                                    ), // 设置圆角半径
                                     border: Border.all(
                                       color: Theme.of(context)
                                           .colorScheme
@@ -488,9 +483,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     Utils.getRatingLabel(bangumiItem!.score),
                                   ),
                                 ),
-                                SizedBox(
-                                  width: 4,
-                                ),
+                                SizedBox(width: 4),
                                 Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start, // 右对齐
@@ -499,18 +492,16 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                       itemCount: 5,
                                       rating: bangumiItem!.score.toDouble() / 2,
                                       itemBuilder: (context, index) =>
-                                          const Icon(
-                                        Icons.star_rounded,
-                                      ),
+                                          const Icon(Icons.star_rounded),
                                       itemSize: 20.0,
                                     ),
                                     Text(
                                       '@t reviews | #@r'.tlParams({
                                         'r': bangumiItem!.rank,
-                                        't': bangumiItem!.total
+                                        't': bangumiItem!.total,
                                       }),
                                       style: TextStyle(fontSize: 12),
-                                    )
+                                    ),
                                   ],
                                 ),
                               ],
@@ -519,7 +510,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                         SizedBox(
                           height: 45,
                           child: _buildActionButtons(context, anime),
-                        )
+                        ),
                       ],
                     ),
                   ),
@@ -553,14 +544,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         ),
         _ActionButton(
           icon: ClipOval(
-              child: SizedBox(
-            width: 24,
-            height: 24,
-            child: SvgPicture.asset(
-              'assets/img/bangumi_icon.svg',
-              fit: BoxFit.fill, // 强制填充
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: SvgPicture.asset(
+                'assets/img/bangumi_icon.svg',
+                fit: BoxFit.fill, // 强制填充
+              ),
             ),
-          )),
+          ),
           text: 'Bangumi'.tl,
           onPressed: () async {
             bangumiBottomInfo(context);
@@ -597,9 +589,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             ),
           ),
           const SizedBox(height: 16),
-          ListTile(
-            title: Text("Description".tl),
-          ),
+          ListTile(title: Text("Description".tl)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SelectableText(anime.description!).fixWidth(double.infinity),
@@ -692,10 +682,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         );
       } else {
         return Container(
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: borderRadius,
-          ),
+          decoration: BoxDecoration(color: color, borderRadius: borderRadius),
           child: Text(text).padding(padding),
         );
       }
@@ -713,9 +700,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
-            title: Text("Information".tl),
-          ),
+          ListTile(title: Text("Information".tl)),
           if (anime.stars != null)
             Row(
               children: [
@@ -734,10 +719,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 if (e.value.isNotEmpty)
                   buildTag(text: e.key.ts(animeSource.key), isTitle: true),
                 for (var tag in e.value)
-                  buildTag(
-                    text: tag,
-                    onTap: () => onTapTag(tag, e.key),
-                  ),
+                  buildTag(text: tag, onTap: () => onTapTag(tag, e.key)),
               ],
             ),
           if (anime.uploader != null)
@@ -782,26 +764,19 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (anime.episode == null) {
       return const SliverPadding(padding: EdgeInsets.zero);
     }
-    return _AnimeEpisodes(
-      history: history,
-    );
+    return _AnimeEpisodes(history: history);
   }
 
   Widget buildRecommend() {
     if (anime.recommend == null || anime.recommend!.isEmpty) {
       return const SliverPadding(padding: EdgeInsets.zero);
     }
-    return SliverMainAxisGroup(slivers: [
-      SliverToBoxAdapter(
-        child: ListTile(
-          title: Text("Related".tl),
-        ),
-      ),
-      SliverGridAnimes(
-        animes: anime.recommend!,
-        isRecommend: true,
-      ),
-    ]);
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverToBoxAdapter(child: ListTile(title: Text("Related".tl))),
+        SliverGridAnimes(animes: anime.recommend!, isRecommend: true),
+      ],
+    );
   }
 }
 
@@ -896,8 +871,12 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget buildContainer(double? width, double? height,
-        {Color? color, double? radius}) {
+    Widget buildContainer(
+      double? width,
+      double? height, {
+      Color? color,
+      double? radius,
+    }) {
       return Container(
         height: height,
         width: width,
@@ -942,7 +921,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
             child: CircularProgressIndicator(
               strokeWidth: 2.4,
             ).fixHeight(24).fixWidth(24),
-          )
+          ),
         ],
       ),
     );
@@ -952,11 +931,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
     Widget child;
     if (cover != null) {
       child = AnimatedImage(
-        image: CachedImageProvider(
-          cover!,
-          sourceKey: sourceKey,
-          aid: aid,
-        ),
+        image: CachedImageProvider(cover!, sourceKey: sourceKey, aid: aid),
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,

@@ -154,7 +154,6 @@ class Settings with ChangeNotifier {
     'blockedWords': [],
     'defaultSearchTarget': null,
     'autoPageTurningInterval': 5, // in seconds
-    'readerMode': 'galleryLeftToRight', // values of [ReaderMode]
     'enableTapToTurnPages': true,
     'enablePageAnimation': true,
     'language': 'system', // system, zh-CN, zh-TW, en-US

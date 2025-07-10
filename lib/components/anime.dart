@@ -354,7 +354,7 @@ class AnimeTile extends StatelessWidget {
             textDirection: TextDirection.ltr,
           )..layout(maxWidth: constraints.maxWidth);
 
-          final shouldScroll = textPainter.width > constraints.maxWidth * 3 / 4;
+          final shouldScroll = textPainter.width >= constraints.maxWidth - 20;
 
           return InkWell(
             borderRadius: BorderRadius.circular(8),
@@ -441,18 +441,12 @@ class AnimeTile extends StatelessWidget {
                               text: title,
                               style: style,
                               scrollAxis: Axis.horizontal,
-                              blankSpace: 40.0,
+                              blankSpace: 10.0,
                               velocity: 40.0,
                               // startPadding: 10.0,
                               pauseAfterRound: Duration.zero,
-                              accelerationDuration: const Duration(
-                                milliseconds: 500,
-                              ),
-                              accelerationCurve: Curves.linear,
-                              decelerationDuration: const Duration(
-                                milliseconds: 500,
-                              ),
-                              decelerationCurve: Curves.easeOut,
+                              accelerationDuration: Duration.zero,
+                              decelerationDuration: Duration.zero,
                             )
                           : Text(
                               title,

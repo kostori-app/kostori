@@ -601,7 +601,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     )..layout(maxWidth: constraints.maxWidth);
 
                                     final shouldScroll =
-                                        textPainter.width >
+                                        textPainter.width >=
                                         constraints.maxWidth * 2 / 3;
 
                                     return SizedBox(
@@ -614,24 +614,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                                 scrollAxis: Axis.horizontal,
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.end,
-                                                blankSpace: 40.0,
+                                                blankSpace: 10.0,
                                                 velocity: 40.0,
-                                                pauseAfterRound: const Duration(
-                                                  milliseconds: 500,
-                                                ),
+                                                pauseAfterRound: Duration.zero,
                                                 startPadding: 10.0,
                                                 accelerationDuration:
-                                                    const Duration(
-                                                      milliseconds: 500,
-                                                    ),
-                                                accelerationCurve:
-                                                    Curves.linear,
+                                                    Duration.zero,
                                                 decelerationDuration:
-                                                    const Duration(
-                                                      milliseconds: 500,
-                                                    ),
-                                                decelerationCurve:
-                                                    Curves.easeOut,
+                                                    Duration.zero,
                                               )
                                             : Align(
                                                 alignment: Alignment.centerLeft,
