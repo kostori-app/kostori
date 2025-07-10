@@ -882,6 +882,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         onPressed: () {
           if (_showSearchHistory) {
             setState(() {
+              keyword = '';
+              _controller.clear();
               _showSearchHistory = false;
             });
           } else {
@@ -895,6 +897,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             icon: const Icon(Icons.clear),
             onPressed: () {
               setState(() {
+                keyword = '';
+                _controller.clear();
                 _showSearchHistory = false;
               });
             },
@@ -920,36 +924,33 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       title: PreferredSize(
         preferredSize: const Size.fromHeight(120),
         child: ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: Colors.transparent,
-              padding: EdgeInsets.fromLTRB(0, 6, 12, 6),
-              child: TextField(
-                controller: _controller,
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  hintText: 'Enter keywords...'.tl,
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+          child: Container(
+            color: Colors.transparent,
+            padding: EdgeInsets.fromLTRB(0, 0, 12, 0),
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Theme.of(context).cardColor,
+                hintText: keyword.isNotEmpty ? keyword : 'Enter keywords...'.tl,
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                onTap: () {
-                  setState(() {
-                    _showSearchHistory = true;
-                  });
-                },
-                onChanged: (value) {
-                  setState(() {
-                    _showSearchHistory = true;
-                  });
-                },
-                onSubmitted: (value) async {
-                  await _performSearch(value);
-                },
               ),
+              onTap: () {
+                setState(() {
+                  _showSearchHistory = true;
+                });
+              },
+              onChanged: (value) {
+                setState(() {
+                  keyword = value;
+                });
+              },
+              onSubmitted: (value) async {
+                await _performSearch(value);
+              },
             ),
           ),
         ),
