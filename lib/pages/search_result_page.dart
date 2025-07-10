@@ -36,7 +36,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
 
   void search([String? text]) {
     if (text != null) {
-      text = checkAutoLanguage(text);
+      text = text;
       setState(() {
         this.text = text!;
       });
@@ -55,32 +55,18 @@ class _SearchResultPageState extends State<SearchResultPage> {
     if (setting == 'none') {
       return text;
     }
-    var searchSource = sourceKey;
-    // TODO: Move it to a better place
-    const enabledSources = [
-      'nhentai',
-      'ehentai',
-    ];
-    if (!enabledSources.contains(searchSource)) {
-      return text;
-    }
-    if (!text.contains('language:')) {
-      return '$text language:$setting';
-    }
     return text;
   }
 
   @override
   void initState() {
     sourceKey = widget.sourceKey;
-    text = checkAutoLanguage(widget.text);
-    controller = SearchBarController(
-      currentText: text,
-      onSearch: search,
-    );
+    text = widget.text;
+    controller = SearchBarController(currentText: text, onSearch: search);
     options = widget.options ?? const [];
     validateOptions();
     appdata.addSearchHistory(text);
+    appdata.saveData();
     super.initState();
   }
 
@@ -103,10 +89,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
     var source = AnimeSource.find(sourceKey);
     return AnimeList(
       key: Key(text + options.toString() + sourceKey),
-      errorLeading: AppSearchBar(
-        controller: controller,
-        action: buildAction(),
-      ),
+      errorLeading: AppSearchBar(controller: controller, action: buildAction()),
       leadingSliver: SliverSearchBar(
         controller: controller,
         action: buildAction(),
@@ -114,20 +97,12 @@ class _SearchResultPageState extends State<SearchResultPage> {
       loadPage: source!.searchPageData!.loadPage == null
           ? null
           : (i) {
-              return source.searchPageData!.loadPage!(
-                text,
-                i,
-                options,
-              );
+              return source.searchPageData!.loadPage!(text, i, options);
             },
       loadNext: source.searchPageData!.loadNext == null
           ? null
           : (i) {
-              return source.searchPageData!.loadNext!(
-                text,
-                i,
-                options,
-              );
+              return source.searchPageData!.loadNext!(text, i, options);
             },
     );
   }
@@ -149,7 +124,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
           );
           if (!previousOptions.isEqualTo(options) ||
               previousSourceKey != sourceKey) {
-            text = checkAutoLanguage(controller.text);
+            text = controller.text;
             controller.currentText = text;
             setState(() {});
           }
@@ -206,9 +181,10 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
                   setState(() {
                     searchTarget = e.key;
                     options.clear();
-                    final searchOptions = AnimeSource.find(searchTarget)!
-                            .searchPageData!
-                            .searchOptions ??
+                    final searchOptions =
+                        AnimeSource.find(
+                          searchTarget,
+                        )!.searchPageData!.searchOptions ??
                         <SearchOptions>[];
                     options = searchOptions.map((e) => e.defaultValue).toList();
                     onChanged();
@@ -235,7 +211,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
 
     final searchOptions =
         AnimeSource.find(searchTarget)!.searchPageData!.searchOptions ??
-            <SearchOptions>[];
+        <SearchOptions>[];
     if (searchOptions.length != options.length) {
       options = searchOptions.map((e) => e.defaultValue).toList();
     }
@@ -244,16 +220,18 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
     }
     for (int i = 0; i < searchOptions.length; i++) {
       final option = searchOptions[i];
-      children.add(SearchOptionWidget(
-        option: option,
-        value: options[i],
-        onChanged: (value) {
-          setState(() {
-            options[i] = value;
-          });
-        },
-        sourceKey: searchTarget,
-      ));
+      children.add(
+        SearchOptionWidget(
+          option: option,
+          value: options[i],
+          onChanged: (value) {
+            setState(() {
+              options[i] = value;
+            });
+          },
+          sourceKey: searchTarget,
+        ),
+      );
     }
 
     return Container(

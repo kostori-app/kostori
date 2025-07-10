@@ -79,7 +79,8 @@ class _AppbarState extends State<Appbar> {
   Widget build(BuildContext context) {
     var content = Container(
       decoration: BoxDecoration(
-        color: widget.backgroundColor ??
+        color:
+            widget.backgroundColor ??
             context.colorScheme.surface.toOpacity(0.72),
       ),
       height: _kAppBarHeight + context.padding.top,
@@ -94,9 +95,7 @@ class _AppbarState extends State<Appbar> {
                   onPressed: () => Navigator.maybePop(context),
                 ),
               ),
-          const SizedBox(
-            width: 16,
-          ),
+          const SizedBox(width: 16),
           Expanded(
             child: DefaultTextStyle(
               style: DefaultTextStyle.of(context).style.copyWith(fontSize: 20),
@@ -106,9 +105,7 @@ class _AppbarState extends State<Appbar> {
             ),
           ),
           ...?widget.actions,
-          const SizedBox(
-            width: 8,
-          )
+          const SizedBox(width: 8),
         ],
       ).paddingTop(context.padding.top),
     );
@@ -119,18 +116,12 @@ class _AppbarState extends State<Appbar> {
         child: content,
       );
     } else {
-      return BlurEffect(
-        blur: _scrolledUnder ? 15 : 0,
-        child: content,
-      );
+      return BlurEffect(blur: _scrolledUnder ? 15 : 0, child: content);
     }
   }
 }
 
-enum AppbarStyle {
-  blur,
-  shadow,
-}
+enum AppbarStyle { blur, shadow }
 
 class SliverAppbar extends StatelessWidget {
   const SliverAppbar({
@@ -140,6 +131,7 @@ class SliverAppbar extends StatelessWidget {
     this.actions,
     this.radius = 0,
     this.style = AppbarStyle.blur,
+    this.bottom,
   });
 
   final Widget? leading;
@@ -152,6 +144,8 @@ class SliverAppbar extends StatelessWidget {
 
   final AppbarStyle style;
 
+  final PreferredSizeWidget? bottom;
+
   @override
   Widget build(BuildContext context) {
     return SliverPersistentHeader(
@@ -163,6 +157,7 @@ class SliverAppbar extends StatelessWidget {
         topPadding: MediaQuery.of(context).padding.top,
         radius: radius,
         style: style,
+        bottom: bottom,
       ),
     );
   }
@@ -183,6 +178,8 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   final AppbarStyle style;
 
+  final PreferredSizeWidget? bottom;
+
   _MySliverAppBarDelegate({
     this.leading,
     required this.title,
@@ -190,41 +187,50 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     required this.topPadding,
     this.radius = 0,
     this.style = AppbarStyle.blur,
+    this.bottom,
   });
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    var body = Row(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    var body = Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(width: 8),
-        leading ??
-            (Navigator.of(context).canPop()
-                ? Tooltip(
-                    message: "Back".tl,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new),
-                      onPressed: () => Navigator.maybePop(context),
-                    ),
-                  )
-                : const SizedBox()),
-        const SizedBox(
-          width: 16,
-        ),
-        Expanded(
-          child: DefaultTextStyle(
-            style: DefaultTextStyle.of(context).style.copyWith(fontSize: 20),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            child: title,
-          ),
-        ),
-        ...?actions,
-        const SizedBox(
-          width: 8,
-        )
+        Row(
+          children: [
+            const SizedBox(width: 8),
+            leading ??
+                (Navigator.of(context).canPop()
+                    ? Tooltip(
+                        message: "Back".tl,
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new),
+                          onPressed: () => Navigator.maybePop(context),
+                        ),
+                      )
+                    : const SizedBox()),
+            const SizedBox(width: 16),
+            Expanded(
+              child: DefaultTextStyle(
+                style: DefaultTextStyle.of(
+                  context,
+                ).style.copyWith(fontSize: 20),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                child: title,
+              ),
+            ),
+            ...?actions,
+            const SizedBox(width: 8),
+          ],
+        ).paddingTop(topPadding),
+        if (bottom != null) bottom!,
       ],
-    ).paddingTop(topPadding);
+    );
 
     if (style == AppbarStyle.blur) {
       return SizedBox.expand(
@@ -251,10 +257,12 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => _kAppBarHeight + topPadding;
+  double get maxExtent =>
+      _kAppBarHeight + topPadding + (bottom?.preferredSize.height ?? 0);
 
   @override
-  double get minExtent => _kAppBarHeight + topPadding;
+  double get minExtent =>
+      _kAppBarHeight + topPadding + (bottom?.preferredSize.height ?? 0);
 
   @override
   bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) {
@@ -264,7 +272,8 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
         actions != oldDelegate.actions ||
         topPadding != oldDelegate.topPadding ||
         radius != oldDelegate.radius ||
-        style != oldDelegate.style;
+        style != oldDelegate.style ||
+        bottom != oldDelegate.bottom;
   }
 }
 
@@ -463,11 +472,11 @@ class _AppTabBarState extends State<AppTabBar> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DefaultTextStyle(
             style: DefaultTextStyle.of(context).style.copyWith(
-                  color: i == _controller.animation?.value.round()
-                      ? context.colorScheme.primary
-                      : context.colorScheme.onSurface,
-                  fontWeight: FontWeight.w500,
-                ),
+              color: i == _controller.animation?.value.round()
+                  ? context.colorScheme.primary
+                  : context.colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
             child: widget.tabs[i],
           ),
         ),
@@ -476,10 +485,8 @@ class _AppTabBarState extends State<AppTabBar> {
   }
 }
 
-typedef _TabRenderCallback = void Function(
-  List<double> offsets,
-  double itemHeight,
-);
+typedef _TabRenderCallback =
+    void Function(List<double> offsets, double itemHeight);
 
 class _TabRow extends Row {
   const _TabRow({required this.callback, required super.children});
@@ -489,13 +496,14 @@ class _TabRow extends Row {
   @override
   RenderFlex createRenderObject(BuildContext context) {
     return _RenderTabFlex(
-        direction: Axis.horizontal,
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        textDirection: Directionality.of(context),
-        verticalDirection: VerticalDirection.down,
-        callback: callback);
+      direction: Axis.horizontal,
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      textDirection: Directionality.of(context),
+      verticalDirection: VerticalDirection.down,
+      callback: callback,
+    );
   }
 
   @override
@@ -592,8 +600,11 @@ class _IndicatorPainter extends CustomPainter {
     final Rect toRect = indicatorRect(size, to);
     _currentRect = Rect.lerp(fromRect, toRect, (value - from).abs());
     final Paint paint = Paint()..color = color;
-    final RRect rrect = RRect.fromRectAndCorners(_currentRect!,
-        topLeft: Radius.circular(radius), topRight: Radius.circular(radius));
+    final RRect rrect = RRect.fromRectAndCorners(
+      _currentRect!,
+      topLeft: Radius.circular(radius),
+      topRight: Radius.circular(radius),
+    );
     canvas.drawRRect(rrect, paint);
   }
 
@@ -730,14 +741,15 @@ class _SliverSearchBarState extends State<SliverSearchBar>
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverSearchBarDelegate(
-          editingController: _editingController,
-          controller: _controller,
-          topPadding: MediaQuery.of(context).padding.top,
-          onChanged: widget.onChanged,
-          action: widget.action,
-          focusNode: widget.focusNode,
-          bangumiPage: widget.bangumiPage,
-          keywords: widget.keywords),
+        editingController: _editingController,
+        controller: _controller,
+        topPadding: MediaQuery.of(context).padding.top,
+        onChanged: widget.onChanged,
+        action: widget.action,
+        focusNode: widget.focusNode,
+        bangumiPage: widget.bangumiPage,
+        keywords: widget.keywords,
+      ),
     );
   }
 }
@@ -773,7 +785,9 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
   static const _kAppBarHeight = 52.0;
 
   Future<String?> showKeywordsDialog(
-      BuildContext context, List<String> keywords) {
+    BuildContext context,
+    List<String> keywords,
+  ) {
     final scrollController = ScrollController();
 
     return showDialog(
@@ -832,7 +846,10 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       height: _kAppBarHeight + topPadding,
       width: double.infinity,
@@ -849,19 +866,25 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
         children: [
           const SizedBox(width: 8),
           IconButton(
-              onPressed: () => Navigator.maybePop(context),
-              icon: const Icon(Icons.arrow_back_ios_new)),
+            onPressed: () => Navigator.maybePop(context),
+            icon: const Icon(Icons.arrow_back_ios_new),
+          ),
           if (bangumiPage)
             IconButton(
-                onPressed: () async {
-                  final selectedKeyword =
-                      await showKeywordsDialog(context, keywords ?? []);
-                  if (selectedKeyword != null) {
-                    controller.onSearch?.call(selectedKeyword);
-                    editingController.text = selectedKeyword;
-                  }
-                },
-                icon: const Icon(Icons.change_history)),
+              onPressed: () async {
+                final selectedKeyword = await showKeywordsDialog(
+                  context,
+                  keywords ?? [],
+                );
+                if (selectedKeyword != null) {
+                  controller.onSearch?.call(selectedKeyword);
+                  editingController.text = selectedKeyword;
+                  appdata.addSearchHistory(selectedKeyword);
+                  appdata.saveData();
+                }
+              },
+              icon: const Icon(Icons.change_history),
+            ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
