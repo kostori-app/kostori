@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -32,6 +33,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   final maxWidth = 1250.0;
   List<String> tags = [];
   List<BangumiItem> bangumiItems = [];
+  List<BangumiItem> searchSuggestions = [];
   Map<BangumiItem, bool> selectedBangumiItems = {};
 
   bool useBriefMode = false;
@@ -50,8 +52,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   String airDate = '';
   String endDate = '';
 
+  Timer? _debounce;
+  int _searchToken = 0;
+
   final TextEditingController _controller = TextEditingController();
   bool _showSearchHistory = false;
+  bool _showSearchSuggestions = false;
 
   final List<String> options = ['最佳匹配', '最高排名', '最高收藏', '最高评分'];
 
@@ -78,6 +84,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   void dispose() {
     bangumiItems.clear();
     _scrollController.removeListener(_loadMoreData);
+    _debounce?.cancel();
     super.dispose();
   }
 
@@ -843,6 +850,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       setState(() {
         _isLoading = true;
         _showSearchHistory = false;
+        _showSearchSuggestions = false;
+        searchSuggestions.clear();
       });
 
       final newItems = await bangumiSearch();
@@ -875,6 +884,20 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     );
   }
 
+  Widget _searchSuggestionsSliver() {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final item = searchSuggestions[index];
+        return ListTile(
+          leading: const Icon(Icons.search),
+          title: Text(item.nameCn.isNotEmpty ? item.nameCn : item.name),
+          onTap: () =>
+              _performSearch(item.nameCn.isNotEmpty ? item.nameCn : item.name),
+        );
+      }, childCount: searchSuggestions.length),
+    );
+  }
+
   Widget _sliverAppBar(BuildContext context) {
     return SliverAppbar(
       leading: IconButton(
@@ -885,6 +908,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               keyword = '';
               _controller.clear();
               _showSearchHistory = false;
+              _showSearchSuggestions = false;
+              searchSuggestions.clear();
             });
           } else {
             Navigator.of(context).pop();
@@ -900,6 +925,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 keyword = '';
                 _controller.clear();
                 _showSearchHistory = false;
+                _showSearchSuggestions = false;
+                searchSuggestions.clear();
               });
             },
           ),
@@ -946,6 +973,35 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               onChanged: (value) {
                 setState(() {
                   keyword = value;
+                  _showSearchSuggestions = true;
+                });
+
+                // 取消之前的防抖定时器
+                _debounce?.cancel();
+
+                _debounce = Timer(const Duration(seconds: 2), () async {
+                  if (value.trim().isEmpty) {
+                    setState(() {
+                      searchSuggestions = [];
+                    });
+                    return;
+                  }
+                  final int token = ++_searchToken; // 每次搜索加一个标记
+
+                  final results = await Bangumi.bangumiPostSearch(
+                    value,
+                    tags: tags,
+                    sort: 'match',
+                    airDate: airDate,
+                    endDate: endDate,
+                  );
+
+                  // 只处理最新的一次搜索结果
+                  if (token == _searchToken) {
+                    setState(() {
+                      searchSuggestions = results;
+                    });
+                  }
                 });
               },
               onSubmitted: (value) async {
@@ -1076,9 +1132,13 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             controller: _scrollController,
             slivers: [
               _sliverAppBar(context),
-              if (_showSearchHistory && appdata.searchHistory.isNotEmpty)
+              if (_showSearchSuggestions && searchSuggestions.isNotEmpty)
+                _searchSuggestionsSliver(),
+              if (_showSearchHistory &&
+                  appdata.searchHistory.isNotEmpty &&
+                  searchSuggestions.isEmpty)
                 _searchHistorySliver(),
-              if (!_showSearchHistory) ...[
+              if (!_showSearchHistory && !_showSearchSuggestions) ...[
                 ..._buildTagCategories(),
                 if (tags.isNotEmpty)
                   SliverToBoxAdapter(child: _tagsWidget(context)),

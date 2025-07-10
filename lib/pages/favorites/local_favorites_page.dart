@@ -567,8 +567,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                           favoritesController.isRefreshEnabled = true;
                           updateAnimes();
                           manager.initCounts();
-                          favoritesController.animes =
-                              favoritesController.animes;
                           setState(() {});
                         }),
                   ),
