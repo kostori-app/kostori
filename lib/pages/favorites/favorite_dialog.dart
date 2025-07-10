@@ -1,30 +1,37 @@
 part of 'favorites_page.dart';
 
 class _FavoriteDialog extends StatefulWidget {
-  const _FavoriteDialog(
-      {required this.selectedAnimes,
-      required this.favPage,
-      required this.updateAnimes,
-      required this.cancel});
+  const _FavoriteDialog({
+    required this.selectedAnimes,
+    required this.favPage,
+    // required this.updateAnimes,
+    required this.cancel,
+    required this.favoritesController,
+  });
 
   final Map<Anime, bool> selectedAnimes;
   final _FavoritesPageState favPage;
-  final void Function() updateAnimes;
-  final void Function() cancel;
 
-  static Future<void> show(
-      {required BuildContext context,
-      required Map<Anime, bool> selectedAnimes,
-      required _FavoritesPageState favPage,
-      required void Function() updateAnimes,
-      required void Function() cancel}) async {
+  // final VoidCallback updateAnimes;
+  final VoidCallback cancel;
+  final FavoritesController favoritesController;
+
+  static Future<void> show({
+    required BuildContext context,
+    required Map<Anime, bool> selectedAnimes,
+    required _FavoritesPageState favPage,
+    // required VoidCallback updateAnimes,
+    required VoidCallback cancel,
+    required FavoritesController favoritesController,
+  }) async {
     return showDialog(
       context: context,
       builder: (context) => _FavoriteDialog(
         selectedAnimes: selectedAnimes,
         favPage: favPage,
-        updateAnimes: updateAnimes,
+        // updateAnimes: updateAnimes,
         cancel: cancel,
+        favoritesController: favoritesController,
       ),
     );
   }
@@ -37,8 +44,10 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
     with SingleTickerProviderStateMixin {
   late List<String> localFolders;
   late List<String> added;
-  var selectedLocalFolders = <String>{};
+  List<String> selectedLocalFolders = [];
   late List<String> filteredFolders;
+
+  FavoritesController get favoritesController => widget.favoritesController;
 
   @override
   void initState() {
@@ -48,7 +57,8 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
     added = [];
     for (final a in widget.selectedAnimes.keys) {
       added.addAll(
-          LocalFavoritesManager().find(a.id, AnimeType(a.sourceKey.hashCode)));
+        LocalFavoritesManager().find(a.id, AnimeType(a.sourceKey.hashCode)),
+      );
     }
     if (added.contains('default') || added.contains('默认')) {
       filteredFolders = localFolders.toList();
@@ -93,9 +103,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
               ),
             ),
             const Divider(height: 1),
-            Expanded(
-              child: buildLocalContent(),
-            ),
+            Expanded(child: buildLocalContent()),
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.all(16),
@@ -121,64 +129,76 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                         onPressed: selectedLocalFolders.isEmpty
                             ? null
                             : () async {
-                                for (var a in widget.selectedAnimes.keys) {
-                                  // 执行移动操作
-                                  if (selectedLocalFolders.length > 1 &&
-                                      selectedLocalFolders
-                                          .contains(widget.favPage.folder)) {
-                                    var animes = widget.selectedAnimes.keys
-                                        .map((e) => e as FavoriteItem)
-                                        .toList();
-                                    for (var f in selectedLocalFolders) {
-                                      LocalFavoritesManager()
-                                          .batchMoveFavorites(
-                                        widget.favPage.folder as String,
-                                        f,
-                                        animes,
-                                      );
-                                    }
-                                  } else if (selectedLocalFolders.length == 1 &&
-                                      selectedLocalFolders
-                                          .contains(widget.favPage.folder)) {
+                                // 执行移动操作
+                                if (selectedLocalFolders.length > 1 &&
+                                    selectedLocalFolders.contains(
+                                      widget.favPage.folder,
+                                    )) {
+                                  var animes = widget.selectedAnimes.keys
+                                      .map((e) => e as FavoriteItem)
+                                      .toList();
+                                  final sortedFolders = [
+                                    ...selectedLocalFolders.where(
+                                      (f) =>
+                                          f != widget.favPage.folder as String,
+                                    ),
+                                    ...selectedLocalFolders.where(
+                                      (f) =>
+                                          f == widget.favPage.folder as String,
+                                    ),
+                                  ];
+
+                                  for (var f in sortedFolders) {
+                                    LocalFavoritesManager().batchMoveFavorites(
+                                      widget.favPage.folder as String,
+                                      f,
+                                      animes,
+                                    );
+                                  }
+                                } else if (selectedLocalFolders.length == 1 &&
+                                    selectedLocalFolders.contains(
+                                      widget.favPage.folder,
+                                    )) {
+                                  for (var a in widget.selectedAnimes.keys) {
                                     LocalFavoritesManager().deleteAnimeWithId(
-                                        widget.favPage.folder as String,
-                                        a.id,
-                                        (a as FavoriteItem).type);
-                                  } else {
-                                    // 执行添加操作
-                                    var animes = widget.selectedAnimes.keys
-                                        .map((e) => e as FavoriteItem)
-                                        .toList();
-                                    for (var f in selectedLocalFolders) {
-                                      LocalFavoritesManager()
-                                          .batchCopyFavorites(
-                                        widget.favPage.folder as String,
-                                        f,
-                                        animes,
-                                      );
-                                    }
+                                      widget.favPage.folder as String,
+                                      a.id,
+                                      (a as FavoriteItem).type,
+                                    );
+                                  }
+                                } else {
+                                  // 执行添加操作
+                                  var animes = widget.selectedAnimes.keys
+                                      .map((e) => e as FavoriteItem)
+                                      .toList();
+                                  for (var f in selectedLocalFolders) {
+                                    LocalFavoritesManager().batchCopyFavorites(
+                                      widget.favPage.folder as String,
+                                      f,
+                                      animes,
+                                    );
                                   }
                                 }
+
                                 // 更新状态
                                 if (mounted) {
                                   setState(() {
-                                    widget.updateAnimes();
                                     widget.cancel();
                                   });
                                   showCenter(
-                                      seconds: 1,
-                                      icon: Gif(
-                                        image:
-                                            AssetImage('assets/img/check.gif'),
-                                        height: 80,
-                                        fps: 120,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                        autostart: Autostart.once,
-                                      ),
-                                      message: '操作成功',
-                                      context: context);
+                                    seconds: 1,
+                                    icon: Gif(
+                                      image: AssetImage('assets/img/check.gif'),
+                                      height: 80,
+                                      fps: 120,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      autostart: Autostart.once,
+                                    ),
+                                    message: '操作成功',
+                                    context: context,
+                                  );
                                   Navigator.of(context).pop();
                                 }
                               },
@@ -197,11 +217,11 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                   "@a to add • @b to remove • @c to move".tlParams({
                     "a": foldersToAdd,
                     "b": foldersToRemove,
-                    "c": foldersToMove
+                    "c": foldersToMove,
                   }),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
               ),
           ],
@@ -214,8 +234,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
     if (added.contains('default') || added.contains('默认')) {
       filteredFolders = LocalFavoritesManager().folderNames.toList();
     } else {
-      filteredFolders = LocalFavoritesManager()
-          .folderNames
+      filteredFolders = LocalFavoritesManager().folderNames
           .where((folder) => !excludedFolders.contains(folder))
           .toList();
     }
@@ -271,16 +290,19 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
       height: 36,
       child: Center(
         child: TextButton(
-          onPressed: () async {
-            await newFolder();
+          onPressed: () {
+            newFolder().then((value) {
+              setState(() {
+                favoritesController.isRefreshEnabled = true;
+              });
+            });
             if (mounted) {
               setState(() {
                 if (added.contains('default') || added.contains('默认')) {
-                  filteredFolders =
-                      LocalFavoritesManager().folderNames.toList();
+                  filteredFolders = LocalFavoritesManager().folderNames
+                      .toList();
                 } else {
-                  filteredFolders = LocalFavoritesManager()
-                      .folderNames
+                  filteredFolders = LocalFavoritesManager().folderNames
                       .where((folder) => !excludedFolders.contains(folder))
                       .toList();
                 }

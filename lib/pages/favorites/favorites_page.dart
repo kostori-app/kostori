@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -16,15 +17,15 @@ import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 
-import '../../components/misc_components.dart';
+import 'favorites_controller.dart';
 
 part 'favorite_actions.dart';
 
-part 'side_bar.dart';
+part 'favorite_dialog.dart';
 
 part 'local_favorites_page.dart';
 
-part 'favorite_dialog.dart';
+part 'side_bar.dart';
 
 const _kLeftBarWidth = 256.0;
 
@@ -38,6 +39,8 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
+  late final FavoritesController favoritesController;
+
   String? folder;
 
   bool isNetwork = false;
@@ -49,7 +52,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       this.isNetwork = isNetwork;
       this.folder = folder;
     });
-    folderList?.update();
+    // folderList?.update();
     appdata.implicitData['favoriteFolder'] = {
       'name': folder,
       'isNetwork': isNetwork,
@@ -65,12 +68,32 @@ class _FavoritesPageState extends State<FavoritesPage> {
     return folders.any((folder) => folder == targetFolderName);
   }
 
+  void update() {
+    setState(() {});
+  }
+
   @override
   void initState() {
+    favoritesController = FavoritesController();
     var data = appdata.implicitData['favoriteFolder'];
+
+    favoritesController.folders = LocalFavoritesManager().folderNames.where((
+      name,
+    ) {
+      if (name == 'default') {
+        return LocalFavoritesManager()
+            .getAllAnimes('default', FavoriteSortType.nameAsc)
+            .isNotEmpty;
+      }
+      return true;
+    }).toList();
     if (data != null) {
       folder = data['name'];
       isNetwork = data['isNetwork'] ?? false;
+    } else {
+      if (favoritesController.folders.isNotEmpty) {
+        setFolder(false, favoritesController.folders[0]);
+      }
     }
     if (!hasSpecificFolder("default")) {
       LocalFavoritesManager().createFolder('default');
@@ -94,7 +117,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
             top: 0,
             bottom: 0,
             duration: const Duration(milliseconds: 200),
-            child: (const _LeftBar()).fixWidth(_kLeftBarWidth),
+            child: (_LeftBar(
+              favoritesController: favoritesController,
+            )).fixWidth(_kLeftBarWidth),
           ),
           Positioned(
             top: 0,
@@ -109,40 +134,44 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   void showFolderSelector() {
-    Navigator.of(App.rootContext).push(PageRouteBuilder(
-      barrierDismissible: true,
-      fullscreenDialog: true,
-      opaque: false,
-      barrierColor: Colors.black.toOpacity(0.36),
-      pageBuilder: (context, animation, secondary) {
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Material(
-            child: SizedBox(
-              width: min(300, context.width - 16),
-              child: _LeftBar(
-                withAppbar: true,
-                favPage: this,
-                onSelected: () {
-                  context.pop();
-                },
+    Navigator.of(App.rootContext).push(
+      PageRouteBuilder(
+        barrierDismissible: true,
+        fullscreenDialog: true,
+        opaque: false,
+        barrierColor: Colors.black.toOpacity(0.36),
+        pageBuilder: (context, animation, secondary) {
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Material(
+              child: SizedBox(
+                width: min(300, context.width - 16),
+                child: _LeftBar(
+                  withAppbar: true,
+                  favPage: this,
+                  onSelected: () {
+                    context.pop();
+                  },
+                  favoritesController: favoritesController,
+                ),
               ),
             ),
-          ),
-        );
-      },
-      transitionsBuilder: (context, animation, secondary, child) {
-        var offset =
-            Tween<Offset>(begin: const Offset(-1, 0), end: const Offset(0, 0));
-        return SlideTransition(
-          position: offset.animate(CurvedAnimation(
-            parent: animation,
-            curve: Curves.fastOutSlowIn,
-          )),
-          child: child,
-        );
-      },
-    ));
+          );
+        },
+        transitionsBuilder: (context, animation, secondary, child) {
+          var offset = Tween<Offset>(
+            begin: const Offset(-1, 0),
+            end: const Offset(0, 0),
+          );
+          return SlideTransition(
+            position: offset.animate(
+              CurvedAnimation(parent: animation, curve: Curves.fastOutSlowIn),
+            ),
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
   Widget buildBody() {
@@ -171,7 +200,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
       );
     }
     return _LocalFavoritesPage(
-        folder: folder!, key: PageStorageKey("local_$folder"));
+      favoritesController: favoritesController,
+      // folder: folder!,
+      // key: PageStorageKey("local_$folder"),
+    );
   }
 }
 
