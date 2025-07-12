@@ -214,9 +214,7 @@ class AppScrollBar extends StatefulWidget {
   });
 
   final ScrollController controller;
-
   final Widget child;
-
   final double topPadding;
 
   @override
@@ -230,19 +228,21 @@ class _AppScrollBarState extends State<AppScrollBar> {
   double minExtent = 0;
   double maxExtent = 0;
   double position = 0;
-
   double viewHeight = 0;
 
-  final _scrollIndicatorSize = App.isDesktop ? 42.0 : 64.0;
+  double _startDragDy = 0;
+  double _startScrollOffset = 0;
+
+  final _scrollbarHeight = App.isDesktop ? 42.0 : 64.0;
 
   late final VerticalDragGestureRecognizer _dragGestureRecognizer;
-  ScrollMetrics? _metrics;
 
   @override
   void initState() {
     super.initState();
     _dragGestureRecognizer = VerticalDragGestureRecognizer()
-      ..onUpdate = onUpdate;
+      ..onStart = _onDragStart
+      ..onUpdate = _onDragUpdate;
   }
 
   @override
@@ -252,54 +252,43 @@ class _AppScrollBarState extends State<AppScrollBar> {
     super.dispose();
   }
 
-  void onUpdate(DragUpdateDetails details) {
-    if (_metrics == null ||
-        _metrics!.maxScrollExtent - _metrics!.minScrollExtent <= 0 ||
-        viewHeight == 0 ||
-        details.primaryDelta == null) {
-      return;
-    }
+  void _onDragStart(DragStartDetails details) {
+    _startDragDy = details.localPosition.dy;
+    _startScrollOffset = widget.controller.offset;
+  }
 
-    var offset = details.primaryDelta!;
-    var positionOffset =
-        offset /
-        (viewHeight - _scrollIndicatorSize) *
-        (_metrics!.maxScrollExtent - _metrics!.minScrollExtent);
-    final newOffset = (position + positionOffset).clamp(
-      _metrics!.minScrollExtent,
-      _metrics!.maxScrollExtent,
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (maxExtent - minExtent <= 0 || viewHeight <= 0) return;
+
+    final dyDelta = details.localPosition.dy - _startDragDy;
+    final scrollRange = maxExtent - minExtent;
+    final viewRange = viewHeight - _scrollbarHeight;
+    if (viewRange <= 0) return;
+
+    final scrollDelta = dyDelta / viewRange * scrollRange;
+    final newOffset = (_startScrollOffset + scrollDelta).clamp(
+      minExtent,
+      maxExtent,
     );
 
-    Scrollable.ensureVisible(
-      context,
-      duration: Duration.zero,
-      alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
-    ); // 保证 context 是可见的
-
-    final controller = PrimaryScrollController.of(context);
-    if (controller.hasClients) {
-      controller.jumpTo(newOffset);
-    }
+    widget.controller.jumpTo(newOffset);
   }
 
   void _restartHideTimer() {
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          showScrollbar = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() => showScrollbar = false);
     });
   }
 
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
 
-    bool extentChanged =
+    final extentChanged =
         notification.metrics.minScrollExtent != minExtent ||
         notification.metrics.maxScrollExtent != maxExtent;
-    bool pixelChanged = (notification.metrics.pixels - position).abs() > 0.5;
+    final pixelChanged = (notification.metrics.pixels - position).abs() > 0.5;
 
     if (extentChanged || pixelChanged) {
       SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -308,7 +297,6 @@ class _AppScrollBarState extends State<AppScrollBar> {
           minExtent = notification.metrics.minScrollExtent;
           maxExtent = notification.metrics.maxScrollExtent;
           position = notification.metrics.pixels;
-          _metrics = notification.metrics;
           showScrollbar = true;
         });
         _restartHideTimer();
@@ -324,18 +312,18 @@ class _AppScrollBarState extends State<AppScrollBar> {
       onNotification: _onScrollNotification,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final scrollHeight = (maxExtent - minExtent);
-          final height = constraints.maxHeight - widget.topPadding;
-          viewHeight = height;
-          final top = scrollHeight == 0
+          viewHeight = constraints.maxHeight - widget.topPadding;
+
+          final scrollExtent = maxExtent - minExtent;
+          final top = scrollExtent == 0
               ? 0.0
-              : (position - minExtent) /
-                    scrollHeight *
-                    (height - _scrollIndicatorSize);
+              : ((position - minExtent) / scrollExtent) *
+                    (viewHeight - _scrollbarHeight);
+
           return Stack(
             children: [
               Positioned.fill(child: widget.child),
-              if (_metrics != null)
+              if (scrollExtent > 0)
                 Positioned(
                   top: top + widget.topPadding,
                   right: 0,
@@ -351,19 +339,19 @@ class _AppScrollBarState extends State<AppScrollBar> {
                           _restartHideTimer();
                         },
                         child: SizedBox(
-                          width: _scrollIndicatorSize / 2,
-                          height: _scrollIndicatorSize,
+                          width: _scrollbarHeight / 2,
+                          height: _scrollbarHeight,
                           child: CustomPaint(
                             painter: _ScrollIndicatorPainter(
                               backgroundColor: context.colorScheme.surface,
                               shadowColor: context.colorScheme.shadow,
                             ),
                             child: Column(
-                              children: [
-                                const Spacer(),
+                              children: const [
+                                Spacer(),
                                 Icon(Icons.arrow_drop_up, size: 18),
                                 Icon(Icons.arrow_drop_down, size: 18),
-                                const Spacer(),
+                                Spacer(),
                               ],
                             ).paddingLeft(4),
                           ),
