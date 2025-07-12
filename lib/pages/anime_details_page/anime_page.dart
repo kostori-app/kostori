@@ -180,6 +180,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         Positioned.fill(
           child: NestedScrollView(
             controller: scrollController,
+            physics: ClampingScrollPhysics(),
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverPadding(padding: EdgeInsets.only(top: 28)),
@@ -214,13 +215,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         ),
       ],
     );
-    widget = AppScrollBar(
-      topPadding: 82,
-      controller: scrollController,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: widget,
-      ),
+    widget = ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: widget,
     );
     return widget;
   }
