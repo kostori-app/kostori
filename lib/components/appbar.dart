@@ -213,7 +213,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
                         ),
                       )
                     : const SizedBox()),
-            const SizedBox(width: 16),
+            const SizedBox(width: 8),
             Expanded(
               child: DefaultTextStyle(
                 style: DefaultTextStyle.of(
