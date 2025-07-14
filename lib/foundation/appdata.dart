@@ -178,6 +178,7 @@ class Settings with ChangeNotifier {
     'gitMirror': false,
     'initialPage': '0',
     'debugInfo': false,
+    'BangumiUserName': '',
   };
 
   operator [](String key) {
