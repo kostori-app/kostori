@@ -69,6 +69,13 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     '最高评分': 'score',
   };
 
+  final Map<String, String> sortTypeToOption = {
+    'match': '最佳匹配',
+    'rank': '最高排名',
+    'heat': '最高收藏',
+    'score': '最高评分',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -944,6 +951,10 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     return ShareWidget(
                       selectedBangumiItems: selectedBangumiItems,
                       useBriefMode: useBriefMode,
+                      tag: tags,
+                      sort: sortTypeToOption[sort],
+                      airDate: airDate,
+                      endDate: endDate,
                     );
                   },
                 ),
@@ -1037,6 +1048,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 tags.remove(tag);
                 _isLoading = true;
                 bangumiItems.clear();
+                selectedBangumiItems.clear();
+                multiSelectMode = false;
               });
               final newItems = await bangumiSearch();
               bangumiItems = newItems;
@@ -1077,6 +1090,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     airDate = '';
                     _isLoading = true;
                     bangumiItems.clear();
+                    selectedBangumiItems.clear();
+                    multiSelectMode = false;
                   });
                   final newItems = await bangumiSearch();
                   bangumiItems = newItems;
@@ -1100,11 +1115,19 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 ),
                 label: Text(endDate),
                 onPressed: () async {
-                  endDate = '';
-                  bangumiItems.clear();
+                  setState(() {
+                    endDate = '';
+                    _isLoading = true;
+                    bangumiItems.clear();
+                    selectedBangumiItems.clear();
+                    multiSelectMode = false;
+                  });
+
                   final newItems = await bangumiSearch();
                   bangumiItems = newItems;
-                  setState(() {});
+                  setState(() {
+                    _isLoading = false;
+                  });
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),

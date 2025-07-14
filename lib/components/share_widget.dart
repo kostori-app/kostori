@@ -57,6 +57,10 @@ class ShareWidget extends StatefulWidget {
     this.selectedBangumiItems,
     this.anime,
     this.useBriefMode,
+    this.airDate,
+    this.tag,
+    this.sort,
+    this.endDate,
   });
 
   final int? id;
@@ -66,6 +70,14 @@ class ShareWidget extends StatefulWidget {
   final AnimeDetails? anime;
 
   final bool? useBriefMode;
+
+  final String? airDate;
+
+  final String? endDate;
+
+  final List<String>? tag;
+
+  final String? sort;
 
   @override
   State<ShareWidget> createState() => _ShareWidgetState();
@@ -628,6 +640,88 @@ class _ShareWidgetState extends State<ShareWidget> {
                     Theme.of(context).colorScheme.primary.toOpacity(0.72),
                     BlendMode.srcIn,
                   ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if ((widget.airDate ?? '').isNotEmpty)
+                      Text(
+                        widget.airDate!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                          color: Colors.green,
+                        ),
+                      ),
+                    if ((widget.airDate ?? '').isNotEmpty &&
+                        (widget.endDate ?? '').isNotEmpty)
+                      const Text(
+                        ' - ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    if ((widget.endDate ?? '').isNotEmpty)
+                      Text(
+                        widget.endDate!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                          color: Colors.blue,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if ((widget.sort ?? '').isNotEmpty)
+                      Text(
+                        widget.sort!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Wrap(
+                  spacing: 8.0,
+                  runSpacing: 6.0,
+                  children: widget.tag!.map((tag) {
+                    return ActionChip(
+                      label: Text(tag),
+                      onPressed: () {},
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.toOpacity(0.72),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
               Padding(
