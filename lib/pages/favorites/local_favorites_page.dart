@@ -63,10 +63,10 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     });
   }
 
-  void updateAnimes() async {
+  Future<void> updateAnimes() async {
     if (isLoading) return;
     final Map<String, List<FavoriteItem>> result = {};
-    favoritesController.animes.clear();
+
     favoritesController.folders = manager.folderNames.where((name) {
       if (name == 'default') {
         return manager
@@ -129,7 +129,8 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     if (!mounted) return;
 
     setState(() {
-      favoritesController.animes = result;
+      favoritesController.animes.clear();
+      favoritesController.animes.addAll(result);
       isLoading = false;
     });
   }
@@ -211,9 +212,9 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
 
   @override
   void dispose() {
-    super.dispose();
     favoritesController.tabController.dispose();
     manager.removeListener(updateAnimes);
+    super.dispose();
   }
 
   void update() {
@@ -382,13 +383,18 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     if (favoritesController.tabs.isEmpty) {
       favoritesController.tabs = getTabs();
     }
-    PreferredSizeWidget tab = TabBar(
-      controller: favoritesController.tabController,
-      isScrollable: true,
-      tabs: favoritesController.tabs,
-      dividerHeight: 0,
-      tabAlignment: TabAlignment.start,
-      labelColor: Theme.of(context).colorScheme.primary,
+    PreferredSizeWidget tab = PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: Observer(
+        builder: (_) => TabBar(
+          controller: favoritesController.tabController,
+          isScrollable: true,
+          tabs: favoritesController.tabs,
+          dividerHeight: 0,
+          tabAlignment: TabAlignment.start,
+          labelColor: Theme.of(context).colorScheme.primary,
+        ),
+      ),
     );
 
     Widget body = NestedScrollView(
@@ -556,19 +562,25 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                   MenuEntry(
                     icon: Icons.star_rounded,
                     text: "Favorite actions".tl,
-                    onClick: () async =>
-                        await _FavoriteDialog.show(
-                          context: context,
-                          selectedAnimes: selectedAnimes,
-                          favPage: favPage,
-                          cancel: () => _cancel(),
-                          favoritesController: favoritesController,
-                        ).then((_) {
+                    onClick: () async {
+                      favoritesController.isRefreshEnabled = true;
+                      await _FavoriteDialog.show(
+                        context: context,
+                        selectedAnimes: selectedAnimes,
+                        favPage: favPage,
+                        cancel: () => _cancel(),
+                        favoritesController: favoritesController,
+                      ).then((_) {
+                        manager.initCounts();
+                        Future.delayed(const Duration(seconds: 1), () async {
+                          if (!mounted) return;
                           favoritesController.isRefreshEnabled = true;
-                          updateAnimes();
-                          manager.initCounts();
+                          await updateAnimes();
+                          favoritesController.tabs = getTabs();
                           setState(() {});
-                        }),
+                        });
+                      });
+                    },
                   ),
                   MenuEntry(
                     icon: Icons.select_all,
@@ -620,11 +632,8 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                 onPressed: () {
                   setState(() {
                     searchAllMode = false;
-                    favoritesController.animes = {
-                      for (var folder in favoritesController.folders)
-                        folder: manager.getAllAnimes(folder, sortType),
-                    };
-                    favoritesController.tabs = getTabs();
+                    favoritesController.isRefreshEnabled = true;
+                    updateAnimes();
                   });
                 },
               ),
@@ -663,98 +672,103 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                 return SmoothCustomScrollView(
                   key: PageStorageKey("local_$name"),
                   slivers: [
-                    SliverGridAnimes(
-                      animes: searchAllMode
-                          ? (searchResults[name] ?? [])
-                          : (favoritesController.animes[name] ?? []),
-                      selections: selectedAnimes,
-                      enableFavorite: false,
-                      onTap: multiSelectMode
-                          ? (a) {
-                              setState(() {
-                                if (selectedAnimes.containsKey(
-                                  a as FavoriteItem,
-                                )) {
-                                  selectedAnimes.remove(a);
-                                  _checkExitSelectMode();
-                                } else {
-                                  selectedAnimes[a] = true;
-                                }
-                                lastSelectedIndex =
+                    Observer(
+                      builder: (context) => SliverGridAnimes(
+                        animes: searchAllMode
+                            ? (searchResults[name] ?? [])
+                            : (favoritesController.animes[name] ?? []),
+                        selections: selectedAnimes,
+                        enableFavorite: false,
+                        onTap: multiSelectMode
+                            ? (a) {
+                                setState(() {
+                                  if (selectedAnimes.containsKey(
+                                    a as FavoriteItem,
+                                  )) {
+                                    selectedAnimes.remove(a);
+                                    _checkExitSelectMode();
+                                  } else {
+                                    selectedAnimes[a] = true;
+                                  }
+                                  lastSelectedIndex =
+                                      (searchMode
+                                              ? searchResults[name]
+                                              : favoritesController
+                                                    .animes[name])
+                                          ?.indexOf(a) ??
+                                      -1;
+                                });
+                              }
+                            : (a) {
+                                App.mainNavigatorKey?.currentContext?.to(
+                                  () => AnimePage(
+                                    id: a.id,
+                                    sourceKey: a.sourceKey,
+                                  ),
+                                );
+                                manager.updateRecentlyWatched(
+                                  a.id,
+                                  AnimeType(a.sourceKey.hashCode),
+                                );
+                              },
+                        onLongPressed: (a) {
+                          setState(() {
+                            if (!multiSelectMode) {
+                              multiSelectMode = true;
+                              if (!selectedAnimes.containsKey(
+                                a as FavoriteItem,
+                              )) {
+                                selectedAnimes[a] = true;
+                              }
+                              lastSelectedIndex =
+                                  (searchMode
+                                          ? searchResults[name]
+                                          : favoritesController.animes[name])
+                                      ?.indexOf(a) ??
+                                  -1;
+                            } else {
+                              if (lastSelectedIndex != null &&
+                                  lastSelectedIndex! >= 0) {
+                                int start = lastSelectedIndex!;
+                                int end =
                                     (searchMode
                                             ? searchResults[name]
                                             : favoritesController.animes[name])
-                                        ?.indexOf(a) ??
+                                        ?.indexOf(a as FavoriteItem) ??
                                     -1;
-                              });
-                            }
-                          : (a) {
-                              App.mainNavigatorKey?.currentContext?.to(
-                                () =>
-                                    AnimePage(id: a.id, sourceKey: a.sourceKey),
-                              );
-                              manager.updateRecentlyWatched(
-                                a.id,
-                                AnimeType(a.sourceKey.hashCode),
-                              );
-                            },
-                      onLongPressed: (a) {
-                        setState(() {
-                          if (!multiSelectMode) {
-                            multiSelectMode = true;
-                            if (!selectedAnimes.containsKey(
-                              a as FavoriteItem,
-                            )) {
-                              selectedAnimes[a] = true;
-                            }
-                            lastSelectedIndex =
-                                (searchMode
+                                if (end < 0) return;
+                                if (start > end) {
+                                  int temp = start;
+                                  start = end;
+                                  end = temp;
+                                }
+
+                                var currentList =
+                                    (searchMode
                                         ? searchResults[name]
-                                        : favoritesController.animes[name])
-                                    ?.indexOf(a) ??
-                                -1;
-                          } else {
-                            if (lastSelectedIndex != null &&
-                                lastSelectedIndex! >= 0) {
-                              int start = lastSelectedIndex!;
-                              int end =
+                                        : favoritesController.animes[name]) ??
+                                    [];
+                                for (int i = start; i <= end; i++) {
+                                  if (i == lastSelectedIndex) continue;
+                                  var anime = currentList[i];
+                                  if (selectedAnimes.containsKey(anime)) {
+                                    selectedAnimes.remove(anime);
+                                  } else {
+                                    selectedAnimes[anime] = true;
+                                  }
+                                }
+                              }
+                              lastSelectedIndex =
                                   (searchMode
                                           ? searchResults[name]
                                           : favoritesController.animes[name])
                                       ?.indexOf(a as FavoriteItem) ??
                                   -1;
-                              if (end < 0) return;
-                              if (start > end) {
-                                int temp = start;
-                                start = end;
-                                end = temp;
-                              }
-
-                              var currentList =
-                                  (searchMode
-                                      ? searchResults[name]
-                                      : favoritesController.animes[name]) ??
-                                  [];
-                              for (int i = start; i <= end; i++) {
-                                if (i == lastSelectedIndex) continue;
-                                var anime = currentList[i];
-                                if (selectedAnimes.containsKey(anime)) {
-                                  selectedAnimes.remove(anime);
-                                } else {
-                                  selectedAnimes[anime] = true;
-                                }
-                              }
                             }
-                            lastSelectedIndex =
-                                (searchMode
-                                        ? searchResults[name]
-                                        : favoritesController.animes[name])
-                                    ?.indexOf(a as FavoriteItem) ??
-                                -1;
-                          }
-                          _checkExitSelectMode();
-                        });
-                      },
+                            _checkExitSelectMode();
+                          });
+                        },
+                      ),
                     ),
                   ],
                 );
