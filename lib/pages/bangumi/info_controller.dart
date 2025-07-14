@@ -1,18 +1,15 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'package:kostori/foundation/history.dart';
-import 'package:mobx/mobx.dart';
-
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
+import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
-
-import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-
-import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
+import 'package:mobx/mobx.dart';
 
 import '../../foundation/bangumi/reviews/reviews_item.dart';
 import '../../foundation/bangumi/topics/topics_info_item.dart';
@@ -109,8 +106,9 @@ abstract class _InfoController with Store {
     }
     await Bangumi.getTopicsLatestByID(offset: offset).then((value) {
       final existingIds = topicsLatestList.map((e) => e.id).toSet();
-      final newItems =
-          value.where((item) => !existingIds.contains(item.id)).toList();
+      final newItems = value
+          .where((item) => !existingIds.contains(item.id))
+          .toList();
       topicsLatestList.addAll(newItems);
     });
   }
@@ -121,8 +119,9 @@ abstract class _InfoController with Store {
     }
     await Bangumi.getTopicsTrendingByID(offset: offset).then((value) {
       final existingIds = topicsTrendingList.map((e) => e.id).toSet();
-      final newItems =
-          value.where((item) => !existingIds.contains(item.id)).toList();
+      final newItems = value
+          .where((item) => !existingIds.contains(item.id))
+          .toList();
       topicsTrendingList.addAll(newItems);
     });
   }
@@ -141,15 +140,12 @@ abstract class _InfoController with Store {
     await Bangumi.getCharatersByID(id).then((value) {
       characterList.addAll(value.characterList);
     });
-    Map<String, int> relationValue = {
-      '主角': 1,
-      '配角': 2,
-      '客串': 3,
-      '未知': 4,
-    };
+    Map<String, int> relationValue = {'主角': 1, '配角': 2, '客串': 3, '未知': 4};
     try {
-      characterList.sort((a, b) =>
-          relationValue[a.relation]!.compareTo(relationValue[b.relation]!));
+      characterList.sort(
+        (a, b) =>
+            relationValue[a.relation]!.compareTo(relationValue[b.relation]!),
+      );
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'queryBangumiCharactersByID', '$e\n$s');
     }
@@ -162,8 +158,11 @@ abstract class _InfoController with Store {
     });
   }
 
-  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode,
-      {int offset = 0}) async {
+  Future<void> queryBangumiEpisodeCommentsByID(
+    int id,
+    int episode, {
+    int offset = 0,
+  }) async {
     if (offset == 0) {
       episodeCommentsList.clear();
     }
@@ -174,8 +173,10 @@ abstract class _InfoController with Store {
     });
   }
 
-  Future<void> queryBangumiEpisodeCommentsByEpID(int id,
-      {int offset = 0}) async {
+  Future<void> queryBangumiEpisodeCommentsByEpID(
+    int id, {
+    int offset = 0,
+  }) async {
     if (offset == 0) {
       episodeCommentsList.clear();
     }

@@ -23,18 +23,28 @@ class _LeftBar extends StatefulWidget {
 class _LeftBarState extends State<_LeftBar> implements FolderList {
   late _FavoritesPageState favPage;
 
-  late final FavoritesController favoritesController;
+  FavoritesController get favoritesController => widget.favoritesController;
+
+  String get name => widget.favoritesController.bangumiUserName;
 
   var folders = <String>[];
+  String nameAvatar = '';
 
   @override
   void initState() {
-    favoritesController = widget.favoritesController;
     favPage =
         widget.favPage ??
         context.findAncestorStateOfType<_FavoritesPageState>()!;
     favPage.folderList = this;
     folders = LocalFavoritesManager().folderNames;
+    if (name.isNotEmpty) {
+      if (appdata.implicitData['nameAvatar'] != null &&
+          appdata.implicitData['nameAvatar'] != '') {
+        nameAvatar = appdata.implicitData['nameAvatar'];
+      } else {
+        getNameAvatar();
+      }
+    }
     // appdata.settings.addListener(updateFolders);
     // LocalFavoritesManager().addListener(updateFolders);
     super.initState();
@@ -45,6 +55,13 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
     super.dispose();
     // appdata.settings.removeListener(updateFolders);
     // LocalFavoritesManager().removeListener(updateFolders);
+  }
+
+  Future<void> getNameAvatar() async {
+    nameAvatar = await Bangumi.getBangumiUserAvatarByName(name);
+    appdata.implicitData['nameAvatar'] = nameAvatar;
+    appdata.writeImplicitData();
+    setState(() {});
   }
 
   @override
@@ -79,13 +96,36 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
                 ? EdgeInsets.zero
                 : EdgeInsets.only(top: context.padding.top),
             child: Card(
+              color: favPage.pageId == 0
+                  ? context.colorScheme.primaryContainer.toOpacity(0.36)
+                  : null,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () {},
-                child: buildLocalTitle(), // 这个 widget 本身必须撑满
+                onTap: () {
+                  favPage.setPage(0);
+                },
+                child: buildLocalTitle(),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.zero,
+            child: Card(
+              color: favPage.pageId == 1
+                  ? context.colorScheme.primaryContainer.toOpacity(0.36)
+                  : null,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  favPage.setPage(1);
+                },
+                child: buildBangumiFavoriteTitle(),
               ),
             ),
           ),
@@ -111,7 +151,6 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               newFolder().then((value) {
                 setState(() {
                   favoritesController.isRefreshEnabled = true;
-                  // folders = LocalFavoritesManager().folderNames;
                 });
               });
             },
@@ -123,9 +162,61 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               sortFolders().then((value) {
                 setState(() {
                   favoritesController.isRefreshEnabled = true;
-                  // folders = LocalFavoritesManager().folderNames;
                 });
               });
+            },
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget buildBangumiFavoriteTitle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const SizedBox(width: 16),
+          if (nameAvatar.isEmpty) ...[
+            Icon(Icons.star, color: context.colorScheme.secondary),
+            const SizedBox(width: 12),
+            Text("番组计划".tl),
+          ],
+          if (nameAvatar.isNotEmpty) ...[
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(nameAvatar),
+              backgroundColor: Colors.transparent, // 如果你不想要背景色
+            ),
+            const SizedBox(width: 12),
+            Text(name),
+          ],
+
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            color: context.colorScheme.primary,
+            onPressed: () {
+              showInputDialog(
+                context: App.rootContext,
+                title: "切换收藏人".tl,
+                hintText: "New Name".tl,
+                onConfirm: (value) {
+                  if (value.isEmpty) {
+                    favoritesController.bangumiUserName = '';
+                    appdata.implicitData['nameAvatar'] = '';
+                    appdata.writeImplicitData();
+                    favPage.setName('');
+                  } else {
+                    favPage.setName(value);
+                    favoritesController.bangumiUserName = value;
+                    getNameAvatar();
+                  }
+
+                  return null;
+                },
+              );
             },
           ),
           const SizedBox(width: 16),

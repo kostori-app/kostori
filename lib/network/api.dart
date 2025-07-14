@@ -93,6 +93,13 @@ class Api {
   static const String bangumiReviewsSubjectsByIDNext =
       'https://next.bgm.tv/p1/blogs/{0}/subjects';
 
+  //用户收藏
+  static const String bangumiUserFavoritesSubjectByNameNext =
+      'https://next.bgm.tv/p1/users/{0}/collections/subjects';
+
+  //用户头像
+  static const String bangumiUserAvatar = 'https://next.bgm.tv/p1/users/';
+
   static String formatUrl(String url, List<dynamic> params) {
     for (int i = 0; i < params.length; i++) {
       url = url.replaceAll('{$i}', params[i].toString());

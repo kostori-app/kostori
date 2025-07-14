@@ -822,6 +822,51 @@ class Bangumi {
     return {false: null};
   }
 
+  static Future<String> getBangumiUserAvatarByName(String name) async {
+    try {
+      final res = await AppDio().request(
+        '${Api.bangumiUserAvatar}$name',
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
+      final avatar = res.data["avatar"]["large"];
+      return avatar;
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getBangumiUserAvatarByName', '$e');
+    }
+    return '';
+  }
+
+  static Future<List<BangumiItem>> getBangumiUseFavoritesByName({
+    String name = '',
+    int type = 2,
+    int subjectType = 2,
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    List<BangumiItem> bangumiList = [];
+    var params = <String, dynamic>{
+      'type': type,
+      'subjectType': subjectType,
+      'limit': limit,
+      'offset': offset,
+    };
+    try {
+      final res = await AppDio().request(
+        Api.formatUrl(Api.bangumiUserFavoritesSubjectByNameNext, [name]),
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
+      final jsonData = res.data;
+      final jsonList = jsonData['data'];
+      for (dynamic jsonItem in jsonList) {
+        bangumiList.add(BangumiItem.fromJson(jsonItem));
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'getBangumiUseFavorites', '$e');
+    }
+    return bangumiList;
+  }
+
   static Future<List<BangumiItem>> getBangumiTrendsList({
     int type = 2,
     int limit = 24,

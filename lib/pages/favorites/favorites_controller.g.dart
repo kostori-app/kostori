@@ -9,6 +9,24 @@ part of 'favorites_controller.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$FavoritesController on _FavoritesController, Store {
+  late final _$isLoadingAtom = Atom(
+    name: '_FavoritesController.isLoading',
+    context: context,
+  );
+
+  @override
+  bool get isLoading {
+    _$isLoadingAtom.reportRead();
+    return super.isLoading;
+  }
+
+  @override
+  set isLoading(bool value) {
+    _$isLoadingAtom.reportWrite(value, super.isLoading, () {
+      super.isLoading = value;
+    });
+  }
+
   late final _$tabsAtom = Atom(
     name: '_FavoritesController.tabs',
     context: context,
@@ -105,27 +123,123 @@ mixin _$FavoritesController on _FavoritesController, Store {
   );
 
   @override
-  Map<String, List<FavoriteItem>> get animes {
+  ObservableMap<String, List<FavoriteItem>> get animes {
     _$animesAtom.reportRead();
     return super.animes;
   }
 
   @override
-  set animes(Map<String, List<FavoriteItem>> value) {
+  set animes(ObservableMap<String, List<FavoriteItem>> value) {
     _$animesAtom.reportWrite(value, super.animes, () {
       super.animes = value;
+    });
+  }
+
+  late final _$doingListAtom = Atom(
+    name: '_FavoritesController.doingList',
+    context: context,
+  );
+
+  @override
+  ObservableList<BangumiItem> get doingList {
+    _$doingListAtom.reportRead();
+    return super.doingList;
+  }
+
+  @override
+  set doingList(ObservableList<BangumiItem> value) {
+    _$doingListAtom.reportWrite(value, super.doingList, () {
+      super.doingList = value;
+    });
+  }
+
+  late final _$collectListAtom = Atom(
+    name: '_FavoritesController.collectList',
+    context: context,
+  );
+
+  @override
+  ObservableList<BangumiItem> get collectList {
+    _$collectListAtom.reportRead();
+    return super.collectList;
+  }
+
+  @override
+  set collectList(ObservableList<BangumiItem> value) {
+    _$collectListAtom.reportWrite(value, super.collectList, () {
+      super.collectList = value;
+    });
+  }
+
+  late final _$wishListAtom = Atom(
+    name: '_FavoritesController.wishList',
+    context: context,
+  );
+
+  @override
+  ObservableList<BangumiItem> get wishList {
+    _$wishListAtom.reportRead();
+    return super.wishList;
+  }
+
+  @override
+  set wishList(ObservableList<BangumiItem> value) {
+    _$wishListAtom.reportWrite(value, super.wishList, () {
+      super.wishList = value;
+    });
+  }
+
+  late final _$onHoldListAtom = Atom(
+    name: '_FavoritesController.onHoldList',
+    context: context,
+  );
+
+  @override
+  ObservableList<BangumiItem> get onHoldList {
+    _$onHoldListAtom.reportRead();
+    return super.onHoldList;
+  }
+
+  @override
+  set onHoldList(ObservableList<BangumiItem> value) {
+    _$onHoldListAtom.reportWrite(value, super.onHoldList, () {
+      super.onHoldList = value;
+    });
+  }
+
+  late final _$droppedListAtom = Atom(
+    name: '_FavoritesController.droppedList',
+    context: context,
+  );
+
+  @override
+  ObservableList<BangumiItem> get droppedList {
+    _$droppedListAtom.reportRead();
+    return super.droppedList;
+  }
+
+  @override
+  set droppedList(ObservableList<BangumiItem> value) {
+    _$droppedListAtom.reportWrite(value, super.droppedList, () {
+      super.droppedList = value;
     });
   }
 
   @override
   String toString() {
     return '''
+isLoading: ${isLoading},
 tabs: ${tabs},
 folders: ${folders},
 folder: ${folder},
 index: ${index},
 isRefreshEnabled: ${isRefreshEnabled},
-animes: ${animes}
+animes: ${animes},
+doingList: ${doingList},
+collectList: ${collectList},
+wishList: ${wishList},
+onHoldList: ${onHoldList},
+droppedList: ${droppedList}
     ''';
   }
 }

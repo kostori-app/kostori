@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/misc_components.dart';
@@ -16,8 +17,15 @@ import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
+import '../../components/bangumi_widget.dart';
+import '../../foundation/bangumi/bangumi_item.dart';
+import '../../network/bangumi.dart';
+import '../bangumi/bangumi_search_page.dart';
 import 'favorites_controller.dart';
+
+part 'bangumi_favorites_page.dart';
 
 part 'favorite_actions.dart';
 
@@ -44,6 +52,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
   String? folder;
 
   bool isNetwork = false;
+  bool localFavorites = false;
+  bool bangumiUserFavorites = false;
+
+  int pageId = 0;
 
   FolderList? folderList;
 
@@ -58,6 +70,24 @@ class _FavoritesPageState extends State<FavoritesPage> {
       'isNetwork': isNetwork,
     };
     appdata.writeImplicitData();
+  }
+
+  void setName(String name) {
+    setState(() {
+      favoritesController.bangumiUserName = name;
+    });
+    folderList?.update();
+    appdata.settings['BangumiUserName'] = name;
+    appdata.saveData();
+  }
+
+  void setPage(int id) {
+    setState(() {
+      pageId = id;
+    });
+    folderList?.update();
+    appdata.settings['favoritePageId'] = id;
+    appdata.saveData();
   }
 
   bool hasSpecificFolder(String targetFolderName) {
@@ -76,7 +106,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
   void initState() {
     favoritesController = FavoritesController();
     var data = appdata.implicitData['favoriteFolder'];
+    pageId = appdata.settings['favoritePageId'];
 
+    favoritesController.bangumiUserName = appdata.settings['BangumiUserName'];
     favoritesController.folders = LocalFavoritesManager().folderNames.where((
       name,
     ) {
@@ -102,6 +134,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
         !isNetwork &&
         !LocalFavoritesManager().existsFolder(folder!)) {
       folder = null;
+      if (favoritesController.folders.isNotEmpty) {
+        setFolder(false, favoritesController.folders[0]);
+      }
     }
     super.initState();
   }
@@ -174,6 +209,20 @@ class _FavoritesPageState extends State<FavoritesPage> {
     );
   }
 
+  Widget _buildBody() {
+    if (pageId == 0) {
+      return _LocalFavoritesPage(
+        favoritesController: favoritesController,
+        // folder: folder!,
+        // key: PageStorageKey("local_$folder"),
+      );
+    } else if (pageId == 1) {
+      return BangumiFavoritesPage(favoritesController: favoritesController);
+    } else {
+      return Container();
+    }
+  }
+
   Widget buildBody() {
     if (folder == null) {
       return CustomScrollView(
@@ -199,11 +248,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
         ],
       );
     }
-    return _LocalFavoritesPage(
-      favoritesController: favoritesController,
-      // folder: folder!,
-      // key: PageStorageKey("local_$folder"),
-    );
+    return _buildBody();
   }
 }
 

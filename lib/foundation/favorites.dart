@@ -673,7 +673,7 @@ class LocalFavoritesManager with ChangeNotifier {
 
         displayOrder++;
       }
-      notifyListeners();
+      // notifyListeners();
     } catch (e) {
       Log.error("Batch Move Favorites", e.toString());
       _db.execute("ROLLBACK");
@@ -696,7 +696,7 @@ class LocalFavoritesManager with ChangeNotifier {
       }
     }
 
-    notifyListeners();
+    // notifyListeners();
   }
 
   void batchCopyFavorites(
