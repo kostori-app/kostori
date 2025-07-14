@@ -684,8 +684,8 @@ class ToastManager {
   }
 
   static void _repositionAll() {
-    const double baseOffset = 40.0; // 你想要的第一个toast起始高度
-    const double spacing = 48.0; // 每个toast的高度+间距
+    const double baseOffset = 40.0;
+    const double spacing = 48.0;
 
     for (int i = 0; i < _entries.length; i++) {
       _entries[i].position = baseOffset + i * spacing;

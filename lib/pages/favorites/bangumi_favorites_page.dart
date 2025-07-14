@@ -14,6 +14,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
         TickerProviderStateMixin,
         AutomaticKeepAliveClientMixin<BangumiFavoritesPage> {
   late TabController controller;
+  late _FavoritesPageState favPage;
 
   FavoritesController get favoritesController => widget.favoritesController;
 
@@ -38,6 +39,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
   @override
   void initState() {
     super.initState();
+    favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
     favoritesController.doingList.clear();
     favoritesController.collectList.clear();
     favoritesController.droppedList.clear();
@@ -634,33 +636,35 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    Widget tabBar = Material(
-      child: TabBar(
-        tabs: tab.map((title) => Tab(text: title)).toList(),
-        controller: controller,
-        tabAlignment: TabAlignment.center,
-      ),
-    ).paddingTop(context.padding.top);
-    return Column(
-      children: [
-        tabBar,
-        Expanded(
-          child: MediaQuery.removePadding(
-            context: context,
-            removeTop: true,
-            child: TabBarView(
-              controller: controller,
-              children: [
-                droppedListBody,
-                wishListBody,
-                doingListBody,
-                onHoldListBody,
-                collectListBody,
-              ],
-            ),
-          ),
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: Tooltip(
+          message: "Folders".tl,
+          child: context.width <= _kTwoPanelChangeWidth
+              ? IconButton(
+                  icon: const Icon(Icons.menu),
+                  color: context.colorScheme.primary,
+                  onPressed: favPage.showFolderSelector,
+                )
+              : const SizedBox(),
         ),
-      ],
+        bottom: TabBar(
+          tabs: tab.map((title) => Tab(text: title)).toList(),
+          controller: controller,
+          tabAlignment: TabAlignment.center,
+        ),
+      ),
+      body: TabBarView(
+        controller: controller,
+        children: [
+          droppedListBody,
+          wishListBody,
+          doingListBody,
+          onHoldListBody,
+          collectListBody,
+        ],
+      ),
     );
   }
 
