@@ -106,7 +106,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   void initState() {
     favoritesController = FavoritesController();
     var data = appdata.implicitData['favoriteFolder'];
-    pageId = appdata.settings['favoritePageId'];
+    pageId = appdata.settings['favoritePageId'] ?? 0;
 
     favoritesController.bangumiUserName = appdata.settings['BangumiUserName'];
     favoritesController.folders = LocalFavoritesManager().folderNames.where((
