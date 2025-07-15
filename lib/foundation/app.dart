@@ -2,16 +2,15 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-
 import 'package:kostori/foundation/appdata.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'bangumi.dart';
 import 'favorites.dart';
 import 'history.dart';
 
-export "widget_utils.dart";
 export "context.dart";
+export "widget_utils.dart";
 
 class _App {
   final version = "1.2.0";
