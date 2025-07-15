@@ -2,26 +2,24 @@
 
 part of "components.dart";
 
-void showToast({
-  required String message,
-  required BuildContext context,
-  Widget? icon,
-  Widget? trailing,
-  int? seconds,
-}) {
-  var newEntry = OverlayEntry(
-      builder: (context) => _ToastOverlay(
-            message: message,
-            icon: icon,
-            trailing: trailing,
-          ));
-
-  var state = context.findAncestorStateOfType<OverlayWidgetState>();
-
-  state?.addOverlay(newEntry);
-
-  Timer(Duration(seconds: seconds ?? 2), () => state?.remove(newEntry));
-}
+// void showToast({
+//   required String message,
+//   required BuildContext context,
+//   Widget? icon,
+//   Widget? trailing,
+//   int? seconds,
+// }) {
+//   var newEntry = OverlayEntry(
+//     builder: (context) =>
+//         _ToastOverlay(message: message, icon: icon, trailing: trailing),
+//   );
+//
+//   var state = context.findAncestorStateOfType<OverlayWidgetState>();
+//
+//   state?.addOverlay(newEntry);
+//
+//   Timer(Duration(seconds: seconds ?? 2), () => state?.remove(newEntry));
+// }
 
 void showCenter({
   required String message,
@@ -31,11 +29,9 @@ void showCenter({
   int? seconds,
 }) {
   var newEntry = OverlayEntry(
-      builder: (context) => _CenterOverlay(
-            message: message,
-            icon: icon,
-            trailing: trailing,
-          ));
+    builder: (context) =>
+        _CenterOverlay(message: message, icon: icon, trailing: trailing),
+  );
 
   var state = context.findAncestorStateOfType<OverlayWidgetState>();
 
@@ -45,18 +41,22 @@ void showCenter({
 }
 
 class _ToastOverlay extends StatelessWidget {
-  const _ToastOverlay({required this.message, this.icon, this.trailing});
+  const _ToastOverlay({
+    required this.message,
+    this.icon,
+    this.trailing,
+    required this.position,
+  });
 
   final String message;
-
   final Widget? icon;
-
   final Widget? trailing;
+  final double position;
 
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      bottom: 24 + MediaQuery.of(context).viewInsets.bottom,
+      bottom: position + MediaQuery.of(context).viewInsets.bottom + 24,
       left: 0,
       right: 0,
       child: Align(
@@ -65,18 +65,20 @@ class _ToastOverlay extends StatelessWidget {
           color: Theme.of(context).colorScheme.inverseSurface,
           borderRadius: BorderRadius.circular(8),
           elevation: 2,
-          textStyle:
-              ts.withColor(Theme.of(context).colorScheme.onInverseSurface),
+          textStyle: ts.withColor(
+            Theme.of(context).colorScheme.onInverseSurface,
+          ),
           child: IconTheme(
             data: IconThemeData(
-                color: Theme.of(context).colorScheme.onInverseSurface),
+              color: Theme.of(context).colorScheme.onInverseSurface,
+            ),
             child: IntrinsicWidth(
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-                constraints: BoxConstraints(
-                  maxWidth: context.width - 32,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
                 ),
+                constraints: BoxConstraints(maxWidth: context.width - 32),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -85,12 +87,14 @@ class _ToastOverlay extends StatelessWidget {
                       child: Text(
                         message,
                         style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (trailing != null) trailing!.paddingLeft(8)
+                    if (trailing != null) trailing!.paddingLeft(8),
                   ],
                 ),
               ),
@@ -130,7 +134,9 @@ class _CenterOverlay extends StatelessWidget {
             child: IntrinsicWidth(
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    vertical: 12, horizontal: 24), // 增加内边距
+                  vertical: 12,
+                  horizontal: 24,
+                ), // 增加内边距
                 constraints: BoxConstraints(
                   maxWidth:
                       MediaQuery.of(context).size.width * 0.8, // 限制最大宽度为屏幕的80%
@@ -217,12 +223,7 @@ void showDialogMessage(BuildContext context, String title, String message) {
     builder: (context) => AlertDialog(
       title: Text(title),
       content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: context.pop,
-          child: Text("OK".tl),
-        )
-      ],
+      actions: [TextButton(onPressed: context.pop, child: Text("OK".tl))],
     ),
   );
 }
@@ -246,9 +247,7 @@ Future<void> showConfirmDialog({
             context.pop();
             onConfirm();
           },
-          style: FilledButton.styleFrom(
-            backgroundColor: btnColor,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: btnColor),
           child: Text(confirmText.tl),
         ),
       ],
@@ -316,36 +315,38 @@ LoadingDialogController showLoadingDialog(
     context: context,
     barrierDismissible: barrierDismissible,
     builder: (BuildContext context) {
-      return StatefulBuilder(builder: (context, setState) {
-        controller._serProgress = (value) {
-          setState(() {
-            controller._progress = value;
-          });
-        };
-        controller._setMessage = (message) {
-          setState(() {
-            controller._message = message;
-          });
-        };
-        return ContentDialog(
-          title: controller._message ?? 'Loading',
-          content: LinearProgressIndicator(
-            value: controller._progress,
-            backgroundColor: context.colorScheme.surfaceContainer,
-          ).paddingHorizontal(16).paddingVertical(16),
-          actions: [
-            FilledButton(
-              onPressed: allowCancel
-                  ? () {
-                      controller.close();
-                      onCancel?.call();
-                    }
-                  : null,
-              child: Text(cancelButtonText.tl),
-            )
-          ],
-        );
-      });
+      return StatefulBuilder(
+        builder: (context, setState) {
+          controller._serProgress = (value) {
+            setState(() {
+              controller._progress = value;
+            });
+          };
+          controller._setMessage = (message) {
+            setState(() {
+              controller._message = message;
+            });
+          };
+          return ContentDialog(
+            title: controller._message ?? 'Loading',
+            content: LinearProgressIndicator(
+              value: controller._progress,
+              backgroundColor: context.colorScheme.surfaceContainer,
+            ).paddingHorizontal(16).paddingVertical(16),
+            actions: [
+              FilledButton(
+                onPressed: allowCancel
+                    ? () {
+                        controller.close();
+                        onCancel?.call();
+                      }
+                    : null,
+                child: Text(cancelButtonText.tl),
+              ),
+            ],
+          );
+        },
+      );
     },
   );
 
@@ -386,8 +387,11 @@ class ContentDialog extends StatelessWidget {
         children: [
           title != null
               ? Padding(
-                  padding:
-                      const EdgeInsets.only(left: 24.0, top: 24, bottom: 12),
+                  padding: const EdgeInsets.only(
+                    left: 24.0,
+                    top: 24,
+                    bottom: 12,
+                  ),
                   child: Text(
                     title!,
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -402,9 +406,7 @@ class ContentDialog extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              const SizedBox(
-                width: 24,
-              ),
+              const SizedBox(width: 24),
               Button.text(
                 onPressed: () {
                   Navigator.pop(context);
@@ -412,12 +414,10 @@ class ContentDialog extends StatelessWidget {
                 child: Text("Cancel".tl),
               ),
               const Spacer(),
-              ...actions
+              ...actions,
             ],
           ).paddingRight(12),
-          const SizedBox(
-            height: 24,
-          )
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -443,8 +443,9 @@ class ContentDialog extends StatelessWidget {
           filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3), // 模糊强度
           child: Container(
             decoration: BoxDecoration(
-                color: context.colorScheme.surface.toOpacity(0.22),
-                borderRadius: BorderRadius.circular(24)),
+              color: context.colorScheme.surface.toOpacity(0.22),
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: AnimatedSize(
               duration: const Duration(milliseconds: 200),
               alignment: Alignment.topCenter,
@@ -546,10 +547,7 @@ void showInfoDialog({
         title: title,
         content: Text(content).paddingHorizontal(16).paddingVertical(8),
         actions: [
-          Button.filled(
-            onPressed: context.pop,
-            child: Text(confirmText.tl),
-          ),
+          Button.filled(onPressed: context.pop, child: Text(confirmText.tl)),
         ],
       );
     },
@@ -584,7 +582,7 @@ Future<int?> showSelectDialog({
                         current = i;
                       });
                     },
-                  )
+                  ),
                 ],
               ),
             ),
@@ -608,4 +606,90 @@ Future<int?> showSelectDialog({
   );
 
   return current;
+}
+
+class _ToastEntry {
+  late final OverlayEntry overlayEntry;
+  final int seconds;
+  final VoidCallback onRemove;
+  final BuildContext context;
+  final String message;
+  final Widget? icon;
+  final Widget? trailing;
+
+  double position = 0;
+
+  _ToastEntry({
+    required this.context,
+    required this.message,
+    required this.icon,
+    required this.trailing,
+    required this.seconds,
+    required this.onRemove,
+  }) {
+    overlayEntry = OverlayEntry(
+      builder: (ctx) => _ToastOverlay(
+        message: message,
+        icon: icon,
+        trailing: trailing,
+        position: position, // 实时读取位置
+      ),
+    );
+  }
+
+  void startTimer(VoidCallback onTimeout) {
+    Future.delayed(Duration(seconds: seconds)).then((_) {
+      onTimeout();
+      onRemove();
+    });
+  }
+
+  void updatePosition(int index) {
+    position = index * 48.0; // 每个 toast 高度+间距
+    overlayEntry.markNeedsBuild();
+  }
+}
+
+class ToastManager {
+  static final List<_ToastEntry> _entries = [];
+
+  static void show({
+    required String message,
+    required BuildContext context,
+    Widget? icon,
+    Widget? trailing,
+    int? seconds,
+  }) {
+    final newEntry = _ToastEntry(
+      context: context,
+      message: message,
+      icon: icon,
+      trailing: trailing,
+      seconds: seconds ?? 2,
+      onRemove: _repositionAll,
+    );
+
+    var state = context.findAncestorStateOfType<OverlayWidgetState>();
+    if (state != null) {
+      _entries.add(newEntry);
+      state.addOverlay(newEntry.overlayEntry);
+      _repositionAll();
+
+      newEntry.startTimer(() {
+        _entries.remove(newEntry);
+        state.remove(newEntry.overlayEntry);
+        _repositionAll();
+      });
+    }
+  }
+
+  static void _repositionAll() {
+    const double baseOffset = 40.0;
+    const double spacing = 48.0;
+
+    for (int i = 0; i < _entries.length; i++) {
+      _entries[i].position = baseOffset + i * spacing;
+      _entries[i].overlayEntry.markNeedsBuild();
+    }
+  }
 }

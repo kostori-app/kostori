@@ -1,8 +1,11 @@
 part of 'components.dart';
 
 class SmoothCustomScrollView extends StatelessWidget {
-  const SmoothCustomScrollView(
-      {super.key, required this.slivers, this.controller});
+  const SmoothCustomScrollView({
+    super.key,
+    required this.slivers,
+    this.controller,
+  });
 
   final ScrollController? controller;
 
@@ -19,9 +22,7 @@ class SmoothCustomScrollView extends StatelessWidget {
           slivers: [
             ...slivers,
             SliverPadding(
-              padding: EdgeInsets.only(
-                bottom: context.padding.bottom,
-              ),
+              padding: EdgeInsets.only(bottom: context.padding.bottom),
             ),
           ],
         );
@@ -31,8 +32,11 @@ class SmoothCustomScrollView extends StatelessWidget {
 }
 
 class SmoothScrollProvider extends StatefulWidget {
-  const SmoothScrollProvider(
-      {super.key, this.controller, required this.builder});
+  const SmoothScrollProvider({
+    super.key,
+    this.controller,
+    required this.builder,
+  });
 
   final ScrollController? controller;
 
@@ -125,16 +129,16 @@ class _SmoothScrollProviderState extends State<SmoothScrollProvider> {
           var target = _futurePosition!;
           _controller
               .animateTo(
-            _futurePosition!,
-            duration: _fastAnimationDuration,
-            curve: Curves.linear,
-          )
+                _futurePosition!,
+                duration: _fastAnimationDuration,
+                curve: Curves.linear,
+              )
               .then((_) {
-            var current = _controller.position.pixels;
-            if (current == target && current == _futurePosition) {
-              _futurePosition = null;
-            }
-          });
+                var current = _controller.position.pixels;
+                if (current == target && current == _futurePosition) {
+                  _futurePosition = null;
+                }
+              });
         }
       },
       child: ScrollState._(
@@ -186,8 +190,8 @@ class ScrollState extends InheritedWidget {
   final void Function(int id) onChildInactive;
 
   static ScrollState of(BuildContext context) {
-    final ScrollState? provider =
-        context.dependOnInheritedWidgetOfExactType<ScrollState>();
+    final ScrollState? provider = context
+        .dependOnInheritedWidgetOfExactType<ScrollState>();
     return provider!;
   }
 
@@ -210,9 +214,7 @@ class AppScrollBar extends StatefulWidget {
   });
 
   final ScrollController controller;
-
   final Widget child;
-
   final double topPadding;
 
   @override
@@ -220,141 +222,148 @@ class AppScrollBar extends StatefulWidget {
 }
 
 class _AppScrollBarState extends State<AppScrollBar> {
-  late final ScrollController _scrollController;
-
   bool showScrollbar = true;
   Timer? _hideTimer;
 
   double minExtent = 0;
   double maxExtent = 0;
   double position = 0;
-
   double viewHeight = 0;
 
-  final _scrollIndicatorSize = App.isDesktop ? 42.0 : 64.0;
+  double _startDragDy = 0;
+  double _startScrollOffset = 0;
+
+  final _scrollbarHeight = App.isDesktop ? 42.0 : 64.0;
 
   late final VerticalDragGestureRecognizer _dragGestureRecognizer;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = widget.controller;
-    _scrollController.addListener(onChanged);
-    Future.microtask(onChanged);
     _dragGestureRecognizer = VerticalDragGestureRecognizer()
-      ..onUpdate = onUpdate;
-    _restartHideTimer();
+      ..onStart = _onDragStart
+      ..onUpdate = _onDragUpdate;
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(onChanged);
     _hideTimer?.cancel();
     _dragGestureRecognizer.dispose();
     super.dispose();
   }
 
-  void onUpdate(DragUpdateDetails details) {
-    if (maxExtent - minExtent <= 0 ||
-        viewHeight == 0 ||
-        details.primaryDelta == null) {
-      return;
-    }
-    var offset = details.primaryDelta!;
-    var positionOffset =
-        offset / (viewHeight - _scrollIndicatorSize) * (maxExtent - minExtent);
-    _scrollController.jumpTo((position + positionOffset).clamp(
+  void _onDragStart(DragStartDetails details) {
+    _startDragDy = details.localPosition.dy;
+    _startScrollOffset = widget.controller.offset;
+  }
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (maxExtent - minExtent <= 0 || viewHeight <= 0) return;
+
+    final dyDelta = details.localPosition.dy - _startDragDy;
+    final scrollRange = maxExtent - minExtent;
+    final viewRange = viewHeight - _scrollbarHeight;
+    if (viewRange <= 0) return;
+
+    final scrollDelta = dyDelta / viewRange * scrollRange;
+    final newOffset = (_startScrollOffset + scrollDelta).clamp(
       minExtent,
       maxExtent,
-    ));
+    );
+
+    widget.controller.jumpTo(newOffset);
   }
 
   void _restartHideTimer() {
     _hideTimer?.cancel();
     _hideTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          showScrollbar = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() => showScrollbar = false);
     });
   }
 
-  void onChanged() {
-    if (_scrollController.positions.isEmpty) return;
-    var position = _scrollController.position;
+  bool _onScrollNotification(ScrollNotification notification) {
+    if (notification.metrics.axis != Axis.vertical) return false;
 
-    bool extentChanged = position.minScrollExtent != minExtent ||
-        position.maxScrollExtent != maxExtent;
-    bool pixelChanged = (position.pixels - this.position).abs() > 0.5;
+    final extentChanged =
+        notification.metrics.minScrollExtent != minExtent ||
+        notification.metrics.maxScrollExtent != maxExtent;
+    final pixelChanged = (notification.metrics.pixels - position).abs() > 0.5;
 
     if (extentChanged || pixelChanged) {
-      setState(() {
-        minExtent = position.minScrollExtent;
-        maxExtent = position.maxScrollExtent;
-        this.position = position.pixels;
-        showScrollbar = true;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          minExtent = notification.metrics.minScrollExtent;
+          maxExtent = notification.metrics.maxScrollExtent;
+          position = notification.metrics.pixels;
+          showScrollbar = true;
+        });
+        _restartHideTimer();
       });
-      _restartHideTimer();
     }
+
+    return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constrains) {
-        var scrollHeight = (maxExtent - minExtent);
-        var height = constrains.maxHeight - widget.topPadding;
-        viewHeight = height;
-        var top = scrollHeight == 0
-            ? 0.0
-            : (position - minExtent) /
-                scrollHeight *
-                (height - _scrollIndicatorSize);
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: widget.child,
-            ),
-            Positioned(
-              top: top + widget.topPadding,
-              right: 0,
-              child: AnimatedOpacity(
-                opacity: showScrollbar ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Listener(
-                    behavior: HitTestBehavior.translucent,
-                    onPointerDown: (event) {
-                      _dragGestureRecognizer.addPointer(event);
-                      _restartHideTimer(); // 手动拖动时也应重启定时器
-                    },
-                    child: SizedBox(
-                      width: _scrollIndicatorSize / 2,
-                      height: _scrollIndicatorSize,
-                      child: CustomPaint(
-                        painter: _ScrollIndicatorPainter(
-                          backgroundColor: context.colorScheme.surface,
-                          shadowColor: context.colorScheme.shadow,
+    return NotificationListener<ScrollNotification>(
+      onNotification: _onScrollNotification,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          viewHeight = constraints.maxHeight - widget.topPadding;
+
+          final scrollExtent = maxExtent - minExtent;
+          final top = scrollExtent == 0
+              ? 0.0
+              : ((position - minExtent) / scrollExtent) *
+                    (viewHeight - _scrollbarHeight);
+
+          return Stack(
+            children: [
+              Positioned.fill(child: widget.child),
+              if (scrollExtent > 0)
+                Positioned(
+                  top: top + widget.topPadding,
+                  right: 0,
+                  child: AnimatedOpacity(
+                    opacity: showScrollbar ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Listener(
+                        behavior: HitTestBehavior.translucent,
+                        onPointerDown: (event) {
+                          _dragGestureRecognizer.addPointer(event);
+                          _restartHideTimer();
+                        },
+                        child: SizedBox(
+                          width: _scrollbarHeight / 2,
+                          height: _scrollbarHeight,
+                          child: CustomPaint(
+                            painter: _ScrollIndicatorPainter(
+                              backgroundColor: context.colorScheme.surface,
+                              shadowColor: context.colorScheme.shadow,
+                            ),
+                            child: Column(
+                              children: const [
+                                Spacer(),
+                                Icon(Icons.arrow_drop_up, size: 18),
+                                Icon(Icons.arrow_drop_down, size: 18),
+                                Spacer(),
+                              ],
+                            ).paddingLeft(4),
+                          ),
                         ),
-                        child: Column(
-                          children: [
-                            const Spacer(),
-                            Icon(Icons.arrow_drop_up, size: 18),
-                            Icon(Icons.arrow_drop_down, size: 18),
-                            const Spacer(),
-                          ],
-                        ).paddingLeft(4),
                       ),
                     ),
                   ),
                 ),
-              ),
-            )
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -374,10 +383,7 @@ class _ScrollIndicatorPainter extends CustomPainter {
     var path = Path()
       ..moveTo(size.width, 0)
       ..lineTo(size.width, size.height)
-      ..arcToPoint(
-        Offset(size.width, 0),
-        radius: Radius.circular(size.width),
-      );
+      ..arcToPoint(Offset(size.width, 0), radius: Radius.circular(size.width));
     canvas.drawShadow(path, shadowColor, 4, true);
     var backgroundPaint = Paint()
       ..color = backgroundColor
@@ -385,10 +391,7 @@ class _ScrollIndicatorPainter extends CustomPainter {
     path = Path()
       ..moveTo(size.width, 0)
       ..lineTo(size.width, size.height)
-      ..arcToPoint(
-        Offset(size.width, 0),
-        radius: Radius.circular(size.width),
-      );
+      ..arcToPoint(Offset(size.width, 0), radius: Radius.circular(size.width));
     canvas.drawPath(path, backgroundPaint);
   }
 

@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:gif/gif.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
@@ -48,8 +48,10 @@ class Utils {
   }
 
   static Map<bool, EpisodeInfo?> findCurrentWeekEpisode(
-      List<EpisodeInfo> allEpisodes, BangumiItem bangumiItem,
-      [bool calendar = false]) {
+    List<EpisodeInfo> allEpisodes,
+    BangumiItem bangumiItem, [
+    bool calendar = false,
+  ]) {
     if (allEpisodes.isEmpty) return {false: null};
 
     final now = DateTime.now();
@@ -59,14 +61,16 @@ class Utils {
     if (targetEpisodes.isEmpty) return {false: null};
 
     // 获取番剧的标准播出时间
-    String? bangumiDataAirTime =
-        BangumiManager().findbangumiDataByID(bangumiItem.id);
+    String? bangumiDataAirTime = BangumiManager().findbangumiDataByID(
+      bangumiItem.id,
+    );
     final bangumiAirTime = bangumiDataAirTime != null
         ? DateTime.tryParse(bangumiDataAirTime)?.toLocal()
         : null;
 
     // 判断是否需要调整周数（周一5点前属于上周）
-    final shouldAdjustWeek = bangumiAirTime != null &&
+    final shouldAdjustWeek =
+        bangumiAirTime != null &&
         bangumiAirTime.weekday == DateTime.monday &&
         (bangumiAirTime.hour < 5);
 
@@ -208,23 +212,24 @@ class Utils {
     if (date.weekday <= DateTime.thursday) {
       thursday = date.add(Duration(days: DateTime.thursday - date.weekday));
     } else {
-      thursday =
-          date.subtract(Duration(days: date.weekday - DateTime.thursday));
+      thursday = date.subtract(
+        Duration(days: date.weekday - DateTime.thursday),
+      );
     }
 
     // 如果计算的周数超出合理范围（1-53），调整年份
     if (weekNumber < 1) {
       // 属于前一年的最后一周（52或53周）
-      final prevYearLastWeek =
-          getISOWeekNumber(DateTime(date.year - 1, 12, 28) // 12月28日肯定在最后一周
-              );
+      final prevYearLastWeek = getISOWeekNumber(
+        DateTime(date.year - 1, 12, 28), // 12月28日肯定在最后一周
+      );
       return (date.year - 1, prevYearLastWeek.$2);
     } else if (weekNumber > 52) {
       // 检查是否真的有53周（某些年份有53周）
       final dec28 = DateTime(date.year, 12, 28);
       final weekOfDec28 =
           ((int.parse(DateFormat("D").format(dec28)) - dec28.weekday + 10) ~/
-              7);
+          7);
 
       if (weekNumber > weekOfDec28) {
         // 属于下一年的第一周
@@ -265,10 +270,11 @@ class Utils {
       currentYearStr = 'MM-DD hh:mm';
       lastYearStr = 'YY-MM-DD hh:mm';
       return CustomStamp_str(
-          timestamp: timeStamp,
-          date: lastYearStr,
-          toInt: false,
-          formatType: formatType);
+        timestamp: timeStamp,
+        date: lastYearStr,
+        toInt: false,
+        formatType: formatType,
+      );
     }
     if (distance <= 60) {
       return '刚刚';
@@ -279,28 +285,32 @@ class Utils {
     } else if (DateTime.fromMillisecondsSinceEpoch(time * 1000).year ==
         DateTime.fromMillisecondsSinceEpoch(timeStamp * 1000).year) {
       return CustomStamp_str(
-          timestamp: timeStamp,
-          date: currentYearStr,
-          toInt: false,
-          formatType: formatType);
+        timestamp: timeStamp,
+        date: currentYearStr,
+        toInt: false,
+        formatType: formatType,
+      );
     } else {
       return CustomStamp_str(
-          timestamp: timeStamp,
-          date: lastYearStr,
-          toInt: false,
-          formatType: formatType);
+        timestamp: timeStamp,
+        date: lastYearStr,
+        toInt: false,
+        formatType: formatType,
+      );
     }
   }
 
   // 时间戳转时间
-  static String CustomStamp_str(
-      {int? timestamp, // 为空则显示当前时间
-      String? date, // 显示格式，比如：'YY年MM月DD日 hh:mm:ss'
-      bool toInt = true, // 去除0开头
-      String? formatType}) {
+  static String CustomStamp_str({
+    int? timestamp, // 为空则显示当前时间
+    String? date, // 显示格式，比如：'YY年MM月DD日 hh:mm:ss'
+    bool toInt = true, // 去除0开头
+    String? formatType,
+  }) {
     timestamp ??= (DateTime.now().millisecondsSinceEpoch / 1000).round();
-    String timeStr =
-        (DateTime.fromMillisecondsSinceEpoch(timestamp * 1000)).toString();
+    String timeStr = (DateTime.fromMillisecondsSinceEpoch(
+      timestamp * 1000,
+    )).toString();
 
     dynamic dateArr = timeStr.split(' ')[0];
     dynamic timeArr = timeStr.split(' ')[1];
@@ -349,7 +359,9 @@ class Utils {
   }
 
   static String buildShadersAbsolutePath(
-      String baseDirectory, List<String> shaders) {
+    String baseDirectory,
+    List<String> shaders,
+  ) {
     List<String> absolutePaths = shaders.map((shader) {
       return path.join(baseDirectory, shader);
     }).toList();
@@ -370,9 +382,7 @@ class Utils {
         padding: const EdgeInsets.only(bottom: 8.0, left: 4),
         child: Row(
           children: [
-            SizedBox(
-              width: 16,
-            ),
+            SizedBox(width: 16),
             Text(
               timeFormat.format(dateTime),
               style: TextStyle(
@@ -380,7 +390,7 @@ class Utils {
                 // color: Colors.grey[700],
                 fontWeight: FontWeight.w500,
               ),
-            )
+            ),
           ],
         ),
       );
@@ -392,12 +402,18 @@ class Utils {
 
   //标准差
   static double getDeviation(
-      dynamic total, List<dynamic> count, dynamic score) {
+    dynamic total,
+    List<dynamic> count,
+    dynamic score,
+  ) {
     if (total == 0 || count.isEmpty) return 0;
 
     final scores = count.reversed.toList(); // 反转评分列表（从10分到1分）
     return calculateSD(
-        scores, double.parse(score.toString()), double.parse(total.toString()));
+      scores,
+      double.parse(score.toString()),
+      double.parse(total.toString()),
+    );
   }
 
   /// 计算标准差
@@ -439,7 +455,9 @@ class Utils {
   }
 
   static Future<void> saveLongImage(
-      BuildContext context, Uint8List imageData) async {
+    BuildContext context,
+    Uint8List imageData,
+  ) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     try {
       if (App.isAndroid) {
@@ -473,8 +491,6 @@ class Utils {
         if (!await folder.exists()) {
           await folder.create(recursive: true);
           Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
-        } else {
-          Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
         }
 
         final filePath = '$folderPath/拼图_$timestamp.png';

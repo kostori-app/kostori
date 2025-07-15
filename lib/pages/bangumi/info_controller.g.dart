@@ -9,8 +9,10 @@ part of 'info_controller.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$InfoController on _InfoController, Store {
-  late final _$isLoadingAtom =
-      Atom(name: '_InfoController.isLoading', context: context);
+  late final _$isLoadingAtom = Atom(
+    name: '_InfoController.isLoading',
+    context: context,
+  );
 
   @override
   bool get isLoading {
@@ -25,8 +27,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$commentsListAtom =
-      Atom(name: '_InfoController.commentsList', context: context);
+  late final _$commentsListAtom = Atom(
+    name: '_InfoController.commentsList',
+    context: context,
+  );
 
   @override
   ObservableList<CommentItem> get commentsList {
@@ -41,8 +45,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$topicsListAtom =
-      Atom(name: '_InfoController.topicsList', context: context);
+  late final _$topicsListAtom = Atom(
+    name: '_InfoController.topicsList',
+    context: context,
+  );
 
   @override
   ObservableList<TopicsItem> get topicsList {
@@ -57,8 +63,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$topicsLatestListAtom =
-      Atom(name: '_InfoController.topicsLatestList', context: context);
+  late final _$topicsLatestListAtom = Atom(
+    name: '_InfoController.topicsLatestList',
+    context: context,
+  );
 
   @override
   ObservableList<TopicsInfoItem> get topicsLatestList {
@@ -73,8 +81,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$topicsTrendingListAtom =
-      Atom(name: '_InfoController.topicsTrendingList', context: context);
+  late final _$topicsTrendingListAtom = Atom(
+    name: '_InfoController.topicsTrendingList',
+    context: context,
+  );
 
   @override
   ObservableList<TopicsInfoItem> get topicsTrendingList {
@@ -89,8 +99,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$reviewsListAtom =
-      Atom(name: '_InfoController.reviewsList', context: context);
+  late final _$reviewsListAtom = Atom(
+    name: '_InfoController.reviewsList',
+    context: context,
+  );
 
   @override
   ObservableList<ReviewsItem> get reviewsList {
@@ -105,8 +117,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$characterListAtom =
-      Atom(name: '_InfoController.characterList', context: context);
+  late final _$characterListAtom = Atom(
+    name: '_InfoController.characterList',
+    context: context,
+  );
 
   @override
   ObservableList<CharacterItem> get characterList {
@@ -121,8 +135,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$staffListAtom =
-      Atom(name: '_InfoController.staffList', context: context);
+  late final _$staffListAtom = Atom(
+    name: '_InfoController.staffList',
+    context: context,
+  );
 
   @override
   ObservableList<StaffFullItem> get staffList {
@@ -137,8 +153,10 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
-  late final _$episodeCommentsListAtom =
-      Atom(name: '_InfoController.episodeCommentsList', context: context);
+  late final _$episodeCommentsListAtom = Atom(
+    name: '_InfoController.episodeCommentsList',
+    context: context,
+  );
 
   @override
   ObservableList<EpisodeCommentItem> get episodeCommentsList {

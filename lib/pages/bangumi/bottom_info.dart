@@ -4,28 +4,25 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/bean/card/character_card.dart';
+import 'package:kostori/components/bean/card/comments_card.dart';
+import 'package:kostori/components/bean/card/episode_comments_sheet.dart';
+import 'package:kostori/components/bean/card/staff_card.dart';
+import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/components/bean/card/comments_card.dart';
-import 'package:kostori/components/bean/card/staff_card.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart'
+    show BangumiSearchPage;
+import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-import 'package:kostori/components/bean/card/character_card.dart';
-import 'package:kostori/components/bean/card/episode_comments_sheet.dart';
-import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-import 'package:kostori/components/error_widget.dart';
-
-import 'package:kostori/foundation/log.dart';
-import 'package:kostori/pages/bangumi/info_controller.dart';
-
-import 'package:kostori/components/bangumi_widget.dart';
-import 'package:kostori/pages/bangumi/bangumi_search_page.dart'
-    show BangumiSearchPage;
 
 import '../../components/bean/card/reviews_card.dart';
 import '../../components/bean/card/topics_card.dart';
@@ -88,8 +85,10 @@ class BottomInfoState extends State<BottomInfo>
     infoController.commentsList.clear();
     infoController.staffList.clear();
     infoController.episodeCommentsList.clear();
-    infoTabController =
-        TabController(length: infoController.tabs.length + 1, vsync: this);
+    infoTabController = TabController(
+      length: infoController.tabs.length + 1,
+      vsync: this,
+    );
     infoTabController.addListener(() {
       int index = infoTabController.index;
       if (index == 1 &&
@@ -148,10 +147,16 @@ class BottomInfoState extends State<BottomInfo>
     }
   }
 
-  Future<void> queryBangumiEpisodeCommentsByID(int id, int episode,
-      {int offset = 0}) async {
-    await infoController.queryBangumiEpisodeCommentsByID(id, episode,
-        offset: offset);
+  Future<void> queryBangumiEpisodeCommentsByID(
+    int id,
+    int episode, {
+    int offset = 0,
+  }) async {
+    await infoController.queryBangumiEpisodeCommentsByID(
+      id,
+      episode,
+      offset: offset,
+    );
     if (mounted) {
       setState(() {});
     }
@@ -163,9 +168,9 @@ class BottomInfoState extends State<BottomInfo>
       charactersIsLoading = true;
       charactersQueryTimeout = false;
     });
-    infoController
-        .queryBangumiCharactersByID(infoController.bangumiId)
-        .then((_) {
+    infoController.queryBangumiCharactersByID(infoController.bangumiId).then((
+      _,
+    ) {
       if (infoController.characterList.isEmpty && mounted) {
         setState(() {
           charactersIsLoading = false;
@@ -189,18 +194,18 @@ class BottomInfoState extends State<BottomInfo>
     infoController
         .queryBangumiCommentsByID(infoController.bangumiId, offset: offset)
         .then((_) {
-      if (infoController.commentsList.isEmpty && mounted) {
-        setState(() {
-          commentsIsLoading = false;
-          commentsQueryTimeout = true;
+          if (infoController.commentsList.isEmpty && mounted) {
+            setState(() {
+              commentsIsLoading = false;
+              commentsQueryTimeout = true;
+            });
+          }
+          if (infoController.commentsList.isNotEmpty && mounted) {
+            setState(() {
+              commentsIsLoading = false;
+            });
+          }
         });
-      }
-      if (infoController.commentsList.isNotEmpty && mounted) {
-        setState(() {
-          commentsIsLoading = false;
-        });
-      }
-    });
   }
 
   Future<void> loadMoreTopics({int offset = 0}) async {
@@ -212,18 +217,18 @@ class BottomInfoState extends State<BottomInfo>
     infoController
         .queryBangumiTopicsByID(infoController.bangumiItem.id, offset: offset)
         .then((_) {
-      if (infoController.topicsList.isEmpty && mounted) {
-        setState(() {
-          topicsIsLoading = false;
-          topicsQueryTimeout = true;
+          if (infoController.topicsList.isEmpty && mounted) {
+            setState(() {
+              topicsIsLoading = false;
+              topicsQueryTimeout = true;
+            });
+          }
+          if (infoController.topicsList.isNotEmpty && mounted) {
+            setState(() {
+              topicsIsLoading = false;
+            });
+          }
         });
-      }
-      if (infoController.topicsList.isNotEmpty && mounted) {
-        setState(() {
-          topicsIsLoading = false;
-        });
-      }
-    });
   }
 
   Future<void> loadMoreReviews({int offset = 0}) async {
@@ -235,25 +240,27 @@ class BottomInfoState extends State<BottomInfo>
     infoController
         .queryBangumiReviewsByID(infoController.bangumiItem.id, offset: offset)
         .then((_) {
-      if (infoController.reviewsList.isEmpty && mounted) {
-        setState(() {
-          reviewsIsLoading = false;
-          reviewsQueryTimeout = true;
+          if (infoController.reviewsList.isEmpty && mounted) {
+            setState(() {
+              reviewsIsLoading = false;
+              reviewsQueryTimeout = true;
+            });
+          }
+          if (infoController.reviewsList.isNotEmpty && mounted) {
+            setState(() {
+              reviewsIsLoading = false;
+            });
+          }
         });
-      }
-      if (infoController.reviewsList.isNotEmpty && mounted) {
-        setState(() {
-          reviewsIsLoading = false;
-        });
-      }
-    });
   }
 
   Future<void> loadComments(int episode, {int offset = 0}) async {
     commentsQueryTimeout = false;
-    await queryBangumiEpisodeCommentsByID(infoController.bangumiId, episode,
-            offset: offset)
-        .then((_) {
+    await queryBangumiEpisodeCommentsByID(
+      infoController.bangumiId,
+      episode,
+      offset: offset,
+    ).then((_) {
       if (infoController.episodeCommentsList.isEmpty && mounted) {
         setState(() {
           commentsQueryTimeout = true;
@@ -284,11 +291,13 @@ class BottomInfoState extends State<BottomInfo>
   }
 
   Widget get infoBodyBone {
-    return LayoutBuilder(builder: (context, constraints) {
-      double height = constraints.maxHeight;
-      double width = constraints.maxWidth;
-      return MiscComponents.placeholder(context, width, height);
-    });
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double height = constraints.maxHeight;
+        double width = constraints.maxWidth;
+        return MiscComponents.placeholder(context, width, height);
+      },
+    );
   }
 
   Widget get infoBody {
@@ -299,16 +308,22 @@ class BottomInfoState extends State<BottomInfo>
     var bangumiItem = infoController.bangumiItem;
     var allEpisodes = infoController.allEpisodes;
 
-    double standardDeviation = Utils.getDeviation(bangumiItem.total,
-        bangumiItem.count!.values.toList(), bangumiItem.score);
+    double standardDeviation = Utils.getDeviation(
+      bangumiItem.total,
+      bangumiItem.count!.values.toList(),
+      bangumiItem.score,
+    );
 
     // 获取当前周的剧集
-    final currentWeekEp =
-        Utils.findCurrentWeekEpisode(allEpisodes, bangumiItem);
+    final currentWeekEp = Utils.findCurrentWeekEpisode(
+      allEpisodes,
+      bangumiItem,
+    );
 
     final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
 
-    final isCompleted = currentWeekEp.values.first != null &&
+    final isCompleted =
+        currentWeekEp.values.first != null &&
         type0Episodes.isNotEmpty &&
         currentWeekEp.values.first == type0Episodes.last;
 
@@ -321,11 +336,14 @@ class BottomInfoState extends State<BottomInfo>
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    double height = constraints.maxWidth *
+                    double height =
+                        constraints.maxWidth *
                         (App.isDesktop ? 9 / 16 : 9 / 16);
                     double width = height * 0.72;
 
@@ -340,155 +358,123 @@ class BottomInfoState extends State<BottomInfo>
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: BangumiWidget.kostoriImage(
-                                context, bangumiItem.images['large']!,
-                                width: width, height: height),
+                              context,
+                              bangumiItem.images['large']!,
+                              width: width,
+                              height: height,
+                            ),
                           ),
                           // SizedBox(width: 12.0),
                           Expanded(
-                              child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  bangumiItem.nameCn,
-                                  style: TextStyle(
-                                      fontSize: width * 1 / 10,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                Text(bangumiItem.name,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    bangumiItem.nameCn,
                                     style: TextStyle(
-                                      fontSize: width * 1 / 24,
-                                    )),
-                                SizedBox(height: 12.0),
-                                Container(
-                                  padding: EdgeInsets.all(8.0),
-                                  // 可选，设置内边距
-                                  decoration: BoxDecoration(
-                                    borderRadius:
-                                        BorderRadius.circular(16.0), // 设置圆角半径
-                                    border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .secondaryContainer
-                                          .toOpacity(0.72),
-                                      width: 2.0, // 设置边框宽度
+                                      fontSize: width * 1 / 10,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  child: Text(
-                                    bangumiItem.airDate,
+                                  Text(
+                                    bangumiItem.name,
+                                    style: TextStyle(fontSize: width * 1 / 24),
                                   ),
-                                ),
-                                SizedBox(height: 12.0),
-                                (currentWeekEp.values.first?.sort != null)
-                                    ? Text(
-                                        isCompleted
-                                            ? 'Full @b episodes released'
-                                                .tlParams({
-                                                'b': bangumiItem.totalEpisodes
-                                              })
-                                            : currentWeekEp
-                                                        .values.first?.sort ==
-                                                    currentWeekEp
-                                                        .values.first?.ep
-                                                ? 'Up to ep @s • Total @t eps planned'
-                                                    .tlParams({
-                                                    's': currentWeekEp.values
-                                                        .first?.sort as int,
-                                                    't': bangumiItem
-                                                        .totalEpisodes
-                                                  })
-                                                : 'Up to ep @e (@s) • Total @t eps planned'
-                                                    .tlParams({
-                                                    'e': currentWeekEp.values
-                                                        .first?.ep as int,
-                                                    's': currentWeekEp.values
-                                                        .first?.sort as int,
-                                                    't': bangumiItem
-                                                        .totalEpisodes
-                                                  }),
-                                        style: TextStyle(
-                                          fontSize: 12.0,
+                                  SizedBox(height: 12.0),
+                                  Container(
+                                    padding: EdgeInsets.all(8.0),
+                                    // 可选，设置内边距
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(
+                                        16.0,
+                                      ), // 设置圆角半径
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .secondaryContainer
+                                            .toOpacity(0.72),
+                                        width: 2.0, // 设置边框宽度
+                                      ),
+                                    ),
+                                    child: Text(bangumiItem.airDate),
+                                  ),
+                                  SizedBox(height: 12.0),
+                                  BangumiWidget.bangumiTimeText(
+                                    bangumiItem,
+                                    currentWeekEp,
+                                    isCompleted,
+                                  ),
+                                  Spacer(),
+                                  Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          '${bangumiItem.score}',
+                                          style: TextStyle(fontSize: 32.0),
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      )
-                                    : Text(
-                                        'Not Yet Airing'.tl,
-                                        style: TextStyle(
-                                            fontSize: 12.0,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                Spacer(),
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        '${bangumiItem.score}',
-                                        style: TextStyle(
-                                          fontSize: 32.0,
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 5,
-                                      ),
-                                      Container(
-                                        padding: EdgeInsets.all(2.0),
-                                        // 可选，设置内边距
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                              8), // 设置圆角半径
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .secondaryContainer
-                                                .toOpacity(0.72),
-                                            width: 2.0, // 设置边框宽度
-                                          ),
-                                        ),
-                                        child: Text(
-                                          Utils.getRatingLabel(
-                                              bangumiItem.score),
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        width: 4,
-                                      ),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end, // 右对齐
-                                        children: [
-                                          RatingBarIndicator(
-                                            itemCount: 5,
-                                            rating:
-                                                bangumiItem.score.toDouble() /
-                                                    2,
-                                            itemBuilder: (context, index) =>
-                                                const Icon(
-                                              Icons.star_rounded,
+                                        SizedBox(width: 5),
+                                        Container(
+                                          padding: EdgeInsets.all(2.0),
+                                          // 可选，设置内边距
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ), // 设置圆角半径
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .secondaryContainer
+                                                  .toOpacity(0.72),
+                                              width: 2.0, // 设置边框宽度
                                             ),
-                                            itemSize: 20.0,
                                           ),
-                                          Text(
-                                            '@t reviews | #@r'.tlParams({
-                                              'r': bangumiItem.rank,
-                                              't': bangumiItem.total
-                                            }),
-                                            style: TextStyle(fontSize: 12),
-                                          )
-                                        ],
-                                      ),
-                                    ],
+                                          child: Text(
+                                            Utils.getRatingLabel(
+                                              bangumiItem.score,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end, // 右对齐
+                                          children: [
+                                            RatingBarIndicator(
+                                              itemCount: 5,
+                                              rating:
+                                                  bangumiItem.score.toDouble() /
+                                                  2,
+                                              itemBuilder: (context, index) =>
+                                                  const Icon(
+                                                    Icons.star_rounded,
+                                                  ),
+                                              itemSize: 20.0,
+                                            ),
+                                            Text(
+                                              '@t reviews | #@r'.tlParams({
+                                                'r': bangumiItem.rank,
+                                                't': bangumiItem.total,
+                                              }),
+                                              style: TextStyle(fontSize: 12),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          )),
+                          ),
                         ],
                       ),
                     );
@@ -499,7 +485,9 @@ class BottomInfoState extends State<BottomInfo>
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Align(
                   child: BangumiWidget.buildStatsRow(
-                      context, infoController.bangumiItem),
+                    context,
+                    infoController.bangumiItem,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -515,70 +503,78 @@ class BottomInfoState extends State<BottomInfo>
               ),
               const SizedBox(height: 8),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Introduction'.tl,
-                      style:
-                          TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    SizedBox(
-                      height: 8,
-                    ),
+                    SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: LayoutBuilder(builder: (context, constraints) {
-                        final span = TextSpan(text: bangumiItem.summary);
-                        final tp = TextPainter(
-                            text: span, textDirection: TextDirection.ltr);
-                        tp.layout(maxWidth: constraints.maxWidth);
-                        final numLines = tp.computeLineMetrics().length;
-                        if (numLines > 7) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              SizedBox(
-                                // make intro expandable
-                                height: fullIntro ? null : 120,
-                                width:
-                                    MediaQuery.sizeOf(context).width > maxWidth
-                                        ? maxWidth
-                                        : MediaQuery.sizeOf(context).width - 32,
-                                child: SelectableText(
-                                  bangumiItem.summary,
-                                  textAlign: TextAlign.start,
-                                  scrollBehavior:
-                                      const ScrollBehavior().copyWith(
-                                    scrollbars: false,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final span = TextSpan(text: bangumiItem.summary);
+                          final tp = TextPainter(
+                            text: span,
+                            textDirection: TextDirection.ltr,
+                          );
+                          tp.layout(maxWidth: constraints.maxWidth);
+                          final numLines = tp.computeLineMetrics().length;
+                          if (numLines > 7) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                SizedBox(
+                                  // make intro expandable
+                                  height: fullIntro ? null : 120,
+                                  width:
+                                      MediaQuery.sizeOf(context).width >
+                                          maxWidth
+                                      ? maxWidth
+                                      : MediaQuery.sizeOf(context).width - 32,
+                                  child: SelectableText(
+                                    bangumiItem.summary,
+                                    textAlign: TextAlign.start,
+                                    scrollBehavior: const ScrollBehavior()
+                                        .copyWith(scrollbars: false),
+                                    scrollPhysics:
+                                        NeverScrollableScrollPhysics(),
+                                    selectionHeightStyle: ui.BoxHeightStyle.max,
                                   ),
-                                  scrollPhysics: NeverScrollableScrollPhysics(),
-                                  selectionHeightStyle: ui.BoxHeightStyle.max,
                                 ),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  setState(() {
-                                    fullIntro = !fullIntro;
-                                  });
-                                },
-                                child: Text(!fullIntro
-                                    ? 'Show more +'.tl
-                                    : 'Show less -'.tl),
-                              ),
-                            ],
-                          );
-                        } else {
-                          return SelectableText(
-                            bangumiItem.summary,
-                            textAlign: TextAlign.start,
-                            scrollPhysics: NeverScrollableScrollPhysics(),
-                            selectionHeightStyle: ui.BoxHeightStyle.max,
-                          );
-                        }
-                      }),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      fullIntro = !fullIntro;
+                                    });
+                                  },
+                                  child: Text(
+                                    !fullIntro
+                                        ? 'Show more +'.tl
+                                        : 'Show less -'.tl,
+                                  ),
+                                ),
+                              ],
+                            );
+                          } else {
+                            return SelectableText(
+                              bangumiItem.summary,
+                              textAlign: TextAlign.start,
+                              scrollPhysics: NeverScrollableScrollPhysics(),
+                              selectionHeightStyle: ui.BoxHeightStyle.max,
+                            );
+                          }
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -596,8 +592,10 @@ class BottomInfoState extends State<BottomInfo>
               ),
               const SizedBox(height: 8),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -605,27 +603,33 @@ class BottomInfoState extends State<BottomInfo>
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text('Tags'.tl,
-                            style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Tags'.tl,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .secondaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child:
-                              Text('${bangumiItem.tags.length}', style: ts.s12),
+                          child: Text(
+                            '${bangumiItem.tags.length}',
+                            style: ts.s12,
+                          ),
                         ),
                       ],
                     ),
-                    SizedBox(
-                      height: 12,
-                    ),
+                    SizedBox(height: 12),
                     Wrap(
                       spacing: 8.0,
                       runSpacing: Utils.isDesktop() ? 8 : 0,
@@ -643,16 +647,20 @@ class BottomInfoState extends State<BottomInfo>
                                 Text(
                                   '${bangumiItem.tags[index].count}',
                                   style: TextStyle(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                 ),
                               ],
                             ),
                             onPressed: () {
                               // 标签点击逻辑
-                              context.to(() => BangumiSearchPage(
-                                  tag: bangumiItem.tags[index].name));
+                              context.to(
+                                () => BangumiSearchPage(
+                                  tag: bangumiItem.tags[index].name,
+                                ),
+                              );
                             },
                           ),
                         ),
@@ -692,24 +700,32 @@ class BottomInfoState extends State<BottomInfo>
               ),
               const SizedBox(height: 8),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Text('Rating Statistics Chart'.tl,
-                            style: TextStyle(
-                                fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Rating Statistics Chart'.tl,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         Container(
                           margin: const EdgeInsets.symmetric(horizontal: 8),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .secondaryContainer,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text('${bangumiItem.score}', style: ts.s12),
@@ -721,14 +737,18 @@ class BottomInfoState extends State<BottomInfo>
                                   !infoController.showLineChart;
                             });
                           },
-                          icon: Icon(infoController.showLineChart
-                              ? Icons.show_chart
-                              : Icons.bar_chart),
-                          label: Text(infoController.showLineChart
-                              ? 'Line Chart'.tl
-                              : 'Bar Chart'.tl),
+                          icon: Icon(
+                            infoController.showLineChart
+                                ? Icons.show_chart
+                                : Icons.bar_chart,
+                          ),
+                          label: Text(
+                            infoController.showLineChart
+                                ? 'Line Chart'.tl
+                                : 'Bar Chart'.tl,
+                          ),
                         ),
-                        Text('${bangumiItem.total} votes')
+                        Text('${bangumiItem.total} votes'),
                       ],
                     ),
                   ],
@@ -736,26 +756,32 @@ class BottomInfoState extends State<BottomInfo>
               ),
               const SizedBox(height: 12),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 2,
+                ),
                 child: Row(
                   children: [
                     Text(
-                        'Standard Deviation: @s'.tlParams(
-                            {'s': standardDeviation.toStringAsFixed(2)}),
-                        style: TextStyle(fontSize: 12)),
-                    const SizedBox(
-                      width: 8,
+                      'Standard Deviation: @s'.tlParams({
+                        's': standardDeviation.toStringAsFixed(2),
+                      }),
+                      style: TextStyle(fontSize: 12),
                     ),
-                    Text(Utils.getDispute(standardDeviation),
-                        style: TextStyle(fontSize: 12))
+                    const SizedBox(width: 8),
+                    Text(
+                      Utils.getDispute(standardDeviation),
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 2,
+                ),
                 child: infoController.showLineChart
                     ? LineChatPage(bangumiItem: bangumiItem)
                     : BangumiBarChartPage(bangumiItem: bangumiItem),
@@ -791,101 +817,114 @@ class BottomInfoState extends State<BottomInfo>
             return true;
           },
           child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('吐槽'),
             slivers: <Widget>[
-              SliverLayoutBuilder(builder: (context, _) {
-                if (infoController.commentsList.isNotEmpty) {
-                  return SliverList.separated(
-                    addAutomaticKeepAlives: false,
-                    itemCount: infoController.commentsList.length,
-                    itemBuilder: (context, index) {
-                      return SafeArea(
-                        top: false,
-                        bottom: false,
-                        child: Center(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > maxWidth
-                                  ? maxWidth
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: CommentsCard(
-                                commentItem: infoController.commentsList[index],
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (infoController.commentsList.isNotEmpty) {
+                    return SliverList.separated(
+                      addAutomaticKeepAlives: false,
+                      itemCount: infoController.commentsList.length,
+                      itemBuilder: (context, index) {
+                        return SafeArea(
+                          top: false,
+                          bottom: false,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: SizedBox(
+                                width:
+                                    MediaQuery.sizeOf(context).width > maxWidth
+                                    ? maxWidth
+                                    : MediaQuery.sizeOf(context).width - 32,
+                                child: CommentsCard(
+                                  commentItem:
+                                      infoController.commentsList[index],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    },
-                    separatorBuilder: (BuildContext context, int index) {
+                        );
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return SafeArea(
+                          top: false,
+                          bottom: false,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                              ),
+                              child: SizedBox(
+                                width:
+                                    MediaQuery.sizeOf(context).width > maxWidth
+                                    ? maxWidth
+                                    : MediaQuery.sizeOf(context).width - 32,
+                                child: Divider(
+                                  thickness: 0.5,
+                                  indent: 10,
+                                  endIndent: 10,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (commentsQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              loadMoreComments(
+                                offset: infoController.commentsList.length,
+                              );
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SliverList.builder(
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
                       return SafeArea(
                         top: false,
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.all(16),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > maxWidth
                                   ? maxWidth
                                   : MediaQuery.sizeOf(context).width - 32,
-                              child: Divider(
-                                  thickness: 0.5, indent: 10, endIndent: 10),
+                              child: CommentsCard.bone(),
                             ),
                           ),
                         ),
                       );
                     },
                   );
-                }
-                if (commentsQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadMoreComments(
-                                offset: infoController.commentsList.length);
-                          },
-                          text: 'Reload'.tl,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return SliverList.builder(
-                  itemCount: 4,
-                  itemBuilder: (context, _) {
-                    return SafeArea(
-                      top: false,
-                      bottom: false,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > maxWidth
-                                ? maxWidth
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: CommentsCard.bone(),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                },
+              ),
               if (commentsIsLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -912,76 +951,82 @@ class BottomInfoState extends State<BottomInfo>
             return true;
           },
           child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('讨论'),
             slivers: <Widget>[
-              SliverLayoutBuilder(builder: (context, _) {
-                if (topicsList.isNotEmpty) {
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (topicsList.isNotEmpty) {
+                    return SliverList.builder(
+                      itemCount: topicsList.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: TopicsCard(
+                                topicsItem: topicsList[index],
+                                isBottom: true,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (topicsQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              loadMoreTopics();
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return SliverList.builder(
-                    itemCount: topicsList.length,
-                    itemBuilder: (context, index) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > maxWidth
-                                ? maxWidth
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: TopicsCard(
-                              topicsItem: topicsList[index],
-                              isBottom: true,
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: Skeletonizer.zone(
+                            child: ListTile(
+                              leading: Bone.circle(size: 36),
+                              title: Bone.text(width: 100),
+                              subtitle: Bone.text(width: 80),
                             ),
                           ),
                         ),
                       );
                     },
                   );
-                }
-                if (topicsQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadMoreTopics();
-                          },
-                          text: 'Reload'.tl,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return SliverList.builder(
-                  itemCount: 4,
-                  itemBuilder: (context, _) {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width > maxWidth
-                            ? maxWidth
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                },
+              ),
               if (topicsIsLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -1008,26 +1053,115 @@ class BottomInfoState extends State<BottomInfo>
             return true;
           },
           child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('日志'),
             slivers: <Widget>[
-              SliverLayoutBuilder(builder: (context, _) {
-                if (reviewsList.isNotEmpty) {
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (reviewsList.isNotEmpty) {
+                    return SliverList.builder(
+                      itemCount: reviewsList.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: ReviewsCard(
+                                reviewsItem: reviewsList[index],
+                                isBottom: true,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (reviewsQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              loadMoreReviews();
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   return SliverList.builder(
-                    itemCount: reviewsList.length,
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: Skeletonizer.zone(
+                            child: ListTile(
+                              leading: Bone.circle(size: 36),
+                              title: Bone.text(width: 100),
+                              subtitle: Bone.text(width: 80),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              if (reviewsIsLoading)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Center(
+                      child: MiscComponents.placeholder(
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget get charactersListBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return CustomScrollView(
+          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
+          key: PageStorageKey<String>('角色'),
+          slivers: <Widget>[
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (infoController.characterList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: infoController.characterList.length,
                     itemBuilder: (context, index) {
                       return Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: SizedBox(
                             width: MediaQuery.sizeOf(context).width > maxWidth
                                 ? maxWidth
                                 : MediaQuery.sizeOf(context).width - 32,
-                            child: ReviewsCard(
-                              reviewsItem: reviewsList[index],
-                              isBottom: true,
+                            child: CharacterCard(
+                              characterItem:
+                                  infoController.characterList[index],
                             ),
                           ),
                         ),
@@ -1035,14 +1169,14 @@ class BottomInfoState extends State<BottomInfo>
                     },
                   );
                 }
-                if (reviewsQueryTimeout) {
+                if (charactersQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
+                      errMsg: 'Failed to load, please try again.'.tl,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
-                            loadMoreReviews();
+                            loadCharacters();
                           },
                           text: 'Reload'.tl,
                         ),
@@ -1070,90 +1204,8 @@ class BottomInfoState extends State<BottomInfo>
                     );
                   },
                 );
-              }),
-              if (reviewsIsLoading)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget get charactersListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(
-            scrollbars: false,
-          ),
-          key: PageStorageKey<String>('角色'),
-          slivers: <Widget>[
-            SliverLayoutBuilder(builder: (context, _) {
-              if (infoController.characterList.isNotEmpty) {
-                return SliverList.builder(
-                  itemCount: infoController.characterList.length,
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: CharacterCard(
-                            characterItem: infoController.characterList[index],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }
-              if (charactersQueryTimeout) {
-                return SliverFillRemaining(
-                  child: GeneralErrorWidget(
-                    errMsg: 'Failed to load, please try again.'.tl,
-                    actions: [
-                      GeneralErrorButton(
-                        onPressed: () {
-                          loadCharacters();
-                        },
-                        text: 'Reload'.tl,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return SliverList.builder(
-                itemCount: 4,
-                itemBuilder: (context, _) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width > maxWidth
-                          ? maxWidth
-                          : MediaQuery.sizeOf(context).width - 32,
-                      child: Skeletonizer.zone(
-                        child: ListTile(
-                          leading: Bone.circle(size: 36),
-                          title: Bone.text(width: 100),
-                          subtitle: Bone.text(width: 80),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
+              },
+            ),
           ],
         );
       },
@@ -1164,68 +1216,68 @@ class BottomInfoState extends State<BottomInfo>
     return Builder(
       builder: (BuildContext context) {
         return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(
-            scrollbars: false,
-          ),
+          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
           key: PageStorageKey<String>('制作人员'),
           slivers: <Widget>[
-            SliverLayoutBuilder(builder: (context, _) {
-              if (infoController.staffList.isNotEmpty) {
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (infoController.staffList.isNotEmpty) {
+                  return SliverList.builder(
+                    itemCount: infoController.staffList.length,
+                    itemBuilder: (context, index) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > maxWidth
+                                ? maxWidth
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: StaffCard(
+                              staffFullItem: infoController.staffList[index],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (staffQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: 'Failed to load, please try again.'.tl,
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            loadStaff();
+                          },
+                          text: 'Reload'.tl,
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return SliverList.builder(
-                  itemCount: infoController.staffList.length,
-                  itemBuilder: (context, index) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: StaffCard(
-                            staffFullItem: infoController.staffList[index],
+                  itemCount: 8,
+                  itemBuilder: (context, _) {
+                    return Align(
+                      alignment: Alignment.topCenter,
+                      child: SizedBox(
+                        width: MediaQuery.sizeOf(context).width > maxWidth
+                            ? maxWidth
+                            : MediaQuery.sizeOf(context).width - 32,
+                        child: Skeletonizer.zone(
+                          child: ListTile(
+                            leading: Bone.circle(size: 36),
+                            title: Bone.text(width: 100),
+                            subtitle: Bone.text(width: 80),
                           ),
                         ),
                       ),
                     );
                   },
                 );
-              }
-              if (staffQueryTimeout) {
-                return SliverFillRemaining(
-                  child: GeneralErrorWidget(
-                    errMsg: 'Failed to load, please try again.'.tl,
-                    actions: [
-                      GeneralErrorButton(
-                        onPressed: () {
-                          loadStaff();
-                        },
-                        text: 'Reload'.tl,
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return SliverList.builder(
-                itemCount: 8,
-                itemBuilder: (context, _) {
-                  return Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: MediaQuery.sizeOf(context).width > maxWidth
-                          ? maxWidth
-                          : MediaQuery.sizeOf(context).width - 32,
-                      child: Skeletonizer.zone(
-                        child: ListTile(
-                          leading: Bone.circle(size: 36),
-                          title: Bone.text(width: 100),
-                          subtitle: Bone.text(width: 80),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            }),
+              },
+            ),
           ],
         );
       },
@@ -1257,31 +1309,39 @@ class BottomInfoState extends State<BottomInfo>
                 ),
               ),
             ),
-            Expanded(child: Observer(builder: (context) {
-              return TabBarView(
-                controller: infoTabController,
-                children: [
-                  Builder(builder: (BuildContext context) {
-                    return SafeArea(
-                      top: false,
-                      bottom: false,
-                      child: infoController.isLoading ? infoBodyBone : infoBody,
-                    );
-                  }),
-                  commentsListBody,
-                  EpisodeCommentsSheet(
-                    episodeInfo: episodeInfo,
-                    loadComments: loadComments,
-                    episode: WatcherState.currentState!.episode,
-                    infoController: infoController,
-                  ),
-                  topicsListBody,
-                  reviewsListBody,
-                  charactersListBody,
-                  staffListBody
-                ],
-              );
-            })),
+            Expanded(
+              child: Observer(
+                builder: (context) {
+                  return TabBarView(
+                    controller: infoTabController,
+                    children: [
+                      Builder(
+                        builder: (BuildContext context) {
+                          return SafeArea(
+                            top: false,
+                            bottom: false,
+                            child: infoController.isLoading
+                                ? infoBodyBone
+                                : infoBody,
+                          );
+                        },
+                      ),
+                      commentsListBody,
+                      EpisodeCommentsSheet(
+                        episodeInfo: episodeInfo,
+                        loadComments: loadComments,
+                        episode: WatcherState.currentState!.episode,
+                        infoController: infoController,
+                      ),
+                      topicsListBody,
+                      reviewsListBody,
+                      charactersListBody,
+                      staffListBody,
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),

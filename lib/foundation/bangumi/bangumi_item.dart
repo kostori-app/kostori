@@ -42,60 +42,61 @@ class BangumiItem {
 
   Map<String, dynamic>? extraInfo; // 新增字段
 
-  BangumiItem(
-      {required this.id,
-      required this.type,
-      required this.name,
-      required this.nameCn,
-      required this.summary,
-      required this.airDate,
-      required this.airWeekday,
-      required this.rank,
-      required this.total,
-      required this.totalEpisodes,
-      required this.score,
-      this.count,
-      this.collection,
-      this.airTime,
-      required this.images,
-      required this.tags,
-      this.alias,
-      this.extraInfo});
+  BangumiItem({
+    required this.id,
+    required this.type,
+    required this.name,
+    required this.nameCn,
+    required this.summary,
+    required this.airDate,
+    required this.airWeekday,
+    required this.rank,
+    required this.total,
+    required this.totalEpisodes,
+    required this.score,
+    this.count,
+    this.collection,
+    this.airTime,
+    required this.images,
+    required this.tags,
+    this.alias,
+    this.extraInfo,
+  });
 
   BangumiItem.fromRow(Row row)
-      : id = row["id"],
-        type = row["type"],
-        name = row["name"],
-        nameCn = row["nameCn"],
-        summary = row["summary"],
-        airDate = row["airDate"],
-        airWeekday = row["airWeekday"],
-        rank = row["rank"],
-        total = row["total"],
-        totalEpisodes = row["totalEpisodes"] ?? 0,
-        score = row["score"],
-        // 转为 double
-        count = row["count"] == null
-            ? null
-            : Map<String, int>.from(jsonDecode(row["count"])),
-        // 转为 Map<String, int>
-        collection = row["collection"] == null
-            ? null
-            : Map<String, int>.from(jsonDecode(row["collection"])),
-        // 转为 Map<String, int>
-        images = Map<String, String>.from(jsonDecode(row["images"])),
-        // 转为 Map<String, String>
-        tags = row["tags"] == null
-            ? []
-            : (row["tags"] is String)
-                ? (json.decode(row["tags"]) as List)
-                    .map((tag) => BangumiTag.fromJson(tag))
-                    .toList()
-                : (row["tags"]).map((tag) => BangumiTag.fromJson(tag)).toList()
-                    as List<BangumiTag>,
-        alias = row['alias'] != null
-            ? (json.decode(row['alias']) as List).cast<String>()
-            : [];
+    : id = row["id"],
+      type = row["type"],
+      name = row["name"],
+      nameCn = row["nameCn"],
+      summary = row["summary"],
+      airDate = row["airDate"],
+      airWeekday = row["airWeekday"],
+      rank = row["rank"],
+      total = row["total"],
+      totalEpisodes = row["totalEpisodes"] ?? 0,
+      score = row["score"],
+      // 转为 double
+      count = row["count"] == null
+          ? null
+          : Map<String, int>.from(jsonDecode(row["count"])),
+      // 转为 Map<String, int>
+      collection = row["collection"] == null
+          ? null
+          : Map<String, int>.from(jsonDecode(row["collection"])),
+      // 转为 Map<String, int>
+      images = Map<String, String>.from(jsonDecode(row["images"])),
+      // 转为 Map<String, String>
+      tags = row["tags"] == null
+          ? []
+          : (row["tags"] is String)
+          ? (json.decode(row["tags"]) as List)
+                .map((tag) => BangumiTag.fromJson(tag))
+                .toList()
+          : (row["tags"]).map((tag) => BangumiTag.fromJson(tag)).toList()
+                as List<BangumiTag>,
+      alias = row['alias'] != null
+          ? (json.decode(row['alias']) as List).cast<String>()
+          : [];
 
   static String? extractDateFromInfo(String? info) {
     if (info == null || info.isEmpty) return null;
@@ -144,12 +145,14 @@ class BangumiItem {
           ? (json['name'] ?? '')
           : json['name_cn'] ?? json['nameCN'],
       summary: json['summary'] ?? '',
-      airDate: json['air_date'] ??
+      airDate:
+          json['air_date'] ??
           json['date'] ??
           json['airtime']?['date'] ??
           extractDateFromInfo(json['info']) ??
-          '',
-      airWeekday: json['air_weekday'] ??
+          '2077',
+      airWeekday:
+          json['air_weekday'] ??
           (json['date'] == null ? 1 : Utils.dateStringToWeekday(json['date'])),
       // 修改这一行，使用安全访问操作符检查 json['rating']
       rank: json['rating']?['rank'] ?? json['rank'] ?? 0,
@@ -162,7 +165,7 @@ class BangumiItem {
               "common": '',
               "medium": '',
               "small": '',
-              "grid": ''
+              "grid": '',
             },
       ),
       tags: tagList,
@@ -171,8 +174,9 @@ class BangumiItem {
       count: (() {
         final rawCount = json['rating']?['count'];
         if (rawCount is Map) {
-          return rawCount
-              .map((key, value) => MapEntry(key.toString(), value as int));
+          return rawCount.map(
+            (key, value) => MapEntry(key.toString(), value as int),
+          );
         } else if (rawCount is List) {
           return {
             for (int i = 0; i < rawCount.length; i++)
@@ -187,23 +191,24 @@ class BangumiItem {
     );
   }
 
-  BangumiItem copyWith(
-      {int? id,
-      String? nameCn,
-      String? name,
-      Map<String, String>? images,
-      int? rank,
-      double? score,
-      int? total,
-      int? airWeekday,
-      String? airTime,
-      int? type,
-      String? summary,
-      String? airDate,
-      int? totalEpisodes,
-      List<BangumiTag>? tags,
-      List<String>? alias,
-      Map<String, dynamic>? extraInfo}) {
+  BangumiItem copyWith({
+    int? id,
+    String? nameCn,
+    String? name,
+    Map<String, String>? images,
+    int? rank,
+    double? score,
+    int? total,
+    int? airWeekday,
+    String? airTime,
+    int? type,
+    String? summary,
+    String? airDate,
+    int? totalEpisodes,
+    List<BangumiTag>? tags,
+    List<String>? alias,
+    Map<String, dynamic>? extraInfo,
+  }) {
     return BangumiItem(
       id: id ?? this.id,
       nameCn: nameCn ?? this.nameCn,

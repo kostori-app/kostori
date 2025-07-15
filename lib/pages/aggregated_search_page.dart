@@ -1,19 +1,19 @@
 import "package:flutter/material.dart";
 import "package:kostori/components/components.dart";
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:kostori/foundation/app.dart";
 import "package:kostori/foundation/appdata.dart";
 import "package:kostori/pages/search_result_page.dart";
 import "package:kostori/utils/translations.dart";
-
-import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:shimmer_animation/shimmer_animation.dart";
 
 class AggregatedSearchPage extends StatefulWidget {
-  const AggregatedSearchPage(
-      {super.key,
-      required this.keyword,
-      this.keywords,
-      this.bangumiPage = false});
+  const AggregatedSearchPage({
+    super.key,
+    required this.keyword,
+    this.keywords,
+    this.bangumiPage = false,
+  });
 
   final String keyword;
   final List<String>? keywords;
@@ -45,6 +45,8 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
     }
     this.sources = sources.map((e) => AnimeSource.find(e)!).toList();
     _keyword = widget.keyword;
+    appdata.addSearchHistory(_keyword);
+    appdata.saveData();
     controller = SearchBarController(
       currentText: widget.keyword,
       onSearch: (text) {
@@ -58,26 +60,26 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SmoothCustomScrollView(slivers: [
-      SliverSearchBar(
+    return SmoothCustomScrollView(
+      slivers: [
+        SliverSearchBar(
           controller: controller,
           bangumiPage: widget.bangumiPage,
-          keywords: widget.keywords),
-      SliverList(
-        key: ValueKey(_keyword),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
+          keywords: widget.keywords,
+        ),
+        SliverList(
+          key: ValueKey(_keyword),
+          delegate: SliverChildBuilderDelegate((context, index) {
             final source = sources[index];
             return _SliverSearchResult(
               key: ValueKey(source.key),
               source: source,
               keyword: _keyword,
             );
-          },
-          childCount: sources.length,
+          }, childCount: sources.length),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -112,8 +114,9 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
 
   void load() async {
     final data = widget.source.searchPageData!;
-    var options =
-        (data.searchOptions ?? []).map((e) => e.defaultValue).toList();
+    var options = (data.searchOptions ?? [])
+        .map((e) => e.defaultValue)
+        .toList();
     if (data.loadPage != null) {
       var res = await data.loadPage!(widget.keyword, 1, options);
       if (!res.error) {
@@ -162,9 +165,10 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
   }
 
   Widget buildAnime(Anime c) {
-    return SimpleAnimeTile(anime: c, withTitle: true)
-        .paddingLeft(_kLeftPadding)
-        .paddingBottom(2);
+    return SimpleAnimeTile(
+      anime: c,
+      withTitle: true,
+    ).paddingLeft(_kLeftPadding).paddingBottom(2);
   }
 
   @override
@@ -193,25 +197,27 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
               height: _kAnimeHeight,
               width: double.infinity,
               child: Shimmer(
-                child: LayoutBuilder(builder: (context, constrains) {
-                  var itemWidth = _animeWidth + _kLeftPadding;
-                  var items = (constrains.maxWidth / itemWidth).ceil();
-                  return Stack(
-                    children: [
-                      Positioned(
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Row(
-                          children: List.generate(
-                            items,
-                            (index) => buildPlaceHolder(),
+                child: LayoutBuilder(
+                  builder: (context, constrains) {
+                    var itemWidth = _animeWidth + _kLeftPadding;
+                    var items = (constrains.maxWidth / itemWidth).ceil();
+                    return Stack(
+                      children: [
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: Row(
+                            children: List.generate(
+                              items,
+                              (index) => buildPlaceHolder(),
+                            ),
                           ),
                         ),
-                      )
-                    ],
-                  );
-                }),
+                      ],
+                    );
+                  },
+                ),
               ),
             )
           else if (animes == null || animes!.isEmpty)
@@ -229,7 +235,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      )
+                      ),
                     ],
                   ),
                   const Spacer(),
@@ -241,9 +247,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
               height: _kAnimeHeight,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                children: [
-                  for (var a in animes!) buildAnime(a),
-                ],
+                children: [for (var a in animes!) buildAnime(a)],
               ),
             ),
         ],

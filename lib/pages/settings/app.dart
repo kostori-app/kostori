@@ -15,10 +15,7 @@ class _AppSettingsState extends State<AppSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("App".tl)),
-        _SettingPartTitle(
-          title: "Data".tl,
-          icon: Icons.storage,
-        ),
+        _SettingPartTitle(title: "Data".tl, icon: Icons.storage),
         ListTile(
           title: Text("Cache Size".tl),
           subtitle: Text(bytesToReadableString(CacheManager().currentSize)),
@@ -74,8 +71,9 @@ class _AppSettingsState extends State<AppSettings> {
             var controller = showLoadingDialog(context);
             var file = await selectFile(ext: ['kostori']);
             if (file != null) {
-              var cacheFile =
-                  File(FilePath.join(App.cachePath, "import_data_temp"));
+              var cacheFile = File(
+                FilePath.join(App.cachePath, "import_data_temp"),
+              );
               await file.saveTo(cacheFile.path);
               try {
                 await importAppData(cacheFile);
@@ -98,10 +96,7 @@ class _AppSettingsState extends State<AppSettings> {
           },
           actionTitle: 'Set'.tl,
         ).toSliver(),
-        _SettingPartTitle(
-          title: "Log".tl,
-          icon: Icons.error_outline,
-        ),
+        _SettingPartTitle(title: "Log".tl, icon: Icons.error_outline),
         _CallbackSetting(
           title: "Open Log".tl,
           callback: () {
@@ -109,10 +104,11 @@ class _AppSettingsState extends State<AppSettings> {
           },
           actionTitle: 'Open'.tl,
         ).toSliver(),
-        _SettingPartTitle(
-          title: "User".tl,
-          icon: Icons.person_outline,
-        ),
+        _SwitchSetting(
+          title: "Debug Info".tl,
+          settingKey: "debugInfo",
+        ).toSliver(),
+        _SettingPartTitle(title: "User".tl, icon: Icons.person_outline),
         SelectSetting(
           title: "Language".tl,
           settingKey: "language",
@@ -136,7 +132,8 @@ class _AppSettingsState extends State<AppSettings> {
                 final auth = LocalAuthentication();
                 final bool canAuthenticateWithBiometrics =
                     await auth.canCheckBiometrics;
-                final bool canAuthenticate = canAuthenticateWithBiometrics ||
+                final bool canAuthenticate =
+                    canAuthenticateWithBiometrics ||
                     await auth.isDeviceSupported();
                 if (!canAuthenticate) {
                   context.showMessage(message: "Biometrics not supported".tl);
@@ -169,33 +166,37 @@ class _LogsPageState extends State<LogsPage> {
         title: const Text("Logs"),
         actions: [
           IconButton(
-              onPressed: () => setState(() {
-                    final RelativeRect position = RelativeRect.fromLTRB(
-                      MediaQuery.of(context).size.width,
-                      MediaQuery.of(context).padding.top + kToolbarHeight,
-                      0.0,
-                      0.0,
-                    );
-                    showMenu(context: context, position: position, items: [
-                      PopupMenuItem(
-                        child: Text("Clear".tl),
-                        onTap: () => setState(() => Log.clear()),
-                      ),
-                      PopupMenuItem(
-                        child: Text("Disable Length Limitation".tl),
-                        onTap: () {
-                          Log.ignoreLimitation = true;
-                          context.showMessage(
-                              message: "Only valid for this run");
-                        },
-                      ),
-                      PopupMenuItem(
-                        child: Text("Export".tl),
-                        onTap: () => saveLog(Log().toString()),
-                      ),
-                    ]);
-                  }),
-              icon: const Icon(Icons.more_horiz))
+            onPressed: () => setState(() {
+              final RelativeRect position = RelativeRect.fromLTRB(
+                MediaQuery.of(context).size.width,
+                MediaQuery.of(context).padding.top + kToolbarHeight,
+                0.0,
+                0.0,
+              );
+              showMenu(
+                context: context,
+                position: position,
+                items: [
+                  PopupMenuItem(
+                    child: Text("Clear".tl),
+                    onTap: () => setState(() => Log.clear()),
+                  ),
+                  PopupMenuItem(
+                    child: Text("Disable Length Limitation".tl),
+                    onTap: () {
+                      Log.ignoreLimitation = true;
+                      context.showMessage(message: "Only valid for this run");
+                    },
+                  ),
+                  PopupMenuItem(
+                    child: Text("Export".tl),
+                    onTap: () => saveLog(Log().toString()),
+                  ),
+                ],
+              );
+            }),
+            icon: const Icon(Icons.more_horiz),
+          ),
         ],
       ),
       body: ListView.builder(
@@ -214,51 +215,56 @@ class _LogsPageState extends State<LogsPage> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(16)),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(16),
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 1),
                           child: Text(Log.logs[index].title),
                         ),
                       ),
-                      const SizedBox(
-                        width: 3,
-                      ),
+                      const SizedBox(width: 3),
                       Container(
                         decoration: BoxDecoration(
                           color: [
                             Theme.of(context).colorScheme.error,
                             Theme.of(context).colorScheme.errorContainer,
-                            Theme.of(context).colorScheme.primaryContainer
+                            Theme.of(context).colorScheme.primaryContainer,
                           ][Log.logs[index].level.index],
-                          borderRadius:
-                              const BorderRadius.all(Radius.circular(16)),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(16),
+                          ),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(5, 0, 5, 1),
                           child: Text(
                             Log.logs[index].level.name,
                             style: TextStyle(
-                                color: Log.logs[index].level.index == 0
-                                    ? Colors.white
-                                    : Colors.black),
+                              color: Log.logs[index].level.index == 0
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                   Text(Log.logs[index].content),
-                  Text(Log.logs[index].time
-                      .toString()
-                      .replaceAll(RegExp(r"\.\w+"), "")),
+                  Text(
+                    Log.logs[index].time.toString().replaceAll(
+                      RegExp(r"\.\w+"),
+                      "",
+                    ),
+                  ),
                   TextButton(
                     onPressed: () {
                       Clipboard.setData(
-                          ClipboardData(text: Log.logs[index].content));
+                        ClipboardData(text: Log.logs[index].content),
+                      );
                     },
                     child: Text("Copy".tl),
                   ),
@@ -357,10 +363,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               leading: Icon(Icons.sync),
               title: Text("Auto Sync Data".tl),
               contentPadding: EdgeInsets.zero,
-              trailing: Switch(
-                value: autoSync,
-                onChanged: onAutoSyncChanged,
-              ),
+              trailing: Switch(value: autoSync, onChanged: onAutoSyncChanged),
             ),
             const SizedBox(height: 12),
             Row(
@@ -404,8 +407,9 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                                "Once the operation is successful, app will automatically sync data with the server."
-                                    .tl),
+                              "Once the operation is successful, app will automatically sync data with the server."
+                                  .tl,
+                            ),
                           ),
                         ],
                       ),
@@ -467,7 +471,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                 },
                 child: Text("Continue".tl),
               ),
-            )
+            ),
           ],
         ).paddingHorizontal(16),
       ),

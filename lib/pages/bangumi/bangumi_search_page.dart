@@ -1,24 +1,23 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-
-import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
-
-import 'package:kostori/components/bangumi_widget.dart';
-
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/utils.dart';
 
-import '../../components/components.dart';
-import '../../components/share_widget.dart';
-import '../../foundation/appdata.dart';
+import 'bangumi_info_page.dart';
 
 class BangumiSearchPage extends StatefulWidget {
   const BangumiSearchPage({super.key, this.tag});
@@ -34,6 +33,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   final maxWidth = 1250.0;
   List<String> tags = [];
   List<BangumiItem> bangumiItems = [];
+  List<BangumiItem> searchSuggestions = [];
   Map<BangumiItem, bool> selectedBangumiItems = {};
 
   bool useBriefMode = false;
@@ -52,15 +52,14 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   String airDate = '';
   String endDate = '';
 
+  Timer? _debounce;
+  int _searchToken = 0;
+
   final TextEditingController _controller = TextEditingController();
   bool _showSearchHistory = false;
+  bool _showSearchSuggestions = false;
 
-  final List<String> options = [
-    '最佳匹配',
-    '最高排名',
-    '最高收藏',
-    '最高评分',
-  ];
+  final List<String> options = ['最佳匹配', '最高排名', '最高收藏', '最高评分'];
 
   String selectedOption = '最高排名'; // 当前选中的选项
   final Map<String, String> optionToSortType = {
@@ -68,6 +67,13 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     '最高排名': 'rank',
     '最高收藏': 'heat',
     '最高评分': 'score',
+  };
+
+  final Map<String, String> sortTypeToOption = {
+    'match': '最佳匹配',
+    'rank': '最高排名',
+    'heat': '最高收藏',
+    'score': '最高评分',
   };
 
   @override
@@ -85,12 +91,18 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   void dispose() {
     bangumiItems.clear();
     _scrollController.removeListener(_loadMoreData);
+    _debounce?.cancel();
     super.dispose();
   }
 
   Future<List<BangumiItem>> bangumiSearch() async {
-    return Bangumi.bangumiPostSearch(keyword,
-        tags: tags, sort: sort, airDate: airDate, endDate: endDate);
+    return Bangumi.bangumiPostSearch(
+      keyword,
+      tags: tags,
+      sort: sort,
+      airDate: airDate,
+      endDate: endDate,
+    );
   }
 
   Future<void> _loadinitial() async {
@@ -122,12 +134,14 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       setState(() {
         _isLoading = true;
       });
-      final result = await Bangumi.bangumiPostSearch(keyword,
-          tags: tags,
-          offset: bangumiItems.length,
-          sort: sort,
-          airDate: airDate,
-          endDate: endDate);
+      final result = await Bangumi.bangumiPostSearch(
+        keyword,
+        tags: tags,
+        offset: bangumiItems.length,
+        sort: sort,
+        airDate: airDate,
+        endDate: endDate,
+      );
       bangumiItems.addAll(result);
       setState(() {
         _isLoading = false;
@@ -136,7 +150,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   // 构建所有标签分类
-// 在State类中添加以下变量
+  // 在State类中添加以下变量
   int selectedCountForCategory(TagCategory category) {
     return tags.where((tag) => category.tags.contains(tag)).length;
   }
@@ -151,7 +165,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     TagCategory(title: '分类', tags: classification),
   ];
 
-// 分类选择栏
+  // 分类选择栏
   List<Widget> _buildTagCategories() {
     return [
       SliverToBoxAdapter(
@@ -193,8 +207,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   ),
                   selected: selectedCount > 0,
                   onSelected: (_) => _showTagSelectionDialog(context, category),
-                  selectedColor:
-                      Theme.of(context).colorScheme.primary.toOpacity(0.1),
+                  selectedColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.toOpacity(0.1),
                   labelStyle: TextStyle(
                     color: selectedCount > 0
                         ? Theme.of(context).colorScheme.primary
@@ -204,10 +219,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     borderRadius: BorderRadius.circular(20),
                     side: BorderSide(
                       color: selectedCount > 0
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .toOpacity(0.72)
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.toOpacity(0.72)
                           : Colors.grey.shade300,
                     ),
                   ),
@@ -220,10 +234,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     ];
   }
 
-// 标签选择对话框
+  // 标签选择对话框
   void _showTagSelectionDialog(BuildContext context, TagCategory category) {
-    final currentSelected =
-        List<String>.from(tags.where((tag) => category.tags.contains(tag)));
+    final currentSelected = List<String>.from(
+      tags.where((tag) => category.tags.contains(tag)),
+    );
 
     showDialog(
       context: context,
@@ -231,129 +246,130 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-                insetPadding: const EdgeInsets.all(24),
-                backgroundColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16)),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(
-                      constraints:
-                          BoxConstraints(maxWidth: 500, maxHeight: 600),
-                      decoration: BoxDecoration(
-                        color: context.colorScheme.surface.toOpacity(0.22),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 标题栏
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Text('选择${category.title}',
-                                    style:
-                                        Theme.of(context).textTheme.titleLarge),
-                                const Spacer(),
-                                IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () => Navigator.pop(context)),
-                              ],
-                            ),
+              insetPadding: const EdgeInsets.all(24),
+              backgroundColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    constraints: BoxConstraints(maxWidth: 500, maxHeight: 600),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surface.toOpacity(0.22),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 标题栏
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Text(
+                                '选择${category.title}',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
                           ),
-                          // 标签区
-                          Expanded(
-                            child: SingleChildScrollView(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: category.tags.map((tag) {
-                                  final isSelected =
-                                      currentSelected.contains(tag);
-                                  return InputChip(
-                                    backgroundColor:
-                                        Colors.black.toOpacity(0.5),
-                                    shape: StadiumBorder(
-                                      side: BorderSide(
-                                        color: isSelected
-                                            ? Theme.of(context)
+                        ),
+                        // 标签区
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: category.tags.map((tag) {
+                                final isSelected = currentSelected.contains(
+                                  tag,
+                                );
+                                return InputChip(
+                                  backgroundColor: Colors.black.toOpacity(0.5),
+                                  shape: StadiumBorder(
+                                    side: BorderSide(
+                                      color: isSelected
+                                          ? Theme.of(context)
                                                 .colorScheme
                                                 .primary
                                                 .toOpacity(0.72)
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .withAlpha(4),
-                                      ),
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.primary.withAlpha(4),
                                     ),
-                                    label: Text(tag),
-                                    selected: isSelected,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        if (selected) {
-                                          if (!currentSelected.contains(tag)) {
-                                            currentSelected.add(tag);
-                                          }
-                                        } else {
-                                          currentSelected.remove(tag);
+                                  ),
+                                  label: Text(tag),
+                                  selected: isSelected,
+                                  onSelected: (selected) {
+                                    setState(() {
+                                      if (selected) {
+                                        if (!currentSelected.contains(tag)) {
+                                          currentSelected.add(tag);
                                         }
-                                      });
-                                    },
-                                    selectedColor: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .toOpacity(0.22),
-                                    checkmarkColor: isSelected
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .toOpacity(0.72)
-                                        : Theme.of(context)
-                                            .colorScheme
-                                            .primary
-                                            .withAlpha(4),
-                                    showCheckmark: true,
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
-                          // 操作栏
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                OutlinedButton(
-                                  onPressed: () =>
-                                      setState(() => currentSelected.clear()),
-                                  child: const Text('清空'),
-                                ),
-                                const Spacer(),
-                                TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('取消')),
-                                const SizedBox(width: 16),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    _updateSelectedTags(
-                                        category, currentSelected);
-                                    Navigator.pop(context);
+                                      } else {
+                                        currentSelected.remove(tag);
+                                      }
+                                    });
                                   },
-                                  child: Text('确认 (${currentSelected.length})'),
-                                ),
-                              ],
+                                  selectedColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.toOpacity(0.22),
+                                  checkmarkColor: isSelected
+                                      ? Theme.of(
+                                          context,
+                                        ).colorScheme.primary.toOpacity(0.72)
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withAlpha(4),
+                                  showCheckmark: true,
+                                );
+                              }).toList(),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        // 操作栏
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              OutlinedButton(
+                                onPressed: () =>
+                                    setState(() => currentSelected.clear()),
+                                child: const Text('清空'),
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('取消'),
+                              ),
+                              const SizedBox(width: 16),
+                              ElevatedButton(
+                                onPressed: () {
+                                  _updateSelectedTags(
+                                    category,
+                                    currentSelected,
+                                  );
+                                  Navigator.pop(context);
+                                },
+                                child: Text('确认 (${currentSelected.length})'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ));
+                ),
+              ),
+            );
           },
         );
       },
@@ -361,7 +377,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   void _updateSelectedTags(
-      TagCategory category, List<String> selectedTagsInCategory) async {
+    TagCategory category,
+    List<String> selectedTagsInCategory,
+  ) async {
     setState(() {
       // 先把这个分类原来选中的标签从tags中移除
       tags.removeWhere((tag) => category.tags.contains(tag));
@@ -385,8 +403,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       builder: (context) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: ClipRect(
             child: BackdropFilter(
               filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -489,55 +508,56 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     }
 
     return SliverGrid(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          var isSelected = selectedBangumiItems == {}
-              ? false
-              : selectedBangumiItems[bangumiItems[index]] ?? false;
-          var bangumi = useBriefMode
-              ? BangumiWidget.buildBriefMode(
-                  context,
-                  bangumiItems[index],
-                  'search',
-                  showPlaceholder: false,
-                  onTap: multiSelectMode
-                      ? (a) {
-                          onTap(a);
-                        }
-                      : null,
-                  onLongPressed: (a) {
-                    onLongPressed(a);
-                  },
-                )
-              : BangumiWidget.buildDetailedMode(
-                  context, bangumiItems[index], 'search',
-                  onTap: multiSelectMode
-                      ? (a) {
-                          onTap(a);
-                        }
-                      : null, onLongPressed: (a) {
-                  onLongPressed(a);
-                });
-
-          if (selectedBangumiItems.isEmpty) {
-            return bangumi;
-          }
-          return AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Theme.of(context)
-                        .colorScheme
-                        .secondaryContainer
-                        .toOpacity(0.72)
+      delegate: SliverChildBuilderDelegate((context, index) {
+        var isSelected = selectedBangumiItems == {}
+            ? false
+            : selectedBangumiItems[bangumiItems[index]] ?? false;
+        var bangumi = useBriefMode
+            ? BangumiWidget.buildBriefMode(
+                context,
+                bangumiItems[index],
+                'search',
+                showPlaceholder: false,
+                onTap: multiSelectMode
+                    ? (a) {
+                        onTap(a);
+                      }
                     : null,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.all(4),
-              child: bangumi);
-        },
-        childCount: bangumiItems.length,
-      ),
+                onLongPressed: (a) {
+                  onLongPressed(a);
+                },
+              )
+            : BangumiWidget.buildDetailedMode(
+                context,
+                bangumiItems[index],
+                'search',
+                onTap: multiSelectMode
+                    ? (a) {
+                        onTap(a);
+                      }
+                    : null,
+                onLongPressed: (a) {
+                  onLongPressed(a);
+                },
+              );
+
+        if (selectedBangumiItems.isEmpty) {
+          return bangumi;
+        }
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(
+                    context,
+                  ).colorScheme.secondaryContainer.toOpacity(0.72)
+                : null,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(4),
+          child: bangumi,
+        );
+      }, childCount: bangumiItems.length),
       gridDelegate: SliverGridDelegateWithBangumiItems(useBriefMode),
     );
   }
@@ -633,8 +653,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     airDate = air != null ? formatDate(air) : '';
                     endDate = end != null ? formatDate(end) : '';
 
-                    Log.addLog(LogLevel.info, 'pickDate',
-                        "Air Date: $airDate, End Date: $endDate");
+                    Log.addLog(
+                      LogLevel.info,
+                      'pickDate',
+                      "Air Date: $airDate, End Date: $endDate",
+                    );
 
                     Navigator.pop(context);
                     setState(() {
@@ -670,34 +693,38 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             Text('Showing @l results'.tlParams({'l': bangumiItems.length})),
           const SizedBox(width: 8),
           IconButton(
-              onPressed: () {
-                bangumiItems.clear();
-                tags.clear();
-                airDate = '';
-                endDate = '';
-                setState(() {});
-              },
-              tooltip: "Clear Tags".tl,
-              icon: const Icon(Icons.clear_all)),
+            onPressed: () {
+              bangumiItems.clear();
+              tags.clear();
+              airDate = '';
+              endDate = '';
+              setState(() {});
+            },
+            tooltip: "Clear Tags".tl,
+            icon: const Icon(Icons.clear_all),
+          ),
           IconButton(
-              onPressed: () {
-                _showAddTagDialog(context);
-              },
-              icon: const Icon(Icons.add)),
+            onPressed: () {
+              _showAddTagDialog(context);
+            },
+            icon: const Icon(Icons.add),
+          ),
           const Spacer(),
           IconButton(
-              onPressed: () {
-                _showAirEndDateDialog(context);
-              },
-              tooltip: "Select Time".tl,
-              icon: Icon(Icons.calendar_today)),
+            onPressed: () {
+              _showAirEndDateDialog(context);
+            },
+            tooltip: "Select Time".tl,
+            icon: Icon(Icons.calendar_today),
+          ),
           IconButton(
-              onPressed: () {
-                useBriefMode = !useBriefMode;
-                setState(() {});
-              },
-              tooltip: "Switch Layout".tl,
-              icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda)),
+            onPressed: () {
+              useBriefMode = !useBriefMode;
+              setState(() {});
+            },
+            tooltip: "Switch Layout".tl,
+            icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
+          ),
           PopupMenuButton<String>(
             icon: Row(
               children: [
@@ -744,57 +771,64 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       child: Row(
         children: [
           if (bangumiItems.isNotEmpty)
-            Text("Selected @c animes"
-                .tlParams({"c": selectedBangumiItems.length})),
+            Text(
+              "Selected @c animes".tlParams({"c": selectedBangumiItems.length}),
+            ),
           const SizedBox(width: 8),
           IconButton(
-              onPressed: () {
-                selectedBangumiItems.clear();
-                multiSelectMode = false;
-                setState(() {});
-              },
-              tooltip: "Clear Tags".tl,
-              icon: const Icon(Icons.clear_all)),
+            onPressed: () {
+              selectedBangumiItems.clear();
+              multiSelectMode = false;
+              setState(() {});
+            },
+            tooltip: "Clear Tags".tl,
+            icon: const Icon(Icons.clear_all),
+          ),
           const Spacer(),
           IconButton(
-              onPressed: () {
-                setState(() {
-                  selectedBangumiItems =
-                      bangumiItems.asMap().map((k, v) => MapEntry(v, true));
-                });
-              },
-              tooltip: "Select All".tl,
-              icon: Icon(Icons.select_all)),
+            onPressed: () {
+              setState(() {
+                selectedBangumiItems = bangumiItems.asMap().map(
+                  (k, v) => MapEntry(v, true),
+                );
+              });
+            },
+            tooltip: "Select All".tl,
+            icon: Icon(Icons.select_all),
+          ),
           IconButton(
-              onPressed: () {
-                setState(() {
-                  selectedBangumiItems.clear();
-                  multiSelectMode = false;
-                });
-              },
-              tooltip: "Deselect".tl,
-              icon: Icon(Icons.deselect)),
+            onPressed: () {
+              setState(() {
+                selectedBangumiItems.clear();
+                multiSelectMode = false;
+              });
+            },
+            tooltip: "Deselect".tl,
+            icon: Icon(Icons.deselect),
+          ),
           IconButton(
-              onPressed: () {
-                setState(() {
-                  for (var b in bangumiItems) {
-                    if (selectedBangumiItems.containsKey(b)) {
-                      selectedBangumiItems.remove(b);
-                    } else {
-                      selectedBangumiItems[b] = true;
-                    }
+            onPressed: () {
+              setState(() {
+                for (var b in bangumiItems) {
+                  if (selectedBangumiItems.containsKey(b)) {
+                    selectedBangumiItems.remove(b);
+                  } else {
+                    selectedBangumiItems[b] = true;
                   }
-                });
-              },
-              tooltip: "Invert Selection".tl,
-              icon: Icon(Icons.flip)),
+                }
+              });
+            },
+            tooltip: "Invert Selection".tl,
+            icon: Icon(Icons.flip),
+          ),
           IconButton(
-              onPressed: () {
-                useBriefMode = !useBriefMode;
-                setState(() {});
-              },
-              tooltip: "Switch Layout".tl,
-              icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda)),
+            onPressed: () {
+              useBriefMode = !useBriefMode;
+              setState(() {});
+            },
+            tooltip: "Switch Layout".tl,
+            icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
+          ),
         ],
       ),
     );
@@ -804,47 +838,71 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     value = value.trim();
     if (value.isEmpty) return;
 
-    _controller.text = value;
-    keyword = value;
+    if (RegExp(r'^\d+$').hasMatch(value)) {
+      final res = await Bangumi.isBangumiExists(int.parse(value));
+      if (res.keys.first) {
+        App.rootContext.showMessage(message: '正在跳转...');
+        context.to(() => BangumiInfoPage(bangumiItem: res.values.first!));
+      } else {
+        App.rootContext.showMessage(message: '查询失败');
+      }
+    } else {
+      FocusScope.of(context).unfocus();
+      _controller.text = value;
+      keyword = value;
 
-    // 保存历史，去重
-    appdata.addSearchHistory(value);
-    appdata.saveData();
+      // 保存历史，去重
+      appdata.addSearchHistory(value);
+      appdata.saveData();
 
-    setState(() {
-      _isLoading = true;
-      _showSearchHistory = false;
-    });
+      setState(() {
+        _isLoading = true;
+        _showSearchHistory = false;
+        _showSearchSuggestions = false;
+        searchSuggestions.clear();
+      });
 
-    final newItems = await bangumiSearch();
-    bangumiItems = newItems;
+      final newItems = await bangumiSearch();
+      bangumiItems = newItems;
 
-    setState(() {
-      _isLoading = false;
-    });
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Widget _searchHistorySliver() {
     return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final item = appdata.searchHistory[index];
-          return ListTile(
-            leading: const Icon(Icons.history),
-            title: Text(item),
-            onTap: () => _performSearch(item),
-            trailing: IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: () {
-                appdata.removeSearchHistory(item);
-                appdata.saveData();
-                setState(() {});
-              },
-            ),
-          );
-        },
-        childCount: appdata.searchHistory.length,
-      ),
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final item = appdata.searchHistory[index];
+        return ListTile(
+          leading: const Icon(Icons.history),
+          title: Text(item),
+          onTap: () => _performSearch(item),
+          trailing: IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              appdata.removeSearchHistory(item);
+              appdata.saveData();
+              setState(() {});
+            },
+          ),
+        );
+      }, childCount: appdata.searchHistory.length),
+    );
+  }
+
+  Widget _searchSuggestionsSliver() {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        final item = searchSuggestions[index];
+        return ListTile(
+          leading: const Icon(Icons.search),
+          title: Text(item.nameCn.isNotEmpty ? item.nameCn : item.name),
+          onTap: () =>
+              _performSearch(item.nameCn.isNotEmpty ? item.nameCn : item.name),
+        );
+      }, childCount: searchSuggestions.length),
     );
   }
 
@@ -855,7 +913,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         onPressed: () {
           if (_showSearchHistory) {
             setState(() {
+              FocusScope.of(context).unfocus();
+              keyword = '';
+              _controller.clear();
               _showSearchHistory = false;
+              _showSearchSuggestions = false;
+              searchSuggestions.clear();
             });
           } else {
             Navigator.of(context).pop();
@@ -868,7 +931,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             icon: const Icon(Icons.clear),
             onPressed: () {
               setState(() {
+                FocusScope.of(context).unfocus();
+                keyword = '';
+                _controller.clear();
                 _showSearchHistory = false;
+                _showSearchSuggestions = false;
+                searchSuggestions.clear();
               });
             },
           ),
@@ -878,33 +946,42 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             onPressed: () {
               showPopUpWidget(
                 App.rootContext,
-                StatefulBuilder(builder: (context, setState) {
-                  return ShareWidget(
-                    selectedBangumiItems: selectedBangumiItems,
-                    useBriefMode: useBriefMode,
-                  );
-                }),
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return ShareWidget(
+                      selectedBangumiItems: selectedBangumiItems,
+                      useBriefMode: useBriefMode,
+                      tag: tags,
+                      sort: sortTypeToOption[sort],
+                      airDate: airDate,
+                      endDate: endDate,
+                    );
+                  },
+                ),
               );
             },
           ),
       ],
       title: PreferredSize(
-        preferredSize: const Size.fromHeight(120),
+        preferredSize: const Size.fromHeight(60),
         child: ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              color: Colors.transparent,
-              padding: EdgeInsets.fromLTRB(0, 6, 12, 6),
+          child: SizedBox(
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
               child: TextField(
                 controller: _controller,
+                style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: Theme.of(context).cardColor,
-                  hintText: 'Enter keywords...'.tl,
+                  fillColor: Colors.transparent,
+                  hintText: keyword.isNotEmpty
+                      ? keyword
+                      : 'Enter keywords...'.tl,
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
                   ),
                 ),
                 onTap: () {
@@ -914,7 +991,36 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 },
                 onChanged: (value) {
                   setState(() {
-                    _showSearchHistory = true;
+                    keyword = value;
+                    _showSearchSuggestions = true;
+                  });
+
+                  // 取消之前的防抖定时器
+                  _debounce?.cancel();
+
+                  _debounce = Timer(const Duration(seconds: 2), () async {
+                    if (value.trim().isEmpty) {
+                      setState(() {
+                        searchSuggestions = [];
+                      });
+                      return;
+                    }
+                    final int token = ++_searchToken; // 每次搜索加一个标记
+
+                    final results = await Bangumi.bangumiPostSearch(
+                      value,
+                      tags: tags,
+                      sort: 'match',
+                      airDate: airDate,
+                      endDate: endDate,
+                    );
+
+                    // 只处理最新的一次搜索结果
+                    if (token == _searchToken) {
+                      setState(() {
+                        searchSuggestions = results;
+                      });
+                    }
                   });
                 },
                 onSubmitted: (value) async {
@@ -942,6 +1048,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 tags.remove(tag);
                 _isLoading = true;
                 bangumiItems.clear();
+                selectedBangumiItems.clear();
+                multiSelectMode = false;
               });
               final newItems = await bangumiSearch();
               bangumiItems = newItems;
@@ -971,14 +1079,19 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
           children: [
             if (airDate.isNotEmpty)
               ActionChip(
-                avatar:
-                    Icon(Icons.calendar_today, size: 16, color: Colors.green),
+                avatar: Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: Colors.green,
+                ),
                 label: Text(airDate),
                 onPressed: () async {
                   setState(() {
                     airDate = '';
                     _isLoading = true;
                     bangumiItems.clear();
+                    selectedBangumiItems.clear();
+                    multiSelectMode = false;
                   });
                   final newItems = await bangumiSearch();
                   bangumiItems = newItems;
@@ -995,15 +1108,26 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               ),
             if (endDate.isNotEmpty)
               ActionChip(
-                avatar:
-                    Icon(Icons.calendar_today, size: 16, color: Colors.blue),
+                avatar: Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: Colors.blue,
+                ),
                 label: Text(endDate),
                 onPressed: () async {
-                  endDate = '';
-                  bangumiItems.clear();
+                  setState(() {
+                    endDate = '';
+                    _isLoading = true;
+                    bangumiItems.clear();
+                    selectedBangumiItems.clear();
+                    multiSelectMode = false;
+                  });
+
                   final newItems = await bangumiSearch();
                   bangumiItems = newItems;
-                  setState(() {});
+                  setState(() {
+                    _isLoading = false;
+                  });
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -1040,14 +1164,16 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             controller: _scrollController,
             slivers: [
               _sliverAppBar(context),
-              if (_showSearchHistory && appdata.searchHistory.isNotEmpty)
+              if (_showSearchSuggestions && searchSuggestions.isNotEmpty)
+                _searchSuggestionsSliver(),
+              if (_showSearchHistory &&
+                  appdata.searchHistory.isNotEmpty &&
+                  searchSuggestions.isEmpty)
                 _searchHistorySliver(),
-              if (!_showSearchHistory) ...[
+              if (!_showSearchHistory && !_showSearchSuggestions) ...[
                 ..._buildTagCategories(),
                 if (tags.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: _tagsWidget(context),
-                  ),
+                  SliverToBoxAdapter(child: _tagsWidget(context)),
                 if (airDate.isNotEmpty || endDate.isNotEmpty)
                   _dataTagsWidget(context),
                 if (!multiSelectMode)
@@ -1062,7 +1188,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -1117,36 +1247,35 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
   @override
   SliverGridLayout getLayout(SliverConstraints constraints) {
     if (useBriefMode) {
-      return getBriefModeLayout(
-        constraints,
-        scale,
-      );
+      return getBriefModeLayout(constraints, scale);
     } else {
-      return getDetailedModeLayout(
-        constraints,
-        scale,
-      );
+      return getDetailedModeLayout(constraints, scale);
     }
   }
 
   SliverGridLayout getDetailedModeLayout(
-      SliverConstraints constraints, double scale) {
+    SliverConstraints constraints,
+    double scale,
+  ) {
     const minCrossAxisExtent = 360;
     final itemHeight = 192 * scale;
-    int crossAxisCount =
-        (constraints.crossAxisExtent / minCrossAxisExtent).floor();
+    int crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
+        .floor();
     crossAxisCount = math.min(3, math.max(1, crossAxisCount)); // 限制1-3列
     return SliverGridRegularTileLayout(
-        crossAxisCount: crossAxisCount,
-        mainAxisStride: itemHeight,
-        crossAxisStride: constraints.crossAxisExtent / crossAxisCount,
-        childMainAxisExtent: itemHeight,
-        childCrossAxisExtent: constraints.crossAxisExtent / crossAxisCount,
-        reverseCrossAxis: false);
+      crossAxisCount: crossAxisCount,
+      mainAxisStride: itemHeight,
+      crossAxisStride: constraints.crossAxisExtent / crossAxisCount,
+      childMainAxisExtent: itemHeight,
+      childCrossAxisExtent: constraints.crossAxisExtent / crossAxisCount,
+      reverseCrossAxis: false,
+    );
   }
 
   SliverGridLayout getBriefModeLayout(
-      SliverConstraints constraints, double scale) {
+    SliverConstraints constraints,
+    double scale,
+  ) {
     final maxCrossAxisExtent = 192.0 * scale;
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;

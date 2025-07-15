@@ -193,9 +193,7 @@ abstract class _PlayerController with Store {
       await pp.setProperty("ao", "opensles");
     }
 
-    await player.setAudioTrack(
-      AudioTrack.auto(),
-    );
+    await player.setAudioTrack(AudioTrack.auto());
 
     player.setPlaylistMode(PlaylistMode.none);
     playerTimer = getPlayerTimer();
@@ -215,7 +213,9 @@ abstract class _PlayerController with Store {
         'glsl-shaders',
         'set',
         Utils.buildShadersAbsolutePath(
-            shadersController.shadersDirectory.path, mpvAnime4KShadersLite),
+          shadersController.shadersDirectory.path,
+          mpvAnime4KShadersLite,
+        ),
       ]);
       superResolutionType = 2;
       return;
@@ -226,7 +226,9 @@ abstract class _PlayerController with Store {
         'glsl-shaders',
         'set',
         Utils.buildShadersAbsolutePath(
-            shadersController.shadersDirectory.path, mpvAnime4KShaders),
+          shadersController.shadersDirectory.path,
+          mpvAnime4KShaders,
+        ),
       ]);
       superResolutionType = 3;
       return;
@@ -263,7 +265,7 @@ abstract class _PlayerController with Store {
     WindowFrame.of(App.rootContext).setWindowFrame(!isFullScreen);
   }
 
-  void initReaderWindow() {
+  void initWindow() {
     if (!App.isDesktop || _isInit) return;
     windowFrame = WindowFrame.of(App.rootContext);
     windowFrame.addCloseListener(onWindowClose);
@@ -279,7 +281,7 @@ abstract class _PlayerController with Store {
     }
   }
 
-  void disposeReaderWindow() {
+  void disposeWindow() {
     if (!App.isDesktop) return;
     windowFrame.removeCloseListener(onWindowClose);
   }
@@ -295,12 +297,14 @@ abstract class _PlayerController with Store {
       WakelockPlus.disable();
     } else {
       WakelockPlus.enable();
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky,
-          overlays: SystemUiOverlay.values);
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.immersiveSticky,
+        overlays: SystemUiOverlay.values,
+      );
       // 进入全屏，使用 App.globalTo 跳转到全屏页面
-      App.rootContext.to(() => FullscreenVideoPage(
-          playerController:
-              this as PlayerController)); // 传递当前的 PlayerController
+      App.rootContext.to(
+        () => FullscreenVideoPage(playerController: this as PlayerController),
+      ); // 传递当前的 PlayerController
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
@@ -316,8 +320,9 @@ abstract class _PlayerController with Store {
       App.rootContext.pop(); // 退出全屏，返回原页面
     } else {
       Future.microtask(() {
-        App.rootContext.to(() =>
-            FullscreenVideoPage(playerController: this as PlayerController));
+        App.rootContext.to(
+          () => FullscreenVideoPage(playerController: this as PlayerController),
+        );
       });
     }
 
@@ -386,9 +391,7 @@ abstract class _PlayerController with Store {
               width: 160,
               height: 90,
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -396,10 +399,7 @@ abstract class _PlayerController with Store {
                     child: Stack(
                       children: [
                         Positioned.fill(
-                          child: Image.file(
-                            File(image),
-                            fit: BoxFit.cover,
-                          ),
+                          child: Image.file(File(image), fit: BoxFit.cover),
                         ),
                         Align(
                           alignment: Alignment.bottomCenter,
@@ -445,9 +445,7 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
   Widget build(BuildContext context) {
     return PopScope(
       child: Scaffold(
-        body: VideoPage(
-          playerController: widget.playerController,
-        ),
+        body: VideoPage(playerController: widget.playerController),
       ),
     );
   }

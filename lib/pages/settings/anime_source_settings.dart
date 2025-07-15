@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io' as io;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     show InAppWebViewController;
@@ -62,9 +63,7 @@ class AnimeSourceSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: const _Body(),
-    );
+    return Scaffold(body: const _Body());
   }
 }
 
@@ -98,10 +97,7 @@ class _BodyState extends State<_Body> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(
-          title: Text('Anime Source'.tl),
-          style: AppbarStyle.shadow,
-        ),
+        SliverAppbar(title: Text('Anime Source'.tl), style: AppbarStyle.shadow),
         buildCard(context),
         for (var source in AnimeSource.all())
           _SliverAnimeSource(
@@ -120,9 +116,7 @@ class _BodyState extends State<_Body> {
     showConfirmDialog(
       context: App.rootContext,
       title: "Delete".tl,
-      content: "Delete anime source '@n' ?".tlParams({
-        "n": source.name,
-      }),
+      content: "Delete anime source '@n' ?".tlParams({"n": source.name}),
       btnColor: context.colorScheme.error,
       onConfirm: () {
         var file = File(source.filePath);
@@ -144,14 +138,16 @@ class _BodyState extends State<_Body> {
             title: const Text("Reload Configs"),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("cancel")),
+                onPressed: () => Navigator.pop(context),
+                child: const Text("cancel"),
+              ),
               TextButton(
-                  onPressed: () async {
-                    await AnimeSourceManager().reload();
-                    App.forceRebuild();
-                  },
-                  child: const Text("continue")),
+                onPressed: () async {
+                  await AnimeSourceManager().reload();
+                  App.forceRebuild();
+                },
+                child: const Text("continue"),
+              ),
             ],
           ),
         );
@@ -160,14 +156,18 @@ class _BodyState extends State<_Body> {
         //
       }
     }
-    context.to(() => _EditFilePage(source.filePath, () async {
-          await AnimeSourceManager().reload();
-          setState(() {});
-        }));
+    context.to(
+      () => _EditFilePage(source.filePath, () async {
+        await AnimeSourceManager().reload();
+        setState(() {});
+      }),
+    );
   }
 
-  static Future<void> update(AnimeSource source,
-      [bool showLoading = true]) async {
+  static Future<void> update(
+    AnimeSource source, [
+    bool showLoading = true,
+  ]) async {
     if (!source.url.isURL) {
       App.rootContext.showMessage(message: "Invalid url config");
       return;
@@ -185,11 +185,15 @@ class _BodyState extends State<_Body> {
     try {
       dynamic res;
       if (appdata.settings['gitMirror']) {
-        res = await AppDio().get<String>(Api.gitMirror + source.url,
-            options: Options(responseType: ResponseType.plain));
+        res = await AppDio().get<String>(
+          Api.gitMirror + source.url,
+          options: Options(responseType: ResponseType.plain),
+        );
       } else {
-        res = await AppDio().get<String>(source.url,
-            options: Options(responseType: ResponseType.plain));
+        res = await AppDio().get<String>(
+          source.url,
+          options: Options(responseType: ResponseType.plain),
+        );
       }
       if (cancel) return;
       controller?.close();
@@ -207,12 +211,11 @@ class _BodyState extends State<_Body> {
   }
 
   Widget buildCard(BuildContext context) {
-    Widget buildButton(
-        {required Widget child, required VoidCallback onPressed}) {
-      return Button.normal(
-        onPressed: onPressed,
-        child: child,
-      ).fixHeight(32);
+    Widget buildButton({
+      required Widget child,
+      required VoidCallback onPressed,
+    }) {
+      return Button.normal(onPressed: onPressed, child: child).fixHeight(32);
     }
 
     return SliverToBoxAdapter(
@@ -228,12 +231,14 @@ class _BodyState extends State<_Body> {
             ),
             TextField(
               decoration: InputDecoration(
-                  hintText: "URL",
-                  border: const UnderlineInputBorder(),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                  suffix: IconButton(
-                      onPressed: () => handleAddSource(url),
-                      icon: const Icon(Icons.check))),
+                hintText: "URL",
+                border: const UnderlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                suffix: IconButton(
+                  onPressed: () => handleAddSource(url),
+                  icon: const Icon(Icons.check),
+                ),
+              ),
               onChanged: (value) {
                 url = value;
               },
@@ -260,10 +265,7 @@ class _BodyState extends State<_Body> {
             ),
             ListTile(
               title: Text("Help".tl),
-              trailing: buildButton(
-                onPressed: help,
-                child: Text("Open".tl),
-              ),
+              trailing: buildButton(onPressed: help, child: Text("Open".tl)),
             ),
             ListTile(
               title: Text("Check updates".tl),
@@ -272,13 +274,14 @@ class _BodyState extends State<_Body> {
             ListTile(
               title: Text("Git Mirror".tl),
               trailing: Switch(
-                  value: appdata.settings["gitMirror"],
-                  onChanged: (value) {
-                    setState(() {
-                      appdata.settings["gitMirror"] = value;
-                    });
-                    appdata.saveData();
-                  }),
+                value: appdata.settings["gitMirror"],
+                onChanged: (value) {
+                  setState(() {
+                    appdata.settings["gitMirror"] = value;
+                  });
+                  appdata.saveData();
+                },
+              ),
             ),
             const SizedBox(height: 8),
           ],
@@ -313,11 +316,16 @@ class _BodyState extends State<_Body> {
     splits.removeWhere((element) => element == "");
     var fileName = splits.last;
     bool cancel = false;
-    var controller = showLoadingDialog(App.rootContext,
-        onCancel: () => cancel = true, barrierDismissible: false);
+    var controller = showLoadingDialog(
+      App.rootContext,
+      onCancel: () => cancel = true,
+      barrierDismissible: false,
+    );
     try {
-      var res = await AppDio()
-          .get<String>(url, options: Options(responseType: ResponseType.plain));
+      var res = await AppDio().get<String>(
+        url,
+        options: Options(responseType: ResponseType.plain),
+      );
       if (cancel) return;
       controller.close();
       await addSource(res.data!, fileName);
@@ -424,7 +432,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
               },
             );
           },
-        )
+        ),
       ],
       body: buildBody(),
     );
@@ -464,11 +472,12 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
                     changed = true;
                   },
                 ).paddingHorizontal(16).paddingBottom(8),
-                Text("The URL should point to a 'index.json' file".tl)
-                    .paddingLeft(16),
-                Text("Do not report any issues related to sources to App repo."
-                        .tl)
-                    .paddingLeft(16),
+                Text(
+                  "The URL should point to a 'index.json' file".tl,
+                ).paddingLeft(16),
+                Text(
+                  "Do not report any issues related to sources to App repo.".tl,
+                ).paddingLeft(16),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -514,7 +523,8 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
                         .replaceFirst("https://", "")
                         .replaceFirst("http://", "")
                         .contains("/")) {
-                      url = listUrl.substring(0, listUrl.lastIndexOf("/") + 1) +
+                      url =
+                          listUrl.substring(0, listUrl.lastIndexOf("/") + 1) +
                           fileName;
                     } else {
                       url = '$listUrl/$fileName';
@@ -646,15 +656,10 @@ class __EditFilePageState extends State<_EditFilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: Appbar(
-        title: Text("Edit".tl),
-      ),
+      appBar: Appbar(title: Text("Edit".tl)),
       body: Column(
         children: [
-          Container(
-            height: 0.6,
-            color: context.colorScheme.outlineVariant,
-          ),
+          Container(height: 0.6, color: context.colorScheme.outlineVariant),
           Expanded(
             child: CodeEditor(
               initialValue: current,
@@ -695,9 +700,11 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
   }
 
   void showUpdateDialog() async {
-    var text = AnimeSourceManager().availableUpdates.entries.map((e) {
-      return "${AnimeSource.find(e.key)!.name}: ${e.value}";
-    }).join("\n");
+    var text = AnimeSourceManager().availableUpdates.entries
+        .map((e) {
+          return "${AnimeSource.find(e.key)!.name}: ${e.value}";
+        })
+        .join("\n");
     bool doUpdate = false;
     await showDialog(
       context: App.rootContext,
@@ -835,10 +842,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
           child: ListTile(
             title: Row(
               children: [
-                Text(
-                  source.name,
-                  style: ts.s18,
-                ),
+                Text(source.name, style: ts.s18),
                 const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -871,7 +875,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                         style: const TextStyle(fontSize: 13),
                       ),
                     ),
-                  ).paddingLeft(4)
+                  ).paddingLeft(4),
               ],
             ),
             trailing: Row(
@@ -916,15 +920,9 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
           ),
         ),
         SliverToBoxAdapter(
-          child: Column(
-            children: buildSourceSettings().toList(),
-          ),
+          child: Column(children: buildSourceSettings().toList()),
         ),
-        SliverToBoxAdapter(
-          child: Column(
-            children: _buildAccount().toList(),
-          ),
-        ),
+        SliverToBoxAdapter(child: Column(children: _buildAccount().toList())),
       ],
     );
   }
@@ -950,8 +948,10 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
               }
             }
           } else {
-            current = item.value['options']
-                    .firstWhere((e) => e['value'] == current)['text'] ??
+            current =
+                item.value['options'].firstWhere(
+                  (e) => e['value'] == current,
+                )['text'] ??
                 current;
           }
           yield ListTile(
@@ -959,8 +959,9 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
             trailing: Select(
               current: (current as String).ts(source.key),
               values: (item.value['options'] as List)
-                  .map<String>((e) =>
-                      ((e['text'] ?? e['value']) as String).ts(source.key))
+                  .map<String>(
+                    (e) => ((e['text'] ?? e['value']) as String).ts(source.key),
+                  )
                   .toList(),
               onTap: (i) {
                 source.data['settings'][key] =
@@ -988,8 +989,11 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
               source.data['settings'][key] ?? item.value['default'] ?? '';
           yield ListTile(
             title: Text((item.value['title'] as String).ts(source.key)),
-            subtitle:
-                Text(current, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text(
+              current,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.edit),
               onPressed: () {
@@ -1030,10 +1034,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
         trailing: const Icon(Icons.arrow_right),
         onTap: () async {
           await context.to(
-            () => _LoginPage(
-              config: source.account!,
-              source: source,
-            ),
+            () => _LoginPage(config: source.account!, source: source),
           );
           source.saveData();
           setState(() {});
@@ -1079,9 +1080,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
           trailing: loading
               ? const SizedBox.square(
                   dimension: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                  ),
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.refresh),
         );
@@ -1122,9 +1121,7 @@ class _LoginPageState extends State<_LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const Appbar(
-        title: Text(''),
-      ),
+      appBar: const Appbar(title: Text('')),
       body: Center(
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -1226,7 +1223,7 @@ class _LoginPageState extends State<_LoginPage> {
   void login() {
     if (widget.config.login != null) {
       if (username.isEmpty || password.isEmpty) {
-        showToast(
+        ToastManager.show(
           message: "Cannot be empty".tl,
           icon: const Icon(Icons.error_outline),
           context: context,
@@ -1252,8 +1249,9 @@ class _LoginPageState extends State<_LoginPage> {
       setState(() {
         loading = true;
       });
-      var cookies =
-          widget.config.cookieFields!.map((e) => _cookies[e] ?? '').toList();
+      var cookies = widget.config.cookieFields!
+          .map((e) => _cookies[e] ?? '')
+          .toList();
       widget.config.validateCookies!(cookies).then((value) {
         if (value) {
           widget.source.data['account'] = 'ok';

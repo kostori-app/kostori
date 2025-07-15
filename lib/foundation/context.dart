@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
-
 import 'package:kostori/foundation/app_page_route.dart';
 
 extension Navigation on BuildContext {
@@ -15,13 +14,15 @@ extension Navigation on BuildContext {
   }
 
   Future<T?> to<T>(Widget Function() builder) {
-    return Navigator.of(this)
-        .push<T>(AppPageRoute(builder: (context) => builder()));
+    return Navigator.of(
+      this,
+    ).push<T>(AppPageRoute(builder: (context) => builder()));
   }
 
   Future<void> toReplacement<T>(Widget Function() builder) {
-    return Navigator.of(this)
-        .pushReplacement(AppPageRoute(builder: (context) => builder()));
+    return Navigator.of(
+      this,
+    ).pushReplacement(AppPageRoute(builder: (context) => builder()));
   }
 
   double get width => MediaQuery.of(this).size.width;
@@ -39,7 +40,7 @@ extension Navigation on BuildContext {
   bool get isDarkMode => brightness == Brightness.dark;
 
   void showMessage({required String message}) {
-    showToast(message: message, context: this);
+    ToastManager.show(message: message, context: this);
   }
 
   Color useBackgroundColor(MaterialColor color) {

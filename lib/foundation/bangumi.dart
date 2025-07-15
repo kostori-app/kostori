@@ -3,9 +3,9 @@ import 'dart:convert';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/network/bangumi.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'log.dart';
@@ -48,53 +48,53 @@ class BangumiData {
   });
 
   Map<String, dynamic> toMap() => {
-        "title": title,
-        "titleTranslate": titleTranslate,
-        "type": type,
-        "lang": lang,
-        "officialSite": officialSite,
-        "begin": begin,
-        "broadcast ": broadcast,
-        "end": end,
-        "comment": comment,
-        "sites": sites
-      };
+    "title": title,
+    "titleTranslate": titleTranslate,
+    "type": type,
+    "lang": lang,
+    "officialSite": officialSite,
+    "begin": begin,
+    "broadcast ": broadcast,
+    "end": end,
+    "comment": comment,
+    "sites": sites,
+  };
 
   BangumiData.fromMap(Map<String, dynamic> map)
-      : title = map["title"],
-        titleTranslate = map["titleTranslate"],
-        type = map["type"],
-        lang = map["lang"],
-        officialSite = map["officialSite"],
-        begin = map["begin"],
-        broadcast = map["broadcast "],
-        end = map["end"],
-        comment = map["comment"],
-        sites = map["sites"];
+    : title = map["title"],
+      titleTranslate = map["titleTranslate"],
+      type = map["type"],
+      lang = map["lang"],
+      officialSite = map["officialSite"],
+      begin = map["begin"],
+      broadcast = map["broadcast "],
+      end = map["end"],
+      comment = map["comment"],
+      sites = map["sites"];
 
   BangumiData.fromRow(Row row)
-      : title = row["title"],
-        titleTranslate = row["titleTranslate"],
-        type = row["type"],
-        lang = row["lang"],
-        officialSite = row["officialSite"],
-        begin = row["begin"],
-        broadcast = row["broadcast "],
-        end = row["end"],
-        comment = row["comment"],
-        sites = row["sites"];
+    : title = row["title"],
+      titleTranslate = row["titleTranslate"],
+      type = row["type"],
+      lang = row["lang"],
+      officialSite = row["officialSite"],
+      begin = row["begin"],
+      broadcast = row["broadcast "],
+      end = row["end"],
+      comment = row["comment"],
+      sites = row["sites"];
 
   BangumiData.fromJson(Map<String, dynamic> json)
-      : title = json["title"],
-        titleTranslate = json["titleTranslate"],
-        type = json["type"],
-        lang = (json["lang"]),
-        officialSite = json["officialSite"],
-        begin = json["begin"],
-        broadcast = json["broadcast"],
-        end = json["end"],
-        comment = json["comment"],
-        sites = json["sites"];
+    : title = json["title"],
+      titleTranslate = json["titleTranslate"],
+      type = json["type"],
+      lang = (json["lang"]),
+      officialSite = json["officialSite"],
+      begin = json["begin"],
+      broadcast = json["broadcast"],
+      end = json["end"],
+      comment = json["comment"],
+      sites = json["sites"];
 
   @override
   String toString() {
@@ -131,20 +131,21 @@ class BnagumiCalendar {
 
   BnagumiCalendar();
 
-  BnagumiCalendar.fromModel(
-      {this.id,
-      this.type,
-      this.name,
-      this.nameCn,
-      this.summary,
-      this.airDate,
-      this.airWeekday,
-      this.rank,
-      this.total,
-      this.score,
-      this.count,
-      this.collection,
-      this.images});
+  BnagumiCalendar.fromModel({
+    this.id,
+    this.type,
+    this.name,
+    this.nameCn,
+    this.summary,
+    this.airDate,
+    this.airWeekday,
+    this.rank,
+    this.total,
+    this.score,
+    this.count,
+    this.collection,
+    this.images,
+  });
 }
 
 class BangumiManager with ChangeNotifier {
@@ -235,7 +236,8 @@ class BangumiManager with ChangeNotifier {
   }
 
   Future<void> addBangumiData(BangumiData newItem) async {
-    _db.execute("""
+    _db.execute(
+      """
         insert or replace into bangumi_data (
         title,
         titleTranslate,
@@ -249,70 +251,69 @@ class BangumiManager with ChangeNotifier {
         sites
         )
         values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """, [
-      newItem.title,
-      jsonEncode(newItem.titleTranslate),
-      newItem.type,
-      newItem.lang,
-      newItem.officialSite,
-      newItem.begin,
-      newItem.broadcast,
-      newItem.end,
-      newItem.comment,
-      jsonEncode(newItem.sites)
-    ]);
+      """,
+      [
+        newItem.title,
+        jsonEncode(newItem.titleTranslate),
+        newItem.type,
+        newItem.lang,
+        newItem.officialSite,
+        newItem.begin,
+        newItem.broadcast,
+        newItem.end,
+        newItem.comment,
+        jsonEncode(newItem.sites),
+      ],
+    );
 
     notifyListeners();
   }
 
-  Future<void> addBulkBangumiData(List<BangumiData> bangumiDataList) async {
+  void batchAddBangumiData(List<BangumiData> bangumiDataList) {
+    _db.execute("BEGIN TRANSACTION");
+
     try {
-      // 开始事务
-      _db.execute('BEGIN TRANSACTION');
-
-      final stmt = _db.prepare('''
-      INSERT OR REPLACE INTO bangumi_data (
-        title,
-        titleTranslate,
-        type,
-        lang,
-        officialSite,
-        begin,
-        broadcast,
-        end,
-        comment,
-        sites
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''');
-
-      // 批量插入
-      for (var bangumiData in bangumiDataList) {
-        stmt.execute([
-          bangumiData.title,
-          jsonEncode(bangumiData.titleTranslate),
-          bangumiData.type,
-          bangumiData.lang,
-          bangumiData.officialSite,
-          bangumiData.begin,
-          bangumiData.broadcast,
-          bangumiData.end,
-          bangumiData.comment,
-          jsonEncode(bangumiData.sites),
-        ]);
+      for (final bangumiData in bangumiDataList) {
+        _db.execute(
+          """
+        INSERT OR REPLACE INTO bangumi_data (
+          title,
+          titleTranslate,
+          type,
+          lang,
+          officialSite,
+          begin,
+          broadcast,
+          end,
+          comment,
+          sites
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      """,
+          [
+            bangumiData.title,
+            jsonEncode(bangumiData.titleTranslate),
+            bangumiData.type,
+            bangumiData.lang,
+            bangumiData.officialSite,
+            bangumiData.begin,
+            bangumiData.broadcast,
+            bangumiData.end,
+            bangumiData.comment,
+            jsonEncode(bangumiData.sites),
+          ],
+        );
       }
 
-      // 提交事务
-      _db.execute('COMMIT');
-
-      stmt.dispose(); // 释放statement
+      _db.execute("COMMIT");
     } catch (e, s) {
-      _db.execute('ROLLBACK'); // 如果发生错误，则回滚事务
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      _db.execute("ROLLBACK");
+      Log.addLog(LogLevel.error, 'batchAddBangumiData', '$e\n$s');
     }
   }
 
   Future<void> addBangumiCalendar(BangumiItem newItem) async {
-    _db.execute("""
+    _db.execute(
+      """
         insert or replace into bangumi_calendar (
         id,
         type,
@@ -329,27 +330,79 @@ class BangumiManager with ChangeNotifier {
         collection
         )
         values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """, [
-      newItem.id,
-      newItem.type,
-      newItem.name,
-      newItem.nameCn,
-      newItem.summary,
-      newItem.airDate,
-      newItem.airWeekday,
-      newItem.total,
-      jsonEncode(newItem.count),
-      newItem.score,
-      newItem.rank,
-      jsonEncode(newItem.images),
-      jsonEncode(newItem.collection)
-    ]);
+      """,
+      [
+        newItem.id,
+        newItem.type,
+        newItem.name,
+        newItem.nameCn,
+        newItem.summary,
+        newItem.airDate,
+        newItem.airWeekday,
+        newItem.total,
+        jsonEncode(newItem.count),
+        newItem.score,
+        newItem.rank,
+        jsonEncode(newItem.images),
+        jsonEncode(newItem.collection),
+      ],
+    );
 
     notifyListeners();
   }
 
-  Future<void> addBnagumiBinding(BangumiItem newItem) async {
-    _db.execute("""
+  void batchAddBangumiCalendar(List<BangumiItem> items) {
+    _db.execute("BEGIN TRANSACTION");
+
+    try {
+      for (final newItem in items) {
+        _db.execute(
+          """
+        insert or replace into bangumi_calendar (
+          id,
+          type,
+          name,
+          nameCn,
+          summary,
+          airDate,
+          airWeekday,
+          total,
+          count,
+          score,
+          rank,
+          images,
+          collection
+        ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      """,
+          [
+            newItem.id,
+            newItem.type,
+            newItem.name,
+            newItem.nameCn,
+            newItem.summary,
+            newItem.airDate,
+            newItem.airWeekday,
+            newItem.total,
+            jsonEncode(newItem.count),
+            newItem.score,
+            newItem.rank,
+            jsonEncode(newItem.images),
+            jsonEncode(newItem.collection),
+          ],
+        );
+      }
+
+      _db.execute("COMMIT");
+      notifyListeners();
+    } catch (e) {
+      _db.execute("ROLLBACK");
+      Log.error("batchAddBangumiCalendar", e.toString());
+    }
+  }
+
+  Future<void> addBangumiBinding(BangumiItem newItem) async {
+    _db.execute(
+      """
         insert or replace into bangumi_binding (
         id,
         type,
@@ -369,51 +422,62 @@ class BangumiManager with ChangeNotifier {
         alias
         )
         values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """, [
-      newItem.id,
-      newItem.type,
-      newItem.name,
-      newItem.nameCn,
-      newItem.summary,
-      newItem.airDate,
-      newItem.airWeekday,
-      newItem.total,
-      newItem.totalEpisodes,
-      jsonEncode(newItem.count),
-      newItem.score,
-      newItem.rank,
-      jsonEncode(newItem.images),
-      jsonEncode(newItem.collection),
-      jsonEncode(newItem.tags),
-      jsonEncode(newItem.alias)
-    ]);
+      """,
+      [
+        newItem.id,
+        newItem.type,
+        newItem.name,
+        newItem.nameCn,
+        newItem.summary,
+        newItem.airDate,
+        newItem.airWeekday,
+        newItem.total,
+        newItem.totalEpisodes,
+        jsonEncode(newItem.count),
+        newItem.score,
+        newItem.rank,
+        jsonEncode(newItem.images),
+        jsonEncode(newItem.collection),
+        jsonEncode(newItem.tags),
+        jsonEncode(newItem.alias),
+      ],
+    );
 
     notifyListeners();
   }
 
   Future<void> addBnagumiAllEpInfo(int bangumiId, dynamic data) async {
-    _db.execute("""
+    _db.execute(
+      """
         insert or replace into bangumi_AllEpInfo (
         id,
         data
         )
         values ( ?, ?);
-      """, [bangumiId, jsonEncode(data)]);
+      """,
+      [bangumiId, jsonEncode(data)],
+    );
 
     notifyListeners();
   }
 
   Future<BangumiItem?> bindFind(int id) async {
-    var res = _db.select("""
+    var res = _db.select(
+      """
       select * from bangumi_binding
       where id == ?;
-    """, [id]);
+    """,
+      [id],
+    );
     if (res.isEmpty) {
       await Bangumi.getBangumiInfoBind(id);
-      res = _db.select("""
+      res = _db.select(
+        """
       select * from bangumi_binding
       where id == ?;
-    """, [id]);
+    """,
+        [id],
+      );
       if (res.isEmpty) {
         return null;
       }
@@ -422,10 +486,13 @@ class BangumiManager with ChangeNotifier {
   }
 
   Future<List<EpisodeInfo>> allEpInfoFind(int id) async {
-    var res = _db.select("""
+    var res = _db.select(
+      """
       select * from bangumi_AllEpInfo
       where id == ?;
-    """, [id]);
+    """,
+      [id],
+    );
     if (res.isNotEmpty) {
       final String jsonStr = res.first['data'] as String;
       final List<dynamic> jsonList = jsonDecode(jsonStr);
@@ -453,16 +520,21 @@ class BangumiManager with ChangeNotifier {
 
   // 修改后的存在性检查方法（返回包含存在状态和时间的 Map）
   Future<Map<String, String?>> checkWhetherDataExistsBatch(
-      List<String> ids) async {
+    List<String> ids,
+  ) async {
     if (ids.isEmpty) return {};
 
-    final conditions =
-        List.generate(ids.length, (_) => 'sites LIKE ?').join(' OR ');
+    final conditions = List.generate(
+      ids.length,
+      (_) => 'sites LIKE ?',
+    ).join(' OR ');
     final patterns = ids.map((id) => '%"bangumi","id":"$id"%').toList();
 
     // 同时查询 sites 和 begin 列
     final result = _db.select(
-        'SELECT sites, begin FROM bangumi_data WHERE $conditions', patterns);
+      'SELECT sites, begin FROM bangumi_data WHERE $conditions',
+      patterns,
+    );
 
     final existenceMap = <String, String?>{};
     for (final row in result) {

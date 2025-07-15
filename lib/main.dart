@@ -9,56 +9,56 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/pages/auth_page.dart';
+import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
+
 import 'components/components.dart';
+import 'components/window_frame.dart';
+import 'foundation/app.dart';
 import 'foundation/appdata.dart';
 import 'foundation/log.dart';
 import 'init.dart';
 import 'pages/main_page.dart';
-import 'components/window_frame.dart';
-import 'foundation/app.dart';
 
 void main(List<String> args) {
-  // debugPaintSizeEnabled = true;
-  MediaKit.ensureInitialized();
   if (runWebViewTitleBarWidget(args)) return;
   overrideIO(() {
-    runZonedGuarded(() async {
-      WidgetsFlutterBinding.ensureInitialized();
-      await init();
-      runApp(
-        ProviderScope(
-          child: MyApp(),
-        ),
-      );
-      if (App.isDesktop) {
-        await windowManager.ensureInitialized();
-        windowManager.waitUntilReadyToShow().then((_) async {
-          await windowManager.setTitleBarStyle(
-            TitleBarStyle.hidden,
-            windowButtonVisibility: App.isMacOS,
-          );
-          if (App.isLinux) {
-            await windowManager.setBackgroundColor(Colors.transparent);
-          }
-          await windowManager.setMinimumSize(const Size(500, 600));
-          var placement = await WindowPlacement.loadFromFile();
-          if (App.isLinux) {
-            await windowManager.show();
-            await placement.applyToWindow();
-          } else {
-            await placement.applyToWindow();
-            await windowManager.show();
-          }
+    runZonedGuarded(
+      () async {
+        WidgetsFlutterBinding.ensureInitialized();
+        MediaKit.ensureInitialized();
+        await init();
+        runApp(ProviderScope(child: MyApp()));
+        if (App.isDesktop) {
+          await windowManager.ensureInitialized();
+          windowManager.waitUntilReadyToShow().then((_) async {
+            await windowManager.setTitleBarStyle(
+              TitleBarStyle.hidden,
+              windowButtonVisibility: App.isMacOS,
+            );
+            if (App.isLinux) {
+              await windowManager.setBackgroundColor(Colors.transparent);
+            }
+            await windowManager.setMinimumSize(const Size(500, 600));
+            var placement = await WindowPlacement.loadFromFile();
+            if (App.isLinux) {
+              await windowManager.show();
+              await placement.applyToWindow();
+            } else {
+              await placement.applyToWindow();
+              await windowManager.show();
+            }
 
-          WindowPlacement.loop();
-        });
-      }
-    }, (error, stack) {
-      Log.error("Unhandled Exception", error, stack);
-    });
+            WindowPlacement.loop();
+          });
+        }
+      },
+      (error, stack) {
+        Log.error("Unhandled Exception", error, stack);
+      },
+    );
   });
 }
 
@@ -73,6 +73,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     App.registerForceRebuild(forceRebuild);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarDividerColor: Colors.transparent,
+        statusBarColor: Colors.transparent,
+      ),
+    );
     WidgetsBinding.instance.addObserver(this);
     checkUpdates();
     super.initState();
@@ -84,6 +92,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      debugPrint("应用进入后台");
+      Future.microtask(() {
+        DataSync().onDataChanged();
+      });
+    } else if (state == AppLifecycleState.resumed) {
+      debugPrint("应用回到前台");
+    } else if (state == AppLifecycleState.inactive) {
+      debugPrint("应用处于非活动状态");
+      if (App.isDesktop) {
+        Future.microtask(() {
+          DataSync().onDataChanged();
+        });
+      }
+    }
     if (!App.isMobile || !appdata.settings['authorizationRequired']) {
       return;
     }
@@ -163,7 +186,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         'Microsoft YaHei',
         'PingFang SC',
         'Arial',
-        'sans-serif'
+        'sans-serif',
       ];
     }
     return ThemeData(
@@ -191,85 +214,106 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     } else {
       home = const MainPage();
     }
-    return DynamicColorBuilder(builder: (light, dark) {
-      Color? primary, secondary, tertiary;
-      if (appdata.settings['color'] != 'system' ||
-          light == null ||
-          dark == null) {
-        primary = translateColorSetting();
-      } else {
-        primary = light.primary;
-        secondary = light.secondary;
-        tertiary = light.tertiary;
-      }
-      return MaterialApp(
-        home: home,
-        debugShowCheckedModeBanner: false,
-        scrollBehavior: MyCustomScrollBehavior(),
-        theme: getTheme(primary, secondary, tertiary, Brightness.light),
-        navigatorKey: App.rootNavigatorKey,
-        darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
-        themeMode: switch (appdata.settings['theme_mode']) {
-          'light' => ThemeMode.light,
-          'dark' => ThemeMode.dark,
-          _ => ThemeMode.system
-        },
-        color: Colors.transparent,
-        localizationsDelegates: [
-          GlobalMaterialLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        locale: () {
-          var lang = appdata.settings['language'];
-          if (lang == 'system') {
-            return null;
-          }
-          return switch (lang) {
-            'zh-CN' => const Locale('zh', 'CN'),
-            'zh-TW' => const Locale('zh', 'TW'),
-            'en-US' => const Locale('en'),
-            _ => null
-          };
-        }(),
-        supportedLocales: const [
-          Locale('en'),
-          Locale('zh', 'CN'),
-          Locale('zh', 'TW'),
-        ],
-        builder: (context, widget) {
-          ErrorWidget.builder = (details) {
-            Log.error("Unhandled Exception",
-                "${details.exception}\n${details.stack}");
-            return Material(
-              child: Center(
-                child: Text(details.exception.toString()),
-              ),
-            );
-          };
-          if (widget != null) {
-            widget = OverlayWidget(widget);
-            if (App.isDesktop) {
-              widget = Shortcuts(
-                shortcuts: {
-                  LogicalKeySet(LogicalKeyboardKey.escape): VoidCallbackIntent(
-                    App.pop,
+    return DynamicColorBuilder(
+      builder: (light, dark) {
+        Color? primary, secondary, tertiary;
+        if (appdata.settings['color'] != 'system' ||
+            light == null ||
+            dark == null) {
+          primary = translateColorSetting();
+        } else {
+          primary = light.primary;
+          secondary = light.secondary;
+          tertiary = light.tertiary;
+        }
+        return MaterialApp(
+          home: home,
+          debugShowCheckedModeBanner: false,
+          scrollBehavior: MyCustomScrollBehavior(),
+          theme: getTheme(primary, secondary, tertiary, Brightness.light),
+          navigatorKey: App.rootNavigatorKey,
+          darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
+          themeMode: switch (appdata.settings['theme_mode']) {
+            'light' => ThemeMode.light,
+            'dark' => ThemeMode.dark,
+            _ => ThemeMode.system,
+          },
+          color: Colors.transparent,
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          locale: () {
+            var lang = appdata.settings['language'];
+            if (lang == 'system') {
+              return null;
+            }
+            return switch (lang) {
+              'zh-CN' => const Locale('zh', 'CN'),
+              'zh-TW' => const Locale('zh', 'TW'),
+              'en-US' => const Locale('en'),
+              _ => null,
+            };
+          }(),
+          supportedLocales: const [
+            Locale('en'),
+            Locale('zh', 'CN'),
+            Locale('zh', 'TW'),
+          ],
+          builder: (context, widget) {
+            final isPaddingCheckError =
+                MediaQuery.of(context).padding.top <= 0 ||
+                MediaQuery.of(context).padding.top > 80;
+
+            ErrorWidget.builder = (details) {
+              Log.error(
+                "Unhandled Exception",
+                "${details.exception}\n${details.stack}",
+              );
+              return Material(
+                child: Center(child: Text(details.exception.toString())),
+              );
+            };
+            if (widget != null) {
+              widget = OverlayWidget(widget);
+              if (App.isDesktop) {
+                widget = Shortcuts(
+                  shortcuts: {
+                    LogicalKeySet(LogicalKeyboardKey.escape):
+                        VoidCallbackIntent(App.pop),
+                  },
+                  child: MouseBackDetector(
+                    onTapDown: App.pop,
+                    child: WindowFrame(widget),
                   ),
-                },
-                child: MouseBackDetector(
-                  onTapDown: App.pop,
-                  child: WindowFrame(widget),
+                );
+              }
+              //有点问题,只能暂时解决
+              if (isPaddingCheckError) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    padding: MediaQuery.of(context).padding.copyWith(top: 24),
+                  ),
+                  child: _SystemUiProvider(
+                    Material(
+                      color: App.isLinux ? Colors.transparent : null,
+                      child: widget,
+                    ),
+                  ),
+                );
+              }
+              return _SystemUiProvider(
+                Material(
+                  color: App.isLinux ? Colors.transparent : null,
+                  child: widget,
                 ),
               );
             }
-            return _SystemUiProvider(Material(
-              color: App.isLinux ? Colors.transparent : null,
-              child: widget,
-            ));
-          }
-          throw ('widget is null');
-        },
-      );
-    });
+            throw ('widget is null');
+          },
+        );
+      },
+    );
   }
 }
 
@@ -305,9 +349,9 @@ class _SystemUiProvider extends StatelessWidget {
 class MyCustomScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.trackpad,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
 }

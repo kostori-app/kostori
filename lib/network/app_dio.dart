@@ -3,46 +3,58 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
-import 'package:kostori/network/proxy.dart';
-import 'package:rhttp/rhttp.dart' as rhttp;
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/app.dart';
 import 'package:kostori/network/cache.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/network/proxy.dart';
+import 'package:rhttp/rhttp.dart' as rhttp;
 
 export 'package:dio/dio.dart';
 
 class MyLogInterceptor implements Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    Log.error("Network",
-        "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}");
+    if (appdata.settings['debugInfo']) {
+      Log.error(
+        "Network",
+        "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}",
+      );
+    }
     switch (err.type) {
       case DioExceptionType.badResponse:
         var statusCode = err.response?.statusCode;
         if (statusCode != null) {
           err = err.copyWith(
-              message: "Invalid Status Code: $statusCode. "
-                  "${_getStatusCodeInfo(statusCode)}");
+            message:
+                "Invalid Status Code: $statusCode. "
+                "${_getStatusCodeInfo(statusCode)}",
+          );
         }
       case DioExceptionType.connectionTimeout:
         err = err.copyWith(message: "Connection Timeout");
       case DioExceptionType.receiveTimeout:
         err = err.copyWith(
-            message: "Receive Timeout: "
-                "This indicates that the server is too busy to respond");
+          message:
+              "Receive Timeout: "
+              "This indicates that the server is too busy to respond",
+        );
       case DioExceptionType.unknown:
         if (err.toString().contains("Connection terminated during handshake")) {
           err = err.copyWith(
-              message: "Connection terminated during handshake: "
-                  "This may be caused by the firewall blocking the connection "
-                  "or your requests are too frequent.");
+            message:
+                "Connection terminated during handshake: "
+                "This may be caused by the firewall blocking the connection "
+                "or your requests are too frequent.",
+          );
         } else if (err.toString().contains("Connection reset by peer")) {
           err = err.copyWith(
-              message: "Connection reset by peer: "
-                  "The error is unrelated to app, please check your network.");
+            message:
+                "Connection reset by peer: "
+                "The error is unrelated to app, please check your network.",
+          );
         }
       default:
         {}
@@ -69,9 +81,15 @@ class MyLogInterceptor implements Interceptor {
 
   @override
   void onResponse(
-      Response<dynamic> response, ResponseInterceptorHandler handler) {
-    var headers = response.headers.map.map((key, value) => MapEntry(
-        key.toLowerCase(), value.length == 1 ? value.first : value.toString()));
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
+    var headers = response.headers.map.map(
+      (key, value) => MapEntry(
+        key.toLowerCase(),
+        value.length == 1 ? value.first : value.toString(),
+      ),
+    );
     headers.remove("cookie");
     String content;
     if (response.data is List<int>) {
@@ -83,23 +101,32 @@ class MyLogInterceptor implements Interceptor {
     } else {
       content = response.data.toString();
     }
-    Log.addLog(
+
+    if (appdata.settings['debugInfo']) {
+      Log.addLog(
         (response.statusCode != null && response.statusCode! < 400)
             ? LogLevel.info
             : LogLevel.error,
         "Network",
         "Response ${response.realUri.toString()} ${response.statusCode}\n"
-            "headers:\n$headers\n$content");
+            "headers:\n$headers\n$content",
+      );
+    }
+
     handler.next(response);
   }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    Log.info(
+    if (appdata.settings['debugInfo']) {
+      Log.info(
         "Network",
         "${options.method} ${options.uri}\n"
             "headers:\n${options.headers}\n"
-            "data:\n${options.data}");
+            "data:\n${options.data}",
+      );
+    }
+
     options.connectTimeout = const Duration(seconds: 15);
     options.receiveTimeout = const Duration(seconds: 15);
     options.sendTimeout = const Duration(seconds: 15);
@@ -156,13 +183,38 @@ class AppDio with DioMixin {
 }
 
 class RHttpAdapter implements HttpClientAdapter {
-  Future<rhttp.ClientSettings> get settings async {
-    var proxy = await getProxy();
+  // Future<rhttp.ClientSettings> get settings async {
+  //   var proxy = await getProxy();
+  //
+  //   return rhttp.ClientSettings(
+  //     proxySettings: proxy == null
+  //         ? const rhttp.ProxySettings.noProxy()
+  //         : rhttp.ProxySettings.proxy(proxy),
+  //     redirectSettings: const rhttp.RedirectSettings.limited(5),
+  //     timeoutSettings: const rhttp.TimeoutSettings(
+  //       connectTimeout: Duration(seconds: 15),
+  //       keepAliveTimeout: Duration(seconds: 60),
+  //       keepAlivePing: Duration(seconds: 30),
+  //     ),
+  //     throwOnStatusCode: false,
+  //     dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
+  //     tlsSettings: rhttp.TlsSettings(sni: appdata.settings['sni'] != false),
+  //   );
+  // }
+
+  Future<rhttp.ClientSettings> settings(Uri uri) async {
+    final proxy = await getProxy();
+
+    // 判断 host 是否以 bgm 或 bangumi 开头，决定是否绕过代理
+    final isNoProxy =
+        uri.host.startsWith('bgm') || uri.host.startsWith('bangumi');
 
     return rhttp.ClientSettings(
-      proxySettings: proxy == null
+      proxySettings: isNoProxy
           ? const rhttp.ProxySettings.noProxy()
-          : rhttp.ProxySettings.proxy(proxy),
+          : (proxy == null
+                ? const rhttp.ProxySettings.noProxy()
+                : rhttp.ProxySettings.proxy(proxy)),
       redirectSettings: const rhttp.RedirectSettings.limited(5),
       timeoutSettings: const rhttp.TimeoutSettings(
         connectTimeout: Duration(seconds: 15),
@@ -171,9 +223,7 @@ class RHttpAdapter implements HttpClientAdapter {
       ),
       throwOnStatusCode: false,
       dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
-      tlsSettings: rhttp.TlsSettings(
-        sni: appdata.settings['sni'] != false,
-      ),
+      tlsSettings: rhttp.TlsSettings(sni: appdata.settings['sni'] != false),
     );
   }
 
@@ -211,7 +261,7 @@ class RHttpAdapter implements HttpClientAdapter {
     var res = await rhttp.Rhttp.request(
       method: rhttp.HttpMethod(options.method),
       url: options.uri.toString(),
-      settings: await settings,
+      settings: await settings(options.uri),
       expectBody: rhttp.HttpExpectBody.stream,
       body: requestStream == null ? null : rhttp.HttpBody.stream(requestStream),
       headers: rhttp.HttpHeaders.rawMap(
@@ -268,13 +318,15 @@ class RetryInterceptor extends Interceptor {
 
   RetryInterceptor({
     required this.dio,
-    this.maxRetries = 2,
+    this.maxRetries = 1,
     this.retryDelay = const Duration(seconds: 2),
   });
 
   @override
   Future<void> onError(
-      DioException err, ErrorInterceptorHandler handler) async {
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
     var shouldRetry = _shouldRetryOn(err);
     var extra = err.requestOptions.extra;
     var retryCount = (extra["__retry_count__"] as int?) ?? 0;

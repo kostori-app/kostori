@@ -73,17 +73,17 @@ class BatteryWidgetState extends State<BatteryWidget>
   }
 
   void _startAnimation(double targetLevel) {
-    _animation = Tween<double>(
-      begin: _displayLevel,
-      end: targetLevel,
-    ).animate(_controller)
-      ..addListener(() {
-        if (mounted) {
-          setState(() {
-            _displayLevel = _animation.value;
-          });
-        }
-      });
+    _animation =
+        Tween<double>(
+          begin: _displayLevel,
+          end: targetLevel,
+        ).animate(_controller)..addListener(() {
+          if (mounted) {
+            setState(() {
+              _displayLevel = _animation.value;
+            });
+          }
+        });
     _controller.reset();
     _controller.forward();
   }
@@ -156,7 +156,7 @@ class BatteryWidgetState extends State<BatteryWidget>
                         color: Colors.white,
                       ),
                     ),
-                  )
+                  ),
               ],
             ),
           ),
@@ -235,11 +235,12 @@ class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
   }
 
   String _formatSpeed(int speed) {
-    if (speed < 1024) {
-      return '$speed B/s';
-    } else if (speed < 1024 * 1024) {
-      return '${(speed / 1024).toStringAsFixed(1)} KB/s';
+    if (speed < 1024 * 1024) {
+      // 显示 KB/s（即使低于 1KB 也强制为 0.1 KB/s 之类）
+      final kb = speed / 1024;
+      return '${kb < 0.1 ? '0.1' : kb.toStringAsFixed(1)} KB/s';
     } else {
+      // 显示 MB/s
       return '${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
     }
   }
@@ -253,39 +254,28 @@ class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
   @override
   Widget build(BuildContext context) {
     return Center(
-        child: Column(
-      children: [
-        Row(
-          children: [
-            Icon(
-              Icons.arrow_downward,
-              size: 8,
-            ),
-            Text(
-              " $_downloadSpeed",
-              style: TextStyle(
-                fontWeight: FontWeight.normal,
-                fontSize: 8,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(Icons.arrow_downward, size: 8),
+              Text(
+                " $_downloadSpeed",
+                style: TextStyle(fontWeight: FontWeight.normal, fontSize: 8),
               ),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            Icon(
-              Icons.arrow_upward,
-              size: 8,
-            ),
-            Text(
-              " $_uploadSpeed",
-              style: TextStyle(
-                fontWeight: FontWeight.normal,
-                fontSize: 8,
+            ],
+          ),
+          Row(
+            children: [
+              Icon(Icons.arrow_upward, size: 8),
+              Text(
+                " $_uploadSpeed",
+                style: TextStyle(fontWeight: FontWeight.normal, fontSize: 8),
               ),
-            ),
-          ],
-        ),
-      ],
-    ));
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -4,13 +4,13 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:flutter/foundation.dart';
-import 'package:sqlite3/sqlite3.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 String _getTimeString(DateTime time) {
   return time.toIso8601String().replaceFirst("T", " ").substring(0, 19);
@@ -27,26 +27,27 @@ class FavoriteItem implements Anime {
   String coverPath;
   late String time;
 
-  FavoriteItem(
-      {required this.id,
-      required this.name,
-      required this.coverPath,
-      required this.author,
-      required this.type,
-      required this.tags,
-      DateTime? favoriteTime}) {
+  FavoriteItem({
+    required this.id,
+    required this.name,
+    required this.coverPath,
+    required this.author,
+    required this.type,
+    required this.tags,
+    DateTime? favoriteTime,
+  }) {
     var t = favoriteTime ?? DateTime.now();
     time = _getTimeString(t);
   }
 
   FavoriteItem.fromRow(Row row)
-      : name = row["name"],
-        author = row["author"],
-        type = AnimeType(row["type"]),
-        tags = (row["tags"] as String).split(","),
-        id = row["id"],
-        coverPath = row["cover_path"],
-        time = row["time"] {
+    : name = row["name"],
+      author = row["author"],
+      type = AnimeType(row["type"]),
+      tags = (row["tags"] as String).split(","),
+      id = row["id"],
+      coverPath = row["cover_path"],
+      time = row["time"] {
     tags.remove("");
   }
 
@@ -127,14 +128,14 @@ class FavoriteItemWithFolderInfo extends FavoriteItem {
   String folder;
 
   FavoriteItemWithFolderInfo(FavoriteItem item, this.folder)
-      : super(
-          id: item.id,
-          name: item.name,
-          coverPath: item.coverPath,
-          author: item.author,
-          type: item.type,
-          tags: item.tags,
-        );
+    : super(
+        id: item.id,
+        name: item.name,
+        coverPath: item.coverPath,
+        author: item.author,
+        type: item.type,
+        tags: item.tags,
+      );
 }
 
 class FavoriteItemWithUpdateInfo extends FavoriteItem {
@@ -149,17 +150,17 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
     this.updateTime,
     this.hasNewUpdate,
     int? lastCheckTime,
-  )   : lastCheckTime = lastCheckTime == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(lastCheckTime),
-        super(
-          id: item.id,
-          name: item.name,
-          coverPath: item.coverPath,
-          author: item.author,
-          type: item.type,
-          tags: item.tags,
-        );
+  ) : lastCheckTime = lastCheckTime == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(lastCheckTime),
+      super(
+        id: item.id,
+        name: item.name,
+        coverPath: item.coverPath,
+        author: item.author,
+        type: item.type,
+        tags: item.tags,
+      );
 
   @override
   String get description {
@@ -249,10 +250,13 @@ class LocalFavoritesManager with ChangeNotifier {
   List<String> find(String id, AnimeType type) {
     var res = <String>[];
     for (var folder in folderNames) {
-      var rows = _db.select("""
+      var rows = _db.select(
+        """
         select * from "$folder"
         where id == ? and type == ?;
-      """, [id, type.value]);
+      """,
+        [id, type.value],
+      );
       if (rows.isNotEmpty) {
         res.add(folder);
       }
@@ -263,10 +267,13 @@ class LocalFavoritesManager with ChangeNotifier {
   Future<List<String>> findWithModel(FavoriteItem item) async {
     var res = <String>[];
     for (var folder in folderNames) {
-      var rows = _db.select("""
+      var rows = _db.select(
+        """
         select * from "$folder"
         where id == ? and type == ?;
-      """, [item.id, item.type.value]);
+      """,
+        [item.id, item.type.value],
+      );
       if (rows.isNotEmpty) {
         res.add(folder);
       }
@@ -288,10 +295,13 @@ class LocalFavoritesManager with ChangeNotifier {
     folders.remove('folder_order');
     var folderToOrder = <String, int>{};
     for (var folder in folders) {
-      var res = _db.select("""
+      var res = _db.select(
+        """
         select * from folder_order
         where folder_name == ?;
-      """, [folder]);
+      """,
+        [folder],
+      );
       if (res.isNotEmpty) {
         folderToOrder[folder] = res.first["order_value"];
       } else {
@@ -301,15 +311,19 @@ class LocalFavoritesManager with ChangeNotifier {
     folders.sort((a, b) {
       return folderToOrder[a]! - folderToOrder[b]!;
     });
+
     return folders;
   }
 
   void updateOrder(List<String> folders) {
     for (int i = 0; i < folders.length; i++) {
-      _db.execute("""
+      _db.execute(
+        """
         insert or replace into folder_order (folder_name, order_value)
         values (?, ?);
-      """, [folders[i], i]);
+      """,
+        [folders[i], i],
+      );
     }
     notifyListeners();
   }
@@ -327,14 +341,16 @@ class LocalFavoritesManager with ChangeNotifier {
     return _db.select("""
         SELECT MAX(display_order) AS max_value
         FROM "$folder";
-      """).firstOrNull?["max_value"] ?? 0;
+      """).firstOrNull?["max_value"] ??
+        0;
   }
 
   int minValue(String folder) {
     return _db.select("""
         SELECT MIN(display_order) AS min_value
         FROM "$folder";
-      """).firstOrNull?["min_value"] ?? 0;
+      """).firstOrNull?["min_value"] ??
+        0;
   }
 
   List<FavoriteItem> getFolderAnimes(String folder) {
@@ -346,7 +362,10 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   static Future<List<FavoriteItem>> _getFolderAnimesAsync(
-      String folder, Pointer<void> p, FavoriteSortType sortType) {
+    String folder,
+    Pointer<void> p,
+    FavoriteSortType sortType,
+  ) {
     // 解析排序类型
     final orderBy = switch (sortType) {
       FavoriteSortType.nameAsc => 'name ASC',
@@ -356,7 +375,7 @@ class LocalFavoritesManager with ChangeNotifier {
       FavoriteSortType.displayOrderAsc => 'display_order ASC',
       FavoriteSortType.displayOrderDesc => 'display_order DESC',
       FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
-      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC'
+      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
     };
     return Isolate.run(() {
       var db = sqlite3.fromPointer(p);
@@ -370,12 +389,16 @@ class LocalFavoritesManager with ChangeNotifier {
 
   /// Start a new isolate to get the animes in the folder
   Future<List<FavoriteItem>> getFolderAnimesAsync(
-      String folder, FavoriteSortType sortType) {
+    String folder,
+    FavoriteSortType sortType,
+  ) {
     return _getFolderAnimesAsync(folder, _db.handle, sortType);
   }
 
-  List<FavoriteItem> getAllAnimes(String folder,
-      [FavoriteSortType sortType = FavoriteSortType.displayOrderAsc]) {
+  List<FavoriteItem> getAllAnimes(
+    String folder, [
+    FavoriteSortType sortType = FavoriteSortType.displayOrderAsc,
+  ]) {
     if (folder == '默认') {
       folder = 'default';
     }
@@ -389,7 +412,7 @@ class LocalFavoritesManager with ChangeNotifier {
       FavoriteSortType.displayOrderAsc => 'display_order ASC',
       FavoriteSortType.displayOrderDesc => 'display_order DESC',
       FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
-      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC'
+      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
     };
 
     var rows = _db.select("""
@@ -402,11 +425,14 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void addTagTo(String folder, String id, String tag) {
-    _db.execute("""
+    _db.execute(
+      """
       update "$folder"
       set tags = '$tag,' || tags
       where id == ?
-    """, [id]);
+    """,
+      [id],
+    );
     notifyListeners();
   }
 
@@ -416,8 +442,12 @@ class LocalFavoritesManager with ChangeNotifier {
       var animes = _db.select("""
         select * from "$folder";
       """);
-      res.addAll(animes.map((element) =>
-          FavoriteItemWithFolderInfo(FavoriteItem.fromRow(element), folder)));
+      res.addAll(
+        animes.map(
+          (element) =>
+              FavoriteItemWithFolderInfo(FavoriteItem.fromRow(element), folder),
+        ),
+      );
     }
     return res;
   }
@@ -470,18 +500,24 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   bool animeExists(String folder, String id, AnimeType type) {
-    var res = _db.select("""
+    var res = _db.select(
+      """
       select * from "$folder"
       where id == ? and type == ?;
-    """, [id, type.value]);
+    """,
+      [id, type.value],
+    );
     return res.isNotEmpty;
   }
 
   FavoriteItem getAnime(String folder, String id, AnimeType type) {
-    var res = _db.select("""
+    var res = _db.select(
+      """
       select * from "$folder"
       where id == ? and type == ?;
-    """, [id, type.value]);
+    """,
+      [id, type.value],
+    );
     if (res.isEmpty) {
       throw Exception("Anime not found");
     }
@@ -496,10 +532,13 @@ class LocalFavoritesManager with ChangeNotifier {
     if (!existsFolder(folder)) {
       throw Exception("Folder does not exists");
     }
-    var res = _db.select("""
+    var res = _db.select(
+      """
       select * from "$folder"
       where id == ? and type == ?;
-    """, [anime.id, anime.type.value]);
+    """,
+      [anime.id, anime.type.value],
+    );
     if (res.isNotEmpty) {
       return false;
     }
@@ -514,20 +553,29 @@ class LocalFavoritesManager with ChangeNotifier {
       anime.time,
     ];
     if (order != null) {
-      _db.execute("""
+      _db.execute(
+        """
         insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """, [...params, order]);
+      """,
+        [...params, order],
+      );
     } else if (appdata.settings['newFavoriteAddTo'] == "end") {
-      _db.execute("""
+      _db.execute(
+        """
         insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """, [...params, maxValue(folder) + 1]);
+      """,
+        [...params, maxValue(folder) + 1],
+      );
     } else {
-      _db.execute("""
+      _db.execute(
+        """
         insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
         values (?, ?, ?, ?, ?, ?, ?, ?, ?);
-      """, [...params, minValue(folder) - 1]);
+      """,
+        [...params, minValue(folder) - 1],
+      );
     }
     initCounts();
     notifyListeners();
@@ -535,7 +583,11 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void moveFavorite(
-      String sourceFolder, String targetFolder, String id, AnimeType type) {
+    String sourceFolder,
+    String targetFolder,
+    String id,
+    AnimeType type,
+  ) {
     _modifiedAfterLastCache = true;
 
     if (!existsFolder(sourceFolder)) {
@@ -545,35 +597,47 @@ class LocalFavoritesManager with ChangeNotifier {
       throw Exception("Target folder does not exist");
     }
 
-    var res = _db.select("""
+    var res = _db.select(
+      """
     select * from "$targetFolder"
     where id == ? and type == ?;
-  """, [id, type.value]);
+  """,
+      [id, type.value],
+    );
 
     if (res.isNotEmpty) {
       initCounts();
       return;
     }
 
-    _db.execute("""
+    _db.execute(
+      """
       insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order, recently_watched)
       select id, name, author, type, tags, cover_path, time, ?, recently_watched
       from "$sourceFolder"
       where id == ? and type == ?;
-    """, [minValue(targetFolder) - 1, id, type.value]);
+    """,
+      [minValue(targetFolder) - 1, id, type.value],
+    );
 
     // 从源表删除该数据
-    _db.execute("""
+    _db.execute(
+      """
     delete from "$sourceFolder"
     where id == ? and type == ?;
-  """, [id, type.value]);
+  """,
+      [id, type.value],
+    );
 
     initCounts();
     notifyListeners();
   }
 
   void batchMoveFavorites(
-      String sourceFolder, String targetFolder, List<FavoriteItem> items) {
+    String sourceFolder,
+    String targetFolder,
+    List<FavoriteItem> items,
+  ) {
     _modifiedAfterLastCache = true;
 
     if (!existsFolder(sourceFolder)) {
@@ -587,21 +651,29 @@ class LocalFavoritesManager with ChangeNotifier {
     var displayOrder = maxValue(targetFolder) + 1;
     try {
       for (var item in items) {
-        _db.execute("""
+        _db.execute(
+          """
           insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
           select id, name, author, type, tags, cover_path, time, recently_watched, ?
           from "$sourceFolder"
           where id == ? and type == ?;
-        """, [displayOrder, item.id, item.type.value]);
+        """,
+          [displayOrder, item.id, item.type.value],
+        );
 
-        _db.execute("""
+        if (targetFolder == sourceFolder) {
+          _db.execute(
+            """
           delete from "$sourceFolder"
           where id == ? and type == ?;
-        """, [item.id, item.type.value]);
+        """,
+            [item.id, item.type.value],
+          );
+        }
 
         displayOrder++;
       }
-      notifyListeners();
+      // notifyListeners();
     } catch (e) {
       Log.error("Batch Move Favorites", e.toString());
       _db.execute("ROLLBACK");
@@ -610,23 +682,28 @@ class LocalFavoritesManager with ChangeNotifier {
     _db.execute("COMMIT");
 
     // Update counts
-    if (counts[targetFolder] == null) {
-      counts[targetFolder] = count(targetFolder);
+    if (targetFolder != sourceFolder) {
+      if (counts[targetFolder] == null) {
+        counts[targetFolder] = count(targetFolder);
+      } else {
+        counts[targetFolder] = counts[targetFolder]! + items.length;
+      }
     } else {
-      counts[targetFolder] = counts[targetFolder]! + items.length;
+      if (counts[sourceFolder] != null) {
+        counts[sourceFolder] = counts[sourceFolder]! - items.length;
+      } else {
+        counts[sourceFolder] = count(sourceFolder);
+      }
     }
 
-    if (counts[sourceFolder] != null) {
-      counts[sourceFolder] = counts[sourceFolder]! - items.length;
-    } else {
-      counts[sourceFolder] = count(sourceFolder);
-    }
-
-    notifyListeners();
+    // notifyListeners();
   }
 
   void batchCopyFavorites(
-      String sourceFolder, String targetFolder, List<FavoriteItem> items) {
+    String sourceFolder,
+    String targetFolder,
+    List<FavoriteItem> items,
+  ) {
     _modifiedAfterLastCache = true;
 
     if (!existsFolder(sourceFolder)) {
@@ -640,12 +717,15 @@ class LocalFavoritesManager with ChangeNotifier {
     var displayOrder = maxValue(targetFolder) + 1;
     try {
       for (var item in items) {
-        _db.execute("""
+        _db.execute(
+          """
           insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
           select id, name, author, type, tags, cover_path, time, recently_watched, ?
           from "$sourceFolder"
           where id == ? and type == ?;
-        """, [displayOrder, item.id, item.type.value]);
+        """,
+          [displayOrder, item.id, item.type.value],
+        );
 
         displayOrder++;
       }
@@ -674,10 +754,13 @@ class LocalFavoritesManager with ChangeNotifier {
     try {
       for (var anime in animes) {
         LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
-        _db.execute("""
+        _db.execute(
+          """
           delete from "$folder"
           where id == ? and type == ?;
-        """, [anime.id, anime.type.value]);
+        """,
+          [anime.id, anime.type.value],
+        );
       }
       if (counts[folder] != null) {
         counts[folder] = counts[folder]! - animes.length;
@@ -701,10 +784,13 @@ class LocalFavoritesManager with ChangeNotifier {
       for (var anime in animes) {
         LocalFavoriteImageProvider.delete(anime.id, anime.type.value);
         for (var folder in folderNames) {
-          _db.execute("""
+          _db.execute(
+            """
             delete from "$folder"
             where id == ? and type == ?;
-          """, [anime.id, anime.type.value]);
+          """,
+            [anime.id, anime.type.value],
+          );
         }
       }
     } catch (e) {
@@ -719,14 +805,18 @@ class LocalFavoritesManager with ChangeNotifier {
 
   /// delete a folder
   void deleteFolder(String name) {
+    if (name == "default") return;
     _modifiedAfterLastCache = true;
     _db.execute("""
       drop table "$name";
     """);
-    _db.execute("""
+    _db.execute(
+      """
       delete from folder_order
       where folder_name == ?;
-    """, [name]);
+    """,
+      [name],
+    );
     counts.remove(name);
     notifyListeners();
   }
@@ -734,10 +824,13 @@ class LocalFavoritesManager with ChangeNotifier {
   void deleteAnimeWithId(String folder, String id, AnimeType type) {
     _modifiedAfterLastCache = true;
     LocalFavoriteImageProvider.delete(id, type.value);
-    _db.execute("""
+    _db.execute(
+      """
       delete from "$folder"
       where id == ? and type == ?;
-    """, [id, type.value]);
+    """,
+      [id, type.value],
+    );
     initCounts();
     notifyListeners();
   }
@@ -774,16 +867,22 @@ class LocalFavoritesManager with ChangeNotifier {
       ALTER TABLE "$before"
       RENAME TO "$after";
     """);
-    _db.execute("""
+    _db.execute(
+      """
       update folder_order
       set folder_name = ?
       where folder_name == ?;
-    """, [after, before]);
-    _db.execute("""
+    """,
+      [after, before],
+    );
+    _db.execute(
+      """
       update folder_sync
       set folder_name = ?
       where folder_name == ?;
-    """, [after, before]);
+    """,
+      [after, before],
+    );
     counts[after] = counts[before] ?? 0;
     counts.remove(before);
     notifyListeners();
@@ -792,10 +891,13 @@ class LocalFavoritesManager with ChangeNotifier {
   void onReadEnd(String id, AnimeType type) async {
     _modifiedAfterLastCache = true;
     for (final folder in folderNames) {
-      var rows = _db.select("""
+      var rows = _db.select(
+        """
         select * from "$folder"
         where id == ? and type == ?;
-      """, [id, type.value]);
+      """,
+        [id, type.value],
+      );
       if (rows.isNotEmpty) {
         var newTime = DateTime.now()
             .toIso8601String()
@@ -803,25 +905,32 @@ class LocalFavoritesManager with ChangeNotifier {
             .substring(0, 19);
         String updateLocationSql = "";
         if (appdata.settings['moveFavoriteAfterRead'] == "end") {
-          int maxValue = _db.select("""
+          int maxValue =
+              _db.select("""
             SELECT MAX(display_order) AS max_value
             FROM "$folder";
-          """).firstOrNull?["max_value"] ?? 0;
+          """).firstOrNull?["max_value"] ??
+              0;
           updateLocationSql = "display_order = ${maxValue + 1},";
         } else if (appdata.settings['moveFavoriteAfterRead'] == "start") {
-          int minValue = _db.select("""
+          int minValue =
+              _db.select("""
             SELECT MIN(display_order) AS min_value
             FROM "$folder";
-          """).firstOrNull?["min_value"] ?? 0;
+          """).firstOrNull?["min_value"] ??
+              0;
           updateLocationSql = "display_order = ${minValue - 1},";
         }
-        _db.execute("""
+        _db.execute(
+          """
             UPDATE "$folder"
             SET 
               $updateLocationSql
               time = ?
             WHERE id == ?;
-          """, [newTime, id]);
+          """,
+          [newTime, id],
+        );
       }
     }
     notifyListeners();
@@ -831,10 +940,13 @@ class LocalFavoritesManager with ChangeNotifier {
     var keywordList = keyword.split(" ");
     keyword = keywordList.first;
     keyword = "%$keyword%";
-    var res = _db.select("""
+    var res = _db.select(
+      """
       SELECT * FROM "$folder" 
       WHERE name LIKE ? OR author LIKE ? OR tags LIKE;
-    """, [keyword, keyword, keyword, keyword]);
+    """,
+      [keyword, keyword, keyword, keyword],
+    );
     var animes = res.map((e) => FavoriteItem.fromRow(e)).toList();
     bool test(FavoriteItem anime, String keyword) {
       if (anime.name.contains(keyword)) {
@@ -848,14 +960,17 @@ class LocalFavoritesManager with ChangeNotifier {
     }
 
     for (var i = 1; i < keywordList.length; i++) {
-      animes =
-          animes.where((element) => test(element, keywordList[i])).toList();
+      animes = animes
+          .where((element) => test(element, keywordList[i]))
+          .toList();
     }
     return animes;
   }
 
-  List<FavoriteItemWithFolderInfo> search(String keyword,
-      [FavoriteSortType sortType = FavoriteSortType.displayOrderAsc]) {
+  List<FavoriteItemWithFolderInfo> search(
+    String keyword, [
+    FavoriteSortType sortType = FavoriteSortType.displayOrderAsc,
+  ]) {
     var keywordList = keyword.split(" ");
     keyword = keywordList.first;
     var animes = <FavoriteItemWithFolderInfo>[];
@@ -868,18 +983,22 @@ class LocalFavoritesManager with ChangeNotifier {
       FavoriteSortType.displayOrderAsc => 'display_order ASC',
       FavoriteSortType.displayOrderDesc => 'display_order DESC',
       FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
-      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC'
+      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
     };
     for (var table in folderNames) {
       keyword = "%$keyword%";
-      var res = _db.select("""
+      var res = _db.select(
+        """
         SELECT * FROM "$table" 
         WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?
         ORDER BY $orderBy;
-      """, [keyword, keyword, keyword]);
+      """,
+        [keyword, keyword, keyword],
+      );
       for (var anime in res) {
         animes.add(
-            FavoriteItemWithFolderInfo(FavoriteItem.fromRow(anime), table));
+          FavoriteItemWithFolderInfo(FavoriteItem.fromRow(anime), table),
+        );
       }
       if (animes.length > 200) {
         break;
@@ -898,19 +1017,23 @@ class LocalFavoritesManager with ChangeNotifier {
     }
 
     for (var i = 1; i < keywordList.length; i++) {
-      animes =
-          animes.where((element) => test(element, keywordList[i])).toList();
+      animes = animes
+          .where((element) => test(element, keywordList[i]))
+          .toList();
     }
 
     return animes;
   }
 
   void editTags(String id, String folder, List<String> tags) {
-    _db.execute("""
+    _db.execute(
+      """
         update "$folder"
         set tags = ?
         where id == ?;
-      """, [tags.join(","), id]);
+      """,
+      [tags.join(","), id],
+    );
     notifyListeners();
   }
 
@@ -939,18 +1062,21 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void updateInfo(String folder, FavoriteItem anime) {
-    _db.execute("""
+    _db.execute(
+      """
       update "$folder"
       set name = ?, author = ?, cover_path = ?, tags = ?
       where id == ? and type == ?;
-    """, [
-      anime.name,
-      anime.author,
-      anime.coverPath,
-      anime.tags.join(","),
-      anime.id,
-      anime.type.value
-    ]);
+    """,
+      [
+        anime.name,
+        anime.author,
+        anime.coverPath,
+        anime.tags.join(","),
+        anime.id,
+        anime.type.value,
+      ],
+    );
     notifyListeners();
   }
 
@@ -1024,16 +1150,22 @@ class LocalFavoritesManager with ChangeNotifier {
       final now = DateTime.now();
       var folderNames = _getFolderNamesWithDB();
       for (var folder in folderNames) {
-        var row = _db.select("""
+        var row = _db.select(
+          """
         select * from "$folder"
         where id == ? and type == ?;
-      """, [id, type.value]);
+      """,
+          [id, type.value],
+        );
         if (row.isNotEmpty) {
-          _db.execute("""
+          _db.execute(
+            """
         update "$folder"
         set recently_watched = ?
         where id == ? and type == ?;
-      """, [_getTimeString(now), id, type.value]);
+      """,
+            [_getTimeString(now), id, type.value],
+          );
         }
       }
       notifyListeners();

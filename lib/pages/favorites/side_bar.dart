@@ -1,13 +1,20 @@
 part of 'favorites_page.dart';
 
 class _LeftBar extends StatefulWidget {
-  const _LeftBar({this.favPage, this.onSelected, this.withAppbar = false});
+  const _LeftBar({
+    this.favPage,
+    this.onSelected,
+    this.withAppbar = false,
+    required this.favoritesController,
+  });
 
   final _FavoritesPageState? favPage;
 
   final VoidCallback? onSelected;
 
   final bool withAppbar;
+
+  final FavoritesController favoritesController;
 
   @override
   State<_LeftBar> createState() => _LeftBarState();
@@ -16,24 +23,45 @@ class _LeftBar extends StatefulWidget {
 class _LeftBarState extends State<_LeftBar> implements FolderList {
   late _FavoritesPageState favPage;
 
+  FavoritesController get favoritesController => widget.favoritesController;
+
+  String get name => widget.favoritesController.bangumiUserName;
+
   var folders = <String>[];
+  String nameAvatar = '';
 
   @override
   void initState() {
-    favPage = widget.favPage ??
+    favPage =
+        widget.favPage ??
         context.findAncestorStateOfType<_FavoritesPageState>()!;
     favPage.folderList = this;
     folders = LocalFavoritesManager().folderNames;
-    appdata.settings.addListener(updateFolders);
-    LocalFavoritesManager().addListener(updateFolders);
+    if (name.isNotEmpty) {
+      if (appdata.implicitData['nameAvatar'] != null &&
+          appdata.implicitData['nameAvatar'] != '') {
+        nameAvatar = appdata.implicitData['nameAvatar'];
+      } else {
+        getNameAvatar();
+      }
+    }
+    // appdata.settings.addListener(updateFolders);
+    // LocalFavoritesManager().addListener(updateFolders);
     super.initState();
   }
 
   @override
   void dispose() {
     super.dispose();
-    appdata.settings.removeListener(updateFolders);
-    LocalFavoritesManager().removeListener(updateFolders);
+    // appdata.settings.removeListener(updateFolders);
+    // LocalFavoritesManager().removeListener(updateFolders);
+  }
+
+  Future<void> getNameAvatar() async {
+    nameAvatar = await Bangumi.getBangumiUserAvatarByName(name);
+    appdata.implicitData['nameAvatar'] = nameAvatar;
+    appdata.writeImplicitData();
+    setState(() {});
   }
 
   @override
@@ -59,31 +87,48 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
                   const SizedBox(width: 8),
                   const CloseButton(),
                   const SizedBox(width: 8),
-                  Text(
-                    "Folders".tl,
-                    style: ts.s18,
-                  ),
+                  Text("Folders".tl, style: ts.s18),
                 ],
               ),
             ).paddingTop(context.padding.top),
-          Expanded(
-            child: ListView.builder(
-              padding: widget.withAppbar
-                  ? EdgeInsets.zero
-                  : EdgeInsets.only(top: context.padding.top),
-              itemCount: folders.length + 2,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return buildLocalTitle();
-                }
-                index--;
-                if (index < folders.length) {
-                  return buildLocalFolder(folders[index]);
-                }
-                return null;
-              },
+          Padding(
+            padding: widget.withAppbar
+                ? EdgeInsets.zero
+                : EdgeInsets.only(top: context.padding.top),
+            child: Card(
+              color: favPage.pageId == 0
+                  ? context.colorScheme.primaryContainer.toOpacity(0.36)
+                  : null,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  favPage.setPage(0);
+                },
+                child: buildLocalTitle(),
+              ),
             ),
-          )
+          ),
+          Padding(
+            padding: EdgeInsets.zero,
+            child: Card(
+              color: favPage.pageId == 1
+                  ? context.colorScheme.primaryContainer.toOpacity(0.36)
+                  : null,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  favPage.setPage(1);
+                },
+                child: buildBangumiFavoriteTitle(),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -95,10 +140,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
       child: Row(
         children: [
           const SizedBox(width: 16),
-          Icon(
-            Icons.star,
-            color: context.colorScheme.secondary,
-          ),
+          Icon(Icons.star, color: context.colorScheme.secondary),
           const SizedBox(width: 12),
           Text("Local".tl),
           const Spacer(),
@@ -108,7 +150,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
             onPressed: () {
               newFolder().then((value) {
                 setState(() {
-                  folders = LocalFavoritesManager().folderNames;
+                  favoritesController.isRefreshEnabled = true;
                 });
               });
             },
@@ -119,9 +161,62 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
             onPressed: () {
               sortFolders().then((value) {
                 setState(() {
-                  folders = LocalFavoritesManager().folderNames;
+                  favoritesController.isRefreshEnabled = true;
                 });
               });
+            },
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget buildBangumiFavoriteTitle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const SizedBox(width: 16),
+          if (nameAvatar.isEmpty) ...[
+            Icon(Icons.star, color: context.colorScheme.secondary),
+            const SizedBox(width: 12),
+            Text("番组计划".tl),
+          ],
+          if (nameAvatar.isNotEmpty) ...[
+            CircleAvatar(
+              radius: 18,
+              backgroundImage: NetworkImage(nameAvatar),
+              backgroundColor: Colors.transparent, // 如果你不想要背景色
+            ),
+            const SizedBox(width: 12),
+            Text(name),
+          ],
+
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.edit),
+            color: context.colorScheme.primary,
+            onPressed: () {
+              showInputDialog(
+                context: App.rootContext,
+                title: "切换收藏人".tl,
+                hintText: "New Name".tl,
+                onConfirm: (value) {
+                  if (value.isEmpty) {
+                    favoritesController.bangumiUserName = '';
+                    appdata.implicitData['nameAvatar'] = '';
+                    appdata.writeImplicitData();
+                    favPage.setName('');
+                  } else {
+                    favPage.setName(value);
+                    favoritesController.bangumiUserName = value;
+                    getNameAvatar();
+                  }
+
+                  return null;
+                },
+              );
             },
           ),
           const SizedBox(width: 16),
@@ -160,8 +255,9 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               : null,
           border: Border(
             left: BorderSide(
-              color:
-                  isSelected ? context.colorScheme.primary : Colors.transparent,
+              color: isSelected
+                  ? context.colorScheme.primary
+                  : Colors.transparent,
               width: 2,
             ),
           ),
@@ -169,15 +265,10 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
         padding: const EdgeInsets.only(left: 16),
         child: Row(
           children: [
-            Expanded(
-              child: Text(name == 'default' ? 'default'.tl : name),
-            ),
+            Expanded(child: Text(name == 'default' ? 'default'.tl : name)),
             Container(
               margin: EdgeInsets.only(right: 8),
-              padding: EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 2,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: context.colorScheme.surfaceContainer,
                 borderRadius: BorderRadius.circular(8),
@@ -186,41 +277,6 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget buildNetworkFolder(String key) {
-    var data = getFavoriteDataOrNull(key);
-    if (data == null) {
-      return const SizedBox();
-    }
-    bool isSelected = key == favPage.folder && favPage.isNetwork;
-    return InkWell(
-      onTap: () {
-        if (isSelected) {
-          return;
-        }
-        favPage.setFolder(true, key);
-        widget.onSelected?.call();
-      },
-      child: Container(
-        height: 42,
-        alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : null,
-          border: Border(
-            left: BorderSide(
-              color:
-                  isSelected ? context.colorScheme.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.only(left: 16),
-        child: Text(data.title),
       ),
     );
   }
