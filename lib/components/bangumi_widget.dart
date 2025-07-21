@@ -661,7 +661,21 @@ class BangumiWidget {
                                 onPressed: () => Navigator.pop(context),
                               ),
                               const SizedBox(width: 8),
-                              Expanded(child: _textBackground(title)),
+                              Expanded(
+                                child: ValueListenableBuilder<int>(
+                                  valueListenable: currentIndex,
+                                  builder: (context, index, _) {
+                                    final file = urls.value.isNotEmpty
+                                        ? urls.value[index]
+                                        : File(url);
+                                    final filename = file.path
+                                        .split(Platform.pathSeparator)
+                                        .last;
+                                    return _textBackground(filename);
+                                  },
+                                ),
+                              ),
+
                               // const Spacer(),
                               const SizedBox(width: 8),
                               isLocal
@@ -682,19 +696,34 @@ class BangumiWidget {
 
                                         return Row(
                                           children: [
-                                            _iconBackground(
-                                              icon: Icons.share,
-                                              onPressed: () async {
-                                                final file = File(url);
-                                                Uint8List data = await file
-                                                    .readAsBytes();
-                                                Share.shareFile(
-                                                  data: data,
-                                                  filename: heroTag,
-                                                  mime: 'image/png',
+                                            ValueListenableBuilder<int>(
+                                              valueListenable: currentIndex,
+                                              builder: (context, index, _) {
+                                                final file =
+                                                    urls.value.isNotEmpty
+                                                    ? urls.value[index]
+                                                    : File(url);
+                                                final filename = file.path
+                                                    .split(
+                                                      Platform.pathSeparator,
+                                                    )
+                                                    .last;
+
+                                                return _iconBackground(
+                                                  icon: Icons.share,
+                                                  onPressed: () async {
+                                                    Uint8List data = await file
+                                                        .readAsBytes();
+                                                    Share.shareFile(
+                                                      data: data,
+                                                      filename: filename,
+                                                      mime: 'image/png',
+                                                    );
+                                                  },
                                                 );
                                               },
                                             ),
+
                                             const SizedBox(width: 8),
                                             if (localExists)
                                               _iconBackground(
@@ -743,7 +772,7 @@ class BangumiWidget {
                                                               newIndex;
                                                           urls.value = [
                                                             ...urls.value,
-                                                          ]; // 触发刷新
+                                                          ];
 
                                                           WidgetsBinding
                                                               .instance
@@ -761,7 +790,7 @@ class BangumiWidget {
                                                         } else {
                                                           Navigator.pop(
                                                             context,
-                                                          ); // 单图直接关闭
+                                                          );
                                                         }
                                                       } catch (e) {
                                                         Log.addLog(
@@ -824,7 +853,7 @@ class BangumiWidget {
 
   static Widget _textBackground(String title) {
     const style = TextStyle(
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: FontWeight.w600,
       color: Colors.white,
     );
