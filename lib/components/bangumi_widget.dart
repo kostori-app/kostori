@@ -484,18 +484,23 @@ class BangumiWidget {
   }
 
   static Widget buildStatsRow(BuildContext context, BangumiItem bangumiItem) {
-    final collection = bangumiItem.collection!; // 提前解构，避免重复访问
-    final total = collection.values.fold<int>(
-      0,
-      (sum, val) => sum + (val),
-    ); // 计算总数
+    final collection = bangumiItem.collection!;
+    final total = collection.values.fold<int>(0, (sum, val) => sum + val);
 
-    // 定义统计数据项（类型 + 显示文本 + 颜色）
+    String formatCount(int number) {
+      if (number >= 1000) {
+        final k = number ~/ 1000;
+        final r = (number % 1000) ~/ 100;
+        return '${k}k$r';
+      }
+      return number.toString();
+    }
+
     final stats = [
       StatItem('doing', 'doing'.tl, Theme.of(context).colorScheme.primary),
       StatItem('collect', 'collect'.tl, Theme.of(context).colorScheme.error),
       StatItem('wish', 'wish'.tl, Colors.blueAccent),
-      StatItem('on_hold', 'on hold'.tl, null), // 默认文本颜色
+      StatItem('on_hold', 'on hold'.tl, null),
       StatItem('dropped', 'dropped'.tl, Colors.grey),
     ];
 
@@ -504,14 +509,14 @@ class BangumiWidget {
         ...stats.expand(
           (stat) => [
             Text(
-              '${collection[stat.key]} ${stat.label}',
+              '${formatCount(collection[stat.key] ?? 0)} ${stat.label}',
               style: TextStyle(fontSize: 12, color: stat.color),
             ),
             const Text(' / '),
           ],
         ),
         Text(
-          '@t Total count'.tlParams({'t': total}),
+          '@t Total count'.tlParams({'t': formatCount(total)}),
           style: const TextStyle(fontSize: 12),
         ),
       ],

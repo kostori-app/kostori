@@ -348,28 +348,39 @@ class _ShareWidgetState extends State<ShareWidget> {
                                     style: TextStyle(fontSize: 12),
                                   ),
                                   const SizedBox(height: 16),
-                                  if (bangumiItem.airDate.isNotEmpty)
-                                    Container(
-                                      padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(
-                                          8.0,
+                                  Row(
+                                    children: [
+                                      if (bangumiItem.airDate.isNotEmpty)
+                                        Container(
+                                          padding: EdgeInsets.fromLTRB(
+                                            8,
+                                            5,
+                                            8,
+                                            5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              8.0,
+                                            ),
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .toOpacity(0.72),
+                                              width: 1.0,
+                                            ),
+                                          ),
+                                          child: Text(bangumiItem.airDate),
                                         ),
-                                        border: Border.all(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary.toOpacity(0.72),
-                                          width: 1.0,
-                                        ),
+                                      SizedBox(width: 12.0),
+                                      BangumiWidget.bangumiTimeText(
+                                        bangumiItem,
+                                        currentWeekEp,
+                                        isCompleted,
                                       ),
-                                      child: Text(bangumiItem.airDate),
-                                    ),
-                                  SizedBox(height: 12.0),
-                                  BangumiWidget.bangumiTimeText(
-                                    bangumiItem,
-                                    currentWeekEp,
-                                    isCompleted,
+                                    ],
                                   ),
+
                                   Spacer(),
                                   score(context, bangumiItem),
                                 ],
