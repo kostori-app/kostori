@@ -214,10 +214,11 @@ abstract mixin class _AnimePageActions {
                     ),
                     backgroundColor: Colors.transparent,
                     title: SizedBox(
-                      height: 48,
+                      height: 52,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: TextField(
+                          autofocus: true,
                           style: const TextStyle(fontSize: 16),
                           decoration: InputDecoration(
                             labelText: anime.title,

@@ -966,11 +966,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         preferredSize: const Size.fromHeight(60),
         child: ClipRect(
           child: SizedBox(
-            height: 48,
+            height: 52,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: TextField(
                 controller: _controller,
+                autofocus: true,
                 style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   filled: true,
