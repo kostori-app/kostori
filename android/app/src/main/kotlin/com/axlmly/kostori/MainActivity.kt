@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -40,6 +41,8 @@ class MainActivity : FlutterFragmentActivity() {
     var listening = false
 
     private val CHANNEL = "kostori/network_speed"
+    private val ABI_CHANNEL = "kostori/abi"
+    private val APK_CHANNEL = "kostori/install_apk"
 
     private val storageRequestCode = 0x10
     private var storagePermissionRequest: ((Boolean) -> Unit)? = null
@@ -107,6 +110,22 @@ class MainActivity : FlutterFragmentActivity() {
         launcher.launch(input)
     }
 
+    private fun installApk(file: File) {
+        val context = applicationContext
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+        val uri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            intent.flags = intent.flags or Intent.FLAG_GRANT_READ_URI_PERMISSION
+            FileProvider.getUriForFile(context, "$packageName.fileprovider", file)
+        } else {
+            Uri.fromFile(file)
+        }
+
+        intent.setDataAndType(uri, "application/vnd.android.package-archive")
+        context.startActivity(intent)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         GeneratedPluginRegistrant.registerWith(flutterEngine)
@@ -143,6 +162,27 @@ class MainActivity : FlutterFragmentActivity() {
                 }
 
                 else -> res.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ABI_CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "getAbi") {
+                val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
+                result.success(abi)
+            } else {
+                result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, APK_CHANNEL).setMethodCallHandler { call, result ->
+            if (call.method == "installApk") {
+                val apkPath = call.argument<String>("apkPath")
+                if (apkPath != null) {
+                    installApk(File(apkPath))
+                    result.success(null)
+                } else {
+                    result.error("INVALID_PATH", "APK path is null", null)
+                }
             }
         }
 

@@ -6,6 +6,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/pages/auth_page.dart';
@@ -28,8 +29,17 @@ void main(List<String> args) {
     runZonedGuarded(
       () async {
         WidgetsFlutterBinding.ensureInitialized();
+        if (App.isAndroid) {
+          await FlutterDownloader.initialize(
+            debug:
+                true, // optional: set to false to disable printing logs to console (default: true)
+            ignoreSsl:
+                true, // option: set to false to disable working with http links (default: false)
+          );
+        }
         MediaKit.ensureInitialized();
         await init();
+
         runApp(ProviderScope(child: MyApp()));
         if (App.isDesktop) {
           await windowManager.ensureInitialized();

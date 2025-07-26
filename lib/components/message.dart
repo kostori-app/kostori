@@ -368,6 +368,7 @@ class ContentDialog extends StatelessWidget {
     required this.content,
     this.dismissible = true,
     this.actions = const [],
+    this.cancel,
   });
 
   final String? title;
@@ -377,6 +378,8 @@ class ContentDialog extends StatelessWidget {
   final List<Widget> actions;
 
   final bool dismissible;
+
+  final VoidCallback? cancel;
 
   @override
   Widget build(BuildContext context) {
@@ -409,6 +412,9 @@ class ContentDialog extends StatelessWidget {
               const SizedBox(width: 24),
               Button.text(
                 onPressed: () {
+                  if (cancel != null) {
+                    cancel;
+                  }
                   Navigator.pop(context);
                 },
                 child: Text("Cancel".tl),
