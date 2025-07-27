@@ -179,6 +179,7 @@ class Settings with ChangeNotifier {
     'initialPage': '0',
     'debugInfo': false,
     'BangumiUserName': '',
+    'favoritePageId': 0,
   };
 
   operator [](String key) {
