@@ -7,26 +7,26 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
+import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/res.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/init.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/foundation/res.dart';
-import 'package:kostori/foundation/anime_type.dart';
-import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/history.dart';
+import 'package:kostori/utils/translations.dart';
 
 part 'category.dart';
 
 part 'favorites.dart';
 
-part 'parser.dart';
-
 part 'models.dart';
+
+part 'parser.dart';
 
 class AnimeSourceManager with ChangeNotifier, Init {
   final List<AnimeSource> _sources = [];
@@ -57,8 +57,10 @@ class AnimeSourceManager with ChangeNotifier, Init {
     await for (var entity in Directory(path).list()) {
       if (entity is File && entity.path.endsWith(".js")) {
         try {
-          var source = await AnimeSourceParser()
-              .parse(await entity.readAsString(), entity.absolute.path);
+          var source = await AnimeSourceParser().parse(
+            await entity.readAsString(),
+            entity.absolute.path,
+          );
           _sources.add(source);
         } catch (e, s) {
           Log.error("AnimeSource", "$e\n$s");
@@ -105,8 +107,8 @@ class AnimeSourceManager with ChangeNotifier, Init {
 typedef AnimeListBuilder = Future<Res<List<Anime>>> Function(int page);
 
 /// build Anime list with next param, [Res.subData] should be next page param or null if there is no next page.
-typedef AnimeListBuilderWithNext = Future<Res<List<Anime>>> Function(
-    String? next);
+typedef AnimeListBuilderWithNext =
+    Future<Res<List<Anime>>> Function(String? next);
 
 typedef LoginFunction = Future<Res<bool>> Function(String, String);
 
@@ -114,36 +116,61 @@ typedef LoadAnimeFunc = Future<Res<AnimeDetails>> Function(String id);
 
 typedef LoadAnimePagesFunc<T> = Future<T> Function(String id, String? ep);
 
-typedef CommentsLoader = Future<Res<List<Comment>>> Function(
-    String id, String? subId, int page, String? replyTo);
+typedef CommentsLoader =
+    Future<Res<List<Comment>>> Function(
+      String id,
+      String? subId,
+      int page,
+      String? replyTo,
+    );
 
-typedef SendCommentFunc = Future<Res<bool>> Function(
-    String id, String? subId, String content, String? replyTo);
+typedef SendCommentFunc =
+    Future<Res<bool>> Function(
+      String id,
+      String? subId,
+      String content,
+      String? replyTo,
+    );
 
-typedef GetImageLoadingConfigFunc = Future<Map<String, dynamic>> Function(
-    String imageKey, String animeId, String epId)?;
+typedef GetImageLoadingConfigFunc =
+    Future<Map<String, dynamic>> Function(
+      String imageKey,
+      String animeId,
+      String epId,
+    )?;
 
-typedef GetThumbnailLoadingConfigFunc = Map<String, dynamic> Function(
-    String imageKey)?;
+typedef GetThumbnailLoadingConfigFunc =
+    Map<String, dynamic> Function(String imageKey)?;
 
-typedef AnimeThumbnailLoader = Future<Res<List<String>>> Function(
-    String animeId, String? next);
+typedef AnimeThumbnailLoader =
+    Future<Res<List<String>>> Function(String animeId, String? next);
 
-typedef LikeOrUnlikeAnimeFunc = Future<Res<bool>> Function(
-    String animeId, bool isLiking);
+typedef LikeOrUnlikeAnimeFunc =
+    Future<Res<bool>> Function(String animeId, bool isLiking);
 
 /// [isLiking] is true if the user is liking the comment, false if unliking.
 /// return the new likes count or null.
-typedef LikeCommentFunc = Future<Res<int?>> Function(
-    String animeId, String? subId, String commentId, bool isLiking);
+typedef LikeCommentFunc =
+    Future<Res<int?>> Function(
+      String animeId,
+      String? subId,
+      String commentId,
+      bool isLiking,
+    );
 
 /// [isUp] is true if the user is upvoting the comment, false if downvoting.
 /// return the new vote count or null.
-typedef VoteCommentFunc = Future<Res<int?>> Function(
-    String animeId, String? subId, String commentId, bool isUp, bool isCancel);
+typedef VoteCommentFunc =
+    Future<Res<int?>> Function(
+      String animeId,
+      String? subId,
+      String commentId,
+      bool isUp,
+      bool isCancel,
+    );
 
-typedef HandleClickTagEvent = Map<String, String> Function(
-    String namespace, String tag);
+typedef HandleClickTagEvent =
+    Map<String, String> Function(String namespace, String tag);
 
 /// [rating] is the rating value, 0-10. 1 represents 0.5 star.
 typedef StarRatingFunc = Future<Res<bool>> Function(String animeId, int rating);
@@ -165,7 +192,7 @@ class AnimeSource {
   final String key;
 
   int get intKey {
-    return key.hashCode; // 返回源 key 的哈希值作为整数键
+    return key.hashCode;
   }
 
   /// Account config.
@@ -197,7 +224,7 @@ class AnimeSource {
   final GetImageLoadingConfigFunc? getImageLoadingConfig;
 
   final Map<String, dynamic> Function(String imageKey)?
-      getThumbnailLoadingConfig;
+  getThumbnailLoadingConfig;
 
   var data = <String, dynamic>{};
 
@@ -403,11 +430,19 @@ enum ExplorePageType {
   override,
 }
 
-typedef SearchFunction = Future<Res<List<Anime>>> Function(
-    String keyword, int page, List<String> searchOption);
+typedef SearchFunction =
+    Future<Res<List<Anime>>> Function(
+      String keyword,
+      int page,
+      List<String> searchOption,
+    );
 
-typedef SearchNextFunction = Future<Res<List<Anime>>> Function(
-    String keyword, String? next, List<String> searchOption);
+typedef SearchNextFunction =
+    Future<Res<List<Anime>>> Function(
+      String keyword,
+      String? next,
+      List<String> searchOption,
+    );
 
 class SearchPageData {
   /// If this is not null, the default value of search options will be first element.
@@ -434,8 +469,13 @@ class SearchOptions {
   String get defaultValue => defaultVal ?? options.keys.first;
 }
 
-typedef CategoryAnimesLoader = Future<Res<List<Anime>>> Function(
-    String category, String? param, List<String> options, int page);
+typedef CategoryAnimesLoader =
+    Future<Res<List<Anime>>> Function(
+      String category,
+      String? param,
+      List<String> options,
+      int page,
+    );
 
 class CategoryAnimesData {
   /// options
@@ -459,7 +499,7 @@ class RankingData {
   final Future<Res<List<Anime>>> Function(String option, int page)? load;
 
   final Future<Res<List<Anime>>> Function(String option, String? next)?
-      loadWithNext;
+  loadWithNext;
 
   const RankingData(this.options, this.load, this.loadWithNext);
 }
