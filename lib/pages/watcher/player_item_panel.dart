@@ -20,6 +20,7 @@ import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../foundation/appdata.dart';
 import '../settings/settings_page.dart';
 
 class PlayerItemPanel extends StatefulWidget {
@@ -188,6 +189,20 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     return MenuButton(
       message: "更多".tl,
       entries: [
+        if (App.isAndroid)
+          MenuEntry(
+            text: (appdata.settings['audioOutType'] ?? true)
+                ? "音频选项: 低延迟".tl
+                : "音频选项: 兼容性".tl,
+            onClick: () async {
+              try {
+                await widget.playerController.changeAudioOutType();
+                App.rootContext.showMessage(message: "切换成功");
+              } catch (e) {
+                App.rootContext.showMessage(message: "切换失败");
+              }
+            },
+          ),
         MenuEntry(
           text: "远程投屏".tl,
           onClick: () {
