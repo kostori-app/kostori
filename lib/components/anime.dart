@@ -1575,7 +1575,7 @@ class SimpleAnimeTile extends StatelessWidget {
       width: 98,
       height: 136,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).colorScheme.secondaryContainer,
       ),
       clipBehavior: Clip.antiAlias,
@@ -1583,7 +1583,7 @@ class SimpleAnimeTile extends StatelessWidget {
     );
 
     child = AnimatedTapRegion(
-      borderRadius: 8,
+      borderRadius: 12,
       onTap:
           onTap ??
           () {
