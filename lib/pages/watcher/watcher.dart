@@ -128,10 +128,7 @@ class WatcherState extends State<Watcher>
       updateHistory();
     });
     if (history != null && history!.lastWatchEpisode != 0) {
-      loadInfo(
-        history!.lastWatchEpisode,
-        history!.lastRoad.toInt(),
-      ); // 这里传入初始集数
+      loadInfo(history!.lastWatchEpisode, history!.lastRoad.toInt());
     }
     currentRoad = 0;
     _initializeProgress();
@@ -163,9 +160,9 @@ class WatcherState extends State<Watcher>
           (widget.anime.episode!.values
               .elementAt(playerController.currentRoad)
               .length)) {
-        episode++; // 递增到下一集
-        loadNextlVideo(episode); // 直接调用 loadInfo 加载下一集
-        history?.watchEpisode.add(episode); // 记录观看的集数
+        episode++;
+        loadNextlVideo(episode);
+        history?.watchEpisode.add(episode);
       } else {
         showCenter(
           seconds: 3,
@@ -203,7 +200,7 @@ class WatcherState extends State<Watcher>
       //     "${widget.anime.id}\n${AnimeType(widget.anime.sourceKey.hashCode).value}\n${episode - 1}\n$road");
       playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
-      history?.watchEpisode.add(episode); // 记录观看的集数
+      history?.watchEpisode.add(episode);
       history?.lastRoad = road;
       progress?.road = road;
       progress?.episode = episode - 1;
@@ -229,7 +226,7 @@ class WatcherState extends State<Watcher>
 
   void loadNextlVideo(int episodeIndex) async {
     ep = widget.anime.episode?.values.elementAt(playerController.currentRoad);
-    episode = episodeIndex; // 更新逻辑中的当前集数
+    episode = episodeIndex;
     Log.addLog(LogLevel.info, "加载集数", "$episodeIndex");
     try {
       var progressFind = await HistoryManager().progressFind(
@@ -239,7 +236,7 @@ class WatcherState extends State<Watcher>
         playerController.currentRoad,
       );
       playerController.currentEpisoded = episodeIndex;
-      history?.watchEpisode.add(episode); // 记录观看的集数
+      history?.watchEpisode.add(episode);
       progress?.episode = episode - 1;
 
       if (progressFind!.progressInMilli != 0) {

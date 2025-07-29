@@ -60,7 +60,7 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
       onSearch: (text) {
         setState(() {
           _keyword = text;
-          _sourceHasResult.clear(); // 搜索词变了，清空结果记录
+          _sourceHasResult.clear();
         });
       },
     );
@@ -128,7 +128,6 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
           delegate: SliverChildBuilderDelegate((context, index) {
             final source = sources[index];
             final hasResult = _sourceHasResult[source.key] ?? true;
-            // 根据开关和是否有结果决定是否显示
             if (showOnlyNonEmpty && !hasResult) {
               return const SizedBox.shrink();
             }
@@ -137,7 +136,6 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
               source: source,
               keyword: _keyword,
               onResultLoaded: (bool result) {
-                // 仅更新记录，不触发重新加载
                 if (_sourceHasResult[source.key] != result) {
                   setState(() {
                     _sourceHasResult[source.key] = result;
