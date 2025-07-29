@@ -129,6 +129,24 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               ),
             ),
           ),
+          Padding(
+            padding: EdgeInsets.zero,
+            child: Card(
+              color: favPage.pageId == 2
+                  ? context.colorScheme.primaryContainer.toOpacity(0.36)
+                  : null,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  favPage.setPage(2);
+                },
+                child: buildLocalBangumiFavoriteTitle(),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -187,7 +205,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
             CircleAvatar(
               radius: 18,
               backgroundImage: NetworkImage(nameAvatar),
-              backgroundColor: Colors.transparent, // 如果你不想要背景色
+              backgroundColor: Colors.transparent,
             ),
             const SizedBox(width: 12),
             Text(name),
@@ -219,6 +237,22 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
               );
             },
           ),
+          const SizedBox(width: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget buildLocalBangumiFavoriteTitle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          const SizedBox(width: 16),
+          Icon(Icons.star, color: context.colorScheme.secondary),
+          const SizedBox(width: 12),
+          Text("本地绑定收藏".tl),
+          const Spacer(),
           const SizedBox(width: 16),
         ],
       ),
