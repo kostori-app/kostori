@@ -218,8 +218,8 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                     double height =
                         MediaQuery.of(context).size.width <=
                             constraints.maxWidth + 150
-                        ? 230
-                        : 280;
+                        ? 210
+                        : 260;
                     double width = height * 0.72;
                     // 获取当前周的剧集
                     final currentWeekEp = Utils.findCurrentWeekEpisode(
@@ -591,16 +591,16 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   if (MediaQuery.sizeOf(context).width >= 1200 &&
                       !widget.isLoading &&
                       widget.bangumiItem.total > 20)
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        maxWidth: 400,
+                        maxWidth: 450,
                         maxHeight: 300,
                       ),
                       child: Column(
@@ -617,7 +617,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                               ),
                               Container(
                                 margin: const EdgeInsets.symmetric(
-                                  horizontal: 8,
+                                  horizontal: 4,
                                 ),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8,
@@ -652,7 +652,6 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                       : 'Bar Chart'.tl,
                                 ),
                               ),
-                              Text('${widget.bangumiItem.total} votes'),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -674,6 +673,8 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                   Utils.getDispute(standardDeviation),
                                   style: TextStyle(fontSize: 12),
                                 ),
+                                const SizedBox(width: 24),
+                                Text('${widget.bangumiItem.total} votes'),
                               ],
                             ),
                           ),

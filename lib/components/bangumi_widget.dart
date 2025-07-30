@@ -657,17 +657,23 @@ class BangumiWidget {
       StatItem('dropped', 'dropped'.tl, Colors.grey),
     ];
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...stats.expand(
-          (stat) => [
-            Text(
-              '${formatCount(collection[stat.key] ?? 0)} ${stat.label}',
-              style: TextStyle(fontSize: 12, color: stat.color),
+        Row(
+          children: [
+            ...stats.expand(
+              (stat) => [
+                Text(
+                  '${formatCount(collection[stat.key] ?? 0)} ${stat.label}',
+                  style: TextStyle(fontSize: 12, color: stat.color),
+                ),
+                const Text(' / '),
+              ],
             ),
-            const Text(' / '),
           ],
         ),
+        SizedBox(height: 3),
         Text(
           '@t Total count'.tlParams({'t': formatCount(total)}),
           style: const TextStyle(fontSize: 12),

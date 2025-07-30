@@ -240,7 +240,6 @@ class _InfoTabViewState extends State<InfoTabView>
                         ],
                       ),
                       onPressed: () {
-                        // 标签点击逻辑
                         context.to(
                           () => BangumiSearchPage(
                             tag: widget.bangumiItem.tags[index].name,
@@ -250,7 +249,6 @@ class _InfoTabViewState extends State<InfoTabView>
                     ),
                   ),
 
-                  // 添加展开/收起按钮
                   if (widget.bangumiItem.tags.length > 12)
                     ActionChip(
                       label: Text(
@@ -321,12 +319,12 @@ class _InfoTabViewState extends State<InfoTabView>
                 const SizedBox(height: 8),
                 Wrap(
                   children: [
-                    // 先显示最多15个
+                    // 显示最多15个
                     ...widget.allEpisodes.take(15).map((episode) {
                       double intensity = (episode.comment / 300).clamp(
                         0.1,
                         1.0,
-                      ); // 转换为 0~1 范围
+                      );
                       return SizedBox(
                         width: 50,
                         height: 50,
@@ -419,14 +417,12 @@ class _InfoTabViewState extends State<InfoTabView>
                             Container(
                               width: 30,
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(
-                                  12.0,
-                                ), // 设置圆角半径
+                                borderRadius: BorderRadius.circular(12.0),
                                 border: Border.all(
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.primary.toOpacity(intensity),
-                                  width: 2.0, // 设置边框宽度
+                                  width: 2.0,
                                 ),
                               ),
                             ),
@@ -508,7 +504,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
-                  height: 240, // 根据卡片高度调整
+                  height: 240,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: widget.bangumiSRI.length,
@@ -674,7 +670,6 @@ class _InfoTabViewState extends State<InfoTabView>
                             : 'Bar Chart'.tl,
                       ),
                     ),
-                    Text('${widget.bangumiItem.total} votes'),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -696,6 +691,8 @@ class _InfoTabViewState extends State<InfoTabView>
                         Utils.getDispute(standardDeviation),
                         style: TextStyle(fontSize: 12),
                       ),
+                      const SizedBox(width: 24),
+                      Text('${widget.bangumiItem.total} votes'),
                     ],
                   ),
                 ),
