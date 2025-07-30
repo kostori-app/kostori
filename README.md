@@ -12,6 +12,15 @@
 [![Download](https://img.shields.io/github/v/release/kostori-app/kostori)](https://github.com/kostori-app/kostori/releases)
 [![stars](https://img.shields.io/github/stars/kostori-app/kostori?style=flat)](https://github.com/kostori-app/kostori/stargazers)
 
+<div>
+
+[![Latest Downloads](https://img.shields.io/github/downloads/kostori-app/kostori/latest/total?label=Latest%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/kostori-app/kostori/releases/latest)
+[![Total Downloads](https://img.shields.io/github/downloads/kostori-app/kostori/total?label=Total%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/kostori-app/kostori/releases)
+[![Stable Build](https://img.shields.io/github/actions/workflow/status/kostori-app/kostori/main.yml?label=Stable&labelColor=06599d&color=043b69)](https://github.com/kostori-app/kostori/actions/workflows/main.yml)
+
+</div>
+
+
 Flutter-based anime streaming app
 
 ## Features
