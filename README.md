@@ -6,13 +6,14 @@
 
 <h3 align="center">kostori</h3>
 
-# Kostori
+<div align="center">
 
 [![License](https://img.shields.io/github/license/kostori-app/kostori)](https://github.com/kostori-app/kostori/blob/master/LICENSE)
 [![Download](https://img.shields.io/github/v/release/kostori-app/kostori)](https://github.com/kostori-app/kostori/releases)
 [![stars](https://img.shields.io/github/stars/kostori-app/kostori?style=flat)](https://github.com/kostori-app/kostori/stargazers)
+</div>
 
-<div>
+<div align="center">
 
 [![Latest Downloads](https://img.shields.io/github/downloads/kostori-app/kostori/latest/total?label=Latest%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/kostori-app/kostori/releases/latest)
 [![Total Downloads](https://img.shields.io/github/downloads/kostori-app/kostori/total?label=Total%20Downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/kostori-app/kostori/releases)
@@ -26,6 +27,32 @@ Flutter-based anime streaming app
 ## Features
 
 We won't be implementing danmaku.
+
+## screenshot
+
+<table>
+  <tr>
+    <td><img alt="" src=".github/readme-img/img_1.png"></td>
+    <td><img alt="" src=".github/readme-img/img_2.png"></td>
+    <td><img alt="" src=".github/readme-img/img_3.png"></td>
+    <td><img alt="" src=".github/readme-img/img_4.png"></td>
+    <td><img alt="" src=".github/readme-img/img_5.png"></td>
+    <td><img alt="" src=".github/readme-img/img_6.png"></td>
+  <tr>
+  <tr>
+    <td><img alt="" src=".github/readme-img/img_7.png"></td>
+    <td><img alt="" src=".github/readme-img/img_8.png"></td>
+    <td><img alt="" src=".github/readme-img/img_9.png"></td>
+    <td><img alt="" src=".github/readme-img/img_10.png"></td>
+    <td><img alt="" src=".github/readme-img/img_11.png"></td>
+    <td><img alt="" src=".github/readme-img/img_12.png"></td>
+  <tr>
+  <tr>
+    <td><img alt="" src=".github/readme-img/img_13.png"></td>
+    <td><img alt="" src=".github/readme-img/img_14.png"></td>
+    <td><img alt="" src=".github/readme-img/img_15.png"></td>
+  <tr>
+</table>
 
 ## Art assets
 
