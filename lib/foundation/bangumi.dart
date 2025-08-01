@@ -485,6 +485,14 @@ class BangumiManager with ChangeNotifier {
     return BangumiItem.fromRow(res.first);
   }
 
+  List<BangumiItem> getBindAll() {
+    var res = _db.select("""
+      select * from bangumi_binding
+      order by id DESC;
+    """);
+    return res.map((element) => BangumiItem.fromRow(element)).toList();
+  }
+
   Future<List<EpisodeInfo>> allEpInfoFind(int id) async {
     var res = _db.select(
       """

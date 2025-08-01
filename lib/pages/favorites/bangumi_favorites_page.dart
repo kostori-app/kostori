@@ -253,8 +253,8 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                 slivers: <Widget>[
                   doingList.isEmpty
                       ? (useBriefMode
-                            ? _bangumiSkeletonSliverBrief()
-                            : _bangumiSkeletonSliverDetailed())
+                            ? BangumiWidget.bangumiSkeletonSliverBrief()
+                            : BangumiWidget.bangumiSkeletonSliverDetailed())
                       : _bangumiListSliver(doingList),
                   if (doingIsLoading)
                     SliverToBoxAdapter(
@@ -303,8 +303,8 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                 slivers: <Widget>[
                   collectList.isEmpty
                       ? (useBriefMode
-                            ? _bangumiSkeletonSliverBrief()
-                            : _bangumiSkeletonSliverDetailed())
+                            ? BangumiWidget.bangumiSkeletonSliverBrief()
+                            : BangumiWidget.bangumiSkeletonSliverDetailed())
                       : _bangumiListSliver(collectList),
                   if (collectIsLoading)
                     SliverToBoxAdapter(
@@ -353,8 +353,8 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                 slivers: <Widget>[
                   wishList.isEmpty
                       ? (useBriefMode
-                            ? _bangumiSkeletonSliverBrief()
-                            : _bangumiSkeletonSliverDetailed())
+                            ? BangumiWidget.bangumiSkeletonSliverBrief()
+                            : BangumiWidget.bangumiSkeletonSliverDetailed())
                       : _bangumiListSliver(wishList),
                   if (wishIsLoading)
                     SliverToBoxAdapter(
@@ -403,8 +403,8 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                 slivers: <Widget>[
                   onHoldList.isEmpty
                       ? (useBriefMode
-                            ? _bangumiSkeletonSliverBrief()
-                            : _bangumiSkeletonSliverDetailed())
+                            ? BangumiWidget.bangumiSkeletonSliverBrief()
+                            : BangumiWidget.bangumiSkeletonSliverDetailed())
                       : _bangumiListSliver(onHoldList),
                   if (onHoldIsLoading)
                     SliverToBoxAdapter(
@@ -453,8 +453,8 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                 slivers: <Widget>[
                   droppedList.isEmpty
                       ? (useBriefMode
-                            ? _bangumiSkeletonSliverBrief()
-                            : _bangumiSkeletonSliverDetailed())
+                            ? BangumiWidget.bangumiSkeletonSliverBrief()
+                            : BangumiWidget.bangumiSkeletonSliverDetailed())
                       : _bangumiListSliver(droppedList),
                   if (droppedIsLoading)
                     SliverToBoxAdapter(
@@ -476,160 +476,6 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
           },
         );
       },
-    );
-  }
-
-  Widget _bangumiSkeletonSliverBrief() {
-    return SliverGrid(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
-          child: Column(
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Stack(
-                    children: [
-                      Skeletonizer.zone(
-                        child: Bone(
-                          height: double.infinity,
-                          width: double.infinity,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 34,
-                        right: 4,
-                        child: Skeletonizer.zone(
-                          child: Bone.text(width: 40, fontSize: 12),
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 4,
-                        right: 4,
-                        child: Skeletonizer.zone(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Row(
-                                children: List.generate(
-                                  5,
-                                  (index) => Padding(
-                                    padding: const EdgeInsets.only(right: 2),
-                                    child: Bone.square(size: 12, uniRadius: 3),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Bone.text(width: 60, fontSize: 7),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Skeletonizer.zone(
-                child: Bone.text(width: double.infinity, fontSize: 12),
-              ),
-            ],
-          ),
-        );
-      }, childCount: 20),
-      gridDelegate: SliverGridDelegateWithBangumiItems(true),
-    );
-  }
-
-  Widget _bangumiSkeletonSliverDetailed() {
-    return SliverGrid(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        return LayoutBuilder(
-          builder: (context, constrains) {
-            final height = constrains.maxHeight - 16;
-            return Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  // 左边封面骨架，固定大小
-                  Skeletonizer.zone(
-                    child: Bone(
-                      height: height,
-                      width: height * 0.72, // 比例0.72
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  // 右边文字骨架，占满剩余宽度
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Skeletonizer.zone(
-                          child: Bone.text(fontSize: 16, width: 150),
-                        ),
-                        const SizedBox(height: 4),
-                        Skeletonizer.zone(
-                          child: Bone.text(fontSize: 12, width: 100),
-                        ),
-                        const SizedBox(height: 8),
-                        Skeletonizer.zone(
-                          child: Row(
-                            children: [
-                              Bone.text(width: 30, fontSize: 12),
-                              const SizedBox(width: 4),
-                              Bone(
-                                width: 60,
-                                height: 20,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Skeletonizer.zone(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Bone.text(width: 30, fontSize: 24),
-                                const SizedBox(width: 5),
-                                Bone(
-                                  width: 60,
-                                  height: 24,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                const SizedBox(width: 4),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Bone.text(width: 80, fontSize: 10),
-                                    const SizedBox(height: 2),
-                                    Bone.text(width: 80, fontSize: 10),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      }, childCount: 20),
-      gridDelegate: SliverGridDelegateWithBangumiItems(false),
     );
   }
 

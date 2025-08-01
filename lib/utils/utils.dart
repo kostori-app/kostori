@@ -3,6 +3,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gif/gif.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -19,6 +20,32 @@ import 'io.dart';
 
 class Utils {
   Utils._();
+
+  static String colorToHex(Color color) {
+    int a = (color.a * 255).round();
+    int r = (color.r * 255).round();
+    int g = (color.g * 255).round();
+    int b = (color.b * 255).round();
+
+    return '#'
+            '${a.toRadixString(16).padLeft(2, '0')}'
+            '${r.toRadixString(16).padLeft(2, '0')}'
+            '${g.toRadixString(16).padLeft(2, '0')}'
+            '${b.toRadixString(16).padLeft(2, '0')}'
+        .toUpperCase();
+  }
+
+  static Color? hexToColor(String? hex) {
+    if (hex == null) return null;
+    try {
+      hex = hex.toUpperCase().replaceAll('#', '');
+      if (hex.length == 6) hex = 'FF$hex';
+      final val = int.parse(hex, radix: 16);
+      return Color(val);
+    } catch (_) {
+      return null;
+    }
+  }
 
   static bool isDesktop() =>
       Platform.isMacOS || Platform.isWindows || Platform.isLinux;
@@ -479,7 +506,8 @@ class Utils {
             message: '保存成功',
             context: context,
           );
-
+          const platform = MethodChannel('kostori/media');
+          await platform.invokeMethod('scanFolder', {'path': folder.path});
           Log.addLog(LogLevel.info, '保存长图成功', file.path);
         } else {
           Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');

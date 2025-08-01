@@ -1,15 +1,15 @@
 import 'dart:ui' as ui;
+
 import 'package:antlr4/antlr4.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:kostori/foundation/log.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:kostori/bbcode/bbcode_base_listener.dart';
 import 'package:kostori/bbcode/bbcode_elements.dart';
-import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
-
+import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BBCodeWidget extends StatefulWidget {
   const BBCodeWidget({super.key, required this.bbcode, this.showImg = true});
@@ -60,13 +60,13 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // 只关闭对话框
+                Navigator.of(context).pop();
               },
               child: const Text('取消'),
             ),
             TextButton(
               onPressed: () {
-                BangumiWidget.saveImageToGallery(context, imageUrl); // 再执行保存
+                BangumiWidget.saveImageToGallery(context, imageUrl);
               },
               child: const Text('保存到相册'),
             ),
@@ -97,12 +97,12 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                 Color? textColor = (!_isVisible && e.masked)
                     ? Colors.transparent
                     : (e.link != null)
-                        ? Colors.blue
-                        : (e.quoted)
-                            ? Theme.of(context).colorScheme.outline
-                            : (e.color != null)
-                                ? _parseColor(e.color!)
-                                : null;
+                    ? Colors.blue
+                    : (e.quoted)
+                    ? Theme.of(context).colorScheme.outline
+                    : (e.color != null)
+                    ? _parseColor(e.color!)
+                    : null;
                 return TextSpan(
                   text: e.text,
                   mouseCursor: (e.link != null || e.masked)
@@ -131,15 +131,18 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                     decorationColor: textColor,
                     fontSize: e.size.toDouble(),
                     color: textColor,
-                    backgroundColor:
-                        (!_isVisible && e.masked) ? Color(0xFF555555) : null,
+                    backgroundColor: (!_isVisible && e.masked)
+                        ? Color(0xFF555555)
+                        : null,
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 );
               } else if (e is BBCodeImg) {
                 if (!widget.showImg) return const WidgetSpan(child: SizedBox());
-                String getFullImageUrl(String url,
-                    {String baseUrl = 'https://lain.bgm.tv/pic/photo/g/'}) {
+                String getFullImageUrl(
+                  String url, {
+                  String baseUrl = 'https://lain.bgm.tv/pic/photo/g/',
+                }) {
                   if (url.startsWith('http')) {
                     return url;
                   } else {
@@ -157,17 +160,22 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                       MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              Log.addLog(LogLevel.info, 'imageUrl', img);
-                              BangumiWidget.showImagePreview(
-                                  context, img, '', img);
-                            },
-                            onLongPress: () => _showSaveDialog(img),
-                            child: Hero(
-                              tag: img,
-                              child: BangumiWidget.kostoriImage(context, img),
-                            )),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            Log.addLog(LogLevel.info, 'imageUrl', img);
+                            BangumiWidget.showImagePreview(
+                              context,
+                              img,
+                              '',
+                              img,
+                            );
+                          },
+                          onLongPress: () => _showSaveDialog(img),
+                          child: Hero(
+                            tag: img,
+                            child: BangumiWidget.kostoriImage(context, img),
+                          ),
+                        ),
                       ),
                       if (_isSaving) const CircularProgressIndicator(),
                     ],
@@ -189,25 +197,34 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                   child: GestureDetector(
                     onTap: () =>
                         BangumiWidget.showImagePreview(context, url, '', url),
-                    child: BangumiWidget.kostoriImage(context, url,
-                        width: 24, height: 24),
+                    child: BangumiWidget.kostoriImage(
+                      context,
+                      url,
+                      width: 24,
+                      height: 24,
+                    ),
                   ),
                 );
               } else if (e is BBCodeSticker) {
                 return WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
-                      onTap: () => BangumiWidget.showImagePreview(
-                          context,
-                          'https://bangumi.tv/img/smiles/${e.id}.gif',
-                          '',
-                          'https://bangumi.tv/img/smiles/${e.id}.gif'),
-                      child: Hero(
-                        tag: 'https://bangumi.tv/img/smiles/${e.id}.gif',
-                        child: BangumiWidget.kostoriImage(context,
-                            'https://bangumi.tv/img/smiles/${e.id}.gif',
-                            width: 24, height: 24),
-                      )),
+                    onTap: () => BangumiWidget.showImagePreview(
+                      context,
+                      'https://bangumi.tv/img/smiles/${e.id}.gif',
+                      '',
+                      'https://bangumi.tv/img/smiles/${e.id}.gif',
+                    ),
+                    child: Hero(
+                      tag: 'https://bangumi.tv/img/smiles/${e.id}.gif',
+                      child: BangumiWidget.kostoriImage(
+                        context,
+                        'https://bangumi.tv/img/smiles/${e.id}.gif',
+                        width: 24,
+                        height: 24,
+                      ),
+                    ),
+                  ),
                 );
               } else {
                 return WidgetSpan(

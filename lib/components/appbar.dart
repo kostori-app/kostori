@@ -990,7 +990,10 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
       child: Row(
         children: [
           const SizedBox(width: 8),
-          const BackButton(),
+          IconButton(
+            onPressed: () => Navigator.maybePop(context),
+            icon: const Icon(Icons.arrow_back_ios_new),
+          ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),

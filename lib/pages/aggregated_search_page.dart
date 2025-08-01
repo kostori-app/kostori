@@ -25,13 +25,18 @@ class AggregatedSearchPage extends StatefulWidget {
 
 class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
   late final List<AnimeSource> sources;
-
   late final SearchBarController controller;
 
   var _keyword = "";
 
+  bool showOnlyNonEmpty = false;
+
+  /// 记录每个 source 是否有结果
+  final Map<String, bool> _sourceHasResult = {};
+
   @override
   void initState() {
+    super.initState();
     var all = AnimeSource.all()
         .where((e) => e.searchPageData != null)
         .map((e) => e.key)
@@ -44,18 +49,21 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
       }
     }
     this.sources = sources.map((e) => AnimeSource.find(e)!).toList();
+    showOnlyNonEmpty = appdata.implicitData['showOnlyNonEmpty'] ?? false;
+
     _keyword = widget.keyword;
     appdata.addSearchHistory(_keyword);
     appdata.saveData();
+
     controller = SearchBarController(
       currentText: widget.keyword,
       onSearch: (text) {
         setState(() {
           _keyword = text;
+          _sourceHasResult.clear();
         });
       },
     );
-    super.initState();
   }
 
   @override
@@ -67,14 +75,73 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
           bangumiPage: widget.bangumiPage,
           keywords: widget.keywords,
         ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      showOnlyNonEmpty = !showOnlyNonEmpty;
+                      appdata.implicitData['showOnlyNonEmpty'] =
+                          showOnlyNonEmpty;
+                      appdata.writeImplicitData();
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: showOnlyNonEmpty
+                          ? context.colorScheme.secondaryContainer
+                          : context.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: showOnlyNonEmpty
+                          ? Border.all(
+                              color: context.colorScheme.secondaryContainer,
+                            )
+                          : Border.all(color: context.colorScheme.outline),
+                    ),
+
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.sort, size: 20),
+                        const SizedBox(width: 6),
+                        Text(showOnlyNonEmpty ? "有结果".tl : "全部".tl),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
         SliverList(
           key: ValueKey(_keyword),
           delegate: SliverChildBuilderDelegate((context, index) {
             final source = sources[index];
+            final hasResult = _sourceHasResult[source.key] ?? true;
+            if (showOnlyNonEmpty && !hasResult) {
+              return const SizedBox.shrink();
+            }
             return _SliverSearchResult(
               key: ValueKey(source.key),
               source: source,
               keyword: _keyword,
+              onResultLoaded: (bool result) {
+                if (_sourceHasResult[source.key] != result) {
+                  setState(() {
+                    _sourceHasResult[source.key] = result;
+                  });
+                }
+              },
             );
           }, childCount: sources.length),
         ),
@@ -87,12 +154,13 @@ class _SliverSearchResult extends StatefulWidget {
   const _SliverSearchResult({
     required this.source,
     required this.keyword,
+    this.onResultLoaded,
     super.key,
   });
 
   final AnimeSource source;
-
   final String keyword;
+  final void Function(bool hasResult)? onResultLoaded;
 
   @override
   State<_SliverSearchResult> createState() => _SliverSearchResultState();
@@ -104,45 +172,69 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
 
   static const _kAnimeHeight = 162.0;
 
-  get _animeWidth => _kAnimeHeight * 0.7;
-
+  double get _animeWidth => _kAnimeHeight * 0.7;
   static const _kLeftPadding = 16.0;
 
   List<Anime>? animes;
-
   String? error;
 
-  void load() async {
+  Future<void> load() async {
     final data = widget.source.searchPageData!;
     var options = (data.searchOptions ?? [])
         .map((e) => e.defaultValue)
         .toList();
-    if (data.loadPage != null) {
-      var res = await data.loadPage!(widget.keyword, 1, options);
-      if (!res.error) {
-        setState(() {
-          animes = res.data;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          error = res.errorMessage ?? "Unknown error".tl;
-          isLoading = false;
-        });
+
+    void notify(bool hasData) {
+      widget.onResultLoaded?.call(hasData);
+    }
+
+    try {
+      if (data.loadPage != null) {
+        var res = await data.loadPage!(widget.keyword, 1, options);
+        if (!res.error) {
+          if (!mounted) return;
+          setState(() {
+            animes = res.data;
+            isLoading = false;
+          });
+          notify(animes != null && animes!.isNotEmpty);
+          return;
+        } else {
+          if (!mounted) return;
+          setState(() {
+            error = res.errorMessage ?? "Unknown error".tl;
+            isLoading = false;
+          });
+          notify(false);
+          return;
+        }
+      } else if (data.loadNext != null) {
+        var res = await data.loadNext!(widget.keyword, null, options);
+        if (!res.error) {
+          if (!mounted) return;
+          setState(() {
+            animes = res.data;
+            isLoading = false;
+          });
+          notify(animes != null && animes!.isNotEmpty);
+          return;
+        } else {
+          if (!mounted) return;
+          setState(() {
+            error = res.errorMessage ?? "Unknown error".tl;
+            isLoading = false;
+          });
+          notify(false);
+          return;
+        }
       }
-    } else if (data.loadNext != null) {
-      var res = await data.loadNext!(widget.keyword, null, options);
-      if (!res.error) {
-        setState(() {
-          animes = res.data;
-          isLoading = false;
-        });
-      } else {
-        setState(() {
-          error = res.errorMessage ?? "Unknown error".tl;
-          isLoading = false;
-        });
-      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        error = e.toString();
+        isLoading = false;
+      });
+      notify(false);
     }
   }
 
@@ -150,6 +242,17 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
   void initState() {
     super.initState();
     load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SliverSearchResult oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.keyword != widget.keyword) {
+      isLoading = true;
+      animes = null;
+      error = null;
+      load();
+    }
   }
 
   Widget buildPlaceHolder() {
@@ -198,9 +301,9 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
               width: double.infinity,
               child: Shimmer(
                 child: LayoutBuilder(
-                  builder: (context, constrains) {
+                  builder: (context, constraints) {
                     var itemWidth = _animeWidth + _kLeftPadding;
-                    var items = (constrains.maxWidth / itemWidth).ceil();
+                    var items = (constraints.maxWidth / itemWidth).ceil();
                     return Stack(
                       children: [
                         Positioned(

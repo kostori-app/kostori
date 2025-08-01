@@ -51,13 +51,11 @@ class AnimeSourceParseException implements Exception {
 }
 
 class AnimeSourceParser {
-  /// anime source key
   String? _key;
 
   String? _name;
 
   Future<AnimeSource> createAndParse(String js, String fileName) async {
-    // 检查 fileName 是否以 ".js" 结尾，如果不是，则自动在末尾添加 ".js" 后缀。
     if (!fileName.endsWith("js")) {
       fileName = "$fileName.js";
     }
@@ -65,8 +63,13 @@ class AnimeSourceParser {
     if (file.existsSync()) {
       int i = 0;
       while (file.existsSync()) {
-        file = File(FilePath.join(App.dataPath, "anime_source",
-            "${fileName.split('.').first}($i).js"));
+        file = File(
+          FilePath.join(
+            App.dataPath,
+            "anime_source",
+            "${fileName.split('.').first}($i).js",
+          ),
+        );
         i++;
       }
     }
@@ -81,8 +84,9 @@ class AnimeSourceParser {
 
   Future<AnimeSource> parse(String js, String filePath) async {
     js = js.replaceAll("\r\n", "\n");
-    var line1 =
-        js.split('\n').firstWhereOrNull((e) => e.trim().startsWith("class "));
+    var line1 = js
+        .split('\n')
+        .firstWhereOrNull((e) => e.trim().startsWith("class "));
     if (line1 == null ||
         !line1.startsWith("class ") ||
         !line1.contains("extends AnimeSource")) {
@@ -96,19 +100,23 @@ class AnimeSourceParser {
         this['temp'] = new $className()
       }).call()
     """, className);
-    _name = JsEngine().runCode("this['temp'].name") ??
+    _name =
+        JsEngine().runCode("this['temp'].name") ??
         (throw AnimeSourceParseException('name is required'));
-    var key = JsEngine().runCode("this['temp'].key") ??
+    var key =
+        JsEngine().runCode("this['temp'].key") ??
         (throw AnimeSourceParseException('key is required'));
-    var version = JsEngine().runCode("this['temp'].version") ??
+    var version =
+        JsEngine().runCode("this['temp'].version") ??
         (throw AnimeSourceParseException('version is required'));
     var minAppVersion = JsEngine().runCode("this['temp'].minAppVersion");
     var url = JsEngine().runCode("this['temp'].url");
     if (minAppVersion != null) {
       if (compareSemVer(minAppVersion, App.version.split('-').first)) {
         throw AnimeSourceParseException(
-          "minAppVersion @version is required"
-              .tlParams({"version": minAppVersion}),
+          "minAppVersion @version is required".tlParams({
+            "version": minAppVersion,
+          }),
         );
       }
     }
@@ -175,8 +183,10 @@ class AnimeSourceParser {
   }
 
   bool _checkExists(String index) {
-    return JsEngine().runCode("AnimeSource.sources.$_key.$index !== null "
-        "&& AnimeSource.sources.$_key.$index !== undefined");
+    return JsEngine().runCode(
+      "AnimeSource.sources.$_key.$index !== null "
+      "&& AnimeSource.sources.$_key.$index !== undefined",
+    );
   }
 
   dynamic _getValue(String index) {
@@ -277,16 +287,24 @@ class AnimeSourceParser {
       if (type == "singlePageWithMultiPart") {
         loadMultiPart = () async {
           try {
-            var res = await JsEngine()
-                .runCode("AnimeSource.sources.$_key.explore[$i].load()");
-            return Res(List.from(res.keys
-                .map((e) => ExplorePagePart(
-                    e,
-                    (res[e] as List)
-                        .map<Anime>((e) => Anime.fromJson(e, _key!))
-                        .toList(),
-                    null))
-                .toList()));
+            var res = await JsEngine().runCode(
+              "AnimeSource.sources.$_key.explore[$i].load()",
+            );
+            return Res(
+              List.from(
+                res.keys
+                    .map(
+                      (e) => ExplorePagePart(
+                        e,
+                        (res[e] as List)
+                            .map<Anime>((e) => Anime.fromJson(e, _key!))
+                            .toList(),
+                        null,
+                      ),
+                    )
+                    .toList(),
+              ),
+            );
           } catch (e, s) {
             Log.error("Data Analysis", "$e\n$s");
             return Res.error(e.toString());
@@ -297,11 +315,15 @@ class AnimeSourceParser {
           loadPage = (int page) async {
             try {
               var res = await JsEngine().runCode(
-                  "AnimeSource.sources.$_key.explore[$i].load(${jsonEncode(page)})");
+                "AnimeSource.sources.$_key.explore[$i].load(${jsonEncode(page)})",
+              );
               return Res(
-                  List.generate(res["animes"].length,
-                      (index) => Anime.fromJson(res["animes"][index], _key!)),
-                  subData: res["maxPage"]);
+                List.generate(
+                  res["animes"].length,
+                  (index) => Anime.fromJson(res["animes"][index], _key!),
+                ),
+                subData: res["maxPage"],
+              );
             } catch (e, s) {
               Log.error("Network", "$e\n$s");
               return Res.error(e.toString());
@@ -311,10 +333,13 @@ class AnimeSourceParser {
           loadNext = (next) async {
             try {
               var res = await JsEngine().runCode(
-                  "AnimeSource.sources.$_key.explore[$i].loadNext(${jsonEncode(next)})");
+                "AnimeSource.sources.$_key.explore[$i].loadNext(${jsonEncode(next)})",
+              );
               return Res(
-                List.generate(res["animes"].length,
-                    (index) => Anime.fromJson(res["animes"][index], _key!)),
+                List.generate(
+                  res["animes"].length,
+                  (index) => Anime.fromJson(res["animes"][index], _key!),
+                ),
                 subData: res["next"],
               );
             } catch (e, s) {
@@ -326,8 +351,9 @@ class AnimeSourceParser {
       } else if (type == "multiPartPage") {
         loadMultiPart = () async {
           try {
-            var res = await JsEngine()
-                .runCode("AnimeSource.sources.$_key.explore[$i].load()");
+            var res = await JsEngine().runCode(
+              "AnimeSource.sources.$_key.explore[$i].load()",
+            );
             return Res(
               List.from(
                 (res as List).map((e) {
@@ -350,19 +376,22 @@ class AnimeSourceParser {
         loadMixed = (index) async {
           try {
             var res = await JsEngine().runCode(
-                "AnimeSource.sources.$_key.explore[$i].load(${jsonEncode(index)})");
+              "AnimeSource.sources.$_key.explore[$i].load(${jsonEncode(index)})",
+            );
             var list = <Object>[];
             for (var data in (res['data'] as List)) {
               if (data is List) {
                 list.add(data.map((e) => Anime.fromJson(e, _key!)).toList());
               } else if (data is Map) {
-                list.add(ExplorePagePart(
-                  data['title'],
-                  (data['animes'] as List).map((e) {
-                    return Anime.fromJson(e, _key!);
-                  }).toList(),
-                  data['viewMore'],
-                ));
+                list.add(
+                  ExplorePagePart(
+                    data['title'],
+                    (data['animes'] as List).map((e) {
+                      return Anime.fromJson(e, _key!);
+                    }).toList(),
+                    data['viewMore'],
+                  ),
+                );
               }
             }
             return Res(list, subData: res['maxPage']);
@@ -372,21 +401,25 @@ class AnimeSourceParser {
           }
         };
       }
-      pages.add(ExplorePageData(
-        title,
-        switch (type) {
-          "singlePageWithMultiPart" => ExplorePageType.singlePageWithMultiPart,
-          "multiPartPage" => ExplorePageType.singlePageWithMultiPart,
-          "multiPageAnimeList" => ExplorePageType.multiPageAnimeList,
-          "mixed" => ExplorePageType.mixed,
-          _ =>
-            throw AnimeSourceParseException("Unknown explore page type $type")
-        },
-        loadPage,
-        loadNext,
-        loadMultiPart,
-        loadMixed,
-      ));
+      pages.add(
+        ExplorePageData(
+          title,
+          switch (type) {
+            "singlePageWithMultiPart" =>
+              ExplorePageType.singlePageWithMultiPart,
+            "multiPartPage" => ExplorePageType.singlePageWithMultiPart,
+            "multiPageAnimeList" => ExplorePageType.multiPageAnimeList,
+            "mixed" => ExplorePageType.mixed,
+            _ => throw AnimeSourceParseException(
+              "Unknown explore page type $type",
+            ),
+          },
+          loadPage,
+          loadNext,
+          loadMultiPart,
+          loadMixed,
+        ),
+      );
     }
     return pages;
   }
@@ -414,19 +447,22 @@ class AnimeSourceParser {
         categoryParams = List.filled(tags.length, groupParam);
       }
       if (type == "fixed") {
-        categoryParts
-            .add(FixedCategoryPart(name, tags, itemType, categoryParams));
+        categoryParts.add(
+          FixedCategoryPart(name, tags, itemType, categoryParams),
+        );
       } else if (type == "random") {
         categoryParts.add(
-            RandomCategoryPart(name, tags, c["randomNumber"] ?? 1, itemType));
+          RandomCategoryPart(name, tags, c["randomNumber"] ?? 1, itemType),
+        );
       }
     }
 
     return CategoryData(
-        title: title,
-        categories: categoryParts,
-        enableRankingPage: enableRankingPage ?? false,
-        key: title);
+      title: title,
+      categories: categoryParts,
+      enableRankingPage: enableRankingPage ?? false,
+      key: title,
+    );
   }
 
   CategoryAnimesData? _loadCategoryAnimesData() {
@@ -443,10 +479,13 @@ class AnimeSourceParser {
         var value = split.join("-");
         map[key] = value;
       }
-      options.add(CategoryAnimesOptions(
+      options.add(
+        CategoryAnimesOptions(
           map,
           List.from(element["notShowWhen"] ?? []),
-          element["showWhen"] == null ? null : List.from(element["showWhen"])));
+          element["showWhen"] == null ? null : List.from(element["showWhen"]),
+        ),
+      );
     }
     RankingData? rankingData;
     if (_checkExists("categoryAnimes.ranking")) {
@@ -462,7 +501,7 @@ class AnimeSourceParser {
       }
       Future<Res<List<Anime>>> Function(String option, int page)? load;
       Future<Res<List<Anime>>> Function(String option, String? next)?
-          loadWithNext;
+      loadWithNext;
       if (_checkExists("categoryAnimes.ranking.load")) {
         load = (option, page) async {
           try {
@@ -471,9 +510,12 @@ class AnimeSourceParser {
               ${jsonEncode(option)}, ${jsonEncode(page)})
           """);
             return Res(
-                List.generate(res["animes"].length,
-                    (index) => Anime.fromJson(res["animes"][index], _key!)),
-                subData: res["maxPage"]);
+              List.generate(
+                res["animes"].length,
+                (index) => Anime.fromJson(res["animes"][index], _key!),
+              ),
+              subData: res["maxPage"],
+            );
           } catch (e, s) {
             Log.error("Network", "$e\n$s");
             return Res.error(e.toString());
@@ -487,8 +529,10 @@ class AnimeSourceParser {
               ${jsonEncode(option)}, ${jsonEncode(next)})
           """);
             return Res(
-              List.generate(res["animes"].length,
-                  (index) => Anime.fromJson(res["animes"][index], _key!)),
+              List.generate(
+                res["animes"].length,
+                (index) => Anime.fromJson(res["animes"][index], _key!),
+              ),
               subData: res["next"],
             );
           } catch (e, s) {
@@ -510,9 +554,12 @@ class AnimeSourceParser {
           )
         """);
         return Res(
-            List.generate(res["animes"].length,
-                (index) => Anime.fromJson(res["animes"][index], _key!)),
-            subData: res["maxPage"]);
+          List.generate(
+            res["animes"].length,
+            (index) => Anime.fromJson(res["animes"][index], _key!),
+          ),
+          subData: res["maxPage"],
+        );
       } catch (e, s) {
         Log.error("Network", "$e\n$s");
         return Res.error(e.toString());
@@ -534,12 +581,14 @@ class AnimeSourceParser {
         var value = split.join("-");
         map[key] = value;
       }
-      options.add(SearchOptions(
-        map,
-        element["label"],
-        element['type'] ?? 'select',
-        element['default'] == null ? null : jsonEncode(element['default']),
-      ));
+      options.add(
+        SearchOptions(
+          map,
+          element["label"],
+          element['type'] ?? 'select',
+          element['default'] == null ? null : jsonEncode(element['default']),
+        ),
+      );
     }
 
     SearchFunction? loadPage;
@@ -554,9 +603,12 @@ class AnimeSourceParser {
             ${jsonEncode(keyword)}, ${jsonEncode(searchOption)}, ${jsonEncode(page)})
         """);
           return Res(
-              List.generate(res["animes"].length,
-                  (index) => Anime.fromJson(res["animes"][index], _key!)),
-              subData: res["maxPage"]);
+            List.generate(
+              res["animes"].length,
+              (index) => Anime.fromJson(res["animes"][index], _key!),
+            ),
+            subData: res["maxPage"],
+          );
         } catch (e, s) {
           Log.error("Network", "$e\n$s");
           return Res.error(e.toString());
@@ -570,8 +622,10 @@ class AnimeSourceParser {
             ${jsonEncode(keyword)}, ${jsonEncode(searchOption)}, ${jsonEncode(next)})
         """);
           return Res(
-            List.generate(res["animes"].length,
-                (index) => Anime.fromJson(res["animes"][index], _key!)),
+            List.generate(
+              res["animes"].length,
+              (index) => Anime.fromJson(res["animes"][index], _key!),
+            ),
             subData: res["next"],
           );
         } catch (e, s) {
@@ -672,9 +726,12 @@ class AnimeSourceParser {
               ${jsonEncode(page)}, ${jsonEncode(folder)})
           """);
             return Res(
-                List.generate(res["animes"].length,
-                    (index) => Anime.fromJson(res["animes"][index], _key!)),
-                subData: res["maxPage"]);
+              List.generate(
+                res["animes"].length,
+                (index) => Anime.fromJson(res["animes"][index], _key!),
+              ),
+              subData: res["maxPage"],
+            );
           } catch (e, s) {
             Log.error("Network", "$e\n$s");
             return Res.error(e.toString());
@@ -694,8 +751,10 @@ class AnimeSourceParser {
               ${jsonEncode(next)}, ${jsonEncode(folder)})
           """);
             return Res(
-              List.generate(res["animes"].length,
-                  (index) => Anime.fromJson(res["animes"][index], _key!)),
+              List.generate(
+                res["animes"].length,
+                (index) => Anime.fromJson(res["animes"][index], _key!),
+              ),
               subData: res["next"],
             );
           } catch (e, s) {
@@ -785,8 +844,9 @@ class AnimeSourceParser {
             ${jsonEncode(id)}, ${jsonEncode(subId)}, ${jsonEncode(page)}, ${jsonEncode(replyTo)})
         """);
         return Res(
-            (res["comments"] as List).map((e) => Comment.fromJson(e)).toList(),
-            subData: res["maxPage"]);
+          (res["comments"] as List).map((e) => Comment.fromJson(e)).toList(),
+          subData: res["maxPage"],
+        );
       } catch (e, s) {
         Log.error("Network", "$e\n$s");
         return Res.error(e.toString());

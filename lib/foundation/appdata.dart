@@ -140,7 +140,7 @@ class Settings with ChangeNotifier {
   final _data = <String, dynamic>{
     'animeDisplayMode': 'brief', // detailed, brief
     'animeTileScale': 1.00, // 0.75-1.25
-    'color': 'system', // red, pink, purple, green, orange, blue
+    'color': 'blue', // red, pink, purple, green, orange, blue
     'theme_mode': 'system', // light, dark, system
     'newFavoriteAddTo': 'end', // start, end
     'moveFavoriteAfterRead': 'none', // none, end, start
@@ -179,6 +179,9 @@ class Settings with ChangeNotifier {
     'initialPage': '0',
     'debugInfo': false,
     'BangumiUserName': '',
+    'favoritePageId': 0,
+    'AMOLED': false,
+    'dynamicColor': false,
   };
 
   operator [](String key) {

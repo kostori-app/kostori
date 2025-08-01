@@ -20,7 +20,9 @@ import 'package:screen_brightness_platform_interface/screen_brightness_platform_
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../../foundation/appdata.dart';
 import '../../utils/io.dart';
+import '../image_manipulation_page/image_manipulation_page.dart';
 
 part 'player_controller.g.dart';
 
@@ -46,6 +48,8 @@ abstract class _PlayerController with Store {
       androidAttachSurfaceAfterVideoParameters: false,
     ),
   );
+
+  bool audioOutType = true;
 
   @observable
   bool isFullScreen = false;
@@ -158,13 +162,11 @@ abstract class _PlayerController with Store {
   }
 
   void playNextEpisode(BuildContext context) {
-    // 播放下一集的逻辑
-    WatcherState.currentState!.playNextEpisode(); // 这里传递当前集数
+    WatcherState.currentState!.playNextEpisode();
   }
 
   void playEpisode(int index, int road) {
-    // 播放指定集数的逻辑
-    WatcherState.currentState!.loadInfo(index, road); // 加载信息
+    WatcherState.currentState!.loadInfo(index, road);
   }
 
   // 更新当前集数的方法
@@ -179,9 +181,22 @@ abstract class _PlayerController with Store {
         .elementAt(newEpisode - 1);
   }
 
+  Future<void> changeAudioOutType() async {
+    audioOutType = !audioOutType;
+    var pp = player.platform as NativePlayer;
+    if (audioOutType) {
+      await pp.setProperty("ao", "opensles");
+    } else {
+      await pp.setProperty("ao", "audiotrack");
+    }
+    appdata.settings['audioOutType'] = audioOutType;
+    appdata.writeImplicitData();
+  }
+
   Future<void> changePlayerSettings() async {
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
+    audioOutType = appdata.settings['audioOutType'] ?? true;
     var pp = player.platform as NativePlayer;
     // media-kit 默认启用硬盘作为双重缓存，这可以维持大缓存的前提下减轻内存压力
     // media-kit 内部硬盘缓存目录按照 Linux 配置，这导致该功能在其他平台上被损坏
@@ -190,7 +205,11 @@ abstract class _PlayerController with Store {
     await pp.setProperty("af", "scaletempo2=max-speed=8");
     if (App.isAndroid) {
       await pp.setProperty("volume-max", "100");
-      await pp.setProperty("ao", "opensles");
+      if (audioOutType) {
+        await pp.setProperty("ao", "opensles");
+      } else {
+        await pp.setProperty("ao", "audiotrack");
+      }
     }
 
     await player.setAudioTrack(AudioTrack.auto());
@@ -253,7 +272,7 @@ abstract class _PlayerController with Store {
   void dispose() {
     _overlayEntry?.remove();
     _overlayEntry = null;
-    player.dispose(); // 释放播放器资源
+    player.dispose();
   }
 
   void fullscreen() async {
@@ -290,7 +309,7 @@ abstract class _PlayerController with Store {
   Future<void> enterFullScreen(BuildContext context) async {
     if (isFullScreen) {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      Navigator.of(context).pop(); // 退出全屏，返回原页面
+      Navigator.of(context).pop();
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.portraitUp,
       ]);
@@ -301,10 +320,9 @@ abstract class _PlayerController with Store {
         SystemUiMode.immersiveSticky,
         overlays: SystemUiOverlay.values,
       );
-      // 进入全屏，使用 App.globalTo 跳转到全屏页面
       App.rootContext.to(
         () => FullscreenVideoPage(playerController: this as PlayerController),
-      ); // 传递当前的 PlayerController
+      );
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.landscapeLeft,
         DeviceOrientation.landscapeRight,
@@ -317,7 +335,7 @@ abstract class _PlayerController with Store {
   void toggleFullscreen(BuildContext context) {
     windowManager.setFullScreen(!isFullScreen);
     if (isFullScreen) {
-      App.rootContext.pop(); // 退出全屏，返回原页面
+      App.rootContext.pop();
     } else {
       Future.microtask(() {
         App.rootContext.to(
@@ -342,7 +360,7 @@ abstract class _PlayerController with Store {
     } catch (_) {}
   }
 
-  Future playOrPause() async {
+  Future<void> playOrPause() async {
     if (player.state.playing) {
       await pause();
     } else {
@@ -350,16 +368,16 @@ abstract class _PlayerController with Store {
     }
   }
 
-  Future seek(Duration duration) async {
+  Future<void> seek(Duration duration) async {
     await player.seek(duration);
   }
 
-  Future pause() async {
+  Future<void> pause() async {
     await player.pause();
     playing = false;
   }
 
-  Future play() async {
+  Future<void> play() async {
     await player.play();
     playing = true;
   }
@@ -379,23 +397,27 @@ abstract class _PlayerController with Store {
           elevation: 8,
           color: Colors.black.toOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            onTap: () async {
-              pause;
-              Log.addLog(LogLevel.info, 'image图片路径', image);
-              final file = File(image);
-              final data = await file.readAsBytes();
-              Share.shareFile(data: data, filename: name, mime: 'image/png');
-            },
-            child: Container(
-              width: 160,
-              height: 90,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
+          child: Container(
+            width: 160,
+            height: 110,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      await pause();
+                      Log.addLog(LogLevel.info, 'image图片路径', image);
+                      final file = File(image);
+                      final data = await file.readAsBytes();
+                      Share.shareFile(
+                        data: data,
+                        filename: name,
+                        mime: 'image/png',
+                      );
+                    },
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -408,9 +430,15 @@ abstract class _PlayerController with Store {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                ],
-              ),
+                ),
+                InkWell(
+                  onTap: () async {
+                    await pause();
+                    context.to(() => ImageManipulationPage());
+                  },
+                  child: Center(child: SizedBox(height: 20, child: Text('编辑'))),
+                ),
+              ],
             ),
           ),
         ),
@@ -420,13 +448,12 @@ abstract class _PlayerController with Store {
     _overlayEntry = entry;
     Overlay.of(context).insert(entry);
 
-    // 启动新定时器，并保存引用
     _overlayTimer = Timer(const Duration(seconds: 3), () {
       if (_overlayEntry?.mounted ?? false) {
         _overlayEntry?.remove();
         _overlayEntry = null;
       }
-      _overlayTimer = null; // 清除定时器引用
+      _overlayTimer = null;
     });
   }
 }

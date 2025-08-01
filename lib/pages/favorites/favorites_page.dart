@@ -11,16 +11,17 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../components/bangumi_widget.dart';
 import '../../foundation/bangumi/bangumi_item.dart';
+import '../../foundation/history.dart';
 import '../../network/bangumi.dart';
 import '../bangumi/bangumi_search_page.dart';
 import 'favorites_controller.dart';
@@ -28,6 +29,8 @@ import 'favorites_controller.dart';
 part 'bangumi_favorites_page.dart';
 
 part 'favorite_actions.dart';
+
+part 'favorite_bangumi_page.dart';
 
 part 'favorite_dialog.dart';
 
@@ -218,6 +221,8 @@ class _FavoritesPageState extends State<FavoritesPage> {
       );
     } else if (pageId == 1) {
       return BangumiFavoritesPage(favoritesController: favoritesController);
+    } else if (pageId == 2) {
+      return FavoriteBangumiPage();
     } else {
       return Container();
     }

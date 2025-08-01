@@ -23,7 +23,6 @@ class ImagesNotifier extends StateNotifier<List<File>> {
   void setImages(List<File> imgs) => state = imgs;
 
   Future<void> loadImages() async {
-    // 调用你那个加载图片文件夹的方法
     final files = await loadKostoriImages();
     state = files;
   }
@@ -48,8 +47,9 @@ class ImagesNotifier extends StateNotifier<List<File>> {
       return [];
     }
 
-    final files =
-        directory.listSync(recursive: false).whereType<File>().where((file) {
+    final files = directory.listSync(recursive: false).whereType<File>().where((
+      file,
+    ) {
       final ext = file.path.toLowerCase();
       return ext.endsWith('.jpg') ||
           ext.endsWith('.jpeg') ||
@@ -65,14 +65,14 @@ class ImagesNotifier extends StateNotifier<List<File>> {
 
   void deleteIndexes(List<int> indexes) {
     final newList = [...state];
-    // 从大到小删除，防止索引错乱
+
     indexes.sort((a, b) => b.compareTo(a));
     for (var i in indexes) {
       try {
         newList[i].deleteSync();
         newList.removeAt(i);
       } catch (e) {
-        // 处理异常或打印日志
+        Log.addLog(LogLevel.error, 'deleteIndexes', e.toString());
       }
     }
     state = newList;
@@ -84,9 +84,9 @@ final selectedIndexesProvider = StateProvider<Set<int>>((ref) => {});
 final lastSelectedIndexProvider = StateProvider<int?>((ref) => null);
 
 class ImageManipulationPage extends ConsumerStatefulWidget {
-  final List<File> initialImages;
+  final List<File>? initialImages;
 
-  const ImageManipulationPage({required this.initialImages, super.key});
+  const ImageManipulationPage({this.initialImages, super.key});
 
   @override
   ConsumerState<ImageManipulationPage> createState() =>
@@ -97,9 +97,13 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
   @override
   void initState() {
     super.initState();
-    // 初始化图片
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(imagesProvider.notifier).setImages(widget.initialImages);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final notifier = ref.read(imagesProvider.notifier);
+      if (widget.initialImages != null) {
+        notifier.setImages(widget.initialImages!);
+      } else {
+        await notifier.loadImages();
+      }
     });
   }
 
@@ -224,50 +228,47 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
           crossAxisSpacing: 8,
           childAspectRatio: 1,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final file = images[index];
-            final isSelected = selectedIndexes.contains(index);
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final file = images[index];
+          final isSelected = selectedIndexes.contains(index);
 
-            return Padding(
-              padding: const EdgeInsets.all(4),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                clipBehavior: Clip.antiAlias,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Theme.of(context).colorScheme.outline.toOpacity(0.72)
-                        : null,
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.outline.toOpacity(0.72)
+                      : null,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 4,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      clipBehavior: Clip.antiAlias,
-                      child: InkWell(
-                        onTap: () => _onTapImage(index),
-                        onLongPress: () => _onLongPressImage(index),
-                        child: Hero(
-                          tag: App.isAndroid
-                              ? file.path.split('/').last
-                              : file.path.split('\\').last,
-                          child: Image.file(
-                            file,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => _onTapImage(index),
+                      onLongPress: () => _onLongPressImage(index),
+                      child: Hero(
+                        tag: App.isAndroid
+                            ? file.path.split('/').last
+                            : file.path.split('\\').last,
+                        child: Image.file(file, fit: BoxFit.cover),
                       ),
                     ),
                   ),
                 ),
               ),
-            );
-          },
-          childCount: images.length,
-        ),
+            ),
+          );
+        }, childCount: images.length),
       ),
     );
   }
@@ -278,112 +279,126 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
     final selectedIndexes = ref.watch(selectedIndexesProvider);
     final images = ref.watch(imagesProvider);
 
-    var widget = SmoothCustomScrollView(slivers: [
-      SliverAppbar(
-        title: multiSelect
-            ? Text('${selectedIndexes.length} 张已选')
-            : Text('图片操作(${images.length})'),
-        actions: [
-          if (multiSelect) ...[
-            TextButton.icon(
-              onPressed: () {
-                final allIndexes =
-                    Set<int>.from(List.generate(images.length, (i) => i));
-                ref.read(selectedIndexesProvider.notifier).state = allIndexes;
-              },
-              icon: const Icon(Icons.select_all),
-              label: Text('Select All'.tl),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                final images = ref.read(imagesProvider);
-                final current = ref.read(selectedIndexesProvider);
-                final toggled = <int>{};
+    var widget = SmoothCustomScrollView(
+      slivers: [
+        SliverAppbar(
+          title: multiSelect
+              ? Text('${selectedIndexes.length} 张已选')
+              : Text('图片操作(${images.length})'),
+          actions: [
+            if (multiSelect) ...[
+              TextButton.icon(
+                onPressed: () {
+                  final allIndexes = Set<int>.from(
+                    List.generate(images.length, (i) => i),
+                  );
+                  ref.read(selectedIndexesProvider.notifier).state = allIndexes;
+                },
+                icon: const Icon(Icons.select_all),
+                label: Text('Select All'.tl),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  final images = ref.read(imagesProvider);
+                  final current = ref.read(selectedIndexesProvider);
+                  final toggled = <int>{};
 
-                for (int i = 0; i < images.length; i++) {
-                  if (!current.contains(i)) {
-                    toggled.add(i);
+                  for (int i = 0; i < images.length; i++) {
+                    if (!current.contains(i)) {
+                      toggled.add(i);
+                    }
                   }
-                }
 
-                if (toggled.isEmpty) {
+                  if (toggled.isEmpty) {
+                    ref.read(multiSelectModeProvider.notifier).state = false;
+                  }
+
+                  ref.read(selectedIndexesProvider.notifier).state = toggled;
+                },
+                icon: const Icon(Icons.flip),
+                label: Text('Invert Selection'.tl),
+              ),
+              TextButton.icon(
+                onPressed: () {
                   ref.read(multiSelectModeProvider.notifier).state = false;
-                }
-
-                ref.read(selectedIndexesProvider.notifier).state = toggled;
-              },
-              icon: const Icon(Icons.flip),
-              label: Text('Invert Selection'.tl),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                ref.read(multiSelectModeProvider.notifier).state = false;
-                ref.read(selectedIndexesProvider.notifier).state = {};
-              },
-              icon: const Icon(Icons.deselect),
-              label: Text('Deselect'.tl),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                showConfirmDialog(
-                  context: App.rootContext,
-                  title: "Delete".tl,
-                  content: '删除${selectedIndexes.length}张图片',
-                  btnColor: context.colorScheme.error,
-                  onConfirm: () {
-                    _deleteSelected();
-                  },
-                );
-              },
-              icon: const Icon(Icons.delete, color: Colors.red),
-              label: Text('Delete'.tl, style: TextStyle(color: Colors.red)),
-            ),
+                  ref.read(selectedIndexesProvider.notifier).state = {};
+                },
+                icon: const Icon(Icons.deselect),
+                label: Text('Deselect'.tl),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  showConfirmDialog(
+                    context: App.rootContext,
+                    title: "Delete".tl,
+                    content: '删除${selectedIndexes.length}张图片',
+                    btnColor: context.colorScheme.error,
+                    onConfirm: () {
+                      _deleteSelected();
+                    },
+                  );
+                },
+                icon: const Icon(Icons.delete, color: Colors.red),
+                label: Text('Delete'.tl, style: TextStyle(color: Colors.red)),
+              ),
+            ],
           ],
-        ],
-      ),
-      SliverToBoxAdapter(
-        child: _buildCard(
-          icon: Icons.photo,
-          title: '拼长图',
-          onTap: () {
-            context.to(() => SelectImagesPage(
-                maxSelection: 9,
-                onSelected: (selectedImages) {
-                  context.to(() => RenderLongPicPage(images: selectedImages));
-                }));
-          },
         ),
-      ),
-      SliverToBoxAdapter(
-        child: _buildCard(
-          icon: Icons.image,
-          title: '拼横图',
-          onTap: () {
-            context.to(() => SelectImagesPage(
-                maxSelection: 9,
-                onSelected: (selectedImages) {
-                  context.to(
-                      () => RenderHorizontalPicPage(images: selectedImages));
-                }));
-          },
+        SliverToBoxAdapter(
+          child: _buildCard(
+            icon: Icons.photo,
+            title: '拼长图',
+            onTap: () {
+              context.to(
+                () => SelectImagesPage(
+                  maxSelection: 9,
+                  onSelected: (selectedImages) {
+                    context.to(() => RenderLongPicPage(images: selectedImages));
+                  },
+                ),
+              );
+            },
+          ),
         ),
-      ),
-      SliverToBoxAdapter(
-        child: _buildCard(
-          icon: Icons.extension,
-          title: '拼台词',
-          onTap: () {
-            context.to(() => SelectImagesPage(
-                maxSelection: 9,
-                onSelected: (selectedImages) {
-                  context.to(
-                      () => RenderDialogueComposePage(images: selectedImages));
-                }));
-          },
+        SliverToBoxAdapter(
+          child: _buildCard(
+            icon: Icons.image,
+            title: '拼横图',
+            onTap: () {
+              context.to(
+                () => SelectImagesPage(
+                  maxSelection: 9,
+                  onSelected: (selectedImages) {
+                    context.to(
+                      () => RenderHorizontalPicPage(images: selectedImages),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
         ),
-      ),
-      _buildGrid()
-    ]);
+        SliverToBoxAdapter(
+          child: _buildCard(
+            icon: Icons.extension,
+            title: '拼台词',
+            onTap: () {
+              context.to(
+                () => SelectImagesPage(
+                  maxSelection: 9,
+                  onSelected: (selectedImages) {
+                    context.to(
+                      () => RenderDialogueComposePage(images: selectedImages),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+        _buildGrid(),
+      ],
+    );
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
 }
@@ -441,11 +456,11 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
     final filtered = widget.filter != null
         ? files.where(widget.filter!).toList()
         : files
-            .where(
-              (file) =>
-                  file.path.endsWith('.png') || file.path.endsWith('.jpg'),
-            )
-            .toList();
+              .where(
+                (file) =>
+                    file.path.endsWith('.png') || file.path.endsWith('.jpg'),
+              )
+              .toList();
 
     filtered.sort(
       (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
@@ -505,19 +520,20 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
             onTap: () => _toggleSelection(image),
             child: Stack(
               children: [
-                Positioned.fill(
-                  child: Image.file(image, fit: BoxFit.cover),
-                ),
+                Positioned.fill(child: Image.file(image, fit: BoxFit.cover)),
                 Positioned(
                   top: 8,
                   right: 8,
                   child: CircleAvatar(
-                    backgroundColor:
-                        isSelected ? Colors.blue : Colors.transparent,
+                    backgroundColor: isSelected
+                        ? Colors.blue
+                        : Colors.transparent,
                     radius: 14,
                     child: isSelected
-                        ? Text('${selectedIndex + 1}',
-                            style: const TextStyle(color: Colors.white))
+                        ? Text(
+                            '${selectedIndex + 1}',
+                            style: const TextStyle(color: Colors.white),
+                          )
                         : const CircleAvatar(
                             radius: 12,
                             backgroundColor: Colors.white,

@@ -1,8 +1,15 @@
 import 'dart:convert';
+import 'dart:isolate';
+import 'dart:ui';
+
+import 'package:crypto/crypto.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -19,24 +26,28 @@ import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:path/path.dart' as path;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:yaml/yaml.dart';
 
+import '../../foundation/consts.dart';
+import '../../utils/utils.dart';
 import 'anime_source_settings.dart';
+
+part 'about.dart';
+
+part 'app.dart';
+
+part 'appearance.dart';
+
+part 'explore_settings.dart';
+
+part 'local_favorites.dart';
 
 part 'network.dart';
 
 part 'setting_components.dart';
-
-part 'explore_settings.dart';
-
-part 'app.dart';
-
-part 'about.dart';
-
-part 'appearance.dart';
-
-part 'local_favorites.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});
@@ -61,7 +72,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     "Local Favorites",
     "APP",
     "Network",
-    "About"
+    "About",
   ];
 
   final icons = <IconData>[
@@ -72,7 +83,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Icons.collections_bookmark_rounded,
     Icons.apps,
     Icons.public,
-    Icons.info
+    Icons.info,
   ];
 
   double offset = 0;
@@ -153,20 +164,14 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     } else {
       canPop.value = true;
     }
-    return Material(
-      child: buildBody(),
-    );
+    return Material(child: buildBody());
   }
 
   Widget buildBody() {
     if (enableTwoViews) {
       return Row(
         children: [
-          SizedBox(
-            width: 280,
-            height: double.infinity,
-            child: buildLeft(),
-          ),
+          SizedBox(width: 280, height: double.infinity, child: buildLeft()),
           Container(
             height: double.infinity,
             decoration: BoxDecoration(
@@ -210,7 +215,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
               },
               child: buildRight(),
             ),
-          )
+          ),
         ],
       );
     } else {
@@ -232,7 +237,9 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
                     switchOutCurve: Curves.fastOutSlowIn,
                     transitionBuilder: (child, animation) {
                       var tween = Tween<Offset>(
-                          begin: const Offset(1, 0), end: const Offset(0, 0));
+                        begin: const Offset(1, 0),
+                        end: const Offset(0, 0),
+                      );
 
                       return SlideTransition(
                         position: tween.animate(animation),
@@ -245,7 +252,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
                     ),
                   ),
                 ),
-              )
+              ),
             ],
           );
         },
@@ -263,37 +270,26 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     return Material(
       child: Column(
         children: [
-          SizedBox(
-            height: MediaQuery.of(context).padding.top,
-          ),
+          SizedBox(height: MediaQuery.of(context).padding.top),
           SizedBox(
             height: 56,
-            child: Row(children: [
-              const SizedBox(
-                width: 8,
-              ),
-              Tooltip(
-                message: "Back",
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new),
-                  onPressed: context.pop,
+            child: Row(
+              children: [
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: "Back",
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new),
+                    onPressed: context.pop,
+                  ),
                 ),
-              ),
-              const SizedBox(
-                width: 24,
-              ),
-              Text(
-                "Settings".tl,
-                style: ts.s20,
-              )
-            ]),
+                const SizedBox(width: 24),
+                Text("Settings".tl, style: ts.s20),
+              ],
+            ),
           ),
-          const SizedBox(
-            height: 4,
-          ),
-          Expanded(
-            child: buildCategories(),
-          )
+          const SizedBox(height: 4),
+          Expanded(child: buildCategories()),
         ],
       ),
     );
@@ -318,16 +314,15 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
             ),
           ),
         ),
-        child: Row(children: [
-          Icon(icons[id]),
-          const SizedBox(width: 16),
-          Text(
-            name,
-            style: ts.s16,
-          ),
-          const Spacer(),
-          if (selected) const Icon(Icons.arrow_right)
-        ]),
+        child: Row(
+          children: [
+            Icon(icons[id]),
+            const SizedBox(width: 16),
+            Text(name, style: ts.s16),
+            const Spacer(),
+            if (selected) const Icon(Icons.arrow_right),
+          ],
+        ),
       );
 
       return Padding(
@@ -359,7 +354,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       4 => const AppSettings(),
       5 => const NetworkSettings(),
       6 => const AboutSettings(),
-      _ => throw UnimplementedError()
+      _ => throw UnimplementedError(),
     };
   }
 

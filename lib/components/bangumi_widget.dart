@@ -17,9 +17,11 @@ import 'package:marquee/marquee.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../foundation/bangumi/episode/episode_item.dart';
 import '../foundation/image_loader/cached_image.dart';
+import '../pages/bangumi/bangumi_search_page.dart';
 import '../utils/io.dart';
 import 'misc_components.dart';
 
@@ -483,35 +485,197 @@ class BangumiWidget {
     );
   }
 
-  static Widget buildStatsRow(BuildContext context, BangumiItem bangumiItem) {
-    final collection = bangumiItem.collection!; // 提前解构，避免重复访问
-    final total = collection.values.fold<int>(
-      0,
-      (sum, val) => sum + (val),
-    ); // 计算总数
+  static Widget bangumiSkeletonSliverBrief() {
+    return SliverGrid(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+          child: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Stack(
+                    children: [
+                      Skeletonizer.zone(
+                        child: Bone(
+                          height: double.infinity,
+                          width: double.infinity,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 34,
+                        right: 4,
+                        child: Skeletonizer.zone(
+                          child: Bone.text(width: 40, fontSize: 12),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: Skeletonizer.zone(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Row(
+                                children: List.generate(
+                                  5,
+                                  (index) => Padding(
+                                    padding: const EdgeInsets.only(right: 2),
+                                    child: Bone.square(size: 12, uniRadius: 3),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Bone.text(width: 60, fontSize: 7),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Skeletonizer.zone(
+                child: Bone.text(width: double.infinity, fontSize: 12),
+              ),
+            ],
+          ),
+        );
+      }, childCount: 20),
+      gridDelegate: SliverGridDelegateWithBangumiItems(true),
+    );
+  }
 
-    // 定义统计数据项（类型 + 显示文本 + 颜色）
+  static Widget bangumiSkeletonSliverDetailed() {
+    return SliverGrid(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        return LayoutBuilder(
+          builder: (context, constrains) {
+            final height = constrains.maxHeight - 16;
+            return Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Skeletonizer.zone(
+                    child: Bone(
+                      height: height,
+                      width: height * 0.72,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Skeletonizer.zone(
+                          child: Bone.text(fontSize: 16, width: 150),
+                        ),
+                        const SizedBox(height: 4),
+                        Skeletonizer.zone(
+                          child: Bone.text(fontSize: 12, width: 100),
+                        ),
+                        const SizedBox(height: 8),
+                        Skeletonizer.zone(
+                          child: Row(
+                            children: [
+                              Bone.text(width: 30, fontSize: 12),
+                              const SizedBox(width: 4),
+                              Bone(
+                                width: 60,
+                                height: 20,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Skeletonizer.zone(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Bone.text(width: 30, fontSize: 24),
+                                const SizedBox(width: 5),
+                                Bone(
+                                  width: 60,
+                                  height: 24,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                const SizedBox(width: 4),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Bone.text(width: 80, fontSize: 10),
+                                    const SizedBox(height: 2),
+                                    Bone.text(width: 80, fontSize: 10),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      }, childCount: 20),
+      gridDelegate: SliverGridDelegateWithBangumiItems(false),
+    );
+  }
+
+  static Widget buildStatsRow(BuildContext context, BangumiItem bangumiItem) {
+    final collection = bangumiItem.collection!;
+    final total = collection.values.fold<int>(0, (sum, val) => sum + val);
+
+    String formatCount(int number) {
+      if (number >= 1000) {
+        final k = number ~/ 1000;
+        final r = (number % 1000) ~/ 100;
+        return '${k}k$r';
+      }
+      return number.toString();
+    }
+
     final stats = [
       StatItem('doing', 'doing'.tl, Theme.of(context).colorScheme.primary),
       StatItem('collect', 'collect'.tl, Theme.of(context).colorScheme.error),
       StatItem('wish', 'wish'.tl, Colors.blueAccent),
-      StatItem('on_hold', 'on hold'.tl, null), // 默认文本颜色
+      StatItem('on_hold', 'on hold'.tl, null),
       StatItem('dropped', 'dropped'.tl, Colors.grey),
     ];
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...stats.expand(
-          (stat) => [
-            Text(
-              '${collection[stat.key]} ${stat.label}',
-              style: TextStyle(fontSize: 12, color: stat.color),
+        Row(
+          children: [
+            ...stats.expand(
+              (stat) => [
+                Text(
+                  '${formatCount(collection[stat.key] ?? 0)} ${stat.label}',
+                  style: TextStyle(fontSize: 12, color: stat.color),
+                ),
+                const Text(' / '),
+              ],
             ),
-            const Text(' / '),
           ],
         ),
+        SizedBox(height: 3),
         Text(
-          '@t Total count'.tlParams({'t': total}),
+          '@t Total count'.tlParams({'t': formatCount(total)}),
           style: const TextStyle(fontSize: 12),
         ),
       ],
@@ -656,7 +820,21 @@ class BangumiWidget {
                                 onPressed: () => Navigator.pop(context),
                               ),
                               const SizedBox(width: 8),
-                              Expanded(child: _textBackground(title)),
+                              Expanded(
+                                child: ValueListenableBuilder<int>(
+                                  valueListenable: currentIndex,
+                                  builder: (context, index, _) {
+                                    final file = urls.value.isNotEmpty
+                                        ? urls.value[index]
+                                        : File(url);
+                                    final filename = file.path
+                                        .split(Platform.pathSeparator)
+                                        .last;
+                                    return _textBackground(filename);
+                                  },
+                                ),
+                              ),
+
                               // const Spacer(),
                               const SizedBox(width: 8),
                               isLocal
@@ -677,19 +855,34 @@ class BangumiWidget {
 
                                         return Row(
                                           children: [
-                                            _iconBackground(
-                                              icon: Icons.share,
-                                              onPressed: () async {
-                                                final file = File(url);
-                                                Uint8List data = await file
-                                                    .readAsBytes();
-                                                Share.shareFile(
-                                                  data: data,
-                                                  filename: heroTag,
-                                                  mime: 'image/png',
+                                            ValueListenableBuilder<int>(
+                                              valueListenable: currentIndex,
+                                              builder: (context, index, _) {
+                                                final file =
+                                                    urls.value.isNotEmpty
+                                                    ? urls.value[index]
+                                                    : File(url);
+                                                final filename = file.path
+                                                    .split(
+                                                      Platform.pathSeparator,
+                                                    )
+                                                    .last;
+
+                                                return _iconBackground(
+                                                  icon: Icons.share,
+                                                  onPressed: () async {
+                                                    Uint8List data = await file
+                                                        .readAsBytes();
+                                                    Share.shareFile(
+                                                      data: data,
+                                                      filename: filename,
+                                                      mime: 'image/png',
+                                                    );
+                                                  },
                                                 );
                                               },
                                             ),
+
                                             const SizedBox(width: 8),
                                             if (localExists)
                                               _iconBackground(
@@ -738,7 +931,7 @@ class BangumiWidget {
                                                               newIndex;
                                                           urls.value = [
                                                             ...urls.value,
-                                                          ]; // 触发刷新
+                                                          ];
 
                                                           WidgetsBinding
                                                               .instance
@@ -756,7 +949,7 @@ class BangumiWidget {
                                                         } else {
                                                           Navigator.pop(
                                                             context,
-                                                          ); // 单图直接关闭
+                                                          );
                                                         }
                                                       } catch (e) {
                                                         Log.addLog(
@@ -819,7 +1012,7 @@ class BangumiWidget {
 
   static Widget _textBackground(String title) {
     const style = TextStyle(
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: FontWeight.w600,
       color: Colors.white,
     );
@@ -901,7 +1094,8 @@ class BangumiWidget {
             message: '保存成功',
             context: context,
           );
-
+          const platform = MethodChannel('kostori/media');
+          await platform.invokeMethod('scanFolder', {'path': folder.path});
           Log.addLog(LogLevel.info, '保存长图成功', file.path);
         } else {
           showCenter(
@@ -985,6 +1179,7 @@ class BangumiWidget {
     double width = 100,
     double height = 100,
     bool showPlaceholder = true,
+    bool enableDefaultSize = true,
   }) {
     if (_failedImageUrls.contains(imageUrl)) {
       return MiscComponents.placeholder(
@@ -1028,14 +1223,21 @@ class BangumiWidget {
       return const SizedBox();
     }
 
+    if (enableDefaultSize) {
+      return AnimatedImage(
+        image: image,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
+        cacheWidth: memCacheWidth,
+        cacheHeight: memCacheHeight,
+      );
+    }
     return AnimatedImage(
       image: image,
-      width: width,
-      height: height,
       fit: BoxFit.cover,
       filterQuality: FilterQuality.high,
-      cacheWidth: memCacheWidth,
-      cacheHeight: memCacheHeight,
     );
   }
 }

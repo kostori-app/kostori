@@ -148,35 +148,204 @@ Future<void> checkUpdateUi([
   bool delay = false,
 ]) async {
   var value = await checkUpdate();
-  if (value.containsKey(true)) {
-    if (delay) {
-      await Future.delayed(const Duration(seconds: 2));
+  double downloadProgress = 0.0;
+  String? taskId;
+  bool isDownloading = false;
+  bool downloadStopped = false;
+
+  if (!value.containsKey(true)) {
+    if (showMessageIfNoUpdate) {
+      App.rootContext.showMessage(message: "No new version available".tl);
     }
-    showDialog(
-      context: App.rootContext,
-      builder: (context) {
-        return ContentDialog(
-          title: "New version available".tl,
-          content: Text(
-            "Discover the new version @v".tlParams({"v": value.values}),
-          ),
-          actions: [
-            Button.text(
-              onPressed: () {
-                Navigator.pop(context);
-                launchUrlString(
-                  "https://github.com/kostori-app/kostori/releases",
-                );
-              },
-              child: Text("Update".tl),
-            ),
-          ],
-        );
-      },
-    );
-  } else if (showMessageIfNoUpdate) {
-    App.rootContext.showMessage(message: "No new version available".tl);
+    return;
   }
+
+  if (delay) {
+    await Future.delayed(const Duration(seconds: 2));
+  }
+
+  late StateSetter dialogSetState;
+
+  ReceivePort port = ReceivePort();
+  if (IsolateNameServer.lookupPortByName('downloader_send_port') != null) {
+    IsolateNameServer.removePortNameMapping('downloader_send_port');
+  }
+  IsolateNameServer.registerPortWithName(port.sendPort, 'downloader_send_port');
+
+  bool fileValid = false;
+  port.listen((dynamic data) {
+    String id = data[0];
+    int statusInt = data[1];
+    int progress = data[2];
+
+    DownloadTaskStatus status = DownloadTaskStatus.values[statusInt];
+
+    if (id == taskId) {
+      dialogSetState(() {
+        downloadProgress = progress / 100;
+        isDownloading = status == DownloadTaskStatus.running;
+        if (!isDownloading && progress != 100 && !downloadStopped) {
+          downloadStopped = true;
+          App.rootContext.showMessage(message: "下载停止".tl);
+        }
+      });
+      if (progress == 100) {
+        fileValid = true;
+      }
+    }
+  });
+
+  FlutterDownloader.registerCallback(downloadCallback);
+
+  final abi = await getAppAbi();
+  final response = await AppDio().request(
+    'https://api.github.com/repos/kostori-app/kostori/releases/latest',
+    options: Options(method: 'GET'),
+  );
+
+  final assets = (response.data['assets'] as List).cast<Map<String, dynamic>>();
+  final matchedAsset = assets.firstWhere(
+    (a) => (a['name'] as String).contains(abi),
+    orElse: () => {},
+  );
+
+  if (matchedAsset.isEmpty) {
+    App.rootContext.showMessage(
+      message: "No update available for this architecture ($abi)",
+    );
+    return;
+  }
+
+  final name = matchedAsset['name'];
+  final downloadUrl = matchedAsset['browser_download_url'];
+  final digest = matchedAsset['digest'] as String? ?? '';
+  final expectedSha256 = digest.startsWith('sha256:')
+      ? digest.substring(7)
+      : digest;
+  final dir = await AbsolutePath.absoluteDirectory(
+    dirType: DirectoryType.downloads,
+  );
+  final filePath = path.join(dir!.path, name);
+  final file = File(filePath);
+
+  if (await file.exists()) {
+    final actualSha256 = await calculateSha256(file);
+    fileValid = (actualSha256 == expectedSha256);
+  }
+  Log.addLog(
+    LogLevel.info,
+    "infoPrint",
+    '$name \n $downloadUrl \n $expectedSha256 \n $filePath',
+  );
+
+  showDialog(
+    context: App.rootContext,
+    barrierDismissible: false,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          dialogSetState = setState;
+
+          return ContentDialog(
+            title: "New version available".tl,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Discover the new version @v".tlParams({"v": value.values}),
+                ),
+                const SizedBox(height: 12),
+                if (isDownloading)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinearProgressIndicator(value: downloadProgress),
+                      const SizedBox(height: 8),
+                      Text('${(downloadProgress * 100).toStringAsFixed(0)}%'),
+                    ],
+                  ),
+              ],
+            ),
+            actions: [
+              if (fileValid && App.isAndroid && matchedAsset.isNotEmpty)
+                Button.text(
+                  onPressed: () async {
+                    try {
+                      bool installPermGranted =
+                          await checkAndRequestInstallPermission();
+                      bool storagePermGranted =
+                          await checkAndRequestStoragePermission();
+
+                      if (!installPermGranted || !storagePermGranted) {
+                        return;
+                      }
+
+                      const platform = MethodChannel('kostori/install_apk');
+                      await platform.invokeMethod('installApk', {
+                        "apkPath": filePath,
+                      });
+                    } catch (e) {
+                      Log.addLog(
+                        LogLevel.error,
+                        "AndroidPackageInstaller",
+                        e.toString(),
+                      );
+                    }
+                  },
+                  child: Text("Install".tl),
+                )
+              else if (!isDownloading &&
+                  App.isAndroid &&
+                  matchedAsset.isNotEmpty)
+                Button.text(
+                  onPressed: () async {
+                    setState(() {
+                      isDownloading = true;
+                      downloadStopped = false;
+                      downloadProgress = 0.0;
+                    });
+
+                    taskId = await FlutterDownloader.enqueue(
+                      url: downloadUrl,
+                      savedDir: dir.path,
+                      fileName: name,
+                      showNotification: true,
+                      openFileFromNotification: true,
+                    );
+                  },
+                  child: Text("Download".tl),
+                ),
+              Button.text(
+                onPressed: () {
+                  Navigator.pop(context);
+                  launchUrlString(
+                    "https://github.com/kostori-app/kostori/releases",
+                  );
+                },
+                child: Text("View on GitHub".tl),
+              ),
+            ],
+            cancel: () {
+              if (App.isAndroid) {
+                if (taskId != null) {
+                  FlutterDownloader.cancel(taskId: taskId!);
+                  setState(() {
+                    isDownloading = false;
+                    downloadProgress = 0.0;
+                    taskId = null;
+                    IsolateNameServer.removePortNameMapping(
+                      'downloader_send_port',
+                    );
+                  });
+                }
+              }
+            },
+          );
+        },
+      );
+    },
+  );
 }
 
 /// return true if version1 > version2
@@ -189,4 +358,70 @@ bool _compareVersion(String version1, String version2) {
     }
   }
   return false;
+}
+
+Future<String> calculateSha256(File file) async {
+  final bytes = await file.readAsBytes();
+  final digest = sha256.convert(bytes);
+  return digest.toString();
+}
+
+Future<String> getAppAbi() async {
+  const platform = MethodChannel('kostori/abi');
+  try {
+    final abi = await platform.invokeMethod<String>('getAbi');
+    return abi ?? 'unknown';
+  } on PlatformException catch (e) {
+    return 'error: ${e.message}';
+  }
+}
+
+@pragma('vm:entry-point')
+void downloadCallback(String id, int status, int progress) {
+  final SendPort? send = IsolateNameServer.lookupPortByName(
+    'downloader_send_port',
+  );
+  send?.send([id, status, progress]);
+}
+
+Future<bool> checkAndRequestInstallPermission() async {
+  var status = await Permission.requestInstallPackages.status;
+
+  if (status.isGranted) {
+    return true;
+  }
+
+  if (status.isDenied) {
+    var result = await Permission.requestInstallPackages.request();
+    return result.isGranted;
+  }
+
+  if (status.isPermanentlyDenied) {
+    openAppSettings();
+    return false;
+  }
+
+  var result = await Permission.requestInstallPackages.request();
+  return result.isGranted;
+}
+
+Future<bool> checkAndRequestStoragePermission() async {
+  var status = await Permission.storage.status;
+
+  if (status.isGranted) {
+    return true;
+  }
+
+  if (status.isDenied) {
+    var result = await Permission.storage.request();
+    return result.isGranted;
+  }
+
+  if (status.isPermanentlyDenied) {
+    openAppSettings();
+    return false;
+  }
+
+  var result = await Permission.storage.request();
+  return result.isGranted;
 }
