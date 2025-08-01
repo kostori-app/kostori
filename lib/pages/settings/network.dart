@@ -97,15 +97,6 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
         port = parts[1];
       }
     }
-    if (host.isEmpty && port.isEmpty) {
-      if (appdata.implicitData['proxy'] != null) {
-        var data = appdata.implicitData['proxy'];
-        host = data['host'];
-        port = data['port'];
-        username = data['username'];
-        password = data['password'];
-      }
-    }
   }
 
   @override
@@ -153,6 +144,15 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
               onChanged: (v) {
                 setState(() {
                   type = v!;
+                  if (host.isEmpty && port.isEmpty) {
+                    if (appdata.implicitData['proxy'] != null) {
+                      var data = appdata.implicitData['proxy'];
+                      host = data['host'];
+                      port = data['port'];
+                      username = data['username'];
+                      password = data['password'];
+                    }
+                  }
                 });
               },
             ),
