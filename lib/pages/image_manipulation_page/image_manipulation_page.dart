@@ -23,7 +23,6 @@ class ImagesNotifier extends StateNotifier<List<File>> {
   void setImages(List<File> imgs) => state = imgs;
 
   Future<void> loadImages() async {
-    // 调用你那个加载图片文件夹的方法
     final files = await loadKostoriImages();
     state = files;
   }
@@ -85,9 +84,9 @@ final selectedIndexesProvider = StateProvider<Set<int>>((ref) => {});
 final lastSelectedIndexProvider = StateProvider<int?>((ref) => null);
 
 class ImageManipulationPage extends ConsumerStatefulWidget {
-  final List<File> initialImages;
+  final List<File>? initialImages;
 
-  const ImageManipulationPage({required this.initialImages, super.key});
+  const ImageManipulationPage({this.initialImages, super.key});
 
   @override
   ConsumerState<ImageManipulationPage> createState() =>
@@ -98,8 +97,13 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(imagesProvider.notifier).setImages(widget.initialImages);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final notifier = ref.read(imagesProvider.notifier);
+      if (widget.initialImages != null) {
+        notifier.setImages(widget.initialImages!);
+      } else {
+        await notifier.loadImages();
+      }
     });
   }
 

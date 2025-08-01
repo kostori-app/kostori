@@ -22,6 +22,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../foundation/appdata.dart';
 import '../../utils/io.dart';
+import '../image_manipulation_page/image_manipulation_page.dart';
 
 part 'player_controller.g.dart';
 
@@ -359,7 +360,7 @@ abstract class _PlayerController with Store {
     } catch (_) {}
   }
 
-  Future playOrPause() async {
+  Future<void> playOrPause() async {
     if (player.state.playing) {
       await pause();
     } else {
@@ -367,16 +368,16 @@ abstract class _PlayerController with Store {
     }
   }
 
-  Future seek(Duration duration) async {
+  Future<void> seek(Duration duration) async {
     await player.seek(duration);
   }
 
-  Future pause() async {
+  Future<void> pause() async {
     await player.pause();
     playing = false;
   }
 
-  Future play() async {
+  Future<void> play() async {
     await player.play();
     playing = true;
   }
@@ -396,23 +397,27 @@ abstract class _PlayerController with Store {
           elevation: 8,
           color: Colors.black.toOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            onTap: () async {
-              pause;
-              Log.addLog(LogLevel.info, 'image图片路径', image);
-              final file = File(image);
-              final data = await file.readAsBytes();
-              Share.shareFile(data: data, filename: name, mime: 'image/png');
-            },
-            child: Container(
-              width: 160,
-              height: 90,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
+          child: Container(
+            width: 160,
+            height: 110,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () async {
+                      await pause();
+                      Log.addLog(LogLevel.info, 'image图片路径', image);
+                      final file = File(image);
+                      final data = await file.readAsBytes();
+                      Share.shareFile(
+                        data: data,
+                        filename: name,
+                        mime: 'image/png',
+                      );
+                    },
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -425,9 +430,15 @@ abstract class _PlayerController with Store {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                ],
-              ),
+                ),
+                InkWell(
+                  onTap: () async {
+                    await pause();
+                    context.to(() => ImageManipulationPage());
+                  },
+                  child: Center(child: SizedBox(height: 20, child: Text('编辑'))),
+                ),
+              ],
             ),
           ),
         ),
@@ -437,13 +448,12 @@ abstract class _PlayerController with Store {
     _overlayEntry = entry;
     Overlay.of(context).insert(entry);
 
-    // 启动新定时器，并保存引用
     _overlayTimer = Timer(const Duration(seconds: 3), () {
       if (_overlayEntry?.mounted ?? false) {
         _overlayEntry?.remove();
         _overlayEntry = null;
       }
-      _overlayTimer = null; // 清除定时器引用
+      _overlayTimer = null;
     });
   }
 }
