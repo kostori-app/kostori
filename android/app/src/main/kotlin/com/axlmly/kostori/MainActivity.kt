@@ -24,6 +24,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import android.net.TrafficStats
+import android.media.MediaScannerConnection
 import dev.flutter.packages.file_selector_android.FileUtils
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -183,6 +184,23 @@ class MainActivity : FlutterFragmentActivity() {
                 } else {
                     result.error("INVALID_PATH", "APK path is null", null)
                 }
+            }
+        }
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "kostori/media"
+        ).setMethodCallHandler { call, result ->
+            if (call.method == "scanFolder") {
+                val path = call.argument<String>("path")
+                if (path != null) {
+                    MediaScannerConnection.scanFile(this, arrayOf(path), null, null)
+                    result.success("scanned")
+                } else {
+                    result.error("NO_PATH", "Path is null", null)
+                }
+            } else {
+                result.notImplemented()
             }
         }
 

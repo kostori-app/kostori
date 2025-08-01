@@ -1094,7 +1094,8 @@ class BangumiWidget {
             message: '保存成功',
             context: context,
           );
-
+          const platform = MethodChannel('kostori/media');
+          await platform.invokeMethod('scanFolder', {'path': folder.path});
           Log.addLog(LogLevel.info, '保存长图成功', file.path);
         } else {
           showCenter(

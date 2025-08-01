@@ -3,6 +3,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gif/gif.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -505,7 +506,8 @@ class Utils {
             message: '保存成功',
             context: context,
           );
-
+          const platform = MethodChannel('kostori/media');
+          await platform.invokeMethod('scanFolder', {'path': folder.path});
           Log.addLog(LogLevel.info, '保存长图成功', file.path);
         } else {
           Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');

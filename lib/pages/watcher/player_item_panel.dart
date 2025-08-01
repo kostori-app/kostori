@@ -477,6 +477,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 message: '截图成功',
                                 context: context,
                               );
+                              const platform = MethodChannel('kostori/media');
+                              await platform.invokeMethod('scanFolder', {
+                                'path': folder.path,
+                              });
                               Log.addLog(LogLevel.info, '保存文件成功', '');
                             } else {
                               Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
