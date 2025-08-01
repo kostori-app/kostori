@@ -4,44 +4,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+import 'package:kostori/pages/line_chart_page.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../bbcode/bbcode_widget.dart';
-import '../foundation/anime_source/anime_source.dart';
-import '../foundation/bangumi.dart';
-import '../foundation/bangumi/episode/episode_item.dart';
-import '../foundation/image_loader/cached_image.dart';
-import '../foundation/log.dart';
-import '../network/bangumi.dart';
-import '../pages/bangumi/bangumi_search_page.dart';
-import '../pages/line_chart_page.dart';
-import '../utils/io.dart';
-import '../utils/utils.dart';
-import 'components.dart';
-import 'misc_components.dart';
+import '../foundation/bangumi/character/character_full_item.dart';
 
 final GlobalKey repaintKey = GlobalKey();
 
-// 截取图像并保存
 Future<void> captureAndSave() async {
   try {
     RenderRepaintBoundary boundary =
         repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
 
-    // 获取截图数据
     ui.Image image = await boundary.toImage(pixelRatio: 3.0);
     ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     Uint8List uint8List = byteData!.buffer.asUint8List();
 
-    // 保存文件
     final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/popup_image.png');
     await file.writeAsBytes(uint8List);
-    //     // 使用 shareFile 函数分享文件
+
     Uint8List data = await file.readAsBytes();
     Share.shareFile(data: data, filename: 'image.jpg', mime: 'image/jpeg');
     Log.addLog(LogLevel.info, '截图保存', file.path);
@@ -61,6 +59,7 @@ class ShareWidget extends StatefulWidget {
     this.tag,
     this.sort,
     this.endDate,
+    this.characterFullItem,
   });
 
   final int? id;
@@ -79,6 +78,8 @@ class ShareWidget extends StatefulWidget {
 
   final String? sort;
 
+  final CharacterFullItem? characterFullItem;
+
   @override
   State<ShareWidget> createState() => _ShareWidgetState();
 }
@@ -93,6 +94,7 @@ class _ShareWidgetState extends State<ShareWidget> {
   late int id;
   late AnimeDetails anime;
   late Map<BangumiItem, bool> selectedBangumiItems;
+  late CharacterFullItem characterFullItem;
 
   @override
   void initState() {
@@ -104,6 +106,9 @@ class _ShareWidgetState extends State<ShareWidget> {
       isLoding = false;
     } else if (widget.selectedBangumiItems != null) {
       selectedBangumiItems = widget.selectedBangumiItems!;
+      isLoding = false;
+    } else if (widget.characterFullItem != null) {
+      characterFullItem = widget.characterFullItem!;
       isLoding = false;
     }
     super.initState();
@@ -129,13 +134,11 @@ class _ShareWidgetState extends State<ShareWidget> {
             SizedBox(width: 5),
             Container(
               padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
-              // 可选，设置内边距
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                // 设置圆角半径
                 border: Border.all(
                   color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                  width: 1.0, // 设置边框宽度
+                  width: 1.0,
                 ),
               ),
               child: Text(Utils.getRatingLabel(bangumiItem.score)),
@@ -782,6 +785,151 @@ class _ShareWidgetState extends State<ShareWidget> {
     );
   }
 
+  Widget _characterPage() {
+    return RepaintBoundary(
+      key: repaintKey,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
+        child: Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 64.0,
+                width: 320,
+                child: SvgPicture.asset(
+                  'assets/img/header_pattern.svg',
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SizedBox(
+                      width: constraints.maxWidth,
+                      child: BangumiWidget.kostoriImage(
+                        context,
+                        characterFullItem.image,
+                        enableDefaultSize: false,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Text(
+                  characterFullItem.name,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.tertiary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Text(
+                  characterFullItem.nameCN,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.grey[700]),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Text(
+                  'Profile Information'.tl,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Text(
+                  characterFullItem.info,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.justify,
+                ),
+              ),
+
+              const SizedBox(height: 16.0),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Text(
+                  'Character Introduction'.tl,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 6,
+                  horizontal: 16,
+                ),
+                child: Text(
+                  characterFullItem.summary,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.justify,
+                ),
+              ),
+              SizedBox(
+                height: 64.0,
+                // width: 320,
+                child: SvgPicture.asset(
+                  'assets/img/bottom_pattern.svg',
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody() {
     if (widget.anime != null) {
       return _animeInfoPage();
@@ -789,6 +937,8 @@ class _ShareWidgetState extends State<ShareWidget> {
       return _bangumiInfoPage();
     } else if (widget.selectedBangumiItems != null) {
       return _searchPage();
+    } else if (widget.characterFullItem != null) {
+      return _characterPage();
     } else {
       return Container();
     }

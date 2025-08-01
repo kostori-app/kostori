@@ -1178,6 +1178,7 @@ class BangumiWidget {
     double width = 100,
     double height = 100,
     bool showPlaceholder = true,
+    bool enableDefaultSize = true,
   }) {
     if (_failedImageUrls.contains(imageUrl)) {
       return MiscComponents.placeholder(
@@ -1221,14 +1222,21 @@ class BangumiWidget {
       return const SizedBox();
     }
 
+    if (enableDefaultSize) {
+      return AnimatedImage(
+        image: image,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.high,
+        cacheWidth: memCacheWidth,
+        cacheHeight: memCacheHeight,
+      );
+    }
     return AnimatedImage(
       image: image,
-      width: width,
-      height: height,
       fit: BoxFit.cover,
       filterQuality: FilterQuality.high,
-      cacheWidth: memCacheWidth,
-      cacheHeight: memCacheHeight,
     );
   }
 }

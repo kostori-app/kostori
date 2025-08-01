@@ -11,10 +11,10 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import '../../../foundation/anime_type.dart';
-import '../../../foundation/favorites.dart';
-import '../../../pages/anime_details_page/anime_page.dart';
-import '../../../pages/bangumi/info_controller.dart';
+import '../../foundation/anime_type.dart';
+import '../../foundation/favorites.dart';
+import '../anime_details_page/anime_page.dart';
+import 'info_controller.dart';
 
 class BangumiInfoCardV extends StatefulWidget {
   const BangumiInfoCardV({

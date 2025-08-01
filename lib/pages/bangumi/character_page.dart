@@ -1,16 +1,18 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
-
+import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
-import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
 
 import '../../components/bangumi_widget.dart';
+import '../../components/components.dart';
+import '../../components/share_widget.dart';
+import '../../foundation/app.dart';
 import '../../foundation/bangumi/character/character_casts_item.dart';
 
 class CharacterPage extends StatefulWidget {
@@ -36,8 +38,9 @@ class _CharacterPageState extends State<CharacterPage> {
     setState(() {
       loadingCharacter = true;
     });
-    await Bangumi.getCharacterByCharacterID(widget.characterID)
-        .then((character) {
+    await Bangumi.getCharacterByCharacterID(widget.characterID).then((
+      character,
+    ) {
       characterFullItem = character;
     });
     if (mounted) {
@@ -51,8 +54,9 @@ class _CharacterPageState extends State<CharacterPage> {
     setState(() {
       loadingComments = true;
     });
-    await Bangumi.getCharacterCommentsByCharacterID(widget.characterID)
-        .then((value) {
+    await Bangumi.getCharacterCommentsByCharacterID(widget.characterID).then((
+      value,
+    ) {
       commentsList = value.commentList;
       if (commentsList.isEmpty && mounted) {
         setState(() {
@@ -71,8 +75,9 @@ class _CharacterPageState extends State<CharacterPage> {
     setState(() {
       loadingCharacterCasts = true;
     });
-    await Bangumi.getCharacterCastsByCharacterID(widget.characterID)
-        .then((value) {
+    await Bangumi.getCharacterCastsByCharacterID(widget.characterID).then((
+      value,
+    ) {
       characterCastsList = value;
       if (characterCastsList.isEmpty && mounted) {
         setState(() {
@@ -121,7 +126,7 @@ class _CharacterPageState extends State<CharacterPage> {
                 children: [
                   characterInfoBody,
                   characterCommentsBody,
-                  characterCastsBody
+                  characterCastsBody,
                 ],
               ),
             ),
@@ -132,142 +137,195 @@ class _CharacterPageState extends State<CharacterPage> {
   }
 
   Widget get characterInfoBody {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: LayoutBuilder(builder: (context, constraints) {
-        return Column(
-          children: [
-            Expanded(
-              child: loadingCharacter
-                  ? Center(
-                      child: MiscComponents.placeholder(
-                          context, constraints.maxWidth, constraints.maxHeight),
-                    )
-                  : (characterFullItem.id == 0
-                      ? GeneralErrorWidget(
-                          errMsg: "Nobody's posted anything yet...".tl,
-                          actions: [
-                            GeneralErrorButton(
-                              onPressed: () {
-                                loadCharacter();
-                              },
-                              text: 'Reload'.tl,
-                            ),
-                          ],
-                        )
-                      : SizedBox(
-                          width: double.infinity,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  BangumiWidget.showImagePreview(
-                                      context,
-                                      characterFullItem.image,
-                                      characterFullItem.nameCN,
-                                      characterFullItem.image);
-                                },
-                                child: SizedBox(
-                                    width: constraints.maxWidth * 0.6,
-                                    height: constraints.maxHeight,
-                                    child: Hero(
-                                      tag: characterFullItem.image,
-                                      child: BangumiWidget.kostoriImage(
-                                          context, characterFullItem.image,
-                                          width: constraints.maxWidth,
-                                          height: constraints.maxHeight),
-                                    )),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  children: [
+                    Expanded(
+                      child: loadingCharacter
+                          ? Center(
+                              child: MiscComponents.placeholder(
+                                context,
+                                constraints.maxWidth,
+                                constraints.maxHeight,
                               ),
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
+                            )
+                          : (characterFullItem.id == 0
+                                ? GeneralErrorWidget(
+                                    errMsg:
+                                        "Nobody's posted anything yet...".tl,
+                                    actions: [
+                                      GeneralErrorButton(
+                                        onPressed: () {
+                                          loadCharacter();
+                                        },
+                                        text: 'Reload'.tl,
+                                      ),
+                                    ],
+                                  )
+                                : SizedBox(
+                                    width: double.infinity,
+                                    child: Row(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          characterFullItem.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headlineSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .tertiary,
+                                        InkWell(
+                                          onTap: () {
+                                            BangumiWidget.showImagePreview(
+                                              context,
+                                              characterFullItem.image,
+                                              characterFullItem.nameCN,
+                                              characterFullItem.image,
+                                            );
+                                          },
+                                          child: SizedBox(
+                                            width: constraints.maxWidth * 0.6,
+                                            height: constraints.maxHeight,
+                                            child: Hero(
+                                              tag: characterFullItem.image,
+                                              child: BangumiWidget.kostoriImage(
+                                                context,
+                                                characterFullItem.image,
+                                                width: constraints.maxWidth,
+                                                height: constraints.maxHeight,
                                               ),
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 2,
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              top: 4.0, bottom: 12.0),
-                                          child: Text(
-                                            characterFullItem.nameCN,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                                  color: Colors.grey[700],
-                                                ),
+                                            ),
                                           ),
                                         ),
-                                        const Divider(),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 8.0),
-                                          child: Text(
-                                            'Profile Information'.tl,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(
+                                                16.0,
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    characterFullItem.name,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .headlineSmall
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .tertiary,
+                                                        ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 2,
+                                                  ),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          top: 4.0,
+                                                          bottom: 12.0,
+                                                        ),
+                                                    child: Text(
+                                                      characterFullItem.nameCN,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleMedium
+                                                          ?.copyWith(
+                                                            color: Colors
+                                                                .grey[700],
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  const Divider(),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 8.0,
+                                                        ),
+                                                    child: Text(
+                                                      'Profile Information'.tl,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleSmall
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    characterFullItem.info,
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodyMedium,
+                                                    textAlign:
+                                                        TextAlign.justify,
+                                                  ),
+                                                  const SizedBox(height: 16.0),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 8.0,
+                                                        ),
+                                                    child: Text(
+                                                      'Character Introduction'
+                                                          .tl,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleSmall
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    characterFullItem.summary,
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodyMedium,
+                                                    textAlign:
+                                                        TextAlign.justify,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                        Text(
-                                          characterFullItem.info,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium,
-                                          textAlign: TextAlign.justify,
-                                        ),
-                                        const SizedBox(height: 16.0),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 8.0),
-                                          child: Text(
-                                            'Character Introduction'.tl,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                          ),
-                                        ),
-                                        Text(
-                                          characterFullItem.summary,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium,
-                                          textAlign: TextAlign.justify,
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )),
+                                  )),
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
-        );
-      }),
+          ),
+        ),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: FilledButton.icon(
+            onPressed: () {
+              showPopUpWidget(
+                App.rootContext,
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return ShareWidget(characterFullItem: characterFullItem);
+                  },
+                ),
+              );
+            },
+            label: Text('Share'.tl),
+            icon: Icon(Icons.share),
+          ),
+        ),
+      ],
     );
   }
 
@@ -282,7 +340,7 @@ class _CharacterPageState extends State<CharacterPage> {
             dragDevices: {
               PointerDeviceKind.mouse,
               PointerDeviceKind.touch,
-              PointerDeviceKind.trackpad
+              PointerDeviceKind.trackpad,
             },
           ),
           key: PageStorageKey<String>('吐槽箱'),
@@ -299,8 +357,9 @@ class _CharacterPageState extends State<CharacterPage> {
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
@@ -320,8 +379,9 @@ class _CharacterPageState extends State<CharacterPage> {
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
@@ -392,7 +452,7 @@ class _CharacterPageState extends State<CharacterPage> {
             dragDevices: {
               PointerDeviceKind.mouse,
               PointerDeviceKind.touch,
-              PointerDeviceKind.trackpad
+              PointerDeviceKind.trackpad,
             },
           ),
           key: PageStorageKey<String>('角色关联'),
@@ -423,15 +483,17 @@ class _CharacterPageState extends State<CharacterPage> {
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
                                   : MediaQuery.sizeOf(context).width - 32,
                               child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 child: Card(
                                   child: Row(
                                     children: [
@@ -453,54 +515,46 @@ class _CharacterPageState extends State<CharacterPage> {
                                                 right: 8,
                                                 bottom: 8,
                                                 child: IgnorePointer(
-                                                    ignoring: true, // 忽略点击事件
-                                                    child: Column(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment.end,
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .end,
-                                                      children: [
-                                                        Text(
-                                                          getRelationName(
-                                                                  characterCastsList[
-                                                                          index]
-                                                                      .type)
-                                                              .toString(),
-                                                          style:
-                                                              const TextStyle(
-                                                            fontSize: 16,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                          ),
+                                                  ignoring: true, // 忽略点击事件
+                                                  child: Column(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.end,
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.end,
+                                                    children: [
+                                                      Text(
+                                                        getRelationName(
+                                                          characterCastsList[index]
+                                                              .type,
+                                                        ).toString(),
+                                                        style: const TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
-                                                        const SizedBox(
-                                                          height: 4,
-                                                        ),
-                                                        Text(
-                                                          'Voice Actor: @c'
-                                                              .tlParams({
-                                                            'c': characterCastsList[
-                                                                        index]
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'Voice Actor: @c'.tlParams({
+                                                          'c':
+                                                              characterCastsList[index]
+                                                                  .actors[0]
+                                                                  .nameCN
+                                                                  .isNotEmpty
+                                                              ? characterCastsList[index]
                                                                     .actors[0]
                                                                     .nameCN
-                                                                    .isNotEmpty
-                                                                ? characterCastsList[
-                                                                        index]
+                                                              : characterCastsList[index]
                                                                     .actors[0]
-                                                                    .nameCN
-                                                                : characterCastsList[
-                                                                        index]
-                                                                    .actors[0]
-                                                                    .name
-                                                          }),
-                                                          style:
-                                                              const TextStyle(
-                                                            fontSize: 12,
-                                                          ),
+                                                                    .name,
+                                                        }),
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
                                                         ),
-                                                      ],
-                                                    )),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -521,8 +575,9 @@ class _CharacterPageState extends State<CharacterPage> {
                         bottom: false,
                         child: Center(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
                             child: SizedBox(
                               width: MediaQuery.sizeOf(context).width > 950
                                   ? 950
