@@ -188,7 +188,7 @@ class WatcherState extends State<Watcher>
     ep = widget.anime.episode?.values.elementAt(road);
 
     Log.addLog(LogLevel.info, "加载集数", "$episodeIndex");
-    episode = episodeIndex; // 更新逻辑中的当前集数
+    episode = episodeIndex;
     try {
       var progressFind = await HistoryManager().progressFind(
         widget.anime.id,
@@ -196,8 +196,6 @@ class WatcherState extends State<Watcher>
         episode - 1,
         road,
       );
-      // Log.addLog(LogLevel.info, "加载找寻参数",
-      //     "${widget.anime.id}\n${AnimeType(widget.anime.sourceKey.hashCode).value}\n${episode - 1}\n$road");
       playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
       history?.watchEpisode.add(episode);
@@ -214,6 +212,7 @@ class WatcherState extends State<Watcher>
         widget.wid,
         ep?.keys.elementAt(episode - 1),
       );
+      playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
       playerController.playing = true;
@@ -248,7 +247,7 @@ class WatcherState extends State<Watcher>
         widget.wid,
         ep?.keys.elementAt(episode - 1),
       );
-      // Log.addLog(LogLevel.info, "视频链接", res);
+      playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
 
@@ -266,7 +265,6 @@ class WatcherState extends State<Watcher>
 
   Future<void> _play(String res, int order, int currentPlaybackTime) async {
     try {
-      // 打开媒体
       await playerController.player.open(Media(res));
     } catch (e, s) {
       Log.addLog(LogLevel.error, "打开媒体", "$e\n$s");

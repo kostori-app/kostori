@@ -121,6 +121,43 @@ abstract class _PlayerController with Store {
 
   late WindowFrameController windowFrame;
 
+  // 播放器实时状态
+  bool get playerPlaying => player.state.playing;
+
+  bool get playerBuffering => player.state.buffering;
+
+  bool get playerCompleted => player.state.completed;
+
+  double get playerVolume => player.state.volume;
+
+  Duration get playerPosition => player.state.position;
+
+  Duration get playerBuffer => player.state.buffer;
+
+  Duration get playerDuration => player.state.duration;
+
+  int? get playerWidth => player.state.width;
+
+  int? get playerHeight => player.state.height;
+
+  String get playerVideoParams => player.state.videoParams.toString();
+
+  String get playerAudioParams => player.state.audioParams.toString();
+
+  String get playerPlaylist => player.state.playlist.toString();
+
+  String get playerAudioTracks => player.state.track.audio.toString();
+
+  String get playerVideoTracks => player.state.track.video.toString();
+
+  String get playerAudioBitrate => player.state.audioBitrate.toString();
+
+  /// 播放器内部日志
+  List<String> playerLog = [];
+
+  /// 播放器日志订阅
+  StreamSubscription<PlayerLog>? playerLogSubscription;
+
   bool _isInit = false;
 
   _PlayerController();
@@ -197,6 +234,14 @@ abstract class _PlayerController with Store {
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
     audioOutType = appdata.settings['audioOutType'] ?? true;
+
+    // 记录播放器内部日志
+    playerLog.clear();
+    await playerLogSubscription?.cancel();
+    playerLogSubscription = player.stream.log.listen((event) {
+      playerLog.add(event.toString());
+    });
+
     var pp = player.platform as NativePlayer;
     // media-kit 默认启用硬盘作为双重缓存，这可以维持大缓存的前提下减轻内存压力
     // media-kit 内部硬盘缓存目录按照 Linux 配置，这导致该功能在其他平台上被损坏
@@ -269,9 +314,12 @@ abstract class _PlayerController with Store {
     player.setRate(playbackSpeed);
   }
 
-  void dispose() {
+  Future<void> dispose() async {
     _overlayEntry?.remove();
     _overlayEntry = null;
+    try {
+      await playerLogSubscription?.cancel();
+    } catch (_) {}
     player.dispose();
   }
 

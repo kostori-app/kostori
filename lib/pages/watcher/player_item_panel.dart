@@ -34,6 +34,7 @@ class PlayerItemPanel extends StatefulWidget {
     required this.keyboardFocus,
     required this.startHideTimer,
     required this.cancelHideTimer,
+    required this.showVideoInfo,
   });
 
   final PlayerController playerController;
@@ -44,6 +45,7 @@ class PlayerItemPanel extends StatefulWidget {
   final FocusNode keyboardFocus;
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
+  final void Function() showVideoInfo;
 
   @override
   State<PlayerItemPanel> createState() => _PlayerItemPanelState();
@@ -224,6 +226,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               context.to(() => const LogsPage());
             },
           ),
+        MenuEntry(
+          text: "播放器详情".tl,
+          onClick: () {
+            widget.showVideoInfo();
+          },
+        ),
       ],
     );
   }
@@ -677,7 +685,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                       fontSize: 16,
                                     );
 
-                                    // 计算文本的实际宽度
                                     final textPainter = TextPainter(
                                       text: TextSpan(text: text, style: style),
                                       maxLines: 1,
