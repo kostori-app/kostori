@@ -303,6 +303,40 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                 ),
               ),
             ),
+            // 右侧渐变半透明区域
+            AnimatedPositioned(
+              duration: Duration(seconds: 1),
+              top: 0,
+              bottom: 0,
+              right: 0,
+              child: Visibility(
+                child: SlideTransition(
+                  position: rightOffsetAnimation,
+                  child: Container(
+                    width: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [
+                          Colors.black.toOpacity(0.8),
+                          Colors.black.toOpacity(0.6),
+                          Colors.black.toOpacity(0.3),
+                          Colors.transparent,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.toOpacity(0.2),
+                          blurRadius: 20.0, // 边缘模糊
+                          spreadRadius: 5.0,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
             // 顶部进度条
             Positioned(
               top: 25,
