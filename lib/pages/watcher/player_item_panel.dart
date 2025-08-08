@@ -621,7 +621,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
                                     final shouldScroll =
                                         textPainter.width >=
-                                        constraints.maxWidth * 2 / 3;
+                                        constraints.maxWidth - 30;
 
                                     return SizedBox(
                                       height: 24,
@@ -657,16 +657,60 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   },
                                 ),
                               )
-                            : Text(
-                                widget.playerController.currentSetName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
+                            : Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final text =
+                                        widget.playerController.currentSetName;
+                                    const style = TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    );
+
+                                    final textPainter = TextPainter(
+                                      text: TextSpan(text: text, style: style),
+                                      maxLines: 1,
+                                      textDirection: TextDirection.ltr,
+                                    )..layout(maxWidth: constraints.maxWidth);
+
+                                    final shouldScroll =
+                                        textPainter.width >=
+                                        constraints.maxWidth - 20;
+
+                                    return SizedBox(
+                                      height: 24,
+                                      child: ClipRect(
+                                        child: shouldScroll
+                                            ? Marquee(
+                                                text: text,
+                                                style: style,
+                                                scrollAxis: Axis.horizontal,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                blankSpace: 10.0,
+                                                velocity: 40.0,
+                                                pauseAfterRound: Duration.zero,
+                                                startPadding: 10.0,
+                                                accelerationDuration:
+                                                    Duration.zero,
+                                                decelerationDuration:
+                                                    Duration.zero,
+                                              )
+                                            : Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Text(
+                                                  text,
+                                                  style: style,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                textAlign: TextAlign.right,
                               ),
-                        if (!widget.playerController.isFullScreen)
-                          const Spacer(),
                         //超分
                         MenuAnchor(
                           consumeOutsideTap: true,
