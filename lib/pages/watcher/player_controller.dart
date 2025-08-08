@@ -469,6 +469,14 @@ class FullscreenVideoPage extends StatefulWidget {
 
 class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
   @override
+  void dispose() {
+    if (widget.playerController.isFullScreen) {
+      widget.playerController.fullscreen();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PopScope(
       child: Scaffold(
