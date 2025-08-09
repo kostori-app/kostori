@@ -132,8 +132,8 @@ class Bangumi {
     try {
       final results =
           await Future.wait([
-            bangumiPostSearch(keyword).timeout(const Duration(seconds: 10)),
-            bangumiGetSearch(keyword).timeout(const Duration(seconds: 10)),
+            bangumiPostSearch(keyword).timeout(const Duration(seconds: 5)),
+            bangumiGetSearch(keyword).timeout(const Duration(seconds: 5)),
           ]).catchError((e, s) {
             Log.addLog(
               LogLevel.warning,

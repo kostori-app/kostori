@@ -146,13 +146,52 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   AnimeDetails get anime => data!;
 
   Future<void> updateBangumiId() async {
+    if (containsIllegalCharacters(anime.title)) {
+      return;
+    }
     var res = await Bangumi.combinedBangumiSearch(anime.title);
-    if (res.isEmpty) {
+    if (res.isEmpty ||
+        !isHalfOverlap(anime.title, res.first.nameCn) ||
+        !isHalfOverlap(anime.title, res.first.name)) {
       return;
     } else {
       history?.bangumiId = res.first.id;
       HistoryManager().addHistoryAsync(history!);
     }
+  }
+
+  bool containsIllegalCharacters(String title) {
+    final illegalPattern = RegExp(r'[_@#$%^&*()+={\}\[\]\\|<>/~`]');
+
+    final emojiPattern = RegExp(
+      r'[\u{1F600}-\u{1F64F}'
+      r'\u{1F300}-\u{1F5FF}'
+      r'\u{1F680}-\u{1F6FF}'
+      r'\u{2600}-\u{26FF}'
+      r'\u{2700}-\u{27BF}]',
+      unicode: true,
+    );
+
+    if (title.contains('_')) {
+      return true;
+    }
+    if (illegalPattern.hasMatch(title)) {
+      return true;
+    }
+    if (emojiPattern.hasMatch(title)) {
+      return true;
+    }
+    return false;
+  }
+
+  bool isHalfOverlap(String a, String b) {
+    Set<String> setA = a.split('').toSet();
+    Set<String> setB = b.split('').toSet();
+
+    Set<String> common = setA.intersection(setB);
+
+    // 判断重合字符数是否 >= 原字符串字符数的一半
+    return common.length >= (setA.length / 2);
   }
 
   void onScroll() {
