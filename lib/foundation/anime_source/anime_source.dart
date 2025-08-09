@@ -20,6 +20,8 @@ import 'package:kostori/utils/init.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 
+import '../../pages/category_animes_page.dart';
+
 part 'category.dart';
 
 part 'favorites.dart';

@@ -15,28 +15,28 @@ class Comment {
     if (value == null) return null;
     if (value is int) {
       if (value < 10000000000) {
-        return DateTime.fromMillisecondsSinceEpoch(value * 1000)
-            .toString()
-            .substring(0, 19);
+        return DateTime.fromMillisecondsSinceEpoch(
+          value * 1000,
+        ).toString().substring(0, 19);
       } else {
-        return DateTime.fromMillisecondsSinceEpoch(value)
-            .toString()
-            .substring(0, 19);
+        return DateTime.fromMillisecondsSinceEpoch(
+          value,
+        ).toString().substring(0, 19);
       }
     }
     return value.toString();
   }
 
   Comment.fromJson(Map<String, dynamic> json)
-      : userName = json["userName"],
-        avatar = json["avatar"],
-        content = json["content"],
-        time = parseTime(json["time"]),
-        replyCount = json["replyCount"],
-        id = json["id"].toString(),
-        score = json["score"],
-        isLiked = json["isLiked"],
-        voteStatus = json["voteStatus"];
+    : userName = json["userName"],
+      avatar = json["avatar"],
+      content = json["content"],
+      time = parseTime(json["time"]),
+      replyCount = json["replyCount"],
+      id = json["id"].toString(),
+      score = json["score"],
+      isLiked = json["isLiked"],
+      voteStatus = json["voteStatus"];
 }
 
 class Anime {
@@ -70,8 +70,8 @@ class Anime {
     this.description,
     this.sourceKey,
     this.language,
-  )   : favoriteId = null,
-        stars = null;
+  ) : favoriteId = null,
+      stars = null;
 
   Map<String, dynamic> toJson() {
     return {
@@ -88,15 +88,15 @@ class Anime {
   }
 
   Anime.fromJson(Map<String, dynamic> json, this.sourceKey)
-      : title = json["title"],
-        subtitle = json["subtitle"] ?? "",
-        cover = json["cover"],
-        id = json["id"],
-        tags = List<String>.from(json["tags"] ?? []),
-        description = json["description"] ?? "",
-        language = json["language"],
-        favoriteId = json["favoriteId"],
-        stars = (json["stars"] as num?)?.toDouble();
+    : title = json["title"],
+      subtitle = json["subtitle"] ?? "",
+      cover = json["cover"],
+      id = json["id"],
+      tags = List<String>.from(json["tags"] ?? []),
+      description = json["description"] ?? "",
+      language = json["language"],
+      favoriteId = json["favoriteId"],
+      stars = (json["stars"] as num?)?.toDouble();
 
   @override
   bool operator ==(Object other) {
@@ -185,13 +185,16 @@ class AnimeDetails with HistoryMixin {
   static Map<String, List<String>> _generateMap(Map<dynamic, dynamic> map) {
     var res = <String, List<String>>{};
     map.forEach((key, value) {
-      res[key] = List<String>.from(value);
+      if (value is List) {
+        res[key] = List<String>.from(value);
+      }
     });
     return res;
   }
 
   static Map<String, Map<String, String>> _generateNestedMap(
-      Map<dynamic, dynamic> map) {
+    Map<dynamic, dynamic> map,
+  ) {
     var res = <String, Map<String, String>>{};
     map.forEach((key, value) {
       res[key] = Map<String, String>.from(value as Map<dynamic, dynamic>);
@@ -200,30 +203,30 @@ class AnimeDetails with HistoryMixin {
   }
 
   AnimeDetails.fromJson(Map<String, dynamic> json)
-      : title = json["title"],
-        subTitle = json["subtitle"],
-        cover = json["cover"],
-        description = json["description"],
-        tags = _generateMap(json["tags"]),
-        episode = _generateNestedMap(json["episode"]),
-        sourceKey = json["sourceKey"],
-        animeId = json["animeId"],
-        thumbnails = ListOrNull.from(json["thumbnails"]),
-        recommend = (json["recommend"] as List?)
-            ?.map((e) => Anime.fromJson(e, json["sourceKey"]))
-            .toList(),
-        isFavorite = json["isFavorite"],
-        subId = json["subId"],
-        likesCount = json["likesCount"],
-        isLiked = json["isLiked"],
-        commentsCount = json["commentsCount"],
-        director = json["director"],
-        actors = json["actors"],
-        uploader = json["uploader"],
-        uploadTime = json["uploadTime"],
-        updateTime = json["updateTime"],
-        url = json["url"],
-        stars = (json["stars"] as num?)?.toDouble();
+    : title = json["title"],
+      subTitle = json["subtitle"],
+      cover = json["cover"],
+      description = json["description"],
+      tags = _generateMap(json["tags"]),
+      episode = _generateNestedMap(json["episode"]),
+      sourceKey = json["sourceKey"],
+      animeId = json["animeId"],
+      thumbnails = ListOrNull.from(json["thumbnails"]),
+      recommend = (json["recommend"] as List?)
+          ?.map((e) => Anime.fromJson(e, json["sourceKey"]))
+          .toList(),
+      isFavorite = json["isFavorite"],
+      subId = json["subId"],
+      likesCount = json["likesCount"],
+      isLiked = json["isLiked"],
+      commentsCount = json["commentsCount"],
+      director = json["director"],
+      actors = json["actors"],
+      uploader = json["uploader"],
+      uploadTime = json["uploadTime"],
+      updateTime = json["updateTime"],
+      url = json["url"],
+      stars = (json["stars"] as num?)?.toDouble();
 
   Map<String, dynamic> toJson() {
     return {
@@ -281,22 +284,14 @@ class PageJumpTarget {
         // old version `onClickTag`
         var page = value["action"];
         if (page == "search") {
-          return PageJumpTarget(
-            sourceKey,
-            "search",
-            {
-              "text": value["keyword"],
-            },
-          );
+          return PageJumpTarget(sourceKey, "search", {
+            "text": value["keyword"],
+          });
         } else if (page == "category") {
-          return PageJumpTarget(
-            sourceKey,
-            "category",
-            {
-              "category": value["keyword"],
-              "param": value["param"],
-            },
-          );
+          return PageJumpTarget(sourceKey, "category", {
+            "category": value["keyword"],
+            "param": value["param"],
+          });
         } else {
           return PageJumpTarget(sourceKey, page, null);
         }
@@ -306,33 +301,17 @@ class PageJumpTarget {
       var segments = value.split(":");
       var page = segments[0];
       if (page == "search") {
-        return PageJumpTarget(
-          sourceKey,
-          "search",
-          {
-            "text": segments[1],
-          },
-        );
+        return PageJumpTarget(sourceKey, "search", {"text": segments[1]});
       } else if (page == "category") {
         var c = segments[1];
         if (c.contains('@')) {
           var parts = c.split('@');
-          return PageJumpTarget(
-            sourceKey,
-            "category",
-            {
-              "category": parts[0],
-              "param": parts[1],
-            },
-          );
+          return PageJumpTarget(sourceKey, "category", {
+            "category": parts[0],
+            "param": parts[1],
+          });
         } else {
-          return PageJumpTarget(
-            sourceKey,
-            "category",
-            {
-              "category": c,
-            },
-          );
+          return PageJumpTarget(sourceKey, "category", {"category": c});
         }
       } else {
         return PageJumpTarget(sourceKey, page, null);
@@ -348,6 +327,18 @@ class PageJumpTarget {
           text: attributes?["text"] ?? attributes?["keyword"] ?? "",
           sourceKey: sourceKey,
           options: List.from(attributes?["options"] ?? []),
+        ),
+      );
+    } else if (page == "category") {
+      var key = AnimeSource.find(sourceKey)!.categoryData!.key;
+      context.to(
+        () => CategoryAnimesPage(
+          categoryKey: key,
+          category:
+              attributes?["category"] ??
+              (throw ArgumentError("Category name is required")),
+          options: List.from(attributes?["options"] ?? []),
+          param: attributes?["param"],
         ),
       );
     } else {
