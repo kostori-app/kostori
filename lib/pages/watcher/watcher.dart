@@ -267,7 +267,7 @@ class WatcherState extends State<Watcher>
     try {
       await playerController.player.open(Media(res));
     } catch (e, s) {
-      Log.addLog(LogLevel.error, "打开媒体", "$e\n$s");
+      Log.addLog(LogLevel.error, "openMedia", "$e\n$s");
     }
     // 监听缓冲流
     var sub = playerController.player.stream.buffer.listen(null);
