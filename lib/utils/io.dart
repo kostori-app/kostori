@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
@@ -13,7 +14,6 @@ import 'package:kostori/utils/file_type.dart';
 import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart' as s;
-import 'package:file_selector/file_selector.dart' as file_selector;
 
 import '../foundation/log.dart';
 
@@ -33,8 +33,13 @@ class IO {
 class FilePath {
   const FilePath._();
 
-  static String join(String path1, String path2,
-      [String? path3, String? path4, String? path5]) {
+  static String join(
+    String path1,
+    String path2, [
+    String? path3,
+    String? path4,
+    String? path5,
+  ]) {
     return p.join(path1, path2, path3, path4, path5);
   }
 }
@@ -184,7 +189,9 @@ Future<void> copyDirectory(Directory source, Directory destination) async {
 /// Copy the **contents** of the source directory to the destination directory.
 /// This function is executed in an isolate to prevent the UI from freezing.
 Future<void> copyDirectoryIsolate(
-    Directory source, Directory destination) async {
+  Directory source,
+  Directory destination,
+) async {
   await Isolate.run(() => overrideIO(() => copyDirectory(source, destination)));
 }
 
@@ -237,8 +244,9 @@ class DirectoryPicker {
         }
       } else {
         // ios, macos
-        directory =
-            await _methodChannel.invokeMethod<String?>("getDirectoryPath");
+        directory = await _methodChannel.invokeMethod<String?>(
+          "getDirectoryPath",
+        );
       }
       if (directory == null) return null;
       _finalizer.attach(this, directory);
@@ -333,8 +341,11 @@ Future<String?> selectDirectoryIOS() async {
   return IOSDirectoryPicker.selectDirectory();
 }
 
-Future<void> saveFile(
-    {Uint8List? data, required String filename, File? file}) async {
+Future<void> saveFile({
+  Uint8List? data,
+  required String filename,
+  File? file,
+}) async {
   if (data == null && file == null) {
     throw Exception("data and file cannot be null at the same time");
   }
@@ -399,33 +410,37 @@ class _IOOverrides extends IOOverrides {
 }
 
 T overrideIO<T>(T Function() f) {
-  return IOOverrides.runWithIOOverrides<T>(
-    f,
-    _IOOverrides(),
-  );
+  return IOOverrides.runWithIOOverrides<T>(f, _IOOverrides());
 }
 
 class Share {
-  static void shareFile({
+  static Future<void> shareFile({
     required Uint8List data,
     required String filename,
     required String mime,
-  }) {
+  }) async {
     if (!App.isWindows) {
-      s.Share.shareXFiles(
-        [s.XFile.fromData(data, mimeType: mime)],
-        fileNameOverrides: [filename],
+      await s.SharePlus.instance.share(
+        s.ShareParams(
+          fileNameOverrides: [filename],
+          files: [s.XFile.fromData(data, mimeType: mime)],
+        ),
       );
     } else {
       // write to cache
-      var file = File(FilePath.join(App.cachePath, filename));
-      file.writeAsBytesSync(data);
-      s.Share.shareXFiles([s.XFile(file.path)]);
+      final file = File(FilePath.join(App.cachePath, filename));
+      await file.writeAsBytes(data);
+      await s.SharePlus.instance.share(
+        s.ShareParams(
+          fileNameOverrides: [filename],
+          files: [s.XFile(file.path)],
+        ),
+      );
     }
   }
 
-  static void shareText(String text) {
-    s.Share.share(text);
+  static Future<s.ShareResult> shareText(String text) async {
+    return await s.SharePlus.instance.share(s.ShareParams(text: text));
   }
 }
 
@@ -483,8 +498,9 @@ class KostoriFolder {
     }
 
     // 2. 获取 Pictures 目录路径
-    Directory? picturesDir =
-        await AbsolutePath.absoluteDirectory(dirType: DirectoryType.pictures);
+    Directory? picturesDir = await AbsolutePath.absoluteDirectory(
+      dirType: DirectoryType.pictures,
+    );
 
     if (picturesDir == null) {
       Log.addLog(LogLevel.error, '获取 Pictures 目录失败', '');

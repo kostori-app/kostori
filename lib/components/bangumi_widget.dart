@@ -873,7 +873,7 @@ class BangumiWidget {
                                                   onPressed: () async {
                                                     Uint8List data = await file
                                                         .readAsBytes();
-                                                    Share.shareFile(
+                                                    await Share.shareFile(
                                                       data: data,
                                                       filename: filename,
                                                       mime: 'image/png',
