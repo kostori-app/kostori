@@ -383,15 +383,23 @@ class AnimeSourceParser {
               if (data is List) {
                 list.add(data.map((e) => Anime.fromJson(e, _key!)).toList());
               } else if (data is Map) {
-                list.add(
-                  ExplorePagePart(
-                    data['title'],
-                    (data['animes'] as List).map((e) {
-                      return Anime.fromJson(e, _key!);
-                    }).toList(),
-                    data['viewMore'],
-                  ),
-                );
+                final kind = data['kind'];
+                List<Anime> parseAnimes(dynamic v) => (v as List)
+                    .map<Anime>((e) => Anime.fromJson(e, _key!))
+                    .toList();
+                if (kind == 'grid') {
+                  list.add(ExploreGridPart(parseAnimes(data['animes'])));
+                } else {
+                  list.add(
+                    ExplorePagePart(
+                      data['title'],
+                      (data['animes'] as List).map((e) {
+                        return Anime.fromJson(e, _key!);
+                      }).toList(),
+                      data['viewMore'],
+                    ),
+                  );
+                }
               }
             }
             return Res(list, subData: res['maxPage']);
@@ -437,23 +445,77 @@ class AnimeSourceParser {
     var categoryParts = <BaseCategoryPart>[];
 
     for (var c in doc["parts"]) {
-      final String name = c["name"];
-      final String type = c["type"];
-      final List<String> tags = List.from(c["categories"]);
-      final String itemType = c["itemType"];
-      List<String>? categoryParams = ListOrNull.from(c["categoryParams"]);
-      final String? groupParam = c["groupParam"];
-      if (groupParam != null) {
-        categoryParams = List.filled(tags.length, groupParam);
+      if (c["categories"] != null && c["categories"] is! List) {
+        continue;
       }
-      if (type == "fixed") {
-        categoryParts.add(
-          FixedCategoryPart(name, tags, itemType, categoryParams),
-        );
-      } else if (type == "random") {
-        categoryParts.add(
-          RandomCategoryPart(name, tags, c["randomNumber"] ?? 1, itemType),
-        );
+      List? categories = c["categories"];
+      if (categories == null || categories[0] is Map) {
+        // new format
+        final String name = c["name"];
+        final String type = c["type"];
+        final cs = categories
+            ?.map(
+              (e) => CategoryItem(
+                e['label'],
+                PageJumpTarget.parse(_key!, e['target']),
+              ),
+            )
+            .toList();
+        if (type != "dynamic" && (cs == null || cs.isEmpty)) {
+          continue;
+        }
+        if (type == "fixed") {
+          categoryParts.add(FixedCategoryPart(name, cs!));
+        } else if (type == "random") {
+          categoryParts.add(
+            RandomCategoryPart(name, cs!, c["randomNumber"] ?? 1),
+          );
+        } else if (type == "dynamic" && categories == null) {
+          var loader = c["loader"];
+          if (loader is! JSInvokable) {
+            throw "DynamicCategoryPart loader must be a function";
+          }
+          categoryParts.add(
+            DynamicCategoryPart(name, JSAutoFreeFunction(loader), _key!),
+          );
+        }
+      } else {
+        // old format
+        final String name = c["name"];
+        final String type = c["type"];
+        final List<String> tags = List.from(c["categories"]);
+        final String itemType = c["itemType"];
+        List<String>? categoryParams = ListOrNull.from(c["categoryParams"]);
+        final String? groupParam = c["groupParam"];
+        if (groupParam != null) {
+          categoryParams = List.filled(tags.length, groupParam);
+        }
+        var cs = <CategoryItem>[];
+        for (int i = 0; i < tags.length; i++) {
+          PageJumpTarget target;
+          if (itemType == 'category') {
+            target = PageJumpTarget(_key!, 'category', {
+              "category": tags[i],
+              "param": categoryParams?.elementAtOrNull(i),
+            });
+          } else if (itemType == 'search') {
+            target = PageJumpTarget(_key!, 'search', {"keyword": tags[i]});
+          } else if (itemType == 'search_with_namespace') {
+            target = PageJumpTarget(_key!, 'search', {
+              "keyword": "$name:$tags[i]",
+            });
+          } else {
+            target = PageJumpTarget(_key!, itemType, null);
+          }
+          cs.add(CategoryItem(tags[i], target));
+        }
+        if (type == "fixed") {
+          categoryParts.add(FixedCategoryPart(name, cs));
+        } else if (type == "random") {
+          categoryParts.add(
+            RandomCategoryPart(name, cs, c["randomNumber"] ?? 1),
+          );
+        }
       }
     }
 
@@ -474,11 +536,14 @@ class AnimeSourceParser {
         if (option.isEmpty || !option.contains("-")) {
           continue;
         }
-        var split = option.split("-");
-        var key = split.removeAt(0);
-        var value = split.join("-");
+
+        int lastIndex = option.lastIndexOf("-");
+        var key = option.substring(0, lastIndex);
+        var value = option.substring(lastIndex + 1);
+
         map[key] = value;
       }
+
       options.add(
         CategoryAnimesOptions(
           map,
@@ -576,9 +641,9 @@ class AnimeSourceParser {
         if (option.isEmpty || !option.contains("-")) {
           continue;
         }
-        var split = option.split("-");
-        var key = split.removeAt(0);
-        var value = split.join("-");
+        int lastIndex = option.lastIndexOf("-");
+        var key = option.substring(0, lastIndex);
+        var value = option.substring(lastIndex + 1);
         map[key] = value;
       }
       options.add(

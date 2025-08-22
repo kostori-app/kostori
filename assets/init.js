@@ -897,9 +897,23 @@ let console = {
  * @param language {string?}
  * @param favoriteId {string?} - Only set this field if the anime is from favorites page
  * @param stars {number?} - 0-5, double
+ * @param viewMore
  * @constructor
  */
-function Anime({id, title, subtitle, subTitle, cover, tags, description, maxPage, language, favoriteId, stars}) {
+function Anime({
+                   id,
+                   title,
+                   subtitle,
+                   subTitle,
+                   cover,
+                   tags,
+                   description,
+                   maxPage,
+                   language,
+                   favoriteId,
+                   stars,
+                   viewMore
+               }) {
     this.id = id;
     this.title = title;
     this.subtitle = subtitle;
@@ -911,6 +925,7 @@ function Anime({id, title, subtitle, subTitle, cover, tags, description, maxPage
     this.language = language;
     this.favoriteId = favoriteId;
     this.stars = stars;
+    this.viewMore = viewMore;
 }
 
 /**

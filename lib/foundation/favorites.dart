@@ -26,6 +26,8 @@ class FavoriteItem implements Anime {
   String id;
   String coverPath;
   late String time;
+  @override
+  final PageJumpTarget? viewMore;
 
   FavoriteItem({
     required this.id,
@@ -34,6 +36,7 @@ class FavoriteItem implements Anime {
     required this.author,
     required this.type,
     required this.tags,
+    this.viewMore,
     DateTime? favoriteTime,
   }) {
     var t = favoriteTime ?? DateTime.now();
@@ -47,6 +50,10 @@ class FavoriteItem implements Anime {
       tags = (row["tags"] as String).split(","),
       id = row["id"],
       coverPath = row["cover_path"],
+      viewMore =
+          row["viewMore"] != null && (row["viewMore"] as String).isNotEmpty
+          ? PageJumpTarget.fromJsonString(row["viewMore"] as String)
+          : null,
       time = row["time"] {
     tags.remove("");
   }
@@ -120,6 +127,7 @@ class FavoriteItem implements Anime {
       coverPath: json["coverPath"],
       type: AnimeType(type),
       tags: List<String>.from(json["tags"] ?? []),
+      viewMore: json["viewMore"],
     );
   }
 }
@@ -135,6 +143,7 @@ class FavoriteItemWithFolderInfo extends FavoriteItem {
         author: item.author,
         type: item.type,
         tags: item.tags,
+        viewMore: item.viewMore,
       );
 }
 
@@ -160,6 +169,7 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
         author: item.author,
         type: item.type,
         tags: item.tags,
+        viewMore: item.viewMore,
       );
 
   @override
@@ -225,18 +235,17 @@ class LocalFavoritesManager with ChangeNotifier {
     //遍历增加列
     var folderNames = _getFolderNamesWithDB();
     for (var folder in folderNames) {
-      var columns = _db.select("""
-        pragma table_info("$folder");
-      """);
+      var columns = _db.select('pragma table_info("$folder");');
+
       if (!columns.any((element) => element["name"] == "recently_watched")) {
-        _db.execute("""
-          alter table "$folder"
-          add column recently_watched TEXT;
-        """);
-      } else {
-        break;
+        _db.execute('alter table "$folder" add column recently_watched TEXT;');
+      }
+
+      if (!columns.any((element) => element["name"] == "viewMore")) {
+        _db.execute('alter table "$folder" add column viewMore TEXT;');
       }
     }
+
     await appdata.ensureInit();
     initCounts();
   }
@@ -492,6 +501,7 @@ class LocalFavoritesManager with ChangeNotifier {
         time TEXT,
         display_order int,
         recently_watched TEXT,
+        viewMore Text,
         primary key (id, type)
       );
     """);
@@ -549,30 +559,33 @@ class LocalFavoritesManager with ChangeNotifier {
       anime.type.value,
       anime.tags.join(","),
       anime.coverPath,
+      anime.viewMore is PageJumpTarget
+          ? (anime.viewMore as PageJumpTarget).toJsonString()
+          : anime.viewMore,
       anime.time,
       anime.time,
     ];
     if (order != null) {
       _db.execute(
         """
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        insert into "$folder" (id, name, author, type, tags, cover_path, viewMore, time, recently_watched, display_order)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       """,
         [...params, order],
       );
     } else if (appdata.settings['newFavoriteAddTo'] == "end") {
       _db.execute(
         """
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        insert into "$folder" (id, name, author, type, tags, cover_path, viewMore, time, recently_watched, display_order)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       """,
         [...params, maxValue(folder) + 1],
       );
     } else {
       _db.execute(
         """
-        insert into "$folder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        insert into "$folder" (id, name, author, type, tags, cover_path, viewMore, time, recently_watched, display_order)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       """,
         [...params, minValue(folder) - 1],
       );
@@ -612,8 +625,8 @@ class LocalFavoritesManager with ChangeNotifier {
 
     _db.execute(
       """
-      insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order, recently_watched)
-      select id, name, author, type, tags, cover_path, time, ?, recently_watched
+      insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order, recently_watched, viewMore)
+      select id, name, author, type, tags, cover_path, time, ?, recently_watched, viewMore
       from "$sourceFolder"
       where id == ? and type == ?;
     """,
@@ -653,8 +666,8 @@ class LocalFavoritesManager with ChangeNotifier {
       for (var item in items) {
         _db.execute(
           """
-          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
-          select id, name, author, type, tags, cover_path, time, recently_watched, ?
+          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order, viewMore)
+          select id, name, author, type, tags, cover_path, time, recently_watched, ?, viewMore
           from "$sourceFolder"
           where id == ? and type == ?;
         """,
@@ -719,8 +732,8 @@ class LocalFavoritesManager with ChangeNotifier {
       for (var item in items) {
         _db.execute(
           """
-          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order)
-          select id, name, author, type, tags, cover_path, time, recently_watched, ?
+          insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order, viewMore)
+          select id, name, author, type, tags, cover_path, time, recently_watched, ?, viewMore
           from "$sourceFolder"
           where id == ? and type == ?;
         """,

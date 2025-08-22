@@ -61,6 +61,8 @@ class Anime {
   /// 0-5
   final double? stars;
 
+  final PageJumpTarget? viewMore;
+
   const Anime(
     this.title,
     this.cover,
@@ -70,6 +72,7 @@ class Anime {
     this.description,
     this.sourceKey,
     this.language,
+    this.viewMore,
   ) : favoriteId = null,
       stars = null;
 
@@ -84,6 +87,7 @@ class Anime {
       "sourceKey": sourceKey,
       "language": language,
       "favoriteId": favoriteId,
+      "viewMore": viewMore,
     };
   }
 
@@ -96,7 +100,8 @@ class Anime {
       description = json["description"] ?? "",
       language = json["language"],
       favoriteId = json["favoriteId"],
-      stars = (json["stars"] as num?)?.toDouble();
+      stars = (json["stars"] as num?)?.toDouble(),
+      viewMore = PageJumpTarget.parse(sourceKey, json["viewMore"]);
 
   @override
   bool operator ==(Object other) {
@@ -168,10 +173,6 @@ class AnimeDetails with HistoryMixin {
 
   final int? commentsCount;
 
-  final List<String>? director; // 新增导演字段
-
-  final List<String>? actors; // 新增演员字段
-
   final String? uploader;
 
   final String? uploadTime;
@@ -220,8 +221,6 @@ class AnimeDetails with HistoryMixin {
       likesCount = json["likesCount"],
       isLiked = json["isLiked"],
       commentsCount = json["commentsCount"],
-      director = json["director"],
-      actors = json["actors"],
       uploader = json["uploader"],
       uploadTime = json["uploadTime"],
       updateTime = json["updateTime"],
@@ -245,8 +244,6 @@ class AnimeDetails with HistoryMixin {
       "isLiked": isLiked,
       "likesCount": likesCount,
       "commentsCount": commentsCount,
-      "director": director,
-      "actors": actors,
       "uploader": uploader,
       "uploadTime": uploadTime,
       "updateTime": updateTime,
@@ -261,6 +258,9 @@ class AnimeDetails with HistoryMixin {
   String get id => animeId;
 
   AnimeType get animeType => AnimeType(sourceKey.hashCode);
+
+  @override
+  PageJumpTarget? get viewMore => null;
 }
 
 class PageJumpTarget {
@@ -306,9 +306,10 @@ class PageJumpTarget {
         var c = segments[1];
         if (c.contains('@')) {
           var parts = c.split('@');
+          var param = value.split("@");
           return PageJumpTarget(sourceKey, "category", {
             "category": parts[0],
-            "param": parts[1],
+            "param": param[1],
           });
         } else {
           return PageJumpTarget(sourceKey, "category", {"category": c});
@@ -344,5 +345,24 @@ class PageJumpTarget {
     } else {
       Log.error("Page Jump", "Unknown page: $page");
     }
+  }
+
+  /// 序列化成字符串存入 SQLite
+  String toJsonString() {
+    return jsonEncode({
+      "sourceKey": sourceKey,
+      "page": page,
+      "attributes": attributes,
+    });
+  }
+
+  /// 从字符串反序列化
+  static PageJumpTarget fromJsonString(String jsonStr) {
+    final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+    return PageJumpTarget(
+      map["sourceKey"],
+      map["page"],
+      map["attributes"] as Map<String, dynamic>?,
+    );
   }
 }

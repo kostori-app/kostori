@@ -11,6 +11,7 @@ import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
 
 import '../foundation/appdata.dart';
+import 'categories_page.dart';
 import 'me_page.dart';
 
 class MainPage extends StatefulWidget {
@@ -95,6 +96,13 @@ class _MainPageState extends State<MainPage> {
           label: "Search".tl,
           onTap: () {
             to(() => const SearchPage(), preventDuplicate: true);
+          },
+        ),
+        PaneActionEntry(
+          icon: Icons.category,
+          label: 'Categories'.tl,
+          onTap: () {
+            to(() => const CategoriesPage(), preventDuplicate: true);
           },
         ),
         PaneActionEntry(

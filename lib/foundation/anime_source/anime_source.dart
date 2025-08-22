@@ -425,6 +425,12 @@ class ExplorePagePart {
   const ExplorePagePart(this.title, this.animes, this.viewMore);
 }
 
+class ExploreGridPart {
+  final List<Anime> animes;
+
+  const ExploreGridPart(this.animes);
+}
+
 enum ExplorePageType {
   multiPageAnimeList,
   singlePageWithMultiPart,
