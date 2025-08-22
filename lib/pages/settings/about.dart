@@ -171,32 +171,7 @@ Future<void> checkUpdateUi([
     IsolateNameServer.removePortNameMapping('downloader_send_port');
   }
   IsolateNameServer.registerPortWithName(port.sendPort, 'downloader_send_port');
-
   bool fileValid = false;
-  port.listen((dynamic data) {
-    String id = data[0];
-    int statusInt = data[1];
-    int progress = data[2];
-
-    DownloadTaskStatus status = DownloadTaskStatus.values[statusInt];
-
-    if (id == taskId) {
-      dialogSetState(() {
-        downloadProgress = progress / 100;
-        isDownloading = status == DownloadTaskStatus.running;
-        if (!isDownloading && progress != 100 && !downloadStopped) {
-          downloadStopped = true;
-          App.rootContext.showMessage(message: "下载停止".tl);
-        }
-      });
-      if (progress == 100) {
-        fileValid = true;
-      }
-    }
-  });
-
-  FlutterDownloader.registerCallback(downloadCallback);
-
   final abi = await getAppAbi();
   final response = await AppDio().request(
     'https://api.github.com/repos/kostori-app/kostori/releases/latest',
@@ -238,6 +213,38 @@ Future<void> checkUpdateUi([
     '$name \n $downloadUrl \n $expectedSha256 \n $filePath',
   );
 
+  port.listen((dynamic data) async {
+    String id = data[0];
+    int statusInt = data[1];
+    int progress = data[2];
+
+    DownloadTaskStatus status = DownloadTaskStatus.values[statusInt];
+
+    if (id == taskId) {
+      dialogSetState(() {
+        downloadProgress = progress / 100;
+        isDownloading = status == DownloadTaskStatus.running;
+        if (!isDownloading && progress != 100 && !downloadStopped) {
+          downloadStopped = true;
+          App.rootContext.showMessage(message: "下载失败".tl);
+        }
+      });
+      if (progress == 100) {
+        if (await file.exists()) {
+          final actualSha256 = await calculateSha256(file);
+          dialogSetState.call(() {
+            fileValid = (actualSha256 == expectedSha256);
+          });
+          if (!fileValid) {
+            App.rootContext.showMessage(message: "检查哈希值失败,请重试".tl);
+          }
+        }
+      }
+    }
+  });
+
+  FlutterDownloader.registerCallback(downloadCallback);
+
   showDialog(
     context: App.rootContext,
     barrierDismissible: false,
@@ -260,7 +267,10 @@ Future<void> checkUpdateUi([
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      LinearProgressIndicator(value: downloadProgress),
+                      SizedBox(
+                        width: double.infinity,
+                        child: LinearProgressIndicator(value: downloadProgress),
+                      ),
                       const SizedBox(height: 8),
                       Text('${(downloadProgress * 100).toStringAsFixed(0)}%'),
                     ],
@@ -297,12 +307,32 @@ Future<void> checkUpdateUi([
                 )
               else if (!isDownloading &&
                   App.isAndroid &&
-                  matchedAsset.isNotEmpty)
+                  matchedAsset.isNotEmpty) ...[
                 Button.text(
                   onPressed: () async {
                     setState(() {
                       isDownloading = true;
                       downloadStopped = false;
+                      fileValid = false;
+                      downloadProgress = 0.0;
+                    });
+
+                    taskId = await FlutterDownloader.enqueue(
+                      url: Api.gitMirror + downloadUrl,
+                      savedDir: dir.path,
+                      fileName: name,
+                      showNotification: true,
+                      openFileFromNotification: true,
+                    );
+                  },
+                  child: Text("镜像".tl),
+                ),
+                Button.text(
+                  onPressed: () async {
+                    setState(() {
+                      isDownloading = true;
+                      downloadStopped = false;
+                      fileValid = false;
                       downloadProgress = 0.0;
                     });
 
@@ -316,6 +346,7 @@ Future<void> checkUpdateUi([
                   },
                   child: Text("Download".tl),
                 ),
+              ],
               Button.text(
                 onPressed: () {
                   Navigator.pop(context);
