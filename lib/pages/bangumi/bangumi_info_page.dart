@@ -219,6 +219,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController.topicsList.clear();
     infoController.reviewsList.clear();
     infoController.staffList.clear();
+    infoController.bangumiSRI.clear();
     infoTabController.dispose();
     super.dispose();
   }

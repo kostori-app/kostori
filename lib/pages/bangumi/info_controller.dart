@@ -29,8 +29,6 @@ abstract class _InfoController with Store {
 
   final List<String> tabs = <String>['概览', '吐槽', '讨论', '日志', '角色', '制作'];
 
-  List<BangumiSRI> bangumiSRI = [];
-
   List<History> bangumiHistory = [];
 
   bool showLineChart = false;
@@ -62,12 +60,17 @@ abstract class _InfoController with Store {
   @observable
   var episodeCommentsList = ObservableList<EpisodeCommentItem>();
 
+  @observable
+  var bangumiSRI = ObservableList<BangumiSRI>();
+
   Future<void> queryBangumiInfoByID(int id) async {
     isLoading = true;
     try {
       bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
-      bangumiSRI = [];
-      bangumiSRI = await Bangumi.getBangumiSRIByID(id);
+      bangumiSRI.clear();
+      await Bangumi.getBangumiSRIByID(id).then((v) {
+        bangumiSRI.addAll(v);
+      });
       isLoading = false;
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());
