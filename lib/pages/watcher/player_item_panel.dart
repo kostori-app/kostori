@@ -10,7 +10,9 @@ import 'package:gif/gif.dart';
 import 'package:kostori/components/BatteryWidget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/io.dart';
@@ -19,9 +21,6 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:path_provider/path_provider.dart';
-
-import '../../foundation/appdata.dart';
-import '../settings/settings_page.dart';
 
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({

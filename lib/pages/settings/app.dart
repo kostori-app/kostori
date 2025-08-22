@@ -15,137 +15,168 @@ class _AppSettingsState extends State<AppSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("App".tl)),
-        _SettingPartTitle(title: "Data".tl, icon: Icons.storage),
-        ListTile(
-          title: Text("Cache Size".tl),
-          subtitle: Text(bytesToReadableString(CacheManager().currentSize)),
-        ).toSliver(),
-        _CallbackSetting(
-          title: "Clear Cache".tl,
-          actionTitle: "Clear".tl,
-          callback: () async {
-            var loadingDialog = showLoadingDialog(
-              App.rootContext,
-              barrierDismissible: false,
-              allowCancel: false,
-            );
-            await CacheManager().clear();
-            loadingDialog.close();
-            context.showMessage(message: "Cache cleared".tl);
-            setState(() {});
-          },
-        ).toSliver(),
-        _CallbackSetting(
-          title: "Cache Limit".tl,
-          subtitle: "${appdata.settings['cacheSize']} MB",
-          callback: () {
-            showInputDialog(
-              context: context,
-              title: "Set Cache Limit".tl,
-              hintText: "Size in MB".tl,
-              inputValidator: RegExp(r"^\d+$"),
-              onConfirm: (value) {
-                appdata.settings['cacheSize'] = int.parse(value);
-                appdata.saveData();
-                setState(() {});
-                CacheManager().setLimitSize(appdata.settings['cacheSize']);
-                return null;
-              },
-            );
-          },
-          actionTitle: 'Set'.tl,
-        ).toSliver(),
-        _CallbackSetting(
-          title: "Export App Data".tl,
-          callback: () async {
-            var controller = showLoadingDialog(context);
-            var file = await exportAppData();
-            await saveFile(filename: "data.kostori", file: file);
-            controller.close();
-          },
-          actionTitle: 'Export'.tl,
-        ).toSliver(),
-        _CallbackSetting(
-          title: "Import App Data".tl,
-          callback: () async {
-            var controller = showLoadingDialog(context);
-            var file = await selectFile(ext: ['kostori']);
-            if (file != null) {
-              var cacheFile = File(
-                FilePath.join(App.cachePath, "import_data_temp"),
-              );
-              await file.saveTo(cacheFile.path);
-              try {
-                await importAppData(cacheFile);
-              } catch (e, s) {
-                Log.error("Import data", e.toString(), s);
-                context.showMessage(message: "Failed to import data".tl);
-              } finally {
-                cacheFile.deleteIgnoreError();
-                App.forceRebuild();
-              }
-            }
-            controller.close();
-          },
-          actionTitle: 'Import'.tl,
-        ).toSliver(),
-        _CallbackSetting(
-          title: "Data Sync".tl,
-          callback: () async {
-            showPopUpWidget(context, const _WebdavSetting());
-          },
-          actionTitle: 'Set'.tl,
-        ).toSliver(),
-        _SettingPartTitle(title: "Log".tl, icon: Icons.error_outline),
-        _CallbackSetting(
-          title: "Open Log".tl,
-          callback: () {
-            context.to(() => const LogsPage());
-          },
-          actionTitle: 'Open'.tl,
-        ).toSliver(),
-        _SwitchSetting(
-          title: "Debug Info".tl,
-          settingKey: "debugInfo",
-        ).toSliver(),
-        _SettingPartTitle(title: "User".tl, icon: Icons.person_outline),
-        SelectSetting(
-          title: "Language".tl,
-          settingKey: "language",
-          optionTranslation: const {
-            "system": "System",
-            "zh-CN": "简体中文",
-            "zh-TW": "繁體中文",
-            "en-US": "English",
-          },
-          onChanged: () {
-            App.forceRebuild();
-          },
-        ).toSliver(),
-        if (!App.isLinux)
-          _SwitchSetting(
-            title: "Authorization Required".tl,
-            settingKey: "authorizationRequired",
-            onChanged: () async {
-              var current = appdata.settings['authorizationRequired'];
-              if (current) {
-                final auth = LocalAuthentication();
-                final bool canAuthenticateWithBiometrics =
-                    await auth.canCheckBiometrics;
-                final bool canAuthenticate =
-                    canAuthenticateWithBiometrics ||
-                    await auth.isDeviceSupported();
-                if (!canAuthenticate) {
-                  context.showMessage(message: "Biometrics not supported".tl);
-                  setState(() {
-                    appdata.settings['authorizationRequired'] = false;
-                  });
-                  appdata.saveData();
-                  return;
-                }
-              }
-            },
-          ).toSliver(),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(title: "Data".tl, icon: Icons.storage),
+                ListTile(
+                  title: Text("Cache Size".tl),
+                  subtitle: Text(
+                    bytesToReadableString(CacheManager().currentSize),
+                  ),
+                ),
+                _CallbackSetting(
+                  title: "Clear Cache".tl,
+                  actionTitle: "Clear".tl,
+                  callback: () async {
+                    var loadingDialog = showLoadingDialog(
+                      App.rootContext,
+                      barrierDismissible: false,
+                      allowCancel: false,
+                    );
+                    await CacheManager().clear();
+                    loadingDialog.close();
+                    context.showMessage(message: "Cache cleared".tl);
+                    setState(() {});
+                  },
+                ),
+                _CallbackSetting(
+                  title: "Cache Limit".tl,
+                  subtitle: "${appdata.settings['cacheSize']} MB",
+                  callback: () {
+                    showInputDialog(
+                      context: context,
+                      title: "Set Cache Limit".tl,
+                      hintText: "Size in MB".tl,
+                      inputValidator: RegExp(r"^\d+$"),
+                      onConfirm: (value) {
+                        appdata.settings['cacheSize'] = int.parse(value);
+                        appdata.saveData();
+                        setState(() {});
+                        CacheManager().setLimitSize(
+                          appdata.settings['cacheSize'],
+                        );
+                        return null;
+                      },
+                    );
+                  },
+                  actionTitle: 'Set'.tl,
+                ),
+                _CallbackSetting(
+                  title: "Export App Data".tl,
+                  actionTitle: 'Export'.tl,
+                  callback: () async {
+                    var controller = showLoadingDialog(context);
+                    var file = await exportAppData();
+                    await saveFile(filename: "data.kostori", file: file);
+                    controller.close();
+                  },
+                ),
+                _CallbackSetting(
+                  title: "Import App Data".tl,
+                  actionTitle: 'Import'.tl,
+                  callback: () async {
+                    var controller = showLoadingDialog(context);
+                    var file = await selectFile(ext: ['kostori']);
+                    if (file != null) {
+                      var cacheFile = File(
+                        FilePath.join(App.cachePath, "import_data_temp"),
+                      );
+                      await file.saveTo(cacheFile.path);
+                      try {
+                        await importAppData(cacheFile);
+                      } catch (e, s) {
+                        Log.error("Import data", e.toString(), s);
+                        context.showMessage(
+                          message: "Failed to import data".tl,
+                        );
+                      } finally {
+                        cacheFile.deleteIgnoreError();
+                        App.forceRebuild();
+                      }
+                    }
+                    controller.close();
+                  },
+                ),
+                _CallbackSetting(
+                  title: "Data Sync".tl,
+                  actionTitle: 'Set'.tl,
+                  callback: () async {
+                    showPopUpWidget(context, const _WebdavSetting());
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(title: "Log".tl, icon: Icons.error_outline),
+                _CallbackSetting(
+                  title: "Open Log".tl,
+                  actionTitle: 'Open'.tl,
+                  callback: () => context.to(() => const LogsPage()),
+                ),
+                _SwitchSetting(title: "Debug Info".tl, settingKey: "debugInfo"),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(title: "User".tl, icon: Icons.person_outline),
+                SelectSetting(
+                  title: "Language".tl,
+                  settingKey: "language",
+                  optionTranslation: const {
+                    "system": "System",
+                    "zh-CN": "简体中文",
+                    "zh-TW": "繁體中文",
+                    "en-US": "English",
+                  },
+                  onChanged: () => App.forceRebuild(),
+                ),
+                if (!App.isLinux)
+                  _SwitchSetting(
+                    title: "Authorization Required".tl,
+                    settingKey: "authorizationRequired",
+                    onChanged: () async {
+                      var current = appdata.settings['authorizationRequired'];
+                      if (current) {
+                        final auth = LocalAuthentication();
+                        final bool canAuthenticateWithBiometrics =
+                            await auth.canCheckBiometrics;
+                        final bool canAuthenticate =
+                            canAuthenticateWithBiometrics ||
+                            await auth.isDeviceSupported();
+                        if (!canAuthenticate) {
+                          context.showMessage(
+                            message: "Biometrics not supported".tl,
+                          );
+                          setState(() {
+                            appdata.settings['authorizationRequired'] = false;
+                          });
+                          appdata.saveData();
+                          return;
+                        }
+                      }
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -366,30 +397,18 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               trailing: Switch(value: autoSync, onChanged: onAutoSyncChanged),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Text("Operation".tl),
-                Radio<bool>(
-                  groupValue: upload,
-                  value: true,
-                  onChanged: (value) {
-                    setState(() {
-                      upload = value!;
-                    });
-                  },
-                ),
-                Text("Upload".tl),
-                Radio<bool>(
-                  groupValue: upload,
-                  value: false,
-                  onChanged: (value) {
-                    setState(() {
-                      upload = value!;
-                    });
-                  },
-                ),
-                Text("Download".tl),
-              ],
+            RadioGroup<bool>(
+              groupValue: upload,
+              onChanged: (v) => setState(() => upload = v!),
+              child: Row(
+                children: [
+                  Text("Operation".tl),
+                  Radio(value: true),
+                  Text("Upload".tl),
+                  Radio(value: false),
+                  Text("Download".tl),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             AnimatedSize(

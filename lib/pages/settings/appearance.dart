@@ -67,23 +67,33 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
             dividerColor: Colors.transparent,
           ),
         ),
-        _SwitchSetting(
-          title: "AMOLED".tl,
-          settingKey: "AMOLED",
-          onChanged: () {
-            App.forceRebuild();
-          },
-        ).toSliver(),
-        _SwitchSetting(
-          title: "动态取色".tl,
-          settingKey: "dynamicColor",
-          onChanged: () async {
-            await App.init();
-            App.forceRebuild();
-          },
-        ).toSliver(),
-        if (!appdata.settings['dynamicColor'])
-          ThemePreviewScroller(seedColorMap: standardColorMap).toSliver(),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SwitchSetting(
+                  title: "AMOLED".tl,
+                  settingKey: "AMOLED",
+                  onChanged: () {
+                    App.forceRebuild();
+                  },
+                ),
+                _SwitchSetting(
+                  title: "动态取色".tl,
+                  settingKey: "dynamicColor",
+                  onChanged: () async {
+                    await App.init();
+                    App.forceRebuild();
+                  },
+                ),
+                if (!appdata.settings['dynamicColor'])
+                  ThemePreviewScroller(seedColorMap: standardColorMap),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

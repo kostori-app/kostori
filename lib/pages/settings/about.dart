@@ -47,76 +47,86 @@ class _AboutSettingsState extends State<AboutSettings> {
             const SizedBox(height: 8),
           ],
         ).toSliver(),
-        ListTile(
-          title: Text("Check for updates".tl),
-          trailing: Button.filled(
-            isLoading: isCheckingAppUpdate,
-            child: Text("Check".tl),
-            onPressed: () {
-              setState(() {
-                isCheckingAppUpdate = true;
-              });
-              checkUpdateUi().then((value) {
-                setState(() {
-                  isCheckingAppUpdate = false;
-                });
-              });
-            },
-          ).fixHeight(32),
-        ).toSliver(),
-        ListTile(
-          title: const Text("Bangumi-data"),
-          subtitle: Text(appdata.settings['bangumiDataVer']),
-          trailing: Button.filled(
-            isLoading: isCheckingBangumiDataUpdate,
-            child: Text("Check".tl),
-            onPressed: () {
-              setState(() {
-                isCheckingBangumiDataUpdate = true;
-              });
-              Bangumi.checkBangumiData().then((value) {
-                setState(() {
-                  isCheckingBangumiDataUpdate = false;
-                });
-              });
-            },
-          ).fixHeight(32),
-        ).toSliver(),
-        ListTile(
-          title: Text("Reset Bangumi-data".tl),
-          trailing: Button.filled(
-            isLoading: isCheckingBangumiDataReset,
-            child: Text("Reset".tl),
-            onPressed: () {
-              setState(() {
-                isCheckingBangumiDataReset = true;
-              });
-              Bangumi.resetBangumiData().then((value) {
-                setState(() {
-                  isCheckingBangumiDataReset = false;
-                });
-              });
-            },
-          ).fixHeight(32),
-        ).toSliver(),
-        _SwitchSetting(
-          title: "Check for updates on startup".tl,
-          settingKey: "checkUpdateOnStart",
-        ).toSliver(),
-        ListTile(
-          title: Text("Icon producer".tl),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: () {
-            launchUrlString("https://www.pixiv.net/users/18071897");
-          },
-        ).toSliver(),
-        ListTile(
-          title: const Text("Github"),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: () {
-            launchUrlString("https://github.com/kostori-app/kostori");
-          },
-        ).toSliver(),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                ListTile(
+                  title: Text("Check for updates".tl),
+                  trailing: Button.filled(
+                    isLoading: isCheckingAppUpdate,
+                    child: Text("Check".tl),
+                    onPressed: () {
+                      setState(() {
+                        isCheckingAppUpdate = true;
+                      });
+                      checkUpdateUi().then((value) {
+                        setState(() {
+                          isCheckingAppUpdate = false;
+                        });
+                      });
+                    },
+                  ).fixHeight(32),
+                ),
+                ListTile(
+                  title: const Text("Bangumi-data"),
+                  subtitle: Text(appdata.settings['bangumiDataVer']),
+                  trailing: Button.filled(
+                    isLoading: isCheckingBangumiDataUpdate,
+                    child: Text("Check".tl),
+                    onPressed: () {
+                      setState(() {
+                        isCheckingBangumiDataUpdate = true;
+                      });
+                      Bangumi.checkBangumiData().then((value) {
+                        setState(() {
+                          isCheckingBangumiDataUpdate = false;
+                        });
+                      });
+                    },
+                  ).fixHeight(32),
+                ),
+                ListTile(
+                  title: Text("Reset Bangumi-data".tl),
+                  trailing: Button.filled(
+                    isLoading: isCheckingBangumiDataReset,
+                    child: Text("Reset".tl),
+                    onPressed: () {
+                      setState(() {
+                        isCheckingBangumiDataReset = true;
+                      });
+                      Bangumi.resetBangumiData().then((value) {
+                        setState(() {
+                          isCheckingBangumiDataReset = false;
+                        });
+                      });
+                    },
+                  ).fixHeight(32),
+                ),
+                _SwitchSetting(
+                  title: "Check for updates on startup".tl,
+                  settingKey: "checkUpdateOnStart",
+                ),
+                ListTile(
+                  title: Text("Icon producer".tl),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    launchUrlString("https://www.pixiv.net/users/18071897");
+                  },
+                ),
+                ListTile(
+                  title: const Text("Github"),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    launchUrlString("https://github.com/kostori-app/kostori");
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

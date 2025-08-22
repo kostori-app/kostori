@@ -13,21 +13,35 @@ class _NetworkSettingsState extends State<NetworkSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Network".tl)),
-        _PopupWindowSetting(
-          title: "Proxy".tl,
-          builder: () => const _ProxySettingView(),
-        ).toSliver(),
-        _PopupWindowSetting(
-          title: "DNS Overrides".tl,
-          builder: () => const _DNSOverrides(),
-        ).toSliver(),
-        _SliderSetting(
-          title: "Download Threads".tl,
-          settingsIndex: 'downloadThreads',
-          interval: 1,
-          min: 1,
-          max: 16,
-        ).toSliver(),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _PopupWindowSetting(
+                  title: "Proxy".tl,
+                  builder: () => const _ProxySettingView(),
+                ),
+                _PopupWindowSetting(
+                  title: "DNS Overrides".tl,
+                  builder: () => const _DNSOverrides(),
+                ),
+                _PopupWindowSetting(
+                  title: "No Proxy Overrides".tl,
+                  builder: () => const _NoProxyOverrides(),
+                ),
+                _SliderSetting(
+                  title: "Download Threads".tl,
+                  settingsIndex: 'downloadThreads',
+                  interval: 1,
+                  min: 1,
+                  max: 16,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -113,49 +127,44 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            RadioListTile<String>(
-              title: Text("Direct".tl),
-              value: 'direct',
+            RadioGroup<String>(
               groupValue: type,
               onChanged: (v) {
                 setState(() {
                   type = v!;
-                });
-                appdata.settings['proxy'] = toProxyStr();
-                appdata.saveData();
-              },
-            ),
-            RadioListTile<String>(
-              title: Text("System".tl),
-              value: 'system',
-              groupValue: type,
-              onChanged: (v) {
-                setState(() {
-                  type = v!;
-                });
-                appdata.settings['proxy'] = toProxyStr();
-                appdata.saveData();
-              },
-            ),
-            RadioListTile(
-              title: Text("Manual".tl),
-              value: 'manual',
-              groupValue: type,
-              onChanged: (v) {
-                setState(() {
-                  type = v!;
-                  if (host.isEmpty && port.isEmpty) {
-                    if (appdata.implicitData['proxy'] != null) {
-                      var data = appdata.implicitData['proxy'];
-                      host = data['host'];
-                      port = data['port'];
-                      username = data['username'];
-                      password = data['password'];
+                  if (v == 'manual') {
+                    if (host.isEmpty && port.isEmpty) {
+                      if (appdata.implicitData['proxy'] != null) {
+                        var data = appdata.implicitData['proxy'];
+                        host = data['host'];
+                        port = data['port'];
+                        username = data['username'];
+                        password = data['password'];
+                      }
                     }
                   }
                 });
+                appdata.settings['proxy'] = toProxyStr();
+                appdata.saveData();
               },
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    title: Text("Direct".tl),
+                    value: 'direct',
+                  ),
+                  RadioListTile<String>(
+                    title: Text("System".tl),
+                    value: 'system',
+                  ),
+                  RadioListTile<String>(
+                    title: Text("Manual".tl),
+                    value: 'manual',
+                  ),
+                ],
+              ),
             ),
+
             if (type == 'manual') buildManualProxy(),
           ],
         ),
@@ -307,7 +316,10 @@ class __DNSOverridesState extends State<_DNSOverrides> {
               title: "Enable DNS Overrides".tl,
               settingKey: "enableDnsOverrides",
             ),
-            _SwitchSetting(title: "Server Name Indication", settingKey: "sni"),
+            _SwitchSetting(
+              title: "Server Name Indication".tl,
+              settingKey: "sni",
+            ),
             const SizedBox(height: 8),
             Container(
               height: 1,
