@@ -212,6 +212,10 @@ class WatcherState extends State<Watcher>
         widget.wid,
         ep?.keys.elementAt(episode - 1),
       );
+      if (res is! String || res.isEmpty) {
+        Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
+        return;
+      }
       playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
@@ -247,6 +251,10 @@ class WatcherState extends State<Watcher>
         widget.wid,
         ep?.keys.elementAt(episode - 1),
       );
+      if (res is! String || res.isEmpty) {
+        Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
+        return;
+      }
       playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
@@ -265,7 +273,9 @@ class WatcherState extends State<Watcher>
 
   Future<void> _play(String res, int order, int currentPlaybackTime) async {
     try {
-      await playerController.player.open(Media(res));
+      if (mounted) {
+        await playerController.player.open(Media(res));
+      }
     } catch (e, s) {
       Log.addLog(LogLevel.error, "openMedia", "$e\n$s");
     }
@@ -279,10 +289,11 @@ class WatcherState extends State<Watcher>
         // It seems that when the `buffer.first` is fired, the media is not fully loaded
         // and the player will not seek properlly.
         await sub.cancel();
-
-        await playerController.player.seek(
-          Duration(milliseconds: currentPlaybackTime),
-        );
+        if (mounted) {
+          await playerController.player.seek(
+            Duration(milliseconds: currentPlaybackTime),
+          );
+        }
         completer.complete(0);
       }
     });
