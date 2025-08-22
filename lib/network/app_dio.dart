@@ -205,9 +205,12 @@ class RHttpAdapter implements HttpClientAdapter {
   Future<rhttp.ClientSettings> settings(Uri uri) async {
     final proxy = await getProxy();
 
-    // 判断 host 是否以 bgm 或 bangumi 开头，决定是否绕过代理
-    final isNoProxy =
-        uri.host.startsWith('bgm') || uri.host.startsWith('bangumi');
+    final noProxyOverrides = appdata.settings['noProxyOverrides'] ?? [];
+    final enableNoProxyOverrides =
+        appdata.settings['enableNoProxyOverrides'] ?? false;
+    final isNoProxy = enableNoProxyOverrides
+        ? noProxyOverrides.any((prefix) => uri.host.startsWith(prefix))
+        : false;
 
     return rhttp.ClientSettings(
       proxySettings: isNoProxy
@@ -318,7 +321,7 @@ class RetryInterceptor extends Interceptor {
 
   RetryInterceptor({
     required this.dio,
-    this.maxRetries = 1,
+    this.maxRetries = 0,
     this.retryDelay = const Duration(seconds: 2),
   });
 

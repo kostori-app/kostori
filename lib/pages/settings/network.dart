@@ -287,6 +287,8 @@ class __DNSOverridesState extends State<_DNSOverrides> {
     var map = <String, String>{};
     for (var entry in overrides) {
       map[entry.$1.text] = entry.$2.text;
+      entry.$1.dispose();
+      entry.$2.dispose();
     }
     appdata.settings['dnsOverrides'] = map;
     appdata.saveData();
@@ -371,6 +373,114 @@ class __DNSOverridesState extends State<_DNSOverrides> {
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
               setState(() {
+                overrides[index].$1.dispose();
+                overrides[index].$2.dispose();
+                overrides.removeAt(index);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoProxyOverrides extends StatefulWidget {
+  const _NoProxyOverrides();
+
+  @override
+  State<_NoProxyOverrides> createState() => __NoProxyOverridesState();
+}
+
+class __NoProxyOverridesState extends State<_NoProxyOverrides> {
+  List<TextEditingController> overrides = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final noProxyOverrides = appdata.settings['noProxyOverrides'] ?? [];
+    overrides = (noProxyOverrides as List)
+        .map((e) => TextEditingController(text: e.toString()))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    final newList = <String>[];
+    for (var controller in overrides) {
+      newList.add(controller.text);
+      controller.dispose();
+    }
+    appdata.settings['noProxyOverrides'] = newList;
+    appdata.saveData();
+    JsEngine().resetDio();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: "No Proxy Overrides".tl,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _SwitchSetting(
+              title: "Enable No Proxy Overrides".tl,
+              settingKey: "enableNoProxyOverrides",
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 1,
+              margin: EdgeInsets.symmetric(horizontal: 8),
+              color: context.colorScheme.outlineVariant,
+            ),
+            for (var i = 0; i < overrides.length; i++) buildOverride(i),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: Text("Add".tl),
+              onPressed: () {
+                setState(() {
+                  overrides.add(TextEditingController());
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildOverride(int index) {
+    var controller = overrides[index];
+    return Container(
+      key: ValueKey(index),
+      height: 48,
+      margin: EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.colorScheme.outlineVariant),
+          left: BorderSide(color: context.colorScheme.outlineVariant),
+          right: BorderSide(color: context.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: "Domain".tl,
+              ),
+            ).paddingHorizontal(8),
+          ),
+          Container(width: 1, color: context.colorScheme.outlineVariant),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () {
+              setState(() {
+                overrides[index].dispose();
                 overrides.removeAt(index);
               });
             },
