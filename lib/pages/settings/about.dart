@@ -335,7 +335,7 @@ Future<void> checkUpdateUi([
                       openFileFromNotification: true,
                     );
                   },
-                  child: Text("镜像".tl),
+                  child: Text("Mirror".tl),
                 ),
                 Button.text(
                   onPressed: () async {
