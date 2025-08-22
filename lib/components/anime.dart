@@ -325,20 +325,13 @@ class AnimeTile extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          Widget image = Container(
-            decoration: BoxDecoration(
-              color: context.colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.toOpacity(0.2),
-                  blurRadius: 2,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+          Widget image = Material(
+            color: context.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(12),
+            elevation: 2,
+            shadowColor: Colors.black.toOpacity(0.2),
             clipBehavior: Clip.antiAlias,
-            child: buildImage(context),
+            child: Ink(child: buildImage(context)),
           );
 
           if (heroID != null) {
@@ -357,7 +350,7 @@ class AnimeTile extends StatelessWidget {
           final shouldScroll = textPainter.width >= constraints.maxWidth - 20;
 
           return InkWell(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             onTap: _onTap,
             onLongPress: enableLongPressed
                 ? () => _onLongPressed(context)
@@ -401,7 +394,7 @@ class AnimeTile extends StatelessWidget {
                                     ? const EdgeInsets.fromLTRB(4, 2, 4, 2)
                                     : const EdgeInsets.fromLTRB(5, 2, 5, 2),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                   color: Colors.black.toOpacity(0.5),
                                 ),
                                 constraints: BoxConstraints(
@@ -427,6 +420,12 @@ class AnimeTile extends StatelessWidget {
                             children: children,
                           );
                         })(),
+                      ),
+                      Positioned.fill(
+                        child: Ink(
+                          color: Colors.transparent,
+                          child: Container(),
+                        ),
                       ),
                     ],
                   ),
