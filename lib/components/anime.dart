@@ -1410,19 +1410,6 @@ class AnimeListState extends State<AnimeList> {
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return Column(
-        children: [
-          if (widget.errorLeading != null) widget.errorLeading!,
-          _buildPageSelector(),
-          Expanded(
-            child: NetworkError(
-              withAppbar: false,
-              message: _error!,
-              retry: () {
-                setState(() {
-                  _error = null;
-                });
-              },
       return Stack(
         children: [
           Positioned.fill(
