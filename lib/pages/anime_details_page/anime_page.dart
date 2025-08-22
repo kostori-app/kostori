@@ -98,7 +98,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   void updateBangumiBind() async {
     if (history?.bangumiId != null) {
-      // Bangumi.getBangumiInfoBind(history!.bangumiId as int);
       bangumiBindInfo = await BangumiManager().bindFind(
         history!.bangumiId as int,
       );
@@ -146,52 +145,18 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   AnimeDetails get anime => data!;
 
   Future<void> updateBangumiId() async {
-    if (containsIllegalCharacters(anime.title)) {
+    if (Utils.containsIllegalCharacters(anime.title)) {
       return;
     }
     var res = await Bangumi.combinedBangumiSearch(anime.title);
     if (res.isEmpty ||
-        !isHalfOverlap(anime.title, res.first.nameCn) ||
-        !isHalfOverlap(anime.title, res.first.name)) {
+        !Utils.isHalfOverlap(anime.title, res.first.nameCn) ||
+        !Utils.isHalfOverlap(anime.title, res.first.name)) {
       return;
     } else {
       history?.bangumiId = res.first.id;
       HistoryManager().addHistoryAsync(history!);
     }
-  }
-
-  bool containsIllegalCharacters(String title) {
-    final illegalPattern = RegExp(r'[_@#$%^&*()+={\}\[\]\\|<>/~`]');
-
-    final emojiPattern = RegExp(
-      r'[\u{1F600}-\u{1F64F}'
-      r'\u{1F300}-\u{1F5FF}'
-      r'\u{1F680}-\u{1F6FF}'
-      r'\u{2600}-\u{26FF}'
-      r'\u{2700}-\u{27BF}]',
-      unicode: true,
-    );
-
-    if (title.contains('_')) {
-      return true;
-    }
-    if (illegalPattern.hasMatch(title)) {
-      return true;
-    }
-    if (emojiPattern.hasMatch(title)) {
-      return true;
-    }
-    return false;
-  }
-
-  bool isHalfOverlap(String a, String b) {
-    Set<String> setA = a.split('').toSet();
-    Set<String> setB = b.split('').toSet();
-
-    Set<String> common = setA.intersection(setB);
-
-    // 判断重合字符数是否 >= 原字符串字符数的一半
-    return common.length >= (setA.length / 2);
   }
 
   void onScroll() {
@@ -360,18 +325,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         margin: const EdgeInsets.symmetric(vertical: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // 计算图片尺寸，保持0.72宽高比，同时限制最大高度
-            final maxImageWidth = constraints.maxWidth * 0.3; // 宽度不超过容器30%
-            final calculatedHeight = maxImageWidth / 0.72; // 按比例计算高度
-
-            // 应用高度限制
+            final maxImageWidth = constraints.maxWidth * 0.3;
+            final calculatedHeight = maxImageWidth / 0.72;
             final imageHeight = math.min(calculatedHeight, 300.0);
-            final imageWidth = imageHeight * 0.72; // 根据限制后的高度计算宽度
+            final imageWidth = imageHeight * 0.72;
 
             return SizedBox(
               width: constraints.maxWidth,
               height: imageHeight,
-              // padding: const EdgeInsets.all(2),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -928,7 +889,10 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
       child: Column(
         children: [
           Appbar(title: Text(""), backgroundColor: context.colorScheme.surface),
-          const SizedBox(height: 8),
+          buildVideoPlaceholder(context),
+          const SizedBox(height: 4),
+          const Divider(),
+          const SizedBox(height: 4),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -950,15 +914,31 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          const Divider(),
-          const SizedBox(height: 8),
-          Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-            ).fixHeight(24).fixWidth(24),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget buildVideoPlaceholder(BuildContext context) {
+    final double aspectRatioMultiplier = App.isDesktop ? 0.45 : 0.6;
+    final double maxWidth = MediaQuery.of(context).size.width;
+    final double maxHeight = maxWidth * aspectRatioMultiplier;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(App.isDesktop ? 16.0 : 8.0),
+        child: Container(
+          constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: maxWidth),
+          color: Colors.black,
+          alignment: Alignment.center,
+          child: MiscComponents.placeholder(
+            context,
+            50,
+            50,
+            Colors.transparent,
+          ),
+        ),
       ),
     );
   }
