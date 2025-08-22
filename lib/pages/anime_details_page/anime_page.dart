@@ -32,6 +32,7 @@ import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../components/bangumi_widget.dart';
+import '../../components/misc_components.dart';
 import '../../components/share_widget.dart';
 import '../../utils/data_sync.dart';
 import '../bangumi/info_controller.dart';
