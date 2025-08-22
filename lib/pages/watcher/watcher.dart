@@ -322,12 +322,15 @@ class WatcherState extends State<Watcher>
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.0),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.width * 0.45,
-                    maxWidth: MediaQuery.of(context).size.width,
+                child: Hero(
+                  tag: widget.anime.id,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.width * 0.45,
+                      maxWidth: MediaQuery.of(context).size.width,
+                    ),
+                    child: VideoPage(playerController: playerController),
                   ),
-                  child: VideoPage(playerController: playerController),
                 ),
               ),
             )
@@ -335,12 +338,15 @@ class WatcherState extends State<Watcher>
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.width * 0.6,
-                    maxWidth: MediaQuery.of(context).size.width,
+                child: Hero(
+                  tag: widget.anime.id,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.width * 0.6,
+                      maxWidth: MediaQuery.of(context).size.width,
+                    ),
+                    child: VideoPage(playerController: playerController),
                   ),
-                  child: VideoPage(playerController: playerController),
                 ),
               ),
             ),

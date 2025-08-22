@@ -460,7 +460,7 @@ abstract class _PlayerController with Store {
                       Log.addLog(LogLevel.info, 'image图片路径', image);
                       final file = File(image);
                       final data = await file.readAsBytes();
-                      Share.shareFile(
+                      await Share.shareFile(
                         data: data,
                         filename: name,
                         mime: 'image/png',
@@ -526,7 +526,8 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return Hero(
+      tag: WatcherState.currentState!.widget.anime.id,
       child: Scaffold(
         body: VideoPage(playerController: widget.playerController),
       ),
