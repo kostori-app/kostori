@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:isolate';
+import 'dart:ui' as ui;
 import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
@@ -32,6 +33,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:yaml/yaml.dart';
 
 import '../../foundation/consts.dart';
+import '../../network/api.dart';
 import '../../utils/utils.dart';
 import 'anime_source_settings.dart';
 
@@ -78,7 +80,6 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   final icons = <IconData>[
     Icons.explore,
     Icons.source,
-    // Icons.book,
     Icons.color_lens,
     Icons.collections_bookmark_rounded,
     Icons.apps,
@@ -167,53 +168,133 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     return Material(child: buildBody());
   }
 
-  Widget buildBody() {
-    if (enableTwoViews) {
-      return Row(
-        children: [
-          SizedBox(width: 280, height: double.infinity, child: buildLeft()),
-          Container(
-            height: double.infinity,
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: context.colorScheme.outlineVariant,
-                  width: 0.6,
-                ),
-              ),
+  Widget buildBackground(BuildContext context) {
+    final themeColor = Theme.of(context).colorScheme.primary.toOpacity(0.1);
+    final height = MediaQuery.of(context).size.height;
+
+    Widget base = SizedBox(
+      height: height * 0.65,
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: context.brightness == Brightness.dark
+                  ? Colors.black.toOpacity(0.3)
+                  : Colors.white.toOpacity(0.3),
+              blurRadius: 25.0,
+              spreadRadius: 5.0,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                themeColor.toOpacity(0.0),
+                themeColor.toOpacity(0.2),
+                themeColor.toOpacity(0.3),
+                themeColor.toOpacity(0.4),
+                themeColor.toOpacity(0.5),
+                themeColor.toOpacity(0.4),
+                themeColor.toOpacity(0.3),
+                themeColor.toOpacity(0.2),
+                themeColor.toOpacity(0.2),
+              ],
+              stops: const [
+                0.0,
+                0.125,
+                0.25,
+                0.375,
+                0.5,
+                0.625,
+                0.75,
+                0.875,
+                1.0,
+              ],
             ),
           ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, animation) {
-                return LayoutBuilder(
-                  builder: (context, constrains) {
-                    return AnimatedBuilder(
-                      animation: animation,
-                      builder: (context, _) {
-                        var width = constrains.maxWidth;
-                        var value = animation.isForwardOrCompleted
-                            ? 1 - animation.value
-                            : 1;
-                        var left = width * value;
-                        return Stack(
-                          children: [
-                            Positioned(
-                              top: 0,
-                              bottom: 0,
-                              left: left,
-                              width: width,
-                              child: child,
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-              child: buildRight(),
+        ),
+      ),
+    );
+
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+        child: Container(
+          color: context.brightness == Brightness.dark
+              ? Colors.black.toOpacity(0.1)
+              : Colors.white.toOpacity(0.1), // 半透明白色
+          child: base,
+        ),
+      ),
+    );
+  }
+
+  Widget buildBody() {
+    if (enableTwoViews) {
+      return Stack(
+        children: [
+          buildBackground(context),
+          Positioned.fill(
+            child: Row(
+              children: [
+                Container(
+                  width: 280,
+                  height: double.infinity,
+                  color: Colors.transparent,
+                  child: buildLeft(),
+                ),
+                Container(
+                  height: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: context.colorScheme.outlineVariant,
+                        width: 0.6,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (child, animation) {
+                      return LayoutBuilder(
+                        builder: (context, constrains) {
+                          return AnimatedBuilder(
+                            animation: animation,
+                            builder: (context, _) {
+                              var width = constrains.maxWidth;
+                              var value = animation.isForwardOrCompleted
+                                  ? 1 - animation.value
+                                  : 1;
+                              var left = width * value;
+                              return Stack(
+                                children: [
+                                  Positioned(
+                                    top: 0,
+                                    bottom: 0,
+                                    left: left,
+                                    width: width,
+                                    child: child,
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                    child: buildRight(),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -223,13 +304,24 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
         builder: (context, constrains) {
           return Stack(
             children: [
-              Positioned.fill(child: buildLeft()),
+              buildBackground(context),
+              Positioned.fill(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: currentPage == -1
+                      ? buildLeft()
+                      : const SizedBox.shrink(),
+                ),
+              ),
               Positioned(
                 left: offset,
                 width: constrains.maxWidth,
                 top: 0,
                 bottom: 0,
                 child: Listener(
+                  // 滑动返回
                   onPointerDown: handlePointerDown,
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 200),
@@ -247,6 +339,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
                       );
                     },
                     child: Material(
+                      color: Colors.transparent,
                       key: ValueKey(currentPage),
                       child: buildRight(),
                     ),
@@ -267,31 +360,36 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   }
 
   Widget buildLeft() {
-    return Material(
-      child: Column(
-        children: [
-          SizedBox(height: MediaQuery.of(context).padding.top),
-          SizedBox(
-            height: 56,
-            child: Row(
-              children: [
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: "Back",
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new),
-                    onPressed: context.pop,
-                  ),
+    return Stack(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: Column(
+            children: [
+              SizedBox(height: MediaQuery.of(context).padding.top),
+              SizedBox(
+                height: 56,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 8),
+                    Tooltip(
+                      message: "Back".tl,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new),
+                        onPressed: context.pop,
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Text("Settings".tl, style: ts.s20),
+                  ],
                 ),
-                const SizedBox(width: 24),
-                Text("Settings".tl, style: ts.s20),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(child: buildCategories()),
+            ],
           ),
-          const SizedBox(height: 4),
-          Expanded(child: buildCategories()),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -299,39 +397,54 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Widget buildItem(String name, int id) {
       final bool selected = id == currentPage;
 
-      Widget content = AnimatedContainer(
-        key: ValueKey(id),
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 46,
-        padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-        decoration: BoxDecoration(
-          color: selected ? colors.primaryContainer.toOpacity(0.36) : null,
-          border: Border(
-            left: BorderSide(
-              color: selected ? colors.primary : Colors.transparent,
-              width: 2,
+      Widget content = ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: AnimatedContainer(
+          key: ValueKey(id),
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          height: 46,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+          decoration: BoxDecoration(
+            color: selected ? colors.primaryContainer.toOpacity(0.36) : null,
+            border: Border(
+              left: BorderSide(
+                color: selected ? colors.primary : Colors.transparent,
+                width: 4,
+              ),
             ),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(icons[id]),
-            const SizedBox(width: 16),
-            Text(name, style: ts.s16),
-            const Spacer(),
-            if (selected) const Icon(Icons.arrow_right),
-          ],
+          child: Row(
+            children: [
+              Icon(icons[id], size: 30),
+              const SizedBox(width: 16),
+              Text(name, style: ts.s16),
+              const Spacer(),
+              if (selected) const Icon(Icons.arrow_right),
+            ],
+          ),
         ),
       );
 
-      return Padding(
-        padding: enableTwoViews
-            ? const EdgeInsets.fromLTRB(8, 0, 8, 0)
-            : EdgeInsets.zero,
-        child: InkWell(
-          onTap: () => setState(() => currentPage = id),
-          child: content,
+      return AnimatedPadding(
+        padding: EdgeInsets.fromLTRB(24, 0, selected ? 12 : 24, 0),
+        duration: const Duration(milliseconds: 200),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Material(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.72)
+                : const Color(0xFF1E1E1E).toOpacity(0.72),
+            elevation: 2,
+            shadowColor: Theme.of(context).colorScheme.shadow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: InkWell(
+              onTap: () => setState(() => currentPage = id),
+              child: content,
+            ),
+          ),
         ).paddingVertical(4),
       );
     }
@@ -345,11 +458,28 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
 
   Widget buildRight() {
     return switch (currentPage) {
-      -1 => const SizedBox(),
+      -1 =>
+        enableTwoViews
+            ? SizedBox(
+                child: Center(
+                  child: Container(
+                    width: 136,
+                    height: 136,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(136),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: const Image(
+                      image: AssetImage("images/app_icon.png"),
+                      filterQuality: FilterQuality.medium,
+                    ),
+                  ),
+                ),
+              )
+            : SizedBox(),
       0 => const ExploreSettings(),
       1 => const AnimeSourceSettings(),
-      // 2 => const ReadingSettings(false),
-      2 => AppearanceSettings(),
+      2 => const AppearanceSettings(),
       3 => const LocalFavoritesSettings(),
       4 => const AppSettings(),
       5 => const NetworkSettings(),

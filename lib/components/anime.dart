@@ -19,6 +19,7 @@ class AnimeTile extends StatelessWidget {
     super.key,
     required this.anime,
     this.isRecommend = false,
+    this.isGrid = false,
     this.enableLongPressed = true,
     this.enableFavorite = true,
     this.enableHistory = false,
@@ -38,6 +39,8 @@ class AnimeTile extends StatelessWidget {
   final bool enableHistory;
 
   final bool isRecommend;
+
+  final bool isGrid;
 
   final String? badge;
 
@@ -64,6 +67,9 @@ class AnimeTile extends StatelessWidget {
           heroID: heroID,
         ),
       );
+    } else if (isGrid) {
+      var context = App.mainNavigatorKey!.currentContext!;
+      anime.viewMore!.jump(context);
     } else {
       App.mainNavigatorKey?.currentContext?.to(
         () => AnimePage(
@@ -82,6 +88,7 @@ class AnimeTile extends StatelessWidget {
     );
   }
 
+  // ignore: strict_top_level_inference
   void _onLongPressed(context) {
     if (onLongPressed != null) {
       onLongPressed!();
@@ -98,6 +105,13 @@ class AnimeTile extends StatelessWidget {
       )) {
         defaultFavorite(anime);
         App.rootContext.showMessage(message: '收藏成功');
+      } else {
+        var renderBox = context.findRenderObject() as RenderBox;
+        var size = renderBox.size;
+        var location = renderBox.localToGlobal(
+          Offset((size.width - 242) / 2, size.height / 2),
+        );
+        showMenu(location, context);
       }
     } else {
       var renderBox = context.findRenderObject() as RenderBox;
@@ -166,7 +180,7 @@ class AnimeTile extends StatelessWidget {
 
     return Stack(
       children: [
-        Positioned.fill(child: child),
+        Positioned.fill(child: Material(child: child)),
         Positioned(
           left: type == 'detailed' ? 16 : 6,
           top: 6,
@@ -325,20 +339,13 @@ class AnimeTile extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          Widget image = Container(
-            decoration: BoxDecoration(
-              color: context.colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.toOpacity(0.2),
-                  blurRadius: 2,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+          Widget image = Material(
+            color: context.colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(12),
+            elevation: 2,
+            shadowColor: Colors.black.toOpacity(0.2),
             clipBehavior: Clip.antiAlias,
-            child: buildImage(context),
+            child: Ink(child: buildImage(context)),
           );
 
           if (heroID != null) {
@@ -357,7 +364,7 @@ class AnimeTile extends StatelessWidget {
           final shouldScroll = textPainter.width >= constraints.maxWidth - 20;
 
           return InkWell(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(12),
             onTap: _onTap,
             onLongPress: enableLongPressed
                 ? () => _onLongPressed(context)
@@ -401,7 +408,7 @@ class AnimeTile extends StatelessWidget {
                                     ? const EdgeInsets.fromLTRB(4, 2, 4, 2)
                                     : const EdgeInsets.fromLTRB(5, 2, 5, 2),
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                   color: Colors.black.toOpacity(0.5),
                                 ),
                                 constraints: BoxConstraints(
@@ -427,6 +434,12 @@ class AnimeTile extends StatelessWidget {
                             children: children,
                           );
                         })(),
+                      ),
+                      Positioned.fill(
+                        child: Ink(
+                          color: Colors.transparent,
+                          child: Container(),
+                        ),
                       ),
                     ],
                   ),
@@ -738,6 +751,7 @@ class SliverGridAnimes extends StatefulWidget {
     this.enableFavorite,
     this.enableHistory,
     this.isRecommend,
+    this.isGrid,
   });
 
   final List<Anime> animes;
@@ -759,6 +773,8 @@ class SliverGridAnimes extends StatefulWidget {
   final bool? enableHistory;
 
   final bool? isRecommend;
+
+  final bool? isGrid;
 
   @override
   State<SliverGridAnimes> createState() => _SliverGridAnimesState();
@@ -834,6 +850,7 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
       enableFavorite: widget.enableFavorite,
       enableHistory: widget.enableHistory,
       isRecommend: widget.isRecommend,
+      isGrid: widget.isGrid,
     );
   }
 }
@@ -851,6 +868,7 @@ class _SliverGridAnimes extends StatelessWidget {
     this.enableFavorite,
     this.enableHistory,
     this.isRecommend,
+    this.isGrid,
   });
 
   final List<Anime> animes;
@@ -875,6 +893,8 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final bool? isRecommend;
 
+  final bool? isGrid;
+
   @override
   Widget build(BuildContext context) {
     return SliverGrid(
@@ -889,6 +909,7 @@ class _SliverGridAnimes extends StatelessWidget {
         var anime = AnimeTile(
           anime: animes[index],
           isRecommend: isRecommend ?? false,
+          isGrid: isGrid ?? false,
           enableFavorite: enableFavorite ?? true,
           enableHistory: enableHistory ?? false,
           badge: badge,
@@ -1057,27 +1078,150 @@ class AnimeListState extends State<AnimeList> {
     setState(() {});
   }
 
-  Widget _buildPageSelector() {
+  Widget _buildCompactPageSelector() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        FilledButton(
-          onPressed: _page > 1
-              ? () {
-                  setState(() {
-                    _error = null;
-                    _page--;
-                  });
-                }
-              : null,
-          child: Text("Back".tl),
-        ).fixWidth(84),
-        Expanded(
-          child: Center(
-            child: Material(
-              color: Theme.of(context).colorScheme.surfaceContainer,
-              borderRadius: BorderRadius.circular(8),
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              String value = '';
+              showDialog(
+                context: App.rootContext,
+                builder: (context) {
+                  return ContentDialog(
+                    title: "Jump to page".tl,
+                    content: TextField(
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: "Page".tl),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      onChanged: (v) {
+                        value = v;
+                      },
+                    ).paddingHorizontal(16),
+                    actions: [
+                      Button.filled(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          var page = int.tryParse(value);
+                          if (page == null) {
+                            context.showMessage(message: "Invalid page".tl);
+                          } else {
+                            if (page > 0 &&
+                                (_maxPage == null || page <= _maxPage!)) {
+                              setState(() {
+                                _error = null;
+                                _page = page;
+                              });
+                            } else {
+                              context.showMessage(message: "Invalid page".tl);
+                            }
+                          }
+                        },
+                        child: Text("Jump".tl),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            child: Container(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text("Page $_page / ${_maxPage ?? '?'}".tl),
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            _buildAnimeButton(
+              context: context,
+              icon: Icons.chevron_left,
+              tooltip: "Back".tl,
+              enabled: _page > 1,
+              onPressed: _page > 1
+                  ? () {
+                      setState(() {
+                        _error = null;
+                        _page--;
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            _buildAnimeButton(
+              context: context,
+              icon: Icons.chevron_right,
+              tooltip: "Next".tl,
+              enabled: _page < (_maxPage ?? (_page + 1)),
+              onPressed: _page < (_maxPage ?? (_page + 1))
+                  ? () {
+                      setState(() {
+                        _error = null;
+                        _page++;
+                      });
+                    }
+                  : null,
+            ),
+          ],
+        ),
+      ],
+    ).paddingVertical(8).paddingHorizontal(24);
+  }
+
+  Widget _buildFullPageSelector() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        SizedBox(),
+        Row(
+          children: [
+            _buildAnimeButton(
+              context: context,
+              icon: Icons.first_page,
+              tooltip: "最前".tl,
+              enabled: _page > 1,
+              onPressed: _page > 1
+                  ? () {
+                      setState(() {
+                        _error = null;
+                        _page = 1;
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(width: 4),
+            _buildAnimeButton(
+              context: context,
+              icon: Icons.chevron_left,
+              tooltip: "Back".tl,
+              enabled: _page > 1,
+              onPressed: _page > 1
+                  ? () {
+                      setState(() {
+                        _error = null;
+                        _page--;
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
               child: InkWell(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(16),
                 onTap: () {
                   String value = '';
                   showDialog(
@@ -1123,34 +1267,100 @@ class AnimeListState extends State<AnimeList> {
                     },
                   );
                 },
-                child: Padding(
+                child: Container(
+                  margin: EdgeInsets.zero,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 6,
                   ),
-                  child: Text("Page $_page / ${_maxPage ?? '?'}"),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text("Page $_page / ${_maxPage ?? '?'}".tl),
                 ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildAnimeButton(
+              context: context,
+              icon: Icons.chevron_right,
+              tooltip: "Next".tl,
+              enabled: _page < (_maxPage ?? (_page + 1)),
+              onPressed: _page < (_maxPage ?? (_page + 1))
+                  ? () {
+                      setState(() {
+                        _error = null;
+                        _page++;
+                      });
+                    }
+                  : null,
+            ),
+            const SizedBox(width: 4),
+            _buildAnimeButton(
+              context: context,
+              icon: Icons.last_page,
+              tooltip: "最后".tl,
+              enabled: _page < (_maxPage ?? (_page + 1)),
+              onPressed: _page < (_maxPage ?? (_page + 1))
+                  ? () {
+                      setState(() {
+                        _error = null;
+                        _page = _maxPage ?? (_page + 1);
+                      });
+                    }
+                  : null,
+            ),
+          ],
+        ),
+        SizedBox(),
+      ],
+    ).paddingVertical(8).paddingHorizontal(24);
+  }
+
+  Widget _buildAnimeButton({
+    required BuildContext context,
+    required IconData icon,
+    required String tooltip,
+    required bool enabled,
+    required VoidCallback? onPressed,
+    double size = 48,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          width: size,
+          height: size,
+          child: InkWell(
+            onTap: enabled ? onPressed : null,
+            borderRadius: BorderRadius.circular(16),
+            overlayColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.pressed)) {
+                return Theme.of(context).colorScheme.primary.toOpacity(0.2);
+              }
+              if (states.contains(WidgetState.hovered)) {
+                return Theme.of(context).colorScheme.secondary.toOpacity(0.1);
+              }
+              return null;
+            }),
+            child: Center(
+              child: Icon(
+                icon,
+                color: enabled
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.toOpacity(0.3),
               ),
             ),
           ),
         ),
-        FilledButton(
-          onPressed: _page < (_maxPage ?? (_page + 1))
-              ? () {
-                  setState(() {
-                    _error = null;
-                    _page++;
-                  });
-                }
-              : null,
-          child: Text("Next".tl),
-        ).fixWidth(84),
-      ],
-    ).paddingVertical(8).paddingHorizontal(16);
-  }
-
-  Widget _buildSliverPageSelector() {
-    return SliverToBoxAdapter(child: _buildPageSelector());
+      ),
+    );
   }
 
   Future<void> _loadPage(int page) async {
@@ -1222,19 +1432,44 @@ class AnimeListState extends State<AnimeList> {
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return Column(
+      return Stack(
         children: [
-          if (widget.errorLeading != null) widget.errorLeading!,
-          _buildPageSelector(),
-          Expanded(
-            child: NetworkError(
-              withAppbar: false,
-              message: _error!,
-              retry: () {
-                setState(() {
-                  _error = null;
-                });
-              },
+          Positioned.fill(
+            child: Column(
+              children: [
+                if (widget.errorLeading != null) widget.errorLeading!,
+                Expanded(
+                  child: NetworkError(
+                    withAppbar: false,
+                    message: _error!,
+                    retry: () {
+                      setState(() {
+                        _error = null;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            right: 0,
+            left: 0,
+            bottom: 0,
+            child: Stack(
+              children: [
+                ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                    child: Container(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.toOpacity(0.85),
+                      child: _buildCompactPageSelector(),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1249,19 +1484,56 @@ class AnimeListState extends State<AnimeList> {
         ],
       );
     }
-    return SmoothCustomScrollView(
-      key: enablePageStorage ? PageStorageKey('scroll$_page') : null,
-      controller: widget.controller,
-      slivers: [
-        if (widget.leadingSliver != null) widget.leadingSliver!,
-        if (_maxPage != 1) _buildSliverPageSelector(),
-        SliverGridAnimes(
-          animes: _data[_page] ?? const [],
-          menuBuilder: widget.menuBuilder,
+
+    Widget pageSelecto = Container(
+      height: 46,
+      decoration: BoxDecoration(color: Colors.transparent),
+      child: context.width <= changePoint
+          ? _buildCompactPageSelector()
+          : _buildFullPageSelector(),
+    );
+
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: SmoothCustomScrollView(
+            key: enablePageStorage ? PageStorageKey('scroll$_page') : null,
+            controller: widget.controller,
+            slivers: [
+              if (widget.leadingSliver != null) widget.leadingSliver!,
+              SliverGridAnimes(
+                animes: _data[_page] ?? const [],
+                menuBuilder: widget.menuBuilder,
+              ),
+              if (widget.trailingSliver != null) widget.trailingSliver!,
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  bottom: 46 + MediaQuery.of(context).padding.bottom + 4,
+                ),
+              ),
+            ],
+          ),
         ),
-        if (_data[_page]!.length > 6 && _maxPage != 1)
-          _buildSliverPageSelector(),
-        if (widget.trailingSliver != null) widget.trailingSliver!,
+        Positioned(
+          right: 0,
+          left: 0,
+          bottom: 0,
+          child: Stack(
+            children: [
+              ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                  child: Container(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surface.toOpacity(0.85),
+                    child: pageSelecto,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -1413,7 +1685,7 @@ class _RatingWidgetState extends State<RatingWidget> {
     );
   }
 
-  pointValue(double dx) {
+  void pointValue(double dx) {
     if (!widget.selectable) {
       return;
     }

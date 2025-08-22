@@ -1,6 +1,7 @@
 // ignore_for_file: file_names
 
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -11,6 +12,9 @@ import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
+
+import '../components/grid_speed_dial.dart';
+import 'explore_controller.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -23,7 +27,9 @@ class _ExplorePageState extends State<ExplorePage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin<ExplorePage> {
   late TabController controller;
 
-  bool showFB = true;
+  late final ExploreController exploreController;
+
+  bool get showFB => exploreController.showFB;
 
   double location = 0;
 
@@ -60,6 +66,7 @@ class _ExplorePageState extends State<ExplorePage>
 
   @override
   void initState() {
+    exploreController = ExploreController();
     pages = List<String>.from(appdata.settings["explore_pages"]);
     var all = AnimeSource.all()
         .map((e) => e.explorePages)
@@ -92,15 +99,6 @@ class _ExplorePageState extends State<ExplorePage>
     GlobalState.find<_SingleExplorePageState>(currentPageId).refresh();
   }
 
-  Widget buildFAB() => Material(
-    color: Colors.transparent,
-    child: FloatingActionButton(
-      key: const Key("FAB"),
-      onPressed: refresh,
-      child: const Icon(Icons.refresh),
-    ),
-  );
-
   Tab buildTab(String i) {
     var animeSource = AnimeSource.all().firstWhere(
       (e) => e.explorePages.any((e) => e.title == i),
@@ -108,8 +106,13 @@ class _ExplorePageState extends State<ExplorePage>
     return Tab(text: i.ts(animeSource.key), key: Key(i));
   }
 
-  Widget buildBody(String i) =>
-      Material(child: _SingleExplorePage(i, key: PageStorageKey(i)));
+  Widget buildBody(String i) => Material(
+    child: _SingleExplorePage(
+      i,
+      key: PageStorageKey(i),
+      exploreController: exploreController,
+    ),
+  );
 
   Widget buildEmpty() {
     var msg = "No Explore Pages".tl;
@@ -152,73 +155,77 @@ class _ExplorePageState extends State<ExplorePage>
       ),
     ).paddingTop(context.padding.top);
 
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Column(
+    return Observer(
+      builder: (context) {
+        return Scaffold(
+          body: Stack(
             children: [
-              tabBar,
-              Expanded(
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (notifications) {
-                    // if (notifications.metrics.axis == Axis.horizontal) {
-                    //   if (!showFB) {
-                    //     setState(() {
-                    //       showFB = true;
-                    //     });
-                    //   }
-                    //   return true;
-                    // }
-
-                    var current = notifications.metrics.pixels;
-                    var overflow = notifications.metrics.outOfRange;
-                    // if (current > location && current != 0 && showFB) {
-                    //   setState(() {
-                    //     showFB = false;
-                    //   });
-                    // } else if ((current < location - 50 || current == 0) &&
-                    //     !showFB) {
-                    //   setState(() {
-                    //     showFB = true;
-                    //   });
-                    // }
-                    if ((current > location || current < location - 50) &&
-                        !overflow) {
-                      location = current;
-                    }
-                    return false;
-                  },
-                  child: MediaQuery.removePadding(
-                    context: context,
-                    removeTop: true,
-                    child: TabBarView(
-                      controller: controller,
-                      children: pages.map((e) => buildBody(e)).toList(),
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    tabBar,
+                    Expanded(
+                      child: MediaQuery.removePadding(
+                        context: context,
+                        removeTop: true,
+                        child: TabBarView(
+                          controller: controller,
+                          children: pages.map((e) => buildBody(e)).toList(),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-        // Positioned(
-        //   right: 16,
-        //   bottom: 16,
-        //   child: AnimatedSwitcher(
-        //     duration: const Duration(milliseconds: 150),
-        //     reverseDuration: const Duration(milliseconds: 150),
-        //     child: showFB ? buildFAB() : const SizedBox(),
-        //     transitionBuilder: (widget, animation) {
-        //       var tween = Tween<Offset>(
-        //           begin: const Offset(0, 1), end: const Offset(0, 0));
-        //       return SlideTransition(
-        //         position: tween.animate(animation),
-        //         child: widget,
-        //       );
-        //     },
-        //   ),
-        // )
-      ],
+          floatingActionButton: showFB
+              ? Padding(
+                  padding: EdgeInsets.only(bottom: 40, right: 0),
+                  child: GridSpeedDial(
+                    icon: Icons.menu,
+                    activeIcon: Icons.close,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    spacing: 6,
+                    spaceBetweenChildren: 4,
+                    direction: SpeedDialDirection.up,
+                    childPadding: const EdgeInsets.all(6),
+                    childrens: [
+                      [
+                        SpeedDialChild(
+                          child: const Icon(Icons.refresh),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: refresh,
+                        ),
+                      ],
+                      [
+                        SpeedDialChild(
+                          child: const Icon(Icons.vertical_align_top),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: () =>
+                              GlobalState.find<_SingleExplorePageState>(
+                                pages[controller.index],
+                              ).toTop(),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+              : null,
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        );
+      },
     );
   }
 
@@ -227,9 +234,15 @@ class _ExplorePageState extends State<ExplorePage>
 }
 
 class _SingleExplorePage extends StatefulWidget {
-  const _SingleExplorePage(this.title, {super.key});
+  const _SingleExplorePage(
+    this.title, {
+    super.key,
+    required this.exploreController,
+  });
 
   final String title;
+
+  final ExploreController exploreController;
 
   @override
   State<_SingleExplorePage> createState() => _SingleExplorePageState();
@@ -241,11 +254,15 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
 
   late final String animeSourceKey;
 
-  bool _wantKeepAlive = true;
+  late final ExploreController exploreController;
 
   var scrollController = ScrollController();
 
+  bool _wantKeepAlive = true;
+
   VoidCallback? refreshHandler;
+
+  bool get showFB => exploreController.showFB;
 
   void onSettingsChanged() {
     var explorePages = appdata.settings["explore_pages"];
@@ -255,9 +272,27 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     }
   }
 
+  void onScroll() {
+    if (scrollController.offset > 200) {
+      if (!showFB) {
+        setState(() {
+          exploreController.showFB = true;
+        });
+      }
+    } else {
+      if (showFB) {
+        setState(() {
+          exploreController.showFB = false;
+        });
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    exploreController = widget.exploreController;
+    scrollController.addListener(onScroll);
     for (var source in AnimeSource.all()) {
       for (var d in source.explorePages) {
         if (d.title == widget.title) {
@@ -273,6 +308,8 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
 
   @override
   void dispose() {
+    scrollController.removeListener(onScroll);
+    scrollController.dispose();
     appdata.settings.removeListener(onSettingsChanged);
     super.dispose();
   }
@@ -380,6 +417,7 @@ class _MixedExplorePageState
 
   Iterable<Widget> buildSlivers(BuildContext context, List<Object> data) sync* {
     List<Anime> cache = [];
+    bool isGrid = false;
     for (var part in data) {
       if (part is ExplorePagePart) {
         if (cache.isNotEmpty) {
@@ -389,12 +427,15 @@ class _MixedExplorePageState
         }
         yield* _buildExplorePagePart(part, widget.sourceKey);
         yield const SliverToBoxAdapter(child: Divider());
+      } else if (part is ExploreGridPart) {
+        cache.addAll(part.animes);
+        isGrid = true;
       } else {
         cache.addAll(part as List<Anime>);
       }
     }
     if (cache.isNotEmpty) {
-      yield SliverGridAnimes(animes: (cache));
+      yield SliverGridAnimes(animes: (cache), isGrid: isGrid);
     }
   }
 
@@ -416,7 +457,9 @@ class _MixedExplorePageState
       return res;
     }
     for (var element in res.data) {
-      if (element is! ExplorePagePart && element is! List<Anime>) {
+      if (element is! ExplorePagePart &&
+          element is! List<Anime> &&
+          element is! ExploreGridPart) {
         return const Res.error("function loadMixed return invalid data");
       }
     }

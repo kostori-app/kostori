@@ -10,7 +10,9 @@ import 'package:gif/gif.dart';
 import 'package:kostori/components/BatteryWidget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/io.dart';
@@ -19,9 +21,6 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:path_provider/path_provider.dart';
-
-import '../../foundation/appdata.dart';
-import '../settings/settings_page.dart';
 
 class PlayerItemPanel extends StatefulWidget {
   const PlayerItemPanel({
@@ -34,6 +33,7 @@ class PlayerItemPanel extends StatefulWidget {
     required this.keyboardFocus,
     required this.startHideTimer,
     required this.cancelHideTimer,
+    required this.showVideoInfo,
   });
 
   final PlayerController playerController;
@@ -44,6 +44,7 @@ class PlayerItemPanel extends StatefulWidget {
   final FocusNode keyboardFocus;
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
+  final void Function() showVideoInfo;
 
   @override
   State<PlayerItemPanel> createState() => _PlayerItemPanelState();
@@ -53,7 +54,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   late bool haEnable;
   late Animation<Offset> topOffsetAnimation;
   late Animation<Offset> bottomOffsetAnimation;
-  late Animation<Offset> leftOffsetAnimation;
+  late Animation<Offset> rightOffsetAnimation;
   final TextEditingController textController = TextEditingController();
   final FocusNode textFieldFocus = FocusNode();
 
@@ -158,7 +159,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             curve: Curves.easeInOut,
           ),
         );
-    leftOffsetAnimation =
+    rightOffsetAnimation =
         Tween<Offset>(
           begin: const Offset(1.0, 0.0),
           end: const Offset(0.0, 0.0),
@@ -224,6 +225,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               context.to(() => const LogsPage());
             },
           ),
+        MenuEntry(
+          text: "播放器详情".tl,
+          onClick: () {
+            widget.showVideoInfo();
+          },
+        ),
       ],
     );
   }
@@ -289,6 +296,40 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           Colors.black.toOpacity(0.3), // 起始透明度提高
                           Colors.black.toOpacity(0.6), // 中间过渡点
                           Colors.black.toOpacity(0.8),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.toOpacity(0.2),
+                          blurRadius: 20.0, // 边缘模糊
+                          spreadRadius: 5.0,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // 右侧渐变半透明区域
+            AnimatedPositioned(
+              duration: Duration(seconds: 1),
+              top: 0,
+              bottom: 0,
+              right: 0,
+              child: Visibility(
+                child: SlideTransition(
+                  position: rightOffsetAnimation,
+                  child: Container(
+                    width: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [
+                          Colors.black.toOpacity(0.8),
+                          Colors.black.toOpacity(0.6),
+                          Colors.black.toOpacity(0.3),
+                          Colors.transparent,
                         ],
                       ),
                       boxShadow: [
@@ -433,126 +474,157 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             Positioned(
               right: 10,
               top: 60,
-              child: SlideTransition(
-                position: leftOffsetAnimation,
-                child: Column(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.fit_screen, color: Colors.white),
-                      onPressed: () async {
-                        saveAddress = '';
-                        final timestamp = DateTime.now().millisecondsSinceEpoch;
-                        context.showMessage(message: '正在截图中...'.tl);
-                        if (App.isAndroid) {
-                          Uint8List? screenData = await widget
-                              .playerController
-                              .player
-                              .screenshot();
-                          try {
-                            final folder =
-                                await KostoriFolder.checkPermissionAndPrepareFolder();
-                            if (folder != null) {
-                              final file = File(
-                                '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
-                              );
-                              await file.writeAsBytes(screenData!);
-                              setState(() {
-                                saveAddress =
-                                    '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
-                              });
-                              widget.playerController.showScreenshotPopup(
-                                context,
-                                saveAddress,
-                                '${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
-                              );
-                              showCenter(
-                                seconds: 1,
-                                icon: Gif(
-                                  image: AssetImage('assets/img/check.gif'),
-                                  height: 80,
-                                  fps: 120,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  autostart: Autostart.once,
-                                ),
-                                message: '截图成功',
-                                context: context,
-                              );
-                              const platform = MethodChannel('kostori/media');
-                              await platform.invokeMethod('scanFolder', {
-                                'path': folder.path,
-                              });
-                              Log.addLog(LogLevel.info, '保存文件成功', '');
+              child: Visibility(
+                child: SlideTransition(
+                  position: rightOffsetAnimation,
+                  child: MouseRegion(
+                    cursor:
+                        (widget.playerController.isFullScreen &&
+                            !widget.playerController.showVideoController)
+                        ? SystemMouseCursors.none
+                        : SystemMouseCursors.basic,
+                    onEnter: (_) {
+                      widget.cancelHideTimer();
+                    },
+                    onExit: (_) {
+                      widget.cancelHideTimer();
+                      widget.startHideTimer();
+                    },
+                    child: Column(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.fit_screen, color: Colors.white),
+                          onPressed: () async {
+                            saveAddress = '';
+                            final timestamp =
+                                DateTime.now().millisecondsSinceEpoch;
+                            context.showMessage(message: '正在截图中...'.tl);
+                            if (App.isAndroid) {
+                              Uint8List? screenData = await widget
+                                  .playerController
+                                  .player
+                                  .screenshot();
+                              try {
+                                final folder =
+                                    await KostoriFolder.checkPermissionAndPrepareFolder();
+                                if (folder != null) {
+                                  final file = File(
+                                    '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
+                                  );
+                                  await file.writeAsBytes(screenData!);
+                                  setState(() {
+                                    saveAddress =
+                                        '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
+                                  });
+                                  widget.playerController.showScreenshotPopup(
+                                    context,
+                                    saveAddress,
+                                    '${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
+                                  );
+                                  showCenter(
+                                    seconds: 1,
+                                    icon: Gif(
+                                      image: AssetImage('assets/img/check.gif'),
+                                      height: 80,
+                                      fps: 120,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      autostart: Autostart.once,
+                                    ),
+                                    message: '截图成功',
+                                    context: context,
+                                  );
+                                  const platform = MethodChannel(
+                                    'kostori/media',
+                                  );
+                                  await platform.invokeMethod('scanFolder', {
+                                    'path': folder.path,
+                                  });
+                                  Log.addLog(LogLevel.info, '保存文件成功', '');
+                                } else {
+                                  Log.addLog(
+                                    LogLevel.error,
+                                    '保存失败：权限或目录异常',
+                                    '',
+                                  );
+                                }
+                                // await _saveImageToGallery(screenData!, timestamp);
+                              } catch (e) {
+                                Log.addLog(LogLevel.error, '截图失败', '$e');
+                              }
                             } else {
-                              Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
-                            }
-                            // await _saveImageToGallery(screenData!, timestamp);
-                          } catch (e) {
-                            Log.addLog(LogLevel.error, '截图失败', '$e');
-                          }
-                        } else {
-                          try {
-                            Uint8List? screenData = await widget
-                                .playerController
-                                .player
-                                .screenshot();
-                            // 获取桌面平台的文档目录
-                            final directory =
-                                await getApplicationDocumentsDirectory();
-                            // 目标文件夹路径
-                            final folderPath = '${directory.path}/Kostori';
-                            // 检查文件夹是否存在，如果不存在则创建它
-                            final folder = Directory(folderPath);
-                            if (!await folder.exists()) {
-                              await folder.create(recursive: true);
-                              Log.addLog(
-                                LogLevel.info,
-                                '创建截图文件夹成功',
-                                folderPath,
-                              );
-                            } else {
-                              Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
-                            }
+                              try {
+                                Uint8List? screenData = await widget
+                                    .playerController
+                                    .player
+                                    .screenshot();
+                                // 获取桌面平台的文档目录
+                                final directory =
+                                    await getApplicationDocumentsDirectory();
+                                // 目标文件夹路径
+                                final folderPath = '${directory.path}/Kostori';
+                                // 检查文件夹是否存在，如果不存在则创建它
+                                final folder = Directory(folderPath);
+                                if (!await folder.exists()) {
+                                  await folder.create(recursive: true);
+                                  Log.addLog(
+                                    LogLevel.info,
+                                    '创建截图文件夹成功',
+                                    folderPath,
+                                  );
+                                } else {
+                                  Log.addLog(
+                                    LogLevel.info,
+                                    '文件夹已存在',
+                                    folderPath,
+                                  );
+                                }
 
-                            final filePath =
-                                '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
-                            // 将图像保存为文件
-                            final file = File(filePath);
-                            await file.writeAsBytes(screenData!);
-                            saveAddress =
-                                '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
-                            widget.playerController.showScreenshotPopup(
-                              context,
-                              saveAddress,
-                              '${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
+                                final filePath =
+                                    '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
+                                // 将图像保存为文件
+                                final file = File(filePath);
+                                await file.writeAsBytes(screenData!);
+                                saveAddress =
+                                    '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
+                                widget.playerController.showScreenshotPopup(
+                                  context,
+                                  saveAddress,
+                                  '${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
+                                );
+                                showCenter(
+                                  seconds: 1,
+                                  icon: Gif(
+                                    image: AssetImage('assets/img/check.gif'),
+                                    height: 80,
+                                    fps: 120,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    autostart: Autostart.once,
+                                  ),
+                                  message: '截图成功',
+                                  context: context,
+                                );
+                              } catch (e) {
+                                Log.addLog(LogLevel.error, '截图失败', '$e');
+                              }
+                            }
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.refresh, color: Colors.white),
+                          onPressed: () {
+                            widget.playerController.seek(
+                              widget.playerController.currentPosition +
+                                  Duration(seconds: 80),
                             );
-                            showCenter(
-                              seconds: 1,
-                              icon: Gif(
-                                image: AssetImage('assets/img/check.gif'),
-                                height: 80,
-                                fps: 120,
-                                color: Theme.of(context).colorScheme.primary,
-                                autostart: Autostart.once,
-                              ),
-                              message: '截图成功',
-                              context: context,
-                            );
-                          } catch (e) {
-                            Log.addLog(LogLevel.error, '截图失败', '$e');
-                          }
-                        }
-                      },
+                          },
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: Icon(Icons.refresh),
-                      onPressed: () {
-                        widget.playerController.seek(
-                          widget.playerController.currentPosition +
-                              Duration(seconds: 80),
-                        );
-                      },
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -612,7 +684,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                       fontSize: 16,
                                     );
 
-                                    // 计算文本的实际宽度
                                     final textPainter = TextPainter(
                                       text: TextSpan(text: text, style: style),
                                       maxLines: 1,
@@ -621,7 +692,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
                                     final shouldScroll =
                                         textPainter.width >=
-                                        constraints.maxWidth * 2 / 3;
+                                        constraints.maxWidth - 30;
 
                                     return SizedBox(
                                       height: 24,
@@ -657,16 +728,60 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   },
                                 ),
                               )
-                            : Text(
-                                widget.playerController.currentSetName,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
+                            : Expanded(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final text =
+                                        widget.playerController.currentSetName;
+                                    const style = TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                    );
+
+                                    final textPainter = TextPainter(
+                                      text: TextSpan(text: text, style: style),
+                                      maxLines: 1,
+                                      textDirection: TextDirection.ltr,
+                                    )..layout(maxWidth: constraints.maxWidth);
+
+                                    final shouldScroll =
+                                        textPainter.width >=
+                                        constraints.maxWidth - 20;
+
+                                    return SizedBox(
+                                      height: 24,
+                                      child: ClipRect(
+                                        child: shouldScroll
+                                            ? Marquee(
+                                                text: text,
+                                                style: style,
+                                                scrollAxis: Axis.horizontal,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.end,
+                                                blankSpace: 10.0,
+                                                velocity: 40.0,
+                                                pauseAfterRound: Duration.zero,
+                                                startPadding: 10.0,
+                                                accelerationDuration:
+                                                    Duration.zero,
+                                                decelerationDuration:
+                                                    Duration.zero,
+                                              )
+                                            : Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: Text(
+                                                  text,
+                                                  style: style,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                      ),
+                                    );
+                                  },
                                 ),
-                                textAlign: TextAlign.right,
                               ),
-                        if (!widget.playerController.isFullScreen)
-                          const Spacer(),
                         //超分
                         MenuAnchor(
                           consumeOutsideTap: true,

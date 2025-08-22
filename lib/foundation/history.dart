@@ -6,11 +6,10 @@ import 'dart:isolate';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:kostori/foundation/anime_source/anime_source.dart';
-import 'package:kostori/utils/translations.dart';
-import 'package:sqlite3/sqlite3.dart';
-
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/utils/translations.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 import 'favorites.dart';
 
@@ -24,6 +23,8 @@ abstract mixin class HistoryMixin {
   String get cover;
 
   String get id;
+
+  PageJumpTarget? get viewMore;
 
   HistoryType get historyType;
 }
@@ -53,77 +54,90 @@ class History implements Anime {
   int? bangumiId;
 
   @override
+  final PageJumpTarget? viewMore;
+
+  @override
   String id;
 
   Set<int> watchEpisode;
 
-  History.fromModel(
-      {required HistoryMixin model,
-      required this.lastWatchEpisode,
-      required this.lastWatchTime,
-      required this.lastRoad,
-      required this.allEpisode,
-      required this.bangumiId,
-      Set<int>? watchEpisode,
-      DateTime? time})
-      : type = model.historyType,
-        title = model.title,
-        subtitle = model.subTitle ?? '',
-        cover = model.cover,
-        id = model.id,
-        watchEpisode = watchEpisode ?? <int>{},
-        time = time ?? DateTime.now();
+  History.fromModel({
+    required HistoryMixin model,
+    required this.lastWatchEpisode,
+    required this.lastWatchTime,
+    required this.lastRoad,
+    required this.allEpisode,
+    required this.bangumiId,
+    Set<int>? watchEpisode,
+    DateTime? time,
+  }) : type = model.historyType,
+       title = model.title,
+       subtitle = model.subTitle ?? '',
+       cover = model.cover,
+       id = model.id,
+       viewMore = model.viewMore,
+       watchEpisode = watchEpisode ?? <int>{},
+       time = time ?? DateTime.now();
 
   Map<String, dynamic> toMap() => {
-        "type": type.value,
-        "time": time.millisecondsSinceEpoch,
-        "title": title,
-        "subtitle": subtitle,
-        "cover": cover,
-        "lastWatchEpisode ": lastWatchEpisode,
-        "lastWatchTime": lastWatchTime,
-        "lastRoad": lastRoad,
-        "allEpisode": allEpisode,
-        "id": id,
-        "watchEpisode": watchEpisode.toList(),
-      };
+    "type": type.value,
+    "time": time.millisecondsSinceEpoch,
+    "title": title,
+    "subtitle": subtitle,
+    "cover": cover,
+    "lastWatchEpisode ": lastWatchEpisode,
+    "lastWatchTime": lastWatchTime,
+    "lastRoad": lastRoad,
+    "allEpisode": allEpisode,
+    "id": id,
+    "watchEpisode": watchEpisode.toList(),
+    "viewMore": viewMore,
+  };
 
   History.fromMap(Map<String, dynamic> map)
-      : type = HistoryType(map["type"]),
-        time = DateTime.fromMillisecondsSinceEpoch(map["time"]),
-        title = map["title"],
-        subtitle = map["subtitle"],
-        cover = map["cover"],
-        lastWatchEpisode = map["lastWatchEpisode"],
-        lastWatchTime = map["lastWatchTime"],
-        lastRoad = map["lastRoad"],
-        allEpisode = map["allEpisode"],
-        id = map["id"],
-        watchEpisode = Set<int>.from(
-            (map["watchEpisode"] as List<dynamic>?)?.toSet() ?? const <int>{}),
-        bangumiId = map["bangumiId"];
+    : type = HistoryType(map["type"]),
+      time = DateTime.fromMillisecondsSinceEpoch(map["time"]),
+      title = map["title"],
+      subtitle = map["subtitle"],
+      cover = map["cover"],
+      lastWatchEpisode = map["lastWatchEpisode"],
+      lastWatchTime = map["lastWatchTime"],
+      lastRoad = map["lastRoad"],
+      allEpisode = map["allEpisode"],
+      id = map["id"],
+      watchEpisode = Set<int>.from(
+        (map["watchEpisode"] as List<dynamic>?)?.toSet() ?? const <int>{},
+      ),
+      bangumiId = map["bangumiId"],
+      viewMore = map["viewMore"];
 
   @override
   String toString() {
-    return 'History{type: $type, time: $time, title: $title, subtitle: $subtitle, cover: $cover, lastWatchEpisode : $lastWatchEpisode , id: $id, bangumiId: $bangumiId}';
+    return 'History{type: $type, time: $time, title: $title, subtitle: $subtitle, cover: $cover, lastWatchEpisode : $lastWatchEpisode , id: $id, bangumiId: $bangumiId, viewMore:$viewMore}';
   }
 
   History.fromRow(Row row)
-      : type = HistoryType(row["type"]),
-        time = DateTime.fromMillisecondsSinceEpoch(row["time"]),
-        title = row["title"],
-        subtitle = row["subtitle"],
-        cover = row["cover"],
-        lastWatchEpisode = row["lastWatchEpisode"],
-        lastWatchTime = row["lastWatchTime"],
-        lastRoad = row["lastRoad"],
-        allEpisode = row["allEpisode"],
-        id = row["id"],
-        watchEpisode = Set<int>.from((row["watchEpisode"] as String)
+    : type = HistoryType(row["type"]),
+      time = DateTime.fromMillisecondsSinceEpoch(row["time"]),
+      title = row["title"],
+      subtitle = row["subtitle"],
+      cover = row["cover"],
+      lastWatchEpisode = row["lastWatchEpisode"],
+      lastWatchTime = row["lastWatchTime"],
+      lastRoad = row["lastRoad"],
+      allEpisode = row["allEpisode"],
+      id = row["id"],
+      watchEpisode = Set<int>.from(
+        (row["watchEpisode"] as String)
             .split(',')
             .where((element) => element != "")
-            .map((e) => int.parse(e))),
-        bangumiId = row["bangumiId"];
+            .map((e) => int.parse(e)),
+      ),
+      bangumiId = row["bangumiId"],
+      viewMore =
+          row["viewMore"] != null && (row["viewMore"] as String).isNotEmpty
+          ? PageJumpTarget.fromJsonString(row["viewMore"] as String)
+          : null;
 
   @override
   int get hashCode => Object.hash(id, type);
@@ -137,9 +151,7 @@ class History implements Anime {
   String get description {
     var res = "";
     if (lastWatchEpisode >= 1) {
-      res += "Episode @ep".tlParams({
-        "ep": lastWatchEpisode,
-      });
+      res += "Episode @ep".tlParams({"ep": lastWatchEpisode});
     }
     if (lastWatchTime >= 1) {
       res += " ";
@@ -204,8 +216,8 @@ class Progress {
     required this.episode,
     required this.road,
     required this.progressInMilli,
-  })  : type = model.historyType,
-        historyId = model.id;
+  }) : type = model.historyType,
+       historyId = model.id;
 
   Map<String, dynamic> toMap() {
     return {
@@ -218,11 +230,11 @@ class Progress {
   }
 
   Progress.fromMap(Map<String, dynamic> map)
-      : type = HistoryType(map['type']),
-        historyId = map['historyId'],
-        episode = map['episode'],
-        road = map['road'],
-        progressInMilli = map['progressInMilli'];
+    : type = HistoryType(map['type']),
+      historyId = map['historyId'],
+      episode = map['episode'],
+      road = map['road'],
+      progressInMilli = map['progressInMilli'];
 
   @override
   String toString() {
@@ -230,11 +242,11 @@ class Progress {
   }
 
   Progress.fromRow(Row row)
-      : type = HistoryType(row['type']),
-        historyId = row['historyId'],
-        episode = row['episode'],
-        road = row['road'],
-        progressInMilli = row['progressInMilli'];
+    : type = HistoryType(row['type']),
+      historyId = row['historyId'],
+      episode = row['episode'],
+      road = row['road'],
+      progressInMilli = row['progressInMilli'];
 }
 
 class HistoryManager with ChangeNotifier {
@@ -276,7 +288,8 @@ class HistoryManager with ChangeNotifier {
           lastRoad int,
           allEpisode int,
           watchEpisode text,
-          bangumiId int
+          bangumiId int,
+          viewMore text
         );
       """);
 
@@ -301,13 +314,19 @@ class HistoryManager with ChangeNotifier {
           add column bangumiId int;
         """);
     }
+    if (!columns.any((element) => element["name"] == "viewMore")) {
+      _db.execute("""
+          alter table history
+          add column viewMore text;
+        """);
+    }
 
     notifyListeners();
   }
 
   static const _insertHistorySql = """
-        insert or replace into history (id, title, subtitle, cover, time, type, lastWatchEpisode, lastWatchTime, lastRoad, allEpisode, watchEpisode, bangumiId)
-        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        insert or replace into history (id, title, subtitle, cover, time, type, lastWatchEpisode, lastWatchTime, lastRoad, allEpisode, watchEpisode, bangumiId, viewMore)
+        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
       """;
 
   static Future<void> _addHistoryAsync(int dbAddr, History newItem) {
@@ -325,7 +344,12 @@ class HistoryManager with ChangeNotifier {
         newItem.lastRoad,
         newItem.allEpisode,
         newItem.watchEpisode.join(','),
-        newItem.bangumiId
+        newItem.bangumiId,
+        newItem.viewMore == null
+            ? null
+            : newItem.viewMore is PageJumpTarget
+            ? (newItem.viewMore as PageJumpTarget).toJsonString()
+            : newItem.viewMore,
       ]);
     });
   }
@@ -369,7 +393,8 @@ class HistoryManager with ChangeNotifier {
       newItem.lastRoad,
       newItem.allEpisode,
       newItem.watchEpisode.join(','),
-      newItem.bangumiId
+      newItem.bangumiId,
+      newItem.viewMore,
     ]);
     if (_cachedHistoryIds == null) {
       updateCache();
@@ -408,7 +433,11 @@ class HistoryManager with ChangeNotifier {
   }
 
   Future<bool> checkIfProgressExists(
-      String historyId, AnimeType type, int episode, int road) async {
+    String historyId,
+    AnimeType type,
+    int episode,
+    int road,
+  ) async {
     final result = _db.select(
       '''
     SELECT COUNT(*) as count
@@ -444,14 +473,20 @@ class HistoryManager with ChangeNotifier {
         final id = element["id"] as String;
         final type = AnimeType(element["type"] as int);
         if (!LocalFavoritesManager().isExist(id, type)) {
-          _db.execute("""
+          _db.execute(
+            """
           delete from history
           where id == ? and type == ?;
-        """, [id, type.value]);
-          _db.execute("""
+        """,
+            [id, type.value],
+          );
+          _db.execute(
+            """
           delete from progress
           where id == ? and type == ?;
-        """, [id, type.value]);
+        """,
+            [id, type.value],
+          );
         }
       }
       _db.execute('COMMIT;');
@@ -464,24 +499,37 @@ class HistoryManager with ChangeNotifier {
   }
 
   void remove(String id, AnimeType type) async {
-    _db.execute("""
+    _db.execute(
+      """
       delete from history
       where id == ? and type == ?;
-    """, [id, type.value]);
-    _db.execute("""
+    """,
+      [id, type.value],
+    );
+    _db.execute(
+      """
       delete from progress
       where historyId == ? and type == ?;
-    """, [id, type.value]);
+    """,
+      [id, type.value],
+    );
     updateCache();
     notifyListeners();
   }
 
   Future<Progress?> progressFind(
-      String historyId, AnimeType type, int episode, int road) async {
-    var res = _db.select('''
+    String historyId,
+    AnimeType type,
+    int episode,
+    int road,
+  ) async {
+    var res = _db.select(
+      '''
     select * from progress
     where historyId == ? and type == ? and episode == ? and road == ?;
-    ''', [historyId, type.value, episode, road]);
+    ''',
+      [historyId, type.value, episode, road],
+    );
     if (res.isEmpty) {
       return null;
     }
@@ -489,10 +537,9 @@ class HistoryManager with ChangeNotifier {
   }
 
   List<History> bangumiByIDFind(int id) {
-    final result = _db.select(
-      'SELECT * FROM history WHERE bangumiId = ?',
-      [id],
-    );
+    final result = _db.select('SELECT * FROM history WHERE bangumiId = ?', [
+      id,
+    ]);
 
     if (result.isEmpty) return [];
 
@@ -526,10 +573,13 @@ class HistoryManager with ChangeNotifier {
       return cachedHistories[id];
     }
 
-    var res = _db.select("""
+    var res = _db.select(
+      """
       select * from history
       where id == ? and type == ?;
-    """, [id, type.value]);
+    """,
+      [id, type.value],
+    );
     if (res.isEmpty) {
       return null;
     }
@@ -572,10 +622,13 @@ class HistoryManager with ChangeNotifier {
     _db.execute('BEGIN TRANSACTION;');
     try {
       for (var history in histories) {
-        _db.execute("""
+        _db.execute(
+          """
           delete from history
           where id == ? and type == ?;
-        """, [history.id, history.type.value]);
+        """,
+          [history.id, history.type.value],
+        );
       }
       _db.execute('COMMIT;');
     } catch (e) {

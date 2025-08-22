@@ -700,16 +700,22 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                 });
                               }
                             : (a) {
-                                App.mainNavigatorKey?.currentContext?.to(
-                                  () => AnimePage(
-                                    id: a.id,
-                                    sourceKey: a.sourceKey,
-                                  ),
-                                );
-                                manager.updateRecentlyWatched(
-                                  a.id,
-                                  AnimeType(a.sourceKey.hashCode),
-                                );
+                                if (a.viewMore != null) {
+                                  var context =
+                                      App.mainNavigatorKey!.currentContext!;
+                                  a.viewMore!.jump(context);
+                                } else {
+                                  App.mainNavigatorKey?.currentContext?.to(
+                                    () => AnimePage(
+                                      id: a.id,
+                                      sourceKey: a.sourceKey,
+                                    ),
+                                  );
+                                  manager.updateRecentlyWatched(
+                                    a.id,
+                                    AnimeType(a.sourceKey.hashCode),
+                                  );
+                                }
                               },
                         onLongPressed: (a) {
                           setState(() {

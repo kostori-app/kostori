@@ -222,6 +222,7 @@
     "Selected @c animes": "已选择 @c 部番剧",
     "Set Cache Limit": "设置缓存限制",
     "Set New Storage Path": "设置新的存储路径",
+    "Set source list url": "设置源列表地址",
     "Set": "设置",
     "Settings": "设置",
     "Share": "分享",
@@ -315,7 +316,13 @@
     "Cameo": "客串",
     "Unknown": "未知",
     "Debug Info": "调试信息",
-    "Install": "安装"
+    "Install": "安装",
+    "View on GitHub": "查看GitHub",
+    "No Proxy Overrides": "无代理覆盖",
+    "Save": "保存",
+    "Mirror": "镜像",
+    "Result": "有结果",
+    "All": "全部"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

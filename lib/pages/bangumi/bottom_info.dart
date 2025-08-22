@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
@@ -1310,36 +1309,32 @@ class BottomInfoState extends State<BottomInfo>
               ),
             ),
             Expanded(
-              child: Observer(
-                builder: (context) {
-                  return TabBarView(
-                    controller: infoTabController,
-                    children: [
-                      Builder(
-                        builder: (BuildContext context) {
-                          return SafeArea(
-                            top: false,
-                            bottom: false,
-                            child: infoController.isLoading
-                                ? infoBodyBone
-                                : infoBody,
-                          );
-                        },
-                      ),
-                      commentsListBody,
-                      EpisodeCommentsSheet(
-                        episodeInfo: episodeInfo,
-                        loadComments: loadComments,
-                        episode: WatcherState.currentState!.episode,
-                        infoController: infoController,
-                      ),
-                      topicsListBody,
-                      reviewsListBody,
-                      charactersListBody,
-                      staffListBody,
-                    ],
-                  );
-                },
+              child: TabBarView(
+                controller: infoTabController,
+                children: [
+                  Builder(
+                    builder: (BuildContext context) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: infoController.isLoading
+                            ? infoBodyBone
+                            : infoBody,
+                      );
+                    },
+                  ),
+                  commentsListBody,
+                  EpisodeCommentsSheet(
+                    episodeInfo: episodeInfo,
+                    loadComments: loadComments,
+                    episode: WatcherState.currentState!.episode,
+                    infoController: infoController,
+                  ),
+                  topicsListBody,
+                  reviewsListBody,
+                  charactersListBody,
+                  staffListBody,
+                ],
               ),
             ),
           ],

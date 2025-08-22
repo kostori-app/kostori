@@ -35,6 +35,7 @@ abstract mixin class _AnimePageActions {
       author: anime.subTitle ?? anime.uploader ?? '',
       type: anime.animeType,
       tags: tags,
+      viewMore: anime.viewMore,
     );
   }
 

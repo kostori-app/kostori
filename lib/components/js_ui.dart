@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
-import 'package:url_launcher/url_launcher_string.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/js_engine.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 
 import 'components.dart';
 
@@ -37,9 +37,11 @@ mixin class JsUiApi {
       case 'showInputDialog':
         var title = message['title'];
         var validator = message['validator'];
+        var image = message['image'];
         if (title is! String) return;
         if (validator != null && validator is! JSInvokable) return;
-        return _showInputDialog(title, validator);
+        if (image != null && image is! String) return;
+        return _showInputDialog(title, validator, image);
       case 'showSelectDialog':
         var title = message['title'];
         var options = message['options'];
@@ -67,22 +69,26 @@ mixin class JsUiApi {
       var callback = action['callback'] as JSInvokable;
       var text = action['text'].toString();
       var style = (action['style'] ?? 'text').toString();
-      actions.add(_JSCallbackButton(
-        text: text,
-        callback: JSAutoFreeFunction(callback),
-        style: style,
-        onCallbackFinished: () {
-          dialogContext?.pop();
-        },
-      ));
+      actions.add(
+        _JSCallbackButton(
+          text: text,
+          callback: JSAutoFreeFunction(callback),
+          style: style,
+          onCallbackFinished: () {
+            dialogContext?.pop();
+          },
+        ),
+      );
     }
     if (actions.isEmpty) {
-      actions.add(TextButton(
-        onPressed: () {
-          dialogContext?.pop();
-        },
-        child: Text('OK'),
-      ));
+      actions.add(
+        TextButton(
+          onPressed: () {
+            dialogContext?.pop();
+          },
+          child: Text('OK'),
+        ),
+      );
     }
     return showDialog(
       context: App.rootContext,
@@ -124,12 +130,17 @@ mixin class JsUiApi {
     controller?.close();
   }
 
-  Future<String?> _showInputDialog(String title, JSInvokable? validator) async {
+  Future<String?> _showInputDialog(
+    String title,
+    JSInvokable? validator,
+    String? image,
+  ) async {
     String? result;
     var func = validator == null ? null : JSAutoFreeFunction(validator);
     await showInputDialog(
       context: App.rootContext,
       title: title,
+      image: image,
       onConfirm: (v) {
         if (func != null) {
           var res = func.call([v]);
@@ -211,32 +222,32 @@ class _JSCallbackButtonState extends State<_JSCallbackButton> {
   Widget build(BuildContext context) {
     return switch (widget.style) {
       "filled" => FilledButton(
-          onPressed: onClick,
-          child: isLoading
-              ? CircularProgressIndicator(strokeWidth: 1.4)
-                  .fixWidth(18)
-                  .fixHeight(18)
-              : Text(widget.text),
-        ),
+        onPressed: onClick,
+        child: isLoading
+            ? CircularProgressIndicator(
+                strokeWidth: 1.4,
+              ).fixWidth(18).fixHeight(18)
+            : Text(widget.text),
+      ),
       "danger" => FilledButton(
-          onPressed: onClick,
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.all(context.colorScheme.error),
-          ),
-          child: isLoading
-              ? CircularProgressIndicator(strokeWidth: 1.4)
-                  .fixWidth(18)
-                  .fixHeight(18)
-              : Text(widget.text),
+        onPressed: onClick,
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.all(context.colorScheme.error),
         ),
+        child: isLoading
+            ? CircularProgressIndicator(
+                strokeWidth: 1.4,
+              ).fixWidth(18).fixHeight(18)
+            : Text(widget.text),
+      ),
       _ => TextButton(
-          onPressed: onClick,
-          child: isLoading
-              ? CircularProgressIndicator(strokeWidth: 1.4)
-                  .fixWidth(18)
-                  .fixHeight(18)
-              : Text(widget.text),
-        ),
+        onPressed: onClick,
+        child: isLoading
+            ? CircularProgressIndicator(
+                strokeWidth: 1.4,
+              ).fixWidth(18).fixHeight(18)
+            : Text(widget.text),
+      ),
     };
   }
 }

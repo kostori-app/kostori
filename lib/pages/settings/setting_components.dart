@@ -30,7 +30,7 @@ class _SwitchSettingState extends State<_SwitchSetting> {
     return ListTile(
       title: Text(widget.title),
       subtitle: widget.subtitle == null ? null : Text(widget.subtitle!),
-      trailing: Switch(
+      trailing: CustomSwitch(
         value: appdata.settings[widget.settingKey],
         onChanged: (value) {
           setState(() {
@@ -40,6 +40,108 @@ class _SwitchSettingState extends State<_SwitchSetting> {
             widget.onChanged?.call();
           });
         },
+      ),
+    );
+  }
+}
+
+class CustomSwitch extends StatelessWidget {
+  /// 开关的当前状态。
+  final bool value;
+
+  /// 开关被点击时调用的回调函数。
+  final ValueChanged<bool> onChanged;
+
+  /// 开关的整体高度。
+  final double height;
+
+  /// 开关的整体宽度。
+  final double width;
+
+  /// 开关背景（轨道）的颜色。
+  final Color? trackColor;
+
+  /// 滑块的颜色。
+  final Color? thumbColor;
+
+  /// 动画持续时间，单位毫秒。
+  final int durationInMillisecond;
+
+  /// 开启状态下背景的颜色。
+  final Color? activeTrackColor;
+
+  /// 关闭状态下背景的颜色。
+  final Color? inactiveTrackColor;
+
+  /// 关闭状态下滑块的颜色。
+  final Color? inactiveThumbColor;
+
+  /// 自定义滑块内部的子Widget。
+  final Widget? thumbChild;
+
+  final Gradient? activeGradient;
+
+  const CustomSwitch({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.height = 21.0,
+    this.width = 40.0,
+    this.trackColor,
+    this.thumbColor,
+    this.durationInMillisecond = 300,
+    this.activeTrackColor,
+    this.inactiveTrackColor,
+    this.inactiveThumbColor,
+    this.thumbChild,
+    this.activeGradient,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color effectiveTrackColor = value
+        ? Theme.of(context).colorScheme.primary
+        : inactiveTrackColor ?? Colors.grey.toOpacity(0.5);
+    final Color effectiveThumbColor = Colors.white;
+    Color fixedGlowColor = Theme.of(context).colorScheme.primary;
+    const double fixedGlowRadius = 12.0;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => onChanged(!value),
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: durationInMillisecond),
+          curve: Curves.easeInOut,
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: effectiveTrackColor,
+            borderRadius: BorderRadius.circular(height / 2),
+            boxShadow: value
+                ? [
+                    BoxShadow(
+                      color: fixedGlowColor.toOpacity(0.36),
+                      blurRadius: fixedGlowRadius,
+                      spreadRadius: 0,
+                    ),
+                  ]
+                : null,
+          ),
+          child: AnimatedAlign(
+            duration: Duration(milliseconds: durationInMillisecond),
+            alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4.0),
+              width: height - 6,
+              height: height - 6,
+              decoration: BoxDecoration(
+                color: effectiveThumbColor,
+                shape: BoxShape.circle,
+              ),
+              child: thumbChild,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -136,9 +238,9 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
                   builder: (context) {
                     return ContentDialog(
                       title: "Help".tl,
-                      content: Text(widget.help!)
-                          .paddingHorizontal(16)
-                          .fixWidth(double.infinity),
+                      content: Text(
+                        widget.help!,
+                      ).paddingHorizontal(16).fixWidth(double.infinity),
                       actions: [
                         Button.filled(
                           onPressed: context.pop,
@@ -153,8 +255,8 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
         ],
       ),
       subtitle: Text(
-          widget.optionTranslation[appdata.settings[widget.settingKey]] ??
-              "None"),
+        widget.optionTranslation[appdata.settings[widget.settingKey]] ?? "None",
+      ),
       trailing: const Icon(Icons.arrow_drop_down),
       onTap: () {
         var renderBox = context.findRenderObject() as RenderBox;
@@ -172,11 +274,13 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
             Offset.zero & MediaQuery.of(context).size,
           ),
           items: widget.optionTranslation.keys
-              .map((key) => PopupMenuItem(
-                    value: key,
-                    height: App.isMobile ? 46 : 40,
-                    child: Text(widget.optionTranslation[key]!),
-                  ))
+              .map(
+                (key) => PopupMenuItem(
+                  value: key,
+                  height: App.isMobile ? 46 : 40,
+                  child: Text(widget.optionTranslation[key]!),
+                ),
+              )
               .toList(),
         ).then((value) {
           if (value != null) {
@@ -235,9 +339,9 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
                   builder: (context) {
                     return ContentDialog(
                       title: "Help".tl,
-                      content: Text(widget.help!)
-                          .paddingHorizontal(16)
-                          .fixWidth(double.infinity),
+                      content: Text(
+                        widget.help!,
+                      ).paddingHorizontal(16).fixWidth(double.infinity),
                       actions: [
                         Button.filled(
                           onPressed: context.pop,
@@ -300,10 +404,17 @@ class _SliderSettingState extends State<_SliderSetting> {
       title: Row(
         children: [
           Text(widget.title),
-          const Spacer(),
-          Text(
-            appdata.settings[widget.settingsIndex].toString(),
-            style: ts.s12,
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              appdata.settings[widget.settingsIndex].toString(),
+              style: ts.s12,
+            ),
           ),
         ],
       ),
@@ -396,10 +507,11 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
         color: Theme.of(context).colorScheme.surfaceContainer,
         boxShadow: const [
           BoxShadow(
-              color: Colors.black12,
-              blurRadius: 5,
-              offset: Offset(0, 2),
-              spreadRadius: 2)
+            color: Colors.black12,
+            blurRadius: 5,
+            offset: Offset(0, 2),
+            spreadRadius: 2,
+          ),
         ],
       ),
       onReorder: (reorderFunc) {
@@ -426,7 +538,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
       title: widget.title,
       tailing: [
         if (keys.length < widget.pages.length)
-          IconButton(onPressed: showAddDialog, icon: const Icon(Icons.add))
+          IconButton(onPressed: showAddDialog, icon: const Icon(Icons.add)),
       ],
       body: view,
     );
@@ -436,13 +548,14 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
     Widget removeButton = Padding(
       padding: const EdgeInsets.only(right: 8),
       child: IconButton(
-          onPressed: () {
-            setState(() {
-              keys.remove(key);
-            });
-            updateSetting();
-          },
-          icon: const Icon(Icons.delete)),
+        onPressed: () {
+          setState(() {
+            keys.remove(key);
+          });
+          updateSetting();
+        },
+        icon: const Icon(Icons.delete),
+      ),
     );
 
     return ListTile(
@@ -450,10 +563,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
       key: Key(key),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          removeButton,
-          const Icon(Icons.drag_handle),
-        ],
+        children: [removeButton, const Icon(Icons.drag_handle)],
       ),
     );
   }
@@ -533,28 +643,53 @@ class _SettingPartTitle extends StatelessWidget {
   const _SettingPartTitle({required this.title, required this.icon});
 
   final String title;
-
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Container(
-        padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: context.colorScheme.onSurface.withValues(alpha: 0.1),
-            ),
+    return Container(
+      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: context.colorScheme.onSurface.withValues(alpha: 0.1),
           ),
         ),
-        child: Row(
-          children: [
-            Icon(icon, size: 24),
-            const SizedBox(width: 8),
-            Text(title, style: ts.s18),
-          ],
-        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 24),
+          const SizedBox(width: 8),
+          Text(title, style: ts.s18),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingCard extends StatelessWidget {
+  const _SettingCard({
+    super.key,
+    required this.children,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  });
+
+  final List<Widget> children;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.brightness == Brightness.light
+          ? Colors.white.toOpacity(0.72)
+          : const Color(0xFF1E1E1E).toOpacity(0.72),
+      elevation: 4,
+      shadowColor: Theme.of(context).colorScheme.shadow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }

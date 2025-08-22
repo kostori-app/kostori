@@ -61,41 +61,49 @@ class _ToastOverlay extends StatelessWidget {
       right: 0,
       child: Align(
         alignment: Alignment.bottomCenter,
-        child: Material(
-          color: Theme.of(context).colorScheme.inverseSurface,
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          elevation: 2,
-          textStyle: ts.withColor(
-            Theme.of(context).colorScheme.onInverseSurface,
-          ),
-          child: IconTheme(
-            data: IconThemeData(
-              color: Theme.of(context).colorScheme.onInverseSurface,
-            ),
-            child: IntrinsicWidth(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Material(
+              color: Theme.of(
+                context,
+              ).colorScheme.inverseSurface.toOpacity(0.6),
+              borderRadius: BorderRadius.circular(8),
+              elevation: 2,
+              textStyle: ts.withColor(
+                Theme.of(context).colorScheme.onInverseSurface,
+              ),
+              child: IconTheme(
+                data: IconThemeData(
+                  color: Theme.of(context).colorScheme.onInverseSurface,
                 ),
-                constraints: BoxConstraints(maxWidth: context.width - 32),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) icon!.paddingRight(8),
-                    Expanded(
-                      child: Text(
-                        message,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                child: IntrinsicWidth(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 16,
                     ),
-                    if (trailing != null) trailing!.paddingLeft(8),
-                  ],
+                    constraints: BoxConstraints(maxWidth: context.width - 32),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (icon != null) icon!.paddingRight(8),
+                        Expanded(
+                          child: Text(
+                            message,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (trailing != null) trailing!.paddingLeft(8),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -116,54 +124,61 @@ class _CenterOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      // 关键修改：移除 bottom 定位，改用 top: 0 + 高度居中计算
       top: 0,
       left: 0,
       right: 0,
       bottom: 0 + MediaQuery.of(context).viewInsets.bottom,
       child: Align(
-        alignment: Alignment.center, // 修改为居中
-        child: Material(
-          color: Colors.black.toOpacity(0.5),
+        alignment: Alignment.center,
+        child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
-          elevation: 2,
-          child: IconTheme(
-            data: IconThemeData(
-              color: Theme.of(context).colorScheme.inverseSurface,
-            ),
-            child: IntrinsicWidth(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 24,
-                ), // 增加内边距
-                constraints: BoxConstraints(
-                  maxWidth:
-                      MediaQuery.of(context).size.width * 0.8, // 限制最大宽度为屏幕的80%
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Material(
+              color: Colors.black.toOpacity(0.4),
+              borderRadius: BorderRadius.circular(8),
+              elevation: 2,
+              textStyle: ts.withColor(
+                Theme.of(context).colorScheme.inverseSurface,
+              ),
+              child: IconTheme(
+                data: IconThemeData(
+                  color: Theme.of(context).colorScheme.inverseSurface,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (icon != null) icon!.paddingRight(8),
-                    Row(
+                child: IntrinsicWidth(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 24,
+                    ),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.8,
+                    ),
+                    child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Text(
-                            message,
-                            textAlign: TextAlign.center, // 文本居中
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                        if (icon != null) icon!.paddingRight(8),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                message,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            if (trailing != null) trailing!.paddingLeft(8),
+                          ],
                         ),
-                        if (trailing != null) trailing!.paddingLeft(8),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -402,7 +417,7 @@ class ContentDialog extends StatelessWidget {
                 )
               : const SizedBox.shrink(),
           Padding(
-            padding: const EdgeInsets.only(left: 24.0),
+            padding: const EdgeInsets.only(left: 24.0, right: 24),
             child: this.content,
           ),
           const SizedBox(height: 16),
@@ -450,7 +465,7 @@ class ContentDialog extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: context.colorScheme.surface.toOpacity(0.22),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: AnimatedSize(
               duration: const Duration(milliseconds: 200),
@@ -486,6 +501,7 @@ Future<void> showInputDialog({
   String confirmText = "Confirm",
   String cancelText = "Cancel",
   RegExp? inputValidator,
+  String? image,
 }) {
   var controller = TextEditingController(text: initialValue);
   bool isLoading = false;
@@ -498,14 +514,23 @@ Future<void> showInputDialog({
         builder: (context, setState) {
           return ContentDialog(
             title: title,
-            content: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: hintText,
-                border: const OutlineInputBorder(),
-                errorText: error,
-              ),
-            ).paddingHorizontal(12),
+            content: Column(
+              children: [
+                if (image != null)
+                  SizedBox(
+                    height: 108,
+                    child: Image.network(image, fit: BoxFit.none),
+                  ).paddingBottom(8),
+                TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    border: const OutlineInputBorder(),
+                    errorText: error,
+                  ),
+                ).paddingHorizontal(12),
+              ],
+            ),
             actions: [
               Button.filled(
                 isLoading: isLoading,

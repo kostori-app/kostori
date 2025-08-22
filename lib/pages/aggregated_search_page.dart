@@ -113,7 +113,7 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
                       children: [
                         Icon(Icons.sort, size: 20),
                         const SizedBox(width: 6),
-                        Text(showOnlyNonEmpty ? "有结果".tl : "全部".tl),
+                        Text(showOnlyNonEmpty ? "Result".tl : "All".tl),
                       ],
                     ),
                   ),

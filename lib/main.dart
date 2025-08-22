@@ -260,6 +260,20 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       useMaterial3: true,
       fontFamily: font,
       fontFamilyFallback: fallback,
+      progressIndicatorTheme: ProgressIndicatorThemeData(year2023: false),
+      sliderTheme: SliderThemeData(
+        year2023: false,
+        showValueIndicator: ShowValueIndicator.onDrag,
+      ),
+      pageTransitionsTheme: PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 

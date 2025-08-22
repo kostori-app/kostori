@@ -13,58 +13,71 @@ class _ExploreSettingsState extends State<ExploreSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Explore".tl)),
-        SelectSetting(
-          title: "Display mode of anime tile".tl,
-          settingKey: "animeDisplayMode",
-          optionTranslation: {
-            "detailed": "Detailed".tl,
-            "brief": "Brief".tl,
-          },
-        ).toSliver(),
-        _SliderSetting(
-          title: "Size of anime tile".tl,
-          settingsIndex: "animeTileScale",
-          interval: 0.05,
-          min: 0.75,
-          max: 1.25,
-        ).toSliver(),
-        _PopupWindowSetting(
-          title: "Explore Pages".tl,
-          builder: setExplorePagesWidget,
-        ).toSliver(),
-        _SwitchSetting(
-          title: "Show favorite status on anime tile".tl,
-          settingKey: "showFavoriteStatusOnTile",
-        ).toSliver(),
-        _SwitchSetting(
-          title: "Show history on anime tile".tl,
-          settingKey: "showHistoryStatusOnTile",
-        ).toSliver(),
-        SelectSetting(
-          title: "Default Search Target".tl,
-          settingKey: "defaultSearchTarget",
-          optionTranslation: {
-            '_aggregated_': "Aggregated".tl,
-            ...(() {
-              var map = <String, String>{};
-              for (var c in AnimeSource.all()) {
-                map[c.key] = c.name;
-              }
-              return map;
-            }()),
-          },
-        ).toSliver(),
-        SelectSetting(
-          title: "Initial Page".tl,
-          settingKey: "initialPage",
-          optionTranslation: {
-            '0': "Me".tl,
-            '1': "Bangumi".tl,
-            '2': "Following".tl,
-            '3': "History".tl,
-            '4': "Explore".tl,
-          },
-        ).toSliver(),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: _SettingCard(
+                children: [
+                  SelectSetting(
+                    title: "Display mode of anime tile".tl,
+                    settingKey: "animeDisplayMode",
+                    optionTranslation: {
+                      "detailed": "Detailed".tl,
+                      "brief": "Brief".tl,
+                    },
+                  ), // 注意转换成 Widget
+                  _SliderSetting(
+                    title: "Size of anime tile".tl,
+                    settingsIndex: "animeTileScale",
+                    interval: 0.05,
+                    min: 0.75,
+                    max: 1.25,
+                  ),
+                  _PopupWindowSetting(
+                    title: "Explore Pages".tl,
+                    builder: setExplorePagesWidget,
+                  ),
+                  _SwitchSetting(
+                    title: "Show favorite status on anime tile".tl,
+                    settingKey: "showFavoriteStatusOnTile",
+                  ),
+                  _SwitchSetting(
+                    title: "Show history on anime tile".tl,
+                    settingKey: "showHistoryStatusOnTile",
+                  ),
+                  SelectSetting(
+                    title: "Default Search Target".tl,
+                    settingKey: "defaultSearchTarget",
+                    optionTranslation: {
+                      '_aggregated_': "Aggregated".tl,
+                      ...(() {
+                        var map = <String, String>{};
+                        for (var c in AnimeSource.all()) {
+                          map[c.key] = c.name;
+                        }
+                        return map;
+                      }()),
+                    },
+                  ),
+                  SelectSetting(
+                    title: "Initial Page".tl,
+                    settingKey: "initialPage",
+                    optionTranslation: {
+                      '0': "Me".tl,
+                      '1': "Bangumi".tl,
+                      '2': "Following".tl,
+                      '3': "History".tl,
+                      '4': "Explore".tl,
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -116,44 +129,47 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
       builder: (context) {
         var controller = TextEditingController();
         String? error;
-        return StatefulBuilder(builder: (context, setState) {
-          return ContentDialog(
-            title: "Add keyword".tl,
-            content: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                label: Text("Keyword".tl),
-                errorText: error,
-              ),
-              onChanged: (s) {
-                if (error != null) {
-                  setState(() {
-                    error = null;
-                  });
-                }
-              },
-            ).paddingHorizontal(12),
-            actions: [
-              Button.filled(
-                onPressed: () {
-                  if (appdata.settings["blockedWords"]
-                      .contains(controller.text)) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return ContentDialog(
+              title: "Add keyword".tl,
+              content: TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  border: const OutlineInputBorder(),
+                  label: Text("Keyword".tl),
+                  errorText: error,
+                ),
+                onChanged: (s) {
+                  if (error != null) {
                     setState(() {
-                      error = "Keyword already exists".tl;
+                      error = null;
                     });
-                    return;
                   }
-                  appdata.settings["blockedWords"].add(controller.text);
-                  appdata.saveData();
-                  this.setState(() {});
-                  context.pop();
                 },
-                child: Text("Add".tl),
-              ),
-            ],
-          );
-        });
+              ).paddingHorizontal(12),
+              actions: [
+                Button.filled(
+                  onPressed: () {
+                    if (appdata.settings["blockedWords"].contains(
+                      controller.text,
+                    )) {
+                      setState(() {
+                        error = "Keyword already exists".tl;
+                      });
+                      return;
+                    }
+                    appdata.settings["blockedWords"].add(controller.text);
+                    appdata.saveData();
+                    this.setState(() {});
+                    context.pop();
+                  },
+                  child: Text("Add".tl),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }

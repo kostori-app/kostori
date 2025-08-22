@@ -176,7 +176,7 @@ let Convert = {
     decryptAesCbc: (value, key, iv) => {
         return sendMessage({
             method: "convert",
-            type: "aes-ecb",
+            type: "aes-cbc",
             value: value,
             key: key,
             iv: iv,
@@ -897,9 +897,23 @@ let console = {
  * @param language {string?}
  * @param favoriteId {string?} - Only set this field if the anime is from favorites page
  * @param stars {number?} - 0-5, double
+ * @param viewMore
  * @constructor
  */
-function Anime({id, title, subtitle, subTitle, cover, tags, description, maxPage, language, favoriteId, stars}) {
+function Anime({
+                   id,
+                   title,
+                   subtitle,
+                   subTitle,
+                   cover,
+                   tags,
+                   description,
+                   maxPage,
+                   language,
+                   favoriteId,
+                   stars,
+                   viewMore
+               }) {
     this.id = id;
     this.title = title;
     this.subtitle = subtitle;
@@ -911,6 +925,7 @@ function Anime({id, title, subtitle, subTitle, cover, tags, description, maxPage
     this.language = language;
     this.favoriteId = favoriteId;
     this.stars = stars;
+    this.viewMore = viewMore;
 }
 
 /**
@@ -935,7 +950,6 @@ function Anime({id, title, subtitle, subTitle, cover, tags, description, maxPage
  * @param url {string?}
  * @param stars {number?} - 0-5, double
  * @param maxPage {number?}
- * @param comments {Comment[]?}- `since 1.0.7` App will display comments in the details page.
  * @constructor
  */
 function AnimeDetails({
@@ -1318,13 +1332,15 @@ let UI = {
      * Show an input dialog
      * @param title {string}
      * @param validator {(string) => string | null | undefined} - A function that validates the input. If the function returns a string, the dialog will show the error message.
+     * @param image {string?} - Available since 1.2.2. An optional image to show in the dialog. You can use this to show a captcha.
      * @returns {Promise<string | null>} - The input value. If the dialog is canceled, return null.
      */
-    showInputDialog: (title, validator) => {
+    showInputDialog: (title, validator, image) => {
         return sendMessage({
             method: 'UI',
             function: 'showInputDialog',
             title: title,
+            image: image,
             validator: validator
         })
     },

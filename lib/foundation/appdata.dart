@@ -182,6 +182,8 @@ class Settings with ChangeNotifier {
     'favoritePageId': 0,
     'AMOLED': false,
     'dynamicColor': false,
+    'enableNoProxyOverrides': true,
+    'noProxyOverrides': ['bgm', 'bangumi'],
   };
 
   operator [](String key) {

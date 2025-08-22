@@ -2,13 +2,13 @@ import 'dart:io' as io;
 
 import 'package:dio/dio.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:kostori/foundation/log.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/pages/webview.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/pages/webview.dart';
+import 'package:kostori/utils/ext.dart';
 
 class CloudflareException implements DioException {
   final String url;
@@ -27,13 +27,14 @@ class CloudflareException implements DioException {
   }
 
   @override
-  DioException copyWith(
-      {RequestOptions? requestOptions,
-      Response<dynamic>? response,
-      DioExceptionType? type,
-      Object? error,
-      StackTrace? stackTrace,
-      String? message}) {
+  DioException copyWith({
+    RequestOptions? requestOptions,
+    Response<dynamic>? response,
+    DioExceptionType? type,
+    Object? error,
+    StackTrace? stackTrace,
+    String? message,
+  }) {
     return this;
   }
 
@@ -111,7 +112,9 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       uri,
       List<io.Cookie>.generate(cookies.length, (index) {
         var cookie = io.Cookie(
-            cookies.keys.elementAt(index), cookies.values.elementAt(index));
+          cookies.keys.elementAt(index),
+          cookies.values.elementAt(index),
+        );
         cookie.domain = domain;
         return cookie;
       }),
@@ -126,9 +129,12 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       onTitleChange: (title, controller) async {
         var head =
             await controller.evaluateJavascript("document.head.innerHTML") ??
-                "";
-        Log.info("Cloudflare", "Checking head: $head");
-        var isChallenging = head.contains('#challenge-success-text') ||
+            "";
+        if (appdata.settings['debugInfo']) {
+          Log.info("Cloudflare", "Checking head: $head");
+        }
+        var isChallenging =
+            head.contains('#challenge-success-text') ||
             head.contains("#challenge-error-text") ||
             head.contains("#challenge-form");
         if (!isChallenging) {
@@ -156,10 +162,16 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
   } else {
     bool success = false;
     void check(InAppWebViewController controller) async {
-      var head = await controller.evaluateJavascript(
-          source: "document.head.innerHTML") as String;
-      Log.info("Cloudflare", "Checking head: $head");
-      var isChallenging = head.contains('#challenge-success-text') ||
+      var head =
+          (await controller.evaluateJavascript(
+            source: "document.head.innerHTML",
+          ))?.toString() ??
+          '';
+      if (appdata.settings['debugInfo']) {
+        Log.info("Cloudflare", "Checking head: $head");
+      }
+      var isChallenging =
+          head.contains('#challenge-success-text') ||
           head.contains("#challenge-error-text") ||
           head.contains("#challenge-form");
       if (!isChallenging) {
@@ -174,7 +186,8 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
         }
         var cookies = await controller.getCookies(url) ?? [];
         if (cookies.firstWhereOrNull(
-                (element) => element.name == 'cf_clearance') ==
+              (element) => element.name == 'cf_clearance',
+            ) ==
             null) {
           return;
         }

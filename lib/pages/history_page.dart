@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:kostori/foundation/app.dart';
-
-import 'package:kostori/foundation/context.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/history.dart';
+import 'package:kostori/utils/translations.dart';
 
 import '../foundation/consts.dart';
+import '../foundation/favorites.dart';
+import 'anime_details_page/anime_page.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -79,10 +79,7 @@ class _HistoryPageState extends State<HistoryPage> {
         AnimeType(int.parse(anime.sourceKey.split(':')[1])),
       );
     } else {
-      HistoryManager().remove(
-        anime.id,
-        AnimeType(anime.sourceKey.hashCode),
-      );
+      HistoryManager().remove(anime.id, AnimeType(anime.sourceKey.hashCode));
     }
   }
 
@@ -90,17 +87,20 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget build(BuildContext context) {
     List<Widget> selectActions = [
       IconButton(
-          icon: const Icon(Icons.select_all),
-          tooltip: "Select All".tl,
-          onPressed: selectAll),
+        icon: const Icon(Icons.select_all),
+        tooltip: "Select All".tl,
+        onPressed: selectAll,
+      ),
       IconButton(
-          icon: const Icon(Icons.deselect),
-          tooltip: "Deselect".tl,
-          onPressed: deSelect),
+        icon: const Icon(Icons.deselect),
+        tooltip: "Deselect".tl,
+        onPressed: deSelect,
+      ),
       IconButton(
-          icon: const Icon(Icons.flip),
-          tooltip: "Invert Selection".tl,
-          onPressed: invertSelection),
+        icon: const Icon(Icons.flip),
+        tooltip: "Invert Selection".tl,
+        onPressed: invertSelection,
+      ),
       IconButton(
         icon: const Icon(Icons.delete),
         tooltip: "Delete".tl,
@@ -193,7 +193,7 @@ class _HistoryPageState extends State<HistoryPage> {
             },
           ),
         ),
-      )
+      ),
     ];
 
     Widget body = SmoothCustomScrollView(
@@ -241,7 +241,20 @@ class _HistoryPageState extends State<HistoryPage> {
                     }
                   });
                 }
-              : null,
+              : (a) {
+                  if (a.viewMore != null) {
+                    var context = App.mainNavigatorKey!.currentContext!;
+                    a.viewMore!.jump(context);
+                  } else {
+                    App.mainNavigatorKey?.currentContext?.to(
+                      () => AnimePage(id: a.id, sourceKey: a.sourceKey),
+                    );
+                    LocalFavoritesManager().updateRecentlyWatched(
+                      a.id,
+                      AnimeType(a.sourceKey.hashCode),
+                    );
+                  }
+                },
           badgeBuilder: (c) {
             return AnimeSource.find(c.sourceKey)?.name;
           },
@@ -287,9 +300,7 @@ class _HistoryPageState extends State<HistoryPage> {
   String getDescription(History h) {
     var res = "";
     if (h.lastWatchEpisode >= 1) {
-      res += "Currently seen @ep".tlParams({
-        "ep": h.lastWatchEpisode,
-      });
+      res += "Currently seen @ep".tlParams({"ep": h.lastWatchEpisode});
     }
     if (h.lastWatchTime >= 1) {
       if (h.lastWatchEpisode >= 1) {

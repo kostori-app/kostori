@@ -188,7 +188,7 @@ class WatcherState extends State<Watcher>
     ep = widget.anime.episode?.values.elementAt(road);
 
     Log.addLog(LogLevel.info, "加载集数", "$episodeIndex");
-    episode = episodeIndex; // 更新逻辑中的当前集数
+    episode = episodeIndex;
     try {
       var progressFind = await HistoryManager().progressFind(
         widget.anime.id,
@@ -196,8 +196,6 @@ class WatcherState extends State<Watcher>
         episode - 1,
         road,
       );
-      // Log.addLog(LogLevel.info, "加载找寻参数",
-      //     "${widget.anime.id}\n${AnimeType(widget.anime.sourceKey.hashCode).value}\n${episode - 1}\n$road");
       playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
       history?.watchEpisode.add(episode);
@@ -214,6 +212,11 @@ class WatcherState extends State<Watcher>
         widget.wid,
         ep?.keys.elementAt(episode - 1),
       );
+      if (res is! String || res.isEmpty) {
+        Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
+        return;
+      }
+      playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
       playerController.playing = true;
@@ -248,7 +251,11 @@ class WatcherState extends State<Watcher>
         widget.wid,
         ep?.keys.elementAt(episode - 1),
       );
-      // Log.addLog(LogLevel.info, "视频链接", res);
+      if (res is! String || res.isEmpty) {
+        Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
+        return;
+      }
+      playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
 
@@ -266,10 +273,11 @@ class WatcherState extends State<Watcher>
 
   Future<void> _play(String res, int order, int currentPlaybackTime) async {
     try {
-      // 打开媒体
-      await playerController.player.open(Media(res));
+      if (mounted) {
+        await playerController.player.open(Media(res));
+      }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, "打开媒体", "$e\n$s");
+      Log.addLog(LogLevel.error, "openMedia", "$e\n$s");
     }
     // 监听缓冲流
     var sub = playerController.player.stream.buffer.listen(null);
@@ -281,10 +289,11 @@ class WatcherState extends State<Watcher>
         // It seems that when the `buffer.first` is fired, the media is not fully loaded
         // and the player will not seek properlly.
         await sub.cancel();
-
-        await playerController.player.seek(
-          Duration(milliseconds: currentPlaybackTime),
-        );
+        if (mounted) {
+          await playerController.player.seek(
+            Duration(milliseconds: currentPlaybackTime),
+          );
+        }
         completer.complete(0);
       }
     });
@@ -313,12 +322,15 @@ class WatcherState extends State<Watcher>
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.0),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.width * 0.45,
-                    maxWidth: MediaQuery.of(context).size.width,
+                child: Hero(
+                  tag: widget.anime.id,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.width * 0.45,
+                      maxWidth: MediaQuery.of(context).size.width,
+                    ),
+                    child: VideoPage(playerController: playerController),
                   ),
-                  child: VideoPage(playerController: playerController),
                 ),
               ),
             )
@@ -326,12 +338,15 @@ class WatcherState extends State<Watcher>
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.width * 0.6,
-                    maxWidth: MediaQuery.of(context).size.width,
+                child: Hero(
+                  tag: widget.anime.id,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.width * 0.6,
+                      maxWidth: MediaQuery.of(context).size.width,
+                    ),
+                    child: VideoPage(playerController: playerController),
                   ),
-                  child: VideoPage(playerController: playerController),
                 ),
               ),
             ),

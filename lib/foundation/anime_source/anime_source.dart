@@ -20,6 +20,8 @@ import 'package:kostori/utils/init.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 
+import '../../pages/category_animes_page.dart';
+
 part 'category.dart';
 
 part 'favorites.dart';
@@ -421,6 +423,12 @@ class ExplorePagePart {
   final PageJumpTarget? viewMore;
 
   const ExplorePagePart(this.title, this.animes, this.viewMore);
+}
+
+class ExploreGridPart {
+  final List<Anime> animes;
+
+  const ExploreGridPart(this.animes);
 }
 
 enum ExplorePageType {

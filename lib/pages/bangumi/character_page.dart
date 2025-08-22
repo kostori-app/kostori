@@ -538,15 +538,19 @@ class _CharacterPageState extends State<CharacterPage> {
                                                         'Voice Actor: @c'.tlParams({
                                                           'c':
                                                               characterCastsList[index]
-                                                                  .actors[0]
-                                                                  .nameCN
+                                                                  .actors
                                                                   .isNotEmpty
-                                                              ? characterCastsList[index]
-                                                                    .actors[0]
-                                                                    .nameCN
-                                                              : characterCastsList[index]
-                                                                    .actors[0]
-                                                                    .name,
+                                                              ? (characterCastsList[index]
+                                                                        .actors[0]
+                                                                        .nameCN
+                                                                        .isNotEmpty
+                                                                    ? characterCastsList[index]
+                                                                          .actors[0]
+                                                                          .nameCN
+                                                                    : characterCastsList[index]
+                                                                          .actors[0]
+                                                                          .name)
+                                                              : '',
                                                         }),
                                                         style: const TextStyle(
                                                           fontSize: 12,

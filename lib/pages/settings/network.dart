@@ -13,21 +13,35 @@ class _NetworkSettingsState extends State<NetworkSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Network".tl)),
-        _PopupWindowSetting(
-          title: "Proxy".tl,
-          builder: () => const _ProxySettingView(),
-        ).toSliver(),
-        _PopupWindowSetting(
-          title: "DNS Overrides".tl,
-          builder: () => const _DNSOverrides(),
-        ).toSliver(),
-        _SliderSetting(
-          title: "Download Threads".tl,
-          settingsIndex: 'downloadThreads',
-          interval: 1,
-          min: 1,
-          max: 16,
-        ).toSliver(),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _PopupWindowSetting(
+                  title: "Proxy".tl,
+                  builder: () => const _ProxySettingView(),
+                ),
+                _PopupWindowSetting(
+                  title: "DNS Overrides".tl,
+                  builder: () => const _DNSOverrides(),
+                ),
+                _PopupWindowSetting(
+                  title: "No Proxy Overrides".tl,
+                  builder: () => const _NoProxyOverrides(),
+                ),
+                _SliderSetting(
+                  title: "Download Threads".tl,
+                  settingsIndex: 'downloadThreads',
+                  interval: 1,
+                  min: 1,
+                  max: 16,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -113,49 +127,44 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            RadioListTile<String>(
-              title: Text("Direct".tl),
-              value: 'direct',
+            RadioGroup<String>(
               groupValue: type,
               onChanged: (v) {
                 setState(() {
                   type = v!;
-                });
-                appdata.settings['proxy'] = toProxyStr();
-                appdata.saveData();
-              },
-            ),
-            RadioListTile<String>(
-              title: Text("System".tl),
-              value: 'system',
-              groupValue: type,
-              onChanged: (v) {
-                setState(() {
-                  type = v!;
-                });
-                appdata.settings['proxy'] = toProxyStr();
-                appdata.saveData();
-              },
-            ),
-            RadioListTile(
-              title: Text("Manual".tl),
-              value: 'manual',
-              groupValue: type,
-              onChanged: (v) {
-                setState(() {
-                  type = v!;
-                  if (host.isEmpty && port.isEmpty) {
-                    if (appdata.implicitData['proxy'] != null) {
-                      var data = appdata.implicitData['proxy'];
-                      host = data['host'];
-                      port = data['port'];
-                      username = data['username'];
-                      password = data['password'];
+                  if (v == 'manual') {
+                    if (host.isEmpty && port.isEmpty) {
+                      if (appdata.implicitData['proxy'] != null) {
+                        var data = appdata.implicitData['proxy'];
+                        host = data['host'];
+                        port = data['port'];
+                        username = data['username'];
+                        password = data['password'];
+                      }
                     }
                   }
                 });
+                appdata.settings['proxy'] = toProxyStr();
+                appdata.saveData();
               },
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    title: Text("Direct".tl),
+                    value: 'direct',
+                  ),
+                  RadioListTile<String>(
+                    title: Text("System".tl),
+                    value: 'system',
+                  ),
+                  RadioListTile<String>(
+                    title: Text("Manual".tl),
+                    value: 'manual',
+                  ),
+                ],
+              ),
             ),
+
             if (type == 'manual') buildManualProxy(),
           ],
         ),
@@ -287,6 +296,8 @@ class __DNSOverridesState extends State<_DNSOverrides> {
     var map = <String, String>{};
     for (var entry in overrides) {
       map[entry.$1.text] = entry.$2.text;
+      entry.$1.dispose();
+      entry.$2.dispose();
     }
     appdata.settings['dnsOverrides'] = map;
     appdata.saveData();
@@ -305,7 +316,10 @@ class __DNSOverridesState extends State<_DNSOverrides> {
               title: "Enable DNS Overrides".tl,
               settingKey: "enableDnsOverrides",
             ),
-            _SwitchSetting(title: "Server Name Indication", settingKey: "sni"),
+            _SwitchSetting(
+              title: "Server Name Indication".tl,
+              settingKey: "sni",
+            ),
             const SizedBox(height: 8),
             Container(
               height: 1,
@@ -371,6 +385,114 @@ class __DNSOverridesState extends State<_DNSOverrides> {
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
               setState(() {
+                overrides[index].$1.dispose();
+                overrides[index].$2.dispose();
+                overrides.removeAt(index);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoProxyOverrides extends StatefulWidget {
+  const _NoProxyOverrides();
+
+  @override
+  State<_NoProxyOverrides> createState() => __NoProxyOverridesState();
+}
+
+class __NoProxyOverridesState extends State<_NoProxyOverrides> {
+  List<TextEditingController> overrides = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final noProxyOverrides = appdata.settings['noProxyOverrides'] ?? [];
+    overrides = (noProxyOverrides as List)
+        .map((e) => TextEditingController(text: e.toString()))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    final newList = <String>[];
+    for (var controller in overrides) {
+      newList.add(controller.text);
+      controller.dispose();
+    }
+    appdata.settings['noProxyOverrides'] = newList;
+    appdata.saveData();
+    JsEngine().resetDio();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: "No Proxy Overrides".tl,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            _SwitchSetting(
+              title: "Enable No Proxy Overrides".tl,
+              settingKey: "enableNoProxyOverrides",
+            ),
+            const SizedBox(height: 8),
+            Container(
+              height: 1,
+              margin: EdgeInsets.symmetric(horizontal: 8),
+              color: context.colorScheme.outlineVariant,
+            ),
+            for (var i = 0; i < overrides.length; i++) buildOverride(i),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: Text("Add".tl),
+              onPressed: () {
+                setState(() {
+                  overrides.add(TextEditingController());
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildOverride(int index) {
+    var controller = overrides[index];
+    return Container(
+      key: ValueKey(index),
+      height: 48,
+      margin: EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.colorScheme.outlineVariant),
+          left: BorderSide(color: context.colorScheme.outlineVariant),
+          right: BorderSide(color: context.colorScheme.outlineVariant),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: "Domain".tl,
+              ),
+            ).paddingHorizontal(8),
+          ),
+          Container(width: 1, color: context.colorScheme.outlineVariant),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () {
+              setState(() {
+                overrides[index].dispose();
                 overrides.removeAt(index);
               });
             },

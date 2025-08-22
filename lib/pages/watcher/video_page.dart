@@ -81,14 +81,18 @@ class _VideoPageState extends State<VideoPage>
   Widget build(BuildContext context) {
     return PopScope(
       canPop:
-          !widget.playerController.isFullScreen &&
-          !widget.playerController.showTabBody,
+          widget.playerController.isFullScreen == false &&
+          widget.playerController.showTabBody == false,
       onPopInvokedWithResult: (bool didPop, _) {
         if (didPop) return;
         if (widget.playerController.showTabBody) {
           closeTabBodyAnimated();
         } else if (widget.playerController.isFullScreen) {
-          widget.playerController.enterFullScreen(context);
+          if (App.isAndroid) {
+            widget.playerController.enterFullScreen(context);
+          } else if (App.isDesktop) {
+            widget.playerController.toggleFullscreen(context);
+          }
         }
       },
       child: OrientationBuilder(

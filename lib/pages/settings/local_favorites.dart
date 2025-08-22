@@ -13,24 +13,31 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(title: Text("Local Favorites".tl)),
-        SelectSetting(
-          title: "Add new favorite to".tl,
-          settingKey: "newFavoriteAddTo",
-          optionTranslation: {
-            "start": "Start".tl,
-            "end": "End".tl,
-          },
-        ).toSliver(),
-        SelectSetting(
-          title: "Quick Favorite".tl,
-          settingKey: "quickFavorite",
-          help:
-              "Long press on the favorite button to quickly add to this folder"
-                  .tl,
-          optionTranslation: {
-            for (var e in LocalFavoritesManager().folderNames) e: e
-          },
-        ).toSliver(),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                SelectSetting(
+                  title: "Add new favorite to".tl,
+                  settingKey: "newFavoriteAddTo",
+                  optionTranslation: {"start": "Start".tl, "end": "End".tl},
+                ),
+                SelectSetting(
+                  title: "Quick Favorite".tl,
+                  settingKey: "quickFavorite",
+                  help:
+                      "Long press on the favorite button to quickly add to this folder"
+                          .tl,
+                  optionTranslation: {
+                    for (var e in LocalFavoritesManager().folderNames) e: e,
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

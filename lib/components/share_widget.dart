@@ -41,7 +41,11 @@ Future<void> captureAndSave() async {
     await file.writeAsBytes(uint8List);
 
     Uint8List data = await file.readAsBytes();
-    Share.shareFile(data: data, filename: 'image.jpg', mime: 'image/jpeg');
+    await Share.shareFile(
+      data: data,
+      filename: 'popup_image.png',
+      mime: 'image/png',
+    );
     Log.addLog(LogLevel.info, '截图保存', file.path);
   } catch (e) {
     Log.addLog(LogLevel.error, '截图失败', '$e');

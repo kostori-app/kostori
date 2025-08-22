@@ -971,7 +971,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               padding: const EdgeInsets.symmetric(vertical: 2),
               child: TextField(
                 controller: _controller,
-                autofocus: true,
+                autofocus: false,
                 style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   filled: true,

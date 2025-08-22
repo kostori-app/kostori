@@ -5,12 +5,13 @@ part of 'favorites_page.dart';
 /// Open a dialog to create a new favorite folder.
 Future<void> newFolder() async {
   return showDialog(
-      context: App.rootContext,
-      builder: (context) {
-        var controller = TextEditingController();
-        String? error;
+    context: App.rootContext,
+    builder: (context) {
+      var controller = TextEditingController();
+      String? error;
 
-        return StatefulBuilder(builder: (context, setState) {
+      return StatefulBuilder(
+        builder: (context, setState) {
           return ContentDialog(
             title: "New Folder".tl,
             content: Column(
@@ -63,8 +64,10 @@ Future<void> newFolder() async {
               ),
             ],
           );
-        });
-      });
+        },
+      );
+    },
+  );
 }
 
 String? validateFolderName(String newFolderName) {
@@ -80,8 +83,7 @@ String? validateFolderName(String newFolderName) {
 }
 
 void addFavorite(Anime anime) {
-  var folders = LocalFavoritesManager()
-      .folderNames
+  var folders = LocalFavoritesManager().folderNames
       .where((folder) => folder != "default")
       .toList();
 
@@ -90,47 +92,52 @@ void addFavorite(Anime anime) {
     builder: (context) {
       String? selectedFolder;
 
-      return StatefulBuilder(builder: (context, setState) {
-        return ContentDialog(
-          title: "Select a folder".tl,
-          content: ListTile(
-            title: Text("Folder".tl),
-            trailing: Select(
-              current: selectedFolder,
-              values: folders,
-              minWidth: 112,
-              onTap: (v) {
-                setState(() {
-                  selectedFolder = folders[v];
-                });
-              },
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return ContentDialog(
+            title: "Select a folder".tl,
+            content: ListTile(
+              title: Text("Folder".tl),
+              trailing: Select(
+                current: selectedFolder,
+                values: folders,
+                minWidth: 112,
+                onTap: (v) {
+                  setState(() {
+                    selectedFolder = folders[v];
+                  });
+                },
+              ),
             ),
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () {
-                if (selectedFolder != null) {
-                  LocalFavoritesManager().addAnime(
-                    selectedFolder!,
-                    FavoriteItem(
-                      id: anime.id,
-                      name: anime.title,
-                      coverPath: anime.cover,
-                      author: anime.subtitle ?? '',
-                      type: AnimeType((anime.sourceKey == 'local'
-                          ? 0
-                          : anime.sourceKey.hashCode)),
-                      tags: anime.tags ?? [],
-                    ),
-                  );
-                  context.pop();
-                }
-              },
-              child: Text("Confirm".tl),
-            ),
-          ],
-        );
-      });
+            actions: [
+              FilledButton(
+                onPressed: () {
+                  if (selectedFolder != null) {
+                    LocalFavoritesManager().addAnime(
+                      selectedFolder!,
+                      FavoriteItem(
+                        id: anime.id,
+                        name: anime.title,
+                        coverPath: anime.cover,
+                        author: anime.subtitle ?? '',
+                        type: AnimeType(
+                          (anime.sourceKey == 'local'
+                              ? 0
+                              : anime.sourceKey.hashCode),
+                        ),
+                        tags: anime.tags ?? [],
+                        viewMore: anime.viewMore,
+                      ),
+                    );
+                    context.pop();
+                  }
+                },
+                child: Text("Confirm".tl),
+              ),
+            ],
+          );
+        },
+      );
     },
   );
 }
@@ -145,13 +152,16 @@ void defaultFavorite(Anime anime) {
       author: anime.subtitle ?? '',
       type: AnimeType((anime.sourceKey.hashCode)),
       tags: anime.tags ?? [],
+      viewMore: anime.viewMore,
     ),
   );
 }
 
 Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
-  var animes = LocalFavoritesManager()
-      .getAllAnimes(folder, FavoriteSortType.displayOrderAsc);
+  var animes = LocalFavoritesManager().getAllAnimes(
+    folder,
+    FavoriteSortType.displayOrderAsc,
+  );
 
   Future<void> updateSingleAnime(int index) async {
     int retry = 3;
@@ -168,7 +178,8 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
           id: a.id,
           name: newInfo.title,
           coverPath: newInfo.cover,
-          author: newInfo.subTitle ??
+          author:
+              newInfo.subTitle ??
               newInfo.tags['author']?.firstOrNull ??
               a.author,
           type: a.type,
@@ -209,9 +220,7 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                LinearProgressIndicator(
-                  value: value / animes.length,
-                ),
+                LinearProgressIndicator(value: value / animes.length),
                 const SizedBox(height: 4),
                 Text("$value/${animes.length}"),
                 const SizedBox(height: 4),
@@ -246,12 +255,17 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
 
     for (var i = 0; i < maxConcurrency; i++) {
       if (index + i >= animes.length) break;
-      futures.add(updateSingleAnime(index + i).then((v) {
-        finished.value++;
-      }, onError: (_) {
-        errors++;
-        finished.value++;
-      }));
+      futures.add(
+        updateSingleAnime(index + i).then(
+          (v) {
+            finished.value++;
+          },
+          onError: (_) {
+            errors++;
+            finished.value++;
+          },
+        ),
+      );
     }
 
     await Future.wait(futures);
@@ -266,44 +280,46 @@ Future<void> sortFolders() async {
 
   await showPopUpWidget(
     App.rootContext,
-    StatefulBuilder(builder: (context, setState) {
-      return PopUpWidgetScaffold(
-        title: "Sort".tl,
-        tailing: [
-          Tooltip(
-            message: "Help".tl,
-            child: IconButton(
-              icon: const Icon(Icons.help_outline),
-              onPressed: () {
-                showInfoDialog(
-                  context: context,
-                  title: "Reorder".tl,
-                  content: "Long press and drag to reorder.".tl,
-                );
-              },
+    StatefulBuilder(
+      builder: (context, setState) {
+        return PopUpWidgetScaffold(
+          title: "Sort".tl,
+          tailing: [
+            Tooltip(
+              message: "Help".tl,
+              child: IconButton(
+                icon: const Icon(Icons.help_outline),
+                onPressed: () {
+                  showInfoDialog(
+                    context: context,
+                    title: "Reorder".tl,
+                    content: "Long press and drag to reorder.".tl,
+                  );
+                },
+              ),
             ),
-          )
-        ],
-        body: ReorderableListView.builder(
-          onReorder: (oldIndex, newIndex) {
-            if (oldIndex < newIndex) {
-              newIndex--;
-            }
-            setState(() {
-              var item = folders.removeAt(oldIndex);
-              folders.insert(newIndex, item);
-            });
-          },
-          itemCount: folders.length,
-          itemBuilder: (context, index) {
-            return ListTile(
-              key: ValueKey(folders[index]),
-              title: Text(folders[index]),
-            );
-          },
-        ),
-      );
-    }),
+          ],
+          body: ReorderableListView.builder(
+            onReorder: (oldIndex, newIndex) {
+              if (oldIndex < newIndex) {
+                newIndex--;
+              }
+              setState(() {
+                var item = folders.removeAt(oldIndex);
+                folders.insert(newIndex, item);
+              });
+            },
+            itemCount: folders.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                key: ValueKey(folders[index]),
+                title: Text(folders[index]),
+              );
+            },
+          ),
+        );
+      },
+    ),
   );
 
   LocalFavoritesManager().updateOrder(folders);

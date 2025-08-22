@@ -161,11 +161,47 @@ class Utils {
     }
   }
 
-  static String getRandomUA() {
-    final random = Random();
-    String randomElement =
-        userAgentsList[random.nextInt(userAgentsList.length)];
-    return randomElement;
+  ///检查字符串相似度
+  static bool isHalfOverlap(String a, String b) {
+    Set<String> setA = a.split('').toSet();
+    Set<String> setB = b.split('').toSet();
+
+    Set<String> common = setA.intersection(setB);
+    return common.length >= (setA.length / 2);
+  }
+
+  ///检查字符串是否包含不该包含的部分
+  static bool containsIllegalCharacters(String title) {
+    // 常规非法字符
+    final illegalPattern = RegExp(r'[_@#$%^&*()+={}\[\]\\|<>/~`]');
+
+    // Emoji
+    final emojiPattern = RegExp(
+      r'[\u{1F600}-\u{1F64F}' // 表情
+      r'\u{1F300}-\u{1F5FF}' // 符号
+      r'\u{1F680}-\u{1F6FF}'
+      r'\u{2600}-\u{26FF}'
+      r'\u{2700}-\u{27BF}]',
+      unicode: true,
+    );
+
+    // 检查下划线或其他非法字符
+    if (title.contains('_') || illegalPattern.hasMatch(title)) {
+      return true;
+    }
+
+    // 检查 emoji
+    if (emojiPattern.hasMatch(title)) {
+      return true;
+    }
+
+    // 检查 - 两边是否是数字或英文
+    final dashPattern = RegExp(r'(?<=[a-zA-Z0-9])-(?=[a-zA-Z0-9])');
+    if (dashPattern.hasMatch(title)) {
+      return true;
+    }
+
+    return false;
   }
 
   // 日期字符串转换为 weekday (eg: 2024-09-23 -> 1 (星期一))
