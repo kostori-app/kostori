@@ -10,7 +10,9 @@
     <application
             android:label="kostori"
             android:name="${applicationName}"
+            android:usesCleartextTraffic="true"
             android:icon="@mipmap/ic_launcher"
+            android:extractNativeLibs="true"
     >
         <activity
                 android:name=".MainActivity"
