@@ -142,7 +142,7 @@ class AppDio with DioMixin {
     interceptors.add(NetworkCacheManager());
     interceptors.add(CloudflareInterceptor());
     interceptors.add(MyLogInterceptor());
-    interceptors.add(RetryInterceptor(dio: this));
+    // interceptors.add(RetryInterceptor(dio: this));
   }
 
   static final Map<String, bool> _requests = {};
