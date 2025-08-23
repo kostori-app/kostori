@@ -700,7 +700,8 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                 });
                               }
                             : (a) {
-                                if (a.viewMore != null) {
+                                if (a.viewMore != null &&
+                                    a.viewMore?.attributes != null) {
                                   var context =
                                       App.mainNavigatorKey!.currentContext!;
                                   a.viewMore!.jump(context);
