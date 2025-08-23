@@ -889,7 +889,6 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
       color: context.isDarkMode ? Colors.grey.shade700 : Colors.white,
       child: Column(
         children: [
-          Appbar(title: Text(""), backgroundColor: context.colorScheme.surface),
           buildVideoPlaceholder(context),
           const SizedBox(height: 4),
           const Divider(),
@@ -926,18 +925,42 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
     final double maxHeight = maxWidth * aspectRatioMultiplier;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 8,
+        left: 16,
+        right: 16,
+        bottom: 8,
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(App.isDesktop ? 16.0 : 8.0),
         child: Container(
           constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: maxWidth),
           color: Colors.black,
-          alignment: Alignment.center,
-          child: MiscComponents.placeholder(
-            context,
-            50,
-            50,
-            Colors.transparent,
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: MiscComponents.placeholder(
+                  context,
+                  50,
+                  50,
+                  Colors.transparent,
+                ),
+              ),
+              Positioned(
+                top: 8,
+                left: 8,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
