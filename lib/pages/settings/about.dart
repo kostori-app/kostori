@@ -162,6 +162,7 @@ Future<void> checkUpdateUi([
   String? taskId;
   bool isDownloading = false;
   bool downloadStopped = false;
+  bool isVersionConsistent = true;
 
   if (!value.containsKey(true)) {
     if (showMessageIfNoUpdate) {
@@ -187,7 +188,10 @@ Future<void> checkUpdateUi([
     'https://api.github.com/repos/kostori-app/kostori/releases/latest',
     options: Options(method: 'GET'),
   );
-
+  if (response.data['tag_name'] != value.values) {
+    App.rootContext.showMessage(message: "版本不一致".tl);
+    isVersionConsistent = false;
+  }
   final assets = (response.data['assets'] as List).cast<Map<String, dynamic>>();
   final matchedAsset = assets.firstWhere(
     (a) => (a['name'] as String).contains(abi),
@@ -317,7 +321,8 @@ Future<void> checkUpdateUi([
                 )
               else if (!isDownloading &&
                   App.isAndroid &&
-                  matchedAsset.isNotEmpty) ...[
+                  matchedAsset.isNotEmpty &&
+                  isVersionConsistent) ...[
                 Button.text(
                   onPressed: () async {
                     setState(() {
