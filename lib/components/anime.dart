@@ -180,7 +180,9 @@ class AnimeTile extends StatelessWidget {
 
     return Stack(
       children: [
-        Positioned.fill(child: Material(child: child)),
+        Positioned.fill(
+          child: Material(color: Colors.transparent, child: child),
+        ),
         Positioned(
           left: type == 'detailed' ? 16 : 6,
           top: 6,
@@ -345,7 +347,7 @@ class AnimeTile extends StatelessWidget {
             elevation: 2,
             shadowColor: Colors.black.toOpacity(0.2),
             clipBehavior: Clip.antiAlias,
-            child: Ink(child: buildImage(context)),
+            child: buildImage(context),
           );
 
           if (heroID != null) {
@@ -434,12 +436,6 @@ class AnimeTile extends StatelessWidget {
                             children: children,
                           );
                         })(),
-                      ),
-                      Positioned.fill(
-                        child: Ink(
-                          color: Colors.transparent,
-                          child: Container(),
-                        ),
                       ),
                     ],
                   ),
