@@ -275,7 +275,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
 
     body = AppScrollBar(
-      topPadding: 48,
+      topPadding: 52 + MediaQuery.of(context).padding.top,
       controller: scrollController,
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),

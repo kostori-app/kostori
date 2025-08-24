@@ -748,6 +748,7 @@ class SliverGridAnimes extends StatefulWidget {
     this.enableHistory,
     this.isRecommend,
     this.isGrid,
+    this.asSliver = true,
   });
 
   final List<Anime> animes;
@@ -771,6 +772,8 @@ class SliverGridAnimes extends StatefulWidget {
   final bool? isRecommend;
 
   final bool? isGrid;
+
+  final bool asSliver;
 
   @override
   State<SliverGridAnimes> createState() => _SliverGridAnimesState();
@@ -847,6 +850,7 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
       enableHistory: widget.enableHistory,
       isRecommend: widget.isRecommend,
       isGrid: widget.isGrid,
+      asSliver: widget.asSliver,
     );
   }
 }
@@ -865,6 +869,7 @@ class _SliverGridAnimes extends StatelessWidget {
     this.enableHistory,
     this.isRecommend,
     this.isGrid,
+    this.asSliver = true,
   });
 
   final List<Anime> animes;
@@ -891,50 +896,97 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final bool? isGrid;
 
+  final bool asSliver;
+
   @override
   Widget build(BuildContext context) {
-    return SliverGrid(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        if (index == animes.length - 1) {
-          onLastItemBuild?.call();
-        }
-        var badge = badgeBuilder?.call(animes[index]);
-        var isSelected = selection == null
-            ? false
-            : selection![animes[index]] ?? false;
-        var anime = AnimeTile(
-          anime: animes[index],
-          isRecommend: isRecommend ?? false,
-          isGrid: isGrid ?? false,
-          enableFavorite: enableFavorite ?? true,
-          enableHistory: enableHistory ?? false,
-          badge: badge,
-          menuOptions: menuBuilder?.call(animes[index]),
-          onTap: onTap != null ? () => onTap!(animes[index]) : null,
-          onLongPressed: onLongPressed != null
-              ? () => onLongPressed!(animes[index])
-              : null,
-          heroID: heroIDs[index],
-        );
-        if (selection == null) {
-          return anime;
-        }
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Theme.of(
-                    context,
-                  ).colorScheme.secondaryContainer.toOpacity(0.72)
+    if (asSliver) {
+      return SliverGrid(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          if (index == animes.length - 1) {
+            onLastItemBuild?.call();
+          }
+          var badge = badgeBuilder?.call(animes[index]);
+          var isSelected = selection == null
+              ? false
+              : selection![animes[index]] ?? false;
+          var anime = AnimeTile(
+            anime: animes[index],
+            isRecommend: isRecommend ?? false,
+            isGrid: isGrid ?? false,
+            enableFavorite: enableFavorite ?? true,
+            enableHistory: enableHistory ?? false,
+            badge: badge,
+            menuOptions: menuBuilder?.call(animes[index]),
+            onTap: onTap != null ? () => onTap!(animes[index]) : null,
+            onLongPressed: onLongPressed != null
+                ? () => onLongPressed!(animes[index])
                 : null,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(4),
-          child: anime,
-        );
-      }, childCount: animes.length),
-      gridDelegate: SliverGridDelegateWithAnimes(),
-    );
+            heroID: heroIDs[index],
+          );
+          if (selection == null) return anime;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondaryContainer.toOpacity(0.72)
+                  : null,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(4),
+            child: anime,
+          );
+        }, childCount: animes.length),
+        gridDelegate: SliverGridDelegateWithAnimes(),
+      );
+    } else {
+      return GridView.builder(
+        padding: EdgeInsets.zero,
+        physics: const ClampingScrollPhysics(),
+        // shrinkWrap: true,
+        itemCount: animes.length,
+        gridDelegate: SliverGridDelegateWithAnimes(),
+        itemBuilder: (context, index) {
+          if (index == animes.length - 1) {
+            onLastItemBuild?.call();
+          }
+          var badge = badgeBuilder?.call(animes[index]);
+          var isSelected = selection == null
+              ? false
+              : selection![animes[index]] ?? false;
+          var anime = AnimeTile(
+            anime: animes[index],
+            isRecommend: isRecommend ?? false,
+            isGrid: isGrid ?? false,
+            enableFavorite: enableFavorite ?? true,
+            enableHistory: enableHistory ?? false,
+            badge: badge,
+            menuOptions: menuBuilder?.call(animes[index]),
+            onTap: onTap != null ? () => onTap!(animes[index]) : null,
+            onLongPressed: onLongPressed != null
+                ? () => onLongPressed!(animes[index])
+                : null,
+            heroID: heroIDs[index],
+          );
+          if (selection == null) return anime;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.secondaryContainer.toOpacity(0.72)
+                  : null,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(4),
+            child: anime,
+          );
+        },
+      );
+    }
   }
 }
 
