@@ -236,6 +236,7 @@ class _AppScrollBarState extends State<AppScrollBar> {
   final _scrollbarHeight = App.isDesktop ? 42.0 : 64.0;
 
   late final VerticalDragGestureRecognizer _dragGestureRecognizer;
+  ScrollPosition? _activePosition;
 
   @override
   void initState() {
@@ -254,7 +255,7 @@ class _AppScrollBarState extends State<AppScrollBar> {
 
   void _onDragStart(DragStartDetails details) {
     _startDragDy = details.localPosition.dy;
-    _startScrollOffset = widget.controller.offset;
+    _startScrollOffset = _activePosition?.pixels ?? 0.0;
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
@@ -271,7 +272,9 @@ class _AppScrollBarState extends State<AppScrollBar> {
       maxExtent,
     );
 
-    widget.controller.jumpTo(newOffset);
+    if (_activePosition != null) {
+      _activePosition!.jumpTo(newOffset);
+    }
   }
 
   void _restartHideTimer() {
@@ -284,6 +287,10 @@ class _AppScrollBarState extends State<AppScrollBar> {
 
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
+
+    _activePosition = notification.context != null
+        ? Scrollable.of(notification.context!).position
+        : null;
 
     final extentChanged =
         notification.metrics.minScrollExtent != minExtent ||
@@ -302,7 +309,6 @@ class _AppScrollBarState extends State<AppScrollBar> {
         _restartHideTimer();
       });
     }
-
     return false;
   }
 
