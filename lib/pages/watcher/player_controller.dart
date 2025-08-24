@@ -182,7 +182,7 @@ abstract class _PlayerController with Store {
       completed = player.state.completed;
       // 音量相关
       if (!volumeSeeking) {
-        if (Utils.isDesktop()) {
+        if (App.isDesktop) {
           volume = player.state.volume;
         } else {
           FlutterVolumeController.getVolume().then((value) {
@@ -422,7 +422,7 @@ abstract class _PlayerController with Store {
     value = value.clamp(0.0, 100.0);
     volume = value;
     try {
-      if (Utils.isDesktop()) {
+      if (App.isDesktop) {
         await player.setVolume(value);
       } else {
         await FlutterVolumeController.updateShowSystemUI(false);

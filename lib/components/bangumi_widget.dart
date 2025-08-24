@@ -1,5 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:math';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -1248,4 +1251,191 @@ class StatItem {
   final Color? color;
 
   StatItem(this.key, this.label, this.color);
+}
+
+class ExpandableText extends StatefulWidget {
+  final String text;
+  final int maxLines;
+
+  const ExpandableText({super.key, required this.text, this.maxLines = 7});
+
+  @override
+  State<ExpandableText> createState() => _ExpandableTextState();
+}
+
+class _ExpandableTextState extends State<ExpandableText> {
+  bool expanded = false;
+  double? collapsedHeight;
+  double? fullHeight;
+
+  double _computeHeight(String text, double maxWidth, {int? maxLines}) {
+    final tp = TextPainter(
+      text: TextSpan(text: text),
+      textDirection: TextDirection.ltr,
+      maxLines: maxLines,
+    );
+    tp.layout(maxWidth: maxWidth);
+    return tp.height;
+  }
+
+  int _computeNumLines(String text, double maxWidth) {
+    final tp = TextPainter(
+      text: TextSpan(text: text),
+      textDirection: TextDirection.ltr,
+    );
+    tp.layout(maxWidth: maxWidth);
+    return tp.computeLineMetrics().length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final numLines = _computeNumLines(widget.text, maxWidth);
+        fullHeight ??= _computeHeight(widget.text, maxWidth);
+        if (numLines <= widget.maxLines) {
+          return SelectableText(
+            widget.text,
+            scrollPhysics: const NeverScrollableScrollPhysics(),
+            selectionHeightStyle: ui.BoxHeightStyle.max,
+          );
+        }
+        collapsedHeight ??= _computeHeight(
+          widget.text,
+          maxWidth,
+          maxLines: widget.maxLines,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                TweenAnimationBuilder<double>(
+                  tween: Tween(
+                    begin: expanded ? fullHeight! : collapsedHeight!,
+                    end: expanded ? fullHeight! : collapsedHeight!,
+                  ),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  builder: (context, value, child) {
+                    return ClipRect(
+                      child: Align(
+                        alignment: Alignment.topLeft,
+                        heightFactor: value / fullHeight!,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: SelectableText(
+                    widget.text,
+                    scrollPhysics: const NeverScrollableScrollPhysics(),
+                  ),
+                ),
+                if (!expanded)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      padding: const EdgeInsets.only(left: 2.0),
+                      child: Text(
+                        '...',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => expanded = !expanded),
+                  child: Text(expanded ? 'Show less -'.tl : 'Show more +'.tl),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class ExpandableTags extends StatelessWidget {
+  final List<dynamic> tags;
+  final bool fullTag;
+  final VoidCallback onToggle;
+  final Function(int index) onTagTap;
+
+  const ExpandableTags({
+    super.key,
+    required this.tags,
+    required this.fullTag,
+    required this.onToggle,
+    required this.onTagTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            sizeFactor: animation,
+            axis: Axis.vertical,
+            axisAlignment: -1.0,
+            child: child,
+          ),
+        );
+      },
+      layoutBuilder: (currentChild, previousChildren) {
+        return Stack(
+          alignment: Alignment.topLeft,
+          children: <Widget>[
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        );
+      },
+      child: Wrap(
+        key: ValueKey(fullTag),
+        spacing: 8.0,
+        runSpacing: App.isDesktop ? 8 : 0,
+        children: [
+          ...List<Widget>.generate(
+            fullTag ? tags.length : min(12, tags.length),
+            (index) => ActionChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${tags[index].name} '),
+                  Text(
+                    '${tags[index].count}',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              onPressed: () => onTagTap(index),
+            ),
+          ),
+          if (tags.length > 12)
+            ActionChip(
+              label: Text(
+                fullTag ? 'Show less -'.tl : 'Show more +'.tl,
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+              onPressed: onToggle,
+            ),
+        ],
+      ),
+    );
+  }
 }
