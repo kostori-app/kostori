@@ -3,6 +3,7 @@
 import 'dart:async';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
@@ -981,6 +982,26 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                       ? Icons.menu_open
                                       : Icons.menu_open_outlined,
                                 ),
+                              )
+                            : Container(),
+                        (!widget.playerController.isFullScreen && App.isAndroid)
+                            ? IconButton(
+                                icon: const Icon(
+                                  Icons.picture_in_picture_alt,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () async {
+                                  final floating = Floating();
+                                  if (await floating.isPipAvailable) {
+                                    final status = await floating.pipStatus;
+                                    if (status == PiPStatus.disabled ||
+                                        status == PiPStatus.automatic) {
+                                      widget.playerController.enterPiPMode();
+                                    } else if (status == PiPStatus.enabled) {
+                                      widget.playerController.exitPiPMode();
+                                    }
+                                  }
+                                },
                               )
                             : Container(),
                         IconButton(

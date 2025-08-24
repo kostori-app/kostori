@@ -448,20 +448,20 @@ class ContentDialog extends StatelessWidget {
         side: BorderSide(
           color: context.brightness == Brightness.dark
               ? Colors.white.toOpacity(0.1)
-              : Colors.black.toOpacity(0.1), // 或其他颜色
-          width: 1.0, // 线宽
+              : Colors.black.toOpacity(0.1),
+          width: 1.0,
         ),
       ),
       insetPadding: context.width < 400
-          ? const EdgeInsets.symmetric(horizontal: 4)
-          : const EdgeInsets.symmetric(horizontal: 16),
+          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 100)
+          : const EdgeInsets.symmetric(horizontal: 16, vertical: 100),
       elevation: 2,
       shadowColor: context.colorScheme.shadow,
       backgroundColor: context.colorScheme.surface.toOpacity(0.3),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16), // 可选：增加圆角
+        borderRadius: BorderRadius.circular(16),
         child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3), // 模糊强度
+          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
           child: Container(
             decoration: BoxDecoration(
               color: context.colorScheme.surface.toOpacity(0.22),

@@ -183,7 +183,12 @@ Future<void> checkUpdateUi([
   }
   IsolateNameServer.registerPortWithName(port.sendPort, 'downloader_send_port');
   bool fileValid = false;
-  final abi = await getAppAbi();
+  String abi = '';
+  String filePath = '';
+  String downloadUrl = '';
+  String name = '';
+  Directory? dir;
+  File file;
   final response = await AppDio().request(
     'https://api.github.com/repos/kostori-app/kostori/releases/latest',
     options: Options(method: 'GET'),
@@ -193,71 +198,73 @@ Future<void> checkUpdateUi([
     isVersionConsistent = false;
   }
   final assets = (response.data['assets'] as List).cast<Map<String, dynamic>>();
+  if (App.isAndroid) {
+    abi = await getAppAbi();
+  }
   final matchedAsset = assets.firstWhere(
     (a) => (a['name'] as String).contains(abi),
     orElse: () => {},
   );
 
-  if (matchedAsset.isEmpty) {
+  if (matchedAsset.isEmpty && App.isAndroid) {
     App.rootContext.showMessage(
       message: "No update available for this architecture ($abi)",
     );
-    return;
   }
 
-  final name = matchedAsset['name'];
-  final downloadUrl = matchedAsset['browser_download_url'];
-  final digest = matchedAsset['digest'] as String? ?? '';
-  final expectedSha256 = digest.startsWith('sha256:')
-      ? digest.substring(7)
-      : digest;
-  final dir = await AbsolutePath.absoluteDirectory(
-    dirType: DirectoryType.downloads,
-  );
-  final filePath = path.join(dir!.path, name);
-  final file = File(filePath);
+  if (App.isAndroid) {
+    name = matchedAsset['name'];
+    downloadUrl = matchedAsset['browser_download_url'];
+    final digest = matchedAsset['digest'] as String? ?? '';
+    final expectedSha256 = digest.startsWith('sha256:')
+        ? digest.substring(7)
+        : digest;
+    dir = await AbsolutePath.absoluteDirectory(
+      dirType: DirectoryType.downloads,
+    );
+    filePath = path.join(dir!.path, name);
+    file = File(filePath);
 
-  if (await file.exists()) {
-    final actualSha256 = await calculateSha256(file);
-    fileValid = (actualSha256 == expectedSha256);
-  }
-  Log.addLog(
-    LogLevel.info,
-    "infoPrint",
-    '$name \n $downloadUrl \n $expectedSha256 \n $filePath',
-  );
+    if (await file.exists()) {
+      final actualSha256 = await calculateSha256(file);
+      fileValid = (actualSha256 == expectedSha256);
+    }
+    Log.addLog(
+      LogLevel.info,
+      "infoPrint",
+      '$name \n $downloadUrl \n $expectedSha256 \n $filePath',
+    );
+    port.listen((dynamic data) async {
+      String id = data[0];
+      int statusInt = data[1];
+      int progress = data[2];
 
-  port.listen((dynamic data) async {
-    String id = data[0];
-    int statusInt = data[1];
-    int progress = data[2];
+      DownloadTaskStatus status = DownloadTaskStatus.values[statusInt];
 
-    DownloadTaskStatus status = DownloadTaskStatus.values[statusInt];
-
-    if (id == taskId) {
-      dialogSetState(() {
-        downloadProgress = progress / 100;
-        isDownloading = status == DownloadTaskStatus.running;
-        if (!isDownloading && progress != 100 && !downloadStopped) {
-          downloadStopped = true;
-          App.rootContext.showMessage(message: "下载失败".tl);
-        }
-      });
-      if (progress == 100) {
-        if (await file.exists()) {
-          final actualSha256 = await calculateSha256(file);
-          dialogSetState.call(() {
-            fileValid = (actualSha256 == expectedSha256);
-          });
-          if (!fileValid) {
-            App.rootContext.showMessage(message: "检查哈希值失败,请重试".tl);
+      if (id == taskId) {
+        dialogSetState(() {
+          downloadProgress = progress / 100;
+          isDownloading = status == DownloadTaskStatus.running;
+          if (!isDownloading && progress != 100 && !downloadStopped) {
+            downloadStopped = true;
+            App.rootContext.showMessage(message: "下载失败".tl);
+          }
+        });
+        if (progress == 100) {
+          if (await file.exists()) {
+            final actualSha256 = await calculateSha256(file);
+            dialogSetState.call(() {
+              fileValid = (actualSha256 == expectedSha256);
+            });
+            if (!fileValid) {
+              App.rootContext.showMessage(message: "检查哈希值失败,请重试".tl);
+            }
           }
         }
       }
-    }
-  });
-
-  FlutterDownloader.registerCallback(downloadCallback);
+    });
+    FlutterDownloader.registerCallback(downloadCallback);
+  }
 
   showDialog(
     context: App.rootContext,
@@ -277,18 +284,42 @@ Future<void> checkUpdateUi([
                   "Discover the new version @v".tlParams({"v": value.values}),
                 ),
                 const SizedBox(height: 12),
-                if (isDownloading)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: LinearProgressIndicator(value: downloadProgress),
+                (isDownloading)
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: LinearProgressIndicator(
+                              value: downloadProgress,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${(downloadProgress * 100).toStringAsFixed(0)}%',
+                          ),
+                        ],
+                      )
+                    : Material(
+                        color: context.brightness == Brightness.light
+                            ? Colors.white.toOpacity(0.72)
+                            : const Color(0xFF1E1E1E).toOpacity(0.72),
+                        elevation: 4,
+                        shadowColor: Theme.of(context).colorScheme.shadow,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(8),
+                            child: buildMarkdown(
+                              context,
+                              response.data['body'],
+                            ),
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Text('${(downloadProgress * 100).toStringAsFixed(0)}%'),
-                    ],
-                  ),
               ],
             ),
             actions: [
@@ -334,7 +365,7 @@ Future<void> checkUpdateUi([
 
                     taskId = await FlutterDownloader.enqueue(
                       url: Api.gitMirror + downloadUrl,
-                      savedDir: dir.path,
+                      savedDir: dir!.path,
                       fileName: name,
                       showNotification: true,
                       openFileFromNotification: true,
@@ -353,7 +384,7 @@ Future<void> checkUpdateUi([
 
                     taskId = await FlutterDownloader.enqueue(
                       url: downloadUrl,
-                      savedDir: dir.path,
+                      savedDir: dir!.path,
                       fileName: name,
                       showNotification: true,
                       openFileFromNotification: true,
@@ -470,4 +501,24 @@ Future<bool> checkAndRequestStoragePermission() async {
 
   var result = await Permission.storage.request();
   return result.isGranted;
+}
+
+Widget buildMarkdown(BuildContext context, String data) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  final config = MarkdownConfig(
+    configs: [
+      PConfig(
+        textStyle: TextStyle(color: isDark ? Colors.white : Colors.black),
+      ),
+      CodeConfig(
+        style: TextStyle(
+          color: isDark ? Colors.white : Colors.black,
+          backgroundColor: isDark ? Colors.black26 : Colors.grey[200],
+        ),
+      ),
+    ],
+  );
+
+  return MarkdownBlock(data: data, config: config);
 }
