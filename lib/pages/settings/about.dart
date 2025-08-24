@@ -193,7 +193,12 @@ Future<void> checkUpdateUi([
     'https://api.github.com/repos/kostori-app/kostori/releases/latest',
     options: Options(method: 'GET'),
   );
-  if (response.data['tag_name'] != value.values) {
+  if (response.data['tag_name']?.toString() != value.values.first.toString()) {
+    Log.addLog(
+      LogLevel.info,
+      "Version Consistent",
+      '${response.data['tag_name']?.toString()} -> ${value.values.first.toString()}',
+    );
     App.rootContext.showMessage(message: "版本不一致".tl);
     isVersionConsistent = false;
   }
