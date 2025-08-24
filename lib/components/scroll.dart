@@ -211,11 +211,13 @@ class AppScrollBar extends StatefulWidget {
     required this.controller,
     required this.child,
     this.topPadding = 0,
+    this.isNested = false,
   });
 
   final ScrollController controller;
   final Widget child;
   final double topPadding;
+  final bool isNested;
 
   @override
   State<AppScrollBar> createState() => _AppScrollBarState();
@@ -237,6 +239,9 @@ class _AppScrollBarState extends State<AppScrollBar> {
 
   late final VerticalDragGestureRecognizer _dragGestureRecognizer;
 
+  ScrollPosition? _outerPosition;
+  ScrollPosition? _innerPosition;
+
   @override
   void initState() {
     super.initState();
@@ -254,7 +259,7 @@ class _AppScrollBarState extends State<AppScrollBar> {
 
   void _onDragStart(DragStartDetails details) {
     _startDragDy = details.localPosition.dy;
-    _startScrollOffset = widget.controller.offset;
+    _startScrollOffset = position;
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
@@ -266,12 +271,23 @@ class _AppScrollBarState extends State<AppScrollBar> {
     if (viewRange <= 0) return;
 
     final scrollDelta = dyDelta / viewRange * scrollRange;
-    final newOffset = (_startScrollOffset + scrollDelta).clamp(
+    double newPosition = (_startScrollOffset + scrollDelta).clamp(
       minExtent,
       maxExtent,
     );
 
-    widget.controller.jumpTo(newOffset);
+    if (widget.isNested && _outerPosition != null && _innerPosition != null) {
+      // 外层滚动范围
+      double outerMax = _outerPosition!.maxScrollExtent;
+      if (newPosition <= outerMax) {
+        _outerPosition!.jumpTo(newPosition);
+      } else {
+        _outerPosition!.jumpTo(outerMax);
+        _innerPosition!.jumpTo(newPosition - outerMax);
+      }
+    } else if (_outerPosition != null) {
+      _outerPosition!.jumpTo(newPosition);
+    }
   }
 
   void _restartHideTimer() {
@@ -285,23 +301,33 @@ class _AppScrollBarState extends State<AppScrollBar> {
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
 
-    final extentChanged =
-        notification.metrics.minScrollExtent != minExtent ||
-        notification.metrics.maxScrollExtent != maxExtent;
-    final pixelChanged = (notification.metrics.pixels - position).abs() > 0.5;
-
-    if (extentChanged || pixelChanged) {
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        setState(() {
-          minExtent = notification.metrics.minScrollExtent;
-          maxExtent = notification.metrics.maxScrollExtent;
-          position = notification.metrics.pixels;
-          showScrollbar = true;
-        });
-        _restartHideTimer();
-      });
+    if (widget.isNested) {
+      final pos = Scrollable.of(notification.context!);
+      if (_outerPosition == null) {
+        _outerPosition = pos.position;
+      } else if (_outerPosition != pos.position) {
+        _innerPosition = pos.position;
+      }
+    } else {
+      _outerPosition = widget.controller.position;
     }
+
+    double outerOffset = _outerPosition?.pixels ?? 0.0;
+    double outerMax = _outerPosition?.maxScrollExtent ?? 0.0;
+    double innerOffset = _innerPosition?.pixels ?? 0.0;
+    double innerMax = _innerPosition?.maxScrollExtent ?? 0.0;
+
+    minExtent = 0;
+    maxExtent = outerMax + innerMax;
+    position = outerOffset + innerOffset;
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        showScrollbar = true;
+      });
+      _restartHideTimer();
+    });
 
     return false;
   }

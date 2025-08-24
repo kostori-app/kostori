@@ -132,6 +132,7 @@ class SliverAppbar extends StatelessWidget {
     this.radius = 0,
     this.style = AppbarStyle.blur,
     this.bottom,
+    this.pinned = true,
   });
 
   final Widget? leading;
@@ -146,10 +147,12 @@ class SliverAppbar extends StatelessWidget {
 
   final PreferredSizeWidget? bottom;
 
+  final bool pinned;
+
   @override
   Widget build(BuildContext context) {
     return SliverPersistentHeader(
-      pinned: true,
+      pinned: pinned,
       delegate: _MySliverAppBarDelegate(
         leading: leading,
         title: title,

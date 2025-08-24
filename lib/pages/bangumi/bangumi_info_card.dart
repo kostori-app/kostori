@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -52,85 +54,102 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
       context: context,
       builder: (context) {
         return Dialog(
+          backgroundColor: Colors.transparent,
           insetPadding: const EdgeInsets.all(20),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 400,
-              maxHeight: 600, // 根据需求调整
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Material(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.transparent,
-                    child: ListView.builder(
-                      controller: scrollController,
-                      shrinkWrap: true,
-                      itemCount: infoController.bangumiHistory.length,
-                      itemBuilder: (context, index) {
-                        final history = infoController.bangumiHistory[index];
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: context.brightness == Brightness.dark
+                    ? Colors.black.toOpacity(0.1)
+                    : Colors.white.toOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 400,
+                  maxHeight: 600,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Material(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.transparent,
+                          child: ListView.builder(
+                            controller: scrollController,
+                            shrinkWrap: true,
+                            itemCount: infoController.bangumiHistory.length,
+                            itemBuilder: (context, index) {
+                              final history =
+                                  infoController.bangumiHistory[index];
 
-                        return InkWell(
-                          onTap: () {
-                            Navigator.pop(context);
-                            App.mainNavigatorKey?.currentContext?.to(
-                              () => AnimePage(
-                                id: history.id,
-                                sourceKey: history.sourceKey,
-                              ),
-                            );
-                            LocalFavoritesManager().updateRecentlyWatched(
-                              history.id,
-                              AnimeType(history.sourceKey.hashCode),
-                            );
-                          },
-                          borderRadius: BorderRadius.circular(12),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 16,
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: BangumiWidget.kostoriImage(
-                                    context,
-                                    history.cover,
-                                    width: 200 * 0.72,
-                                    height: 200,
+                              return InkWell(
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  App.mainNavigatorKey?.currentContext?.to(
+                                    () => AnimePage(
+                                      id: history.id,
+                                      sourceKey: history.sourceKey,
+                                    ),
+                                  );
+                                  LocalFavoritesManager().updateRecentlyWatched(
+                                    history.id,
+                                    AnimeType(history.sourceKey.hashCode),
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 16,
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
+                                  child: Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      Text(history.title),
-                                      const SizedBox(height: 4),
-                                      Text(history.sourceKey),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '上次看到: 第 ${history.lastWatchEpisode} 话',
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: BangumiWidget.kostoriImage(
+                                          context,
+                                          history.cover,
+                                          width: 200 * 0.72,
+                                          height: 200,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            Text(history.title),
+                                            const SizedBox(height: 4),
+                                            Text(history.sourceKey),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '上次看到: 第 ${history.lastWatchEpisode} 话',
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),

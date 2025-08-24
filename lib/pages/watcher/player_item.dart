@@ -11,7 +11,6 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
-import 'package:kostori/utils/utils.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -417,10 +416,10 @@ class _PlayerItemState extends State<PlayerItem>
                     children: [
                       Center(
                         child: Focus(
-                          focusNode: Utils.isDesktop()
+                          focusNode: App.isDesktop
                               ? widget.keyboardFocus
                               : null,
-                          autofocus: Utils.isDesktop(),
+                          autofocus: App.isDesktop,
                           onKeyEvent: (focusNode, KeyEvent event) {
                             if (event is KeyDownEvent) {
                               // 空格键处理

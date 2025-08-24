@@ -47,9 +47,6 @@ class Utils {
     }
   }
 
-  static bool isDesktop() =>
-      Platform.isMacOS || Platform.isWindows || Platform.isLinux;
-
   static bool isSmallScreen(BuildContext context) =>
       MediaQuery.of(context).size.width < 850;
 

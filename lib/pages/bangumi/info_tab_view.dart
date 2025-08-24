@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
@@ -25,6 +22,7 @@ import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+import '../../components/bangumi_widget.dart';
 import '../../components/bean/card/reviews_card.dart';
 import '../../components/bean/card/topics_card.dart';
 import '../../components/misc_components.dart';
@@ -115,13 +113,9 @@ class _InfoTabViewState extends State<InfoTabView>
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SizedBox(
-          width: MediaQuery
-              .sizeOf(context)
-              .width > maxWidth
+          width: MediaQuery.sizeOf(context).width > maxWidth
               ? maxWidth
-              : MediaQuery
-              .sizeOf(context)
-              .width - 32,
+              : MediaQuery.sizeOf(context).width - 32,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.start,
@@ -133,63 +127,7 @@ class _InfoTabViewState extends State<InfoTabView>
               const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final span = TextSpan(text: widget.bangumiItem.summary);
-                    final tp = TextPainter(
-                      text: span,
-                      textDirection: TextDirection.ltr,
-                    );
-                    tp.layout(maxWidth: constraints.maxWidth);
-                    final numLines = tp
-                        .computeLineMetrics()
-                        .length;
-                    if (numLines > 7) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          SizedBox(
-                            // make intro expandable
-                            height: fullIntro ? null : 120,
-                            width: MediaQuery
-                                .sizeOf(context)
-                                .width > maxWidth
-                                ? maxWidth
-                                : MediaQuery
-                                .sizeOf(context)
-                                .width - 32,
-                            child: SelectableText(
-                              widget.bangumiItem.summary,
-                              textAlign: TextAlign.start,
-                              scrollBehavior: const ScrollBehavior().copyWith(
-                                scrollbars: false,
-                              ),
-                              scrollPhysics: NeverScrollableScrollPhysics(),
-                              selectionHeightStyle: ui.BoxHeightStyle.max,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                fullIntro = !fullIntro;
-                              });
-                            },
-                            child: Text(
-                              !fullIntro ? 'Show more +'.tl : 'Show less -'.tl,
-                            ),
-                          ),
-                        ],
-                      );
-                    } else {
-                      return SelectableText(
-                        widget.bangumiItem.summary,
-                        textAlign: TextAlign.start,
-                        scrollPhysics: NeverScrollableScrollPhysics(),
-                        selectionHeightStyle: ui.BoxHeightStyle.max,
-                      );
-                    }
-                  },
-                ),
+                child: ExpandableText(text: widget.bangumiItem.summary),
               ),
               const SizedBox(height: 8),
               Center(
@@ -216,10 +154,7 @@ class _InfoTabViewState extends State<InfoTabView>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Theme
-                          .of(context)
-                          .colorScheme
-                          .secondaryContainer,
+                      color: Theme.of(context).colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -230,61 +165,17 @@ class _InfoTabViewState extends State<InfoTabView>
                 ],
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: Utils.isDesktop() ? 8 : 0,
-                children: [
-                  // 显示标签列表
-                  ...List<Widget>.generate(
-                    fullTag
-                        ? widget.bangumiItem.tags.length
-                        : min(12, widget.bangumiItem.tags.length), // 添加min限制
-                        (int index) =>
-                        ActionChip(
-                          label: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('${widget.bangumiItem.tags[index].name} '),
-                              Text(
-                                '${widget.bangumiItem.tags[index].count}',
-                                style: TextStyle(
-                                  color: Theme
-                                      .of(context)
-                                      .colorScheme
-                                      .primary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          onPressed: () {
-                            context.to(
-                                  () =>
-                                  BangumiSearchPage(
-                                    tag: widget.bangumiItem.tags[index].name,
-                                  ),
-                            );
-                          },
-                        ),
-                  ),
-
-                  if (widget.bangumiItem.tags.length > 12)
-                    ActionChip(
-                      label: Text(
-                        fullTag ? 'Show less -'.tl : 'Show more +'.tl,
-                        style: TextStyle(
-                          color: Theme
-                              .of(context)
-                              .colorScheme
-                              .primary,
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          fullTag = !fullTag;
-                        });
-                      },
+              ExpandableTags(
+                tags: widget.bangumiItem.tags,
+                fullTag: fullTag,
+                onToggle: () => setState(() => fullTag = !fullTag),
+                onTagTap: (index) {
+                  context.to(
+                    () => BangumiSearchPage(
+                      tag: widget.bangumiItem.tags[index].name,
                     ),
-                ],
+                  );
+                },
               ),
               if (widget.allEpisodes.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -315,10 +206,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme
-                            .of(context)
-                            .colorScheme
-                            .secondaryContainer,
+                        color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -330,11 +218,10 @@ class _InfoTabViewState extends State<InfoTabView>
                     TextButton(
                       onPressed: () {
                         context.to(
-                              () =>
-                              BangumiAllEpisodePage(
-                                allEpisodes: widget.allEpisodes,
-                                infoController: widget.infoController,
-                              ),
+                          () => BangumiAllEpisodePage(
+                            allEpisodes: widget.allEpisodes,
+                            infoController: widget.infoController,
+                          ),
                         );
                       },
                       child: Text('more'.tl),
@@ -366,23 +253,16 @@ class _InfoTabViewState extends State<InfoTabView>
                                     width: 2,
                                   ),
                                 ),
-                                color: Theme
-                                    .of(context)
-                                    .colorScheme
-                                    .surface,
-                                shadowColor: Theme
-                                    .of(context)
-                                    .shadowColor,
+                                color: Theme.of(context).colorScheme.surface,
+                                shadowColor: Theme.of(context).shadowColor,
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(12),
                                   onTap: () {
                                     context.to(
-                                          () =>
-                                          BangumiEpisodeInfoPage(
-                                            episode: episode,
-                                            infoController: widget
-                                                .infoController,
-                                          ),
+                                      () => BangumiEpisodeInfoPage(
+                                        episode: episode,
+                                        infoController: widget.infoController,
+                                      ),
                                     );
                                   },
                                   onLongPress: () {
@@ -398,27 +278,19 @@ class _InfoTabViewState extends State<InfoTabView>
                                               child: Column(
                                                 mainAxisSize: MainAxisSize.min,
                                                 crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
-                                                    "${Utils.readType(
-                                                        episode.type)}${episode
-                                                        .sort}.${episode.nameCn
-                                                        .isNotEmpty ? episode
-                                                        .nameCn : episode
-                                                        .name}",
+                                                    "${Utils.readType(episode.type)}${episode.sort}.${episode.nameCn.isNotEmpty ? episode.nameCn : episode.name}",
                                                     style: const TextStyle(
                                                       fontSize: 24,
                                                       fontWeight:
-                                                      FontWeight.bold,
+                                                          FontWeight.bold,
                                                     ),
                                                   ),
                                                   if (episode.nameCn.isNotEmpty)
                                                     Text(
-                                                      "${Utils.readType(episode
-                                                          .type)}${episode
-                                                          .sort}.${episode
-                                                          .name}",
+                                                      "${Utils.readType(episode.type)}${episode.sort}.${episode.name}",
                                                     ),
                                                   const SizedBox(height: 8),
                                                   Row(
@@ -426,9 +298,9 @@ class _InfoTabViewState extends State<InfoTabView>
                                                       Text(
                                                         "Broadcast Time: @a"
                                                             .tlParams({
-                                                          'a': episode
-                                                              .airDate,
-                                                        }),
+                                                              'a': episode
+                                                                  .airDate,
+                                                            }),
                                                       ),
                                                       const SizedBox(width: 8),
                                                       Text(
@@ -459,13 +331,9 @@ class _InfoTabViewState extends State<InfoTabView>
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12.0),
                                 border: Border.all(
-                                  color: Theme
-                                      .of(
+                                  color: Theme.of(
                                     context,
-                                  )
-                                      .colorScheme
-                                      .primary
-                                      .toOpacity(intensity),
+                                  ).colorScheme.primary.toOpacity(intensity),
                                   width: 2.0,
                                 ),
                               ),
@@ -491,22 +359,16 @@ class _InfoTabViewState extends State<InfoTabView>
                               width: 2,
                             ),
                           ),
-                          color: Theme
-                              .of(context)
-                              .colorScheme
-                              .surface,
-                          shadowColor: Theme
-                              .of(context)
-                              .shadowColor,
+                          color: Theme.of(context).colorScheme.surface,
+                          shadowColor: Theme.of(context).shadowColor,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(12),
                             onTap: () {
                               context.to(
-                                    () =>
-                                    BangumiAllEpisodePage(
-                                      allEpisodes: widget.allEpisodes,
-                                      infoController: widget.infoController,
-                                    ),
+                                () => BangumiAllEpisodePage(
+                                  allEpisodes: widget.allEpisodes,
+                                  infoController: widget.infoController,
+                                ),
                               );
                             },
                             child: const Center(child: Text('...')),
@@ -545,10 +407,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme
-                            .of(context)
-                            .colorScheme
-                            .secondaryContainer,
+                        color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text('${widget.bangumiSRI.length}', style: ts.s12),
@@ -569,8 +428,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         text: TextSpan(text: title, style: style),
                         maxLines: 1,
                         textDirection: TextDirection.ltr,
-                      )
-                        ..layout(maxWidth: 140);
+                      )..layout(maxWidth: 140);
 
                       final shouldScroll = textPainter.width >= 140;
 
@@ -585,25 +443,24 @@ class _InfoTabViewState extends State<InfoTabView>
                           child: InkWell(
                             onTap: () {
                               App.mainNavigatorKey?.currentContext?.to(
-                                    () =>
-                                    BangumiInfoPage(
-                                      bangumiItem: BangumiItem(
-                                        id: item.id,
-                                        type: 2,
-                                        name: item.name,
-                                        nameCn: item.nameCn,
-                                        summary: '',
-                                        airDate: '',
-                                        airWeekday: 1,
-                                        rank: 0,
-                                        total: 0,
-                                        totalEpisodes: 0,
-                                        score: 0,
-                                        images: item.images,
-                                        tags: [],
-                                        alias: [],
-                                      ),
-                                    ),
+                                () => BangumiInfoPage(
+                                  bangumiItem: BangumiItem(
+                                    id: item.id,
+                                    type: 2,
+                                    name: item.name,
+                                    nameCn: item.nameCn,
+                                    summary: '',
+                                    airDate: '',
+                                    airWeekday: 1,
+                                    rank: 0,
+                                    total: 0,
+                                    totalEpisodes: 0,
+                                    score: 0,
+                                    images: item.images,
+                                    tags: [],
+                                    alias: [],
+                                  ),
+                                ),
                               );
                             },
                             borderRadius: BorderRadius.circular(12),
@@ -629,24 +486,24 @@ class _InfoTabViewState extends State<InfoTabView>
                                       height: 20,
                                       child: shouldScroll
                                           ? Marquee(
-                                        text: title,
-                                        style: style,
-                                        scrollAxis: Axis.horizontal,
-                                        blankSpace: 10.0,
-                                        velocity: 40.0,
-                                        pauseAfterRound: Duration.zero,
-                                        accelerationDuration:
-                                        Duration.zero,
-                                        decelerationDuration:
-                                        Duration.zero,
-                                      )
+                                              text: title,
+                                              style: style,
+                                              scrollAxis: Axis.horizontal,
+                                              blankSpace: 10.0,
+                                              velocity: 40.0,
+                                              pauseAfterRound: Duration.zero,
+                                              accelerationDuration:
+                                                  Duration.zero,
+                                              decelerationDuration:
+                                                  Duration.zero,
+                                            )
                                           : Text(
-                                        title,
-                                        style: style,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                              title,
+                                              style: style,
+                                              textAlign: TextAlign.center,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                     ),
                                   ),
                                 ),
@@ -670,9 +527,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   ),
                 ),
               ],
-              if (MediaQuery
-                  .sizeOf(context)
-                  .width <= 1200 &&
+              if (MediaQuery.sizeOf(context).width <= 1200 &&
                   !widget.isLoading &&
                   widget.bangumiItem.total > 20) ...[
                 const SizedBox(height: 8),
@@ -703,10 +558,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme
-                            .of(context)
-                            .colorScheme
-                            .secondaryContainer,
+                        color: Theme.of(context).colorScheme.secondaryContainer,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text('${widget.bangumiItem.score}', style: ts.s12),
@@ -715,7 +567,7 @@ class _InfoTabViewState extends State<InfoTabView>
                       onPressed: () {
                         setState(() {
                           infoController.showLineChart =
-                          !infoController.showLineChart;
+                              !infoController.showLineChart;
                         });
                       },
                       icon: Icon(
@@ -773,13 +625,9 @@ class _InfoTabViewState extends State<InfoTabView>
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SizedBox(
-          width: MediaQuery
-              .sizeOf(context)
-              .width > maxWidth
+          width: MediaQuery.sizeOf(context).width > maxWidth
               ? maxWidth
-              : MediaQuery
-              .sizeOf(context)
-              .width - 32,
+              : MediaQuery.sizeOf(context).width - 32,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -796,7 +644,7 @@ class _InfoTabViewState extends State<InfoTabView>
                     runSpacing: 8.0,
                     children: List.generate(
                       4,
-                          (_) => Bone.button(uniRadius: 8, height: 32),
+                      (_) => Bone.button(uniRadius: 8, height: 32),
                     ),
                   ),
                 ),
@@ -844,13 +692,9 @@ class _InfoTabViewState extends State<InfoTabView>
                               ),
                               child: SizedBox(
                                 width:
-                                MediaQuery
-                                    .sizeOf(context)
-                                    .width > maxWidth
+                                    MediaQuery.sizeOf(context).width > maxWidth
                                     ? maxWidth
-                                    : MediaQuery
-                                    .sizeOf(context)
-                                    .width - 32,
+                                    : MediaQuery.sizeOf(context).width - 32,
                                 child: CommentsCard(
                                   commentItem: widget.commentsList[index],
                                 ),
@@ -870,13 +714,9 @@ class _InfoTabViewState extends State<InfoTabView>
                               ),
                               child: SizedBox(
                                 width:
-                                MediaQuery
-                                    .sizeOf(context)
-                                    .width > maxWidth
+                                    MediaQuery.sizeOf(context).width > maxWidth
                                     ? maxWidth
-                                    : MediaQuery
-                                    .sizeOf(context)
-                                    .width - 32,
+                                    : MediaQuery.sizeOf(context).width - 32,
                                 child: Divider(
                                   thickness: 0.5,
                                   indent: 10,
@@ -916,13 +756,9 @@ class _InfoTabViewState extends State<InfoTabView>
                           child: Padding(
                             padding: const EdgeInsets.all(16),
                             child: SizedBox(
-                              width: MediaQuery
-                                  .sizeOf(context)
-                                  .width > maxWidth
+                              width: MediaQuery.sizeOf(context).width > maxWidth
                                   ? maxWidth
-                                  : MediaQuery
-                                  .sizeOf(context)
-                                  .width - 32,
+                                  : MediaQuery.sizeOf(context).width - 32,
                               child: CommentsCard.bone(),
                             ),
                           ),
@@ -989,13 +825,9 @@ class _InfoTabViewState extends State<InfoTabView>
                               horizontal: 16.0,
                             ),
                             child: SizedBox(
-                              width: MediaQuery
-                                  .sizeOf(context)
-                                  .width > maxWidth
+                              width: MediaQuery.sizeOf(context).width > maxWidth
                                   ? maxWidth
-                                  : MediaQuery
-                                  .sizeOf(context)
-                                  .width - 32,
+                                  : MediaQuery.sizeOf(context).width - 32,
                               child: TopicsCard(topicsItem: topicsList[index]),
                             ),
                           ),
@@ -1024,13 +856,9 @@ class _InfoTabViewState extends State<InfoTabView>
                       return Align(
                         alignment: Alignment.topCenter,
                         child: SizedBox(
-                          width: MediaQuery
-                              .sizeOf(context)
-                              .width > maxWidth
+                          width: MediaQuery.sizeOf(context).width > maxWidth
                               ? maxWidth
-                              : MediaQuery
-                              .sizeOf(context)
-                              .width - 32,
+                              : MediaQuery.sizeOf(context).width - 32,
                           child: Skeletonizer.zone(
                             child: ListTile(
                               leading: Bone.circle(size: 36),
@@ -1101,13 +929,9 @@ class _InfoTabViewState extends State<InfoTabView>
                               horizontal: 8.0,
                             ),
                             child: SizedBox(
-                              width: MediaQuery
-                                  .sizeOf(context)
-                                  .width > maxWidth
+                              width: MediaQuery.sizeOf(context).width > maxWidth
                                   ? maxWidth
-                                  : MediaQuery
-                                  .sizeOf(context)
-                                  .width - 32,
+                                  : MediaQuery.sizeOf(context).width - 32,
                               child: ReviewsCard(
                                 reviewsItem: reviewsList[index],
                               ),
@@ -1138,13 +962,9 @@ class _InfoTabViewState extends State<InfoTabView>
                       return Align(
                         alignment: Alignment.topCenter,
                         child: SizedBox(
-                          width: MediaQuery
-                              .sizeOf(context)
-                              .width > maxWidth
+                          width: MediaQuery.sizeOf(context).width > maxWidth
                               ? maxWidth
-                              : MediaQuery
-                              .sizeOf(context)
-                              .width - 32,
+                              : MediaQuery.sizeOf(context).width - 32,
                           child: Skeletonizer.zone(
                             child: ListTile(
                               leading: Bone.circle(size: 36),
@@ -1199,13 +1019,9 @@ class _InfoTabViewState extends State<InfoTabView>
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: SizedBox(
-                            width: MediaQuery
-                                .sizeOf(context)
-                                .width > maxWidth
+                            width: MediaQuery.sizeOf(context).width > maxWidth
                                 ? maxWidth
-                                : MediaQuery
-                                .sizeOf(context)
-                                .width - 32,
+                                : MediaQuery.sizeOf(context).width - 32,
                             child: CharacterCard(
                               characterItem: widget.characterList[index],
                             ),
@@ -1236,13 +1052,9 @@ class _InfoTabViewState extends State<InfoTabView>
                     return Align(
                       alignment: Alignment.topCenter,
                       child: SizedBox(
-                        width: MediaQuery
-                            .sizeOf(context)
-                            .width > maxWidth
+                        width: MediaQuery.sizeOf(context).width > maxWidth
                             ? maxWidth
-                            : MediaQuery
-                            .sizeOf(context)
-                            .width - 32,
+                            : MediaQuery.sizeOf(context).width - 32,
                         child: Skeletonizer.zone(
                           child: ListTile(
                             leading: Bone.circle(size: 36),
@@ -1282,13 +1094,9 @@ class _InfoTabViewState extends State<InfoTabView>
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16.0),
                           child: SizedBox(
-                            width: MediaQuery
-                                .sizeOf(context)
-                                .width > maxWidth
+                            width: MediaQuery.sizeOf(context).width > maxWidth
                                 ? maxWidth
-                                : MediaQuery
-                                .sizeOf(context)
-                                .width - 32,
+                                : MediaQuery.sizeOf(context).width - 32,
                             child: StaffCard(
                               staffFullItem: widget.staffList[index],
                             ),
@@ -1319,13 +1127,9 @@ class _InfoTabViewState extends State<InfoTabView>
                     return Align(
                       alignment: Alignment.topCenter,
                       child: SizedBox(
-                        width: MediaQuery
-                            .sizeOf(context)
-                            .width > maxWidth
+                        width: MediaQuery.sizeOf(context).width > maxWidth
                             ? maxWidth
-                            : MediaQuery
-                            .sizeOf(context)
-                            .width - 32,
+                            : MediaQuery.sizeOf(context).width - 32,
                         child: Skeletonizer.zone(
                           child: ListTile(
                             leading: Bone.circle(size: 36),

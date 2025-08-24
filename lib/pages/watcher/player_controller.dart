@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
@@ -30,6 +31,7 @@ class PlayerController = _PlayerController with _$PlayerController;
 
 abstract class _PlayerController with Store {
   late ShadersController shadersController;
+  StreamSubscription<PiPStatus>? _pipStatusSubscription;
   @observable
   bool loading = true;
 
@@ -37,6 +39,7 @@ abstract class _PlayerController with Store {
     configuration: PlayerConfiguration(
       bufferSize: 1500 * 1024 * 1024,
       osc: false,
+      async: true,
       logLevel: MPVLogLevel.info,
     ),
   );
@@ -50,6 +53,8 @@ abstract class _PlayerController with Store {
   );
 
   bool audioOutType = true;
+
+  bool isPiPMode = false;
 
   @observable
   bool isFullScreen = false;
@@ -177,7 +182,7 @@ abstract class _PlayerController with Store {
       completed = player.state.completed;
       // 音量相关
       if (!volumeSeeking) {
-        if (Utils.isDesktop()) {
+        if (App.isDesktop) {
           volume = player.state.volume;
         } else {
           FlutterVolumeController.getVolume().then((value) {
@@ -262,6 +267,23 @@ abstract class _PlayerController with Store {
     player.setPlaylistMode(PlaylistMode.none);
     playerTimer = getPlayerTimer();
 
+    if (App.isAndroid) {
+      Timer? debounceTimer;
+      _pipStatusSubscription = Floating().pipStatusStream
+          .distinct() // 避免重复状态
+          .listen((status) {
+            debounceTimer?.cancel();
+            debounceTimer = Timer(const Duration(milliseconds: 100), () {
+              if (status == PiPStatus.enabled && !isPiPMode) {
+                enterPiPMode();
+              } else if (status != PiPStatus.enabled && isPiPMode) {
+                App.rootContext.pop();
+                isPiPMode = false;
+              }
+            });
+          });
+    }
+
     if (superResolutionType != 1) {
       await setShader(superResolutionType);
     }
@@ -320,6 +342,7 @@ abstract class _PlayerController with Store {
     try {
       await playerLogSubscription?.cancel();
     } catch (_) {}
+    _pipStatusSubscription?.cancel();
     player.dispose();
   }
 
@@ -357,7 +380,7 @@ abstract class _PlayerController with Store {
   Future<void> enterFullScreen(BuildContext context) async {
     if (isFullScreen) {
       await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      Navigator.of(context).pop();
+      App.rootContext.pop();
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.portraitUp,
       ]);
@@ -399,7 +422,7 @@ abstract class _PlayerController with Store {
     value = value.clamp(0.0, 100.0);
     volume = value;
     try {
-      if (Utils.isDesktop()) {
+      if (App.isDesktop) {
         await player.setVolume(value);
       } else {
         await FlutterVolumeController.updateShowSystemUI(false);
@@ -504,6 +527,20 @@ abstract class _PlayerController with Store {
       _overlayTimer = null;
     });
   }
+
+  Future<void> enterPiPMode() async {
+    App.rootContext.to(
+      () => FullscreenVideoPage(playerController: this as PlayerController),
+    );
+    await Floating().enable(ImmediatePiP(aspectRatio: Rational(16, 9)));
+    isPiPMode = true;
+    await play();
+  }
+
+  Future<void> exitPiPMode() async {
+    await Floating().cancelOnLeavePiP();
+    isPiPMode = false;
+  }
 }
 
 class FullscreenVideoPage extends StatefulWidget {
@@ -529,7 +566,13 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
     return Hero(
       tag: WatcherState.currentState!.widget.anime.id,
       child: Scaffold(
-        body: VideoPage(playerController: widget.playerController),
+        backgroundColor: Colors.black,
+        body: widget.playerController.isPiPMode
+            ? Video(
+                controller: widget.playerController.playerController,
+                controls: null,
+              )
+            : VideoPage(playerController: widget.playerController),
       ),
     );
   }

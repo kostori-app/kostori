@@ -1,6 +1,3 @@
-import 'dart:math';
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -519,61 +516,7 @@ class BottomInfoState extends State<BottomInfo>
                     SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final span = TextSpan(text: bangumiItem.summary);
-                          final tp = TextPainter(
-                            text: span,
-                            textDirection: TextDirection.ltr,
-                          );
-                          tp.layout(maxWidth: constraints.maxWidth);
-                          final numLines = tp.computeLineMetrics().length;
-                          if (numLines > 7) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                SizedBox(
-                                  // make intro expandable
-                                  height: fullIntro ? null : 120,
-                                  width:
-                                      MediaQuery.sizeOf(context).width >
-                                          maxWidth
-                                      ? maxWidth
-                                      : MediaQuery.sizeOf(context).width - 32,
-                                  child: SelectableText(
-                                    bangumiItem.summary,
-                                    textAlign: TextAlign.start,
-                                    scrollBehavior: const ScrollBehavior()
-                                        .copyWith(scrollbars: false),
-                                    scrollPhysics:
-                                        NeverScrollableScrollPhysics(),
-                                    selectionHeightStyle: ui.BoxHeightStyle.max,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      fullIntro = !fullIntro;
-                                    });
-                                  },
-                                  child: Text(
-                                    !fullIntro
-                                        ? 'Show more +'.tl
-                                        : 'Show less -'.tl,
-                                  ),
-                                ),
-                              ],
-                            );
-                          } else {
-                            return SelectableText(
-                              bangumiItem.summary,
-                              textAlign: TextAlign.start,
-                              scrollPhysics: NeverScrollableScrollPhysics(),
-                              selectionHeightStyle: ui.BoxHeightStyle.max,
-                            );
-                          }
-                        },
-                      ),
+                      child: ExpandableText(text: bangumiItem.summary),
                     ),
                   ],
                 ),
@@ -629,59 +572,17 @@ class BottomInfoState extends State<BottomInfo>
                       ],
                     ),
                     SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8.0,
-                      runSpacing: Utils.isDesktop() ? 8 : 0,
-                      children: [
-                        // 显示标签列表
-                        ...List<Widget>.generate(
-                          fullTag
-                              ? bangumiItem.tags.length
-                              : min(12, bangumiItem.tags.length), // 根据状态决定显示数量
-                          (int index) => ActionChip(
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('${bangumiItem.tags[index].name} '),
-                                Text(
-                                  '${bangumiItem.tags[index].count}',
-                                  style: TextStyle(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            onPressed: () {
-                              // 标签点击逻辑
-                              context.to(
-                                () => BangumiSearchPage(
-                                  tag: bangumiItem.tags[index].name,
-                                ),
-                              );
-                            },
+                    ExpandableTags(
+                      tags: bangumiItem.tags,
+                      fullTag: fullTag,
+                      onToggle: () => setState(() => fullTag = !fullTag),
+                      onTagTap: (index) {
+                        context.to(
+                          () => BangumiSearchPage(
+                            tag: bangumiItem.tags[index].name,
                           ),
-                        ),
-
-                        // 添加展开/收起按钮
-                        if (bangumiItem.tags.length > 12) // 只有标签数量超过12时才显示按钮
-                          ActionChip(
-                            label: Text(
-                              fullTag
-                                  ? 'Show less -'.tl
-                                  : 'Show more +'.tl, // 根据状态显示不同文本
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                fullTag = !fullTag; // 切换状态
-                              });
-                            },
-                          ),
-                      ],
+                        );
+                      },
                     ),
                   ],
                 ),

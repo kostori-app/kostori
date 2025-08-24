@@ -77,6 +77,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   bool isUpdateBangumiBind = false;
 
   BangumiItem? get bangumiItem => bangumiBindInfo;
+  late TabController tabController;
 
   void updateHistory() async {
     var newHistory = HistoryManager().find(
@@ -122,6 +123,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
     BangumiManager().addListener(updateBangumiBind);
+    tabController = TabController(length: 3, vsync: this);
+    tabController.addListener(() {
+      setState(() {});
+    });
     super.initState();
   }
 
@@ -134,6 +139,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       DataSync().onDataChanged();
     });
     scrollController.dispose();
+    tabController.dispose();
     super.dispose();
   }
 
@@ -185,7 +191,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         Positioned.fill(
           child: NestedScrollView(
             controller: scrollController,
-            physics: ClampingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverPadding(padding: EdgeInsets.only(top: 28)),
@@ -205,6 +211,17 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                     watchEpisode: history?.watchEpisode,
                   ),
                 ),
+                TabBar(
+                  controller: tabController,
+                  isScrollable: true,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  tabAlignment: TabAlignment.center,
+                  tabs: [
+                    Tab(text: '基本信息'.tl),
+                    Tab(text: '全部剧集'.tl),
+                    Tab(text: '关联条目'.tl),
+                  ],
+                ).toSliver(),
               ];
             },
             body: animeTab(),
@@ -220,9 +237,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         ),
       ],
     );
-    widget = ScrollConfiguration(
-      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-      child: widget,
+    widget = AppScrollBar(
+      topPadding: MediaQuery.of(context).padding.top,
+      controller: scrollController,
+      isNested: true,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
     );
     return widget;
   }
@@ -251,33 +273,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }
 
   Widget animeTab() {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          TabBar(
-            isScrollable: true,
-            indicatorColor: Theme.of(context).colorScheme.primary,
-            tabAlignment: TabAlignment.center,
-            tabs: [
-              Tab(text: '基本信息'.tl),
-              Tab(text: '全部剧集'.tl),
-              Tab(text: '关联条目'.tl),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              children: [
-                CustomScrollView(
-                  slivers: [...buildTitle(), buildDescription(), buildInfo()],
-                ),
-                CustomScrollView(slivers: [buildEpisodes()]),
-                CustomScrollView(slivers: [buildRecommend()]),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return TabBarView(
+      controller: tabController,
+      children: [
+        CustomScrollView(
+          slivers: [...buildTitle(), buildDescription(), buildInfo()],
+        ),
+        CustomScrollView(slivers: [buildEpisodes()]),
+        CustomScrollView(slivers: [buildRecommend()]),
+      ],
     );
   }
 
@@ -889,7 +893,6 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
       color: context.isDarkMode ? Colors.grey.shade700 : Colors.white,
       child: Column(
         children: [
-          Appbar(title: Text(""), backgroundColor: context.colorScheme.surface),
           buildVideoPlaceholder(context),
           const SizedBox(height: 4),
           const Divider(),
@@ -926,18 +929,42 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
     final double maxHeight = maxWidth * aspectRatioMultiplier;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 8,
+        left: 16,
+        right: 16,
+        bottom: 8,
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(App.isDesktop ? 16.0 : 8.0),
         child: Container(
           constraints: BoxConstraints(maxHeight: maxHeight, maxWidth: maxWidth),
           color: Colors.black,
-          alignment: Alignment.center,
-          child: MiscComponents.placeholder(
-            context,
-            50,
-            50,
-            Colors.transparent,
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: MiscComponents.placeholder(
+                  context,
+                  50,
+                  50,
+                  Colors.transparent,
+                ),
+              ),
+              Positioned(
+                top: 8,
+                left: 8,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
