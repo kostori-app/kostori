@@ -183,25 +183,6 @@ class AppDio with DioMixin {
 }
 
 class RHttpAdapter implements HttpClientAdapter {
-  // Future<rhttp.ClientSettings> get settings async {
-  //   var proxy = await getProxy();
-  //
-  //   return rhttp.ClientSettings(
-  //     proxySettings: proxy == null
-  //         ? const rhttp.ProxySettings.noProxy()
-  //         : rhttp.ProxySettings.proxy(proxy),
-  //     redirectSettings: const rhttp.RedirectSettings.limited(5),
-  //     timeoutSettings: const rhttp.TimeoutSettings(
-  //       connectTimeout: Duration(seconds: 15),
-  //       keepAliveTimeout: Duration(seconds: 60),
-  //       keepAlivePing: Duration(seconds: 30),
-  //     ),
-  //     throwOnStatusCode: false,
-  //     dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
-  //     tlsSettings: rhttp.TlsSettings(sni: appdata.settings['sni'] != false),
-  //   );
-  // }
-
   Future<rhttp.ClientSettings> settings(Uri uri) async {
     final proxy = await getProxy();
 
@@ -226,7 +207,10 @@ class RHttpAdapter implements HttpClientAdapter {
       ),
       throwOnStatusCode: false,
       dnsSettings: rhttp.DnsSettings.static(overrides: _getOverrides()),
-      tlsSettings: rhttp.TlsSettings(sni: appdata.settings['sni'] != false),
+      tlsSettings: rhttp.TlsSettings(
+        sni: appdata.settings['sni'] != false,
+        verifyCertificates: appdata.settings['ignoreBadCertificate'] != true,
+      ),
     );
   }
 

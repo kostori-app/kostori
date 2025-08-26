@@ -147,7 +147,7 @@ Future<Map<bool, String?>> checkUpdate() async {
     }
     return {false: null}; // 返回 Map
   } catch (e, s) {
-    App.rootContext.showMessage(message: '检查更新失败...');
+    App.rootContext.showMessage(message: 'Check update failed...'.tl);
     Log.addLog(LogLevel.error, "checkUpdate", '$e\n$s');
     return {false: null}; // 返回 Map
   }
@@ -199,7 +199,7 @@ Future<void> checkUpdateUi([
       "Version Consistent",
       '${response.data['tag_name']?.toString()} -> ${value.values.first.toString()}',
     );
-    App.rootContext.showMessage(message: "版本不一致".tl);
+    App.rootContext.showMessage(message: "Inconsistent versions".tl);
     isVersionConsistent = false;
   }
   final assets = (response.data['assets'] as List).cast<Map<String, dynamic>>();
@@ -213,7 +213,9 @@ Future<void> checkUpdateUi([
 
   if (matchedAsset.isEmpty && App.isAndroid) {
     App.rootContext.showMessage(
-      message: "No update available for this architecture ($abi)",
+      message: "No update available for this architecture (@a)".tlParams({
+        "a": abi,
+      }),
     );
   }
 
@@ -252,7 +254,7 @@ Future<void> checkUpdateUi([
           isDownloading = status == DownloadTaskStatus.running;
           if (!isDownloading && progress != 100 && !downloadStopped) {
             downloadStopped = true;
-            App.rootContext.showMessage(message: "下载失败".tl);
+            App.rootContext.showMessage(message: "Download failed".tl);
           }
         });
         if (progress == 100) {
@@ -262,7 +264,9 @@ Future<void> checkUpdateUi([
               fileValid = (actualSha256 == expectedSha256);
             });
             if (!fileValid) {
-              App.rootContext.showMessage(message: "检查哈希值失败,请重试".tl);
+              App.rootContext.showMessage(
+                message: "Failed to check the hash value. Please try again".tl,
+              );
             }
           }
         }

@@ -1333,20 +1333,20 @@ class _ExpandableTextState extends State<ExpandableText> {
                     scrollPhysics: const NeverScrollableScrollPhysics(),
                   ),
                 ),
-                if (!expanded)
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      padding: const EdgeInsets.only(left: 2.0),
-                      child: Text(
-                        '...',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
+                // if (!expanded)
+                //   Positioned(
+                //     bottom: 0,
+                //     left: 0,
+                //     right: 0,
+                //     child: Container(
+                //       color: Theme.of(context).scaffoldBackgroundColor,
+                //       padding: const EdgeInsets.only(left: 2.0),
+                //       child: Text(
+                //         '...',
+                //         style: TextStyle(fontWeight: FontWeight.bold),
+                //       ),
+                //     ),
+                //   ),
               ],
             ),
             Row(

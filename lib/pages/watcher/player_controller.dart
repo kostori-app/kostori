@@ -563,15 +563,29 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
+    var isPaddingCheckError =
+        MediaQuery.of(context).viewPadding.top <= 0 ||
+        MediaQuery.of(context).viewPadding.top > 50;
     return Hero(
       tag: WatcherState.currentState!.widget.anime.id,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: widget.playerController.isPiPMode
-            ? Video(
-                controller: widget.playerController.playerController,
-                controls: null,
-              )
+            ? isPaddingCheckError
+                  ? MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        viewPadding: const EdgeInsets.only(top: 15, bottom: 15),
+                        padding: const EdgeInsets.only(top: 15, bottom: 15),
+                      ),
+                      child: Video(
+                        controller: widget.playerController.playerController,
+                        controls: null,
+                      ),
+                    )
+                  : Video(
+                      controller: widget.playerController.playerController,
+                      controls: null,
+                    )
             : VideoPage(playerController: widget.playerController),
       ),
     );

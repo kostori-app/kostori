@@ -6,14 +6,14 @@ import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:kostori/components/components.dart';
-import 'package:kostori/foundation/app.dart';
-
 import 'package:url_launcher/url_launcher_string.dart';
+
 export 'package:flutter_inappwebview/flutter_inappwebview.dart'
     show WebUri, URLRequest;
 
@@ -53,22 +53,23 @@ extension WebviewExtension on InAppWebViewController {
 }
 
 class AppWebview extends StatefulWidget {
-  const AppWebview(
-      {required this.initialUrl,
-      this.onTitleChange,
-      this.onNavigation,
-      this.singlePage = false,
-      this.onStarted,
-      this.onLoadStop,
-      super.key});
+  const AppWebview({
+    required this.initialUrl,
+    this.onTitleChange,
+    this.onNavigation,
+    this.singlePage = false,
+    this.onStarted,
+    this.onLoadStop,
+    super.key,
+  });
 
   final String initialUrl;
 
   final void Function(String title, InAppWebViewController controller)?
-      onTitleChange;
+  onTitleChange;
 
   final bool Function(String url, InAppWebViewController controller)?
-      onNavigation;
+  onNavigation;
 
   final void Function(InAppWebViewController controller)? onStarted;
 
@@ -104,9 +105,7 @@ class _AppWebviewState extends State<AppWebview> {
           proxy = "http://$proxy";
         }
         await proxyController.setProxyOverride(
-          settings: ProxySettings(
-            proxyRules: [ProxyRule(url: proxy)],
-          ),
+          settings: ProxySettings(proxyRules: [ProxyRule(url: proxy)]),
         );
       }
     }
@@ -125,36 +124,33 @@ class _AppWebviewState extends State<AppWebview> {
   Widget build(BuildContext context) {
     final actions = [
       Tooltip(
-        message: "More",
+        message: "More".tl,
         child: IconButton(
           icon: const Icon(Icons.more_horiz),
           onPressed: () {
-            showMenuX(
-              context,
-              Offset(context.width, context.padding.top),
-              [
-                MenuEntry(
-                  icon: Icons.open_in_browser,
-                  text: "Open in browser".tl,
-                  onClick: () async =>
-                      launchUrlString((await controller?.getUrl())!.toString()),
+            showMenuX(context, Offset(context.width, context.padding.top), [
+              MenuEntry(
+                icon: Icons.open_in_browser,
+                text: "Open in browser".tl,
+                onClick: () async =>
+                    launchUrlString((await controller?.getUrl())!.toString()),
+              ),
+              MenuEntry(
+                icon: Icons.copy,
+                text: "Copy link".tl,
+                onClick: () async => Clipboard.setData(
+                  ClipboardData(text: (await controller?.getUrl())!.toString()),
                 ),
-                MenuEntry(
-                  icon: Icons.copy,
-                  text: "Copy link".tl,
-                  onClick: () async => Clipboard.setData(ClipboardData(
-                      text: (await controller?.getUrl())!.toString())),
-                ),
-                MenuEntry(
-                  icon: Icons.refresh,
-                  text: "Reload".tl,
-                  onClick: () => controller?.reload(),
-                ),
-              ],
-            );
+              ),
+              MenuEntry(
+                icon: Icons.refresh,
+                text: "Reload".tl,
+                onClick: () => controller?.reload(),
+              ),
+            ]);
           },
         ),
-      )
+      ),
     ];
 
     Widget body = FutureBuilder(
@@ -166,9 +162,7 @@ class _AppWebviewState extends State<AppWebview> {
         if (!e.hasData) {
           return const SizedBox();
         }
-        return createWebviewWithEnvironment(
-          AppWebview.webViewEnvironment,
-        );
+        return createWebviewWithEnvironment(AppWebview.webViewEnvironment);
       },
     );
 
@@ -177,28 +171,24 @@ class _AppWebviewState extends State<AppWebview> {
         Positioned.fill(child: body),
         if (_progress < 1.0)
           const Positioned.fill(
-              child: Center(child: CircularProgressIndicator()))
+            child: Center(child: CircularProgressIndicator()),
+          ),
       ],
     );
 
     return Scaffold(
-        appBar: Appbar(
-          title: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          actions: actions,
-        ),
-        body: body);
+      appBar: Appbar(
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: actions,
+      ),
+      body: body,
+    );
   }
 
   Widget createWebviewWithEnvironment(WebViewEnvironment? e) {
     return InAppWebView(
       webViewEnvironment: e,
-      initialSettings: InAppWebViewSettings(
-        isInspectable: true,
-      ),
+      initialSettings: InAppWebViewSettings(isInspectable: true),
       initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
       onTitleChanged: (c, t) {
         if (mounted) {
@@ -211,7 +201,7 @@ class _AppWebviewState extends State<AppWebview> {
       shouldOverrideUrlLoading: (c, r) async {
         var res =
             widget.onNavigation?.call(r.request.url?.toString() ?? "", c) ??
-                false;
+            false;
         if (res) {
           return NavigationActionPolicy.CANCEL;
         } else {
@@ -249,12 +239,13 @@ class DesktopWebview {
 
   final void Function()? onClose;
 
-  DesktopWebview(
-      {required this.initialUrl,
-      this.onTitleChange,
-      this.onNavigation,
-      this.onStarted,
-      this.onClose});
+  DesktopWebview({
+    required this.initialUrl,
+    this.onTitleChange,
+    this.onNavigation,
+    this.onStarted,
+    this.onClose,
+  });
 
   Webview? _webview;
 
@@ -304,12 +295,13 @@ class DesktopWebview {
 
   void open() async {
     _webview = await WebviewWindow.create(
-        configuration: CreateConfiguration(
-      useWindowPositionAndSize: true,
-      userDataFolderWindows: "${App.dataPath}\\webview",
-      title: "webview",
-      proxy: await getProxy(),
-    ));
+      configuration: CreateConfiguration(
+        useWindowPositionAndSize: true,
+        userDataFolderWindows: "${App.dataPath}\\webview",
+        title: "webview",
+        proxy: await getProxy(),
+      ),
+    );
     _webview!.addOnWebMessageReceivedCallback(onMessage);
     _webview!.setOnNavigation((s) {
       s = s.substring(1, s.length - 1);

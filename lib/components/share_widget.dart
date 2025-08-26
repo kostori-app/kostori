@@ -542,7 +542,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                       Row(
                         children: [
                           Text(
-                            'Rating Statistics Chart'.tl,
+                            'Rating Chart'.tl,
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -952,13 +952,13 @@ class _ShareWidgetState extends State<ShareWidget> {
   Widget build(BuildContext context) {
     if (isLoding) {
       return PopUpWidgetScaffold(
-        title: '截图分享',
+        title: 'Screenshot Share'.tl,
         body: MiscComponents.placeholder(context, 100, 100, Colors.transparent),
       );
     }
 
     return PopUpWidgetScaffold(
-      title: '截图分享',
+      title: 'Screenshot Share'.tl,
       body: Stack(
         children: [
           Positioned.fill(child: SingleChildScrollView(child: _buildBody())),

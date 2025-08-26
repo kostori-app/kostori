@@ -30,6 +30,10 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                   title: "No Proxy Overrides".tl,
                   builder: () => const _NoProxyOverrides(),
                 ),
+                _SwitchSetting(
+                  title: "Ignore Certificate Errors".tl,
+                  settingKey: "ignoreBadCertificate",
+                ),
                 _SliderSetting(
                   title: "Download Threads".tl,
                   settingsIndex: 'downloadThreads',

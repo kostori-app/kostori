@@ -610,7 +610,7 @@ class BottomInfoState extends State<BottomInfo>
                     Row(
                       children: [
                         Text(
-                          'Rating Statistics Chart'.tl,
+                          'Rating Chart'.tl,
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

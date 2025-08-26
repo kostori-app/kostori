@@ -138,11 +138,11 @@ class _AppSettingsState extends State<AppSettings> {
                 SelectSetting(
                   title: "Language".tl,
                   settingKey: "language",
-                  optionTranslation: const {
-                    "system": "System",
-                    "zh-CN": "简体中文",
-                    "zh-TW": "繁體中文",
-                    "en-US": "English",
+                  optionTranslation: {
+                    "system": "System".tl,
+                    "zh-CN": "Simplified Chinese".tl,
+                    "zh-TW": "Traditional Chinese".tl,
+                    "en-US": "English".tl,
                   },
                   onChanged: () => App.forceRebuild(),
                 ),

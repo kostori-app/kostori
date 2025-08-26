@@ -138,18 +138,18 @@ class _BodyState extends State<_Body> {
         await showDialog(
           context: App.rootContext,
           builder: (context) => AlertDialog(
-            title: const Text("Reload Configs"),
+            title: Text("Reload Configs".tl),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("cancel"),
+                child: Text("Cancel".tl),
               ),
               TextButton(
                 onPressed: () async {
                   await AnimeSourceManager().reload();
                   App.forceRebuild();
                 },
-                child: const Text("continue"),
+                child: Text("Continue".tl),
               ),
             ],
           ),
@@ -172,7 +172,7 @@ class _BodyState extends State<_Body> {
     bool showLoading = true,
   ]) async {
     if (!source.url.isURL) {
-      App.rootContext.showMessage(message: "Invalid url config");
+      App.rootContext.showMessage(message: "Invalid url config".tl);
       return;
     }
     AnimeSourceManager().remove(source.key);

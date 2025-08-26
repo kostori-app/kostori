@@ -1171,7 +1171,7 @@ class AnimeListState extends State<AnimeList> {
                             }
                           }
                         },
-                        child: Text("Jump".tl),
+                        child: Text("Apply".tl),
                       ),
                     ],
                   );
@@ -1187,7 +1187,9 @@ class AnimeListState extends State<AnimeList> {
                 ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text("Page $_page / ${_maxPage ?? '?'}".tl),
+              child: Text(
+                "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
+              ),
             ),
           ),
         ),
@@ -1238,7 +1240,7 @@ class AnimeListState extends State<AnimeList> {
             _buildAnimeButton(
               context: context,
               icon: Icons.first_page,
-              tooltip: "最前".tl,
+              tooltip: "First".tl,
               enabled: _page > 1,
               onPressed: _page > 1
                   ? () {
@@ -1308,7 +1310,7 @@ class AnimeListState extends State<AnimeList> {
                                 }
                               }
                             },
-                            child: Text("Jump".tl),
+                            child: Text("Apply".tl),
                           ),
                         ],
                       );
@@ -1327,7 +1329,9 @@ class AnimeListState extends State<AnimeList> {
                     ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text("Page $_page / ${_maxPage ?? '?'}".tl),
+                  child: Text(
+                    "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
+                  ),
                 ),
               ),
             ),
@@ -1350,7 +1354,7 @@ class AnimeListState extends State<AnimeList> {
             _buildAnimeButton(
               context: context,
               icon: Icons.last_page,
-              tooltip: "最后".tl,
+              tooltip: "Last".tl,
               enabled: _page < (_maxPage ?? (_page + 1)),
               onPressed: _page < (_maxPage ?? (_page + 1))
                   ? () {

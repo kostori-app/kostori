@@ -25,11 +25,13 @@ class MePage extends StatefulWidget {
 class _MePageState extends State<MePage> {
   @override
   Widget build(BuildContext context) {
-    var widget = SmoothCustomScrollView(slivers: [
-      SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
-      const _SyncDataWidget(),
-      const _ImageManipulation(),
-    ]);
+    var widget = SmoothCustomScrollView(
+      slivers: [
+        SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
+        const _SyncDataWidget(),
+        const _ImageManipulation(),
+      ],
+    );
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
 }
@@ -87,17 +89,15 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            border: Border.all(color: Theme.of(context).colorScheme.primary),
             borderRadius: BorderRadius.circular(8),
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
             title: Text('Syncing Data'.tl),
-            trailing: const CircularProgressIndicator(strokeWidth: 2)
-                .fixWidth(18)
-                .fixHeight(18),
+            trailing: const CircularProgressIndicator(
+              strokeWidth: 2,
+            ).fixWidth(18).fixHeight(18),
           ),
         ),
       );
@@ -212,8 +212,9 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
       return [];
     }
 
-    final files =
-        directory.listSync(recursive: false).whereType<File>().where((file) {
+    final files = directory.listSync(recursive: false).whereType<File>().where((
+      file,
+    ) {
       final ext = file.path.toLowerCase();
       return ext.endsWith('.jpg') ||
           ext.endsWith('.jpeg') ||
@@ -244,62 +245,65 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
-            context.to(() => ImageManipulationPage(
-                  initialImages: images,
-                ));
+            context.to(() => ImageManipulationPage(initialImages: images));
           },
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            SizedBox(
-              height: 56,
-              child: Row(
-                children: [
-                  Center(
-                    child: Text('图片操作'.tl, style: ts.s18),
-                  ),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text('${images.length}', style: ts.s12),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.calendar_month),
-                  const SizedBox(width: 10),
-                ],
-              ),
-            ).paddingHorizontal(16),
-            SizedBox(
-              height: 384,
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(
-                  scrollbars: true,
-                  dragDevices: {
-                    ui.PointerDeviceKind.touch,
-                    ui.PointerDeviceKind.mouse,
-                    ui.PointerDeviceKind.stylus,
-                    ui.PointerDeviceKind.trackpad,
-                  },
-                ),
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: images.length > 10 ? 10 : images.length,
-                  itemBuilder: (context, index) {
-                    final file = images[index];
-                    return Padding(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 56,
+                child: Row(
+                  children: [
+                    Center(child: Text('Image Operations'.tl, style: ts.s18)),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 4),
-                      child: Card(
-                        margin: const EdgeInsets.all(8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          onTap: () {
-                            BangumiWidget.showImagePreview(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${images.length}', style: ts.s12),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.calendar_month),
+                    const SizedBox(width: 10),
+                  ],
+                ),
+              ).paddingHorizontal(16),
+              SizedBox(
+                height: 384,
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    scrollbars: true,
+                    dragDevices: {
+                      ui.PointerDeviceKind.touch,
+                      ui.PointerDeviceKind.mouse,
+                      ui.PointerDeviceKind.stylus,
+                      ui.PointerDeviceKind.trackpad,
+                    },
+                  ),
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: images.length > 10 ? 10 : images.length,
+                    itemBuilder: (context, index) {
+                      final file = images[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 4,
+                        ),
+                        child: Card(
+                          margin: const EdgeInsets.all(8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () {
+                              BangumiWidget.showImagePreview(
                                 context,
                                 file.path,
                                 App.isAndroid
@@ -309,29 +313,29 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                                     ? file.path.split('/').last
                                     : file.path.split('\\').last,
                                 allUrls: images,
-                                initialIndex: index);
-                            // provider管理，不用调用loadImages
-                          },
-                          child: SizedBox(
-                            width: 300 * 1.8,
-                            height: 300,
-                            child: Hero(
+                                initialIndex: index,
+                              );
+                              // provider管理，不用调用loadImages
+                            },
+                            child: SizedBox(
+                              width: 300 * 1.8,
+                              height: 300,
+                              child: Hero(
                                 tag: App.isAndroid
                                     ? file.path.split('/').last
                                     : file.path.split('\\').last,
-                                child: Image.file(
-                                  file,
-                                  fit: BoxFit.cover,
-                                )),
+                                child: Image.file(file, fit: BoxFit.cover),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ).paddingHorizontal(8).paddingVertical(16),
+                      );
+                    },
+                  ).paddingHorizontal(8).paddingVertical(16),
+                ),
               ),
-            )
-          ]),
+            ],
+          ),
         ),
       ),
     );
