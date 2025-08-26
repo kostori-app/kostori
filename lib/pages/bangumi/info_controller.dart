@@ -9,6 +9,7 @@ import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:mobx/mobx.dart';
 
 import '../../foundation/bangumi/reviews/reviews_item.dart';
@@ -27,7 +28,14 @@ abstract class _InfoController with Store {
 
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
-  final List<String> tabs = <String>['概览', '吐槽', '讨论', '日志', '角色', '制作'];
+  final List<String> tabs = <String>[
+    'Overview'.tl,
+    'Comments'.tl,
+    'Topics'.tl,
+    'Log'.tl,
+    'Characters'.tl,
+    'StaffList'.tl,
+  ];
 
   List<History> bangumiHistory = [];
 

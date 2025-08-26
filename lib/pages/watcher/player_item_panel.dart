@@ -189,24 +189,24 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
   MenuButton _buildMenuItems() {
     return MenuButton(
-      message: "更多".tl,
+      message: "More".tl,
       entries: [
         if (App.isAndroid)
           MenuEntry(
             text: (appdata.settings['audioOutType'] ?? true)
-                ? "音频选项: 低延迟".tl
-                : "音频选项: 兼容性".tl,
+                ? "Audio Option: Low Latency".tl
+                : "Audio Option: Compatibility".tl,
             onClick: () async {
               try {
                 await widget.playerController.changeAudioOutType();
-                App.rootContext.showMessage(message: "切换成功");
+                App.rootContext.showMessage(message: "Switch Successful".tl);
               } catch (e) {
-                App.rootContext.showMessage(message: "切换失败");
+                App.rootContext.showMessage(message: "Switch Failed".tl);
               }
             },
           ),
         MenuEntry(
-          text: "远程投屏".tl,
+          text: "Remote Cast".tl,
           onClick: () {
             bool needRestart = widget.playerController.playing;
             widget.playerController.pause();
@@ -221,13 +221,13 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         ),
         if (!widget.playerController.isFullScreen)
           MenuEntry(
-            text: "日志".tl,
+            text: "Logs".tl,
             onClick: () {
               context.to(() => const LogsPage());
             },
           ),
         MenuEntry(
-          text: "播放器详情".tl,
+          text: "Player Details".tl,
           onClick: () {
             widget.showVideoInfo();
           },

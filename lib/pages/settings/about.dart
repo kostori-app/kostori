@@ -13,6 +13,7 @@ class _AboutSettingsState extends State<AboutSettings> {
   bool isCheckingAppUpdate = false;
   bool isCheckingBangumiDataUpdate = false;
   bool isCheckingBangumiDataReset = false;
+  bool isUpdateLog = false;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +53,10 @@ class _AboutSettingsState extends State<AboutSettings> {
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
+                _SettingPartTitle(
+                  title: "Github".tl,
+                  icon: Icons.radio_button_unchecked_outlined,
+                ),
                 ListTile(
                   title: Text("Check for updates".tl),
                   trailing: Button.filled(
@@ -68,6 +73,55 @@ class _AboutSettingsState extends State<AboutSettings> {
                       });
                     },
                   ).fixHeight(32),
+                ),
+                ListTile(
+                  title: Text("Update log".tl),
+                  trailing: Button.filled(
+                    isLoading: isUpdateLog,
+                    child: Text("Open".tl),
+                    onPressed: () async {
+                      setState(() {
+                        isUpdateLog = true;
+                      });
+                      await updateLog(context).then((value) {
+                        setState(() {
+                          isUpdateLog = false;
+                        });
+                      });
+                    },
+                  ).fixHeight(32),
+                ),
+                _SwitchSetting(
+                  title: "Check for updates on startup".tl,
+                  settingKey: "checkUpdateOnStart",
+                ),
+                ListTile(
+                  title: Text("Icon producer".tl),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    launchUrlString("https://www.pixiv.net/users/18071897");
+                  },
+                ),
+                ListTile(
+                  title: const Text("Github"),
+                  trailing: const Icon(Icons.open_in_new),
+                  onTap: () {
+                    launchUrlString("https://github.com/kostori-app/kostori");
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: "Bangumi".tl,
+                  icon: Icons.radio_button_unchecked_outlined,
                 ),
                 ListTile(
                   title: const Text("Bangumi-data"),
@@ -104,24 +158,6 @@ class _AboutSettingsState extends State<AboutSettings> {
                     },
                   ).fixHeight(32),
                 ),
-                _SwitchSetting(
-                  title: "Check for updates on startup".tl,
-                  settingKey: "checkUpdateOnStart",
-                ),
-                ListTile(
-                  title: Text("Icon producer".tl),
-                  trailing: const Icon(Icons.open_in_new),
-                  onTap: () {
-                    launchUrlString("https://www.pixiv.net/users/18071897");
-                  },
-                ),
-                ListTile(
-                  title: const Text("Github"),
-                  trailing: const Icon(Icons.open_in_new),
-                  onTap: () {
-                    launchUrlString("https://github.com/kostori-app/kostori");
-                  },
-                ),
                 const SizedBox(height: 8),
               ],
             ),
@@ -142,14 +178,14 @@ Future<Map<bool, String?>> checkUpdate() async {
       if (data["version"] != null) {
         String fetchedVersion = data["version"].split("+")[0];
         bool hasNew = _compareVersion(fetchedVersion, App.version);
-        return {hasNew: fetchedVersion}; // 返回 Map
+        return {hasNew: fetchedVersion};
       }
     }
-    return {false: null}; // 返回 Map
+    return {false: null};
   } catch (e, s) {
-    App.rootContext.showMessage(message: '检查更新失败...');
+    App.rootContext.showMessage(message: 'Check update failed...'.tl);
     Log.addLog(LogLevel.error, "checkUpdate", '$e\n$s');
-    return {false: null}; // 返回 Map
+    return {false: null};
   }
 }
 
@@ -158,11 +194,6 @@ Future<void> checkUpdateUi([
   bool delay = false,
 ]) async {
   var value = await checkUpdate();
-  double downloadProgress = 0.0;
-  String? taskId;
-  bool isDownloading = false;
-  bool downloadStopped = false;
-  bool isVersionConsistent = true;
 
   if (!value.containsKey(true)) {
     if (showMessageIfNoUpdate) {
@@ -171,261 +202,13 @@ Future<void> checkUpdateUi([
     return;
   }
 
-  if (delay) {
-    await Future.delayed(const Duration(seconds: 2));
-  }
-
-  late StateSetter dialogSetState;
-
-  ReceivePort port = ReceivePort();
-  if (IsolateNameServer.lookupPortByName('downloader_send_port') != null) {
-    IsolateNameServer.removePortNameMapping('downloader_send_port');
-  }
-  IsolateNameServer.registerPortWithName(port.sendPort, 'downloader_send_port');
-  bool fileValid = false;
-  String abi = '';
-  String filePath = '';
-  String downloadUrl = '';
-  String name = '';
-  Directory? dir;
-  File file;
-  final response = await AppDio().request(
-    'https://api.github.com/repos/kostori-app/kostori/releases/latest',
-    options: Options(method: 'GET'),
-  );
-  if (response.data['tag_name']?.toString() != value.values.first.toString()) {
-    Log.addLog(
-      LogLevel.info,
-      "Version Consistent",
-      '${response.data['tag_name']?.toString()} -> ${value.values.first.toString()}',
-    );
-    App.rootContext.showMessage(message: "版本不一致".tl);
-    isVersionConsistent = false;
-  }
-  final assets = (response.data['assets'] as List).cast<Map<String, dynamic>>();
-  if (App.isAndroid) {
-    abi = await getAppAbi();
-  }
-  final matchedAsset = assets.firstWhere(
-    (a) => (a['name'] as String).contains(abi),
-    orElse: () => {},
-  );
-
-  if (matchedAsset.isEmpty && App.isAndroid) {
-    App.rootContext.showMessage(
-      message: "No update available for this architecture ($abi)",
-    );
-  }
-
-  if (App.isAndroid) {
-    name = matchedAsset['name'];
-    downloadUrl = matchedAsset['browser_download_url'];
-    final digest = matchedAsset['digest'] as String? ?? '';
-    final expectedSha256 = digest.startsWith('sha256:')
-        ? digest.substring(7)
-        : digest;
-    dir = await AbsolutePath.absoluteDirectory(
-      dirType: DirectoryType.downloads,
-    );
-    filePath = path.join(dir!.path, name);
-    file = File(filePath);
-
-    if (await file.exists()) {
-      final actualSha256 = await calculateSha256(file);
-      fileValid = (actualSha256 == expectedSha256);
-    }
-    Log.addLog(
-      LogLevel.info,
-      "infoPrint",
-      '$name \n $downloadUrl \n $expectedSha256 \n $filePath',
-    );
-    port.listen((dynamic data) async {
-      String id = data[0];
-      int statusInt = data[1];
-      int progress = data[2];
-
-      DownloadTaskStatus status = DownloadTaskStatus.values[statusInt];
-
-      if (id == taskId) {
-        dialogSetState(() {
-          downloadProgress = progress / 100;
-          isDownloading = status == DownloadTaskStatus.running;
-          if (!isDownloading && progress != 100 && !downloadStopped) {
-            downloadStopped = true;
-            App.rootContext.showMessage(message: "下载失败".tl);
-          }
-        });
-        if (progress == 100) {
-          if (await file.exists()) {
-            final actualSha256 = await calculateSha256(file);
-            dialogSetState.call(() {
-              fileValid = (actualSha256 == expectedSha256);
-            });
-            if (!fileValid) {
-              App.rootContext.showMessage(message: "检查哈希值失败,请重试".tl);
-            }
-          }
-        }
-      }
-    });
-    FlutterDownloader.registerCallback(downloadCallback);
-  }
+  if (delay) await Future.delayed(const Duration(seconds: 2));
 
   showDialog(
     context: App.rootContext,
     barrierDismissible: false,
     builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          dialogSetState = setState;
-
-          return ContentDialog(
-            title: "New version available".tl,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Discover the new version @v".tlParams({"v": value.values}),
-                ),
-                const SizedBox(height: 12),
-                (isDownloading)
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: LinearProgressIndicator(
-                              value: downloadProgress,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${(downloadProgress * 100).toStringAsFixed(0)}%',
-                          ),
-                        ],
-                      )
-                    : Material(
-                        color: context.brightness == Brightness.light
-                            ? Colors.white.toOpacity(0.72)
-                            : const Color(0xFF1E1E1E).toOpacity(0.72),
-                        elevation: 4,
-                        shadowColor: Theme.of(context).colorScheme.shadow,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 300),
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(8),
-                            child: buildMarkdown(
-                              context,
-                              response.data['body'],
-                            ),
-                          ),
-                        ),
-                      ),
-              ],
-            ),
-            actions: [
-              if (fileValid && App.isAndroid && matchedAsset.isNotEmpty)
-                Button.text(
-                  onPressed: () async {
-                    try {
-                      bool installPermGranted =
-                          await checkAndRequestInstallPermission();
-                      bool storagePermGranted =
-                          await checkAndRequestStoragePermission();
-
-                      if (!installPermGranted || !storagePermGranted) {
-                        return;
-                      }
-
-                      const platform = MethodChannel('kostori/install_apk');
-                      await platform.invokeMethod('installApk', {
-                        "apkPath": filePath,
-                      });
-                    } catch (e) {
-                      Log.addLog(
-                        LogLevel.error,
-                        "AndroidPackageInstaller",
-                        e.toString(),
-                      );
-                    }
-                  },
-                  child: Text("Install".tl),
-                )
-              else if (!isDownloading &&
-                  App.isAndroid &&
-                  matchedAsset.isNotEmpty &&
-                  isVersionConsistent) ...[
-                Button.text(
-                  onPressed: () async {
-                    setState(() {
-                      isDownloading = true;
-                      downloadStopped = false;
-                      fileValid = false;
-                      downloadProgress = 0.0;
-                    });
-
-                    taskId = await FlutterDownloader.enqueue(
-                      url: Api.gitMirror + downloadUrl,
-                      savedDir: dir!.path,
-                      fileName: name,
-                      showNotification: true,
-                      openFileFromNotification: true,
-                    );
-                  },
-                  child: Text("Mirror".tl),
-                ),
-                Button.text(
-                  onPressed: () async {
-                    setState(() {
-                      isDownloading = true;
-                      downloadStopped = false;
-                      fileValid = false;
-                      downloadProgress = 0.0;
-                    });
-
-                    taskId = await FlutterDownloader.enqueue(
-                      url: downloadUrl,
-                      savedDir: dir!.path,
-                      fileName: name,
-                      showNotification: true,
-                      openFileFromNotification: true,
-                    );
-                  },
-                  child: Text("Download".tl),
-                ),
-              ],
-              Button.text(
-                onPressed: () {
-                  Navigator.pop(context);
-                  launchUrlString(
-                    "https://github.com/kostori-app/kostori/releases",
-                  );
-                },
-                child: Text("View on GitHub".tl),
-              ),
-            ],
-            cancel: () {
-              if (App.isAndroid) {
-                if (taskId != null) {
-                  FlutterDownloader.cancel(taskId: taskId!);
-                  setState(() {
-                    isDownloading = false;
-                    downloadProgress = 0.0;
-                    taskId = null;
-                    IsolateNameServer.removePortNameMapping(
-                      'downloader_send_port',
-                    );
-                  });
-                }
-              }
-            },
-          );
-        },
-      );
+      return UpdateDialog(checkUpdate: value);
     },
   );
 }
@@ -442,12 +225,209 @@ bool _compareVersion(String version1, String version2) {
   return false;
 }
 
-Future<String> calculateSha256(File file) async {
-  final bytes = await file.readAsBytes();
-  final digest = sha256.convert(bytes);
-  return digest.toString();
+Future<void> updateLog(BuildContext context) async {
+  final response = await AppDio().request(
+    'https://api.github.com/repos/kostori-app/kostori/releases',
+    options: Options(method: 'GET'),
+  );
+  final releases = response.data as List;
+  final dragProgress = ValueNotifier(0.0);
+
+  showGeneralDialog(
+    context: context,
+    barrierLabel: "Dismiss",
+    barrierDismissible: true,
+    barrierColor: Colors.transparent,
+    transitionDuration: const Duration(milliseconds: 300),
+    pageBuilder: (context, anim1, anim2) {
+      return Stack(
+        children: [
+          ValueListenableBuilder<double>(
+            valueListenable: dragProgress,
+            builder: (context, progress, _) {
+              final dragOpacity = (1.0 - progress).clamp(0.0, 1.0);
+
+              return FadeTransition(
+                opacity: anim1,
+                child: Opacity(
+                  opacity: dragOpacity,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(color: Colors.black.toOpacity(0.2)),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(anim1),
+            child: _DraggableBlurSheet(
+              releases: releases.map((r) => ReleaseCard(release: r)).toList(),
+              maxHeight: MediaQuery.of(context).size.height * 0.75,
+              onDragProgress: (progress) => dragProgress.value = progress,
+            ),
+          ),
+        ],
+      );
+    },
+    transitionBuilder: (context, anim1, anim2, child) => child,
+  );
 }
 
+class _DraggableBlurSheet extends StatefulWidget {
+  final List<Widget> releases;
+  final double maxHeight;
+  final ValueChanged<double>? onDragProgress;
+
+  const _DraggableBlurSheet({
+    required this.releases,
+    this.onDragProgress,
+    required this.maxHeight,
+  });
+
+  @override
+  State<_DraggableBlurSheet> createState() => _DraggableBlurSheetState();
+}
+
+class _DraggableBlurSheetState extends State<_DraggableBlurSheet> {
+  double _dragOffset = 0;
+
+  void _updateDrag(double delta) {
+    setState(() {
+      _dragOffset += delta;
+      if (_dragOffset < 0) _dragOffset = 0; // 不允许向上无限拖
+      if (_dragOffset > widget.maxHeight) _dragOffset = widget.maxHeight;
+    });
+    widget.onDragProgress?.call(_dragOffset / widget.maxHeight);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: GestureDetector(
+        onVerticalDragUpdate: (details) => _updateDrag(details.delta.dy),
+        onVerticalDragEnd: (details) {
+          if (_dragOffset > 100 || (details.primaryVelocity ?? 0) > 700) {
+            Navigator.of(context).pop();
+          } else {
+            _updateDrag(-_dragOffset); // 回弹
+          }
+        },
+        child: Transform.translate(
+          offset: Offset(0, _dragOffset),
+          child: Container(
+            height: widget.maxHeight,
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor.toOpacity(0.9),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            child: Column(
+              children: [
+                // 顶部拖动条
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Container(
+                    height: 4,
+                    width: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // 内容区
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Text(
+                                  'Kostori Changelog',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          ...widget.releases,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 检查最新版本信息
+Future<Map<String, dynamic>> fetchLatestRelease() async {
+  final response = await AppDio().request(
+    'https://api.github.com/repos/kostori-app/kostori/releases/latest',
+    options: Options(method: 'GET'),
+  );
+
+  final tagName = response.data['tag_name']?.toString() ?? '';
+  final assets = (response.data['assets'] as List).cast<Map<String, dynamic>>();
+  final body = response.data['body']?.toString() ?? '';
+
+  return {
+    'version': tagName, // 最新版本号
+    'assets': assets, // Assets 列表
+    'body': body, // Release 描述
+  };
+}
+
+/// 获取匹配当前 ABI 的 Android 资源
+Future<Map<String, dynamic>?> getMatchedAndroidAsset(
+  List<Map<String, dynamic>> assets,
+) async {
+  if (!App.isAndroid) return null;
+  final abi = await getAppAbi();
+  final asset = assets.firstWhere(
+    (a) => (a['name'] as String).contains(abi),
+    orElse: () => {},
+  );
+  if (asset.isEmpty) return null;
+  return asset;
+}
+
+/// 获取应用 ABI
 Future<String> getAppAbi() async {
   const platform = MethodChannel('kostori/abi');
   try {
@@ -458,54 +438,84 @@ Future<String> getAppAbi() async {
   }
 }
 
-@pragma('vm:entry-point')
-void downloadCallback(String id, int status, int progress) {
-  final SendPort? send = IsolateNameServer.lookupPortByName(
-    'downloader_send_port',
+/// 计算文件的 SHA256
+Future<String> calculateSha256(File file) async {
+  final bytes = await file.readAsBytes();
+  return sha256.convert(bytes).toString();
+}
+
+/// 检查下载的 APK 是否完整
+Future<bool> verifyFileSha256(File file, String expectedSha256) async {
+  if (!await file.exists()) return false;
+  final actualSha256 = await calculateSha256(file);
+  return actualSha256 == expectedSha256;
+}
+
+/// 下载 APK 并返回 DownloadTask
+AppDownloadTask prepareDownloadTask(
+  String url,
+  String savePath,
+  void Function(double) onProgress,
+) {
+  final task = AppDownloadTask(url: url, savePath: savePath);
+  task.progressStream.listen(
+    onProgress,
+    onError: (err) {
+      if (!App.rootContext.mounted) return;
+      App.rootContext.showMessage(message: err.toString());
+    },
+    cancelOnError: true,
   );
-  send?.send([id, status, progress]);
+  return task;
 }
 
-Future<bool> checkAndRequestInstallPermission() async {
+/// 获取下载目录和文件路径
+Future<File> getDownloadFile(String fileName) async {
+  Directory? dir;
+
+  if (Platform.isAndroid) {
+    // 安卓使用 AbsolutePath 或下载目录
+    dir =
+        await AbsolutePath.absoluteDirectory(
+          dirType: DirectoryType.downloads,
+        ) ??
+        await getApplicationDocumentsDirectory();
+  } else if (Platform.isIOS) {
+    // iOS 使用应用文档目录
+    dir = await getApplicationDocumentsDirectory();
+  } else {
+    // 其他平台，如桌面
+    dir = await getDownloadsDirectory();
+  }
+  final filePath = path.join(dir!.path, fileName);
+  final file = File(filePath);
+  if (!file.existsSync() && App.isAndroid) await file.create(recursive: true);
+  return file;
+}
+
+/// 权限检查
+Future<bool> checkInstallPermission() async {
   var status = await Permission.requestInstallPackages.status;
-
-  if (status.isGranted) {
-    return true;
-  }
-
+  if (status.isGranted) return true;
   if (status.isDenied) {
-    var result = await Permission.requestInstallPackages.request();
-    return result.isGranted;
+    return (await Permission.requestInstallPackages.request()).isGranted;
   }
-
   if (status.isPermanentlyDenied) {
     openAppSettings();
     return false;
   }
-
-  var result = await Permission.requestInstallPackages.request();
-  return result.isGranted;
+  return (await Permission.requestInstallPackages.request()).isGranted;
 }
 
-Future<bool> checkAndRequestStoragePermission() async {
+Future<bool> checkStoragePermission() async {
   var status = await Permission.storage.status;
-
-  if (status.isGranted) {
-    return true;
-  }
-
-  if (status.isDenied) {
-    var result = await Permission.storage.request();
-    return result.isGranted;
-  }
-
+  if (status.isGranted) return true;
+  if (status.isDenied) return (await Permission.storage.request()).isGranted;
   if (status.isPermanentlyDenied) {
     openAppSettings();
     return false;
   }
-
-  var result = await Permission.storage.request();
-  return result.isGranted;
+  return (await Permission.storage.request()).isGranted;
 }
 
 Widget buildMarkdown(BuildContext context, String data) {
@@ -526,4 +536,317 @@ Widget buildMarkdown(BuildContext context, String data) {
   );
 
   return MarkdownBlock(data: data, config: config);
+}
+
+class ReleaseCard extends StatelessWidget {
+  final Map<String, dynamic> release;
+
+  const ReleaseCard({super.key, required this.release});
+
+  String _formatDate(String isoString) {
+    final date = DateTime.parse(isoString);
+    return DateFormat('yyyy/M/d').format(date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final createdAt = release['created_at'] as String;
+    final name = release['name'] as String? ?? release['tag_name'];
+    final body = release['body'] as String? ?? '';
+
+    return Card(
+      margin: const EdgeInsets.all(12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 第一行：日期
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(
+                  _formatDate(createdAt),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // 第二行：版本名 (居中)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Center(
+                    child: Text(
+                      name,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // 第三部分：Markdown body
+            buildMarkdown(context, body),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class UpdateDialog extends StatefulWidget {
+  final Map<bool, String?> checkUpdate;
+
+  const UpdateDialog({super.key, required this.checkUpdate});
+
+  @override
+  State<UpdateDialog> createState() => _UpdateDialogState();
+}
+
+class _UpdateDialogState extends State<UpdateDialog> {
+  double downloadProgress = 0.0;
+  bool isDownloading = false;
+  bool fileValid = false;
+  AppDownloadTask? task;
+  StreamSubscription<double>? _sub;
+  Map<dynamic, dynamic> releaseData = {};
+
+  String latestVersion = '';
+  Map<String, dynamic>? matchedAsset;
+  File? file;
+  String expectedSha256 = '';
+  String markdown = '';
+  bool isVersionConsistent = true;
+
+  Map<bool, String?> get value => widget.checkUpdate;
+
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    _initData();
+    super.initState();
+  }
+
+  Future<void> _initData() async {
+    isLoading = true;
+    releaseData = await fetchLatestRelease();
+
+    latestVersion = releaseData['version'] as String? ?? '';
+
+    markdown = releaseData['body'] ?? '';
+
+    final assets = releaseData['assets'] as List<Map<String, dynamic>>? ?? [];
+    matchedAsset = await getMatchedAndroidAsset(assets);
+
+    final name = matchedAsset?['name'] ?? '';
+    final digest = matchedAsset?['digest'] as String? ?? '';
+    expectedSha256 = digest.startsWith('sha256:')
+        ? digest.substring(7)
+        : digest;
+
+    file = await getDownloadFile(name);
+    fileValid = await verifyFileSha256(file!, expectedSha256);
+
+    if (matchedAsset == null && App.isAndroid) {
+      App.rootContext.showMessage(
+        message: "No update available for this architecture (@a)".tlParams({
+          "a": await getAppAbi(),
+        }),
+      );
+    }
+
+    if (latestVersion != value.values.first.toString()) {
+      Log.addLog(
+        LogLevel.info,
+        "Version Consistent",
+        '$latestVersion -> ${value.values.first.toString()}',
+      );
+      App.rootContext.showMessage(message: "Inconsistent versions".tl);
+      isVersionConsistent = false;
+    }
+
+    isLoading = false;
+    if (mounted) setState(() {});
+  }
+
+  void _startDownload(String url) {
+    if (isDownloading || file == null) return;
+
+    setState(() {
+      isDownloading = true;
+      downloadProgress = 0.0;
+    });
+
+    task = prepareDownloadTask(url, file!.path, (progress) {
+      if (!mounted) return;
+      setState(() {
+        downloadProgress = progress;
+      });
+    });
+
+    _sub = task?.progressStream.listen(
+      (_) {},
+      onError: (err) {
+        if (!mounted) return;
+        App.rootContext.showMessage(message: err.toString());
+      },
+      cancelOnError: true,
+    );
+
+    task
+        ?.start()
+        .then((_) async {
+          if (!mounted) return;
+          final valid = await verifyFileSha256(file!, expectedSha256);
+          setState(() {
+            fileValid = valid;
+            isDownloading = false;
+          });
+          if (!valid) {
+            App.rootContext.showMessage(
+              message: "Failed to check the hash value. Please try again".tl,
+            );
+          }
+        })
+        .catchError((e) {
+          if (!mounted) return;
+          setState(() {
+            isDownloading = false;
+          });
+          if (CancelToken.isCancel(e)) {
+            App.rootContext.showMessage(message: "Download canceled");
+          } else {
+            App.rootContext.showMessage(message: e.toString());
+            Log.addLog(LogLevel.error, 'startDownload', e.toString());
+          }
+        });
+  }
+
+  @override
+  void dispose() {
+    task?.cancel();
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final downloadUrl = matchedAsset?['browser_download_url'] ?? '';
+
+    return ContentDialog(
+      title: "New version available".tl,
+      content: isLoading
+          ? Center(
+              child: MiscComponents.placeholder(
+                context,
+                50,
+                50,
+                Colors.transparent,
+              ),
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Discover the new version @v".tlParams({"v": value.values}),
+                ),
+                const SizedBox(height: 12),
+                if (isDownloading)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: LinearProgressIndicator(value: downloadProgress),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('${(downloadProgress * 100).toStringAsFixed(0)}%'),
+                    ],
+                  )
+                else
+                  Material(
+                    color: context.brightness == Brightness.light
+                        ? Colors.white.toOpacity(0.72)
+                        : const Color(0xFF1E1E1E).toOpacity(0.72),
+                    elevation: 4,
+                    shadowColor: Theme.of(context).colorScheme.shadow,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(8),
+                        child: buildMarkdown(context, markdown),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+      actions: [
+        if (fileValid && App.isAndroid)
+          Button.text(
+            onPressed: () async {
+              if (!await checkInstallPermission() ||
+                  !await checkStoragePermission()) {
+                return;
+              }
+              const platform = MethodChannel('kostori/install_apk');
+              await platform.invokeMethod('installApk', {
+                "apkPath": file!.path,
+              });
+            },
+            child: Text("Install".tl),
+          )
+        else if (!isDownloading && App.isAndroid && isVersionConsistent) ...[
+          Button.text(
+            onPressed: () => _startDownload(Api.gitMirror + downloadUrl),
+            child: Text("Mirror".tl),
+          ),
+          Button.text(
+            onPressed: () => _startDownload(downloadUrl),
+            child: Text("Download".tl),
+          ),
+        ],
+        Button.text(
+          onPressed: () {
+            Navigator.pop(context);
+            launchUrlString("https://github.com/kostori-app/kostori/releases");
+          },
+          child: Text("View on GitHub".tl),
+        ),
+      ],
+      cancel: () {
+        task?.cancel();
+        _sub?.cancel();
+        if (mounted) {
+          setState(() {
+            isDownloading = false;
+            downloadProgress = 0.0;
+          });
+        }
+      },
+    );
+  }
 }

@@ -59,21 +59,26 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   bool _showSearchHistory = false;
   bool _showSearchSuggestions = false;
 
-  final List<String> options = ['最佳匹配', '最高排名', '最高收藏', '最高评分'];
+  final List<String> options = [
+    'Best Match'.tl,
+    'Top Rank'.tl,
+    'Most Favorited'.tl,
+    'Highest Rating'.tl,
+  ];
 
-  String selectedOption = '最高排名'; // 当前选中的选项
+  String selectedOption = 'Top Rank'.tl; // 当前选中的选项
   final Map<String, String> optionToSortType = {
-    '最佳匹配': 'match',
-    '最高排名': 'rank',
-    '最高收藏': 'heat',
-    '最高评分': 'score',
+    'Best Match'.tl: 'match',
+    'Top Rank'.tl: 'rank',
+    'Most Favorited'.tl: 'heat',
+    'Highest Rating'.tl: 'score',
   };
 
   final Map<String, String> sortTypeToOption = {
-    'match': '最佳匹配',
-    'rank': '最高排名',
-    'heat': '最高收藏',
-    'score': '最高评分',
+    'match': 'Best Match'.tl,
+    'rank': 'Top Rank'.tl,
+    'heat': 'Most Favorited'.tl,
+    'score': 'Highest Rating'.tl,
   };
 
   @override
@@ -156,13 +161,13 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   final categories = [
-    TagCategory(title: '类型', tags: type),
-    TagCategory(title: '背景', tags: background),
-    TagCategory(title: '角色', tags: role),
-    TagCategory(title: '情感', tags: emotional),
-    TagCategory(title: '来源', tags: source),
-    TagCategory(title: '受众', tags: audience),
-    TagCategory(title: '分类', tags: classification),
+    TagCategory(title: 'Type'.tl, tags: type),
+    TagCategory(title: 'Background'.tl, tags: background),
+    TagCategory(title: 'Characters'.tl, tags: role),
+    TagCategory(title: 'Emotion'.tl, tags: emotional),
+    TagCategory(title: 'Source'.tl, tags: source),
+    TagCategory(title: 'Audience'.tl, tags: audience),
+    TagCategory(title: 'Categories'.tl, tags: classification),
   ];
 
   // 分类选择栏
@@ -270,7 +275,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                           child: Row(
                             children: [
                               Text(
-                                '选择${category.title}',
+                                'Select @c'.tlParams({"c": category.title}),
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               const Spacer(),
@@ -343,12 +348,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                               OutlinedButton(
                                 onPressed: () =>
                                     setState(() => currentSelected.clear()),
-                                child: const Text('清空'),
+                                child: Text('Clear'.tl),
                               ),
                               const Spacer(),
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
-                                child: const Text('取消'),
+                                child: Text('Cancel'.tl),
                               ),
                               const SizedBox(width: 16),
                               ElevatedButton(
@@ -359,7 +364,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                                   );
                                   Navigator.pop(context);
                                 },
-                                child: Text('确认 (${currentSelected.length})'),
+                                child: Text(
+                                  'Confirm (@c)'.tlParams({
+                                    "c": currentSelected.length,
+                                  }),
+                                ),
                               ),
                             ],
                           ),
@@ -420,7 +429,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   decoration: InputDecoration(
                     // filled: true,
                     fillColor: Theme.of(context).cardColor,
-                    hintText: '输入关键词...',
+                    hintText: 'Enter keywords...'.tl,
                     prefixIcon: Icon(Icons.search),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
@@ -592,14 +601,14 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             }
 
             String formatDate(DateTime? date) {
-              if (date == null) return "未选择";
+              if (date == null) return "Unselected".tl;
               return "${date.year.toString().padLeft(4, '0')}-"
                   "${date.month.toString().padLeft(2, '0')}-"
                   "${date.day.toString().padLeft(2, '0')}";
             }
 
             return AlertDialog(
-              title: Text("选择日期"),
+              title: Text("Select Date".tl),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -609,13 +618,13 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     ListTile(
-                      title: Text("开始日期"),
+                      title: Text("Start Date".tl),
                       subtitle: Text(formatDate(air)),
                       trailing: Icon(Icons.date_range),
                       onTap: () => pickDate(true),
                     ),
                     ListTile(
-                      title: Text("结束日期"),
+                      title: Text("End Date".tl),
                       subtitle: Text(formatDate(end)),
                       trailing: Icon(Icons.date_range),
                       onTap: () => pickDate(false),
@@ -631,22 +640,27 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                       end = null;
                     });
                   },
-                  child: Text("清除日期"),
+                  child: Text("Clear Date".tl),
                 ),
                 // const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text("取消"),
+                  child: Text("Cancel".tl),
                 ),
                 ElevatedButton(
                   onPressed: () async {
                     if (air == null && end == null) {
-                      App.rootContext.showMessage(message: '请选择日期');
+                      App.rootContext.showMessage(
+                        message: 'Please select a date'.tl,
+                      );
                       return;
                     }
 
                     if (air != null && end != null && end!.isBefore(air!)) {
-                      context.showMessage(message: '结束日期不能早于起始日期');
+                      context.showMessage(
+                        message:
+                            'End date cannot be earlier than start date'.tl,
+                      );
                       return;
                     }
 
@@ -672,7 +686,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                       _isLoading = false;
                     });
                   },
-                  child: Text("确认"),
+                  child: Text("Apply".tl),
                 ),
               ],
             );

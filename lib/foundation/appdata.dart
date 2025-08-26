@@ -184,6 +184,7 @@ class Settings with ChangeNotifier {
     'dynamicColor': false,
     'enableNoProxyOverrides': true,
     'noProxyOverrides': ['bgm', 'bangumi'],
+    'ignoreBadCertificate': false,
   };
 
   operator [](String key) {

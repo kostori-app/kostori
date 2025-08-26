@@ -9,6 +9,7 @@ import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
 import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BBCodeWidget extends StatefulWidget {
@@ -56,19 +57,19 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('图片操作'),
+          title: Text('Image Operations'.tl),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text('取消'),
+              child: Text('Cancel'.tl),
             ),
             TextButton(
               onPressed: () {
                 BangumiWidget.saveImageToGallery(context, imageUrl);
               },
-              child: const Text('保存到相册'),
+              child: Text('Save to Album'.tl),
             ),
           ],
         );

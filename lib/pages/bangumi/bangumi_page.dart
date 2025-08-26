@@ -78,7 +78,7 @@ class _BangumiPageState extends State<BangumiPage>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('热度排行', style: ts.s18),
+                Text('Popularity Ranking'.tl, style: ts.s18),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   padding: const EdgeInsets.symmetric(
@@ -397,14 +397,14 @@ class _TimetableState extends State<_Timetable> {
   }
 
   String getWeekdayString(int weekday) {
-    const weekdays = [
-      '周一时间表',
-      '周二时间表',
-      '周三时间表',
-      '周四时间表',
-      '周五时间表',
-      '周六时间表',
-      '周日时间表',
+    var weekdays = [
+      'Monday Schedule'.tl,
+      'Tuesday Schedule'.tl,
+      'Wednesday Schedule'.tl,
+      'Thursday Schedule'.tl,
+      'Friday Schedule'.tl,
+      'Saturday Schedule'.tl,
+      'Sunday Schedule'.tl,
     ];
     return weekdays[weekday - 1];
   }

@@ -287,7 +287,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   MenuButton _buildSortMenuItems() {
     return MenuButton(
       icon: Icons.sort,
-      message: "Sort",
+      message: "Sort".tl,
       entries: [
         MenuEntry(
           icon: Icons.receipt_long,
@@ -298,7 +298,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "最近观看".tl,
+          text: "Recently Watched".tl,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.recentlyWatchedAsc
@@ -319,7 +319,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "按名称".tl,
+          text: "By Name".tl,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.nameAsc
@@ -340,7 +340,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "按时间".tl,
+          text: "By Time".tl,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.timeAsc
@@ -361,7 +361,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "默认顺序".tl,
+          text: "Default Order".tl,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.displayOrderAsc
@@ -793,7 +793,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     );
     return PopScope(
       key: PageStorageKey("${favoritesController.folders}"),
-      canPop: !multiSelectMode && !searchAllMode,
+      canPop: multiSelectMode == false && searchAllMode == false,
       onPopInvokedWithResult: (didPop, result) {
         if (multiSelectMode) {
           setState(() {

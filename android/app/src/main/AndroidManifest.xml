@@ -22,6 +22,7 @@
                 android:theme="@style/LaunchTheme"
                 android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
                 android:hardwareAccelerated="true"
+                android:resizeableActivity="true"
                 android:supportsPictureInPicture="true"
                 android:windowSoftInputMode="adjustResize">
             <!-- Specifies an Android theme to apply to this Activity as soon as
@@ -44,15 +45,6 @@
                 android:value="2"/>
         <!-- [flutter 3.27.1] Impeller is still worse than skia, disable it -->
         <meta-data android:name="io.flutter.embedding.android.EnableImpeller" android:value="false"/>
-        <provider
-                android:name="vn.hunghd.flutterdownloader.DownloadedFileProvider"
-                android:authorities="${applicationId}.flutter_downloader.provider"
-                android:exported="false"
-                android:grantUriPermissions="true">
-            <meta-data
-                    android:name="android.support.FILE_PROVIDER_PATHS"
-                    android:resource="@xml/provider_paths"/>
-        </provider>
         <provider
                 android:name="androidx.core.content.FileProvider"
                 android:authorities="${applicationId}.fileprovider"

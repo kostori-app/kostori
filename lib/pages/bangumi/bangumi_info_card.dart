@@ -628,7 +628,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                           Row(
                             children: [
                               Text(
-                                'Rating Statistics Chart'.tl,
+                                'Rating Chart'.tl,
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
