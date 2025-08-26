@@ -1,16 +1,4 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-
-import '../../components/components.dart';
-import '../../foundation/app.dart';
-import '../../foundation/log.dart';
-import '../../utils/utils.dart';
-import 'image_manipulation_page.dart';
+part of 'image_manipulation_page.dart';
 
 class DialogueImagePainter extends CustomPainter {
   final List<ui.Image> images;
@@ -38,11 +26,13 @@ class DialogueImagePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // 计算内容区域尺寸（考虑外边框）
-    final contentWidth =
-        showOuterBorder ? size.width - 2 * outerBorderWidth : size.width;
+    final contentWidth = showOuterBorder
+        ? size.width - 2 * outerBorderWidth
+        : size.width;
 
-    final contentHeight =
-        showOuterBorder ? size.height - 2 * outerBorderWidth : size.height;
+    final contentHeight = showOuterBorder
+        ? size.height - 2 * outerBorderWidth
+        : size.height;
 
     // 计算内容区域偏移
     final contentOffset = showOuterBorder
@@ -114,7 +104,11 @@ class DialogueImagePainter extends CustomPainter {
         canvas.drawImageRect(
           image,
           Rect.fromLTWH(
-              0, safeSrcTop, image.width.toDouble(), safeCropSrcHeight),
+            0,
+            safeSrcTop,
+            image.width.toDouble(),
+            safeCropSrcHeight,
+          ),
           Rect.fromLTWH(contentOffset.dx, currentY, contentWidth, cropHeight),
           paint,
         );
@@ -166,17 +160,6 @@ class _RenderDialogueComposePageState
   bool isReorderMode = false;
   bool isCroppingMode = false;
 
-  final showOuterBorderProvider = StateProvider<bool>((ref) => false);
-  final outerBorderColorProvider =
-      StateProvider<Color>((ref) => Color(0xFF6677ff));
-  final outerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
-  final outerBorderRadiusProvider = StateProvider<double>((ref) => 20.0);
-  final bottomCropHeightProvider = StateProvider<double>((ref) => 60.0);
-  final showInnerBordersProvider = StateProvider<bool>((ref) => false);
-  final innerBorderColorProvider =
-      StateProvider<Color>((ref) => Color(0xFF6677ff));
-  final innerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
-
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -205,7 +188,8 @@ class _RenderDialogueComposePageState
         final codec = await ui.instantiateImageCodec(data);
         final frame = await codec.getNextFrame();
         sizes.add(
-            Size(frame.image.width.toDouble(), frame.image.height.toDouble()));
+          Size(frame.image.width.toDouble(), frame.image.height.toDouble()),
+        );
       } catch (e) {
         Log.addLog(LogLevel.warning, 'getImageSizes', e.toString());
         sizes.add(const Size(0, 0)); // 失败时添加默认尺寸避免崩溃
@@ -231,7 +215,10 @@ class _RenderDialogueComposePageState
 
     setState(() {
       Log.addLog(
-          LogLevel.info, 'firstImageHeight', firstImageHeight.toString());
+        LogLevel.info,
+        'firstImageHeight',
+        firstImageHeight.toString(),
+      );
       cropHeights = List.generate(
         imageList.length,
         (index) => index == 0 ? firstImageHeight : 125.0,
@@ -372,10 +359,7 @@ class _RenderDialogueComposePageState
             index: i,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Image.file(
-                imageList[i],
-                fit: BoxFit.fitWidth,
-              ),
+              child: Image.file(imageList[i], fit: BoxFit.fitWidth),
             ),
           ),
       ],
@@ -393,219 +377,15 @@ class _RenderDialogueComposePageState
         maxWidth: MediaQuery.of(context).size.width <= 600
             ? MediaQuery.of(context).size.width
             : (App.isDesktop)
-                ? MediaQuery.of(context).size.width * 9 / 16
-                : MediaQuery.of(context).size.width,
+            ? MediaQuery.of(context).size.width * 9 / 16
+            : MediaQuery.of(context).size.width,
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final showOuterBorder = ref.watch(showOuterBorderProvider);
-            final outerBorderColor = ref.watch(outerBorderColorProvider);
-            final outerBorderWidth = ref.watch(outerBorderWidthProvider);
-            final outerBorderRadius = ref.watch(outerBorderRadiusProvider);
-
-            final showInnerBorders = ref.watch(showInnerBordersProvider);
-            final innerBorderColor = ref.watch(innerBorderColorProvider);
-            final innerBorderWidth = ref.watch(innerBorderWidthProvider);
-
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('边框设置',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-
-                    const SizedBox(height: 16),
-
-                    /// 外边框设置
-                    SwitchListTile(
-                      title: const Text("显示外边框"),
-                      value: showOuterBorder,
-                      onChanged: (v) {
-                        ref.read(showOuterBorderProvider.notifier).state = v;
-                        setModalState(() {});
-                      },
-                    ),
-                    if (showOuterBorder) ...[
-                      _buildColorPicker("外边框颜色", outerBorderColor, (c) {
-                        ref.read(outerBorderColorProvider.notifier).state = c;
-                        setModalState(() {});
-                      }),
-                      _buildSlider("外边框粗细", outerBorderWidth, 0, 120, (v) {
-                        ref.read(outerBorderWidthProvider.notifier).state = v;
-                        setModalState(() {});
-                      }),
-                      _buildSlider("外边框圆角", outerBorderRadius, 0, 120, (v) {
-                        ref.read(outerBorderRadiusProvider.notifier).state = v;
-                        setModalState(() {});
-                      }),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    /// 内边框设置
-                    SwitchListTile(
-                      title: const Text("显示图片间边框"),
-                      value: showInnerBorders,
-                      onChanged: (v) {
-                        ref.read(showInnerBordersProvider.notifier).state = v;
-                        setModalState(() {});
-                      },
-                    ),
-                    if (showInnerBorders) ...[
-                      _buildColorPicker("内边框颜色", innerBorderColor, (c) {
-                        ref.read(innerBorderColorProvider.notifier).state = c;
-                        setModalState(() {});
-                      }),
-                      _buildSlider("内边框粗细", innerBorderWidth, 0, 120, (v) {
-                        ref.read(innerBorderWidthProvider.notifier).state = v;
-                        setModalState(() {});
-                      }),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    /// 操作按钮
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('完成'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildColorPicker(
-    String title,
-    Color currentColor,
-    ValueChanged<Color> onChanged,
-  ) {
-    // 工具函数
-    String colorToHex(Color color) => '#${color.toARGB32().toRadixString(16)}';
-
-    Color fallbackColorIfTooDark(Color color) {
-      // 检查是否是纯黑
-      return color.toARGB32() == 0xFF000000 ? const Color(0xFF6677ff) : color;
-    }
-
-    final Color initialColor = fallbackColorIfTooDark(currentColor);
-
-    final TextEditingController controller =
-        TextEditingController(text: colorToHex(initialColor));
-
-    Color pickerColor = initialColor;
-
-    Color? hexToColor(String hex) {
-      try {
-        hex = hex.toUpperCase().replaceAll('#', '');
-        if (hex.length == 6) hex = 'FF$hex'; // 没透明度自动补FF
-        final val = int.parse(hex, radix: 16);
-        return Color(val);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    return StatefulBuilder(builder: (context, setState) {
-      void onTextChanged(String value) {
-        final color = hexToColor(value);
-        if (color != null) {
-          setState(() {
-            pickerColor = color;
-            controller.text = colorToHex(color);
-            controller.selection = TextSelection.fromPosition(
-                TextPosition(offset: controller.text.length));
-          });
-          onChanged(color);
-        }
-      }
-
-      void onColorChanged(Color color) {
-        setState(() {
-          pickerColor = color;
-          controller.text = colorToHex(color);
-          controller.selection = TextSelection.fromPosition(
-              TextPosition(offset: controller.text.length));
-        });
-        onChanged(color);
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          ColorPicker(
-            pickerColor: pickerColor,
-            onColorChanged: onColorChanged,
-            enableAlpha: false,
-            pickerAreaHeightPercent: 0.3,
-            displayThumbColor: true,
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: '输入十六进制颜色码，例如 #FF000000',
-              border: OutlineInputBorder(),
-            ),
-            maxLength: 9,
-            // # + 6位RGB
-            onSubmitted: onTextChanged,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'#[0-9a-fA-F]*')),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
-    });
-  }
-
-  Widget _buildSlider(
-    String label,
-    double value,
-    double min,
-    double max,
-    ValueChanged<double> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(width: 80, child: Text(label)),
-          Expanded(
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: (max - min).toInt(),
-              label: value.toStringAsFixed(1),
-              onChanged: onChanged,
-            ),
-          ),
-          SizedBox(width: 40, child: Text(value.toStringAsFixed(1))),
-        ],
-      ),
+      builder: (_) => const BorderSettingsSheet(),
     );
   }
 
   Widget _buildCropListView() {
-    const double baseDisplayWidth = 650; // 统一宽度（不拉伸）
+    const double baseDisplayWidth = 650;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 100),
@@ -631,7 +411,7 @@ class _RenderDialogueComposePageState
                     SizedBox(
                       width: baseDisplayWidth,
                       height: displayHeight,
-                      child: Image.file(image, fit: BoxFit.fill), // 不拉伸，只是定高定宽
+                      child: Image.file(image, fit: BoxFit.fill),
                     ),
                     Positioned(
                       bottom: 0,
@@ -646,13 +426,15 @@ class _RenderDialogueComposePageState
                             padding: const EdgeInsets.all(6),
                             color: Colors.black54,
                             child: Text(
-                              '裁剪高度: ${crop.toStringAsFixed(0)} px',
+                              'Crop Height: @c px'.tlParams({
+                                "c": crop.toStringAsFixed(0),
+                              }),
                               style: const TextStyle(color: Colors.white),
                             ),
                           ),
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
                 Slider(
@@ -664,7 +446,7 @@ class _RenderDialogueComposePageState
                       cropHeights[index] = value;
                     });
                   },
-                )
+                ),
               ],
             ),
           );
@@ -674,8 +456,6 @@ class _RenderDialogueComposePageState
   }
 
   Widget _buildMainCanvasPreview() {
-    // const maxWidth = 650.0;
-
     final showOuterBorder = ref.watch(showOuterBorderProvider);
     final outerBorderColor = ref.watch(outerBorderColorProvider);
     final outerBorderWidth = ref.watch(outerBorderWidthProvider);
@@ -688,11 +468,13 @@ class _RenderDialogueComposePageState
     return FutureBuilder<List<ui.Image>>(
       future: _loadUiImages(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text("没有图片"));
+        if (snapshot.hasError ||
+            snapshot.data == null ||
+            snapshot.data!.isEmpty) {
+          return Center(child: Text("No Images".tl));
         }
 
         final images = snapshot.data!;
@@ -701,15 +483,12 @@ class _RenderDialogueComposePageState
         double totalCropHeight = 0.0;
 
         if (cropHeights.isNotEmpty && images.isNotEmpty) {
-          // 先把第一张图片的高度赋值（单位是逻辑像素）
           totalCropHeight = images.first.height.toDouble();
 
-          // 累加 cropHeights 中除了第一个之外的其他高度
           for (int i = 1; i < cropHeights.length; i++) {
             totalCropHeight += cropHeights[i];
           }
         } else {
-          // 如果没有数据，仍然累加所有cropHeights
           totalCropHeight = cropHeights.fold(0.0, (sum, h) => sum + h);
         }
 
@@ -762,12 +541,13 @@ class _RenderDialogueComposePageState
       child: ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8), // 这里调节模糊强度
+          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.black.toOpacity(0.35),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: SingleChildScrollView(
@@ -778,15 +558,17 @@ class _RenderDialogueComposePageState
                   if (!isReorderMode && !isCroppingMode) ...[
                     ElevatedButton.icon(
                       icon: const Icon(Icons.color_lens),
-                      label: const Text("边框颜色"),
+                      label: Text("Border Color".tl),
                       onPressed: _showBorderSettings,
                     ),
-                    const SizedBox(width: 20)
+                    const SizedBox(width: 20),
                   ],
                   if (!isCroppingMode)
                     ElevatedButton.icon(
                       icon: Icon(isReorderMode ? Icons.check : Icons.sort),
-                      label: Text(isReorderMode ? "完成排序" : "排序图片"),
+                      label: Text(
+                        isReorderMode ? "Finish Sorting".tl : "Sort Images".tl,
+                      ),
                       onPressed: () {
                         setState(() {
                           isReorderMode = !isReorderMode;
@@ -798,152 +580,174 @@ class _RenderDialogueComposePageState
                   if (!isReorderMode) ...[
                     ElevatedButton.icon(
                       icon: Icon(isCroppingMode ? Icons.check : Icons.crop),
-                      label: Text(isCroppingMode ? "完成裁剪" : "裁剪图片"),
+                      label: Text(
+                        isCroppingMode ? "Finish Cropping".tl : "Crop Image".tl,
+                      ),
                       onPressed: () {
                         setState(() {
                           isCroppingMode = !isCroppingMode;
                         });
                       },
-                    )
+                    ),
                   ],
                   if (isCroppingMode) ...[
                     const SizedBox(width: 20),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.vertical_align_center),
-                      label: const Text("统一高度"),
+                      label: Text("Uniform Height".tl),
                       onPressed: () {
-                        double targetHeight =
-                            cropHeights.length > 1 ? cropHeights[1] : 120.0;
+                        double targetHeight = cropHeights.length > 1
+                            ? cropHeights[1]
+                            : 120.0;
                         final controller = TextEditingController(
-                            text: targetHeight.toStringAsFixed(0));
+                          text: targetHeight.toStringAsFixed(0),
+                        );
 
                         showGeneralDialog(
                           context: context,
                           barrierDismissible: true,
-                          barrierLabel: '设置统一高度',
+                          barrierLabel: 'Set Uniform Height'.tl,
                           barrierColor: Colors.black.toOpacity(0.3),
-                          // 遮罩半透明黑
                           pageBuilder:
                               (context, animation, secondaryAnimation) {
-                            return Center(
-                              child: BackdropFilter(
-                                filter: ui.ImageFilter.blur(
-                                    sigmaX: 8, sigmaY: 8), // 背景模糊
-                                child: Material(
-                                  color: Colors.black
-                                      .toOpacity(0.3), // 对话框背景半透明，配合模糊更佳
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    width: 650,
-                                    padding: const EdgeInsets.all(16),
-                                    child: StatefulBuilder(
-                                      builder: (context, setStates) {
-                                        void updateHeight(double value) {
-                                          targetHeight =
-                                              value.clamp(0.0, 5000.0);
+                                return Center(
+                                  child: BackdropFilter(
+                                    filter: ui.ImageFilter.blur(
+                                      sigmaX: 8,
+                                      sigmaY: 8,
+                                    ),
+                                    child: Material(
+                                      color: Colors.black.toOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        width: 650,
+                                        padding: const EdgeInsets.all(16),
+                                        child: StatefulBuilder(
+                                          builder: (context, setStates) {
+                                            void updateHeight(double value) {
+                                              targetHeight = value.clamp(
+                                                0.0,
+                                                5000.0,
+                                              );
 
-                                          final newText =
-                                              targetHeight.toStringAsFixed(0);
+                                              final newText = targetHeight
+                                                  .toStringAsFixed(0);
 
-                                          if (controller.text != newText) {
-                                            controller.text = newText;
-                                            controller.selection =
-                                                TextSelection.fromPosition(
-                                                    TextPosition(
-                                                        offset:
-                                                            newText.length));
-                                          }
-                                        }
+                                              if (controller.text != newText) {
+                                                controller.text = newText;
+                                                controller.selection =
+                                                    TextSelection.fromPosition(
+                                                      TextPosition(
+                                                        offset: newText.length,
+                                                      ),
+                                                    );
+                                              }
+                                            }
 
-                                        return Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              "设置统一高度",
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleLarge,
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Slider(
-                                              min: 10.0,
-                                              max: 1080.0,
-                                              value: targetHeight.clamp(
-                                                  50.0, 1080.0),
-                                              onChanged: (value) {
-                                                setStates(
-                                                    () => updateHeight(value));
-                                              },
-                                            ),
-                                            const SizedBox(height: 20),
-                                            TextField(
-                                              controller: controller,
-                                              keyboardType:
-                                                  TextInputType.number,
-                                              decoration: const InputDecoration(
-                                                labelText: '高度（px）',
-                                                border: OutlineInputBorder(),
-                                                isDense: true,
-                                                contentPadding:
-                                                    EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 8),
-                                              ),
-                                              onChanged: (value) {
-                                                final parsed =
-                                                    double.tryParse(value);
-                                                if (parsed != null) {
-                                                  setStates(() =>
-                                                      updateHeight(parsed));
-                                                }
-                                              },
-                                            ),
-                                            const SizedBox(height: 24),
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.end,
+                                            return Column(
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                TextButton(
-                                                  child: const Text("取消"),
-                                                  onPressed: () =>
-                                                      Navigator.of(context)
-                                                          .pop(),
+                                                Text(
+                                                  "Set Uniform Height".tl,
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.titleLarge,
                                                 ),
-                                                ElevatedButton(
-                                                  child: const Text("应用"),
-                                                  onPressed: () {
-                                                    for (int i = 1;
-                                                        i < cropHeights.length;
-                                                        i++) {
-                                                      cropHeights[i] =
-                                                          targetHeight;
-                                                    }
-                                                    setState(() {});
-                                                    Navigator.of(context).pop();
+                                                const SizedBox(height: 16),
+                                                Slider(
+                                                  min: 10.0,
+                                                  max: 1080.0,
+                                                  value: targetHeight.clamp(
+                                                    50.0,
+                                                    1080.0,
+                                                  ),
+                                                  onChanged: (value) {
+                                                    setStates(
+                                                      () => updateHeight(value),
+                                                    );
                                                   },
                                                 ),
+                                                const SizedBox(height: 20),
+                                                TextField(
+                                                  controller: controller,
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  decoration: InputDecoration(
+                                                    labelText: 'Height(px)'.tl,
+                                                    border:
+                                                        OutlineInputBorder(),
+                                                    isDense: true,
+                                                    contentPadding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 8,
+                                                        ),
+                                                  ),
+                                                  onChanged: (value) {
+                                                    final parsed =
+                                                        double.tryParse(value);
+                                                    if (parsed != null) {
+                                                      setStates(
+                                                        () => updateHeight(
+                                                          parsed,
+                                                        ),
+                                                      );
+                                                    }
+                                                  },
+                                                ),
+                                                const SizedBox(height: 24),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    TextButton(
+                                                      child: Text("Cancel".tl),
+                                                      onPressed: () =>
+                                                          Navigator.of(
+                                                            context,
+                                                          ).pop(),
+                                                    ),
+                                                    ElevatedButton(
+                                                      child: Text("Apply".tl),
+                                                      onPressed: () {
+                                                        for (
+                                                          int i = 1;
+                                                          i <
+                                                              cropHeights
+                                                                  .length;
+                                                          i++
+                                                        ) {
+                                                          cropHeights[i] =
+                                                              targetHeight;
+                                                        }
+                                                        setState(() {});
+                                                        Navigator.of(
+                                                          context,
+                                                        ).pop();
+                                                      },
+                                                    ),
+                                                  ],
+                                                ),
                                               ],
-                                            ),
-                                          ],
-                                        );
-                                      },
+                                            );
+                                          },
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                            );
-                          },
+                                );
+                              },
                         );
                       },
-                    )
+                    ),
                   ],
                   if (!isReorderMode && !isCroppingMode) ...[
                     const SizedBox(width: 20),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.save),
-                      label: const Text("保存长图"),
+                      label: Text("Save Long Image".tl),
                       onPressed: () => _captureAndSaveLongImage(context),
-                    )
+                    ),
                   ],
                 ],
               ),
@@ -958,7 +762,7 @@ class _RenderDialogueComposePageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: const Text("拼台词"),
+        title: Text("Stitch Subtitles".tl),
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
@@ -975,14 +779,14 @@ class _RenderDialogueComposePageState
                       child: _buildReorderView(),
                     )
                   : isCroppingMode
-                      ? ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: 650),
-                          child: _buildCropListView(),
-                        )
-                      : _buildMainCanvasPreview(),
+                  ? ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 650),
+                      child: _buildCropListView(),
+                    )
+                  : _buildMainCanvasPreview(),
             ),
           ),
-          _buildBottomButtons()
+          _buildBottomButtons(),
         ],
       ),
     );
