@@ -127,7 +127,7 @@ class BottomInfoState extends State<BottomInfo>
 
   Future<void> queryBangumiInfoByID(int id) async {
     try {
-      await infoController.queryBangumiInfoByID(id);
+      await infoController.queryBangumiInfoByID(id, defaultToDb: true);
       setState(() {});
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());
@@ -136,7 +136,7 @@ class BottomInfoState extends State<BottomInfo>
 
   Future<void> queryBangumiEpisodeByID(int id) async {
     try {
-      await infoController.queryBangumiEpisodeByID(id);
+      await infoController.queryBangumiEpisodeByID(id, defaultToDb: true);
       setState(() {});
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());

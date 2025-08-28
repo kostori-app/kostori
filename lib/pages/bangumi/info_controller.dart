@@ -72,10 +72,19 @@ abstract class _InfoController with Store {
   @observable
   var bangumiSRI = ObservableList<BangumiSRI>();
 
-  Future<void> queryBangumiInfoByID(int id) async {
+  Future<void> queryBangumiInfoByID(int id, {bool defaultToDb = false}) async {
     isLoading = true;
     try {
-      bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+      if (defaultToDb) {
+        BangumiItem? bangumiBind = await BangumiManager().bindFind(id);
+        if (bangumiBind != null) {
+          bangumiItem = bangumiBind;
+        } else {
+          bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+        }
+      } else {
+        bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+      }
       bangumiSRI.clear();
       await Bangumi.getBangumiSRIByID(id).then((v) {
         bangumiSRI.addAll(v);
@@ -86,9 +95,19 @@ abstract class _InfoController with Store {
     }
   }
 
-  Future<void> queryBangumiEpisodeByID(int id) async {
+  Future<void> queryBangumiEpisodeByID(
+    int id, {
+    bool defaultToDb = false,
+  }) async {
     try {
-      allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+      if (defaultToDb) {
+        allEpisodes = await BangumiManager().allEpInfoFind(id);
+        if (allEpisodes.isEmpty) {
+          allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+        }
+      } else {
+        allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+      }
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
     }
