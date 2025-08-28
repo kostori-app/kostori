@@ -274,6 +274,8 @@ class AnimeSource {
   bool _isSaving = false;
   bool _haveWaitingTask = false;
 
+  bool isBangumi = false;
+
   Future<void> saveData() async {
     if (_haveWaitingTask) return;
     while (_isSaving) {
@@ -333,6 +335,7 @@ class AnimeSource {
     this.enableTagsSuggestions,
     this.enableTagsTranslate,
     this.starRatingFunc,
+    this.isBangumi,
   );
 }
 

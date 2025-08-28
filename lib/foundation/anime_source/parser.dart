@@ -109,6 +109,7 @@ class AnimeSourceParser {
     var version =
         JsEngine().runCode("this['temp'].version") ??
         (throw AnimeSourceParseException('version is required'));
+    var isBangumi = JsEngine().runCode("this['temp'].isBangumi") ?? false;
     var minAppVersion = JsEngine().runCode("this['temp'].minAppVersion");
     var url = JsEngine().runCode("this['temp'].url");
     if (minAppVersion != null) {
@@ -162,6 +163,7 @@ class AnimeSourceParser {
       _getValue("search.enableTagsSuggestions") ?? false,
       _getValue("anime.enableTagsTranslate") ?? false,
       _parseStarRatingFunc(),
+      isBangumi,
     );
 
     await source.loadData();
@@ -175,7 +177,7 @@ class AnimeSourceParser {
     return source;
   }
 
-  _checkKeyValidation() {
+  void _checkKeyValidation() {
     // 仅允许数字和字母以及下划线
     if (!_key!.contains(RegExp(r"^[a-zA-Z0-9_]+$"))) {
       throw AnimeSourceParseException("key $_key is invalid");

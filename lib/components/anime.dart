@@ -68,8 +68,20 @@ class AnimeTile extends StatelessWidget {
         ),
       );
     } else if (isGrid) {
-      var context = App.mainNavigatorKey!.currentContext!;
-      anime.viewMore!.jump(context);
+      if (anime.viewMore != null && anime.viewMore?.attributes != null) {
+        var context = App.mainNavigatorKey!.currentContext!;
+        anime.viewMore!.jump(context);
+      } else {
+        App.mainNavigatorKey?.currentContext?.to(
+          () => AnimePage(
+            id: anime.id,
+            sourceKey: anime.sourceKey,
+            cover: anime.cover,
+            title: anime.title,
+            heroID: heroID,
+          ),
+        );
+      }
     } else {
       App.mainNavigatorKey?.currentContext?.to(
         () => AnimePage(
@@ -1556,6 +1568,7 @@ class AnimeListState extends State<AnimeList> {
               SliverGridAnimes(
                 animes: _data[_page] ?? const [],
                 menuBuilder: widget.menuBuilder,
+                isGrid: true,
               ),
               if (widget.trailingSliver != null) widget.trailingSliver!,
               SliverPadding(
