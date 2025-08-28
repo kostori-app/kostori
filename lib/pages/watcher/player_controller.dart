@@ -376,46 +376,63 @@ abstract class _PlayerController with Store {
     windowFrame.removeCloseListener(onWindowClose);
   }
 
-  // 移动
-  Future<void> enterFullScreen(BuildContext context) async {
-    if (isFullScreen) {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      App.rootContext.pop();
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-      ]);
-      WakelockPlus.disable();
-    } else {
-      WakelockPlus.enable();
-      await SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.immersiveSticky,
-        overlays: SystemUiOverlay.values,
-      );
-      App.rootContext.to(
-        () => FullscreenVideoPage(playerController: this as PlayerController),
-      );
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    }
-    isFullScreen = !isFullScreen;
-  }
+  Future<void> toggleFullScreen(
+    BuildContext context, {
+    bool isPortraitFullScreen = false,
+  }) async {
+    if (App.isDesktop) {
+      // --- PC 端逻辑 ---
+      await windowManager.setFullScreen(!isFullScreen);
 
-  // pc
-  void toggleFullscreen(BuildContext context) {
-    windowManager.setFullScreen(!isFullScreen);
-    if (isFullScreen) {
-      App.rootContext.pop();
+      if (isFullScreen) {
+        // 退出全屏
+        App.rootContext.pop();
+      } else {
+        // 进入全屏
+        Future.microtask(() {
+          App.rootContext.to(
+            () =>
+                FullscreenVideoPage(playerController: this as PlayerController),
+          );
+        });
+      }
     } else {
-      Future.microtask(() {
+      // --- 移动端逻辑 ---
+
+      if (isFullScreen) {
+        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        App.rootContext.pop();
+        await SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+        ]);
+        WakelockPlus.disable();
+      } else {
+        WakelockPlus.enable();
+        await SystemChrome.setEnabledSystemUIMode(
+          SystemUiMode.immersiveSticky,
+          overlays: SystemUiOverlay.values,
+        );
         App.rootContext.to(
           () => FullscreenVideoPage(playerController: this as PlayerController),
         );
-      });
+        if (isPortraitFullScreen) {
+          await SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+          ]);
+        } else {
+          await SystemChrome.setPreferredOrientations([
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
+        }
+      }
     }
 
-    fullscreen();
+    if (App.isDesktop) {
+      fullscreen();
+      return;
+    }
+    isFullScreen = !isFullScreen;
   }
 
   Future<void> setVolume(double value) async {

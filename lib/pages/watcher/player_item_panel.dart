@@ -702,15 +702,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           onPressed: () {
                             if (widget.playerController.isFullScreen) {
                               // 检查是否是桌面环境，分别处理全屏逻辑
-                              if (!App.isDesktop) {
-                                widget.playerController.enterFullScreen(
-                                  context,
-                                );
-                              } else {
-                                widget.playerController.toggleFullscreen(
-                                  context,
-                                );
-                              }
+                              widget.playerController.toggleFullScreen(context);
                             } else {
                               // 如果不是全屏，退出当前页面
                               Navigator.pop(context);
@@ -937,10 +929,22 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       children: [
                         IconButton(
                           color: Colors.white,
-                          icon: Icon(
-                            widget.playerController.playing
-                                ? Icons.pause
-                                : Icons.play_arrow,
+                          icon: AnimatedSwitcher(
+                            duration: Duration(milliseconds: 300),
+                            transitionBuilder: (child, animation) {
+                              return ScaleTransition(
+                                scale: animation,
+                                child: child,
+                              );
+                            },
+                            child: Icon(
+                              widget.playerController.playing
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                              key: ValueKey<bool>(
+                                widget.playerController.playing,
+                              ),
+                            ),
                           ),
                           onPressed: () {
                             if (widget.playerController.playing) {
@@ -1048,6 +1052,22 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 },
                               )
                             : Container(),
+                        if (App.isAndroid &&
+                            !widget.playerController.isFullScreen)
+                          IconButton(
+                            color: Colors.white,
+                            icon: Icon(
+                              widget.playerController.isFullScreen
+                                  ? Icons.fullscreen_exit
+                                  : Icons.crop_portrait,
+                            ),
+                            onPressed: () {
+                              widget.playerController.toggleFullScreen(
+                                context,
+                                isPortraitFullScreen: true,
+                              );
+                            },
+                          ),
                         IconButton(
                           color: Colors.white,
                           icon: Icon(
@@ -1056,13 +1076,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 : Icons.fullscreen,
                           ),
                           onPressed: () {
-                            ((!App.isDesktop)
-                                ? widget.playerController.enterFullScreen(
-                                    context,
-                                  )
-                                : widget.playerController.toggleFullscreen(
-                                    context,
-                                  ));
+                            widget.playerController.toggleFullScreen(context);
                           },
                         ),
                       ],

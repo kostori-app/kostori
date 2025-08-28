@@ -88,11 +88,7 @@ class _VideoPageState extends State<VideoPage>
         if (widget.playerController.showTabBody) {
           closeTabBodyAnimated();
         } else if (widget.playerController.isFullScreen) {
-          if (App.isAndroid) {
-            widget.playerController.enterFullScreen(context);
-          } else if (App.isDesktop) {
-            widget.playerController.toggleFullscreen(context);
-          }
+          widget.playerController.toggleFullScreen(context);
         }
       },
       child: OrientationBuilder(

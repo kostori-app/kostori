@@ -525,30 +525,18 @@ class _PlayerItemState extends State<PlayerItem>
                               if (event.logicalKey ==
                                   LogicalKeyboardKey.escape) {
                                 if (widget.playerController.isFullScreen) {
-                                  if (App.isDesktop) {
-                                    widget.playerController.toggleFullscreen(
-                                      context,
-                                    );
-                                  } else {
-                                    widget.playerController.enterFullScreen(
-                                      context,
-                                    );
-                                  }
+                                  widget.playerController.toggleFullScreen(
+                                    context,
+                                  );
                                   return KeyEventResult.handled;
                                 }
                               }
 
                               // F键处理
                               if (event.logicalKey == LogicalKeyboardKey.keyF) {
-                                if (App.isDesktop) {
-                                  widget.playerController.toggleFullscreen(
-                                    context,
-                                  );
-                                } else {
-                                  widget.playerController.enterFullScreen(
-                                    context,
-                                  );
-                                }
+                                widget.playerController.toggleFullScreen(
+                                  context,
+                                );
                                 return KeyEventResult.handled;
                               }
                             } else if (event is KeyRepeatEvent) {
