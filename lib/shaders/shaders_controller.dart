@@ -1,11 +1,14 @@
 // ignore_for_file: library_private_types_in_public_api
 
 import 'dart:io';
+
+import 'package:flutter/services.dart' show rootBundle, AssetManifest;
 import 'package:kostori/foundation/log.dart';
 import 'package:mobx/mobx.dart';
-import 'package:flutter/services.dart' show rootBundle, AssetManifest;
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+
+import '../foundation/appdata.dart';
 
 part 'shaders_controller.g.dart';
 
@@ -22,12 +25,19 @@ abstract class _ShadersController with Store {
 
     if (!await shadersDirectory.exists()) {
       await shadersDirectory.create(recursive: true);
-      Log.addLog(LogLevel.info, "shadersDirectory create",
-          'Create GLSL Shader: ${shadersDirectory.path}');
+      if (appdata.settings['debugInfo']) {
+        Log.addLog(
+          LogLevel.info,
+          "shadersDirectory create",
+          'Create GLSL Shader: ${shadersDirectory.path}',
+        );
+      }
     }
 
-    final shaderFiles = assets.where((String asset) =>
-        asset.startsWith('assets/shaders/') && asset.endsWith('.glsl'));
+    final shaderFiles = assets.where(
+      (String asset) =>
+          asset.startsWith('assets/shaders/') && asset.endsWith('.glsl'),
+    );
 
     int copiedFilesCount = 0;
 
@@ -35,8 +45,13 @@ abstract class _ShadersController with Store {
       final fileName = filePath.split('/').last;
       final targetFile = File(path.join(shadersDirectory.path, fileName));
       if (await targetFile.exists()) {
-        Log.addLog(LogLevel.info, "targetFile exists",
-            'GLSL Shader exists, skip: ${targetFile.path}');
+        if (appdata.settings['debugInfo']) {
+          Log.addLog(
+            LogLevel.info,
+            "targetFile exists",
+            'GLSL Shader exists, skip: ${targetFile.path}',
+          );
+        }
         continue;
       }
 
@@ -45,14 +60,27 @@ abstract class _ShadersController with Store {
         final List<int> bytes = data.buffer.asUint8List();
         await targetFile.writeAsBytes(bytes);
         copiedFilesCount++;
-        Log.addLog(LogLevel.info, "targetFile writeAsBytes",
-            'Copy: ${targetFile.path}');
+        if (appdata.settings['debugInfo']) {
+          Log.addLog(
+            LogLevel.info,
+            "targetFile writeAsBytes",
+            'Copy: ${targetFile.path}',
+          );
+        }
       } catch (e) {
-        Log.addLog(LogLevel.warning, "targetFile writeAsBytes",
-            'Copy: ($filePath): $e');
+        Log.addLog(
+          LogLevel.warning,
+          "targetFile writeAsBytes",
+          'Copy: ($filePath): $e',
+        );
       }
     }
-    Log.addLog(LogLevel.info, "copyShadersToExternalDirectory",
-        '$copiedFilesCount GLSL files copied to ${shadersDirectory.path}');
+    if (appdata.settings['debugInfo']) {
+      Log.addLog(
+        LogLevel.info,
+        "copyShadersToExternalDirectory",
+        '$copiedFilesCount GLSL files copied to ${shadersDirectory.path}',
+      );
+    }
   }
 }
