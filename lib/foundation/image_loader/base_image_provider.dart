@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui show Codec;
 import 'dart:ui';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/log.dart';
 
@@ -19,7 +19,7 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
 
   static const double _minAnimeImageWidth = 1920 * _normalAnimeImageRatio;
 
-  static TargetImageSize _getTargetSize(width, height) {
+  static TargetImageSize _getTargetSize(int? width, int? height) {
     if (_effectiveScreenWidth == null) {
       final screens = PlatformDispatcher.instance.displays;
       for (var screen in screens) {
@@ -29,16 +29,18 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
             screen.size.height * _normalAnimeImageRatio,
           );
         } else {
-          _effectiveScreenWidth =
-              max(_effectiveScreenWidth ?? 0, screen.size.width);
+          _effectiveScreenWidth = max(
+            _effectiveScreenWidth ?? 0,
+            screen.size.width,
+          );
         }
       }
       if (_effectiveScreenWidth! < _minAnimeImageWidth) {
         _effectiveScreenWidth = _minAnimeImageWidth;
       }
     }
-    if (width > _effectiveScreenWidth!) {
-      height = (height * _effectiveScreenWidth! / width).round();
+    if (width! > _effectiveScreenWidth!) {
+      height = (height! * _effectiveScreenWidth! / width).round();
       width = _effectiveScreenWidth!.round();
     }
     return TargetImageSize(width: width, height: height);
@@ -125,8 +127,9 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
         if (data.length < 2 * 1024) {
           // data is too short, it's likely that the data is text, not image
           try {
-            var text =
-                const Utf8Codec(allowMalformed: false).decoder.convert(data);
+            var text = const Utf8Codec(
+              allowMalformed: false,
+            ).decoder.convert(data);
             throw Exception("Expected image data, but got text: $text");
           } catch (e) {
             // ignore

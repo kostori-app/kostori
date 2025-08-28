@@ -134,7 +134,7 @@ class _ShareWidgetState extends State<ShareWidget> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (bangumiItem.total >= 20) ...[
-            Text('${bangumiItem.score}', style: TextStyle(fontSize: 32.0)),
+            Text('${bangumiItem.score}', style: TextStyle(fontSize: 28.0)),
             SizedBox(width: 5),
             Container(
               padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
@@ -156,7 +156,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                 itemCount: 5,
                 rating: bangumiItem.score.toDouble() / 2,
                 itemBuilder: (context, index) => const Icon(Icons.star_rounded),
-                itemSize: 20.0,
+                itemSize: 18.0,
               ),
               Text(
                 '@t reviews | #@r'.tlParams({
@@ -176,7 +176,12 @@ class _ShareWidgetState extends State<ShareWidget> {
     return RepaintBoundary(
       key: repaintKey,
       child: Padding(
-        padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
+        padding: EdgeInsets.only(
+          bottom: context.padding.bottom + 16,
+          top: context.padding.top,
+          right: 20,
+          left: 20,
+        ),
         child: Container(
           color: Theme.of(context).scaffoldBackgroundColor,
           child: Column(
@@ -281,244 +286,147 @@ class _ShareWidgetState extends State<ShareWidget> {
     return RepaintBoundary(
       key: repaintKey,
       child: Padding(
-        padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
+        padding: EdgeInsets.only(
+          bottom: context.padding.bottom + 16,
+          top: context.padding.top,
+          right: 20,
+          left: 20,
+        ),
         child: Container(
           color: Theme.of(context).scaffoldBackgroundColor,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 64.0,
-                width: 320,
-                child: SvgPicture.asset(
-                  'assets/img/header_pattern.svg',
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                    BlendMode.srcIn,
+          child: Material(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.72)
+                : const Color(0xFF1E1E1E).toOpacity(0.72),
+            elevation: 4,
+            shadowColor: Theme.of(context).colorScheme.shadow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 64.0,
+                  width: 320,
+                  child: SvgPicture.asset(
+                    'assets/img/header_pattern.svg',
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    double height = constraints.maxWidth / 2;
-                    double width = height * 0.72;
-                    return Container(
-                      width: constraints.maxWidth,
-                      height: height,
-                      padding: EdgeInsets.all(2),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(width: 16),
-                          //封面
-                          Material(
-                            color: Colors.transparent,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: context.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              height: height,
-                              width: width,
-                              clipBehavior: Clip.antiAlias,
-                              child: BangumiWidget.kostoriImage(
-                                context,
-                                bangumiItem.images['large']!,
-                                width: width,
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      double height = constraints.maxWidth / 2;
+                      double width = height * 0.72;
+                      return Container(
+                        width: constraints.maxWidth,
+                        height: height,
+                        padding: EdgeInsets.all(2),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(width: 16),
+                            //封面
+                            Material(
+                              color: Colors.transparent,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: context.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                                 height: height,
+                                width: width,
+                                clipBehavior: Clip.antiAlias,
+                                child: BangumiWidget.kostoriImage(
+                                  context,
+                                  bangumiItem.images['large']!,
+                                  width: width,
+                                  height: height,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  //标题
-                                  Text(
-                                    bangumiItem.nameCn.isNotEmpty
-                                        ? bangumiItem.nameCn
-                                        : bangumiItem.name,
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    bangumiItem.name,
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      if (bangumiItem.airDate.isNotEmpty)
-                                        Container(
-                                          padding: EdgeInsets.fromLTRB(
-                                            8,
-                                            5,
-                                            8,
-                                            5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              8.0,
-                                            ),
-                                            border: Border.all(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .primary
-                                                  .toOpacity(0.72),
-                                              width: 1.0,
-                                            ),
-                                          ),
-                                          child: Text(bangumiItem.airDate),
-                                        ),
-                                      SizedBox(width: 12.0),
-                                      BangumiWidget.bangumiTimeText(
-                                        bangumiItem,
-                                        currentWeekEp,
-                                        isCompleted,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    //标题
+                                    Text(
+                                      bangumiItem.nameCn.isNotEmpty
+                                          ? bangumiItem.nameCn
+                                          : bangumiItem.name,
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    Text(
+                                      bangumiItem.name,
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        if (bangumiItem.airDate.isNotEmpty)
+                                          Container(
+                                            padding: EdgeInsets.fromLTRB(
+                                              8,
+                                              5,
+                                              8,
+                                              5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(8.0),
+                                              border: Border.all(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                    .toOpacity(0.72),
+                                                width: 1.0,
+                                              ),
+                                            ),
+                                            child: Text(bangumiItem.airDate),
+                                          ),
+                                        SizedBox(width: 12.0),
+                                        BangumiWidget.bangumiTimeText(
+                                          bangumiItem,
+                                          currentWeekEp,
+                                          isCompleted,
+                                        ),
+                                      ],
+                                    ),
 
-                                  Spacer(),
-                                  score(context, bangumiItem),
-                                ],
+                                    Spacer(),
+                                    score(context, bangumiItem),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 2,
-                  horizontal: 16,
-                ),
-                child: Align(
-                  child: BangumiWidget.buildStatsRow(context, bangumiItem),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Introduction'.tl,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 24,
-                ),
-                child: BBCodeWidget(bbcode: bangumiItem.summary),
-              ),
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 2,
+                    horizontal: 16,
+                  ),
+                  child: Align(
+                    child: BangumiWidget.buildStatsRow(context, bangumiItem),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Tags'.tl,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text('${bangumiItem.tags.length}', style: ts.s12),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
-                ),
-                child: Wrap(
-                  spacing: 8.0,
-                  runSpacing: App.isDesktop ? 8 : 0,
-                  children: List<Widget>.generate(bangumiItem.tags.length, (
-                    int index,
-                  ) {
-                    return Chip(
-                      label: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('${bangumiItem.tags[index].name} '),
-                          Text(
-                            '${bangumiItem.tags[index].count}',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              if (bangumiItem.total >= 20) ...[
                 const SizedBox(height: 8),
                 Center(
                   child: Container(
@@ -539,98 +447,219 @@ class _ShareWidgetState extends State<ShareWidget> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Rating Chart'.tl,
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text('${bangumiItem.score}', style: ts.s12),
-                          ),
-                          TextButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                showLineChart = !showLineChart;
-                              });
-                            },
-                            icon: Icon(
-                              showLineChart
-                                  ? Icons.show_chart
-                                  : Icons.bar_chart,
-                            ),
-                            label: Text(
-                              showLineChart ? 'Line Chart'.tl : 'Bar Chart'.tl,
-                            ),
-                          ),
-                          Text('${bangumiItem.total} votes'),
-                        ],
+                      Text(
+                        'Introduction'.tl,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 2,
+                    vertical: 16,
+                    horizontal: 24,
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Standard Deviation: @s'.tlParams({
-                          's': standardDeviation.toStringAsFixed(2),
-                        }),
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        Utils.getDispute(standardDeviation),
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ],
+                  child: BBCodeWidget(bbcode: bangumiItem.summary),
+                ),
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 120,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.toOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(
+                    vertical: 6,
                     horizontal: 16,
-                    vertical: 2,
                   ),
-                  child: showLineChart
-                      ? LineChatPage(bangumiItem: bangumiItem)
-                      : BangumiBarChartPage(bangumiItem: bangumiItem),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tags'.tl,
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${bangumiItem.tags.length}',
+                          style: ts.s12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
+                  child: Wrap(
+                    spacing: 8.0,
+                    runSpacing: App.isDesktop ? 8 : 0,
+                    children: List<Widget>.generate(bangumiItem.tags.length, (
+                      int index,
+                    ) {
+                      return Chip(
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('${bangumiItem.tags[index].name} '),
+                            Text(
+                              '${bangumiItem.tags[index].count}',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                if (bangumiItem.total >= 20) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Rating Chart'.tl,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${bangumiItem.score}',
+                                style: ts.s12,
+                              ),
+                            ),
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  showLineChart = !showLineChart;
+                                });
+                              },
+                              icon: Icon(
+                                showLineChart
+                                    ? Icons.show_chart
+                                    : Icons.bar_chart,
+                              ),
+                              label: Text(
+                                showLineChart
+                                    ? 'Line Chart'.tl
+                                    : 'Bar Chart'.tl,
+                              ),
+                            ),
+                            Text('${bangumiItem.total} votes'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Standard Deviation: @s'.tlParams({
+                            's': standardDeviation.toStringAsFixed(2),
+                          }),
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          Utils.getDispute(standardDeviation),
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
+                    child: showLineChart
+                        ? LineChatPage(bangumiItem: bangumiItem)
+                        : BangumiBarChartPage(bangumiItem: bangumiItem),
+                  ),
+                ],
+
+                // const SizedBox(height: 16),
+                SizedBox(
+                  height: 64.0,
+                  // width: 320,
+                  child: SvgPicture.asset(
+                    'assets/img/bottom_pattern.svg',
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                      BlendMode.srcIn,
+                    ),
+                  ),
                 ),
               ],
-
-              // const SizedBox(height: 16),
-              SizedBox(
-                height: 64.0,
-                // width: 320,
-                child: SvgPicture.asset(
-                  'assets/img/bottom_pattern.svg',
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -643,146 +672,161 @@ class _ShareWidgetState extends State<ShareWidget> {
     return RepaintBoundary(
       key: repaintKey,
       child: Padding(
-        padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
+        padding: EdgeInsets.only(
+          bottom: context.padding.bottom + 16,
+          top: context.padding.top,
+          right: 20,
+          left: 20,
+        ),
         child: Container(
           color: Theme.of(context).scaffoldBackgroundColor,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 64.0,
-                width: 320,
-                child: SvgPicture.asset(
-                  'assets/img/header_pattern.svg',
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                    BlendMode.srcIn,
+          child: Material(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.72)
+                : const Color(0xFF1E1E1E).toOpacity(0.72),
+            elevation: 4,
+            shadowColor: Theme.of(context).colorScheme.shadow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 64.0,
+                  width: 320,
+                  child: SvgPicture.asset(
+                    'assets/img/header_pattern.svg',
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if ((widget.airDate ?? '').isNotEmpty)
-                      Text(
-                        widget.airDate!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                          color: Colors.green,
-                        ),
-                      ),
-                    if ((widget.airDate ?? '').isNotEmpty &&
-                        (widget.endDate ?? '').isNotEmpty)
-                      const Text(
-                        ' - ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    if ((widget.endDate ?? '').isNotEmpty)
-                      Text(
-                        widget.endDate!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                          color: Colors.blue,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if ((widget.sort ?? '').isNotEmpty)
-                      Text(
-                        widget.sort!,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Wrap(
-                  spacing: 8.0,
-                  runSpacing: 6.0,
-                  children: widget.tag!.map((tag) {
-                    return ActionChip(
-                      label: Text(tag),
-                      onPressed: () {},
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.toOpacity(0.72),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  itemCount: keyList.length,
-                  gridDelegate: SliverGridDelegateWithBangumiItems(
-                    widget.useBriefMode!,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
                   ),
-                  itemBuilder: (context, index) {
-                    return widget.useBriefMode!
-                        ? BangumiWidget.buildBriefMode(
-                            context,
-                            keyList[index],
-                            '',
-                            showPlaceholder: false,
-                          )
-                        : BangumiWidget.buildDetailedMode(
-                            context,
-                            keyList[index],
-                            '',
-                          );
-                  },
-                ),
-              ),
-              SizedBox(
-                height: 64.0,
-                // width: 320,
-                child: SvgPicture.asset(
-                  'assets/img/bottom_pattern.svg',
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                    BlendMode.srcIn,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if ((widget.airDate ?? '').isNotEmpty)
+                        Text(
+                          widget.airDate!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                            color: Colors.green,
+                          ),
+                        ),
+                      if ((widget.airDate ?? '').isNotEmpty &&
+                          (widget.endDate ?? '').isNotEmpty)
+                        const Text(
+                          ' - ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      if ((widget.endDate ?? '').isNotEmpty)
+                        Text(
+                          widget.endDate!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 24,
+                            color: Colors.blue,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if ((widget.sort ?? '').isNotEmpty)
+                        Text(
+                          widget.sort!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Wrap(
+                    spacing: 8.0,
+                    runSpacing: 6.0,
+                    children: widget.tag!.map((tag) {
+                      return ActionChip(
+                        label: Text(tag),
+                        onPressed: () {},
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          side: BorderSide(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.toOpacity(0.72),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemCount: keyList.length,
+                    gridDelegate: SliverGridDelegateWithBangumiItems(
+                      widget.useBriefMode!,
+                    ),
+                    itemBuilder: (context, index) {
+                      return widget.useBriefMode!
+                          ? BangumiWidget.buildBriefMode(
+                              context,
+                              keyList[index],
+                              '',
+                              showPlaceholder: false,
+                            )
+                          : BangumiWidget.buildDetailedMode(
+                              context,
+                              keyList[index],
+                              '',
+                            );
+                    },
+                  ),
+                ),
+                SizedBox(
+                  height: 64.0,
+                  // width: 320,
+                  child: SvgPicture.asset(
+                    'assets/img/bottom_pattern.svg',
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -793,141 +837,156 @@ class _ShareWidgetState extends State<ShareWidget> {
     return RepaintBoundary(
       key: repaintKey,
       child: Padding(
-        padding: EdgeInsets.only(bottom: context.padding.bottom + 16),
+        padding: EdgeInsets.only(
+          bottom: context.padding.bottom + 16,
+          top: context.padding.top,
+          right: 20,
+          left: 20,
+        ),
         child: Container(
           color: Theme.of(context).scaffoldBackgroundColor,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 64.0,
-                width: 320,
-                child: SvgPicture.asset(
-                  'assets/img/header_pattern.svg',
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                    BlendMode.srcIn,
+          child: Material(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.72)
+                : const Color(0xFF1E1E1E).toOpacity(0.72),
+            elevation: 4,
+            shadowColor: Theme.of(context).colorScheme.shadow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 64.0,
+                  width: 320,
+                  child: SvgPicture.asset(
+                    'assets/img/header_pattern.svg',
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return SizedBox(
-                      width: constraints.maxWidth,
-                      child: BangumiWidget.kostoriImage(
-                        context,
-                        characterFullItem.image,
-                        enableDefaultSize: false,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Text(
-                  characterFullItem.name,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.tertiary,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 3,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Text(
-                  characterFullItem.nameCN,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(color: Colors.grey[700]),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SizedBox(
+                        width: constraints.maxWidth,
+                        child: BangumiWidget.kostoriImage(
+                          context,
+                          characterFullItem.image,
+                          enableDefaultSize: false,
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Text(
+                    characterFullItem.name,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 3,
+                  ),
                 ),
-                child: Text(
-                  'Profile Information'.tl,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Text(
+                    characterFullItem.nameCN,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.grey[700]),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 120,
+                    height: 2,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.toOpacity(0.4),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                 ),
-                child: Text(
-                  characterFullItem.info,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.justify,
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Text(
+                    'Profile Information'.tl,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Text(
+                    characterFullItem.info,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.justify,
+                  ),
+                ),
 
-              const SizedBox(height: 16.0),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Text(
-                  'Character Introduction'.tl,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 6,
-                  horizontal: 16,
-                ),
-                child: Text(
-                  characterFullItem.summary,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.justify,
-                ),
-              ),
-              SizedBox(
-                height: 64.0,
-                // width: 320,
-                child: SvgPicture.asset(
-                  'assets/img/bottom_pattern.svg',
-                  fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(
-                    Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                    BlendMode.srcIn,
+                const SizedBox(height: 16.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Text(
+                    'Character Introduction'.tl,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Text(
+                    characterFullItem.summary,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.justify,
+                  ),
+                ),
+                SizedBox(
+                  height: 64.0,
+                  // width: 320,
+                  child: SvgPicture.asset(
+                    'assets/img/bottom_pattern.svg',
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

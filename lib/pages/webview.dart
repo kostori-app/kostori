@@ -131,7 +131,7 @@ class _AppWebviewState extends State<AppWebview> {
             showMenuX(context, Offset(context.width, context.padding.top), [
               MenuEntry(
                 icon: Icons.open_in_browser,
-                text: "Open in browser".tl,
+                text: "Open in Browser".tl,
                 onClick: () async =>
                     launchUrlString((await controller?.getUrl())!.toString()),
               ),

@@ -56,7 +56,6 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         if (intent?.action == Intent.ACTION_SEND) {
             if (intent.type == "text/plain") {
                 val text = intent.getStringExtra(Intent.EXTRA_TEXT)

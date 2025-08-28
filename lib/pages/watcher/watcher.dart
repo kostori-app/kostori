@@ -86,7 +86,7 @@ class WatcherState extends State<Watcher>
 
   Progress? progress;
 
-  var ep;
+  dynamic ep;
 
   var time = 0;
 
@@ -319,7 +319,7 @@ class WatcherState extends State<Watcher>
     return SliverToBoxAdapter(
       child: App.isDesktop
           ? Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.0),
                 child: Hero(
@@ -335,7 +335,7 @@ class WatcherState extends State<Watcher>
               ),
             )
           : Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
                 child: Hero(

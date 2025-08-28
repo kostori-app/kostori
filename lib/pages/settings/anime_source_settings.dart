@@ -961,12 +961,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                           .map(
                             (tile) => Material(
                               color: Colors.transparent,
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: tile,
-                              ),
+                              child: tile,
                             ),
                           )
                           .toList(),

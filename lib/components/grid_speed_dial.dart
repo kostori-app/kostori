@@ -614,7 +614,7 @@ class _GridSpeedDialState extends State<GridSpeedDial>
     }
   }
 
-  toggleOverlay() {
+  void toggleOverlay() {
     if (_open) {
       _controller.reverse().whenComplete(() {
         overlayEntry?.remove();

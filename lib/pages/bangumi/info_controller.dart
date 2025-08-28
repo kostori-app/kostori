@@ -12,6 +12,7 @@ import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:mobx/mobx.dart';
 
+import '../../foundation/bangumi.dart';
 import '../../foundation/bangumi/reviews/reviews_item.dart';
 import '../../foundation/bangumi/topics/topics_info_item.dart';
 import '../../foundation/bangumi/topics/topics_item.dart';

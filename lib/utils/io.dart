@@ -116,7 +116,7 @@ extension DirectoryExtension on Directory {
   }
 
   /// Delete the contents of the directory.
-  void deleteContentsSync({recursive = true}) {
+  void deleteContentsSync({dynamic recursive = true}) {
     if (!existsSync()) return;
     for (var f in listSync()) {
       f.deleteIfExistsSync(recursive: recursive);
@@ -124,7 +124,7 @@ extension DirectoryExtension on Directory {
   }
 
   /// Delete the contents of the directory.
-  Future<void> deleteContents({recursive = true}) async {
+  Future<void> deleteContents({dynamic recursive = true}) async {
     if (!existsSync()) return;
     for (var f in listSync()) {
       await f.deleteIfExists(recursive: recursive);

@@ -83,25 +83,12 @@ void _checkOldConfigs() {
 }
 
 Future<void> _checkAppUpdates() async {
-  // var lastCheck = appdata.implicitData['lastCheckUpdate'] ?? 0;
-  // if (appdata.settings['bangumiDataVer'] == null) {
-  //   await Bangumi.checkBangumiData();
-  // }
-  // var now = DateTime.now().millisecondsSinceEpoch;
-  // if (now - lastCheck < 24 * 60 * 60 * 1000) {
-  //   return;
-  // }
-  // appdata.implicitData['lastCheckUpdate'] = now;
-  // appdata.writeImplicitData();
   AnimeSourceSettings.checkAnimeSourceUpdate();
   await Bangumi.getCalendarData();
   await Bangumi.checkBangumiData();
-  // if (appdata.settings['checkUpdateOnStart']) {
   await checkUpdateUi(true, true);
-  // }
 }
 
 void checkUpdates() {
   _checkAppUpdates().wait();
-  // FollowUpdatesService.initChecker();
 }

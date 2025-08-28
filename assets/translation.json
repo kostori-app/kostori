@@ -477,7 +477,9 @@
     "Page": "页面",
     "Page @p / @m": "@p / @m 页",
     "First": "最前",
-    "Last": "最后"
+    "Last": "最后",
+    "Disable Length Limitation": "禁用长度限制",
+    "Update log": "更新日志"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

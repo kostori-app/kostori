@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
 import 'dart:ui' as ui;
 import 'dart:ui';
 
@@ -10,8 +10,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
+import 'package:intl/intl.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -32,12 +32,15 @@ import 'package:markdown_widget/widget/blocks/leaf/paragraph.dart';
 import 'package:markdown_widget/widget/inlines/code.dart';
 import 'package:markdown_widget/widget/markdown_block.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:yaml/yaml.dart';
 
+import '../../components/misc_components.dart';
 import '../../foundation/consts.dart';
 import '../../network/api.dart';
+import '../../network/download.dart';
 import '../../utils/utils.dart';
 import 'anime_source_settings.dart';
 
