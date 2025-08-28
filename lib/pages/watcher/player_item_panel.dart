@@ -243,6 +243,50 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         return Stack(
           alignment: Alignment.center,
           children: [
+            //底部进度条
+            AnimatedOpacity(
+              opacity:
+                  (!widget.playerController.isFullScreen &&
+                      !widget.playerController.showVideoController)
+                  ? 1.0
+                  : 0.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: ProgressBar(
+                  thumbRadius: 0,
+                  thumbGlowRadius: 0,
+                  barHeight: 2,
+                  progressBarColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.toOpacity(0.72),
+                  bufferedBarColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.toOpacity(0.36),
+                  baseBarColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.toOpacity(0.2),
+                  timeLabelLocation: TimeLabelLocation.none,
+                  progress: widget.playerController.currentPosition,
+                  buffered: widget.playerController.buffer,
+                  total: widget.playerController.duration,
+                  onSeek: (duration) {
+                    widget.playerController.seek(duration);
+                  },
+                  onDragStart: (details) {
+                    widget.handleProgressBarDragStart(details);
+                  },
+                  onDragUpdate: (details) {
+                    widget.playerController.currentPosition = details.timeStamp;
+                  },
+                  onDragEnd: () {
+                    widget.handleProgressBarDragEnd();
+                  },
+                ),
+              ),
+            ),
+
             // 顶部渐变半透明区域
             AnimatedPositioned(
               duration: Duration(seconds: 1),
