@@ -66,6 +66,12 @@ class _VideoPageState extends State<VideoPage>
       begin: const Offset(1.0, 0.0),
       end: const Offset(0.0, 0.0),
     ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+
+    _bottomOffsetAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 1.0),
+      end: const Offset(0.0, 0.0),
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+
     widget.playerController.showTabBody = false;
     widget.playerController.currentRoad = 0;
     currentRoad = 0;
@@ -96,12 +102,18 @@ class _VideoPageState extends State<VideoPage>
           return Observer(
             builder: (context) => Scaffold(
               body: SafeArea(
-                bottom: false,
+                bottom: widget.playerController.isPortraitFullscreen,
                 top: false,
-                left: !widget.playerController.isFullScreen,
-                right: !widget.playerController.isFullScreen,
+                left: widget.playerController.isPortraitFullscreen
+                    ? false
+                    : !widget.playerController.isFullScreen,
+                right: widget.playerController.isPortraitFullscreen
+                    ? false
+                    : !widget.playerController.isFullScreen,
                 child: Stack(
-                  alignment: Alignment.topRight,
+                  alignment: widget.playerController.isPortraitFullscreen
+                      ? Alignment.bottomCenter
+                      : Alignment.topRight,
                   children: [
                     Container(
                       color: Colors.black,
