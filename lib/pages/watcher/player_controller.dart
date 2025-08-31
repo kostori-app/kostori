@@ -31,9 +31,13 @@ class PlayerController = _PlayerController with _$PlayerController;
 
 abstract class _PlayerController with Store {
   late ShadersController shadersController;
+
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
+
   @observable
   bool loading = true;
+  @observable
+  bool isPortraitFullscreen = false;
 
   late final player = Player(
     configuration: PlayerConfiguration(
@@ -122,6 +126,8 @@ abstract class _PlayerController with Store {
   @observable
   bool canHidePlayerPanel = true;
 
+  String animeImg = '';
+
   String currentSetName = '';
 
   late WindowFrameController windowFrame;
@@ -203,7 +209,7 @@ abstract class _PlayerController with Store {
     });
   }
 
-  void playNextEpisode(BuildContext context) {
+  Future<void> playNextEpisode() async {
     WatcherState.currentState!.playNextEpisode();
   }
 
@@ -266,6 +272,8 @@ abstract class _PlayerController with Store {
 
     player.setPlaylistMode(PlaylistMode.none);
     playerTimer = getPlayerTimer();
+
+    animeImg = WatcherState.currentState!.widget.anime.cover;
 
     if (App.isAndroid) {
       Timer? debounceTimer;
@@ -405,15 +413,13 @@ abstract class _PlayerController with Store {
         await SystemChrome.setPreferredOrientations([
           DeviceOrientation.portraitUp,
         ]);
+        isPortraitFullscreen = false;
         WakelockPlus.disable();
       } else {
         WakelockPlus.enable();
         await SystemChrome.setEnabledSystemUIMode(
           SystemUiMode.immersiveSticky,
           overlays: SystemUiOverlay.values,
-        );
-        App.rootContext.to(
-          () => FullscreenVideoPage(playerController: this as PlayerController),
         );
         if (isPortraitFullScreen) {
           await SystemChrome.setPreferredOrientations([
@@ -425,6 +431,10 @@ abstract class _PlayerController with Store {
             DeviceOrientation.landscapeRight,
           ]);
         }
+
+        App.rootContext.to(
+          () => FullscreenVideoPage(playerController: this as PlayerController),
+        );
       }
     }
 
@@ -433,6 +443,9 @@ abstract class _PlayerController with Store {
       return;
     }
     isFullScreen = !isFullScreen;
+    if (isPortraitFullScreen) {
+      isPortraitFullscreen = !isPortraitFullscreen;
+    }
   }
 
   Future<void> setVolume(double value) async {
@@ -465,7 +478,13 @@ abstract class _PlayerController with Store {
     playing = false;
   }
 
-  Future<void> play() async {
+  Future<void> play({bool isAudioHandler = true}) async {
+    if (isAudioHandler) {
+      if (App.isAndroid) {
+        final audioHandler = AudioServiceManager().handler;
+        audioHandler.setController(this as PlayerController);
+      }
+    }
     await player.play();
     playing = true;
   }
@@ -480,7 +499,12 @@ abstract class _PlayerController with Store {
     final entry = OverlayEntry(
       builder: (context) => Positioned(
         right: isFullScreen ? 60 : 60,
-        top: isFullScreen ? 70 : 90,
+        top: isPortraitFullscreen
+            ? null
+            : isFullScreen
+            ? 70
+            : 90,
+        bottom: isPortraitFullscreen ? 160 : null,
         child: Material(
           elevation: 8,
           color: Colors.black.toOpacity(0.5),
@@ -585,25 +609,33 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
         MediaQuery.of(context).viewPadding.top > 50;
     return Hero(
       tag: WatcherState.currentState!.widget.anime.id,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: widget.playerController.isPiPMode
-            ? isPaddingCheckError
-                  ? MediaQuery(
-                      data: MediaQuery.of(context).copyWith(
-                        viewPadding: const EdgeInsets.only(top: 15, bottom: 15),
-                        padding: const EdgeInsets.only(top: 15, bottom: 15),
-                      ),
-                      child: Video(
-                        controller: widget.playerController.playerController,
-                        controls: null,
-                      ),
-                    )
-                  : Video(
-                      controller: widget.playerController.playerController,
-                      controls: null,
-                    )
-            : VideoPage(playerController: widget.playerController),
+      child: Observer(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: widget.playerController.isPiPMode
+                ? isPaddingCheckError
+                      ? MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            viewPadding: const EdgeInsets.only(
+                              top: 15,
+                              bottom: 15,
+                            ),
+                            padding: const EdgeInsets.only(top: 15, bottom: 15),
+                          ),
+                          child: Video(
+                            controller:
+                                widget.playerController.playerController,
+                            controls: null,
+                          ),
+                        )
+                      : Video(
+                          controller: widget.playerController.playerController,
+                          controls: null,
+                        )
+                : VideoPage(playerController: widget.playerController),
+          );
+        },
       ),
     );
   }
