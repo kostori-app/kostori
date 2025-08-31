@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 
 class VideoPage extends StatefulWidget {
@@ -19,6 +22,7 @@ class _VideoPageState extends State<VideoPage>
     with SingleTickerProviderStateMixin {
   late AnimationController animation;
   late Animation<Offset> _rightOffsetAnimation;
+  late Animation<Offset> _bottomOffsetAnimation;
 
   final FocusNode keyboardFocus = FocusNode();
 
@@ -121,73 +125,153 @@ class _VideoPageState extends State<VideoPage>
                       width: MediaQuery.of(context).size.width,
                       child: playerBody,
                     ),
-                    AnimatedPositioned(
-                      duration: Duration(seconds: 1),
-                      top: 0,
-                      right: 0,
-                      child: Visibility(
-                        child: SlideTransition(
-                          position: _rightOffsetAnimation,
-                          child: Container(
-                            height: MediaQuery.of(context).size.height,
-                            width:
-                                MediaQuery.of(context).size.width * 1 / 3 > 420
-                                ? 420 + 80
-                                : MediaQuery.of(context).size.width * 1 / 3 +
-                                      80,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.toOpacity(0.3),
-                                  Colors.black.toOpacity(0.6),
-                                  Colors.black.toOpacity(0.8),
-                                ],
-                                stops: [0.0, 0.3, 0.7, 1.0],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.toOpacity(0.2),
-                                  blurRadius: 20.0,
-                                  spreadRadius: 5.0,
+
+                    // 显示播放列表
+                    IgnorePointer(
+                      ignoring:
+                          !widget.playerController.showTabBody, // 隐藏时不拦截事件
+                      child: AnimatedOpacity(
+                        opacity: widget.playerController.showTabBody
+                            ? 1.0
+                            : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        child: Stack(
+                          alignment:
+                              widget.playerController.isPortraitFullscreen
+                              ? Alignment.bottomCenter
+                              : Alignment.topRight,
+                          children: [
+                            AnimatedPositioned(
+                              duration: Duration(seconds: 1),
+                              top: widget.playerController.isPortraitFullscreen
+                                  ? null
+                                  : 0,
+                              bottom:
+                                  widget.playerController.isPortraitFullscreen
+                                  ? 0
+                                  : null,
+                              right: 0,
+                              left: widget.playerController.isPortraitFullscreen
+                                  ? 0
+                                  : null,
+                              child: Visibility(
+                                child: SlideTransition(
+                                  position:
+                                      widget
+                                          .playerController
+                                          .isPortraitFullscreen
+                                      ? _bottomOffsetAnimation
+                                      : _rightOffsetAnimation,
+                                  child: Container(
+                                    height:
+                                        widget
+                                            .playerController
+                                            .isPortraitFullscreen
+                                        ? MediaQuery.of(context).size.height *
+                                                  1 /
+                                                  3 +
+                                              80
+                                        : MediaQuery.of(context).size.height,
+                                    width:
+                                        widget
+                                            .playerController
+                                            .isPortraitFullscreen
+                                        ? MediaQuery.of(context).size.width
+                                        : MediaQuery.of(context).size.width *
+                                                  1 /
+                                                  3 >
+                                              420
+                                        ? 420 + 80
+                                        : MediaQuery.of(context).size.width *
+                                                  1 /
+                                                  3 +
+                                              80,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin:
+                                            widget
+                                                .playerController
+                                                .isPortraitFullscreen
+                                            ? Alignment.topCenter
+                                            : Alignment.centerLeft,
+                                        end:
+                                            widget
+                                                .playerController
+                                                .isPortraitFullscreen
+                                            ? Alignment.bottomCenter
+                                            : Alignment.centerRight,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.toOpacity(0.3),
+                                          Colors.black.toOpacity(0.6),
+                                          Colors.black.toOpacity(0.8),
+                                        ],
+                                        stops: [0.0, 0.3, 0.7, 1.0],
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.toOpacity(0.2),
+                                          blurRadius: 20.0,
+                                          spreadRadius: 5.0,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                            // 毛玻璃背景
+                            GestureDetector(
+                              onTap: closeTabBodyAnimated,
+                              child: SizedBox(
+                                width: double.infinity,
+                                height: double.infinity,
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 10,
+                                    sigmaY: 10,
+                                  ),
+                                  child: Container(
+                                    color: Colors.black.toOpacity(0.2),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // 底部或右侧面板
+                            SlideTransition(
+                              position:
+                                  widget.playerController.isPortraitFullscreen
+                                  ? _bottomOffsetAnimation
+                                  : _rightOffsetAnimation,
+                              child: SizedBox(
+                                height:
+                                    widget.playerController.isPortraitFullscreen
+                                    ? MediaQuery.of(context).size.height / 3 +
+                                          80
+                                    : MediaQuery.of(context).size.height,
+                                width:
+                                    widget.playerController.isPortraitFullscreen
+                                    ? MediaQuery.of(context).size.width
+                                    : MediaQuery.of(context).size.width / 3 >
+                                          420
+                                    ? 420 + 160
+                                    : MediaQuery.of(context).size.width / 3 +
+                                          160,
+                                child: Container(
+                                  color: Colors.black.toOpacity(0.42),
+                                  child: GridViewObserver(
+                                    controller: observerController,
+                                    child: Column(children: [tabBar, tabBody]),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    // 显示播放列表
-                    if (widget.playerController.showTabBody) ...[
-                      GestureDetector(
-                        onTap: () {
-                          closeTabBodyAnimated();
-                        },
-                        child: Container(
-                          color: Colors.black38,
-                          width: double.infinity,
-                          height: double.infinity,
-                        ),
-                      ),
-                      SlideTransition(
-                        position: _rightOffsetAnimation,
-                        child: SizedBox(
-                          height: MediaQuery.of(context).size.height,
-                          width: MediaQuery.of(context).size.width * 1 / 3 > 420
-                              ? 420
-                              : MediaQuery.of(context).size.width * 1 / 3,
-                          child: Container(
-                            color: Colors.black.toOpacity(0.42),
-                            child: GridViewObserver(
-                              controller: observerController,
-                              child: Column(children: [tabBar, tabBody]),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -199,71 +283,11 @@ class _VideoPageState extends State<VideoPage>
   }
 
   Widget get playerBody {
-    return Stack(
-      children: [
-        // 日志组件
-        Positioned.fill(
-          child: Stack(
-            children: [
-              // Positioned.fill(
-              //   child: (videoPageController.currentPlugin.useNativePlayer &&
-              //       playerController.loading)
-              //       ? Center(
-              //     child: Column(
-              //       mainAxisAlignment: MainAxisAlignment.center,
-              //       children: [
-              //         CircularProgressIndicator(
-              //             color: Theme.of(context)
-              //                 .colorScheme
-              //                 .tertiaryContainer),
-              //         const SizedBox(height: 10),
-              //         const Text('视频资源解析成功, 播放器加载中',
-              //             style: TextStyle(
-              //               color: Colors.white,
-              //             )),
-              //       ],
-              //     ),
-              //   )
-              //       : Container(),
-              // ),
-              Visibility(
-                visible: widget.playerController.loading,
-                child: Container(
-                  color: Colors.black,
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.tertiaryContainer,
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            '视频资源解析中',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned.fill(
-          child: PlayerItem(
-            openMenu: openTabBodyAnimated,
-            locateEpisode: menuJumpToCurrentEpisode,
-            playerController: widget.playerController,
-            keyboardFocus: keyboardFocus,
-          ),
-        ),
-      ],
+    return PlayerItem(
+      openMenu: openTabBodyAnimated,
+      locateEpisode: menuJumpToCurrentEpisode,
+      playerController: widget.playerController,
+      keyboardFocus: keyboardFocus,
     );
   }
 
@@ -295,7 +319,7 @@ class _VideoPageState extends State<VideoPage>
                 showDialog(
                   builder: (context) {
                     return AlertDialog(
-                      title: const Text('播放列表'),
+                      title: Text('Playlist'.tl),
                       content: StatefulBuilder(
                         builder:
                             (BuildContext context, StateSetter innerSetState) {
