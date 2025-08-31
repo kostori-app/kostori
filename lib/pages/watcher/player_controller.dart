@@ -58,8 +58,10 @@ abstract class _PlayerController with Store {
     ),
   );
 
+  @observable
   bool audioOutType = true;
 
+  @observable
   bool isPiPMode = false;
 
   @observable
@@ -90,12 +92,13 @@ abstract class _PlayerController with Store {
   Uint8List? previewImage;
   @observable
   Duration? lastPreviewTime;
-
+  @observable
   int currentEpisoded = 1;
-
+  @observable
   int currentRoad = 0;
 
   // 视频地址
+  @observable
   String videoUrl = '';
 
   @observable
@@ -111,6 +114,7 @@ abstract class _PlayerController with Store {
   @observable
   double playerSpeed = 1.0;
 
+  @observable
   double playbackSpeed = 1;
 
   @observable
@@ -129,9 +133,9 @@ abstract class _PlayerController with Store {
   bool brightnessSeeking = false;
   @observable
   bool canHidePlayerPanel = true;
-
+  @observable
   String animeImg = '';
-
+  @observable
   String currentSetName = '';
 
   late WindowFrameController windowFrame;
