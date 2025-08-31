@@ -750,7 +750,6 @@ class _ToastEntry {
 
 class ToastManager {
   static final List<_ToastEntry> _entries = [];
-  static OverlayState? _overlayState;
 
   static void show({
     required String message,
@@ -759,9 +758,6 @@ class ToastManager {
     Widget? trailing,
     int? seconds,
   }) {
-    _overlayState ??= Overlay.of(context);
-    if (_overlayState == null) return;
-
     final newEntry = _ToastEntry(
       context: context,
       message: message,
@@ -770,18 +766,20 @@ class ToastManager {
       seconds: seconds ?? 3,
       onRemove: _repositionAll,
     );
-
-    _entries.add(newEntry);
-    _overlayState!.insert(newEntry.overlayEntry);
-    _repositionAll();
-
-    newEntry.startTimer(() {
-      newEntry.dismiss(() {
-        _entries.remove(newEntry);
-        newEntry.overlayEntry.remove();
-      });
+    var state = context.findAncestorStateOfType<OverlayWidgetState>();
+    if (state != null) {
+      _entries.add(newEntry);
+      state.addOverlay(newEntry.overlayEntry);
       _repositionAll();
-    });
+
+      newEntry.startTimer(() {
+        newEntry.dismiss(() {
+          _entries.remove(newEntry);
+          state.remove(newEntry.overlayEntry);
+        });
+        _repositionAll();
+      });
+    }
   }
 
   static void _repositionAll() {
