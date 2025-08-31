@@ -75,49 +75,60 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                     ),
                     onPressed: () {
                       showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: Text('Playlist'.tl),
-                              content: StatefulBuilder(builder:
-                                  (BuildContext context,
-                                      StateSetter innerSetState) {
-                                return Wrap(
-                                  spacing: 8,
-                                  runSpacing: 2,
-                                  children: [
-                                    for (int i = 0;
-                                        i < state.anime.episode!.keys.length;
-                                        i++) ...<Widget>[
-                                      if (i == playList) ...<Widget>[
-                                        FilledButton(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                            setState(() {
-                                              playList = i;
-                                            });
-                                          },
-                                          child: Text(state.anime.episode!.keys
-                                              .elementAt(i)),
-                                        ),
-                                      ] else ...[
-                                        FilledButton.tonal(
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                            setState(() {
-                                              playList = i;
-                                            });
-                                          },
-                                          child: Text(state.anime.episode!.keys
-                                              .elementAt(i)),
-                                        ),
-                                      ]
-                                    ]
-                                  ],
-                                );
-                              }),
-                            );
-                          });
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text('Playlist'.tl),
+                            content: StatefulBuilder(
+                              builder:
+                                  (
+                                    BuildContext context,
+                                    StateSetter innerSetState,
+                                  ) {
+                                    return Wrap(
+                                      spacing: 8,
+                                      runSpacing: 2,
+                                      children: [
+                                        for (
+                                          int i = 0;
+                                          i < state.anime.episode!.keys.length;
+                                          i++
+                                        ) ...<Widget>[
+                                          if (i == playList) ...<Widget>[
+                                            FilledButton(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                                setState(() {
+                                                  playList = i;
+                                                });
+                                              },
+                                              child: Text(
+                                                state.anime.episode!.keys
+                                                    .elementAt(i),
+                                              ),
+                                            ),
+                                          ] else ...[
+                                            FilledButton.tonal(
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                                setState(() {
+                                                  playList = i;
+                                                });
+                                              },
+                                              child: Text(
+                                                state.anime.episode!.keys
+                                                    .elementAt(i),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ],
+                                    );
+                                  },
+                            ),
+                          );
+                        },
+                      );
                     },
                     child: Text(
                       state.anime.episode!.keys.elementAt(playList),
@@ -131,9 +142,11 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
             trailing: Tooltip(
               message: "Order".tl,
               child: IconButton(
-                icon: Icon(reverse
-                    ? Icons.vertical_align_top
-                    : Icons.vertical_align_bottom_outlined),
+                icon: Icon(
+                  reverse
+                      ? Icons.vertical_align_top
+                      : Icons.vertical_align_bottom_outlined,
+                ),
                 onPressed: () {
                   setState(() {
                     reverse = !reverse; // 切换顺序
@@ -160,8 +173,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
 
               var key = currentEps.keys.elementAt(i); // 获取集数名称
               var value = currentEps[key]!; // 获取集数内容
-              bool visited =
-                  (history?.watchEpisode ?? const {}).contains(i + 1);
+              bool visited = (history?.watchEpisode ?? const {}).contains(
+                i + 1,
+              );
 
               return Padding(
                 padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
@@ -175,11 +189,13 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       child: Center(
                         child: Text(
                           value,
-                          maxLines: 1,
+                          maxLines: 3,
                           textAlign: TextAlign.center,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -194,7 +210,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
             },
           ),
           gridDelegate: const SliverGridDelegateWithFixedHeight(
-              maxCrossAxisExtent: 200, itemHeight: 48),
+            maxCrossAxisExtent: 200,
+            itemHeight: 84,
+          ),
         ),
 
         // 显示更多按钮
@@ -215,22 +233,23 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
           ),
 
         SliverToBoxAdapter(
-            child: Column(
-          children: [
-            const SizedBox(height: 16),
-            Center(
-              child: Container(
-                width: 120,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.grey.toOpacity(0.4),
-                  borderRadius: BorderRadius.circular(4),
+          child: Column(
+            children: [
+              const SizedBox(height: 16),
+              Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        )), // 添加分割线
+              const SizedBox(height: 16),
+            ],
+          ),
+        ), // 添加分割线
       ],
     );
   }

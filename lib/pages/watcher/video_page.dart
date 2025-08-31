@@ -369,17 +369,20 @@ class _VideoPageState extends State<VideoPage>
     var selectedRoad = roadList.values.elementAt(
       currentRoad,
     ); // 用 currentRoad 直接获取对应的 road
+    final watcher = WatcherState.currentState!;
 
     int count = 1;
 
     for (var epKey in selectedRoad.keys) {
       int count0 = count;
-
+      bool visited = (watcher.history!.watchEpisode).contains(count0);
       cardList.add(
         Container(
           margin: const EdgeInsets.only(bottom: 4),
           child: Material(
-            color: Theme.of(context).colorScheme.onInverseSurface,
+            color: !visited
+                ? context.colorScheme.surfaceContainer
+                : Theme.of(context).colorScheme.primary.toOpacity(0.3),
             borderRadius: BorderRadius.circular(6),
             clipBehavior: Clip.hardEdge,
             child: InkWell(
@@ -424,8 +427,14 @@ class _VideoPageState extends State<VideoPage>
                                               .currentEpisoded &&
                                       currentRoad ==
                                           widget.playerController.currentRoad)
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Theme.of(context).colorScheme.onSurface,
+                                  ? Color.lerp(
+                                      Theme.of(context).colorScheme.primary,
+                                      Colors.white,
+                                      0.3,
+                                    )
+                                  : visited
+                                  ? context.colorScheme.outline
+                                  : Colors.white,
                             ),
                           ),
                         ),
