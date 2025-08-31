@@ -410,7 +410,7 @@ class _PlayerItemState extends State<PlayerItem>
                 child: SizedBox(
                   height: widget.playerController.isFullScreen
                       ? (MediaQuery.of(context).size.height)
-                      : (MediaQuery.of(context).size.width * 9.0 / (16.0)),
+                      : (MediaQuery.of(context).size.width * 9.0 / 16.0),
                   width: MediaQuery.of(context).size.width,
                   child: Stack(
                     alignment: Alignment.center,
@@ -638,7 +638,6 @@ class _PlayerItemState extends State<PlayerItem>
                         handleProgressBarDragStart: handleProgressBarDragStart,
                         handleProgressBarDragEnd: handleProgressBarDragEnd,
                         animationController: animationController!,
-                        keyboardFocus: widget.keyboardFocus,
                         startHideTimer: startHideTimer,
                         cancelHideTimer: cancelHideTimer,
                         playerController: widget.playerController,
@@ -652,19 +651,8 @@ class _PlayerItemState extends State<PlayerItem>
                         bottom: 15,
                         child: GestureDetector(
                           onHorizontalDragStart: (_) {
-                            if (!widget.playerController.showVideoController) {
-                              animationController?.forward();
-                            }
-                            widget.playerController.canHidePlayerPanel = false;
-                            // if (App.isAndroid) {
-                            //   _showPreview(Duration(
-                            //       seconds: widget
-                            //           .playerController
-                            //           .player
-                            //           .state
-                            //           .position
-                            //           .inSeconds));
-                            // }
+                            animationController?.reverse();
+                            widget.playerController.isSeek = true;
                           },
                           onHorizontalDragUpdate: (DragUpdateDetails details) {
                             widget.playerController.showSeekTime = true;
@@ -685,10 +673,6 @@ class _PlayerItemState extends State<PlayerItem>
                                           .duration
                                           .inMilliseconds,
                                     );
-                            // if (App.isAndroid) {
-                            //   _updatePreview(
-                            //       Duration(milliseconds: ms));
-                            // }
                             widget.playerController.currentPosition = Duration(
                               milliseconds: ms,
                             );
@@ -698,20 +682,12 @@ class _PlayerItemState extends State<PlayerItem>
                             widget.playerController.seek(
                               widget.playerController.currentPosition,
                             );
-                            widget.playerController.canHidePlayerPanel = true;
-                            if (!widget.playerController.showVideoController) {
-                              animationController?.reverse();
-                            } else {
-                              hideTimer?.cancel();
-                              startHideTimer();
-                            }
+                            widget.playerController.isSeek = false;
+
                             widget.playerController.playerTimer = widget
                                 .playerController
                                 .getPlayerTimer();
                             widget.playerController.showSeekTime = false;
-                            // if (App.isAndroid) {
-                            //   _hidePreview();
-                            // }
                           },
                           onVerticalDragUpdate:
                               (DragUpdateDetails details) async {

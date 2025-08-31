@@ -64,6 +64,8 @@ abstract class _PlayerController with Store {
 
   @observable
   bool isFullScreen = false;
+  @observable
+  bool isSeek = false;
 
   /// 视频超分
   /// 1. OFF

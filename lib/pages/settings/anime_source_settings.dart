@@ -148,6 +148,7 @@ class _BodyState extends State<_Body> {
                 onPressed: () async {
                   await AnimeSourceManager().reload();
                   App.forceRebuild();
+                  App.rootContext.showMessage(message: '加载成功');
                 },
                 child: Text("Continue".tl),
               ),
