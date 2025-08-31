@@ -1,9 +1,12 @@
+library;
+
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/pages/image_manipulation_page/render_dialogue_compose_page.dart';
-import 'package:kostori/pages/image_manipulation_page/render_horizontal_pic_page.dart';
-import 'package:kostori/pages/image_manipulation_page/render_long_pic_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -12,10 +15,30 @@ import '../../components/components.dart';
 import '../../foundation/consts.dart';
 import '../../foundation/log.dart';
 import '../../utils/io.dart';
+import '../../utils/utils.dart';
+
+part 'render_dialogue_compose_page.dart';
+
+part 'render_horizontal_pic_page.dart';
+
+part 'render_long_pic_page.dart';
 
 final imagesProvider = StateNotifierProvider<ImagesNotifier, List<File>>((ref) {
   return ImagesNotifier();
 });
+
+final showOuterBorderProvider = StateProvider<bool>((ref) => false);
+final outerBorderColorProvider = StateProvider<Color>(
+  (ref) => Color(0xFF6677ff),
+);
+final outerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
+final outerBorderRadiusProvider = StateProvider<double>((ref) => 20.0);
+final bottomCropHeightProvider = StateProvider<double>((ref) => 60.0);
+final showInnerBordersProvider = StateProvider<bool>((ref) => false);
+final innerBorderColorProvider = StateProvider<Color>(
+  (ref) => Color(0xFF6677ff),
+);
+final innerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
 
 class ImagesNotifier extends StateNotifier<List<File>> {
   ImagesNotifier() : super([]);
@@ -283,8 +306,8 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
       slivers: [
         SliverAppbar(
           title: multiSelect
-              ? Text('${selectedIndexes.length} 张已选')
-              : Text('图片操作(${images.length})'),
+              ? Text('@s selected'.tlParams({"s": selectedIndexes.length}))
+              : Text('Image Operations (@i)'.tlParams({"i": images.length})),
           actions: [
             if (multiSelect) ...[
               TextButton.icon(
@@ -347,7 +370,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
         SliverToBoxAdapter(
           child: _buildCard(
             icon: Icons.photo,
-            title: '拼长图',
+            title: 'Stitch Long Image'.tl,
             onTap: () {
               context.to(
                 () => SelectImagesPage(
@@ -363,7 +386,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
         SliverToBoxAdapter(
           child: _buildCard(
             icon: Icons.image,
-            title: '拼横图',
+            title: 'Stitch Horizontal Image'.tl,
             onTap: () {
               context.to(
                 () => SelectImagesPage(
@@ -381,7 +404,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
         SliverToBoxAdapter(
           child: _buildCard(
             icon: Icons.extension,
-            title: '拼台词',
+            title: 'Stitch Subtitles'.tl,
             onTap: () {
               context.to(
                 () => SelectImagesPage(
@@ -545,6 +568,252 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class BorderSettingsSheet extends ConsumerStatefulWidget {
+  const BorderSettingsSheet({super.key});
+
+  @override
+  ConsumerState<BorderSettingsSheet> createState() =>
+      _BorderSettingsSheetState();
+}
+
+class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final showOuterBorder = ref.watch(showOuterBorderProvider);
+    final outerBorderColor = ref.watch(outerBorderColorProvider);
+    final outerBorderWidth = ref.watch(outerBorderWidthProvider);
+    final outerBorderRadius = ref.watch(outerBorderRadiusProvider);
+
+    final showInnerBorders = ref.watch(showInnerBordersProvider);
+    final innerBorderColor = ref.watch(innerBorderColorProvider);
+    final innerBorderWidth = ref.watch(innerBorderWidthProvider);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Border Settings'.tl,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// 外边框设置
+            SwitchListTile(
+              title: Text("Show Outer Border".tl),
+              value: showOuterBorder,
+              onChanged: (v) =>
+                  ref.read(showOuterBorderProvider.notifier).state = v,
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: showOuterBorder
+                  ? Column(
+                      children: [
+                        _buildColorPicker(
+                          "Outer Border Color".tl,
+                          outerBorderColor,
+                          (c) =>
+                              ref
+                                      .read(outerBorderColorProvider.notifier)
+                                      .state =
+                                  c,
+                        ),
+                        _buildSlider(
+                          "Outer Border Width".tl,
+                          outerBorderWidth,
+                          0,
+                          120,
+                          (v) =>
+                              ref
+                                      .read(outerBorderWidthProvider.notifier)
+                                      .state =
+                                  v,
+                        ),
+                        _buildSlider(
+                          "Outer Border Radius".tl,
+                          outerBorderRadius,
+                          0,
+                          120,
+                          (v) =>
+                              ref
+                                      .read(outerBorderRadiusProvider.notifier)
+                                      .state =
+                                  v,
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            const SizedBox(height: 16),
+
+            /// 内边框设置
+            SwitchListTile(
+              title: Text("Show Image Borders".tl),
+              value: showInnerBorders,
+              onChanged: (v) =>
+                  ref.read(showInnerBordersProvider.notifier).state = v,
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              child: showInnerBorders
+                  ? Column(
+                      children: [
+                        _buildColorPicker(
+                          "Inner Border Color".tl,
+                          innerBorderColor,
+                          (c) =>
+                              ref
+                                      .read(innerBorderColorProvider.notifier)
+                                      .state =
+                                  c,
+                        ),
+                        _buildSlider(
+                          "Inner Border Width".tl,
+                          innerBorderWidth,
+                          0,
+                          120,
+                          (v) =>
+                              ref
+                                      .read(innerBorderWidthProvider.notifier)
+                                      .state =
+                                  v,
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// 操作按钮
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('Apply'.tl),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorPicker(
+    String title,
+    Color currentColor,
+    ValueChanged<Color> onChanged,
+  ) {
+    String colorToHex(Color color) => '#${color.toARGB32().toRadixString(16)}';
+
+    Color fallbackColorIfTooDark(Color color) =>
+        color.toARGB32() == 0xFF000000 ? const Color(0xFF6677ff) : color;
+
+    final Color initialColor = fallbackColorIfTooDark(currentColor);
+    final controller = TextEditingController(text: colorToHex(initialColor));
+    Color pickerColor = initialColor;
+
+    Color? hexToColor(String hex) {
+      try {
+        hex = hex.toUpperCase().replaceAll('#', '');
+        if (hex.length == 6) hex = 'FF$hex';
+        return Color(int.parse(hex, radix: 16));
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        void onTextChanged(String value) {
+          final color = hexToColor(value);
+          if (color != null) {
+            setState(() {
+              pickerColor = color;
+              controller.text = colorToHex(color);
+            });
+            onChanged(color);
+          }
+        }
+
+        void onColorChanged(Color color) {
+          setState(() {
+            pickerColor = color;
+            controller.text = colorToHex(color);
+          });
+          onChanged(color);
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            ColorPicker(
+              pickerColor: pickerColor,
+              onColorChanged: onColorChanged,
+              enableAlpha: false,
+              pickerAreaHeightPercent: 0.3,
+              displayThumbColor: true,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: 'Enter hex color code, e.g. #FF000000'.tl,
+                border: const OutlineInputBorder(),
+              ),
+              maxLength: 9,
+              onSubmitted: onTextChanged,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'#[0-9a-fA-F]*')),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSlider(
+    String label,
+    double value,
+    double min,
+    double max,
+    ValueChanged<double> onChanged,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(width: 100, child: Text(label)),
+          Expanded(
+            child: Slider(
+              value: value,
+              min: min,
+              max: max,
+              divisions: (max - min).toInt(),
+              label: value.toStringAsFixed(1),
+              onChanged: onChanged,
+            ),
+          ),
+          SizedBox(width: 40, child: Text(value.toStringAsFixed(1))),
+        ],
       ),
     );
   }

@@ -68,8 +68,20 @@ class AnimeTile extends StatelessWidget {
         ),
       );
     } else if (isGrid) {
-      var context = App.mainNavigatorKey!.currentContext!;
-      anime.viewMore!.jump(context);
+      if (anime.viewMore != null && anime.viewMore?.attributes != null) {
+        var context = App.mainNavigatorKey!.currentContext!;
+        anime.viewMore!.jump(context);
+      } else {
+        App.mainNavigatorKey?.currentContext?.to(
+          () => AnimePage(
+            id: anime.id,
+            sourceKey: anime.sourceKey,
+            cover: anime.cover,
+            title: anime.title,
+            heroID: heroID,
+          ),
+        );
+      }
     } else {
       App.mainNavigatorKey?.currentContext?.to(
         () => AnimePage(
@@ -1171,7 +1183,7 @@ class AnimeListState extends State<AnimeList> {
                             }
                           }
                         },
-                        child: Text("Jump".tl),
+                        child: Text("Apply".tl),
                       ),
                     ],
                   );
@@ -1187,7 +1199,9 @@ class AnimeListState extends State<AnimeList> {
                 ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text("Page $_page / ${_maxPage ?? '?'}".tl),
+              child: Text(
+                "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
+              ),
             ),
           ),
         ),
@@ -1238,7 +1252,7 @@ class AnimeListState extends State<AnimeList> {
             _buildAnimeButton(
               context: context,
               icon: Icons.first_page,
-              tooltip: "最前".tl,
+              tooltip: "First".tl,
               enabled: _page > 1,
               onPressed: _page > 1
                   ? () {
@@ -1308,7 +1322,7 @@ class AnimeListState extends State<AnimeList> {
                                 }
                               }
                             },
-                            child: Text("Jump".tl),
+                            child: Text("Apply".tl),
                           ),
                         ],
                       );
@@ -1327,7 +1341,9 @@ class AnimeListState extends State<AnimeList> {
                     ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text("Page $_page / ${_maxPage ?? '?'}".tl),
+                  child: Text(
+                    "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
+                  ),
                 ),
               ),
             ),
@@ -1350,7 +1366,7 @@ class AnimeListState extends State<AnimeList> {
             _buildAnimeButton(
               context: context,
               icon: Icons.last_page,
-              tooltip: "最后".tl,
+              tooltip: "Last".tl,
               enabled: _page < (_maxPage ?? (_page + 1)),
               onPressed: _page < (_maxPage ?? (_page + 1))
                   ? () {
@@ -1552,6 +1568,7 @@ class AnimeListState extends State<AnimeList> {
               SliverGridAnimes(
                 animes: _data[_page] ?? const [],
                 menuBuilder: widget.menuBuilder,
+                isGrid: true,
               ),
               if (widget.trailingSliver != null) widget.trailingSliver!,
               SliverPadding(

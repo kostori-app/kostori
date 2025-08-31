@@ -80,7 +80,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
                   },
                 ),
                 _SwitchSetting(
-                  title: "动态取色".tl,
+                  title: "Dynamic color".tl,
                   settingKey: "dynamicColor",
                   onChanged: () async {
                     await App.init();
@@ -171,7 +171,7 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
                 width: 160,
                 child: Center(
                   child: Text(
-                    appdata.settings["color"],
+                    "${appdata.settings["color"]}".tl,
                     style: const TextStyle(fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -390,7 +390,7 @@ class ThemePreviewCard extends StatelessWidget {
         color: color,
         alignment: Alignment.center,
         child: Text(
-          label,
+          label.tl,
           style: TextStyle(
             color:
                 ThemeData.estimateBrightnessForColor(color) == Brightness.dark
@@ -441,7 +441,7 @@ class _ColorPickPageState extends State<ColorPickPage> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('选择颜色'.tl),
+      title: Text('Select Color'.tl),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -459,10 +459,10 @@ class _ColorPickPageState extends State<ColorPickPage> {
                 // ColorPickerType.custom: false,
               },
               pickerTypeLabels: <ColorPickerType, String>{
-                ColorPickerType.wheel: "色轮".tl,
-                ColorPickerType.primary: "主要".tl,
-                ColorPickerType.accent: '强调'.tl,
-                ColorPickerType.custom: '自定义'.tl,
+                ColorPickerType.wheel: "Color Wheel".tl,
+                ColorPickerType.primary: "Primary".tl,
+                ColorPickerType.accent: 'Accent'.tl,
+                ColorPickerType.custom: 'Custom'.tl,
               },
               copyPasteBehavior: const ColorPickerCopyPasteBehavior(
                 copyButton: true,
@@ -483,7 +483,7 @@ class _ColorPickPageState extends State<ColorPickPage> {
             TextField(
               controller: controller,
               decoration: InputDecoration(
-                labelText: '输入十六进制颜色码，例如 #FF000000'.tl,
+                labelText: 'Enter hex color code, e.g. #FF000000'.tl,
                 border: OutlineInputBorder(),
               ),
               maxLength: 9,
@@ -498,11 +498,11 @@ class _ColorPickPageState extends State<ColorPickPage> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('取消'.tl),
+          child: Text('Cancel'.tl),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(pickerColor),
-          child: Text('确定'.tl),
+          child: Text('Apply'.tl),
         ),
       ],
     );

@@ -11,6 +11,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -308,13 +309,13 @@ class _PlayerItemState extends State<PlayerItem>
           child: Scaffold(
             body: Column(
               children: [
-                const PreferredSize(
+                PreferredSize(
                   preferredSize: Size.fromHeight(kToolbarHeight),
                   child: Material(
                     child: TabBar(
                       tabs: [
-                        Tab(text: '状态'),
-                        Tab(text: '日志'),
+                        Tab(text: 'Status'.tl),
+                        Tab(text: 'Log'.tl),
                       ],
                     ),
                   ),
@@ -409,7 +410,7 @@ class _PlayerItemState extends State<PlayerItem>
                 child: SizedBox(
                   height: widget.playerController.isFullScreen
                       ? (MediaQuery.of(context).size.height)
-                      : (MediaQuery.of(context).size.width * 9.0 / (16.0)),
+                      : (MediaQuery.of(context).size.width * 9.0 / 16.0),
                   width: MediaQuery.of(context).size.width,
                   child: Stack(
                     alignment: Alignment.center,
@@ -524,30 +525,18 @@ class _PlayerItemState extends State<PlayerItem>
                               if (event.logicalKey ==
                                   LogicalKeyboardKey.escape) {
                                 if (widget.playerController.isFullScreen) {
-                                  if (App.isDesktop) {
-                                    widget.playerController.toggleFullscreen(
-                                      context,
-                                    );
-                                  } else {
-                                    widget.playerController.enterFullScreen(
-                                      context,
-                                    );
-                                  }
+                                  widget.playerController.toggleFullScreen(
+                                    context,
+                                  );
                                   return KeyEventResult.handled;
                                 }
                               }
 
                               // F键处理
                               if (event.logicalKey == LogicalKeyboardKey.keyF) {
-                                if (App.isDesktop) {
-                                  widget.playerController.toggleFullscreen(
-                                    context,
-                                  );
-                                } else {
-                                  widget.playerController.enterFullScreen(
-                                    context,
-                                  );
-                                }
+                                widget.playerController.toggleFullScreen(
+                                  context,
+                                );
                                 return KeyEventResult.handled;
                               }
                             } else if (event is KeyRepeatEvent) {
@@ -649,7 +638,6 @@ class _PlayerItemState extends State<PlayerItem>
                         handleProgressBarDragStart: handleProgressBarDragStart,
                         handleProgressBarDragEnd: handleProgressBarDragEnd,
                         animationController: animationController!,
-                        keyboardFocus: widget.keyboardFocus,
                         startHideTimer: startHideTimer,
                         cancelHideTimer: cancelHideTimer,
                         playerController: widget.playerController,
@@ -663,19 +651,8 @@ class _PlayerItemState extends State<PlayerItem>
                         bottom: 15,
                         child: GestureDetector(
                           onHorizontalDragStart: (_) {
-                            if (!widget.playerController.showVideoController) {
-                              animationController?.forward();
-                            }
-                            widget.playerController.canHidePlayerPanel = false;
-                            // if (App.isAndroid) {
-                            //   _showPreview(Duration(
-                            //       seconds: widget
-                            //           .playerController
-                            //           .player
-                            //           .state
-                            //           .position
-                            //           .inSeconds));
-                            // }
+                            animationController?.reverse();
+                            widget.playerController.isSeek = true;
                           },
                           onHorizontalDragUpdate: (DragUpdateDetails details) {
                             widget.playerController.showSeekTime = true;
@@ -696,10 +673,6 @@ class _PlayerItemState extends State<PlayerItem>
                                           .duration
                                           .inMilliseconds,
                                     );
-                            // if (App.isAndroid) {
-                            //   _updatePreview(
-                            //       Duration(milliseconds: ms));
-                            // }
                             widget.playerController.currentPosition = Duration(
                               milliseconds: ms,
                             );
@@ -709,20 +682,12 @@ class _PlayerItemState extends State<PlayerItem>
                             widget.playerController.seek(
                               widget.playerController.currentPosition,
                             );
-                            widget.playerController.canHidePlayerPanel = true;
-                            if (!widget.playerController.showVideoController) {
-                              animationController?.reverse();
-                            } else {
-                              hideTimer?.cancel();
-                              startHideTimer();
-                            }
+                            widget.playerController.isSeek = false;
+
                             widget.playerController.playerTimer = widget
                                 .playerController
                                 .getPlayerTimer();
                             widget.playerController.showSeekTime = false;
-                            // if (App.isAndroid) {
-                            //   _hidePreview();
-                            // }
                           },
                           onVerticalDragUpdate:
                               (DragUpdateDetails details) async {

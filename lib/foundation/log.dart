@@ -78,22 +78,23 @@ class Log {
     }
     if (_logs.length > maxLogNumber) {
       var res = _logs.remove(
-          _logs.firstWhereOrNull((element) => element.level == LogLevel.info));
+        _logs.firstWhereOrNull((element) => element.level == LogLevel.info),
+      );
       if (!res) {
         _logs.removeAt(0);
       }
     }
   }
 
-  static info(String title, String content) {
+  static void info(String title, String content) {
     addLog(LogLevel.info, title, content);
   }
 
-  static warning(String title, String content) {
+  static void warning(String title, String content) {
     addLog(LogLevel.warning, title, content);
   }
 
-  static error(String title, Object content, [Object? stackTrace]) {
+  static void error(String title, Object content, [Object? stackTrace]) {
     var info = content.toString();
     if (stackTrace != null) {
       info += "\n${stackTrace.toString()}";

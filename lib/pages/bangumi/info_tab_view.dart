@@ -545,7 +545,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 Row(
                   children: [
                     Text(
-                      'Rating Statistics Chart'.tl,
+                      'Rating Chart'.tl,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -668,7 +668,7 @@ class _InfoTabViewState extends State<InfoTabView>
           },
           child: CustomScrollView(
             scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('吐槽'),
+            key: PageStorageKey<String>('Comments'.tl),
             slivers: <Widget>[
               SliverOverlapInjector(
                 handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
@@ -806,7 +806,7 @@ class _InfoTabViewState extends State<InfoTabView>
           },
           child: CustomScrollView(
             scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('讨论'),
+            key: PageStorageKey<String>('Discussion'.tl),
             slivers: <Widget>[
               SliverOverlapInjector(
                 handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
@@ -910,7 +910,7 @@ class _InfoTabViewState extends State<InfoTabView>
           },
           child: CustomScrollView(
             scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('日志'),
+            key: PageStorageKey<String>('Log'.tl),
             slivers: <Widget>[
               SliverOverlapInjector(
                 handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
@@ -1004,7 +1004,7 @@ class _InfoTabViewState extends State<InfoTabView>
       builder: (BuildContext context) {
         return CustomScrollView(
           scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-          key: PageStorageKey<String>('角色'),
+          key: PageStorageKey<String>('Characters'.tl),
           slivers: <Widget>[
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
@@ -1079,7 +1079,7 @@ class _InfoTabViewState extends State<InfoTabView>
       builder: (BuildContext context) {
         return CustomScrollView(
           scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-          key: PageStorageKey<String>('制作'),
+          key: PageStorageKey<String>('StaffList'.tl),
           slivers: <Widget>[
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
@@ -1167,7 +1167,7 @@ class _InfoTabViewState extends State<InfoTabView>
               // The PageStorageKey should be unique to this ScrollView;
               // it allows the list to remember its scroll position when
               // the tab view is not on the screen.
-              key: PageStorageKey<String>('概览'),
+              key: PageStorageKey<String>('Overview'.tl),
               slivers: <Widget>[
                 SliverOverlapInjector(
                   handle: NestedScrollView.sliverOverlapAbsorberHandleFor(

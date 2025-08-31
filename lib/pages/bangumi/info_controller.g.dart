@@ -171,6 +171,24 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
+  late final _$bangumiSRIAtom = Atom(
+    name: '_InfoController.bangumiSRI',
+    context: context,
+  );
+
+  @override
+  ObservableList<BangumiSRI> get bangumiSRI {
+    _$bangumiSRIAtom.reportRead();
+    return super.bangumiSRI;
+  }
+
+  @override
+  set bangumiSRI(ObservableList<BangumiSRI> value) {
+    _$bangumiSRIAtom.reportWrite(value, super.bangumiSRI, () {
+      super.bangumiSRI = value;
+    });
+  }
+
   @override
   String toString() {
     return '''
@@ -182,7 +200,8 @@ topicsTrendingList: ${topicsTrendingList},
 reviewsList: ${reviewsList},
 characterList: ${characterList},
 staffList: ${staffList},
-episodeCommentsList: ${episodeCommentsList}
+episodeCommentsList: ${episodeCommentsList},
+bangumiSRI: ${bangumiSRI}
     ''';
   }
 }

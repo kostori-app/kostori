@@ -251,7 +251,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
           const SizedBox(width: 16),
           Icon(Icons.star, color: context.colorScheme.secondary),
           const SizedBox(width: 12),
-          Text("本地绑定收藏".tl),
+          Text("Local Favorite Binding".tl),
           const Spacer(),
           const SizedBox(width: 16),
         ],

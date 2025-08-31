@@ -258,19 +258,27 @@ class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
         children: [
           Row(
             children: [
-              Icon(Icons.arrow_downward, size: 8),
+              Icon(Icons.arrow_downward, size: 8, color: Colors.white),
               Text(
                 " $_downloadSpeed",
-                style: TextStyle(fontWeight: FontWeight.normal, fontSize: 8),
+                style: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 8,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),
           Row(
             children: [
-              Icon(Icons.arrow_upward, size: 8),
+              Icon(Icons.arrow_upward, size: 8, color: Colors.white),
               Text(
                 " $_uploadSpeed",
-                style: TextStyle(fontWeight: FontWeight.normal, fontSize: 8),
+                style: TextStyle(
+                  fontWeight: FontWeight.normal,
+                  fontSize: 8,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),

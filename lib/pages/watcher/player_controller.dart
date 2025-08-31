@@ -5,14 +5,20 @@ import 'dart:async';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
+import 'package:kostori/pages/watcher/player_audio_handler.dart';
+import 'package:kostori/pages/watcher/taskbar_manager.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -21,9 +27,8 @@ import 'package:screen_brightness_platform_interface/screen_brightness_platform_
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../../foundation/appdata.dart';
-import '../../utils/io.dart';
-import '../image_manipulation_page/image_manipulation_page.dart';
+import '../../main.dart';
+import 'SMTC_manager_windows.dart';
 
 part 'player_controller.g.dart';
 
@@ -31,9 +36,14 @@ class PlayerController = _PlayerController with _$PlayerController;
 
 abstract class _PlayerController with Store {
   late ShadersController shadersController;
+  late final PlayerAudioHandler audioHandler;
+
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
+
   @observable
   bool loading = true;
+  @observable
+  bool isPortraitFullscreen = false;
 
   late final player = Player(
     configuration: PlayerConfiguration(
@@ -52,12 +62,16 @@ abstract class _PlayerController with Store {
     ),
   );
 
+  @observable
   bool audioOutType = true;
 
+  @observable
   bool isPiPMode = false;
 
   @observable
   bool isFullScreen = false;
+  @observable
+  bool isSeek = false;
 
   /// 视频超分
   /// 1. OFF
@@ -82,12 +96,13 @@ abstract class _PlayerController with Store {
   Uint8List? previewImage;
   @observable
   Duration? lastPreviewTime;
-
+  @observable
   int currentEpisoded = 1;
-
+  @observable
   int currentRoad = 0;
 
   // 视频地址
+  @observable
   String videoUrl = '';
 
   @observable
@@ -103,6 +118,7 @@ abstract class _PlayerController with Store {
   @observable
   double playerSpeed = 1.0;
 
+  @observable
   double playbackSpeed = 1;
 
   @observable
@@ -121,7 +137,9 @@ abstract class _PlayerController with Store {
   bool brightnessSeeking = false;
   @observable
   bool canHidePlayerPanel = true;
-
+  @observable
+  String animeImg = '';
+  @observable
   String currentSetName = '';
 
   late WindowFrameController windowFrame;
@@ -203,7 +221,7 @@ abstract class _PlayerController with Store {
     });
   }
 
-  void playNextEpisode(BuildContext context) {
+  Future<void> playNextEpisode() async {
     WatcherState.currentState!.playNextEpisode();
   }
 
@@ -267,6 +285,8 @@ abstract class _PlayerController with Store {
     player.setPlaylistMode(PlaylistMode.none);
     playerTimer = getPlayerTimer();
 
+    animeImg = WatcherState.currentState!.widget.anime.cover;
+
     if (App.isAndroid) {
       Timer? debounceTimer;
       _pipStatusSubscription = Floating().pipStatusStream
@@ -284,6 +304,15 @@ abstract class _PlayerController with Store {
           });
     }
 
+    if (App.isAndroid) {
+      audioHandler = AudioServiceManager().handler;
+      audioHandler.setController(this as PlayerController);
+    }
+
+    if (App.isDesktop) {
+      SMTCManagerWindows.instance.setController(this as PlayerController);
+      TaskbarManager.instance.setController(this as PlayerController);
+    }
     if (superResolutionType != 1) {
       await setShader(superResolutionType);
     }
@@ -342,6 +371,17 @@ abstract class _PlayerController with Store {
     try {
       await playerLogSubscription?.cancel();
     } catch (_) {}
+    if (App.isAndroid) {
+      try {
+        audioHandler.clearController();
+      } catch (e) {
+        Log.addLog(LogLevel.error, "clearController", e.toString());
+      }
+    }
+    if (App.isDesktop) {
+      SMTCManagerWindows.instance.hideSmtcButKeepSession();
+      TaskbarManager.instance.dispose();
+    }
     _pipStatusSubscription?.cancel();
     player.dispose();
   }
@@ -376,46 +416,68 @@ abstract class _PlayerController with Store {
     windowFrame.removeCloseListener(onWindowClose);
   }
 
-  // 移动
-  Future<void> enterFullScreen(BuildContext context) async {
-    if (isFullScreen) {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      App.rootContext.pop();
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-      ]);
-      WakelockPlus.disable();
-    } else {
-      WakelockPlus.enable();
-      await SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.immersiveSticky,
-        overlays: SystemUiOverlay.values,
-      );
-      App.rootContext.to(
-        () => FullscreenVideoPage(playerController: this as PlayerController),
-      );
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    }
-    isFullScreen = !isFullScreen;
-  }
+  Future<void> toggleFullScreen(
+    BuildContext context, {
+    bool isPortraitFullScreen = false,
+  }) async {
+    if (App.isDesktop) {
+      // --- PC 端逻辑 ---
+      await windowManager.setFullScreen(!isFullScreen);
 
-  // pc
-  void toggleFullscreen(BuildContext context) {
-    windowManager.setFullScreen(!isFullScreen);
-    if (isFullScreen) {
-      App.rootContext.pop();
+      if (isFullScreen) {
+        // 退出全屏
+        App.rootContext.pop();
+      } else {
+        // 进入全屏
+        Future.microtask(() {
+          App.rootContext.to(
+            () =>
+                FullscreenVideoPage(playerController: this as PlayerController),
+          );
+        });
+      }
     } else {
-      Future.microtask(() {
+      // --- 移动端逻辑 ---
+
+      if (isFullScreen) {
+        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        App.rootContext.pop();
+        await SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+        ]);
+        isPortraitFullscreen = false;
+        WakelockPlus.disable();
+      } else {
+        WakelockPlus.enable();
+        await SystemChrome.setEnabledSystemUIMode(
+          SystemUiMode.immersiveSticky,
+          overlays: SystemUiOverlay.values,
+        );
+        if (isPortraitFullScreen) {
+          await SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+          ]);
+        } else {
+          await SystemChrome.setPreferredOrientations([
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
+        }
+
         App.rootContext.to(
           () => FullscreenVideoPage(playerController: this as PlayerController),
         );
-      });
+      }
     }
 
-    fullscreen();
+    if (App.isDesktop) {
+      fullscreen();
+      return;
+    }
+    isFullScreen = !isFullScreen;
+    if (isPortraitFullScreen) {
+      isPortraitFullscreen = !isPortraitFullscreen;
+    }
   }
 
   Future<void> setVolume(double value) async {
@@ -448,7 +510,13 @@ abstract class _PlayerController with Store {
     playing = false;
   }
 
-  Future<void> play() async {
+  Future<void> play({bool isAudioHandler = true}) async {
+    if (isAudioHandler) {
+      if (App.isAndroid) {
+        final audioHandler = AudioServiceManager().handler;
+        audioHandler.setController(this as PlayerController);
+      }
+    }
     await player.play();
     playing = true;
   }
@@ -463,7 +531,12 @@ abstract class _PlayerController with Store {
     final entry = OverlayEntry(
       builder: (context) => Positioned(
         right: isFullScreen ? 60 : 60,
-        top: isFullScreen ? 70 : 90,
+        top: isPortraitFullscreen
+            ? null
+            : isFullScreen
+            ? 70
+            : 90,
+        bottom: isPortraitFullscreen ? 160 : null,
         child: Material(
           elevation: 8,
           color: Colors.black.toOpacity(0.5),
@@ -563,16 +636,38 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
+    var isPaddingCheckError =
+        MediaQuery.of(context).viewPadding.top <= 0 ||
+        MediaQuery.of(context).viewPadding.top > 50;
     return Hero(
       tag: WatcherState.currentState!.widget.anime.id,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: widget.playerController.isPiPMode
-            ? Video(
-                controller: widget.playerController.playerController,
-                controls: null,
-              )
-            : VideoPage(playerController: widget.playerController),
+      child: Observer(
+        builder: (context) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: widget.playerController.isPiPMode
+                ? isPaddingCheckError
+                      ? MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            viewPadding: const EdgeInsets.only(
+                              top: 15,
+                              bottom: 15,
+                            ),
+                            padding: const EdgeInsets.only(top: 15, bottom: 15),
+                          ),
+                          child: Video(
+                            controller:
+                                widget.playerController.playerController,
+                            controls: null,
+                          ),
+                        )
+                      : Video(
+                          controller: widget.playerController.playerController,
+                          controls: null,
+                        )
+                : VideoPage(playerController: widget.playerController),
+          );
+        },
       ),
     );
   }

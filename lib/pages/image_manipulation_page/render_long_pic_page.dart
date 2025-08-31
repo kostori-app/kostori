@@ -1,15 +1,4 @@
-import 'dart:io';
-import 'dart:ui' as ui;
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../components/components.dart';
-import '../../foundation/app.dart';
-import '../../utils/utils.dart';
-import 'image_manipulation_page.dart';
+part of 'image_manipulation_page.dart';
 
 class LongImagePainter extends CustomPainter {
   final List<ui.Image> images;
@@ -83,10 +72,7 @@ class LongImagePainter extends CustomPainter {
         final top = dy;
         final bottom = dy + innerBorderWidth;
 
-        canvas.drawRect(
-          Rect.fromLTRB(left, top, right, bottom),
-          innerPaint,
-        );
+        canvas.drawRect(Rect.fromLTRB(left, top, right, bottom), innerPaint);
 
         dy += innerBorderWidth;
       }
@@ -119,16 +105,6 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   late List<File> imageList;
   bool isReorderMode = false;
 
-  final showOuterBorderProvider = StateProvider<bool>((ref) => false);
-  final outerBorderColorProvider =
-      StateProvider<Color>((ref) => Color(0xFF6677ff));
-  final outerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
-  final outerBorderRadiusProvider = StateProvider<double>((ref) => 20.0);
-  final showInnerBordersProvider = StateProvider<bool>((ref) => false);
-  final innerBorderColorProvider =
-      StateProvider<Color>((ref) => Color(0xFF6677ff));
-  final innerBorderWidthProvider = StateProvider<double>((ref) => 20.0);
-
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -157,7 +133,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   }
 
   Future<void> _captureAndSaveLongImage(BuildContext context) async {
-    App.rootContext.showMessage(message: '正在保存');
+    App.rootContext.showMessage(message: 'Saving'.tl);
     try {
       final outerBorderColor = ref.read(outerBorderColorProvider);
       final outerBorderWidth = ref.read(outerBorderWidthProvider);
@@ -186,21 +162,25 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
           .toDouble();
 
       // 计算每张图片按contentWidth缩放后的高度列表
-      final contentHeights =
-          images.map((img) => img.height * (contentWidth / img.width)).toList();
+      final contentHeights = images
+          .map((img) => img.height * (contentWidth / img.width))
+          .toList();
 
       // 计算总高度（所有图片高 + 内边框总和）
-      final totalInnerBorders =
-          showInnerBorders ? (images.length - 1) * innerBorderWidth : 0.0;
+      final totalInnerBorders = showInnerBorders
+          ? (images.length - 1) * innerBorderWidth
+          : 0.0;
 
       final totalHeight =
           contentHeights.fold(0.0, (a, b) => a + b) + totalInnerBorders;
 
       // 总宽高考虑外边框
-      final fullWidth =
-          showOuterBorder ? contentWidth + outerBorderWidth * 2 : contentWidth;
-      final fullHeight =
-          showOuterBorder ? totalHeight + outerBorderWidth * 2 : totalHeight;
+      final fullWidth = showOuterBorder
+          ? contentWidth + outerBorderWidth * 2
+          : contentWidth;
+      final fullHeight = showOuterBorder
+          ? totalHeight + outerBorderWidth * 2
+          : totalHeight;
 
       // 创建PictureRecorder和Canvas
       final recorder = ui.PictureRecorder();
@@ -222,8 +202,10 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
 
       // 结束绘制，生成图片
       final picture = recorder.endRecording();
-      final image =
-          await picture.toImage(fullWidth.toInt(), fullHeight.toInt());
+      final image = await picture.toImage(
+        fullWidth.toInt(),
+        fullHeight.toInt(),
+      );
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       if (byteData != null) {
@@ -231,10 +213,12 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         await Utils.saveLongImage(context, bytes);
         final notifier = ref.read(imagesProvider.notifier);
         await notifier.loadImages();
-        App.rootContext.showMessage(message: '保存成功');
+        App.rootContext.showMessage(message: 'Save Successful'.tl);
       }
     } catch (e) {
-      App.rootContext.showMessage(message: '保存失败: $e');
+      App.rootContext.showMessage(
+        message: 'Save Failed: @e'.tlParams({'e': e}),
+      );
     }
   }
 
@@ -249,10 +233,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
           ReorderableDragStartListener(
             key: ValueKey(imageList[i].path),
             index: i,
-            child: Image.file(
-              imageList[i],
-              fit: BoxFit.fitWidth,
-            ),
+            child: Image.file(imageList[i], fit: BoxFit.fitWidth),
           ),
       ],
     );
@@ -269,207 +250,10 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         maxWidth: MediaQuery.of(context).size.width <= 600
             ? MediaQuery.of(context).size.width
             : (App.isDesktop)
-                ? MediaQuery.of(context).size.width * 9 / 16
-                : MediaQuery.of(context).size.width,
+            ? MediaQuery.of(context).size.width * 9 / 16
+            : MediaQuery.of(context).size.width,
       ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final showOuterBorder = ref.watch(showOuterBorderProvider);
-            final outerBorderColor = ref.watch(outerBorderColorProvider);
-            final outerBorderWidth = ref.watch(outerBorderWidthProvider);
-            final outerBorderRadius = ref.watch(outerBorderRadiusProvider);
-
-            final showInnerBorders = ref.watch(showInnerBordersProvider);
-            final innerBorderColor = ref.watch(innerBorderColorProvider);
-            final innerBorderWidth = ref.watch(innerBorderWidthProvider);
-
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('边框设置',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-
-                    const SizedBox(height: 16),
-
-                    /// 外边框设置
-                    SwitchListTile(
-                      title: const Text("显示外边框"),
-                      value: showOuterBorder,
-                      onChanged: (v) {
-                        ref.read(showOuterBorderProvider.notifier).state = v;
-                        setModalState(() {});
-                      },
-                    ),
-                    if (showOuterBorder) ...[
-                      _buildColorPicker("外边框颜色", outerBorderColor, (c) {
-                        ref.read(outerBorderColorProvider.notifier).state = c;
-                        setModalState(() {});
-                      }),
-                      _buildSlider("外边框粗细", outerBorderWidth, 0, 120, (v) {
-                        ref.read(outerBorderWidthProvider.notifier).state = v;
-                        setModalState(() {});
-                      }),
-                      _buildSlider("外边框圆角", outerBorderRadius, 0, 120, (v) {
-                        ref.read(outerBorderRadiusProvider.notifier).state = v;
-                        setModalState(() {});
-                      }),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    /// 内边框设置
-                    SwitchListTile(
-                      title: const Text("显示图片间边框"),
-                      value: showInnerBorders,
-                      onChanged: (v) {
-                        ref.read(showInnerBordersProvider.notifier).state = v;
-                        setModalState(() {});
-                      },
-                    ),
-                    if (showInnerBorders) ...[
-                      _buildColorPicker("内边框颜色", innerBorderColor, (c) {
-                        ref.read(innerBorderColorProvider.notifier).state = c;
-                        setModalState(() {});
-                      }),
-                      _buildSlider("内边框粗细", innerBorderWidth, 0, 120, (v) {
-                        ref.read(innerBorderWidthProvider.notifier).state = v;
-                        setModalState(() {});
-                      }),
-                    ],
-
-                    const SizedBox(height: 16),
-
-                    /// 操作按钮
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('完成'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildColorPicker(
-    String title,
-    Color currentColor,
-    ValueChanged<Color> onChanged,
-  ) {
-    // 工具函数
-    String colorToHex(Color color) => '#${color.toARGB32().toRadixString(16)}';
-
-    final TextEditingController controller =
-        TextEditingController(text: colorToHex(currentColor));
-
-    Color pickerColor = currentColor;
-
-    Color? hexToColor(String hex) {
-      try {
-        hex = hex.toUpperCase().replaceAll('#', '');
-        if (hex.length == 6) hex = 'FF$hex'; // 没透明度自动补FF
-        final val = int.parse(hex, radix: 16);
-        return Color(val);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    return StatefulBuilder(builder: (context, setState) {
-      void onTextChanged(String value) {
-        final color = hexToColor(value);
-        if (color != null) {
-          setState(() {
-            pickerColor = color;
-            controller.text = colorToHex(color);
-            controller.selection = TextSelection.fromPosition(
-                TextPosition(offset: controller.text.length));
-          });
-          onChanged(color);
-        }
-      }
-
-      void onColorChanged(Color color) {
-        setState(() {
-          pickerColor = color;
-          controller.text = colorToHex(color);
-          controller.selection = TextSelection.fromPosition(
-              TextPosition(offset: controller.text.length));
-        });
-        onChanged(color);
-      }
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          ColorPicker(
-            pickerColor: pickerColor,
-            onColorChanged: onColorChanged,
-            enableAlpha: false,
-            pickerAreaHeightPercent: 0.3,
-            displayThumbColor: true,
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: '输入十六进制颜色码，例如 #FF000000',
-              border: OutlineInputBorder(),
-            ),
-            maxLength: 9,
-            // # + 6位RGB
-            onSubmitted: onTextChanged,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'#[0-9a-fA-F]*')),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
-    });
-  }
-
-  Widget _buildSlider(
-    String label,
-    double value,
-    double min,
-    double max,
-    ValueChanged<double> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          SizedBox(width: 80, child: Text(label)),
-          Expanded(
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: (max - min).toInt(),
-              label: value.toStringAsFixed(1),
-              onChanged: onChanged,
-            ),
-          ),
-          SizedBox(width: 40, child: Text(value.toStringAsFixed(1))),
-        ],
-      ),
+      builder: (_) => const BorderSettingsSheet(),
     );
   }
 
@@ -489,6 +273,11 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (snapshot.hasError ||
+            snapshot.data == null ||
+            snapshot.data!.isEmpty) {
+          return Center(child: Text('Failed to load images or no images'.tl));
+        }
 
         final images = snapshot.data!;
 
@@ -500,16 +289,18 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         final contentHeights = images
             .map((img) => img.height * (contentWidth / img.width))
             .toList();
-        final totalInnerBorders =
-            showInnerBorders ? (images.length - 1) * innerBorderWidth : 0.0;
+        final totalInnerBorders = showInnerBorders
+            ? (images.length - 1) * innerBorderWidth
+            : 0.0;
         final totalHeight =
             contentHeights.fold(0.0, (a, b) => a + b) + totalInnerBorders;
 
         final fullWidth = showOuterBorder
             ? contentWidth + outerBorderWidth * 2
             : contentWidth;
-        final fullHeight =
-            showOuterBorder ? totalHeight + outerBorderWidth * 2 : totalHeight;
+        final fullHeight = showOuterBorder
+            ? totalHeight + outerBorderWidth * 2
+            : totalHeight;
 
         return SingleChildScrollView(
           child: Center(
@@ -554,8 +345,9 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.black.toOpacity(0.35),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -565,24 +357,23 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
                   if (!isReorderMode)
                     ElevatedButton(
                       onPressed: _showBorderSettings,
-                      child: const Text('边框颜色'),
+                      child: Text('Border Color'.tl),
                     ),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  ElevatedButton(
+                  const SizedBox(width: 20),
+                  ElevatedButton.icon(
+                    icon: Icon(isReorderMode ? Icons.check : Icons.sort),
                     onPressed: () {
                       setState(() => isReorderMode = !isReorderMode);
                     },
-                    child: Text(isReorderMode ? '完成排序' : '进入排序'),
+                    label: Text(
+                      isReorderMode ? "Finish Sorting".tl : "Sort Images".tl,
+                    ),
                   ),
-                  const SizedBox(
-                    width: 20,
-                  ),
+                  const SizedBox(width: 20),
                   if (!isReorderMode)
                     ElevatedButton(
                       onPressed: () => _captureAndSaveLongImage(context),
-                      child: const Text('保存长图'),
+                      child: Text('Save Long Image'.tl),
                     ),
                 ],
               ),
@@ -597,7 +388,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: const Text('生成长图'),
+        title: Text('Stitch Long Image'.tl),
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
@@ -613,10 +404,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
                 child: _buildReorderView(),
               ),
             ),
-          if (!isReorderMode)
-            Positioned.fill(
-              child: _buildMainCanvasPreview(),
-            ),
+          if (!isReorderMode) Positioned.fill(child: _buildMainCanvasPreview()),
           _buildBottomButtons(),
         ],
       ),

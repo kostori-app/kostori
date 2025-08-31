@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'dart:convert';
-import 'dart:isolate';
 import 'dart:ui' as ui;
 import 'dart:ui';
 
@@ -10,8 +10,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
+import 'package:intl/intl.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -32,12 +32,15 @@ import 'package:markdown_widget/widget/blocks/leaf/paragraph.dart';
 import 'package:markdown_widget/widget/inlines/code.dart';
 import 'package:markdown_widget/widget/markdown_block.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:yaml/yaml.dart';
 
+import '../../components/misc_components.dart';
 import '../../foundation/consts.dart';
 import '../../network/api.dart';
+import '../../network/download.dart';
 import '../../utils/utils.dart';
 import 'anime_source_settings.dart';
 
@@ -177,48 +180,17 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     final height = MediaQuery.of(context).size.height;
 
     Widget base = SizedBox(
-      height: height * 0.65,
+      height: height,
       child: Container(
         decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: context.brightness == Brightness.dark
-                  ? Colors.black.toOpacity(0.3)
-                  : Colors.white.toOpacity(0.3),
-              blurRadius: 25.0,
-              spreadRadius: 5.0,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                themeColor.toOpacity(0.0),
-                themeColor.toOpacity(0.2),
-                themeColor.toOpacity(0.3),
-                themeColor.toOpacity(0.4),
-                themeColor.toOpacity(0.5),
-                themeColor.toOpacity(0.4),
-                themeColor.toOpacity(0.3),
-                themeColor.toOpacity(0.2),
-                themeColor.toOpacity(0.2),
-              ],
-              stops: const [
-                0.0,
-                0.125,
-                0.25,
-                0.375,
-                0.5,
-                0.625,
-                0.75,
-                0.875,
-                1.0,
-              ],
-            ),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              themeColor.toOpacity(0.0), // 顶部透明
+              themeColor.toOpacity(0.4), // 中间
+            ],
+            stops: const [0.2, 1.0],
           ),
         ),
       ),
@@ -229,11 +201,13 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       right: 0,
       bottom: 0,
       child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-        child: Container(
-          color: context.brightness == Brightness.dark
-              ? Colors.black.toOpacity(0.1)
-              : Colors.white.toOpacity(0.1), // 半透明白色
+        filter: ui.ImageFilter.blur(
+          sigmaX: 10,
+          sigmaY: 10,
+          tileMode: TileMode.clamp,
+        ),
+        child: Material(
+          color: Theme.of(context).scaffoldBackgroundColor,
           child: base,
         ),
       ),
@@ -420,7 +394,17 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
           ),
           child: Row(
             children: [
-              Icon(icons[id], size: 30),
+              Icon(
+                icons[id],
+                size: 28,
+                color: Color.lerp(
+                  Theme.of(context).colorScheme.primary,
+                  !context.isDarkMode
+                      ? Colors.black.toOpacity(0.72)
+                      : Colors.white.toOpacity(0.72),
+                  0.4,
+                ),
+              ),
               const SizedBox(width: 16),
               Text(name, style: ts.s16),
               const Spacer(),
@@ -436,15 +420,15 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Material(
-            color: context.brightness == Brightness.light
-                ? Colors.white.toOpacity(0.72)
-                : const Color(0xFF1E1E1E).toOpacity(0.72),
-            elevation: 2,
-            shadowColor: Theme.of(context).colorScheme.shadow,
+            color: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
             child: InkWell(
+              highlightColor: !context.isDarkMode
+                  ? Colors.black.toOpacity(0.1)
+                  : Colors.white.toOpacity(0.1),
+              splashColor: Colors.transparent.toOpacity(0.0),
               onTap: () => setState(() => currentPage = id),
               child: content,
             ),

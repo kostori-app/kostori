@@ -86,7 +86,6 @@ abstract mixin class _AnimePageActions {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 自定义顶部区域
             Container(
               padding: EdgeInsets.only(
                 left: 20,
@@ -94,7 +93,7 @@ abstract mixin class _AnimePageActions {
                 right: 20,
                 bottom: 12,
               ),
-              height: 60, // 自定义顶部区域高度
+              height: 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(20),

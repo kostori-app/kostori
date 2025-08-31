@@ -501,11 +501,7 @@ class Bangumi {
       var res = await getBangumiInfoByID(id);
       if (res != null) {
         BangumiManager().addBangumiBinding(res);
-        Log.addLog(
-          LogLevel.info,
-          'bangumiGetBangumiInfoBind',
-          'bind${id}successful',
-        );
+        Log.addLog(LogLevel.info, 'bangumiGetBangumiInfoBind', '绑定$id成功');
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'bangumiGetBangumiInfoBind', '$e\n$s');

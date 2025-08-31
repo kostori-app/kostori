@@ -1,8 +1,11 @@
 part of 'components.dart';
 
 class HoverBox extends StatefulWidget {
-  const HoverBox(
-      {super.key, required this.child, this.borderRadius = BorderRadius.zero});
+  const HoverBox({
+    super.key,
+    required this.child,
+    this.borderRadius = BorderRadius.zero,
+  });
 
   final Widget child;
 
@@ -24,10 +27,11 @@ class _HoverBoxState extends State<HoverBox> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-            color: isHover
-                ? Theme.of(context).colorScheme.surfaceContainerLow
-                : null,
-            borderRadius: widget.borderRadius),
+          color: isHover
+              ? Theme.of(context).colorScheme.surfaceContainerLow
+              : null,
+          borderRadius: widget.borderRadius,
+        ),
         child: widget.child,
       ),
     );
@@ -37,75 +41,77 @@ class _HoverBoxState extends State<HoverBox> {
 enum ButtonType { filled, outlined, text, normal }
 
 class Button extends StatefulWidget {
-  const Button(
-      {super.key,
-      required this.type,
-      required this.child,
-      this.isLoading = false,
-      this.width,
-      this.height,
-      this.padding,
-      this.color,
-      this.onPressedAt,
-      required this.onPressed});
+  const Button({
+    super.key,
+    required this.type,
+    required this.child,
+    this.isLoading = false,
+    this.width,
+    this.height,
+    this.padding,
+    this.color,
+    this.onPressedAt,
+    required this.onPressed,
+  });
 
-  const Button.filled(
-      {super.key,
-      required this.child,
-      required this.onPressed,
-      this.width,
-      this.height,
-      this.padding,
-      this.color,
-      this.onPressedAt,
-      this.isLoading = false})
-      : type = ButtonType.filled;
+  const Button.filled({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    this.width,
+    this.height,
+    this.padding,
+    this.color,
+    this.onPressedAt,
+    this.isLoading = false,
+  }) : type = ButtonType.filled;
 
-  const Button.outlined(
-      {super.key,
-      required this.child,
-      required this.onPressed,
-      this.width,
-      this.height,
-      this.padding,
-      this.color,
-      this.onPressedAt,
-      this.isLoading = false})
-      : type = ButtonType.outlined;
+  const Button.outlined({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    this.width,
+    this.height,
+    this.padding,
+    this.color,
+    this.onPressedAt,
+    this.isLoading = false,
+  }) : type = ButtonType.outlined;
 
-  const Button.text(
-      {super.key,
-      required this.child,
-      required this.onPressed,
-      this.width,
-      this.height,
-      this.padding,
-      this.color,
-      this.onPressedAt,
-      this.isLoading = false})
-      : type = ButtonType.text;
+  const Button.text({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    this.width,
+    this.height,
+    this.padding,
+    this.color,
+    this.onPressedAt,
+    this.isLoading = false,
+  }) : type = ButtonType.text;
 
-  const Button.normal(
-      {super.key,
-      required this.child,
-      required this.onPressed,
-      this.width,
-      this.height,
-      this.padding,
-      this.color,
-      this.onPressedAt,
-      this.isLoading = false})
-      : type = ButtonType.normal;
+  const Button.normal({
+    super.key,
+    required this.child,
+    required this.onPressed,
+    this.width,
+    this.height,
+    this.padding,
+    this.color,
+    this.onPressedAt,
+    this.isLoading = false,
+  }) : type = ButtonType.normal;
 
-  static Widget icon(
-      {Key? key,
-      required Widget icon,
-      required VoidCallback onPressed,
-      double? size,
-      Color? color,
-      String? tooltip,
-      bool isLoading = false,
-      HitTestBehavior behavior = HitTestBehavior.deferToChild}) {
+  static Widget icon({
+    Key? key,
+    required Widget icon,
+    required VoidCallback onPressed,
+    double? size,
+    Color? color,
+    String? tooltip,
+    bool isLoading = false,
+    HitTestBehavior behavior = HitTestBehavior.deferToChild,
+  }) {
     return _IconButton(
       key: key,
       icon: icon,
@@ -155,7 +161,8 @@ class _ButtonState extends State<Button> {
 
   @override
   Widget build(BuildContext context) {
-    var padding = widget.padding ??
+    var padding =
+        widget.padding ??
         const EdgeInsets.symmetric(horizontal: 16, vertical: 4);
     var width = widget.width;
     if (width != null) {
@@ -166,14 +173,9 @@ class _ButtonState extends State<Button> {
       height = height - padding.vertical;
     }
     Widget child = IconTheme(
-      data: IconThemeData(
-        color: textColor,
-      ),
+      data: IconThemeData(color: textColor),
       child: DefaultTextStyle(
-        style: TextStyle(
-          color: textColor,
-          fontSize: 14,
-        ),
+        style: TextStyle(color: textColor, fontSize: 14),
         child: isLoading
             ? CircularProgressIndicator(
                 color: widget.type == ButtonType.filled
@@ -204,13 +206,12 @@ class _ButtonState extends State<Button> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
           padding: padding,
-          constraints: const BoxConstraints(
-            minWidth: 76,
-          ),
+          constraints: const BoxConstraints(minWidth: 76),
           decoration: BoxDecoration(
             color: buttonColor,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: (isHover &&
+            boxShadow:
+                (isHover &&
                     !isLoading &&
                     (widget.type == ButtonType.filled ||
                         widget.type == ButtonType.normal))
@@ -219,12 +220,13 @@ class _ButtonState extends State<Button> {
                       color: Colors.black.toOpacity(0.1),
                       blurRadius: 2,
                       offset: const Offset(0, 1),
-                    )
+                    ),
                   ]
                 : null,
             border: widget.type == ButtonType.outlined
                 ? Border.all(
-                    color: widget.color ??
+                    color:
+                        widget.color ??
                         Theme.of(context).colorScheme.outlineVariant,
                     width: 0.6,
                   )
@@ -235,10 +237,7 @@ class _ButtonState extends State<Button> {
             child: SizedBox(
               width: width,
               height: height,
-              child: Center(
-                widthFactor: 1,
-                child: child,
-              ),
+              child: Center(widthFactor: 1, child: child),
             ),
           ),
         ),
@@ -276,8 +275,8 @@ class _ButtonState extends State<Button> {
     return widget.type == ButtonType.filled
         ? context.colorScheme.onPrimary
         : (widget.type == ButtonType.text
-            ? widget.color ?? context.colorScheme.primary
-            : context.colorScheme.onSurface);
+              ? widget.color ?? context.colorScheme.primary
+              : context.colorScheme.onSurface);
   }
 }
 
@@ -374,18 +373,15 @@ class _MenuButtonState extends State<MenuButton> {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: (widget.message == null) ? 'more'.tl : '${widget.message}'.tl,
+      message: (widget.message == null) ? 'More'.tl : '${widget.message}'.tl,
       child: Button.icon(
-        icon:
-            (widget.icon == null) ? Icon(Icons.more_horiz) : Icon(widget.icon),
+        icon: (widget.icon == null)
+            ? Icon(Icons.more_horiz)
+            : Icon(widget.icon),
         onPressed: () {
           var renderBox = context.findRenderObject() as RenderBox;
           var offset = renderBox.localToGlobal(Offset.zero);
-          showMenuX(
-            context,
-            offset,
-            widget.entries,
-          );
+          showMenuX(context, offset, widget.entries);
         },
       ),
     );

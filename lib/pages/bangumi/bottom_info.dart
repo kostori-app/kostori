@@ -127,7 +127,7 @@ class BottomInfoState extends State<BottomInfo>
 
   Future<void> queryBangumiInfoByID(int id) async {
     try {
-      await infoController.queryBangumiInfoByID(id);
+      await infoController.queryBangumiInfoByID(id, defaultToDb: true);
       setState(() {});
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());
@@ -136,7 +136,7 @@ class BottomInfoState extends State<BottomInfo>
 
   Future<void> queryBangumiEpisodeByID(int id) async {
     try {
-      await infoController.queryBangumiEpisodeByID(id);
+      await infoController.queryBangumiEpisodeByID(id, defaultToDb: true);
       setState(() {});
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
@@ -415,7 +415,7 @@ class BottomInfoState extends State<BottomInfo>
                                       children: [
                                         Text(
                                           '${bangumiItem.score}',
-                                          style: TextStyle(fontSize: 32.0),
+                                          style: TextStyle(fontSize: 28.0),
                                         ),
                                         SizedBox(width: 5),
                                         Container(
@@ -453,7 +453,7 @@ class BottomInfoState extends State<BottomInfo>
                                                   const Icon(
                                                     Icons.star_rounded,
                                                   ),
-                                              itemSize: 20.0,
+                                              itemSize: 18.0,
                                             ),
                                             Text(
                                               '@t reviews | #@r'.tlParams({
@@ -610,7 +610,7 @@ class BottomInfoState extends State<BottomInfo>
                     Row(
                       children: [
                         Text(
-                          'Rating Statistics Chart'.tl,
+                          'Rating Chart'.tl,
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

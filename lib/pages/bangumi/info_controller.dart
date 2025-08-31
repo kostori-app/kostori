@@ -9,8 +9,10 @@ import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:mobx/mobx.dart';
 
+import '../../foundation/bangumi.dart';
 import '../../foundation/bangumi/reviews/reviews_item.dart';
 import '../../foundation/bangumi/topics/topics_info_item.dart';
 import '../../foundation/bangumi/topics/topics_item.dart';
@@ -27,7 +29,14 @@ abstract class _InfoController with Store {
 
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
-  final List<String> tabs = <String>['概览', '吐槽', '讨论', '日志', '角色', '制作'];
+  final List<String> tabs = <String>[
+    'Overview'.tl,
+    'Comments'.tl,
+    'Topics'.tl,
+    'Log'.tl,
+    'Characters'.tl,
+    'StaffList'.tl,
+  ];
 
   List<History> bangumiHistory = [];
 
@@ -63,10 +72,19 @@ abstract class _InfoController with Store {
   @observable
   var bangumiSRI = ObservableList<BangumiSRI>();
 
-  Future<void> queryBangumiInfoByID(int id) async {
+  Future<void> queryBangumiInfoByID(int id, {bool defaultToDb = false}) async {
     isLoading = true;
     try {
-      bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+      if (defaultToDb) {
+        BangumiItem? bangumiBind = await BangumiManager().bindFind(id);
+        if (bangumiBind != null) {
+          bangumiItem = bangumiBind;
+        } else {
+          bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+        }
+      } else {
+        bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+      }
       bangumiSRI.clear();
       await Bangumi.getBangumiSRIByID(id).then((v) {
         bangumiSRI.addAll(v);
@@ -77,9 +95,19 @@ abstract class _InfoController with Store {
     }
   }
 
-  Future<void> queryBangumiEpisodeByID(int id) async {
+  Future<void> queryBangumiEpisodeByID(
+    int id, {
+    bool defaultToDb = false,
+  }) async {
     try {
-      allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+      if (defaultToDb) {
+        allEpisodes = await BangumiManager().allEpInfoFind(id);
+        if (allEpisodes.isEmpty) {
+          allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+        }
+      } else {
+        allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+      }
     } catch (e) {
       Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
     }

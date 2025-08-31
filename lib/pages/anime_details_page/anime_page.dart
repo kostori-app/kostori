@@ -75,6 +75,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   bool isDownloaded = false;
   bool isUpdateBangumiBind = false;
+  bool isBangumi = false;
 
   BangumiItem? get bangumiItem => bangumiBindInfo;
   late TabController tabController;
@@ -92,7 +93,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         newHistory?.lastWatchTime != history?.lastWatchTime) {
       history = newHistory;
       if (history?.bangumiId == null) {
-        updateBangumiId();
+        debugPrint('isBangumi是: $isBangumi');
+        if (isBangumi) {
+          updateBangumiId();
+        }
       }
       update();
     }
@@ -263,6 +267,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
+    isBangumi = animeSource.isBangumi;
+
     return animeSource.loadAnimeInfo!(widget.id);
   }
 

@@ -297,25 +297,25 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
       switch (weekday.weekday) {
         case 1:
-          dayOfWeek = '周一';
+          dayOfWeek = 'Monday'.tl;
           break;
         case 2:
-          dayOfWeek = '周二';
+          dayOfWeek = 'Tuesday'.tl;
           break;
         case 3:
-          dayOfWeek = '周三';
+          dayOfWeek = 'Wednesday'.tl;
           break;
         case 4:
-          dayOfWeek = '周四';
+          dayOfWeek = 'Thursday'.tl;
           break;
         case 5:
-          dayOfWeek = '周五';
+          dayOfWeek = 'Friday'.tl;
           break;
         case 6:
-          dayOfWeek = '周六';
+          dayOfWeek = 'Saturday'.tl;
           break;
         case 7:
-          dayOfWeek = '周日';
+          dayOfWeek = 'Sunday'.tl;
           break;
       }
 

@@ -27,6 +27,64 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$isPortraitFullscreenAtom = Atom(
+    name: '_PlayerController.isPortraitFullscreen',
+    context: context,
+  );
+
+  @override
+  bool get isPortraitFullscreen {
+    _$isPortraitFullscreenAtom.reportRead();
+    return super.isPortraitFullscreen;
+  }
+
+  @override
+  set isPortraitFullscreen(bool value) {
+    _$isPortraitFullscreenAtom.reportWrite(
+      value,
+      super.isPortraitFullscreen,
+      () {
+        super.isPortraitFullscreen = value;
+      },
+    );
+  }
+
+  late final _$audioOutTypeAtom = Atom(
+    name: '_PlayerController.audioOutType',
+    context: context,
+  );
+
+  @override
+  bool get audioOutType {
+    _$audioOutTypeAtom.reportRead();
+    return super.audioOutType;
+  }
+
+  @override
+  set audioOutType(bool value) {
+    _$audioOutTypeAtom.reportWrite(value, super.audioOutType, () {
+      super.audioOutType = value;
+    });
+  }
+
+  late final _$isPiPModeAtom = Atom(
+    name: '_PlayerController.isPiPMode',
+    context: context,
+  );
+
+  @override
+  bool get isPiPMode {
+    _$isPiPModeAtom.reportRead();
+    return super.isPiPMode;
+  }
+
+  @override
+  set isPiPMode(bool value) {
+    _$isPiPModeAtom.reportWrite(value, super.isPiPMode, () {
+      super.isPiPMode = value;
+    });
+  }
+
   late final _$isFullScreenAtom = Atom(
     name: '_PlayerController.isFullScreen',
     context: context,
@@ -42,6 +100,24 @@ mixin _$PlayerController on _PlayerController, Store {
   set isFullScreen(bool value) {
     _$isFullScreenAtom.reportWrite(value, super.isFullScreen, () {
       super.isFullScreen = value;
+    });
+  }
+
+  late final _$isSeekAtom = Atom(
+    name: '_PlayerController.isSeek',
+    context: context,
+  );
+
+  @override
+  bool get isSeek {
+    _$isSeekAtom.reportRead();
+    return super.isSeek;
+  }
+
+  @override
+  set isSeek(bool value) {
+    _$isSeekAtom.reportWrite(value, super.isSeek, () {
+      super.isSeek = value;
     });
   }
 
@@ -225,6 +301,60 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$currentEpisodedAtom = Atom(
+    name: '_PlayerController.currentEpisoded',
+    context: context,
+  );
+
+  @override
+  int get currentEpisoded {
+    _$currentEpisodedAtom.reportRead();
+    return super.currentEpisoded;
+  }
+
+  @override
+  set currentEpisoded(int value) {
+    _$currentEpisodedAtom.reportWrite(value, super.currentEpisoded, () {
+      super.currentEpisoded = value;
+    });
+  }
+
+  late final _$currentRoadAtom = Atom(
+    name: '_PlayerController.currentRoad',
+    context: context,
+  );
+
+  @override
+  int get currentRoad {
+    _$currentRoadAtom.reportRead();
+    return super.currentRoad;
+  }
+
+  @override
+  set currentRoad(int value) {
+    _$currentRoadAtom.reportWrite(value, super.currentRoad, () {
+      super.currentRoad = value;
+    });
+  }
+
+  late final _$videoUrlAtom = Atom(
+    name: '_PlayerController.videoUrl',
+    context: context,
+  );
+
+  @override
+  String get videoUrl {
+    _$videoUrlAtom.reportRead();
+    return super.videoUrl;
+  }
+
+  @override
+  set videoUrl(String value) {
+    _$videoUrlAtom.reportWrite(value, super.videoUrl, () {
+      super.videoUrl = value;
+    });
+  }
+
   late final _$showTabBodyAtom = Atom(
     name: '_PlayerController.showTabBody',
     context: context,
@@ -294,6 +424,24 @@ mixin _$PlayerController on _PlayerController, Store {
   set playerSpeed(double value) {
     _$playerSpeedAtom.reportWrite(value, super.playerSpeed, () {
       super.playerSpeed = value;
+    });
+  }
+
+  late final _$playbackSpeedAtom = Atom(
+    name: '_PlayerController.playbackSpeed',
+    context: context,
+  );
+
+  @override
+  double get playbackSpeed {
+    _$playbackSpeedAtom.reportRead();
+    return super.playbackSpeed;
+  }
+
+  @override
+  set playbackSpeed(double value) {
+    _$playbackSpeedAtom.reportWrite(value, super.playbackSpeed, () {
+      super.playbackSpeed = value;
     });
   }
 
@@ -441,11 +589,51 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$animeImgAtom = Atom(
+    name: '_PlayerController.animeImg',
+    context: context,
+  );
+
+  @override
+  String get animeImg {
+    _$animeImgAtom.reportRead();
+    return super.animeImg;
+  }
+
+  @override
+  set animeImg(String value) {
+    _$animeImgAtom.reportWrite(value, super.animeImg, () {
+      super.animeImg = value;
+    });
+  }
+
+  late final _$currentSetNameAtom = Atom(
+    name: '_PlayerController.currentSetName',
+    context: context,
+  );
+
+  @override
+  String get currentSetName {
+    _$currentSetNameAtom.reportRead();
+    return super.currentSetName;
+  }
+
+  @override
+  set currentSetName(String value) {
+    _$currentSetNameAtom.reportWrite(value, super.currentSetName, () {
+      super.currentSetName = value;
+    });
+  }
+
   @override
   String toString() {
     return '''
 loading: ${loading},
+isPortraitFullscreen: ${isPortraitFullscreen},
+audioOutType: ${audioOutType},
+isPiPMode: ${isPiPMode},
 isFullScreen: ${isFullScreen},
+isSeek: ${isSeek},
 superResolutionType: ${superResolutionType},
 showPreviewImage: ${showPreviewImage},
 playing: ${playing},
@@ -456,10 +644,14 @@ buffer: ${buffer},
 duration: ${duration},
 previewImage: ${previewImage},
 lastPreviewTime: ${lastPreviewTime},
+currentEpisoded: ${currentEpisoded},
+currentRoad: ${currentRoad},
+videoUrl: ${videoUrl},
 showTabBody: ${showTabBody},
 volume: ${volume},
 brightness: ${brightness},
 playerSpeed: ${playerSpeed},
+playbackSpeed: ${playbackSpeed},
 showSeekTime: ${showSeekTime},
 showPlaySpeed: ${showPlaySpeed},
 showBrightness: ${showBrightness},
@@ -467,7 +659,9 @@ showVolume: ${showVolume},
 showVideoController: ${showVideoController},
 volumeSeeking: ${volumeSeeking},
 brightnessSeeking: ${brightnessSeeking},
-canHidePlayerPanel: ${canHidePlayerPanel}
+canHidePlayerPanel: ${canHidePlayerPanel},
+animeImg: ${animeImg},
+currentSetName: ${currentSetName}
     ''';
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/utils/translations.dart';
 
 import '../utils/utils.dart';
 import 'app.dart';
@@ -19,16 +20,16 @@ Map<String, String> bangumiHTTPHeader = {
 };
 
 Map<int, String> ratingLabels = {
-  1: '不忍直视',
-  2: '很差',
-  3: '差',
-  4: '较差',
-  5: '不过不失',
-  6: '还行',
-  7: '推荐',
-  8: '力荐',
-  9: '神作',
-  10: '超神作',
+  1: 'Awful'.tl,
+  2: 'Terrible'.tl,
+  3: 'Bad'.tl,
+  4: 'Poor'.tl,
+  5: 'Okay'.tl,
+  6: 'Fine'.tl,
+  7: 'Good'.tl,
+  8: 'Great'.tl,
+  9: 'Master'.tl,
+  10: 'Epic'.tl,
 };
 
 // 超分辨率滤镜

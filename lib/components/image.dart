@@ -25,9 +25,9 @@ class AnimatedImage extends StatefulWidget {
     Map<String, String>? headers,
     int? cacheWidth,
     int? cacheHeight,
-  })  : image = ResizeImage.resizeIfNeeded(cacheWidth, cacheHeight, image),
-        assert(cacheWidth == null || cacheWidth > 0),
-        assert(cacheHeight == null || cacheHeight > 0);
+  }) : image = ResizeImage.resizeIfNeeded(cacheWidth, cacheHeight, image),
+       assert(cacheWidth == null || cacheWidth > 0),
+       assert(cacheHeight == null || cacheHeight > 0);
 
   final ImageProvider image;
 
@@ -84,7 +84,7 @@ class _AnimatedImageState extends State<AnimatedImage>
 
   static final Map<int, Size> _cache = {};
 
-  static clear() => _cache.clear();
+  static void clear() => _cache.clear();
 
   @override
   void initState() {
@@ -141,7 +141,8 @@ class _AnimatedImageState extends State<AnimatedImage>
   }
 
   void _updateInvertColors() {
-    _invertColors = MediaQuery.maybeInvertColorsOf(context) ??
+    _invertColors =
+        MediaQuery.maybeInvertColorsOf(context) ??
         SemanticsBinding.instance.accessibilityFeatures.invertColors;
   }
 
@@ -150,13 +151,14 @@ class _AnimatedImageState extends State<AnimatedImage>
       context: _scrollAwareContext,
       imageProvider: widget.image,
     );
-    final ImageStream newStream =
-        provider.resolve(createLocalImageConfiguration(
-      context,
-      size: widget.width != null && widget.height != null
-          ? Size(widget.width!, widget.height!)
-          : null,
-    ));
+    final ImageStream newStream = provider.resolve(
+      createLocalImageConfiguration(
+        context,
+        size: widget.width != null && widget.height != null
+            ? Size(widget.width!, widget.height!)
+            : null,
+      ),
+    );
     _updateSourceStream(newStream);
   }
 
@@ -197,8 +199,9 @@ class _AnimatedImageState extends State<AnimatedImage>
 
   void _replaceImage({required ImageInfo? info}) {
     final ImageInfo? oldImageInfo = _imageInfo;
-    SchedulerBinding.instance
-        .addPostFrameCallback((_) => oldImageInfo?.dispose());
+    SchedulerBinding.instance.addPostFrameCallback(
+      (_) => oldImageInfo?.dispose(),
+    );
     _imageInfo = info;
   }
 
@@ -273,14 +276,8 @@ class _AnimatedImageState extends State<AnimatedImage>
     if (_imageInfo != null) {
       if (widget.part != null) {
         return CustomPaint(
-          painter: ImagePainter(
-            image: _imageInfo!.image,
-            part: widget.part!,
-          ),
-          child: SizedBox(
-            width: widget.width,
-            height: widget.height,
-          ),
+          painter: ImagePainter(image: _imageInfo!.image, part: widget.part!),
+          child: SizedBox(width: widget.width, height: widget.height),
         );
       }
       result = RawImage(
@@ -302,9 +299,7 @@ class _AnimatedImageState extends State<AnimatedImage>
         filterQuality: widget.filterQuality,
       );
     } else if (_lastException != null) {
-      result = const Center(
-        child: Icon(Icons.error),
-      );
+      result = const Center(child: Icon(Icons.error));
 
       if (!widget.excludeFromSemantics) {
         result = Semantics(
@@ -393,11 +388,16 @@ class _AnimatedImageState extends State<AnimatedImage>
     super.debugFillProperties(description);
     description.add(DiagnosticsProperty<ImageStream>('stream', _imageStream));
     description.add(DiagnosticsProperty<ImageInfo>('pixels', _imageInfo));
-    description.add(DiagnosticsProperty<ImageChunkEvent>(
-        'loadingProgress', _loadingProgress));
+    description.add(
+      DiagnosticsProperty<ImageChunkEvent>('loadingProgress', _loadingProgress),
+    );
     description.add(DiagnosticsProperty<int>('frameNumber', _frameNumber));
-    description.add(DiagnosticsProperty<bool>(
-        'wasSynchronouslyLoaded', _wasSynchronouslyLoaded));
+    description.add(
+      DiagnosticsProperty<bool>(
+        'wasSynchronouslyLoaded',
+        _wasSynchronouslyLoaded,
+      ),
+    );
   }
 }
 
@@ -407,12 +407,7 @@ class ImagePart {
   final double? x2;
   final double? y2;
 
-  const ImagePart({
-    this.x1,
-    this.y1,
-    this.x2,
-    this.y2,
-  });
+  const ImagePart({this.x1, this.y1, this.x2, this.y2});
 }
 
 class ImagePainter extends CustomPainter {
@@ -421,10 +416,7 @@ class ImagePainter extends CustomPainter {
   final ImagePart part;
 
   /// Render a part of the image.
-  const ImagePainter({
-    required this.image,
-    this.part = const ImagePart(),
-  });
+  const ImagePainter({required this.image, this.part = const ImagePart()});
 
   @override
   void paint(Canvas canvas, Size size) {

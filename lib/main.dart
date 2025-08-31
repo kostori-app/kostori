@@ -1,15 +1,18 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/pages/auth_page.dart';
+import 'package:kostori/pages/watcher/player_audio_handler.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
@@ -30,15 +33,10 @@ void main(List<String> args) {
     runZonedGuarded(
       () async {
         WidgetsFlutterBinding.ensureInitialized();
-        if (App.isAndroid) {
-          await FlutterDownloader.initialize(
-            debug: true,
-            // optional: set to false to disable printing logs to console (default: true)
-            ignoreSsl:
-                true, // option: set to false to disable working with http links (default: false)
-          );
-        }
         MediaKit.ensureInitialized();
+        if (App.isAndroid) {
+          await AudioServiceManager().initializeHandler();
+        }
         await init();
 
         runApp(ProviderScope(child: MyApp()));
@@ -429,4 +427,42 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
     PointerDeviceKind.stylus,
     PointerDeviceKind.trackpad,
   };
+}
+
+class AudioServiceManager {
+  static final AudioServiceManager _instance = AudioServiceManager._internal();
+
+  factory AudioServiceManager() => _instance;
+
+  AudioServiceManager._internal();
+
+  PlayerAudioHandler? _handler;
+  bool _isInitialized = false;
+
+  PlayerAudioHandler get handler {
+    if (!_isInitialized) {
+      Log.addLog(
+        LogLevel.error,
+        'handler',
+        "AudioHandler has not been initialized yet",
+      );
+      throw Exception('AudioHandler has not been initialized yet');
+    }
+    return _handler!;
+  }
+
+  // 初始化 handler
+  Future<void> initializeHandler() async {
+    _handler = await AudioService.init(
+      builder: () => PlayerAudioHandler(),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.axlmly.kostori',
+        androidNotificationChannelName: 'Kostori',
+        androidNotificationChannelDescription: 'Kostori Media Notification',
+        androidNotificationOngoing: false,
+        androidStopForegroundOnPause: true,
+      ),
+    );
+    _isInitialized = true;
+  }
 }

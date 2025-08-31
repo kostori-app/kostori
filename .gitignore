@@ -47,3 +47,4 @@ app.*.map.json
 /package-lock.json
 /CHANGELOG.md
 /yarn.lock
+/.versionrc.js

@@ -1049,6 +1049,8 @@ function ImageLoadingConfig({url, method, data, headers, onResponse, modifyImage
 
 class AnimeSource {
     name = ""
+    
+    isBangumi = false
 
     key = ""
 

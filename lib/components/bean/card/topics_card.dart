@@ -1,3 +1,5 @@
+// ignore_for_file: strict_top_level_inference
+
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
@@ -34,8 +36,9 @@ class TopicsCard extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: contentMaxWidth),
         child: Card(
           elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () => _handleTap(context),
@@ -55,9 +58,7 @@ class TopicsCard extends StatelessWidget {
                       children: [
                         Text(
                           topics.title,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -69,7 +70,8 @@ class TopicsCard extends StatelessWidget {
                               child: Text(
                                 topics.creator.nickname,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                                  fontWeight: FontWeight.bold,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -106,8 +108,8 @@ class TopicsCard extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width < 600
               ? MediaQuery.of(context).size.width
               : App.isDesktop
-                  ? MediaQuery.of(context).size.width * 9 / 16
-                  : MediaQuery.of(context).size.width,
+              ? MediaQuery.of(context).size.width * 9 / 16
+              : MediaQuery.of(context).size.width,
         ),
         clipBehavior: Clip.antiAlias,
         context: context,
