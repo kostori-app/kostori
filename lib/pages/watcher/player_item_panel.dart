@@ -31,7 +31,6 @@ class PlayerItemPanel extends StatefulWidget {
     required this.handleProgressBarDragStart,
     required this.handleProgressBarDragEnd,
     required this.animationController,
-    required this.keyboardFocus,
     required this.startHideTimer,
     required this.cancelHideTimer,
     required this.showVideoInfo,
@@ -42,7 +41,6 @@ class PlayerItemPanel extends StatefulWidget {
   final void Function(ThumbDragDetails details) handleProgressBarDragStart;
   final void Function() handleProgressBarDragEnd;
   final AnimationController animationController;
-  final FocusNode keyboardFocus;
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
   final void Function() showVideoInfo;
@@ -336,43 +334,96 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             //底部进度条
             AnimatedOpacity(
               opacity:
-                  (!widget.playerController.isFullScreen &&
-                      !widget.playerController.showVideoController)
+                  ((!widget.playerController.isFullScreen &&
+                          !widget.playerController.showVideoController) ||
+                      widget.playerController.isSeek)
                   ? 1.0
                   : 0.0,
-              duration: const Duration(milliseconds: 200),
+              duration: Duration(seconds: 1),
               curve: Curves.easeInOut,
               child: Align(
                 alignment: Alignment.bottomCenter,
-                child: ProgressBar(
-                  thumbRadius: 0,
-                  thumbGlowRadius: 0,
-                  barHeight: 2,
-                  progressBarColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.toOpacity(0.72),
-                  bufferedBarColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.toOpacity(0.36),
-                  baseBarColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.toOpacity(0.2),
-                  timeLabelLocation: TimeLabelLocation.none,
-                  progress: widget.playerController.currentPosition,
-                  buffered: widget.playerController.buffer,
-                  total: widget.playerController.duration,
-                  onSeek: (duration) {
-                    widget.playerController.seek(duration);
-                  },
-                  onDragStart: (details) {
-                    widget.handleProgressBarDragStart(details);
-                  },
-                  onDragUpdate: (details) {
-                    widget.playerController.currentPosition = details.timeStamp;
-                  },
-                  onDragEnd: () {
-                    widget.handleProgressBarDragEnd();
-                  },
+                child: Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      tween: Tween<double>(
+                        begin: widget.playerController.isSeek ? 0.0 : 1.0,
+                        end: widget.playerController.isSeek ? 1.0 : 0.0,
+                      ),
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Container(
+                            height: 25,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                stops: const [0.0, 0.3, 0.6, 1.0],
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.toOpacity(0.3),
+                                  Colors.black.toOpacity(0.6),
+                                  Colors.black,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.toOpacity(0.2),
+                                  blurRadius: 20.0,
+                                  spreadRadius: 5.0,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                      tween: Tween<double>(
+                        begin: widget.playerController.isSeek ? 0 : 1,
+                        end: widget.playerController.isSeek ? 1 : 0,
+                      ),
+                      builder: (context, value, child) {
+                        return ProgressBar(
+                          thumbRadius: 6 * value,
+                          thumbGlowRadius: 0,
+                          barHeight: 2 + 2 * value,
+                          progressBarColor: Theme.of(
+                            context,
+                          ).colorScheme.primary.toOpacity(0.72),
+                          bufferedBarColor: Theme.of(
+                            context,
+                          ).colorScheme.primary.toOpacity(0.36),
+                          baseBarColor: Theme.of(
+                            context,
+                          ).colorScheme.primary.toOpacity(0.2),
+                          timeLabelLocation: TimeLabelLocation.none,
+                          progress: widget.playerController.currentPosition,
+                          buffered: widget.playerController.buffer,
+                          total: widget.playerController.duration,
+                          onSeek: (duration) {
+                            widget.playerController.seek(duration);
+                          },
+                          onDragStart: (details) {
+                            widget.handleProgressBarDragStart(details);
+                          },
+                          onDragUpdate: (details) {
+                            widget.playerController.currentPosition =
+                                details.timeStamp;
+                          },
+                          onDragEnd: () {
+                            widget.handleProgressBarDragEnd();
+                          },
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -414,38 +465,53 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               ),
             ),
             // 底部渐变半透明区域
-            AnimatedPositioned(
-              duration: Duration(seconds: 1),
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Visibility(
-                child: SlideTransition(
-                  position: bottomOffsetAnimation,
-                  child: Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.toOpacity(0.3), // 起始透明度提高
-                          Colors.black.toOpacity(0.6), // 中间过渡点
-                          Colors.black.toOpacity(0.8),
+            Stack(
+              children: [
+                // Animated 底部面板
+                AnimatedPositioned(
+                  duration: Duration(seconds: 1),
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: SlideTransition(
+                    position: bottomOffsetAnimation,
+                    child: Container(
+                      height: widget.playerController.isPortraitFullscreen
+                          ? 140
+                          : 50,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          stops: const [0.0, 0.3, 0.6, 1.0],
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.toOpacity(0.3),
+                            Colors.black.toOpacity(0.6),
+                            Colors.black,
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.toOpacity(0.2),
+                            blurRadius: 20.0,
+                            spreadRadius: 5.0,
+                          ),
                         ],
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.toOpacity(0.2),
-                          blurRadius: 20.0, // 边缘模糊
-                          spreadRadius: 5.0,
-                        ),
-                      ],
                     ),
                   ),
                 ),
-              ),
+                //会有几px的透明空隙
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 1,
+                  child: Container(color: Colors.black),
+                ),
+              ],
             ),
             // 右侧渐变半透明区域
             AnimatedPositioned(
