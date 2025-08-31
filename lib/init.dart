@@ -6,6 +6,7 @@ import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
+import 'package:kostori/pages/watcher/SMTC_manager_windows.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
@@ -58,6 +59,7 @@ Future<void> init() async {
       const methodChannel = MethodChannel('kostori/method_channel');
       methodChannel.invokeMethod("heartBeat");
     });
+    await SMTCManagerWindows.instance.init();
   }
 }
 

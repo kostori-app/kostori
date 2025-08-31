@@ -125,6 +125,8 @@ dependencies:
   floating: ^6.0.0
   markdown_widget: ^2.3.2+8
   audio_service: ^0.18.18
+  smtc_windows: ^1.1.0
+  windows_taskbar: ^1.1.2
 
 dev_dependencies:
   build_runner: ^2.4.9

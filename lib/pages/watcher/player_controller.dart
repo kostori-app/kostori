@@ -13,6 +13,8 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
+import 'package:kostori/pages/watcher/player_audio_handler.dart';
+import 'package:kostori/pages/watcher/taskbar_manager.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
@@ -26,6 +28,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../main.dart';
+import 'SMTC_manager_windows.dart';
 
 part 'player_controller.g.dart';
 
@@ -33,6 +36,7 @@ class PlayerController = _PlayerController with _$PlayerController;
 
 abstract class _PlayerController with Store {
   late ShadersController shadersController;
+  late final PlayerAudioHandler audioHandler;
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
 
@@ -300,6 +304,15 @@ abstract class _PlayerController with Store {
           });
     }
 
+    if (App.isAndroid) {
+      audioHandler = AudioServiceManager().handler;
+      audioHandler.setController(this as PlayerController);
+    }
+
+    if (App.isDesktop) {
+      SMTCManagerWindows.instance.setController(this as PlayerController);
+      TaskbarManager.instance.setController(this as PlayerController);
+    }
     if (superResolutionType != 1) {
       await setShader(superResolutionType);
     }
@@ -358,6 +371,17 @@ abstract class _PlayerController with Store {
     try {
       await playerLogSubscription?.cancel();
     } catch (_) {}
+    if (App.isAndroid) {
+      try {
+        audioHandler.clearController();
+      } catch (e) {
+        Log.addLog(LogLevel.error, "clearController", e.toString());
+      }
+    }
+    if (App.isDesktop) {
+      SMTCManagerWindows.instance.hideSmtcButKeepSession();
+      TaskbarManager.instance.dispose();
+    }
     _pipStatusSubscription?.cancel();
     player.dispose();
   }

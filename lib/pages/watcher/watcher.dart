@@ -13,13 +13,10 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/pages/watcher/player_audio_handler.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
-
-import '../../main.dart';
 
 extension WatcherContext on BuildContext {
   WatcherState get watcher => findAncestorStateOfType<WatcherState>()!;
@@ -68,8 +65,6 @@ class WatcherState extends State<Watcher>
   late final PlayerController playerController;
 
   late GridObserverController observerController;
-
-  late final PlayerAudioHandler audioHandler;
 
   // 当前播放列表
   late int currentRoad;
@@ -138,10 +133,6 @@ class WatcherState extends State<Watcher>
     currentRoad = 0;
     _initializeProgress();
     playerController.changePlayerSettings();
-    if (App.isAndroid) {
-      audioHandler = AudioServiceManager().handler;
-      audioHandler.setController(playerController);
-    }
   }
 
   @override
@@ -155,13 +146,6 @@ class WatcherState extends State<Watcher>
   @override
   void dispose() {
     observerController.controller?.dispose();
-    if (App.isAndroid) {
-      try {
-        audioHandler.clearController();
-      } catch (e) {
-        Log.addLog(LogLevel.error, "clearController", e.toString());
-      }
-    }
     playerController.dispose();
     updateHistoryTimer.cancel();
     playerController.disposeWindow();
