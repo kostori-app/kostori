@@ -36,8 +36,9 @@ import java.io.FileOutputStream
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.Timer
 import java.util.TimerTask
+import com.ryanheise.audioservice.AudioServiceFragmentActivity
 
-class MainActivity : FlutterFragmentActivity() {
+class MainActivity : AudioServiceFragmentActivity() {
     var volumeListen = VolumeListen()
     var listening = false
 

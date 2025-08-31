@@ -27,6 +27,28 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$isPortraitFullscreenAtom = Atom(
+    name: '_PlayerController.isPortraitFullscreen',
+    context: context,
+  );
+
+  @override
+  bool get isPortraitFullscreen {
+    _$isPortraitFullscreenAtom.reportRead();
+    return super.isPortraitFullscreen;
+  }
+
+  @override
+  set isPortraitFullscreen(bool value) {
+    _$isPortraitFullscreenAtom.reportWrite(
+      value,
+      super.isPortraitFullscreen,
+      () {
+        super.isPortraitFullscreen = value;
+      },
+    );
+  }
+
   late final _$isFullScreenAtom = Atom(
     name: '_PlayerController.isFullScreen',
     context: context,
@@ -42,6 +64,24 @@ mixin _$PlayerController on _PlayerController, Store {
   set isFullScreen(bool value) {
     _$isFullScreenAtom.reportWrite(value, super.isFullScreen, () {
       super.isFullScreen = value;
+    });
+  }
+
+  late final _$isSeekAtom = Atom(
+    name: '_PlayerController.isSeek',
+    context: context,
+  );
+
+  @override
+  bool get isSeek {
+    _$isSeekAtom.reportRead();
+    return super.isSeek;
+  }
+
+  @override
+  set isSeek(bool value) {
+    _$isSeekAtom.reportWrite(value, super.isSeek, () {
+      super.isSeek = value;
     });
   }
 
@@ -445,7 +485,9 @@ mixin _$PlayerController on _PlayerController, Store {
   String toString() {
     return '''
 loading: ${loading},
+isPortraitFullscreen: ${isPortraitFullscreen},
 isFullScreen: ${isFullScreen},
+isSeek: ${isSeek},
 superResolutionType: ${superResolutionType},
 showPreviewImage: ${showPreviewImage},
 playing: ${playing},
