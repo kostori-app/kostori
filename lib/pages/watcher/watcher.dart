@@ -176,9 +176,36 @@ class WatcherState extends State<Watcher>
           (widget.anime.episode!.values
               .elementAt(playerController.currentRoad)
               .length)) {
-        episode++;
-        loadNextlVideo(episode);
-        history?.watchEpisode.add(episode);
+        try {
+          episode++;
+          loadNextlVideo(episode);
+          history?.watchEpisode.add(episode);
+          showCenter(
+            seconds: 1,
+            icon: Gif(
+              image: const AssetImage('assets/img/check.gif'),
+              height: 80,
+              fps: 120,
+              color: Theme.of(context).colorScheme.primary,
+              autostart: Autostart.once,
+            ),
+            message: '正在播放下一集',
+            context: context,
+          );
+        } catch (e) {
+          showCenter(
+            seconds: 3,
+            icon: Gif(
+              image: AssetImage('assets/img/warning.gif'),
+              height: 64,
+              fps: 120,
+              autostart: Autostart.once,
+            ),
+            message: '加载剧集时出错 ${e.toString()}',
+            context: context,
+          );
+          Log.addLog(LogLevel.info, "playNextEpisode", "加载剧集时出错");
+        }
       } else {
         showCenter(
           seconds: 3,
@@ -203,7 +230,7 @@ class WatcherState extends State<Watcher>
 
     ep = widget.anime.episode?.values.elementAt(road);
 
-    Log.addLog(LogLevel.info, "加载集数", "$episodeIndex");
+    Log.addLog(LogLevel.info, "加载剧集", "$episodeIndex");
     episode = episodeIndex;
     try {
       var progressFind = await HistoryManager().progressFind(
@@ -213,7 +240,7 @@ class WatcherState extends State<Watcher>
         road,
       );
       playerController.currentRoad = road;
-      playerController.currentEpisoded = episodeIndex;
+
       history?.watchEpisode.add(episode);
       history?.lastRoad = road;
       progress?.road = road;
@@ -230,8 +257,9 @@ class WatcherState extends State<Watcher>
       );
       if (res is! String || res.isEmpty) {
         Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
-        return;
+        throw Exception("$res 不合法");
       }
+      playerController.currentEpisoded = episodeIndex;
       playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
@@ -239,14 +267,14 @@ class WatcherState extends State<Watcher>
       playerController.updateCurrentSetName(episode);
       updateHistory();
     } catch (e, s) {
-      Log.addLog(LogLevel.error, "加载剧集", "$e\n$s");
-    } finally {}
+      Log.addLog(LogLevel.error, "loadInfo", "$e\n$s");
+    }
   }
 
-  void loadNextlVideo(int episodeIndex) async {
+  Future<void> loadNextlVideo(int episodeIndex) async {
     ep = widget.anime.episode?.values.elementAt(playerController.currentRoad);
     episode = episodeIndex;
-    Log.addLog(LogLevel.info, "加载集数", "$episodeIndex");
+    Log.addLog(LogLevel.info, "加载剧集", "$episodeIndex");
     try {
       var progressFind = await HistoryManager().progressFind(
         widget.anime.id,
@@ -254,7 +282,7 @@ class WatcherState extends State<Watcher>
         episode - 1,
         playerController.currentRoad,
       );
-      playerController.currentEpisoded = episodeIndex;
+
       history?.watchEpisode.add(episode);
       progress?.episode = episode - 1;
 
@@ -269,8 +297,9 @@ class WatcherState extends State<Watcher>
       );
       if (res is! String || res.isEmpty) {
         Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
-        return;
+        throw Exception("$res 不合法");
       }
+      playerController.currentEpisoded = episodeIndex;
       playerController.videoUrl = res;
       await _play(res, episode, time);
       loaded = episodeIndex;
@@ -279,8 +308,9 @@ class WatcherState extends State<Watcher>
       playerController.updateCurrentSetName(episode);
       updateHistory();
     } catch (e, s) {
-      Log.addLog(LogLevel.error, "加载剧集", "$e\n$s");
-    } finally {}
+      Log.addLog(LogLevel.error, "loadNextlVideo", "$e\n$s");
+      rethrow;
+    }
   }
 
   void retry() {
