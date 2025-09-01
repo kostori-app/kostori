@@ -10,11 +10,13 @@ import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/audio_service/SMTC_manager_windows.dart';
+import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
+import 'package:kostori/foundation/audio_service/player_audio_handler.dart';
+import 'package:kostori/foundation/audio_service/taskbar_manager.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
-import 'package:kostori/pages/watcher/player_audio_handler.dart';
-import 'package:kostori/pages/watcher/taskbar_manager.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
@@ -26,9 +28,6 @@ import 'package:mobx/mobx.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
-
-import '../../main.dart';
-import 'SMTC_manager_windows.dart';
 
 part 'player_controller.g.dart';
 
