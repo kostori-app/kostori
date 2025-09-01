@@ -52,11 +52,6 @@ class PlayerAudioHandler extends BaseAudioHandler {
     }
   }
 
-  // 当播放页面销毁时调用
-  Future<void> clearController() async {
-    await stop();
-  }
-
   // 统一的取消监听方法
   Future<void> _clearListeners() async {
     try {
@@ -164,16 +159,19 @@ class PlayerAudioHandler extends BaseAudioHandler {
     try {
       await _clearListeners().then((_) async {
         if (_controller != null) {
-          await _controller!.pause();
+          try {
+            await _controller!.pause();
+          } catch (_) {
+          } finally {
+            playbackState.add(
+              PlaybackState(
+                playing: false,
+                processingState: AudioProcessingState.idle,
+              ),
+            );
+            mediaItem.add(null);
+          }
         }
-
-        playbackState.add(
-          PlaybackState(
-            playing: false,
-            processingState: AudioProcessingState.idle,
-          ),
-        );
-        mediaItem.add(null);
       });
 
       Log.addLog(LogLevel.info, "stop", "updated: ${playbackState.value}");

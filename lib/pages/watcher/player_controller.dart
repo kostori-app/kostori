@@ -373,7 +373,7 @@ abstract class _PlayerController with Store {
     } catch (_) {}
     if (App.isAndroid) {
       try {
-        audioHandler.clearController();
+        audioHandler.stop();
       } catch (e) {
         Log.addLog(LogLevel.error, "clearController", e.toString());
       }
