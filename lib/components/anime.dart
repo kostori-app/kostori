@@ -94,6 +94,22 @@ class AnimeTile extends StatelessWidget {
       );
     }
 
+    final stats = StatsManager();
+    if (!stats.isExist(anime.id, AnimeType(anime.sourceKey.hashCode))) {
+      try {
+        stats.addStats(
+          stats.createStatsData(
+            id: anime.id,
+            title: anime.title,
+            cover: anime.cover,
+            type: anime.sourceKey.hashCode,
+          ),
+        );
+      } catch (e) {
+        Log.addLog(LogLevel.error, 'addStats', e.toString());
+      }
+    }
+
     LocalFavoritesManager().updateRecentlyWatched(
       anime.id,
       AnimeType(anime.sourceKey.hashCode),

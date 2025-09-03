@@ -244,6 +244,13 @@ abstract class _PlayerController with Store {
         .elementAt(newEpisode - 1);
   }
 
+  void closeTabBodyAnimated() {
+    animation.reverse();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      showTabBody = false;
+    });
+  }
+
   Future<void> changeAudioOutType() async {
     audioOutType = !audioOutType;
     var pp = player.platform as NativePlayer;
@@ -254,6 +261,13 @@ abstract class _PlayerController with Store {
     }
     appdata.settings['audioOutType'] = audioOutType;
     appdata.writeImplicitData();
+  }
+
+  String formatNow() {
+    final now = DateTime.now();
+    return '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
   }
 
   Future<void> changePlayerSettings() async {
@@ -289,6 +303,11 @@ abstract class _PlayerController with Store {
     playerTimer = getPlayerTimer();
 
     animeImg = WatcherState.currentState!.widget.anime.cover;
+
+    timeStream = Stream.periodic(
+      const Duration(seconds: 1),
+      (_) => formatNow(),
+    ).asBroadcastStream();
 
     if (App.isAndroid) {
       Timer? debounceTimer;
@@ -429,7 +448,7 @@ abstract class _PlayerController with Store {
 
       if (isFullScreen) {
         // 退出全屏
-        App.rootContext.pop();
+        App.pop();
       } else {
         // 进入全屏
         Future.microtask(() {
@@ -443,11 +462,9 @@ abstract class _PlayerController with Store {
       // --- 移动端逻辑 ---
 
       if (isFullScreen) {
-        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        App.rootContext.pop();
-        await SystemChrome.setPreferredOrientations([
-          DeviceOrientation.portraitUp,
-        ]);
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        App.pop();
+        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         isPortraitFullscreen = false;
         WakelockPlus.disable();
       } else {
@@ -457,11 +474,9 @@ abstract class _PlayerController with Store {
           overlays: SystemUiOverlay.values,
         );
         if (isPortraitFullScreen) {
-          await SystemChrome.setPreferredOrientations([
-            DeviceOrientation.portraitUp,
-          ]);
+          SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         } else {
-          await SystemChrome.setPreferredOrientations([
+          SystemChrome.setPreferredOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
           ]);
@@ -646,30 +661,26 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
       tag: WatcherState.currentState!.widget.anime.id,
       child: Observer(
         builder: (context) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: widget.playerController.isPiPMode
-                ? isPaddingCheckError
-                      ? MediaQuery(
-                          data: MediaQuery.of(context).copyWith(
-                            viewPadding: const EdgeInsets.only(
-                              top: 15,
-                              bottom: 15,
-                            ),
-                            padding: const EdgeInsets.only(top: 15, bottom: 15),
+          return widget.playerController.isPiPMode
+              ? isPaddingCheckError
+                    ? MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          viewPadding: const EdgeInsets.only(
+                            top: 15,
+                            bottom: 15,
                           ),
-                          child: Video(
-                            controller:
-                                widget.playerController.playerController,
-                            controls: null,
-                          ),
-                        )
-                      : Video(
+                          padding: const EdgeInsets.only(top: 15, bottom: 15),
+                        ),
+                        child: Video(
                           controller: widget.playerController.playerController,
                           controls: null,
-                        )
-                : VideoPage(playerController: widget.playerController),
-          );
+                        ),
+                      )
+                    : Video(
+                        controller: widget.playerController.playerController,
+                        controls: null,
+                      )
+              : VideoPage(playerController: widget.playerController);
         },
       ),
     );

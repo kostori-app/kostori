@@ -2,6 +2,8 @@
 
 part of 'anime_page.dart';
 
+String comment = '';
+
 abstract mixin class _AnimePageActions {
   final InfoController infoController = InfoController();
 
@@ -15,7 +17,21 @@ abstract mixin class _AnimePageActions {
 
   BangumiItem? bangumiBindInfo;
 
-  bool isLiking = false;
+  StatsDataImpl? statsDataImpl;
+
+  DailyEvent? todayComment;
+  PlatformEventRecord? commentRecord;
+
+  DailyEvent? todayClick;
+  PlatformEventRecord? clickRecord;
+
+  DailyEvent? todayWatch;
+  PlatformEventRecord? watchRecord;
+
+  DailyEvent? todayRating;
+  PlatformEventRecord? ratingRecord;
+
+  int? ratingValue;
 
   bool isLiked = false;
 

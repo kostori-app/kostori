@@ -18,6 +18,8 @@ import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 
+import '../../foundation/stats.dart';
+
 extension WatcherContext on BuildContext {
   WatcherState get watcher => findAncestorStateOfType<WatcherState>()!;
 }
@@ -69,12 +71,14 @@ class WatcherState extends State<Watcher>
 
   late GridObserverController observerController;
 
+  final stats = StatsManager();
+
   // 当前播放列表
   late int currentRoad;
 
   ScrollController scrollController = ScrollController();
 
-  Timer updateHistoryTimer = Timer.periodic(Duration(days: 1), (timer) {});
+  Timer? updateHistoryTimer;
 
   @override
   void update() {
@@ -88,6 +92,8 @@ class WatcherState extends State<Watcher>
   History? history;
 
   Progress? progress;
+
+  late StatsDataImpl statsDataImpl;
 
   dynamic ep;
 
@@ -114,7 +120,7 @@ class WatcherState extends State<Watcher>
     currentState = this;
     lastWatchTime = widget.initialWatchEpisode ?? 1;
     episode = widget.initialEpisode ?? 1;
-
+    updateStats();
     playerController.player.stream.completed.listen((completed) {
       if (completed) {
         playNextEpisode();
@@ -150,7 +156,7 @@ class WatcherState extends State<Watcher>
   void dispose() {
     observerController.controller?.dispose();
     playerController.dispose();
-    updateHistoryTimer.cancel();
+    updateHistoryTimer?.cancel();
     playerController.disposeWindow();
     super.dispose();
   }
@@ -300,10 +306,6 @@ class WatcherState extends State<Watcher>
     }
   }
 
-  void retry() {
-    setState(() {});
-  }
-
   Future<void> _play(String res, int order, int currentPlaybackTime) async {
     try {
       if (mounted) {
@@ -344,10 +346,38 @@ class WatcherState extends State<Watcher>
         if (bangumiId != null) {
           history?.bangumiId = bangumiId;
         }
+        final todayRecord = statsDataImpl.totalWatchDurations.firstWhere(
+          (c) =>
+              c.date.year == DateTime.now().year &&
+              c.date.month == DateTime.now().month &&
+              c.date.day == DateTime.now().day,
+        );
+        final platformRecord = todayRecord.platformEventRecords.firstWhere(
+          (p) => p.platform == AppPlatform.current,
+        );
+        platformRecord.value += 1;
         HistoryManager().addHistoryAsync(history!);
         HistoryManager().addProgress(progress!, widget.anime.animeId);
+        stats.addStats(statsDataImpl);
       }
     });
+  }
+
+  void updateStats() async {
+    final (statsDataImpl, todayRecord, platformRecord) = await stats
+        .getOrCreateTodayPlatformRecord(
+          id: widget.anime.id,
+          type: widget.anime.sourceKey.hashCode,
+          targetType: DailyEventType.watch,
+        );
+
+    platformRecord.value = platformRecord.value;
+
+    if (!statsDataImpl.totalWatchDurations.contains(todayRecord)) {
+      statsDataImpl.totalWatchDurations.add(todayRecord);
+    }
+    this.statsDataImpl = statsDataImpl;
+    await stats.addStats(statsDataImpl);
   }
 
   @override

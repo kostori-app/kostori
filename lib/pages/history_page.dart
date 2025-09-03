@@ -9,6 +9,7 @@ import 'package:kostori/utils/translations.dart';
 import '../foundation/consts.dart';
 import '../foundation/favorites.dart';
 import '../foundation/log.dart';
+import '../foundation/stats.dart';
 import 'anime_details_page/anime_page.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -250,6 +251,21 @@ class _HistoryPageState extends State<HistoryPage> {
                     App.mainNavigatorKey?.currentContext?.to(
                       () => AnimePage(id: a.id, sourceKey: a.sourceKey),
                     );
+                    final stats = StatsManager();
+                    if (!stats.isExist(a.id, AnimeType(a.sourceKey.hashCode))) {
+                      try {
+                        stats.addStats(
+                          stats.createStatsData(
+                            id: a.id,
+                            title: a.title,
+                            cover: a.cover,
+                            type: a.sourceKey.hashCode,
+                          ),
+                        );
+                      } catch (e) {
+                        Log.addLog(LogLevel.error, 'addStats', e.toString());
+                      }
+                    }
                     LocalFavoritesManager().updateRecentlyWatched(
                       a.id,
                       AnimeType(a.sourceKey.hashCode),
@@ -285,7 +301,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
 
     return PopScope(
-      canPop: !multiSelectMode,
+      canPop: multiSelectMode == false,
       onPopInvokedWithResult: (didPop, result) {
         if (multiSelectMode) {
           setState(() {

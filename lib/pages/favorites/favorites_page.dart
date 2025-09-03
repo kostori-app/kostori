@@ -23,6 +23,7 @@ import '../../components/bangumi_widget.dart';
 import '../../foundation/bangumi/bangumi_item.dart';
 import '../../foundation/history.dart';
 import '../../foundation/log.dart';
+import '../../foundation/stats.dart';
 import '../../network/bangumi.dart';
 import '../bangumi/bangumi_search_page.dart';
 import 'favorites_controller.dart';

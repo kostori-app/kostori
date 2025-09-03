@@ -715,6 +715,28 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                 () =>
                                     AnimePage(id: a.id, sourceKey: a.sourceKey),
                               );
+                              final stats = StatsManager();
+                              if (!stats.isExist(
+                                a.id,
+                                AnimeType(a.sourceKey.hashCode),
+                              )) {
+                                try {
+                                  stats.addStats(
+                                    stats.createStatsData(
+                                      id: a.id,
+                                      title: a.title,
+                                      cover: a.cover,
+                                      type: a.sourceKey.hashCode,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  Log.addLog(
+                                    LogLevel.error,
+                                    'addStats',
+                                    e.toString(),
+                                  );
+                                }
+                              }
                               manager.updateRecentlyWatched(
                                 a.id,
                                 AnimeType(a.sourceKey.hashCode),
@@ -795,17 +817,32 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
       key: PageStorageKey("${favoritesController.folders}"),
       canPop: multiSelectMode == false && searchAllMode == false,
       onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         if (multiSelectMode) {
           setState(() {
             multiSelectMode = false;
             selectedAnimes.clear();
           });
+          if (App.isAndroid) {
+            Log.addLog(
+              LogLevel.info,
+              'multiSelectMode',
+              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
+            );
+          }
         } else if (searchAllMode) {
           setState(() {
             searchAllMode = false;
             keyword = "";
             updateAnimes();
           });
+          if (App.isAndroid) {
+            Log.addLog(
+              LogLevel.info,
+              'searchAllMode',
+              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
+            );
+          }
         }
       },
       child: body,
