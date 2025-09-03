@@ -36,6 +36,10 @@ class PlayerController = _PlayerController with _$PlayerController;
 abstract class _PlayerController with Store {
   late ShadersController shadersController;
   late final PlayerAudioHandler audioHandler;
+  late final Stream<String> timeStream;
+  late AnimationController animation;
+
+  final FocusNode keyboardFocus = FocusNode();
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
 

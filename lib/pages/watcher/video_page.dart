@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -20,11 +21,8 @@ class VideoPage extends StatefulWidget {
 
 class _VideoPageState extends State<VideoPage>
     with SingleTickerProviderStateMixin {
-  late AnimationController animation;
   late Animation<Offset> _rightOffsetAnimation;
   late Animation<Offset> _bottomOffsetAnimation;
-
-  final FocusNode keyboardFocus = FocusNode();
 
   late GridObserverController observerController;
 
@@ -32,13 +30,6 @@ class _VideoPageState extends State<VideoPage>
 
   // 当前播放列表
   late int currentRoad;
-
-  void closeTabBodyAnimated() {
-    animation.reverse();
-    Future.delayed(const Duration(milliseconds: 300), () {
-      widget.playerController.showTabBody = false;
-    });
-  }
 
   void menuJumpToCurrentEpisode() {
     Future.delayed(const Duration(milliseconds: 20), () {
@@ -52,7 +43,7 @@ class _VideoPageState extends State<VideoPage>
 
   void openTabBodyAnimated() {
     if (widget.playerController.showTabBody) {
-      animation.forward();
+      widget.playerController.animation.forward();
       menuJumpToCurrentEpisode();
     }
   }
@@ -61,20 +52,32 @@ class _VideoPageState extends State<VideoPage>
   void initState() {
     super.initState();
     observerController = GridObserverController(controller: scrollController);
-    animation = AnimationController(
+    widget.playerController.animation = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
 
-    _rightOffsetAnimation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0),
-      end: const Offset(0.0, 0.0),
-    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+    _rightOffsetAnimation =
+        Tween<Offset>(
+          begin: const Offset(1.0, 0.0),
+          end: const Offset(0.0, 0.0),
+        ).animate(
+          CurvedAnimation(
+            parent: widget.playerController.animation,
+            curve: Curves.easeInOut,
+          ),
+        );
 
-    _bottomOffsetAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 1.0),
-      end: const Offset(0.0, 0.0),
-    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+    _bottomOffsetAnimation =
+        Tween<Offset>(
+          begin: const Offset(0.0, 1.0),
+          end: const Offset(0.0, 0.0),
+        ).animate(
+          CurvedAnimation(
+            parent: widget.playerController.animation,
+            curve: Curves.easeInOut,
+          ),
+        );
 
     widget.playerController.showTabBody = false;
     widget.playerController.currentRoad = 0;
@@ -93,191 +96,180 @@ class _VideoPageState extends State<VideoPage>
       canPop:
           widget.playerController.isFullScreen == false &&
           widget.playerController.showTabBody == false,
-      onPopInvokedWithResult: (bool didPop, _) {
+      onPopInvokedWithResult: (bool didPop, _) async {
         if (didPop) return;
         if (widget.playerController.showTabBody) {
-          closeTabBodyAnimated();
+          widget.playerController.closeTabBodyAnimated();
+          if (App.isAndroid) {
+            Log.addLog(
+              LogLevel.info,
+              'videoPopScope.showTabBody',
+              'isFullScreen: ${widget.playerController.isFullScreen} \n showTabBody: ${widget.playerController.showTabBody}',
+            );
+          }
         } else if (widget.playerController.isFullScreen) {
-          widget.playerController.toggleFullScreen(context);
+          await widget.playerController.toggleFullScreen(context);
+          if (App.isAndroid) {
+            Log.addLog(
+              LogLevel.info,
+              'videoPopScope.isFullScreen',
+              'isFullScreen: ${widget.playerController.isFullScreen} \n showTabBody: ${widget.playerController.showTabBody}',
+            );
+          }
         }
+        Log.addLog(
+          LogLevel.info,
+          'videoPopScope.PopScope',
+          'isFullScreen: ${widget.playerController.isFullScreen} \n showTabBody: ${widget.playerController.showTabBody}',
+        );
       },
-      child: OrientationBuilder(
-        builder: (context, orientation) {
-          return Observer(
-            builder: (context) => Scaffold(
-              body: SafeArea(
-                bottom: widget.playerController.isPortraitFullscreen,
-                top: false,
-                left: widget.playerController.isPortraitFullscreen
-                    ? false
-                    : !widget.playerController.isFullScreen,
-                right: widget.playerController.isPortraitFullscreen
-                    ? false
-                    : !widget.playerController.isFullScreen,
-                child: Stack(
-                  alignment: widget.playerController.isPortraitFullscreen
-                      ? Alignment.bottomCenter
-                      : Alignment.topRight,
-                  children: [
-                    Container(
-                      color: Colors.black,
-                      height: MediaQuery.of(context).size.height,
-                      width: MediaQuery.of(context).size.width,
-                      child: playerBody,
-                    ),
+      child: Observer(
+        builder: (context) => SafeArea(
+          bottom: widget.playerController.isPortraitFullscreen,
+          top: false,
+          left: widget.playerController.isPortraitFullscreen
+              ? false
+              : !widget.playerController.isFullScreen,
+          right: widget.playerController.isPortraitFullscreen
+              ? false
+              : !widget.playerController.isFullScreen,
+          child: Stack(
+            alignment: widget.playerController.isPortraitFullscreen
+                ? Alignment.bottomCenter
+                : Alignment.topRight,
+            children: [
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black,
+                  height: MediaQuery.of(context).size.height,
+                  width: MediaQuery.of(context).size.width,
+                  child: playerBody,
+                ),
+              ),
 
-                    // 显示播放列表
-                    IgnorePointer(
-                      ignoring:
-                          !widget.playerController.showTabBody, // 隐藏时不拦截事件
-                      child: AnimatedOpacity(
-                        opacity: widget.playerController.showTabBody
-                            ? 1.0
-                            : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        child: Stack(
-                          alignment:
-                              widget.playerController.isPortraitFullscreen
-                              ? Alignment.bottomCenter
-                              : Alignment.topRight,
-                          children: [
-                            AnimatedPositioned(
-                              duration: Duration(seconds: 1),
-                              top: widget.playerController.isPortraitFullscreen
-                                  ? null
-                                  : 0,
-                              bottom:
+              // 显示播放列表
+              IgnorePointer(
+                ignoring: !widget.playerController.showTabBody, // 隐藏时不拦截事件
+                child: AnimatedOpacity(
+                  opacity: widget.playerController.showTabBody ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: Stack(
+                    alignment: widget.playerController.isPortraitFullscreen
+                        ? Alignment.bottomCenter
+                        : Alignment.topRight,
+                    children: [
+                      AnimatedPositioned(
+                        duration: Duration(seconds: 1),
+                        top: widget.playerController.isPortraitFullscreen
+                            ? null
+                            : 0,
+                        bottom: widget.playerController.isPortraitFullscreen
+                            ? 0
+                            : null,
+                        right: 0,
+                        left: widget.playerController.isPortraitFullscreen
+                            ? 0
+                            : null,
+                        child: Visibility(
+                          child: SlideTransition(
+                            position:
+                                widget.playerController.isPortraitFullscreen
+                                ? _bottomOffsetAnimation
+                                : _rightOffsetAnimation,
+                            child: Container(
+                              height:
                                   widget.playerController.isPortraitFullscreen
-                                  ? 0
-                                  : null,
-                              right: 0,
-                              left: widget.playerController.isPortraitFullscreen
-                                  ? 0
-                                  : null,
-                              child: Visibility(
-                                child: SlideTransition(
-                                  position:
+                                  ? MediaQuery.of(context).size.height * 1 / 3 +
+                                        80
+                                  : MediaQuery.of(context).size.height,
+                              width:
+                                  widget.playerController.isPortraitFullscreen
+                                  ? MediaQuery.of(context).size.width
+                                  : MediaQuery.of(context).size.width * 1 / 3 >
+                                        420
+                                  ? 420 + 80
+                                  : MediaQuery.of(context).size.width * 1 / 3 +
+                                        80,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin:
                                       widget
                                           .playerController
                                           .isPortraitFullscreen
-                                      ? _bottomOffsetAnimation
-                                      : _rightOffsetAnimation,
-                                  child: Container(
-                                    height:
-                                        widget
-                                            .playerController
-                                            .isPortraitFullscreen
-                                        ? MediaQuery.of(context).size.height *
-                                                  1 /
-                                                  3 +
-                                              80
-                                        : MediaQuery.of(context).size.height,
-                                    width:
-                                        widget
-                                            .playerController
-                                            .isPortraitFullscreen
-                                        ? MediaQuery.of(context).size.width
-                                        : MediaQuery.of(context).size.width *
-                                                  1 /
-                                                  3 >
-                                              420
-                                        ? 420 + 80
-                                        : MediaQuery.of(context).size.width *
-                                                  1 /
-                                                  3 +
-                                              80,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin:
-                                            widget
-                                                .playerController
-                                                .isPortraitFullscreen
-                                            ? Alignment.topCenter
-                                            : Alignment.centerLeft,
-                                        end:
-                                            widget
-                                                .playerController
-                                                .isPortraitFullscreen
-                                            ? Alignment.bottomCenter
-                                            : Alignment.centerRight,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.toOpacity(0.3),
-                                          Colors.black.toOpacity(0.6),
-                                          Colors.black.toOpacity(0.8),
-                                        ],
-                                        stops: [0.0, 0.3, 0.7, 1.0],
-                                      ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.toOpacity(0.2),
-                                          blurRadius: 20.0,
-                                          spreadRadius: 5.0,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                      ? Alignment.topCenter
+                                      : Alignment.centerLeft,
+                                  end:
+                                      widget
+                                          .playerController
+                                          .isPortraitFullscreen
+                                      ? Alignment.bottomCenter
+                                      : Alignment.centerRight,
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.toOpacity(0.3),
+                                    Colors.black.toOpacity(0.6),
+                                    Colors.black.toOpacity(0.8),
+                                  ],
+                                  stops: [0.0, 0.3, 0.7, 1.0],
                                 ),
-                              ),
-                            ),
-                            // 毛玻璃背景
-                            GestureDetector(
-                              onTap: closeTabBodyAnimated,
-                              child: SizedBox(
-                                width: double.infinity,
-                                height: double.infinity,
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                    sigmaX: 10,
-                                    sigmaY: 10,
-                                  ),
-                                  child: Container(
+                                boxShadow: [
+                                  BoxShadow(
                                     color: Colors.black.toOpacity(0.2),
+                                    blurRadius: 20.0,
+                                    spreadRadius: 5.0,
                                   ),
-                                ),
+                                ],
                               ),
                             ),
-
-                            // 底部或右侧面板
-                            SlideTransition(
-                              position:
-                                  widget.playerController.isPortraitFullscreen
-                                  ? _bottomOffsetAnimation
-                                  : _rightOffsetAnimation,
-                              child: SizedBox(
-                                height:
-                                    widget.playerController.isPortraitFullscreen
-                                    ? MediaQuery.of(context).size.height / 3 +
-                                          80
-                                    : MediaQuery.of(context).size.height,
-                                width:
-                                    widget.playerController.isPortraitFullscreen
-                                    ? MediaQuery.of(context).size.width
-                                    : MediaQuery.of(context).size.width / 3 >
-                                          420
-                                    ? 420 + 160
-                                    : MediaQuery.of(context).size.width / 3 +
-                                          160,
-                                child: Container(
-                                  color: Colors.black.toOpacity(0.42),
-                                  child: GridViewObserver(
-                                    controller: observerController,
-                                    child: Column(children: [tabBar, tabBody]),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      // 毛玻璃背景
+                      GestureDetector(
+                        onTap: widget.playerController.closeTabBodyAnimated,
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: double.infinity,
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(
+                              color: Colors.black.toOpacity(0.2),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // 底部或右侧面板
+                      SlideTransition(
+                        position: widget.playerController.isPortraitFullscreen
+                            ? _bottomOffsetAnimation
+                            : _rightOffsetAnimation,
+                        child: SizedBox(
+                          height: widget.playerController.isPortraitFullscreen
+                              ? MediaQuery.of(context).size.height / 3 + 80
+                              : MediaQuery.of(context).size.height,
+                          width: widget.playerController.isPortraitFullscreen
+                              ? MediaQuery.of(context).size.width
+                              : MediaQuery.of(context).size.width / 3 > 420
+                              ? 420 + 160
+                              : MediaQuery.of(context).size.width / 3 + 160,
+                          child: Container(
+                            color: Colors.black.toOpacity(0.42),
+                            child: GridViewObserver(
+                              controller: observerController,
+                              child: Column(children: [tabBar, tabBody]),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -287,7 +279,7 @@ class _VideoPageState extends State<VideoPage>
       openMenu: openTabBodyAnimated,
       locateEpisode: menuJumpToCurrentEpisode,
       playerController: widget.playerController,
-      keyboardFocus: keyboardFocus,
+      keyboardFocus: widget.playerController.keyboardFocus,
     );
   }
 
@@ -423,7 +415,7 @@ class _VideoPageState extends State<VideoPage>
             clipBehavior: Clip.hardEdge,
             child: InkWell(
               onTap: () async {
-                closeTabBodyAnimated();
+                widget.playerController.closeTabBodyAnimated();
                 widget.playerController.currentRoad = currentRoad;
                 widget.playerController.playEpisode(count0, currentRoad);
               },

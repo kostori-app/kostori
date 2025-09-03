@@ -23,6 +23,8 @@ abstract mixin class _AnimePageActions {
 
   bool isFavorite = false;
 
+  final PlayerController playerController = PlayerController();
+
   FavoriteItem _toFavoriteItem() {
     var tags = <String>[];
     for (var e in anime.tags.entries) {
@@ -95,16 +97,24 @@ abstract mixin class _AnimePageActions {
               ),
               height: 60,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ), // 圆角效果
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
-                  const Image(
-                    image: AssetImage("images/app_icon.png"),
-                    filterQuality: FilterQuality.medium,
-                  ),
+                  if (appdata.implicitData['nameAvatar'] == null ||
+                      appdata.implicitData['nameAvatar'] == '')
+                    const Image(
+                      image: AssetImage("images/app_icon.png"),
+                      filterQuality: FilterQuality.medium,
+                    )
+                  else
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundImage: NetworkImage(
+                        appdata.implicitData['nameAvatar'],
+                      ),
+                      backgroundColor: Colors.transparent,
+                    ),
                   Spacer(),
                   ElevatedButton(
                     onPressed: () async {
@@ -117,10 +127,17 @@ abstract mixin class _AnimePageActions {
             ),
             // 下面是 BottomInfo 内容
             Expanded(
-              child: BottomInfo(
-                bangumiId: bangumiId,
-                infoController: infoController,
-              ),
+              child: bangumiId == null
+                  ? MiscComponents.placeholder(
+                      context,
+                      100,
+                      100,
+                      Colors.transparent,
+                    )
+                  : BottomInfo(
+                      bangumiId: bangumiId,
+                      infoController: infoController,
+                    ),
             ),
           ],
         );
@@ -160,23 +177,18 @@ abstract mixin class _AnimePageActions {
             : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
-      context: context,
+      context: App.rootContext,
       builder: (context) {
-        // 使用 StatefulBuilder 实现搜索框和动态搜索功能
         return StatefulBuilder(
           builder: (context, setState) {
-            // 更新搜索结果的函数
             Future<void> fetchSearchResults(String query) async {
-              FocusScope.of(context).unfocus();
+              FocusScope.of(App.rootContext).unfocus();
               if (query.isEmpty) {
-                // 如果搜索框为空，则默认展示初始数据
                 res = await Bangumi.combinedBangumiSearch(anime.title);
               } else {
-                // 否则根据用户输入重新搜索
                 res = await Bangumi.combinedBangumiSearch(query);
               }
 
-              // 如果搜索结果为空，提示用户
               if (res.isEmpty) {
                 showCenter(
                   seconds: 3,
@@ -195,50 +207,47 @@ abstract mixin class _AnimePageActions {
               setState(() {});
             }
 
-            return Scaffold(
-              body: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverAppBar(
-                    pinned: true,
-                    floating: true,
-                    snap: true,
-                    elevation: 0,
-                    automaticallyImplyLeading: false,
-                    flexibleSpace: ClipRect(
-                      child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          color: context.colorScheme.surface.toOpacity(0.22),
-                        ),
-                      ),
-                    ),
-                    backgroundColor: Colors.transparent,
-                    title: SizedBox(
-                      height: 52,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: TextField(
-                          autofocus: true,
-                          style: const TextStyle(fontSize: 16),
-                          decoration: InputDecoration(
-                            labelText: anime.title,
-                            hintText: 'Enter keywords...'.tl,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.transparent,
-                          ),
-                          onSubmitted: fetchSearchResults,
-                          onChanged: (value) => value,
-                        ),
+            return NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverAppBar(
+                  pinned: true,
+                  floating: true,
+                  snap: true,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  flexibleSpace: ClipRect(
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        color: context.colorScheme.surface.toOpacity(0.22),
                       ),
                     ),
                   ),
-                ],
-                body: _buildResultsList(context, res, fetchSearchResults),
-              ),
+                  backgroundColor: Colors.transparent,
+                  title: SizedBox(
+                    height: 52,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: TextField(
+                        style: const TextStyle(fontSize: 16),
+                        decoration: InputDecoration(
+                          labelText: anime.title,
+                          hintText: 'Enter keywords...'.tl,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16.0),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.transparent,
+                        ),
+                        onSubmitted: fetchSearchResults,
+                        onChanged: (value) => value,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              body: _buildResultsList(res, fetchSearchResults),
             );
           },
         );
@@ -250,23 +259,19 @@ abstract mixin class _AnimePageActions {
     }
   }
 
-  Widget _buildResultsList(
-    BuildContext context,
-    List<BangumiItem> items,
-    Function(String) onSearch,
-  ) {
+  Widget _buildResultsList(List<BangumiItem> items, Function(String) onSearch) {
     if (items.isEmpty) {
       return Center(child: Text('暂无搜索结果'));
     }
 
     return ListView.builder(
-      padding: EdgeInsets.only(top: 16), // 给顶部留出空间
+      padding: EdgeInsets.only(top: 16),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
         return InkWell(
           onTap: () {
-            Navigator.pop(context, item); // 返回选中的项
+            Navigator.pop(context, item);
           },
           splashColor: Theme.of(
             context,
@@ -342,7 +347,7 @@ abstract mixin class _AnimePageActions {
                                   ),
                                   SizedBox(width: 5),
                                   Container(
-                                    padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                                    padding: EdgeInsets.all(2.0),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(
                                         8,
@@ -352,7 +357,7 @@ abstract mixin class _AnimePageActions {
                                             .colorScheme
                                             .secondaryContainer
                                             .toOpacity(0.72),
-                                        width: 2.0, // 设置边框宽度
+                                        width: 2.0,
                                       ),
                                     ),
                                     child: Text(
@@ -361,8 +366,7 @@ abstract mixin class _AnimePageActions {
                                   ),
                                   SizedBox(width: 4),
                                   Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.end, // 右对齐
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       RatingBarIndicator(
                                         itemCount: 5,
@@ -399,8 +403,6 @@ abstract mixin class _AnimePageActions {
 
   // 处理选择后的操作
   Future<void> handleSelection(BuildContext context, BangumiItem item) async {
-    // 模拟延迟操作，可以替换成其他操作（如网络请求等）
-    // await Future.delayed(Duration(seconds: 1));
     showDialog(
       context: context,
       builder: (context) {
@@ -476,5 +478,223 @@ abstract mixin class _AnimePageActions {
         ),
       );
     }
+  }
+
+  void liked() {
+    StatsManager().updateStatsLiked(
+      anime.id,
+      anime.sourceKey.hashCode,
+      !isLiked,
+    );
+  }
+
+  Future<void> showRatingDialog(StatsDataImpl statsDataImpl) async {
+    showDialog(
+      context: App.rootContext,
+      builder: (context) {
+        return FocusScope(
+          node: FocusScopeNode(),
+          child: RatingDialog(statsDataImpl: statsDataImpl),
+        );
+      },
+    );
+  }
+}
+
+class RatingDialog extends StatefulWidget {
+  const RatingDialog({super.key, required this.statsDataImpl});
+
+  final StatsDataImpl statsDataImpl;
+
+  @override
+  State<RatingDialog> createState() => _RatingDialogState();
+}
+
+class _RatingDialogState extends State<RatingDialog> {
+  late StatsDataImpl _statsDataImpl;
+  late double _rating;
+  late bool _showingDraft;
+  bool _isLoading = true;
+  late TextEditingController _commentController;
+  late TodayEventBundle stats;
+
+  @override
+  void initState() {
+    super.initState();
+    _statsDataImpl = widget.statsDataImpl;
+    _initializeData();
+  }
+
+  void _initializeData() async {
+    stats = await StatsManager().getOrCreateTodayEvents(
+      id: _statsDataImpl.id,
+      type: _statsDataImpl.type,
+    );
+
+    setState(() {
+      _rating = stats.ratingRecord.rating!.toDouble();
+      _showingDraft = comment.isNotEmpty == true;
+      _commentController = TextEditingController(
+        text: _showingDraft ? comment : stats.commentRecord.comment,
+      );
+      _isLoading = false;
+    });
+  }
+
+  void _toggleDraftSaved() {
+    setState(() {
+      _showingDraft = !_showingDraft;
+      _commentController.text = (_showingDraft
+          ? comment
+          : stats.commentRecord.comment)!;
+    });
+  }
+
+  // 更新评分和评论
+  void _updateStats() async {
+    try {
+      final newRating = _rating.toInt();
+      final newComment = _commentController.text;
+
+      final stats = await StatsManager().getOrCreateTodayEvents(
+        id: _statsDataImpl.id,
+        type: _statsDataImpl.type,
+      );
+
+      if (stats.ratingRecord.rating != newRating) {
+        stats.ratingRecord.rating = newRating;
+        stats.ratingRecord.value += 1;
+      }
+
+      if (stats.commentRecord.comment != newComment) {
+        stats.commentRecord.comment = newComment;
+        stats.commentRecord.value += 1;
+      }
+
+      await StatsManager().updateStatsRatingAndComment(
+        _statsDataImpl.id,
+        _statsDataImpl.type,
+        rating: stats.statsData.rating,
+        comment: stats.statsData.comment,
+      );
+
+      App.rootContext.showMessage(message: '应用成功');
+    } catch (e) {
+      App.rootContext.showMessage(message: '应用失败');
+      Log.addLog(LogLevel.error, 'save statsDataImpl', e.toString());
+    } finally {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return ContentDialog(
+      title: "Rating".tl,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  Utils.getRatingLabel(_rating),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(' /'),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _rating = 0;
+                    });
+                  },
+                  child: const Text(
+                    '清除',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            RatingBar.builder(
+              initialRating: _rating / 2,
+              minRating: 0,
+              maxRating: 5,
+              allowHalfRating: true,
+              itemBuilder: (context, index) => const Icon(Icons.star_rounded),
+              itemSize: 30,
+              onRatingUpdate: (newRating) {
+                setState(() {
+                  _rating = newRating * 2;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 240),
+                    child: Scrollbar(
+                      child: SingleChildScrollView(
+                        child: TextField(
+                          controller: _commentController,
+                          maxLines: null,
+                          onChanged: (_) => setState(() {
+                            comment = _commentController.text;
+                          }),
+                          decoration: InputDecoration(
+                            hintText: '写下你的评价...'.tl,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        Text(
+                          _showingDraft ? '草稿'.tl : '正文'.tl,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${_commentController.text.length} 字".tl,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        ElevatedButton(onPressed: _toggleDraftSaved, child: Text('切换草稿'.tl)),
+        const SizedBox(width: 8),
+        ElevatedButton(onPressed: _updateStats, child: Text('Update'.tl)),
+      ],
+    );
   }
 }

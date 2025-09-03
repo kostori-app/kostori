@@ -36,6 +36,7 @@ import '../../components/misc_components.dart';
 import '../../components/share_widget.dart';
 import '../../utils/data_sync.dart';
 import '../bangumi/info_controller.dart';
+import '../watcher/player_controller.dart';
 
 part 'actions.dart';
 

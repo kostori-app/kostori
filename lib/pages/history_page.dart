@@ -8,6 +8,7 @@ import 'package:kostori/utils/translations.dart';
 
 import '../foundation/consts.dart';
 import '../foundation/favorites.dart';
+import '../foundation/log.dart';
 import 'anime_details_page/anime_page.dart';
 
 class HistoryPage extends StatefulWidget {

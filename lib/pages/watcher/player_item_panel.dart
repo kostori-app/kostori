@@ -57,8 +57,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   final TextEditingController textController = TextEditingController();
   final FocusNode textFieldFocus = FocusNode();
 
-  Timer? timer;
-  String formattedTime = '';
   String saveAddress = '';
 
   void _showPlaybackSpeedDialog(BuildContext context) {
@@ -258,21 +256,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             curve: Curves.easeInOut,
           ),
         );
-    timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      setState(() {
-        DateTime now = DateTime.now();
-        formattedTime =
-            '${now.hour.toString().padLeft(2, '0')}:'
-            '${now.minute.toString().padLeft(2, '0')}:'
-            '${now.second.toString().padLeft(2, '0')}';
-      });
-    });
   }
 
   @override
   void dispose() {
     super.dispose();
-    timer!.cancel();
   }
 
   MenuButton _buildMenuItems() {
@@ -924,14 +912,21 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             if (widget.playerController.isFullScreen) ...[
                               const SizedBox(width: 4),
                               //时间
-                              Text(
-                                formattedTime,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium!.fontSize,
-                                ),
+                              StreamBuilder<String>(
+                                stream: widget.playerController.timeStream,
+                                initialData: widget.playerController
+                                    .formatNow(),
+                                builder: (context, snapshot) {
+                                  return Text(
+                                    snapshot.data ?? '--:--:--',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium!.fontSize,
+                                    ),
+                                  );
+                                },
                               ),
                               const SizedBox(width: 8),
                               //安卓流量速度显示
@@ -1208,14 +1203,21 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 if (widget.playerController.isFullScreen) ...[
                                   const SizedBox(width: 4),
                                   //时间
-                                  Text(
-                                    formattedTime,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: Theme.of(
-                                        context,
-                                      ).textTheme.titleMedium!.fontSize,
-                                    ),
+                                  StreamBuilder<String>(
+                                    stream: widget.playerController.timeStream,
+                                    initialData: widget.playerController
+                                        .formatNow(),
+                                    builder: (context, snapshot) {
+                                      return Text(
+                                        snapshot.data ?? '--:--:--',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium!.fontSize,
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(width: 8),
                                   //安卓流量速度显示

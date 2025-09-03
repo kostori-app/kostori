@@ -70,11 +70,12 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
 
   @override
   Widget build(BuildContext context) {
-    // 计算要添加和删除的文件夹数量
-    final foldersToAdd =
-        selectedLocalFolders.where((f) => !added.contains(f)).length;
-    final foldersToRemove =
-        selectedLocalFolders.where((f) => added.contains(f)).length;
+    final foldersToAdd = selectedLocalFolders
+        .where((f) => !added.contains(f))
+        .length;
+    final foldersToRemove = selectedLocalFolders
+        .where((f) => added.contains(f))
+        .length;
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -91,9 +92,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
               ),
             ),
             const Divider(height: 1),
-            Expanded(
-              child: buildLocalContent(),
-            ),
+            Expanded(child: buildLocalContent()),
             const Divider(height: 1),
             Padding(
               padding: const EdgeInsets.all(16),
@@ -120,8 +119,9 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                             ? null
                             : () async {
                                 // 执行添加操作
-                                for (final folder in selectedLocalFolders
-                                    .where((f) => !added.contains(f))) {
+                                for (final folder in selectedLocalFolders.where(
+                                  (f) => !added.contains(f),
+                                )) {
                                   LocalFavoritesManager().addAnime(
                                     folder,
                                     widget.favoriteItem,
@@ -129,8 +129,9 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                 }
 
                                 // 执行删除操作
-                                for (final folder in selectedLocalFolders
-                                    .where((f) => added.contains(f))) {
+                                for (final folder in selectedLocalFolders.where(
+                                  (f) => added.contains(f),
+                                )) {
                                   LocalFavoritesManager().deleteAnimeWithId(
                                     folder,
                                     widget.cid,
@@ -141,8 +142,10 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                 // 更新状态
                                 if (mounted) {
                                   setState(() {
-                                    added = LocalFavoritesManager()
-                                        .find(widget.cid, widget.type);
+                                    added = LocalFavoritesManager().find(
+                                      widget.cid,
+                                      widget.type,
+                                    );
                                     selectedLocalFolders.clear();
                                   });
                                   widget.onFavorite(foldersToAdd > 0);
@@ -161,11 +164,13 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  "@a to add • @b to remove"
-                      .tlParams({"a": foldersToAdd, "b": foldersToRemove}),
+                  "@a to add • @b to remove".tlParams({
+                    "a": foldersToAdd,
+                    "b": foldersToRemove,
+                  }),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outlineVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
               ),
           ],
@@ -229,12 +234,13 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
       child: Center(
         child: TextButton(
           onPressed: () async {
-            await newFolder();
-            if (mounted) {
-              setState(() {
-                localFolders = LocalFavoritesManager().folderNames;
-              });
-            }
+            await newFolder().then((_) {
+              if (mounted) {
+                setState(() {
+                  localFolders = LocalFavoritesManager().folderNames;
+                });
+              }
+            });
           },
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -33,6 +33,7 @@ class Watcher extends StatefulWidget {
     required this.history,
     this.initialWatchEpisode,
     this.initialEpisode,
+    required this.playerController,
   });
 
   final AnimeType type;
@@ -53,6 +54,8 @@ class Watcher extends StatefulWidget {
   final int? initialEpisode;
 
   final History history;
+
+  final PlayerController playerController;
 
   @override
   State<Watcher> createState() => WatcherState();
@@ -107,7 +110,7 @@ class WatcherState extends State<Watcher>
   void initState() {
     super.initState();
     observerController = GridObserverController(controller: scrollController);
-    playerController = PlayerController();
+    playerController = widget.playerController;
     currentState = this;
     lastWatchTime = widget.initialWatchEpisode ?? 1;
     episode = widget.initialEpisode ?? 1;
@@ -320,15 +323,18 @@ class WatcherState extends State<Watcher>
         // and the player will not seek properlly.
         await sub.cancel();
         if (mounted) {
-          await playerController.player.seek(
-            Duration(milliseconds: currentPlaybackTime),
-          );
+          try {
+            await playerController.player.seek(
+              Duration(milliseconds: currentPlaybackTime),
+            );
+          } catch (_) {}
         }
         completer.complete(0);
       }
     });
     // 等待 Completer 完成
     await completer.future;
+    if (mounted) return;
     updateHistoryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (playerController.player.state.playing) {
         history?.lastWatchTime =
@@ -419,19 +425,13 @@ class WatcherState extends State<Watcher>
     }
   }
 
-  Timer? _updateHistoryTimer;
-
   void updateHistory() {
     if (history != null) {
       history!.lastWatchEpisode = episode;
       history!.allEpisode = widget.episode!.values
           .elementAt(playerController.currentRoad)
           .length;
-      _updateHistoryTimer?.cancel();
-      _updateHistoryTimer = Timer(const Duration(seconds: 1), () {
-        HistoryManager().addHistoryAsync(history!);
-        _updateHistoryTimer = null;
-      });
+      HistoryManager().addHistoryAsync(history!);
     }
   }
 }

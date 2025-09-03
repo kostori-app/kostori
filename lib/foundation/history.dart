@@ -294,15 +294,15 @@ class HistoryManager with ChangeNotifier {
       """);
 
     _db.execute('''
-  CREATE TABLE IF NOT EXISTS progress (
-    type int,
-    historyId TEXT,
-    episode INT,
-    road INT,
-    progressInMilli INT,
-    PRIMARY KEY (type, episode, road, historyId),
-    FOREIGN KEY (historyId) REFERENCES History(id)
-  );
+        create table if not exists progress (
+          type int,
+          historyId text,
+          episode int,
+          road int,
+          progressInMilli int,
+          PRIMARY KEY (type, episode, road, historyId),
+          FOREIGN KEY (historyId) REFERENCES History(id)
+        );
 ''');
 
     var columns = _db.select("""

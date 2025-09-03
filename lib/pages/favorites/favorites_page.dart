@@ -22,6 +22,7 @@ import 'package:kostori/utils/translations.dart';
 import '../../components/bangumi_widget.dart';
 import '../../foundation/bangumi/bangumi_item.dart';
 import '../../foundation/history.dart';
+import '../../foundation/log.dart';
 import '../../network/bangumi.dart';
 import '../bangumi/bangumi_search_page.dart';
 import 'favorites_controller.dart';
