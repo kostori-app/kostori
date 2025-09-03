@@ -415,188 +415,199 @@ class _PlayerItemState extends State<PlayerItem>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Center(
-                        child: Focus(
-                          focusNode: App.isDesktop
-                              ? widget.keyboardFocus
-                              : null,
-                          autofocus: App.isDesktop,
-                          onKeyEvent: (focusNode, KeyEvent event) {
-                            if (event is KeyDownEvent) {
-                              // 空格键处理
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.space) {
-                                try {
-                                  widget.playerController.playOrPause();
-                                  return KeyEventResult.handled; // 明确返回值
-                                } catch (e) {
-                                  Log.addLog(
-                                    LogLevel.error,
-                                    '播放器内部错误',
-                                    e.toString(),
-                                  );
-                                  return KeyEventResult.ignored;
-                                }
-                              }
-                              // 右方向键处理
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.arrowRight) {
-                                try {
-                                  if (widget.playerController.playerTimer !=
-                                      null) {
-                                    widget.playerController.playerTimer!
-                                        .cancel();
-                                  }
-                                  widget.playerController.currentPosition =
-                                      Duration(
-                                        seconds:
-                                            widget
-                                                .playerController
-                                                .currentPosition
-                                                .inSeconds +
-                                            10,
-                                      );
-                                  widget.playerController.seek(
-                                    widget.playerController.currentPosition,
-                                  );
-                                  widget.playerController.playerTimer = widget
-                                      .playerController
-                                      .getPlayerTimer();
-                                  return KeyEventResult.handled;
-                                } catch (e) {
-                                  Log.addLog(
-                                    LogLevel.error,
-                                    '播放器内部错误',
-                                    e.toString(),
-                                  );
-                                  return KeyEventResult.ignored;
-                                }
-                              }
-
-                              // 左方向键处理
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.arrowLeft) {
-                                int targetPosition =
-                                    widget
-                                        .playerController
-                                        .currentPosition
-                                        .inSeconds -
-                                    10;
-                                if (targetPosition < 0) {
-                                  targetPosition = 0;
-                                }
-                                try {
-                                  if (widget.playerController.playerTimer !=
-                                      null) {
-                                    widget.playerController.playerTimer!
-                                        .cancel();
-                                  }
-                                  widget.playerController.currentPosition =
-                                      Duration(seconds: targetPosition);
-                                  widget.playerController.seek(
-                                    widget.playerController.currentPosition,
-                                  );
-                                  widget.playerController.playerTimer = widget
-                                      .playerController
-                                      .getPlayerTimer();
-                                  return KeyEventResult.handled;
-                                } catch (e) {
-                                  Log.addLog(
-                                    LogLevel.error,
-                                    '左方向键被按下',
-                                    e.toString(),
-                                  );
-                                  return KeyEventResult.ignored;
-                                }
-                              }
-                              // 上方向键被按下
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.arrowUp) {
-                                increaseVolume();
-                                _handleKeyChangingVolume();
-                              }
-                              // 下方向键被按下
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.arrowDown) {
-                                decreaseVolume();
-                                _handleKeyChangingVolume();
-                              }
-                              // Esc键处理
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.escape) {
-                                if (widget.playerController.isFullScreen) {
-                                  widget.playerController.toggleFullScreen(
-                                    context,
-                                  );
-                                  return KeyEventResult.handled;
-                                }
-                              }
-
-                              // F键处理
-                              if (event.logicalKey == LogicalKeyboardKey.keyF) {
-                                widget.playerController.toggleFullScreen(
-                                  context,
-                                );
-                                return KeyEventResult.handled;
-                              }
-                            } else if (event is KeyRepeatEvent) {
-                              // 右方向键长按
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.arrowRight) {
-                                if (widget.playerController.playbackSpeed <
-                                    widget.playerController.playbackSpeed * 2) {
-                                  if (!widget.playerController.showPlaySpeed) {
-                                    widget.playerController.showPlaySpeed =
-                                        true;
-                                    widget.playerController.setPlaybackSpeed(
-                                      widget.playerController.playbackSpeed * 2,
-                                    );
-                                  }
-                                }
-                              }
-                            } else if (event is KeyUpEvent) {
-                              // 右方向键抬起
-                              if (event.logicalKey ==
-                                  LogicalKeyboardKey.arrowRight) {
-                                if (widget.playerController.showPlaySpeed) {
-                                  widget.playerController.showPlaySpeed = false;
-                                  widget.playerController.setPlaybackSpeed(
-                                    widget.playerController.playbackSpeed / 2,
-                                  );
-                                } else {
+                      if (App.isDesktop)
+                        Center(
+                          child: Focus(
+                            focusNode: widget.keyboardFocus,
+                            autofocus: App.isDesktop,
+                            onKeyEvent: (focusNode, KeyEvent event) {
+                              if (event is KeyDownEvent) {
+                                // 空格键处理
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.space) {
                                   try {
-                                    widget.playerController.playerTimer
-                                        ?.cancel();
-                                    widget.playerController.seek(
-                                      Duration(
-                                        seconds:
-                                            widget
-                                                .playerController
-                                                .currentPosition
-                                                .inSeconds +
-                                            10,
-                                      ),
-                                    );
-                                    widget.playerController.playerTimer = widget
-                                        .playerController
-                                        .getPlayerTimer();
+                                    widget.playerController.playOrPause();
+                                    return KeyEventResult.handled; // 明确返回值
                                   } catch (e) {
                                     Log.addLog(
                                       LogLevel.error,
                                       '播放器内部错误',
                                       e.toString(),
                                     );
+                                    return KeyEventResult.ignored;
+                                  }
+                                }
+                                // 右方向键处理
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.arrowRight) {
+                                  try {
+                                    if (widget.playerController.playerTimer !=
+                                        null) {
+                                      widget.playerController.playerTimer!
+                                          .cancel();
+                                    }
+                                    widget.playerController.currentPosition =
+                                        Duration(
+                                          seconds:
+                                              widget
+                                                  .playerController
+                                                  .currentPosition
+                                                  .inSeconds +
+                                              10,
+                                        );
+                                    widget.playerController.seek(
+                                      widget.playerController.currentPosition,
+                                    );
+                                    widget.playerController.playerTimer = widget
+                                        .playerController
+                                        .getPlayerTimer();
+                                    return KeyEventResult.handled;
+                                  } catch (e) {
+                                    Log.addLog(
+                                      LogLevel.error,
+                                      '播放器内部错误',
+                                      e.toString(),
+                                    );
+                                    return KeyEventResult.ignored;
+                                  }
+                                }
+
+                                // 左方向键处理
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.arrowLeft) {
+                                  int targetPosition =
+                                      widget
+                                          .playerController
+                                          .currentPosition
+                                          .inSeconds -
+                                      10;
+                                  if (targetPosition < 0) {
+                                    targetPosition = 0;
+                                  }
+                                  try {
+                                    if (widget.playerController.playerTimer !=
+                                        null) {
+                                      widget.playerController.playerTimer!
+                                          .cancel();
+                                    }
+                                    widget.playerController.currentPosition =
+                                        Duration(seconds: targetPosition);
+                                    widget.playerController.seek(
+                                      widget.playerController.currentPosition,
+                                    );
+                                    widget.playerController.playerTimer = widget
+                                        .playerController
+                                        .getPlayerTimer();
+                                    return KeyEventResult.handled;
+                                  } catch (e) {
+                                    Log.addLog(
+                                      LogLevel.error,
+                                      '左方向键被按下',
+                                      e.toString(),
+                                    );
+                                    return KeyEventResult.ignored;
+                                  }
+                                }
+                                // 上方向键被按下
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.arrowUp) {
+                                  increaseVolume();
+                                  _handleKeyChangingVolume();
+                                }
+                                // 下方向键被按下
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.arrowDown) {
+                                  decreaseVolume();
+                                  _handleKeyChangingVolume();
+                                }
+                                // Esc键处理
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.escape) {
+                                  if (widget.playerController.isFullScreen) {
+                                    widget.playerController.toggleFullScreen(
+                                      context,
+                                    );
+                                    return KeyEventResult.handled;
+                                  }
+                                }
+
+                                // F键处理
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.keyF) {
+                                  widget.playerController.toggleFullScreen(
+                                    context,
+                                  );
+                                  return KeyEventResult.handled;
+                                }
+                              } else if (event is KeyRepeatEvent) {
+                                // 右方向键长按
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.arrowRight) {
+                                  if (widget.playerController.playbackSpeed <
+                                      widget.playerController.playbackSpeed *
+                                          2) {
+                                    if (!widget
+                                        .playerController
+                                        .showPlaySpeed) {
+                                      widget.playerController.showPlaySpeed =
+                                          true;
+                                      widget.playerController.setPlaybackSpeed(
+                                        widget.playerController.playbackSpeed *
+                                            2,
+                                      );
+                                    }
+                                  }
+                                }
+                              } else if (event is KeyUpEvent) {
+                                // 右方向键抬起
+                                if (event.logicalKey ==
+                                    LogicalKeyboardKey.arrowRight) {
+                                  if (widget.playerController.showPlaySpeed) {
+                                    widget.playerController.showPlaySpeed =
+                                        false;
+                                    widget.playerController.setPlaybackSpeed(
+                                      widget.playerController.playbackSpeed / 2,
+                                    );
+                                  } else {
+                                    try {
+                                      widget.playerController.playerTimer
+                                          ?.cancel();
+                                      widget.playerController.seek(
+                                        Duration(
+                                          seconds:
+                                              widget
+                                                  .playerController
+                                                  .currentPosition
+                                                  .inSeconds +
+                                              10,
+                                        ),
+                                      );
+                                      widget.playerController.playerTimer =
+                                          widget.playerController
+                                              .getPlayerTimer();
+                                    } catch (e) {
+                                      Log.addLog(
+                                        LogLevel.error,
+                                        '播放器内部错误',
+                                        e.toString(),
+                                      );
+                                    }
                                   }
                                 }
                               }
-                            }
-                            return KeyEventResult.handled;
-                          },
+                              return KeyEventResult.handled;
+                            },
+                            child: PlayerItemSurface(
+                              playerController: widget.playerController,
+                            ),
+                          ),
+                        )
+                      else
+                        Center(
                           child: PlayerItemSurface(
                             playerController: widget.playerController,
                           ),
                         ),
-                      ),
                       // widget.playerController.player.state.buffering
                       //     ? const Positioned.fill(
                       //         child: Center(
