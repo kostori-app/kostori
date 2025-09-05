@@ -728,7 +728,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         widget.startHideTimer();
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.only(right: 10, left: 0),
                         child: Row(
                           children: [
                             IconButton(
@@ -999,7 +999,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         children: [
                           Padding(
                             padding: EdgeInsets.only(
-                              left: 10,
+                              left: 0,
                               right: 10,
                               top: MediaQuery.of(context).padding.top,
                             ),

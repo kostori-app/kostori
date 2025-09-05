@@ -11,7 +11,6 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -157,138 +156,7 @@ class _PlayerItemState extends State<PlayerItem>
     });
   }
 
-  Widget get videoInfoBody {
-    return ListView(
-      children: [
-        ListTile(
-          title: const Text("Source"),
-          subtitle: Text(widget.playerController.videoUrl),
-          onTap: () {
-            App.rootContext.showMessage(message: '复制成功');
-            Clipboard.setData(
-              ClipboardData(text: widget.playerController.videoUrl),
-            );
-          },
-        ),
-        ListTile(
-          title: const Text("Resolution"),
-          subtitle: Text(
-            '${widget.playerController.playerWidth}x${widget.playerController.playerHeight}',
-          ),
-          onTap: () {
-            App.rootContext.showMessage(message: '复制成功');
-            Clipboard.setData(
-              ClipboardData(
-                text:
-                    "Resolution\n${widget.playerController.playerWidth}x${widget.playerController.playerHeight}",
-              ),
-            );
-          },
-        ),
-        ListTile(
-          title: const Text("VideoParams"),
-          subtitle: Text(widget.playerController.playerVideoParams.toString()),
-          onTap: () {
-            App.rootContext.showMessage(message: '复制成功');
-            Clipboard.setData(
-              ClipboardData(
-                text:
-                    "VideoParams\n${widget.playerController.playerVideoParams.toString()}",
-              ),
-            );
-          },
-        ),
-        ListTile(
-          title: const Text("AudioParams"),
-          subtitle: Text(widget.playerController.playerAudioParams.toString()),
-          onTap: () {
-            App.rootContext.showMessage(message: '复制成功');
-            Clipboard.setData(
-              ClipboardData(
-                text:
-                    "AudioParams\n${widget.playerController.playerAudioParams.toString()}",
-              ),
-            );
-          },
-        ),
-        ListTile(
-          title: const Text("Media"),
-          subtitle: Text(widget.playerController.playerPlaylist.toString()),
-          onTap: () {
-            App.rootContext.showMessage(message: '复制成功');
-            Clipboard.setData(
-              ClipboardData(
-                text:
-                    "Media\n${widget.playerController.playerPlaylist.toString()}",
-              ),
-            );
-          },
-        ),
-        ListTile(
-          title: const Text("AudioTrack"),
-          subtitle: Text(widget.playerController.playerAudioTracks.toString()),
-          onTap: () {
-            App.rootContext.showMessage(message: '复制成功');
-            Clipboard.setData(
-              ClipboardData(
-                text:
-                    "AudioTrack\n${widget.playerController.playerAudioTracks.toString()}",
-              ),
-            );
-          },
-        ),
-        ListTile(
-          title: const Text("VideoTrack"),
-          subtitle: Text(widget.playerController.playerVideoTracks.toString()),
-          onTap: () {
-            App.rootContext.showMessage(message: '复制成功');
-            Clipboard.setData(
-              ClipboardData(
-                text:
-                    "VideoTrack\n${widget.playerController.playerVideoTracks.toString()}",
-              ),
-            );
-          },
-        ),
-        ListTile(
-          title: const Text("AudioBitrate"),
-          subtitle: Text(widget.playerController.playerAudioBitrate.toString()),
-          onTap: () {
-            Clipboard.setData(
-              ClipboardData(
-                text:
-                    "AudioBitrate\n${widget.playerController.playerAudioBitrate.toString()}",
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget get videoDebugLogBody {
-    return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 0),
-        child: ListView.builder(
-          itemCount: widget.playerController.playerLog.length,
-          itemBuilder: (context, index) {
-            return SelectableText(widget.playerController.playerLog[index]);
-          },
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.copy),
-        onPressed: () {
-          Clipboard.setData(
-            ClipboardData(text: widget.playerController.playerLog.join('\n')),
-          );
-        },
-      ),
-    );
-  }
-
-  void showVideoInfo() async {
+  void showVideoInfo() {
     showModalBottomSheet(
       isScrollControlled: true,
       constraints: BoxConstraints(
@@ -303,33 +171,7 @@ class _PlayerItemState extends State<PlayerItem>
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
-      builder: (context) {
-        return DefaultTabController(
-          length: 2,
-          child: Scaffold(
-            body: Column(
-              children: [
-                PreferredSize(
-                  preferredSize: Size.fromHeight(kToolbarHeight),
-                  child: Material(
-                    child: TabBar(
-                      tabs: [
-                        Tab(text: 'Status'.tl),
-                        Tab(text: 'Log'.tl),
-                      ],
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    children: [videoInfoBody, videoDebugLogBody],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (_) => VideoInfoSheet(playerController: widget.playerController),
     );
   }
 

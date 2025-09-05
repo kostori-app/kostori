@@ -458,6 +458,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.7"
+  extended_tabs:
+    dependency: "direct main"
+    description:
+      name: extended_tabs
+      sha256: c54d250f39af65033116672ca471fd0950d637dc9dd119c3d24c093295024430
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
   fading_edge_scrollview:
     dependency: transitive
     description:
@@ -1787,6 +1795,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.2"
+  simple_gesture_detector:
+    dependency: transitive
+    description:
+      name: simple_gesture_detector
+      sha256: ba2cd5af24ff20a0b8d609cec3f40e5b0744d2a71804a2616ae086b9c19d19a3
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
   skeletonizer:
     dependency: "direct main"
     description:
