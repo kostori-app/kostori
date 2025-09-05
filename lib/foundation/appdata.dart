@@ -2,13 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/api.dart';
-import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/init.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'log.dart';
 
 class Appdata with Init {
   Appdata._create();
@@ -31,9 +29,9 @@ class Appdata with Init {
     } finally {
       _isSavingData = false;
     }
-    if (sync) {
-      DataSync().uploadData();
-    }
+    // if (sync) {
+    //   DataSync().uploadData();
+    // }
   }
 
   void addSearchHistory(String keyword) {

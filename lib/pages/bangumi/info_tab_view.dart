@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
+import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
+import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/pages/bangumi/bangumi_all_episode_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
@@ -21,13 +27,6 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-import '../../components/bangumi_widget.dart';
-import '../../components/bean/card/reviews_card.dart';
-import '../../components/bean/card/topics_card.dart';
-import '../../components/misc_components.dart';
-import '../../foundation/bangumi/reviews/reviews_item.dart';
-import '../../foundation/image_loader/cached_image.dart';
 
 class InfoTabView extends StatefulWidget {
   const InfoTabView({

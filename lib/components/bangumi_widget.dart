@@ -8,12 +8,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/utils/extension.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
@@ -21,12 +26,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-import '../foundation/bangumi/episode/episode_item.dart';
-import '../foundation/image_loader/cached_image.dart';
-import '../pages/bangumi/bangumi_search_page.dart';
-import '../utils/io.dart';
-import 'misc_components.dart';
 
 class BangumiWidget {
   static Widget buildBriefMode(

@@ -6,16 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:path_provider/path_provider.dart';
-
-import '../../components/bangumi_widget.dart';
-import '../../components/components.dart';
-import '../../foundation/consts.dart';
-import '../../foundation/log.dart';
-import '../../utils/io.dart';
-import '../../utils/utils.dart';
 
 part 'render_dialogue_compose_page.dart';
 

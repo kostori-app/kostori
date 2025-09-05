@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/foundation/app.dart';
-
-import '../../../bbcode/bbcode_widget.dart';
-import '../../../foundation/bangumi/reviews/reviews_item.dart';
-import '../../../pages/bangumi/bangumi_reviews_page.dart';
-import '../../../utils/utils.dart';
+import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
+import 'package:kostori/pages/bangumi/bangumi_reviews_page.dart';
+import 'package:kostori/utils/utils.dart';
 
 class ReviewsCard extends StatelessWidget {
   const ReviewsCard({
@@ -27,8 +26,9 @@ class ReviewsCard extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: contentMaxWidth),
         child: Card(
           elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () {
@@ -55,9 +55,7 @@ class ReviewsCard extends StatelessWidget {
                       children: [
                         Text(
                           reviewsItem.entry.title,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -69,7 +67,8 @@ class ReviewsCard extends StatelessWidget {
                               child: Text(
                                 reviewsItem.user.nickname,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
+                                  fontWeight: FontWeight.bold,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -107,9 +106,7 @@ class ReviewsCard extends StatelessWidget {
   }
 
   void _handleTap(BuildContext context) {
-    final page = BangumiReviewsPage(
-      reviewsItem: reviewsItem,
-    );
+    final page = BangumiReviewsPage(reviewsItem: reviewsItem);
 
     if (!isBottom) {
       context.to(() => page);
@@ -121,8 +118,8 @@ class ReviewsCard extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width < 600
               ? MediaQuery.of(context).size.width
               : App.isDesktop
-                  ? MediaQuery.of(context).size.width * 9 / 16
-                  : MediaQuery.of(context).size.width,
+              ? MediaQuery.of(context).size.width * 9 / 16
+              : MediaQuery.of(context).size.width,
         ),
         clipBehavior: Clip.antiAlias,
         context: context,

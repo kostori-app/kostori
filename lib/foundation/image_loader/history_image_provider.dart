@@ -1,10 +1,12 @@
 import 'dart:async' show Future;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/image_loader/base_image_provider.dart';
+import 'package:kostori/foundation/image_loader/history_image_provider.dart'
+    as image_provider;
 import 'package:kostori/network/images.dart';
-import '../history.dart';
-import 'base_image_provider.dart';
-import 'history_image_provider.dart' as image_provider;
 
 class HistoryImageProvider
     extends BaseImageProvider<image_provider.HistoryImageProvider> {
@@ -24,10 +26,12 @@ class HistoryImageProvider
       history.id,
     )) {
       checkStop();
-      chunkEvents.add(ImageChunkEvent(
-        cumulativeBytesLoaded: progress.currentBytes,
-        expectedTotalBytes: progress.totalBytes,
-      ));
+      chunkEvents.add(
+        ImageChunkEvent(
+          cumulativeBytesLoaded: progress.currentBytes,
+          expectedTotalBytes: progress.totalBytes,
+        ),
+      );
       if (progress.imageBytes != null) {
         return progress.imageBytes!;
       }

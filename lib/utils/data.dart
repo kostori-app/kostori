@@ -9,9 +9,8 @@ import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
-
-import 'io.dart';
 
 Future<File> exportAppData() async {
   var time = DateTime.now().millisecondsSinceEpoch ~/ 1000;

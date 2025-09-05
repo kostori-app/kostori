@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gif/gif.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -12,21 +13,19 @@ import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/stats.dart';
+import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+import 'package:kostori/pages/favorites/favorites_controller.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
-
-import '../../components/bangumi_widget.dart';
-import '../../foundation/bangumi/bangumi_item.dart';
-import '../../foundation/history.dart';
-import '../../foundation/log.dart';
-import '../../foundation/stats.dart';
-import '../../network/bangumi.dart';
-import '../bangumi/bangumi_search_page.dart';
-import 'favorites_controller.dart';
 
 part 'bangumi_favorites_page.dart';
 

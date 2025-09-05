@@ -13,6 +13,7 @@ import 'package:kostori/components/js_ui.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/js_pool.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cookie_jar.dart';
@@ -31,8 +32,6 @@ import 'package:pointycastle/block/modes/cfb.dart';
 import 'package:pointycastle/block/modes/ecb.dart';
 import 'package:pointycastle/block/modes/ofb.dart';
 import 'package:uuid/uuid.dart';
-
-import 'js_pool.dart';
 
 class JavaScriptRuntimeException implements Exception {
   final String message;

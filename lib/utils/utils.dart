@@ -6,17 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gif/gif.dart';
 import 'package:intl/intl.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-
-import '../components/components.dart';
-import '../foundation/app.dart';
-import '../foundation/bangumi/bangumi_item.dart';
-import 'io.dart';
 
 class Utils {
   Utils._();

@@ -62,6 +62,57 @@ class AnimeSourceSettings extends StatelessWidget {
     return shouldUpdate.length;
   }
 
+  static Future<void> update(
+    AnimeSource source, [
+    bool showLoading = true,
+  ]) async {
+    if (!source.url.isURL) {
+      if (showLoading) {
+        App.rootContext.showMessage(message: "Invalid url config");
+        return;
+      } else {
+        throw Exception("Invalid url config");
+      }
+    }
+    AnimeSourceManager().remove(source.key);
+    bool cancel = false;
+    LoadingDialogController? controller;
+    if (showLoading) {
+      controller = showLoadingDialog(
+        App.rootContext,
+        onCancel: () => cancel = true,
+        barrierDismissible: false,
+      );
+    }
+    try {
+      var res = await AppDio().get<String>(
+        source.url,
+        options: Options(
+          responseType: ResponseType.plain,
+          headers: {"cache-time": "no"},
+        ),
+      );
+      if (cancel) return;
+      controller?.close();
+      await AnimeSourceParser().parse(res.data!, source.filePath);
+      await io.File(source.filePath).writeAsString(res.data!);
+      if (AnimeSourceManager().availableUpdates.containsKey(source.key)) {
+        AnimeSourceManager().availableUpdates.remove(source.key);
+      }
+    } catch (e) {
+      if (cancel) return;
+      if (showLoading) {
+        App.rootContext.showMessage(message: e.toString());
+      } else {
+        rethrow;
+      }
+    }
+    await AnimeSourceManager().reload();
+    if (showLoading) {
+      App.forceRebuild();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(backgroundColor: Colors.transparent, body: const _Body());
@@ -168,50 +219,8 @@ class _BodyState extends State<_Body> {
     );
   }
 
-  static Future<void> update(
-    AnimeSource source, [
-    bool showLoading = true,
-  ]) async {
-    if (!source.url.isURL) {
-      App.rootContext.showMessage(message: "Invalid url config".tl);
-      return;
-    }
-    AnimeSourceManager().remove(source.key);
-    bool cancel = false;
-    LoadingDialogController? controller;
-    if (showLoading) {
-      controller = showLoadingDialog(
-        App.rootContext,
-        onCancel: () => cancel = true,
-        barrierDismissible: false,
-      );
-    }
-    try {
-      dynamic res;
-      if (appdata.settings['gitMirror']) {
-        res = await AppDio().get<String>(
-          Api.gitMirror + source.url,
-          options: Options(responseType: ResponseType.plain),
-        );
-      } else {
-        res = await AppDio().get<String>(
-          source.url,
-          options: Options(responseType: ResponseType.plain),
-        );
-      }
-      if (cancel) return;
-      controller?.close();
-      await AnimeSourceParser().parse(res.data!, source.filePath);
-      await File(source.filePath).writeAsString(res.data!);
-      if (AnimeSourceManager().availableUpdates.containsKey(source.key)) {
-        AnimeSourceManager().availableUpdates.remove(source.key);
-      }
-    } catch (e) {
-      if (cancel) return;
-      App.rootContext.showMessage(message: e.toString());
-    }
-    await AnimeSourceManager().reload();
-    App.forceRebuild();
+  void update(AnimeSource source, [bool showLoading = true]) {
+    AnimeSourceSettings.update(source, showLoading);
   }
 
   Widget buildCard(BuildContext context) {
@@ -755,7 +764,7 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
         var shouldUpdate = AnimeSourceManager().availableUpdates.keys.toList();
         for (var key in shouldUpdate) {
           var source = AnimeSource.find(key)!;
-          await _BodyState.update(source, false);
+          await AnimeSourceSettings.update(source, false);
           current++;
           loadingController.setProgress(current / total);
         }

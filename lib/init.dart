@@ -3,22 +3,21 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_saf/flutter_saf.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
+import 'package:kostori/foundation/cache_manager.dart';
+import 'package:kostori/foundation/js_engine.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
-
-import 'foundation/anime_source/anime_source.dart';
-import 'foundation/app.dart';
-import 'foundation/appdata.dart';
-import 'foundation/audio_service/audio_service_manager.dart';
-import 'foundation/cache_manager.dart';
-import 'foundation/js_engine.dart';
-import 'foundation/log.dart';
-import 'network/cookie_jar.dart';
 
 extension _FutureInit<T> on Future<T> {
   /// Prevent unhandled exception

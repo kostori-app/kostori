@@ -1,4 +1,4 @@
-import 'avatar_item.dart';
+import 'package:kostori/foundation/bangumi/avatar_item.dart';
 
 class User {
   final int id;

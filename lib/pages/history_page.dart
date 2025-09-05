@@ -3,14 +3,13 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/stats.dart';
+import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/utils/translations.dart';
-
-import '../foundation/consts.dart';
-import '../foundation/favorites.dart';
-import '../foundation/log.dart';
-import '../foundation/stats.dart';
-import 'anime_details_page/anime_page.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -220,7 +219,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     icon: const Icon(Icons.close),
                   ),
                 )
-              : null,
+              : Container(),
           title: multiSelectMode
               ? Text(selectedAnimes.length.toString())
               : Text(''),

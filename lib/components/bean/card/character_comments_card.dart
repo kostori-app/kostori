@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-import '../../../foundation/bangumi/comment/comment_item.dart';
 
 class CharacterCommentsCard extends StatelessWidget {
   CharacterCommentsCard({
@@ -65,8 +64,9 @@ class CharacterCommentsCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundImage:
-                      NetworkImage(commentItem!.comment.user.avatar.large),
+                  backgroundImage: NetworkImage(
+                    commentItem!.comment.user.avatar.large,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Column(
@@ -77,9 +77,9 @@ class CharacterCommentsCard extends StatelessWidget {
                       children: [
                         Text(Utils.dateFormat(commentItem!.comment.createdAt)),
                         const SizedBox(width: 4),
-                        Text('#${replyIndex + 1}')
+                        Text('#${replyIndex + 1}'),
                       ],
-                    )
+                    ),
                   ],
                 ),
               ],
@@ -87,10 +87,7 @@ class CharacterCommentsCard extends StatelessWidget {
             const SizedBox(height: 8),
             BBCodeWidget(bbcode: commentItem!.comment.comment),
             if (commentItem!.replies.isNotEmpty)
-              _CharacterChildRepliesList(
-                replies: commentItem!.replies,
-                id: id,
-              ),
+              _CharacterChildRepliesList(replies: commentItem!.replies, id: id),
           ],
         ),
       ),
@@ -99,10 +96,7 @@ class CharacterCommentsCard extends StatelessWidget {
 }
 
 class _CharacterChildRepliesList extends StatefulWidget {
-  const _CharacterChildRepliesList({
-    required this.replies,
-    required this.id,
-  });
+  const _CharacterChildRepliesList({required this.replies, required this.id});
 
   final List<CharacterComment> replies;
   final int id;
@@ -120,8 +114,9 @@ class _CharacterChildRepliesListState
   Widget build(BuildContext context) {
     final int total = widget.replies.length;
     final int maxDisplay = 3;
-    final int displayCount =
-        _showAll ? total : (total > maxDisplay ? maxDisplay : total);
+    final int displayCount = _showAll
+        ? total
+        : (total > maxDisplay ? maxDisplay : total);
 
     if (total < 1) return const SizedBox();
 
@@ -135,9 +130,7 @@ class _CharacterChildRepliesListState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Divider(
-                  color: Theme.of(context).dividerColor.withAlpha(60),
-                ),
+                Divider(color: Theme.of(context).dividerColor.withAlpha(60)),
                 Row(
                   children: [
                     CircleAvatar(
@@ -155,14 +148,17 @@ class _CharacterChildRepliesListState
                             Text('#${index + 1}'),
                             if (reply.creatorID == widget.id)
                               Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .secondaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondaryContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Text('层主'),

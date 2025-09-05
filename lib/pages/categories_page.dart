@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/pages/ranking_page.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
-
-import '../components/components.dart';
-import '../foundation/anime_source/anime_source.dart';
-import '../foundation/app.dart';
-import '../foundation/appdata.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});

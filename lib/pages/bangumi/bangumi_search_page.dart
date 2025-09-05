@@ -14,10 +14,9 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
-
-import 'bangumi_info_page.dart';
 
 class BangumiSearchPage extends StatefulWidget {
   const BangumiSearchPage({super.key, this.tag});

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
-import '../../../bbcode/bbcode_widget.dart';
-import '../../../foundation/bangumi/topics/topics_info_item.dart';
-import '../../../utils/utils.dart';
+import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
+import 'package:kostori/utils/utils.dart';
 
 class TopicsInfoCommentsCard extends StatelessWidget {
   const TopicsInfoCommentsCard({
@@ -26,8 +25,9 @@ class TopicsInfoCommentsCard extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: NetworkImage(topicsInfoItem
-                        .replies[replyIndex].creator.avatar.large),
+                    backgroundImage: NetworkImage(
+                      topicsInfoItem.replies[replyIndex].creator.avatar.large,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Column(
@@ -36,28 +36,31 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                       Text(topicsInfoItem.replies[replyIndex].creator.nickname),
                       Row(
                         children: [
-                          Text(Utils.dateFormat(
-                              topicsInfoItem.replies[replyIndex].createdAt)),
-                          const SizedBox(
-                            width: 4,
+                          Text(
+                            Utils.dateFormat(
+                              topicsInfoItem.replies[replyIndex].createdAt,
+                            ),
                           ),
+                          const SizedBox(width: 4),
                           Text('#${replyIndex + 1}'),
                           if (topicsInfoItem.replies[replyIndex].creatorID ==
                               topicsInfoItem.creatorID)
                             Container(
                               margin: const EdgeInsets.symmetric(horizontal: 8),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .secondaryContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.secondaryContainer,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text('贴主'),
                             ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ],
@@ -85,7 +88,10 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                         radius: 20,
                         backgroundImage: NetworkImage(
                           topicsInfoItem
-                              .replies[replyIndex].creator.avatar.large,
+                              .replies[replyIndex]
+                              .creator
+                              .avatar
+                              .large,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -95,7 +101,9 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                           children: [
                             Text(
                               topicsInfoItem
-                                  .replies[replyIndex].creator.nickname,
+                                  .replies[replyIndex]
+                                  .creator
+                                  .nickname,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -104,9 +112,7 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             const Text(
                               '删除了回复',
-                              style: TextStyle(
-                                color: Colors.grey,
-                              ),
+                              style: TextStyle(color: Colors.grey),
                             ),
                           ],
                         ),
@@ -114,7 +120,7 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              )
+              ),
           ],
         ),
       ),
@@ -123,8 +129,11 @@ class TopicsInfoCommentsCard extends StatelessWidget {
 }
 
 class _ChildRepliesList extends StatefulWidget {
-  const _ChildRepliesList(
-      {required this.replies, required this.masterId, required this.id});
+  const _ChildRepliesList({
+    required this.replies,
+    required this.masterId,
+    required this.id,
+  });
 
   final List<TopicReply> replies;
   final int masterId;
@@ -141,8 +150,9 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
   Widget build(BuildContext context) {
     final int total = widget.replies.length;
     final int maxDisplay = 3;
-    final int displayCount =
-        _showAll ? total : (total > maxDisplay ? maxDisplay : total);
+    final int displayCount = _showAll
+        ? total
+        : (total > maxDisplay ? maxDisplay : total);
 
     // 如果没有子楼层，不渲染
     if (total < 1) return const SizedBox();
@@ -162,14 +172,13 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Divider(
-                    color: Theme.of(context).dividerColor.withAlpha(60),
-                  ),
+                  Divider(color: Theme.of(context).dividerColor.withAlpha(60)),
                   Row(
                     children: [
                       CircleAvatar(
-                        backgroundImage:
-                            NetworkImage(reply.creator.avatar.large),
+                        backgroundImage: NetworkImage(
+                          reply.creator.avatar.large,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Column(
@@ -179,40 +188,44 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                           Row(
                             children: [
                               Text(Utils.dateFormat(reply.createdAt)),
-                              const SizedBox(
-                                width: 4,
-                              ),
+                              const SizedBox(width: 4),
                               Text('#${index + 1}'),
                               if (reply.creatorID == widget.masterId)
                                 Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text('贴主'),
                                 ),
                               if (reply.creatorID == widget.id)
                                 Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text('层主'),
                                 ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                     ],

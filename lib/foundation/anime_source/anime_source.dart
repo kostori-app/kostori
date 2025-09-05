@@ -13,14 +13,13 @@ import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/pages/category_animes_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/init.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
-
-import '../../pages/category_animes_page.dart';
 
 part 'category.dart';
 

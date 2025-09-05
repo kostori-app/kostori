@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import '../foundation/log.dart';
-import 'app_dio.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/network/app_dio.dart';
 
 class AppDownloadTask {
   final String url;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
-
-import '../../../foundation/log.dart';
+import 'package:kostori/foundation/log.dart';
 
 class KostoriDialog {
   static Future<T?> show<T>({
@@ -26,8 +25,11 @@ class KostoriDialog {
         return null;
       }
     } else {
-      Log.addLog(LogLevel.error, 'Dialog Error',
-          'Dialog Error: No context available to show the dialog');
+      Log.addLog(
+        LogLevel.error,
+        'Dialog Error',
+        'Dialog Error: No context available to show the dialog',
+      );
       return null;
     }
   }

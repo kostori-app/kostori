@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
-
-import '../../../bbcode/bbcode_widget.dart';
-import '../../../utils/utils.dart';
+import 'package:kostori/utils/utils.dart';
 
 class ReviewsCommentsCard extends StatelessWidget {
   const ReviewsCommentsCard({
@@ -29,8 +28,9 @@ class ReviewsCommentsCard extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage:
-                        NetworkImage(reviewsCommentsItem.user.avatar.large),
+                    backgroundImage: NetworkImage(
+                      reviewsCommentsItem.user.avatar.large,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Column(
@@ -40,26 +40,26 @@ class ReviewsCommentsCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(Utils.dateFormat(reviewsCommentsItem.createdAt)),
-                          const SizedBox(
-                            width: 4,
-                          ),
+                          const SizedBox(width: 4),
                           Text('#$replyIndex'),
                           if (reviewsCommentsItem.user.id ==
                               reviewsInfoItem.user.id)
                             Container(
                               margin: const EdgeInsets.symmetric(horizontal: 8),
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .secondaryContainer,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.secondaryContainer,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text('作者'),
                             ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ],
@@ -85,8 +85,9 @@ class ReviewsCommentsCard extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundImage:
-                            NetworkImage(reviewsCommentsItem.user.avatar.large),
+                        backgroundImage: NetworkImage(
+                          reviewsCommentsItem.user.avatar.large,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -103,9 +104,7 @@ class ReviewsCommentsCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             const Text(
                               '删除了回复',
-                              style: TextStyle(
-                                color: Colors.grey,
-                              ),
+                              style: TextStyle(color: Colors.grey),
                             ),
                           ],
                         ),
@@ -113,7 +112,7 @@ class ReviewsCommentsCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              )
+              ),
           ],
         ),
       ),
@@ -122,8 +121,11 @@ class ReviewsCommentsCard extends StatelessWidget {
 }
 
 class _ChildRepliesList extends StatefulWidget {
-  const _ChildRepliesList(
-      {required this.replies, required this.masterId, required this.id});
+  const _ChildRepliesList({
+    required this.replies,
+    required this.masterId,
+    required this.id,
+  });
 
   final List<ReviewsCommentsItem> replies;
   final int masterId;
@@ -140,8 +142,9 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
   Widget build(BuildContext context) {
     final int total = widget.replies.length;
     final int maxDisplay = 3;
-    final int displayCount =
-        _showAll ? total : (total > maxDisplay ? maxDisplay : total);
+    final int displayCount = _showAll
+        ? total
+        : (total > maxDisplay ? maxDisplay : total);
 
     // 如果没有子楼层，不渲染
     if (total < 1) return const SizedBox();
@@ -161,9 +164,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Divider(
-                    color: Theme.of(context).dividerColor.withAlpha(60),
-                  ),
+                  Divider(color: Theme.of(context).dividerColor.withAlpha(60)),
                   Row(
                     children: [
                       CircleAvatar(
@@ -177,40 +178,44 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                           Row(
                             children: [
                               Text(Utils.dateFormat(reply.createdAt)),
-                              const SizedBox(
-                                width: 4,
-                              ),
+                              const SizedBox(width: 4),
                               Text('#${index + 1}'),
                               if (reply.creatorID == widget.masterId)
                                 Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text('作者'),
                                 ),
                               if (reply.creatorID == widget.id)
                                 Container(
-                                  margin:
-                                      const EdgeInsets.symmetric(horizontal: 8),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondaryContainer,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text('层主'),
                                 ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                     ],

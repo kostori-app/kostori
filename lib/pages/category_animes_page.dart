@@ -1,9 +1,8 @@
 import "package:flutter/material.dart";
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:kostori/foundation/app.dart";
 import "package:kostori/utils/translations.dart";
-
-import "../components/components.dart";
-import "../foundation/anime_source/anime_source.dart";
 
 class CategoryAnimesPage extends StatefulWidget {
   const CategoryAnimesPage({

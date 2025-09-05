@@ -1,5 +1,5 @@
-import '../bangumi_item.dart';
-import 'character_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_item.dart';
 
 class CharacterCastsItem {
   final List<CharacterActor> actors;

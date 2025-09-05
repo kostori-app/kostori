@@ -10,20 +10,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/components/window_frame.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/pages/auth_page.dart';
+import 'package:kostori/pages/main_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
-
-import 'components/components.dart';
-import 'components/window_frame.dart';
-import 'foundation/app.dart';
-import 'foundation/appdata.dart';
-import 'foundation/log.dart';
-import 'init.dart';
-import 'pages/main_page.dart';
 
 void main(List<String> args) {
   if (runWebViewTitleBarWidget(args)) return;

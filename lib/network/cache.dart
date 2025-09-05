@@ -2,7 +2,7 @@
 
 import 'dart:typed_data';
 
-import 'app_dio.dart';
+import 'package:kostori/network/app_dio.dart';
 
 class NetworkCache {
   final Uri uri;

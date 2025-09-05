@@ -1,21 +1,21 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/components/bean/card/episode_comments_card.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-
-import '../../../foundation/app.dart';
-import '../../components.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
 
 class EpisodeCommentsSheet extends StatefulWidget {
-  const EpisodeCommentsSheet(
-      {super.key,
-      required this.episodeInfo,
-      required this.loadComments,
-      required this.episode,
-      required this.infoController});
+  const EpisodeCommentsSheet({
+    super.key,
+    required this.episodeInfo,
+    required this.loadComments,
+    required this.episode,
+    required this.infoController,
+  });
 
   final EpisodeInfo episodeInfo;
 
@@ -64,95 +64,101 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
   }
 
   Widget get episodeCommentsBody {
-    return Builder(builder: (BuildContext context) {
-      return CustomScrollView(
-        scrollBehavior: const ScrollBehavior().copyWith(
-          // Scrollbars' movement is not linear so hide it.
-          scrollbars: false,
-          // Enable mouse drag to refresh
-          dragDevices: {
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.touch,
-            PointerDeviceKind.trackpad
-          },
-        ),
-        key: PageStorageKey<String>('集评论'),
-        slivers: [
-          SliverLayoutBuilder(
-            builder: (context, _) {
-              if (infoController.episodeCommentsList.isNotEmpty) {
-                return SliverList.separated(
-                  addAutomaticKeepAlives: false,
-                  itemCount: infoController.episodeCommentsList.length,
-                  itemBuilder: (context, index) {
-                    return SafeArea(
-                      top: false,
-                      bottom: false,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > 950
-                                ? 950
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: EpisodeCommentsCard(
-                              commentItem:
-                                  infoController.episodeCommentsList[index],
-                              replyIndex: index,
+    return Builder(
+      builder: (BuildContext context) {
+        return CustomScrollView(
+          scrollBehavior: const ScrollBehavior().copyWith(
+            // Scrollbars' movement is not linear so hide it.
+            scrollbars: false,
+            // Enable mouse drag to refresh
+            dragDevices: {
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.touch,
+              PointerDeviceKind.trackpad,
+            },
+          ),
+          key: PageStorageKey<String>('集评论'),
+          slivers: [
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (infoController.episodeCommentsList.isNotEmpty) {
+                  return SliverList.separated(
+                    addAutomaticKeepAlives: false,
+                    itemCount: infoController.episodeCommentsList.length,
+                    itemBuilder: (context, index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: EpisodeCommentsCard(
+                                commentItem:
+                                    infoController.episodeCommentsList[index],
+                                replyIndex: index,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                  separatorBuilder: (BuildContext context, int index) {
+                      );
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: Divider(
+                                thickness: 0.5,
+                                indent: 10,
+                                endIndent: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
                     return SafeArea(
                       top: false,
                       bottom: false,
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          padding: const EdgeInsets.all(16),
                           child: SizedBox(
                             width: MediaQuery.sizeOf(context).width > 950
                                 ? 950
                                 : MediaQuery.sizeOf(context).width - 32,
-                            child: Divider(
-                              thickness: 0.5,
-                              indent: 10,
-                              endIndent: 10,
-                            ),
+                            child: EpisodeCommentsCard.bone(),
                           ),
                         ),
                       ),
                     );
                   },
                 );
-              }
-              return SliverList.builder(
-                itemCount: 4,
-                itemBuilder: (context, _) {
-                  return SafeArea(
-                    top: false,
-                    bottom: false,
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > 950
-                              ? 950
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: EpisodeCommentsCard.bone(),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
-      );
-    });
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget get commentsInfo {
@@ -167,19 +173,23 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.name}',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline)),
+                  '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.name}',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
                 Text(
-                    (infoController.episodeInfo.nameCn != '')
-                        ? '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.nameCn}'
-                        : '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.name}',
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.outline)),
+                  (infoController.episodeInfo.nameCn != '')
+                      ? '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.nameCn}'
+                      : '${infoController.episodeInfo.readType()}.${infoController.episodeInfo.sort} ${infoController.episodeInfo.name}',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
               ],
             ),
           ),
@@ -189,15 +199,13 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
             child: TextButton(
               style: ButtonStyle(
                 padding: WidgetStateProperty.all(
-                    const EdgeInsets.only(left: 4.0, right: 4.0)),
+                  const EdgeInsets.only(left: 4.0, right: 4.0),
+                ),
               ),
               onPressed: () {
                 showEpisodeSelection();
               },
-              child: const Text(
-                '手动切换',
-                style: TextStyle(fontSize: 13),
-              ),
+              child: const Text('手动切换', style: TextStyle(fontSize: 13)),
             ),
           ),
         ],
@@ -239,9 +247,7 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
               onPressed: () => Navigator.pop(context), // 使用 Navigator 关闭对话框
               child: Text(
                 '取消',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+                style: TextStyle(color: Theme.of(context).colorScheme.outline),
               ),
             ),
             TextButton(

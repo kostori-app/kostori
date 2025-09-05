@@ -3,9 +3,8 @@ import 'dart:isolate';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
-
-import 'js_engine.dart';
-import 'log.dart';
+import 'package:kostori/foundation/js_engine.dart';
+import 'package:kostori/foundation/log.dart';
 
 class JSPool {
   static final int _maxInstances = 4;

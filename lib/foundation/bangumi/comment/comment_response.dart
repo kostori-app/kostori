@@ -1,4 +1,4 @@
-import 'comment_item.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 
 class CommentResponse {
   List<CommentItem> commentList;

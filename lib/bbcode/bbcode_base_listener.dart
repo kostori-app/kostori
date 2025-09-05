@@ -1,9 +1,8 @@
 import 'package:antlr4/antlr4.dart';
 import 'package:flutter/material.dart';
-
-import 'bbcode_elements.dart';
-import 'generated/BBCodeListener.dart';
-import 'generated/BBCodeParser.dart';
+import 'package:kostori/bbcode/bbcode_elements.dart';
+import 'package:kostori/bbcode/generated/BBCodeListener.dart';
+import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 
 class BBCodeBaseListener implements BBCodeListener {
   final List<dynamic> bbcode = [];
