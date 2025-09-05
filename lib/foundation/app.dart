@@ -45,6 +45,8 @@ class _App {
     return deviceLocale;
   }
 
+  bool isInitialized = false;
+
   late String dataPath;
   late String cachePath;
   String? externalStoragePath;
@@ -83,6 +85,7 @@ class _App {
     if (isAndroid) {
       externalStoragePath = (await getExternalStorageDirectory())!.path;
     }
+    isInitialized = true;
   }
 
   Future<void> initComponents() async {

@@ -138,11 +138,12 @@ class AppDio with DioMixin {
   AppDio([BaseOptions? options]) {
     this.options = options ?? BaseOptions();
     httpClientAdapter = RHttpAdapter();
-    interceptors.add(CookieManagerSql(SingleInstanceCookieJar.instance!));
-    interceptors.add(NetworkCacheManager());
-    interceptors.add(CloudflareInterceptor());
-    interceptors.add(MyLogInterceptor());
-    // interceptors.add(RetryInterceptor(dio: this));
+    if (App.isInitialized) {
+      interceptors.add(CookieManagerSql(SingleInstanceCookieJar.instance!));
+      interceptors.add(NetworkCacheManager());
+      interceptors.add(CloudflareInterceptor());
+      interceptors.add(MyLogInterceptor());
+    }
   }
 
   static final Map<String, bool> _requests = {};

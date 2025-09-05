@@ -4,6 +4,18 @@ Kostori JavaScript Library
 This library provides a set of APIs for interacting with the Kostori app.
 */
 
+/**
+ * @function sendMessage
+ * @global
+ * @param {Object} message
+ * @returns {any}
+ */
+
+/**
+ * Set a timeout to execute a callback function after a specified delay.
+ * @param callback {Function}
+ * @param delay {number} - delay in milliseconds
+ */
 function setTimeout(callback, delay) {
     sendMessage({
         method: 'delay',
@@ -497,7 +509,7 @@ let Network = {
 /**
  * [fetch] function for sending HTTP requests. Same api as the browser fetch.
  * @param url {string}
- * @param options {{method: string, headers: Object, body: any}}
+ * @param [options] {{method?: string, headers?: Object, body?: any}}
  * @returns {Promise<{ok: boolean, status: number, statusText: string, headers: {}, arrayBuffer: (function(): Promise<ArrayBuffer>), text: (function(): Promise<string>), json: (function(): Promise<any>)}>}
  * @since 1.2.0
  */
@@ -940,7 +952,7 @@ function Anime({
  * @param isFavorite {boolean | null | undefined} - favorite status. If the anime source supports multiple folders, this field should be null
  * @param subId {string?} - a param which is passed to comments api
  * @param thumbnails {string[]?} - for multiple page thumbnails, set this to null, and use `loadThumbnails` api to load thumbnails
- * @param recommend {anime[]?} - related animes
+ * @param recommend {Anime[]?} - related animes
  * @param commentCount {number?}
  * @param likesCount {number?}
  * @param isLiked {boolean?}
@@ -1049,7 +1061,7 @@ function ImageLoadingConfig({url, method, data, headers, onResponse, modifyImage
 
 class AnimeSource {
     name = ""
-    
+
     isBangumi = false
 
     key = ""
@@ -1404,7 +1416,7 @@ let APP = {
  * @param text {string}
  * @returns {Promise<void>}
  *
- * @since 1.3.4
+ * @since 1.2.4
  */
 function setClipboard(text) {
     return sendMessage({
@@ -1417,10 +1429,25 @@ function setClipboard(text) {
  * Get clipboard text
  * @returns {Promise<string>}
  *
- * @since 1.3.4
+ * @since 1.2.4
  */
 function getClipboard() {
     return sendMessage({
         method: 'getClipboard'
+    })
+}
+
+/**
+ * Compute a function with arguments. The function will be executed in the engine pool which is not in the main thread.
+ * @param func {string} - A js code string which can be evaluated to a function. The function will receive the args as its only argument.
+ * @param args {any[]} - The arguments to pass to the function.
+ * @returns {Promise<any>} - The result of the function.
+ * @since 1.2.5
+ */
+function compute(func, ...args) {
+    return sendMessage({
+        method: 'compute',
+        function: func,
+        args: args
     })
 }
