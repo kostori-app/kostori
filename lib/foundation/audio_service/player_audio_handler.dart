@@ -10,18 +10,32 @@ import 'package:media_kit/media_kit.dart';
 class PlayerAudioHandler extends BaseAudioHandler {
   PlayerController? _controller;
 
+  int _headsetClicksCount = 0;
+  Timer? _headsetButtonClickTimer;
+  bool _willPlayWhenReady = true;
+
+  Timer _createHeadsetClicksTimer(FutureOr<void> Function() callback) {
+    return Timer(const Duration(milliseconds: 250), () async {
+      try {
+        await callback();
+      } finally {
+        _headsetButtonClickTimer?.cancel();
+        _headsetButtonClickTimer = null;
+        _headsetClicksCount = 0;
+      }
+    });
+  }
+
   // 用于存放所有事件监听的订阅，方便统一取消
   final List<StreamSubscription> _subscriptions = [];
 
   // 页面初始化 PlayerController 后调用
   void setController(PlayerController controller) {
     try {
-      // 如果之前有 Controller，先清理旧的监听
       _clearListeners();
 
       _controller = controller;
 
-      // --- 核心改动：在这里设置事件监听 ---
       final player = controller.player;
 
       // 监听播放状态
@@ -114,6 +128,12 @@ class PlayerAudioHandler extends BaseAudioHandler {
         ],
         processingState: _getProcessingState(player.state),
         queueIndex: 0,
+        androidCompactActionIndices: const [0, 1, 2],
+        systemActions: {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
       ),
     );
 
@@ -135,12 +155,14 @@ class PlayerAudioHandler extends BaseAudioHandler {
   @override
   Future<void> play() {
     Log.addLog(LogLevel.info, "AudioService.play", "${_controller?.playing}");
+    _willPlayWhenReady = true;
     return _controller?.play(isAudioHandler: false) ?? Future.value();
   }
 
   @override
   Future<void> pause() {
     Log.addLog(LogLevel.info, "AudioService.pause", "${_controller?.playing}");
+    _willPlayWhenReady = false;
     return _controller?.pause() ?? Future.value();
   }
 
@@ -183,4 +205,49 @@ class PlayerAudioHandler extends BaseAudioHandler {
   @override
   Future<void> seek(Duration position) =>
       _controller?.player.seek(position) ?? Future.value();
+
+  @override
+  Future<void> click([MediaButton button = MediaButton.media]) async {
+    if (button == MediaButton.next) {
+      skipToNext();
+      return;
+    }
+
+    _headsetClicksCount++;
+
+    _headsetButtonClickTimer?.cancel();
+
+    if (_headsetClicksCount == 1) {
+      _headsetButtonClickTimer = _createHeadsetClicksTimer(
+        _willPlayWhenReady ? pause : play,
+      );
+    } else if (_headsetClicksCount == 2) {
+      _headsetButtonClickTimer = _createHeadsetClicksTimer(skipToNext);
+    }
+  }
+
+  @override
+  Future<void> fastForward() async {
+    final player = _controller?.player;
+    if (player == null) return;
+
+    final current = player.state.position;
+    final target = current + const Duration(seconds: 10);
+
+    await player.seek(target);
+  }
+
+  @override
+  Future<void> rewind() async {
+    final player = _controller?.player;
+    if (player == null) return;
+
+    final current = player.state.position;
+    var target = current - const Duration(seconds: 10);
+    if (target < Duration.zero) {
+      target = Duration.zero;
+    }
+
+    await player.seek(target);
+  }
 }
