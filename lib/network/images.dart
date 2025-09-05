@@ -5,13 +5,15 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/utils/image.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/utils/image.dart';
 
 abstract class ImageDownloader {
   static Stream<ImageDownloadProgress> loadThumbnail(
-      String url, String? sourceKey,
-      [String? aid]) async* {
+    String url,
+    String? sourceKey, [
+    String? aid,
+  ]) async* {
     final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
     final cache = await CacheManager().findCache(cacheKey);
 
@@ -45,14 +47,18 @@ abstract class ImageDownloader {
       }
     }
 
-    var dio = AppDio(BaseOptions(
-      headers: Map<String, dynamic>.from(configs['headers']),
-      method: configs['method'] ?? 'GET',
-      responseType: ResponseType.stream,
-    ));
+    var dio = AppDio(
+      BaseOptions(
+        headers: Map<String, dynamic>.from(configs['headers']),
+        method: configs['method'] ?? 'GET',
+        responseType: ResponseType.stream,
+      ),
+    );
 
-    var req = await dio.request<ResponseBody>(configs['url'] ?? url,
-        data: configs['data']);
+    var req = await dio.request<ResponseBody>(
+      configs['url'] ?? url,
+      data: configs['data'],
+    );
     var stream = req.data?.stream ?? (throw "Error: Empty response body.");
     int? expectedBytes = req.data!.contentLength;
     if (expectedBytes == -1) {
@@ -70,7 +76,8 @@ abstract class ImageDownloader {
     }
 
     if (configs['onResponse'] is JSInvokable) {
-      buffer = (configs['onResponse'] as JSInvokable)([buffer]);
+      final uint8List = Uint8List.fromList(buffer);
+      buffer = (configs['onResponse'] as JSInvokable)([uint8List]);
       (configs['onResponse'] as JSInvokable).free();
     }
 
@@ -96,7 +103,11 @@ abstract class ImageDownloader {
   /// Load a comic image from the network or cache.
   /// The function will prevent multiple requests for the same image.
   static Stream<ImageDownloadProgress> loadAnimeImage(
-      String imageKey, String? sourceKey, String cid, String eid) {
+    String imageKey,
+    String? sourceKey,
+    String cid,
+    String eid,
+  ) {
     final cacheKey = "$imageKey@$sourceKey@$cid@$eid";
     if (_loadingImages.containsKey(cacheKey)) {
       return _loadingImages[cacheKey]!.stream;
@@ -112,7 +123,11 @@ abstract class ImageDownloader {
   }
 
   static Stream<ImageDownloadProgress> _loadAnimeImage(
-      String imageKey, String? sourceKey, String cid, String eid) async* {
+    String imageKey,
+    String? sourceKey,
+    String cid,
+    String eid,
+  ) async* {
     final cacheKey = "$imageKey@$sourceKey@$cid@$eid";
     final cache = await CacheManager().findCache(cacheKey);
 
@@ -130,16 +145,18 @@ abstract class ImageDownloader {
     var configs = <String, dynamic>{};
     if (sourceKey != null) {
       var animeSource = AnimeSource.find(sourceKey);
-      configs = (await animeSource!.getImageLoadingConfig
-              ?.call(imageKey, cid, eid)) ??
+      configs =
+          (await animeSource!.getImageLoadingConfig?.call(
+            imageKey,
+            cid,
+            eid,
+          )) ??
           {};
     }
     var retryLimit = 5;
     while (true) {
       try {
-        configs['headers'] ??= {
-          'user-agent': webUA,
-        };
+        configs['headers'] ??= {'user-agent': webUA};
 
         if (configs['onLoadFailed'] is JSInvokable) {
           onLoadFailed = () async {
@@ -152,14 +169,18 @@ abstract class ImageDownloader {
           };
         }
 
-        var dio = AppDio(BaseOptions(
-          headers: configs['headers'],
-          method: configs['method'] ?? 'GET',
-          responseType: ResponseType.stream,
-        ));
+        var dio = AppDio(
+          BaseOptions(
+            headers: configs['headers'],
+            method: configs['method'] ?? 'GET',
+            responseType: ResponseType.stream,
+          ),
+        );
 
-        var req = await dio.request<ResponseBody>(configs['url'] ?? imageKey,
-            data: configs['data']);
+        var req = await dio.request<ResponseBody>(
+          configs['url'] ?? imageKey,
+          data: configs['data'],
+        );
         var stream = req.data?.stream ?? (throw "Error: Empty response body.");
         int? expectedBytes = req.data!.contentLength;
         if (expectedBytes == -1) {
