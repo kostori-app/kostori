@@ -531,29 +531,86 @@ class AnimeSourceParser {
 
   CategoryAnimesData? _loadCategoryAnimesData() {
     if (!_checkExists("categoryAnimes")) return null;
-    var options = <CategoryAnimesOptions>[];
-    for (var element in _getValue("categoryAnimes.optionList") ?? []) {
-      LinkedHashMap<String, String> map = LinkedHashMap<String, String>();
-      for (var option in element["options"]) {
-        if (option.isEmpty || !option.contains("-")) {
-          continue;
+    List<CategoryAnimesOptions>? options;
+    if (_checkExists("categoryAnimes.optionList")) {
+      options = <CategoryAnimesOptions>[];
+      for (var element in _getValue("categoryAnimes.optionList") ?? []) {
+        LinkedHashMap<String, String> map = LinkedHashMap<String, String>();
+        for (var option in element["options"]) {
+          if (option.isEmpty || !option.contains("-")) {
+            continue;
+          }
+
+          int lastIndex = option.lastIndexOf("-");
+          var key = option.substring(0, lastIndex);
+          var value = option.substring(lastIndex + 1);
+
+          map[key] = value;
         }
 
-        int lastIndex = option.lastIndexOf("-");
-        var key = option.substring(0, lastIndex);
-        var value = option.substring(lastIndex + 1);
-
-        map[key] = value;
+        options.add(
+          CategoryAnimesOptions(
+            element["label"] ?? "",
+            map,
+            List.from(element["notShowWhen"] ?? []),
+            element["showWhen"] == null ? null : List.from(element["showWhen"]),
+          ),
+        );
       }
-
-      options.add(
-        CategoryAnimesOptions(
-          map,
-          List.from(element["notShowWhen"] ?? []),
-          element["showWhen"] == null ? null : List.from(element["showWhen"]),
-        ),
-      );
     }
+
+    CategoryOptionsLoader? optionLoader;
+    if (_checkExists("categoryAnimes.optionLoader")) {
+      optionLoader = (category, param) async {
+        try {
+          dynamic res = JsEngine().runCode("""
+          AnimeSource.sources.$_key.categoryAnimes.optionLoader(
+            ${jsonEncode(category)}, ${jsonEncode(param)})
+        """);
+          if (res is Future) {
+            res = await res;
+          }
+          if (res is! List) {
+            return Res.error(
+              "Invalid data:\nExpected: List\nGot: ${res.runtimeType}",
+            );
+          }
+          var options = <CategoryAnimesOptions>[];
+          for (var element in res) {
+            if (element is! Map) {
+              return Res.error(
+                "Invalid option data:\nExpected: Map\nGot: ${element.runtimeType}",
+              );
+            }
+            LinkedHashMap<String, String> map = LinkedHashMap<String, String>();
+            for (var option in element["options"] ?? []) {
+              if (option.isEmpty || !option.contains("-")) {
+                continue;
+              }
+              int lastIndex = option.lastIndexOf("-");
+              var key = option.substring(0, lastIndex);
+              var value = option.substring(lastIndex + 1);
+              map[key] = value;
+            }
+            options.add(
+              CategoryAnimesOptions(
+                element["label"] ?? "",
+                map,
+                List.from(element["notShowWhen"] ?? []),
+                element["showWhen"] == null
+                    ? null
+                    : List.from(element["showWhen"]),
+              ),
+            );
+          }
+          return Res(options);
+        } catch (e) {
+          Log.error("Data Analysis", "Failed to load category options.\n$e");
+          return Res.error(e.toString());
+        }
+      };
+    }
+
     RankingData? rankingData;
     if (_checkExists("categoryAnimes.ranking")) {
       var options = <String, String>{};
@@ -610,9 +667,16 @@ class AnimeSourceParser {
       }
       rankingData = RankingData(options, load, loadWithNext);
     }
-    return CategoryAnimesData(options, (category, param, options, page) async {
-      try {
-        var res = await JsEngine().runCode("""
+    if (options == null && optionLoader == null) {
+      options = [];
+    }
+
+    return CategoryAnimesData(
+      options: options,
+      optionsLoader: optionLoader,
+      load: (category, param, options, page) async {
+        try {
+          var res = await JsEngine().runCode("""
           AnimeSource.sources.$_key.categoryAnimes.load(
             ${jsonEncode(category)}, 
             ${jsonEncode(param)}, 
@@ -620,18 +684,20 @@ class AnimeSourceParser {
             ${jsonEncode(page)}
           )
         """);
-        return Res(
-          List.generate(
-            res["animes"].length,
-            (index) => Anime.fromJson(res["animes"][index], _key!),
-          ),
-          subData: res["maxPage"],
-        );
-      } catch (e, s) {
-        Log.error("Network", "$e\n$s");
-        return Res.error(e.toString());
-      }
-    }, rankingData: rankingData);
+          return Res(
+            List.generate(
+              res["animes"].length,
+              (index) => Anime.fromJson(res["animes"][index], _key!),
+            ),
+            subData: res["maxPage"],
+          );
+        } catch (e, s) {
+          Log.error("Network", "$e\n$s");
+          return Res.error(e.toString());
+        }
+      },
+      rankingData: rankingData,
+    );
   }
 
   SearchPageData? _loadSearchData() {
@@ -1103,9 +1169,12 @@ class AnimeSourceParser {
       var res = JsEngine().runCode("""
           AnimeSource.sources.$_key.anime.onClickTag(${jsonEncode(namespace)}, ${jsonEncode(tag)})
         """);
-      var r = Map<String, String?>.from(res);
+      if (res is! Map) {
+        return null;
+      }
+      var r = Map<String, dynamic>.from(res);
       r.removeWhere((key, value) => value == null);
-      return Map.from(r);
+      return PageJumpTarget.parse(_key!, r);
     };
   }
 

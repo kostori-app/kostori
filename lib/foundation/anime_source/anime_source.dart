@@ -172,7 +172,7 @@ typedef VoteCommentFunc =
     );
 
 typedef HandleClickTagEvent =
-    Map<String, String> Function(String namespace, String tag);
+    PageJumpTarget? Function(String namespace, String tag);
 
 /// [rating] is the rating value, 0-10. 1 represents 0.5 star.
 typedef StarRatingFunc = Future<Res<bool>> Function(String animeId, int rating);
@@ -488,9 +488,17 @@ typedef CategoryAnimesLoader =
       int page,
     );
 
+typedef CategoryOptionsLoader =
+    Future<Res<List<CategoryAnimesOptions>>> Function(
+      String category,
+      String? param,
+    );
+
 class CategoryAnimesData {
   /// options
-  final List<CategoryAnimesOptions> options;
+  final List<CategoryAnimesOptions>? options;
+
+  final CategoryOptionsLoader? optionsLoader;
 
   /// [category] is the one clicked by the user on the category page.
   ///
@@ -501,7 +509,12 @@ class CategoryAnimesData {
 
   final RankingData? rankingData;
 
-  const CategoryAnimesData(this.options, this.load, {this.rankingData});
+  const CategoryAnimesData({
+    this.options,
+    this.optionsLoader,
+    required this.load,
+    this.rankingData,
+  });
 }
 
 class RankingData {
@@ -516,6 +529,8 @@ class RankingData {
 }
 
 class CategoryAnimesOptions {
+  final String label;
+
   /// Use a [LinkedHashMap] to describe an option list.
   /// key is for loading Animes, value is the name displayed on screen.
   /// Default value will be the first of the Map.
@@ -526,7 +541,12 @@ class CategoryAnimesOptions {
 
   final List<String>? showWhen;
 
-  const CategoryAnimesOptions(this.options, this.notShowWhen, this.showWhen);
+  const CategoryAnimesOptions(
+    this.label,
+    this.options,
+    this.notShowWhen,
+    this.showWhen,
+  );
 }
 
 class LinkHandler {
