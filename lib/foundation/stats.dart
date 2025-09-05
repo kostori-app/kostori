@@ -1,10 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart' show ChangeNotifier;
+import 'package:kostori/foundation/anime_type.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:sqlite3/sqlite3.dart';
-
-import 'anime_type.dart';
-import 'app.dart';
 
 enum AppPlatform {
   android("android"),
@@ -82,10 +81,21 @@ class TodayEventBundle {
 }
 
 extension DateTimeFormat on DateTime {
+  /// 格式化为 yyyy-MM-dd
   String get yyyymmdd {
     return '${year.toString().padLeft(4, '0')}-'
         '${month.toString().padLeft(2, '0')}-'
         '${day.toString().padLeft(2, '0')}';
+  }
+
+  /// 格式化为 yyyy-MM-dd HH:mm:ss
+  String get yyyymmddHHmmss {
+    return '${year.toString().padLeft(4, '0')}-'
+        '${month.toString().padLeft(2, '0')}-'
+        '${day.toString().padLeft(2, '0')} '
+        '${hour.toString().padLeft(2, '0')}:'
+        '${minute.toString().padLeft(2, '0')}:'
+        '${second.toString().padLeft(2, '0')}';
   }
 }
 
@@ -94,15 +104,32 @@ class PlatformEventRecord {
   AppPlatform? platform;
   String? comment;
   int? rating;
+  DateTime? date;
 
   PlatformEventRecord({
     required this.value,
     this.platform,
     this.comment,
     this.rating,
-  });
+    String? dateStr,
+  }) : date = dateStr != null ? _parseDate(dateStr) : null;
 
-  /// 序列化成
+  /// 校验并解析字符串，支持 yyyy-MM-dd 或 yyyy-MM-dd HH:mm:ss
+  static DateTime _parseDate(String dateStr) {
+    // yyyy-MM-dd HH:mm:ss
+    final regexSecond = RegExp(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$');
+
+    if (regexSecond.hasMatch(dateStr)) {
+      // 替换空格为 T，兼容 DateTime.parse
+      return DateTime.parse(dateStr.replaceFirst(' ', 'T'));
+    } else {
+      throw FormatException(
+        'Invalid date format, expected yyyy-MM-dd HH:mm:ss',
+      );
+    }
+  }
+
+  /// 序列化成 JSON
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{'value': value, 'platform': platform?.value};
 
@@ -111,6 +138,16 @@ class PlatformEventRecord {
     }
     if (rating != null) {
       map['rating'] = rating;
+    }
+    if (date != null) {
+      // 固定输出 yyyy-MM-dd HH:mm:ss
+      map['date'] =
+          '${date!.year.toString().padLeft(4, '0')}-'
+          '${date!.month.toString().padLeft(2, '0')}-'
+          '${date!.day.toString().padLeft(2, '0')} '
+          '${date!.hour.toString().padLeft(2, '0')}:'
+          '${date!.minute.toString().padLeft(2, '0')}:'
+          '${date!.second.toString().padLeft(2, '0')}';
     }
 
     return map;
@@ -123,14 +160,11 @@ class PlatformEventRecord {
       platform: json['platform'] != null
           ? AppPlatform.fromString(json['platform'] as String)
           : null,
-      comment: json['comment'] != null ? json['comment'] as String : null,
-      rating: json['rating'] != null ? json['rating'] as int : null,
+      comment: json['comment'] as String?,
+      rating: json['rating'] as int?,
+      dateStr: json['date'] as String?,
     );
   }
-
-  @override
-  String toString() =>
-      'PlatformEventRecord(value: $value, platform: ${platform?.value}, comment: $comment, rating: $rating)';
 }
 
 class DailyEvent {
@@ -467,9 +501,41 @@ class StatsManager with ChangeNotifier {
     }).toList();
   }
 
+  Future<Map<DateTime, List<StatsDataImpl>>> getEventMap() async {
+    final allStats = await getStatsAll();
+    final map = <DateTime, List<StatsDataImpl>>{};
+
+    for (var stats in allStats) {
+      final allEvents = <DailyEvent>[];
+      allEvents.addAll(stats.comment);
+      allEvents.addAll(stats.totalClickCount);
+      allEvents.addAll(stats.totalWatchDurations);
+      allEvents.addAll(stats.rating);
+
+      final uniqueDates = allEvents.map((e) => e.date).toSet();
+
+      for (var date in uniqueDates) {
+        map.putIfAbsent(date, () => []).add(stats);
+      }
+    }
+
+    return map;
+  }
+
   Future<void> updateStatsLiked(String id, int type, bool liked) async {
     _db.execute("update stats set liked = ? where id = ? and type = ?", [
       liked ? 1 : 0,
+      id,
+      type,
+    ]);
+
+    notifyListeners();
+  }
+
+  Future<void> updateStatsBangumiId(String id, int type, int? bangumiId) async {
+    if (bangumiId == null) return;
+    _db.execute("update stats set bangumiId = ? where id = ? and type = ?", [
+      bangumiId,
       id,
       type,
     ]);
@@ -543,38 +609,84 @@ extension StatsHelper on StatsManager {
     required DailyEventType targetType,
   }) async {
     final statsDataImpl = (await getStatsByIdAndType(id: id, type: type))!;
-
     final todayStr = DateTime.now().yyyymmdd;
 
-    // 直接用 enum 的扩展方法获取列表
+    // 获取目标类型的列表
     final targetList = targetType.getList(statsDataImpl);
 
-    // 找到今天的记录，如果没有就创建
-    final todayRecord = targetList.firstWhere(
-      (c) => c.date.yyyymmdd == todayStr,
-      orElse: () {
-        final newEvent = DailyEvent(
-          dateStr: todayStr,
-          platformEventRecords: [],
+    // 获取当天 DailyEvent（click/watch）或最新 DailyEvent（comment/rating）
+    DailyEvent getTargetDailyEvent() {
+      if (targetType == DailyEventType.comment ||
+          targetType == DailyEventType.rating) {
+        if (targetList.isEmpty) {
+          final newEvent = DailyEvent(
+            dateStr: todayStr,
+            platformEventRecords: [],
+          );
+          targetList.add(newEvent);
+          return newEvent;
+        } else {
+          return targetList.last;
+        }
+      } else {
+        return targetList.firstWhere(
+          (e) => e.date.yyyymmdd == todayStr,
+          orElse: () {
+            final newEvent = DailyEvent(
+              dateStr: todayStr,
+              platformEventRecords: [],
+            );
+            targetList.add(newEvent);
+            return newEvent;
+          },
         );
-        targetList.add(newEvent);
-        return newEvent;
-      },
-    );
+      }
+    }
 
-    // 找到当前平台的记录，如果没有就创建
+    // 获取当天平台记录，如果不存在就创建
     PlatformEventRecord getOrCreatePlatformRecord(
       DailyEvent todayEvent,
-      DailyEventType type,
+      DailyEventType targetType,
     ) {
+      // 如果是 comment 或 rating，只取最新，不创建
+      if (targetType == DailyEventType.comment ||
+          targetType == DailyEventType.rating) {
+        if (todayEvent.platformEventRecords.isEmpty) {
+          final now = DateTime.now();
+          final newRecord = PlatformEventRecord(
+            value: 0,
+            platform: AppPlatform.current,
+            comment: targetType == DailyEventType.comment ? '' : null,
+            rating: targetType == DailyEventType.rating ? 0 : null,
+            dateStr:
+                '${now.year.toString().padLeft(4, '0')}-'
+                '${now.month.toString().padLeft(2, '0')}-'
+                '${now.day.toString().padLeft(2, '0')} '
+                '${now.hour.toString().padLeft(2, '0')}:'
+                '${now.minute.toString().padLeft(2, '0')}:'
+                '${now.second.toString().padLeft(2, '0')}',
+          );
+          todayEvent.platformEventRecords.add(newRecord);
+          return newRecord;
+        }
+        // 取 date 最新的
+        return todayEvent.platformEventRecords.reduce((a, b) {
+          final ad = a.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bd = b.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return ad.isAfter(bd) ? a : b;
+        });
+      }
+
+      // 其他类型（click / watch）：如果不存在则创建
       return todayEvent.platformEventRecords.firstWhere(
         (p) => p.platform == AppPlatform.current,
         orElse: () {
           final newRecord = PlatformEventRecord(
             value: 0,
             platform: AppPlatform.current,
-            comment: (type == DailyEventType.comment) ? '' : null,
-            rating: (type == DailyEventType.rating) ? 0 : null,
+            comment: null,
+            rating: null,
+            dateStr: null,
           );
           todayEvent.platformEventRecords.add(newRecord);
           return newRecord;
@@ -582,11 +694,10 @@ extension StatsHelper on StatsManager {
       );
     }
 
-    return (
-      statsDataImpl,
-      todayRecord,
-      getOrCreatePlatformRecord(todayRecord, targetType),
-    );
+    final todayRecord = getTargetDailyEvent();
+    final platformRecord = getOrCreatePlatformRecord(todayRecord, targetType);
+
+    return (statsDataImpl, todayRecord, platformRecord);
   }
 
   ///初始化全部
@@ -595,12 +706,10 @@ extension StatsHelper on StatsManager {
     required int type,
   }) async {
     final statsData = (await getStatsByIdAndType(id: id, type: type))!;
-
     final todayStr = DateTime.now().yyyymmdd;
 
-    DailyEvent getOrCreate(DailyEventType typeEnum) {
-      final list = typeEnum.getList(statsData);
-      final todayEvent = list.firstWhere(
+    DailyEvent getOrCreateDailyEvent(List<DailyEvent> list) {
+      return list.firstWhere(
         (e) => e.date.yyyymmdd == todayStr,
         orElse: () {
           final newEvent = DailyEvent(
@@ -611,40 +720,88 @@ extension StatsHelper on StatsManager {
           return newEvent;
         },
       );
-      return todayEvent;
     }
 
-    PlatformEventRecord getOrCreatePlatform(
-      DailyEvent todayEvent, {
-      bool initComment = false,
-      bool initRating = false,
-    }) {
-      return todayEvent.platformEventRecords.firstWhere(
+    PlatformEventRecord getOrCreatePlatformRecord(DailyEvent event) {
+      return event.platformEventRecords.firstWhere(
         (p) => p.platform == AppPlatform.current,
         orElse: () {
           final newRecord = PlatformEventRecord(
             value: 0,
             platform: AppPlatform.current,
-            comment: initComment ? '' : null,
-            rating: initRating ? 0 : null,
+            comment: null,
+            rating: null,
+            dateStr: null,
           );
-          todayEvent.platformEventRecords.add(newRecord);
+          event.platformEventRecords.add(newRecord);
           return newRecord;
         },
       );
     }
 
-    final todayComment = getOrCreate(DailyEventType.comment);
-    final commentRecord = getOrCreatePlatform(todayComment, initComment: true);
+    DailyEvent getLatestOrCreateDailyEvent(List<DailyEvent> list) {
+      if (list.isNotEmpty) {
+        return list.last;
+      } else {
+        final todayStr = DateTime.now().yyyymmdd;
+        final newEvent = DailyEvent(
+          dateStr: todayStr,
+          platformEventRecords: [],
+        );
+        list.add(newEvent);
+        return newEvent;
+      }
+    }
 
-    final todayClick = getOrCreate(DailyEventType.click);
-    final clickRecord = getOrCreatePlatform(todayClick);
+    PlatformEventRecord getLatestPlatformRecord(
+      DailyEvent event, {
+      bool initComment = false,
+      bool initRating = false,
+    }) {
+      if (event.platformEventRecords.isNotEmpty) {
+        // 取 date 最新的记录
+        return event.platformEventRecords.reduce((a, b) {
+          final ad = a.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bd = b.date ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return ad.isAfter(bd) ? a : b;
+        });
+      } else {
+        // 列表为空时才创建（精确到秒）
+        final now = DateTime.now();
+        final newRecord = PlatformEventRecord(
+          value: 0,
+          platform: AppPlatform.current,
+          comment: initComment ? '' : null,
+          rating: initRating ? 0 : null,
+          dateStr:
+              '${now.year.toString().padLeft(4, '0')}-'
+              '${now.month.toString().padLeft(2, '0')}-'
+              '${now.day.toString().padLeft(2, '0')} '
+              '${now.hour.toString().padLeft(2, '0')}:'
+              '${now.minute.toString().padLeft(2, '0')}:'
+              '${now.second.toString().padLeft(2, '0')}',
+        );
+        event.platformEventRecords.add(newRecord);
+        return newRecord;
+      }
+    }
 
-    final todayWatch = getOrCreate(DailyEventType.watch);
-    final watchRecord = getOrCreatePlatform(todayWatch);
+    // click / watch
+    final todayClick = getOrCreateDailyEvent(statsData.totalClickCount);
+    final clickRecord = getOrCreatePlatformRecord(todayClick);
 
-    final todayRating = getOrCreate(DailyEventType.rating);
-    final ratingRecord = getOrCreatePlatform(todayRating, initRating: true);
+    final todayWatch = getOrCreateDailyEvent(statsData.totalWatchDurations);
+    final watchRecord = getOrCreatePlatformRecord(todayWatch);
+
+    // comment / rating
+    final todayComment = getLatestOrCreateDailyEvent(statsData.comment);
+    final commentRecord = getLatestPlatformRecord(
+      todayComment,
+      initComment: true,
+    );
+
+    final todayRating = getLatestOrCreateDailyEvent(statsData.rating);
+    final ratingRecord = getLatestPlatformRecord(todayRating, initRating: true);
 
     return TodayEventBundle(
       statsData: statsData,

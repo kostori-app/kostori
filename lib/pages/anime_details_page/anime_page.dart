@@ -8,7 +8,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -20,24 +23,19 @@ import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
-import 'package:kostori/pages/search_result_page.dart';
+import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-
-import '../../components/bangumi_widget.dart';
-import '../../components/misc_components.dart';
-import '../../components/share_widget.dart';
-import '../../foundation/stats.dart';
-import '../../utils/data_sync.dart';
-import '../bangumi/info_controller.dart';
-import '../watcher/player_controller.dart';
 
 part 'actions.dart';
 
@@ -91,6 +89,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     );
     if (!isUpdateBangumiBind && history?.bangumiId != null) {
       Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+      stats.updateStatsBangumiId(
+        widget.id,
+        widget.sourceKey.hashCode,
+        history!.bangumiId,
+      );
       isUpdateBangumiBind = true;
     }
     if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||

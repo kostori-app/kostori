@@ -13,12 +13,11 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
-
-import '../../foundation/stats.dart';
 
 extension WatcherContext on BuildContext {
   WatcherState get watcher => findAncestorStateOfType<WatcherState>()!;
@@ -336,7 +335,7 @@ class WatcherState extends State<Watcher>
     });
     // 等待 Completer 完成
     await completer.future;
-    if (mounted) return;
+    if (!mounted) return;
     updateHistoryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (playerController.player.state.playing) {
         history?.lastWatchTime =
@@ -443,10 +442,10 @@ class WatcherState extends State<Watcher>
         if (!exists) {
           // 不存在时插入数据
           final newProgress = Progress.fromModel(
-            model: widget.anime, // 使用 AnimeDetails 对象实现 HistoryMixin
-            episode: index, // 假设 episodeId 可解析为集数
-            road: road, // 当前 episode 类型对应的 road
-            progressInMilli: 0, // 默认初始进度为 0
+            model: widget.anime,
+            episode: index,
+            road: road,
+            progressInMilli: 0,
           );
           await HistoryManager().addProgress(newProgress, widget.anime.animeId);
         }

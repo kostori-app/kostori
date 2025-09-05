@@ -481,19 +481,9 @@ abstract mixin class _AnimePageActions {
   }
 
   void onTapTag(String tag, String namespace) {
-    var config =
-        animeSource.handleClickTagEvent?.call(namespace, tag) ??
-        {'action': 'search', 'keyword': tag};
+    var target = animeSource.handleClickTagEvent?.call(namespace, tag);
     var context = App.mainNavigatorKey!.currentContext!;
-    if (config['action'] == 'search') {
-      context.to(
-        () => SearchResultPage(
-          text: config['keyword'] ?? '',
-          sourceKey: animeSource.key,
-          options: const [],
-        ),
-      );
-    }
+    target?.jump(context);
   }
 
   void liked() {
@@ -571,20 +561,37 @@ class _RatingDialogState extends State<RatingDialog> {
     try {
       final newRating = _rating.toInt();
       final newComment = _commentController.text;
+      final now = DateTime.now();
 
       final stats = await StatsManager().getOrCreateTodayEvents(
         id: _statsDataImpl.id,
         type: _statsDataImpl.type,
       );
 
+      // 新增 rating 记录
       if (stats.ratingRecord.rating != newRating) {
-        stats.ratingRecord.rating = newRating;
-        stats.ratingRecord.value += 1;
+        final newRatingRecord = PlatformEventRecord(
+          value: stats.ratingRecord.value + 1,
+          platform: AppPlatform.current,
+          rating: newRating,
+          dateStr: now.yyyymmddHHmmss,
+        );
+        stats.todayRating.platformEventRecords.add(newRatingRecord);
+        stats.todayRating.platformEventRecords.removeWhere((p) => p.value == 0);
       }
 
+      // 新增 comment 记录
       if (stats.commentRecord.comment != newComment) {
-        stats.commentRecord.comment = newComment;
-        stats.commentRecord.value += 1;
+        final newCommentRecord = PlatformEventRecord(
+          value: stats.commentRecord.value + 1,
+          platform: AppPlatform.current,
+          comment: newComment,
+          dateStr: now.yyyymmddHHmmss,
+        );
+        stats.todayComment.platformEventRecords.add(newCommentRecord);
+        stats.todayComment.platformEventRecords.removeWhere(
+          (p) => p.value == 0,
+        );
       }
 
       await StatsManager().updateStatsRatingAndComment(
