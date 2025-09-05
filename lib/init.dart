@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_saf/flutter_saf.dart';
-import 'package:kostori/foundation/audio_service/SMTC_manager_windows.dart';
+import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';

@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:extended_tabs/extended_tabs.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,9 +11,9 @@ import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/audio_service/SMTC_manager_windows.dart';
 import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
 import 'package:kostori/foundation/audio_service/player_audio_handler.dart';
+import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/foundation/audio_service/taskbar_manager.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
@@ -21,6 +22,7 @@ import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/io.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
