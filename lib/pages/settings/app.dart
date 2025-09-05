@@ -190,121 +190,185 @@ class LogsPage extends StatefulWidget {
 }
 
 class _LogsPageState extends State<LogsPage> {
+  final levelOrder = [LogLevel.info, LogLevel.warning, LogLevel.error];
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: Appbar(
-        title: const Text("Logs"),
-        actions: [
-          IconButton(
-            onPressed: () => setState(() {
-              final RelativeRect position = RelativeRect.fromLTRB(
-                MediaQuery.of(context).size.width,
-                MediaQuery.of(context).padding.top + kToolbarHeight,
-                0.0,
-                0.0,
-              );
-              showMenu(
-                context: context,
-                position: position,
-                items: [
-                  PopupMenuItem(
-                    child: Text("Clear".tl),
-                    onTap: () => setState(() => Log.clear()),
-                  ),
-                  PopupMenuItem(
-                    child: Text("Disable Length Limitation".tl),
-                    onTap: () {
-                      Log.ignoreLimitation = true;
-                      context.showMessage(message: "Only valid for this run");
-                    },
-                  ),
-                  PopupMenuItem(
-                    child: Text("Export".tl),
-                    onTap: () => saveLog(Log().toString()),
-                  ),
-                ],
-              );
-            }),
-            icon: const Icon(Icons.more_horiz),
+    return DefaultTabController(
+      length: levelOrder.length,
+      child: Scaffold(
+        appBar: Appbar(
+          title: Text("Logs".tl),
+          bottom: TabBar(
+            tabs: levelOrder
+                .map((lvl) => Tab(text: lvl.name.toUpperCase()))
+                .toList(),
           ),
-        ],
-      ),
-      body: ListView.builder(
-        reverse: true,
-        controller: ScrollController(),
-        itemCount: Log.logs.length,
-        itemBuilder: (context, index) {
-          index = Log.logs.length - index - 1;
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SelectionArea(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(16),
-                          ),
+          actions: [
+            IconButton(
+              onPressed: () {
+                final RelativeRect position = RelativeRect.fromLTRB(
+                  MediaQuery.of(context).size.width,
+                  MediaQuery.of(context).padding.top + kToolbarHeight,
+                  0.0,
+                  0.0,
+                );
+                showMenu(
+                  context: context,
+                  position: position,
+                  items: [
+                    PopupMenuItem(
+                      child: Text("Clear".tl),
+                      onTap: () => Log.clear(),
+                    ),
+                    PopupMenuItem(
+                      child: Text("Disable Length Limitation".tl),
+                      onTap: () {
+                        Log.ignoreLimitation = true;
+                        context.showMessage(
+                          message: "Only valid for this run".tl,
+                        );
+                      },
+                    ),
+                    PopupMenuItem(
+                      child: Text("Export".tl),
+                      onTap: () => saveLog(Log.logs.toString()),
+                    ),
+                  ],
+                );
+              },
+              icon: const Icon(Icons.more_horiz),
+            ),
+          ],
+        ),
+        body: StreamBuilder<List<LogItem>>(
+          stream: Log.stream,
+          initialData: Log.logs,
+          builder: (context, snapshot) {
+            final logsByLevel = {
+              LogLevel.info: <LogItem>[],
+              LogLevel.warning: <LogItem>[],
+              LogLevel.error: <LogItem>[],
+            };
+
+            for (var log in snapshot.data ?? []) {
+              logsByLevel[log.level]!.add(log);
+            }
+
+            return TabBarView(
+              children: levelOrder.map((level) {
+                final logs = logsByLevel[level]!;
+
+                if (logs.isEmpty) {
+                  return Center(
+                    child: Text("No logs for @l".tlParams({"l": level.name})),
+                  );
+                }
+
+                return ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: logs.length,
+                  itemBuilder: (context, index) {
+                    index = logs.length - index - 1;
+                    final log = logs[index];
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Material(
+                        elevation: 2,
+                        color: Theme.of(context).brightness == Brightness.light
+                            ? Colors.white.toOpacity(0.85)
+                            : const Color(0xFF1E1E1E).toOpacity(0.85),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 1),
-                          child: Text(Log.logs[index].title),
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: [
-                            Theme.of(context).colorScheme.error,
-                            Theme.of(context).colorScheme.errorContainer,
-                            Theme.of(context).colorScheme.primaryContainer,
-                          ][Log.logs[index].level.index],
-                          borderRadius: const BorderRadius.all(
-                            Radius.circular(16),
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(5, 0, 5, 1),
-                          child: Text(
-                            Log.logs[index].level.name,
-                            style: TextStyle(
-                              color: Log.logs[index].level.index == 0
-                                  ? Colors.white
-                                  : Colors.black,
+                          padding: const EdgeInsets.all(12.0),
+                          child: SelectionArea(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 2,
+                                        horizontal: 6,
+                                      ),
+                                      child: Text(log.title),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: [
+                                          Theme.of(context).colorScheme.error,
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.errorContainer,
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.primaryContainer,
+                                        ][log.level.index],
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 2,
+                                        horizontal: 6,
+                                      ),
+                                      child: Text(
+                                        log.level.name,
+                                        style: TextStyle(
+                                          color: log.level.index == 0
+                                              ? Colors.white
+                                              : Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(log.content),
+                                const SizedBox(height: 4),
+                                Text(
+                                  log.time.toString().replaceAll(
+                                    RegExp(r"\.\w+"),
+                                    "",
+                                  ),
+                                ),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () {
+                                      Clipboard.setData(
+                                        ClipboardData(text: log.content),
+                                      );
+                                      App.rootContext.showMessage(
+                                        message: '复制成功',
+                                      );
+                                    },
+                                    child: Text("Copy".tl),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  Text(Log.logs[index].content),
-                  Text(
-                    Log.logs[index].time.toString().replaceAll(
-                      RegExp(r"\.\w+"),
-                      "",
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Clipboard.setData(
-                        ClipboardData(text: Log.logs[index].content),
-                      );
-                    },
-                    child: Text("Copy".tl),
-                  ),
-                  const Divider(),
-                ],
-              ),
-            ),
-          );
-        },
+                    );
+                  },
+                );
+              }).toList(),
+            );
+          },
+        ),
       ),
     );
   }

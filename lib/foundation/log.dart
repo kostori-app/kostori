@@ -1,10 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
-
-import 'app.dart';
 
 class LogItem {
   final LogLevel level;
