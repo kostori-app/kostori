@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -184,80 +183,91 @@ class _ShareWidgetState extends State<ShareWidget> {
         ),
         child: Container(
           color: Theme.of(context).scaffoldBackgroundColor,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(width: 16),
-                    //封面
-                    Material(
-                      color: Colors.transparent,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        height: 256,
-                        width: 256 * 0.72,
-                        clipBehavior: Clip.antiAlias,
-                        child: AnimatedImage(
-                          image: CachedImageProvider(
-                            anime.cover,
-                            sourceKey: anime.sourceKey,
+          child: Material(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.72)
+                : const Color(0xFF1E1E1E).toOpacity(0.72),
+            elevation: 4,
+            shadowColor: Theme.of(context).colorScheme.shadow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                SizedBox(height: 64.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(width: 16),
+                      //封面
+                      Material(
+                        color: Colors.transparent,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: context.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          width: double.infinity,
-                          height: double.infinity,
+                          height: 256,
+                          width: 256 * 0.72,
+                          clipBehavior: Clip.antiAlias,
+                          child: AnimatedImage(
+                            image: CachedImageProvider(
+                              anime.cover,
+                              sourceKey: anime.sourceKey,
+                            ),
+                            width: double.infinity,
+                            height: double.infinity,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            //标题
-                            Text(anime.title, style: ts.s20),
-                            if (anime.subTitle != null)
-                              SelectableText(anime.subTitle!, style: ts.s14),
-                            //源名称
-                            Text(
-                              (AnimeSource.find(anime.sourceKey)?.name) ?? '',
-                              style: ts.s12,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              anime.tags.entries
-                                  .map((entry) {
-                                    // 对每个键值对，创建一个字符串表示形式
-                                    return '${entry.key}: ${entry.value.join(', ')}';
-                                  })
-                                  .join('\n'), // 用换行符分隔每个键值对
-                              style: ts.s12,
-                            ),
-                          ],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              //标题
+                              Text(anime.title, style: ts.s20),
+                              if (anime.subTitle != null)
+                                SelectableText(anime.subTitle!, style: ts.s14),
+                              //源名称
+                              Text(
+                                (AnimeSource.find(anime.sourceKey)?.name) ?? '',
+                                style: ts.s12,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                anime.tags.entries
+                                    .map((entry) {
+                                      // 对每个键值对，创建一个字符串表示形式
+                                      return '${entry.key}: ${entry.value.join(', ')}';
+                                    })
+                                    .join('\n'), // 用换行符分隔每个键值对
+                                style: ts.s12,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const Divider(),
-                  ],
+                      const Divider(),
+                    ],
+                  ),
                 ),
-              ),
-              Text('Introduction'.tl, style: ts.s18),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
+                Text('Introduction'.tl, style: ts.s18),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16,
+                    horizontal: 16,
+                  ),
+                  child: SelectableText(
+                    anime.description!,
+                  ).fixWidth(double.infinity),
                 ),
-                child: SelectableText(
-                  anime.description!,
-                ).fixWidth(double.infinity),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -305,18 +315,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
             child: Column(
               children: [
-                SizedBox(
-                  height: 64.0,
-                  width: 320,
-                  child: SvgPicture.asset(
-                    'assets/img/header_pattern.svg',
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
+                SizedBox(height: 64.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: LayoutBuilder(
@@ -540,7 +539,6 @@ class _ShareWidgetState extends State<ShareWidget> {
                     }).toList(),
                   ),
                 ),
-
                 if (bangumiItem.total >= 20) ...[
                   const SizedBox(height: 8),
                   Center(
@@ -644,20 +642,6 @@ class _ShareWidgetState extends State<ShareWidget> {
                         : BangumiBarChartPage(bangumiItem: bangumiItem),
                   ),
                 ],
-
-                // const SizedBox(height: 16),
-                SizedBox(
-                  height: 64.0,
-                  // width: 320,
-                  child: SvgPicture.asset(
-                    'assets/img/bottom_pattern.svg',
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -691,18 +675,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
             child: Column(
               children: [
-                SizedBox(
-                  height: 64.0,
-                  width: 320,
-                  child: SvgPicture.asset(
-                    'assets/img/header_pattern.svg',
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
+                SizedBox(height: 64.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 6,
@@ -813,18 +786,6 @@ class _ShareWidgetState extends State<ShareWidget> {
                     },
                   ),
                 ),
-                SizedBox(
-                  height: 64.0,
-                  // width: 320,
-                  child: SvgPicture.asset(
-                    'assets/img/bottom_pattern.svg',
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -856,18 +817,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
             child: Column(
               children: [
-                SizedBox(
-                  height: 64.0,
-                  width: 320,
-                  child: SvgPicture.asset(
-                    'assets/img/header_pattern.svg',
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
+                SizedBox(height: 64.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 6,
@@ -971,18 +921,6 @@ class _ShareWidgetState extends State<ShareWidget> {
                     characterFullItem.summary,
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.justify,
-                  ),
-                ),
-                SizedBox(
-                  height: 64.0,
-                  // width: 320,
-                  child: SvgPicture.asset(
-                    'assets/img/bottom_pattern.svg',
-                    fit: BoxFit.cover,
-                    colorFilter: ColorFilter.mode(
-                      Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                      BlendMode.srcIn,
-                    ),
                   ),
                 ),
               ],
