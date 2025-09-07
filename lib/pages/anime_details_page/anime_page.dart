@@ -3,6 +3,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -132,24 +133,24 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       } catch (e) {
         Log.addLog(LogLevel.error, 'addStats', e.toString());
       }
-      return;
     }
 
-    final (statsDataImpl, todayClick, platformRecord) = await stats
+    final (statsDataImpl, todayClick, platformRecord) = stats
         .getOrCreateTodayPlatformRecord(
           id: widget.id,
           type: widget.sourceKey.hashCode,
           targetType: DailyEventType.click,
         );
-
+    final now = DateTime.now();
     platformRecord.value += 1;
-    statsDataImpl.lastClickTime = DateTime.now();
+    platformRecord.date = now;
+    statsDataImpl.lastClickTime = now;
 
     await stats.addStats(statsDataImpl);
   }
 
   Future<void> updateStats() async {
-    final s = await stats.getOrCreateTodayEvents(
+    final s = stats.getOrCreateTodayEvents(
       id: widget.id,
       type: widget.sourceKey.hashCode,
     );
@@ -219,17 +220,32 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   Future<void> updateBangumiId() async {
     if (Utils.containsIllegalCharacters(anime.title)) {
+      Log.addLog(LogLevel.warning, 'updateBangumiId', '名称不合法: ${anime.title}');
       return;
     }
     var res = await Bangumi.combinedBangumiSearch(anime.title);
-    if (res.isEmpty ||
-        !Utils.isHalfOverlap(anime.title, res.first.nameCn) ||
-        !Utils.isHalfOverlap(anime.title, res.first.name)) {
+    if (res.isEmpty) {
+      debugPrint('res isEmpty');
       return;
-    } else {
-      history?.bangumiId = res.first.id;
-      HistoryManager().addHistoryAsync(history!);
     }
+
+    bool matched =
+        Utils.isHalfOverlap(anime.title, res.first.name) ||
+        Utils.isHalfOverlap(anime.title, res.first.nameCn);
+
+    if (!matched) {
+      debugPrint(Utils.isHalfOverlap(anime.title, res.first.name).toString());
+      debugPrint(Utils.isHalfOverlap(anime.title, res.first.nameCn).toString());
+      Log.addLog(
+        LogLevel.warning,
+        'updateBangumiId',
+        '名称不匹配: ${anime.title} - ${res.first.nameCn} - ${res.first.name}',
+      );
+      return;
+    }
+
+    history?.bangumiId = res.first.id;
+    HistoryManager().addHistoryAsync(history!);
   }
 
   void onScroll() {
@@ -332,7 +348,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     );
     isBangumi = animeSource.isBangumi;
 
-    StatsDataImpl statsDataImpl = (await stats.getStatsByIdAndType(
+    StatsDataImpl statsDataImpl = (stats.getStatsByIdAndType(
       id: widget.id,
       type: widget.sourceKey.hashCode,
     ))!;
@@ -654,8 +670,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       children: [
         if (isZero)
           _ActionButton(
-            icon: const Icon(Icons.star_border),
-            activeIcon: const Icon(Icons.star),
+            icon: const Icon(Icons.star_border_rounded),
+            activeIcon: const Icon(Icons.star_rounded),
             isActive: isFavorite || isAddToLocalFav,
             text: 'Favorite'.tl,
             onPressed: openFavPanel,
@@ -667,12 +683,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             icon: const Icon(Icons.share),
             text: 'Share'.tl,
             onPressed: share,
-            iconColor: context.useTextColor(Colors.blue),
+            iconColor: Theme.of(context).colorScheme.inversePrimary,
           ),
         if (!isZero)
           _ActionButton(
-            icon: const Icon(Icons.thumb_up_outlined),
-            activeIcon: const Icon(Icons.thumb_up),
+            icon: const Icon(Icons.favorite_border),
+            activeIcon: const Icon(Icons.favorite),
             isActive: isLiked,
             text: 'Liked'.tl,
             onPressed: () {
@@ -686,7 +702,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 App.rootContext.showMessage(message: '取消点赞');
               }
             },
-            iconColor: context.useTextColor(Colors.blue),
+            iconColor: Colors.redAccent,
           ),
         if (!isZero)
           _ActionButton(
@@ -711,7 +727,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 setState(() {});
               });
             },
-            iconColor: context.useTextColor(Colors.blue),
+            iconColor: Theme.of(context).colorScheme.primary,
           ),
         if (!isZero)
           _ActionButton(
@@ -736,7 +752,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             icon: const Icon(Icons.open_in_browser),
             text: 'Open in Browser'.tl,
             onPressed: () => launchUrlString(anime.url!),
-            iconColor: context.useTextColor(Colors.blueGrey),
+            iconColor: Theme.of(context).colorScheme.secondary,
           ),
       ],
     ).fixHeight(48);

@@ -219,7 +219,11 @@ class _LogsPageState extends State<LogsPage> {
                   items: [
                     PopupMenuItem(
                       child: Text("Clear".tl),
-                      onTap: () => Log.clear(),
+                      onTap: () {
+                        setState(() {
+                          Log.clear();
+                        });
+                      },
                     ),
                     PopupMenuItem(
                       child: Text("Disable Length Limitation".tl),

@@ -484,6 +484,20 @@ class BangumiManager with ChangeNotifier {
     return BangumiItem.fromRow(res.first);
   }
 
+  BangumiItem? getBangumiItem(int id) {
+    var res = _db.select(
+      """
+    select * from bangumi_binding
+    where id == ?;
+  """,
+      [id],
+    );
+    if (res.isEmpty) {
+      return null;
+    }
+    return BangumiItem.fromRow(res.first);
+  }
+
   List<BangumiItem> getBindAll() {
     var res = _db.select("""
       select * from bangumi_binding

@@ -9,6 +9,8 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
@@ -157,6 +159,45 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
     );
   }
 
+  final manager = StatsManager();
+  late StatsDataImpl stats;
+
+  int? latestRating;
+
+  void setStats() {
+    stats = manager.getStatsByIdAndType(
+      id: bangumiItem.id.toString(),
+      type: 'bangumi'.hashCode,
+    )!;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (!manager.isExist(
+      bangumiItem.id.toString(),
+      AnimeType('bangumi'.hashCode),
+    )) {
+      try {
+        manager.addStats(
+          manager.createStatsData(
+            id: bangumiItem.id.toString(),
+            title: bangumiItem.nameCn.isNotEmpty
+                ? bangumiItem.nameCn
+                : bangumiItem.name,
+            cover: bangumiItem.images['large']!,
+            type: 'bangumi'.hashCode,
+            isBangumi: true,
+          ),
+        );
+      } catch (e) {
+        Log.addLog(LogLevel.error, 'addStats', e.toString());
+      }
+    }
+    setStats();
+    latestRating = manager.getLatestRating(current: stats);
+  }
+
   Widget _button() {
     return Row(
       children: [
@@ -201,6 +242,15 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
             child: const Text('开始观看'),
           ),
       ],
+    );
+  }
+
+  Future<void> showRatingDialog(StatsDataImpl statsDataImpl) async {
+    showDialog(
+      context: App.rootContext,
+      builder: (context) {
+        return RatingDialog(statsDataImpl: statsDataImpl);
+      },
     );
   }
 
@@ -337,6 +387,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                     ? Row(
                                         mainAxisAlignment:
                                             MainAxisAlignment.start,
+
                                         children: [
                                           if (bangumiItem.airDate.isNotEmpty)
                                             Container(
@@ -404,81 +455,126 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                 (!widget.isLoading)
                                     ? Align(
                                         alignment: Alignment.bottomRight,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            if (bangumiItem.total >= 20) ...[
-                                              Text(
-                                                '${bangumiItem.score}',
-                                                style: TextStyle(
-                                                  fontSize: 24.0,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              SizedBox(width: 5),
-                                              Container(
-                                                padding: EdgeInsets.fromLTRB(
-                                                  8,
-                                                  5,
-                                                  8,
-                                                  5,
-                                                ), // 可选，设置内边距
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        8,
-                                                      ), // 设置圆角半径
-                                                  border: Border.all(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .primary
-                                                        .toOpacity(0.72),
-                                                    width: 1.0, // 设置边框宽度
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  Utils.getRatingLabel(
-                                                    bangumiItem.score,
-                                                  ),
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                              SizedBox(width: 4),
-                                            ],
-                                            Column(
+                                        child: InkWell(
+                                          onTap: () async {
+                                            await showRatingDialog(stats);
+                                          },
+                                          customBorder: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12.0,
+                                            ),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(4),
+                                            child: Column(
                                               crossAxisAlignment:
-                                                  CrossAxisAlignment.end, // 右对齐
+                                                  CrossAxisAlignment.end,
                                               children: [
-                                                RatingBarIndicator(
-                                                  itemCount: 5,
-                                                  rating:
-                                                      bangumiItem.score
-                                                          .toDouble() /
-                                                      2,
-                                                  itemBuilder:
-                                                      (context, index) =>
-                                                          const Icon(
-                                                            Icons.star_rounded,
-                                                          ),
-                                                  itemSize: 20.0,
-                                                ),
-                                                Text(
-                                                  '@t reviews | #@r'.tlParams({
-                                                    'r': bangumiItem.rank,
-                                                    't': bangumiItem.total,
-                                                  }),
-                                                  style: TextStyle(
-                                                    fontSize: 12,
+                                                if (latestRating != null)
+                                                  Text(
+                                                    '我的评分: $latestRating',
+                                                    style: TextStyle(
+                                                      fontSize: 12.0,
+                                                    ),
                                                   ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.center,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    if (bangumiItem.total >=
+                                                        20) ...[
+                                                      Text(
+                                                        '${bangumiItem.score}',
+                                                        style: TextStyle(
+                                                          fontSize: 24.0,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 5),
+                                                      Container(
+                                                        padding:
+                                                            EdgeInsets.fromLTRB(
+                                                              8,
+                                                              5,
+                                                              8,
+                                                              5,
+                                                            ), // 可选，设置内边距
+                                                        decoration: BoxDecoration(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ), // 设置圆角半径
+                                                          border: Border.all(
+                                                            color:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .colorScheme
+                                                                    .primary
+                                                                    .toOpacity(
+                                                                      0.72,
+                                                                    ),
+                                                            width:
+                                                                1.0, // 设置边框宽度
+                                                          ),
+                                                        ),
+                                                        child: Text(
+                                                          Utils.getRatingLabel(
+                                                            bangumiItem.score,
+                                                          ),
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 4),
+                                                    ],
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .end, // 右对齐
+                                                      children: [
+                                                        RatingBarIndicator(
+                                                          itemCount: 5,
+                                                          rating:
+                                                              bangumiItem.score
+                                                                  .toDouble() /
+                                                              2,
+                                                          itemBuilder:
+                                                              (
+                                                                context,
+                                                                index,
+                                                              ) => const Icon(
+                                                                Icons
+                                                                    .star_rounded,
+                                                              ),
+                                                          itemSize: 20.0,
+                                                        ),
+                                                        Text(
+                                                          '@t reviews | #@r'
+                                                              .tlParams({
+                                                                'r': bangumiItem
+                                                                    .rank,
+                                                                't': bangumiItem
+                                                                    .total,
+                                                              }),
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
-                                          ],
+                                          ),
                                         ),
                                       )
                                     : Align(

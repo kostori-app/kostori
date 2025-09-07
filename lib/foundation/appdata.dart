@@ -151,7 +151,6 @@ class Settings with ChangeNotifier {
     'showHistoryStatusOnTile': false,
     'blockedWords': [],
     'defaultSearchTarget': null,
-    'autoPageTurningInterval': 5, // in seconds
     'enableTapToTurnPages': true,
     'enablePageAnimation': true,
     'language': 'system', // system, zh-CN, zh-TW, en-US
@@ -183,6 +182,7 @@ class Settings with ChangeNotifier {
     'enableNoProxyOverrides': true,
     'noProxyOverrides': ['bgm', 'bangumi'],
     'ignoreBadCertificate': false,
+    'statsSelectors': [],
   };
 
   dynamic operator [](String key) {

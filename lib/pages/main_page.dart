@@ -47,7 +47,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   final _pages = [
-    const MePage(key: PageStorageKey('me')),
+    MePage(),
     const BangumiPage(key: PageStorageKey('bangumi')),
     const FavoritesPage(key: PageStorageKey('favorites')),
     const HistoryPage(key: PageStorageKey('history')),
