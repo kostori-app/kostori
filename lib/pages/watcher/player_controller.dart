@@ -54,7 +54,7 @@ abstract class _PlayerController with Store {
     configuration: PlayerConfiguration(
       bufferSize: 1500 * 1024 * 1024,
       osc: false,
-      async: true,
+      // async: true,
       logLevel: MPVLogLevel.info,
     ),
   );
