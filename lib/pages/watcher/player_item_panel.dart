@@ -453,53 +453,40 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               ),
             ),
             // 底部渐变半透明区域
-            Stack(
-              children: [
-                // Animated 底部面板
-                AnimatedPositioned(
-                  duration: Duration(seconds: 1),
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: SlideTransition(
-                    position: bottomOffsetAnimation,
-                    child: Container(
-                      height: widget.playerController.isPortraitFullscreen
-                          ? 140
-                          : 50,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          stops: const [0.0, 0.3, 0.6, 1.0],
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.toOpacity(0.3),
-                            Colors.black.toOpacity(0.6),
-                            Colors.black,
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.toOpacity(0.2),
-                            blurRadius: 20.0,
-                            spreadRadius: 5.0,
-                          ),
-                        ],
-                      ),
+            AnimatedPositioned(
+              duration: Duration(seconds: 1),
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: bottomOffsetAnimation,
+                child: Container(
+                  height: widget.playerController.isPortraitFullscreen
+                      ? 140
+                      : 50,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.0, 0.3, 0.6, 1.0],
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.toOpacity(0.3),
+                        Colors.black.toOpacity(0.6),
+                        Colors.black,
+                      ],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.toOpacity(0.2),
+                        blurRadius: 20.0,
+                        spreadRadius: 5.0,
+                      ),
+                    ],
                   ),
                 ),
-                //会有几px的透明空隙
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 1,
-                  child: Container(color: Colors.black),
-                ),
-              ],
+              ),
             ),
             // 右侧渐变半透明区域
             AnimatedPositioned(

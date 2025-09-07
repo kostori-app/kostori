@@ -32,14 +32,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
 
   bool searchMode = false;
   bool searchAllMode = false;
-
+  bool showFB = false;
   bool multiSelectMode = false;
+  bool isLoading = false;
 
   int? lastSelectedIndex;
 
   LocalFavoritesManager get manager => LocalFavoritesManager();
-
-  bool isLoading = false;
 
   Map<String, List<FavoriteItem>> searchResults = {};
 
@@ -160,9 +159,34 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     return true;
   }
 
+  void onScroll() {
+    if (scrollController.offset > 50) {
+      if (!showFB) {
+        setState(() {
+          showFB = true;
+        });
+      }
+    } else {
+      if (showFB) {
+        setState(() {
+          showFB = false;
+        });
+      }
+    }
+  }
+
+  void scrollToTop() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   void initState() {
-    // favoritesController.isRefreshEnabled = true;
     var sort = appdata.implicitData["favori_sort"] ?? "displayOrder_asc";
     sortType = FavoriteSortType.fromString(sort);
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
@@ -206,6 +230,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
       });
     });
     updateAnimes();
+    scrollController.addListener(onScroll);
     manager.addListener(updateAnimes);
     super.initState();
   }
@@ -213,7 +238,9 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   @override
   void dispose() {
     favoritesController.tabController.dispose();
+    scrollController.removeListener(onScroll);
     manager.removeListener(updateAnimes);
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -399,7 +426,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
 
     Widget body = NestedScrollView(
       controller: scrollController,
-      physics: const ClampingScrollPhysics(),
       headerSliverBuilder: (context, innerBoxIsScrolled) => [
         if (!searchAllMode && !searchMode && !multiSelectMode)
           SliverAppbar(
@@ -802,6 +828,61 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                 );
               }).toList(),
             ),
+    );
+    body = Stack(
+      children: [
+        Positioned.fill(child: body),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            opacity: showFB ? 1 : 0,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20, right: 0),
+              child: GridSpeedDial(
+                icon: Icons.menu,
+                activeIcon: Icons.close,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                spacing: 6,
+                spaceBetweenChildren: 4,
+                direction: SpeedDialDirection.up,
+                childPadding: const EdgeInsets.all(6),
+                childrens: [
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.refresh),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () async {
+                        await updateAnimes();
+                      },
+                    ),
+                  ],
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.vertical_align_top),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () => scrollToTop(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
     body = AppScrollBar(
       topPadding:

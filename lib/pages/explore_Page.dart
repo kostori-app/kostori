@@ -156,31 +156,34 @@ class _ExplorePageState extends State<ExplorePage>
 
     return Observer(
       builder: (context) {
-        return Scaffold(
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: Column(
-                  children: [
-                    tabBar,
-                    Expanded(
-                      child: MediaQuery.removePadding(
-                        context: context,
-                        removeTop: true,
-                        child: TabBarView(
-                          controller: controller,
-                          children: pages.map((e) => buildBody(e)).toList(),
-                        ),
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: Column(
+                children: [
+                  tabBar,
+                  Expanded(
+                    child: MediaQuery.removePadding(
+                      context: context,
+                      removeTop: true,
+                      child: TabBarView(
+                        controller: controller,
+                        children: pages.map((e) => buildBody(e)).toList(),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          floatingActionButton: showFB
-              ? Padding(
-                  padding: EdgeInsets.only(bottom: 40, right: 0),
+            ),
+            Positioned(
+              bottom: 10,
+              right: 10,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                opacity: showFB ? 1 : 0,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20, right: 0),
                   child: GridSpeedDial(
                     icon: Icons.menu,
                     activeIcon: Icons.close,
@@ -220,9 +223,10 @@ class _ExplorePageState extends State<ExplorePage>
                       ],
                     ],
                   ),
-                )
-              : null,
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

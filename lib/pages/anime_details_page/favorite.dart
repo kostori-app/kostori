@@ -47,9 +47,6 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
   var selectedLocalFolders = <String>{};
   var isEditing = false;
 
-  // 定义需要排除的文件夹名称
-  final excludedFolders = ["default", "默认"];
-
   late List<String> filteredFolders;
 
   @override

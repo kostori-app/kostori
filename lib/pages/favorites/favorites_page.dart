@@ -7,6 +7,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';

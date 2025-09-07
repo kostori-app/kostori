@@ -343,6 +343,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               );
             };
             if (widget != null) {
+              if (isPaddingCheckError && App.isAndroid) {
+                widget = MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    viewPadding: const EdgeInsets.only(top: 15, bottom: 15),
+                    padding: const EdgeInsets.only(top: 15, bottom: 15),
+                  ),
+                  child: widget,
+                );
+              }
               widget = OverlayWidget(widget);
               if (App.isDesktop) {
                 widget = Shortcuts(
@@ -357,19 +366,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 );
               }
               //有点问题,只能暂时解决
-              if (isPaddingCheckError) {
-                return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    padding: MediaQuery.of(context).padding.copyWith(top: 24),
-                  ),
-                  child: _SystemUiProvider(
-                    Material(
-                      color: App.isLinux ? Colors.transparent : null,
-                      child: widget,
-                    ),
-                  ),
-                );
-              }
+
               return _SystemUiProvider(
                 Material(
                   color: App.isLinux ? Colors.transparent : null,
