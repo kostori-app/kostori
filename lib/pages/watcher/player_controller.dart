@@ -977,55 +977,57 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
     return Material(
       child: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 单独显示 Media
-            if (widget.playerController.playerPlaylist.medias.isNotEmpty)
-              MediaWidget(
-                media: widget.playerController.playerPlaylist.medias.first,
-              ),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 单独显示 Media
+              if (widget.playerController.playerPlaylist.medias.isNotEmpty)
+                MediaWidget(
+                  media: widget.playerController.playerPlaylist.medias.first,
+                ),
 
-            Material(
-              child: InkWell(
-                onLongPress: () {
-                  Clipboard.setData(
-                    ClipboardData(text: widget.playerController.videoUrl),
-                  );
-                  App.rootContext.showMessage(message: '复制成功');
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SelectableText(
-                        'Source'.tl,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      SelectableText(
-                        'URI: ${widget.playerController.videoUrl}',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
+              Material(
+                child: InkWell(
+                  onLongPress: () {
+                    Clipboard.setData(
+                      ClipboardData(text: widget.playerController.videoUrl),
+                    );
+                    App.rootContext.showMessage(message: '复制成功');
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          'Source'.tl,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          'URI: ${widget.playerController.videoUrl}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            MediaInfoWidget(
-              videoParams: widget.playerController.playerVideoParams,
-              audioParams: widget.playerController.playerAudioParams,
-              audioTrack: widget.playerController.playerAudioTracks,
-              videoTrack: widget.playerController.playerVideoTracks,
-              audioBitrate: widget.playerController.playerAudioBitrate,
-            ),
-          ],
+              MediaInfoWidget(
+                videoParams: widget.playerController.playerVideoParams,
+                audioParams: widget.playerController.playerAudioParams,
+                audioTrack: widget.playerController.playerAudioTracks,
+                videoTrack: widget.playerController.playerVideoTracks,
+                audioBitrate: widget.playerController.playerAudioBitrate,
+              ),
+            ],
+          ),
         ),
       ),
     );
