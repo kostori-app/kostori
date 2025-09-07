@@ -10,6 +10,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 String _getTimeString(DateTime time) {
@@ -375,22 +376,11 @@ class LocalFavoritesManager with ChangeNotifier {
     Pointer<void> p,
     FavoriteSortType sortType,
   ) {
-    // 解析排序类型
-    final orderBy = switch (sortType) {
-      FavoriteSortType.nameAsc => 'name ASC',
-      FavoriteSortType.nameDesc => 'name DESC',
-      FavoriteSortType.timeAsc => 'time ASC',
-      FavoriteSortType.timeDesc => 'time DESC',
-      FavoriteSortType.displayOrderAsc => 'display_order ASC',
-      FavoriteSortType.displayOrderDesc => 'display_order DESC',
-      FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
-      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
-    };
     return Isolate.run(() {
       var db = sqlite3.fromPointer(p);
       var rows = db.select("""
         select * from "$folder"
-        ORDER BY $orderBy;
+        ORDER BY ${sortType.orderBy};
       """);
       return rows.map((element) => FavoriteItem.fromRow(element)).toList();
     });
@@ -412,21 +402,9 @@ class LocalFavoritesManager with ChangeNotifier {
       folder = 'default';
     }
 
-    // 解析排序类型
-    final orderBy = switch (sortType) {
-      FavoriteSortType.nameAsc => 'name ASC',
-      FavoriteSortType.nameDesc => 'name DESC',
-      FavoriteSortType.timeAsc => 'time ASC',
-      FavoriteSortType.timeDesc => 'time DESC',
-      FavoriteSortType.displayOrderAsc => 'display_order ASC',
-      FavoriteSortType.displayOrderDesc => 'display_order DESC',
-      FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
-      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
-    };
-
     var rows = _db.select("""
         select * from "$folder"
-        ORDER BY $orderBy;
+        ORDER BY ${sortType.orderBy};
       """);
     var items = rows.map((element) => FavoriteItem.fromRow(element)).toList();
 
@@ -509,17 +487,6 @@ class LocalFavoritesManager with ChangeNotifier {
     return name;
   }
 
-  bool animeExists(String folder, String id, AnimeType type) {
-    var res = _db.select(
-      """
-      select * from "$folder"
-      where id == ? and type == ?;
-    """,
-      [id, type.value],
-    );
-    return res.isNotEmpty;
-  }
-
   FavoriteItem getAnime(String folder, String id, AnimeType type) {
     var res = _db.select(
       """
@@ -532,6 +499,24 @@ class LocalFavoritesManager with ChangeNotifier {
       throw Exception("Anime not found");
     }
     return FavoriteItem.fromRow(res.first);
+  }
+
+  FavoriteItem? findAnime(String id, AnimeType type) {
+    for (final folder in folderNames) {
+      final res = _db.select(
+        """
+      select * from "$folder"
+      where id == ? and type == ?;
+      """,
+        [id, type.value],
+      );
+
+      if (res.isNotEmpty) {
+        return FavoriteItem.fromRow(res.first);
+      }
+    }
+
+    return null;
   }
 
   /// add anime to a folder
@@ -590,6 +575,14 @@ class LocalFavoritesManager with ChangeNotifier {
         [...params, minValue(folder) - 1],
       );
     }
+
+    StatsManager().addFavoriteRecord(
+      id: anime.id,
+      type: anime.type.value,
+      folder: folder,
+      action: FavoriteAction.add,
+    );
+
     initCounts();
     notifyListeners();
     return true;
@@ -640,6 +633,13 @@ class LocalFavoritesManager with ChangeNotifier {
     where id == ? and type == ?;
   """,
       [id, type.value],
+    );
+
+    StatsManager().addFavoriteRecord(
+      id: id,
+      type: type.value,
+      folder: '$sourceFolder,$targetFolder',
+      action: FavoriteAction.move,
     );
 
     initCounts();
@@ -709,6 +709,15 @@ class LocalFavoritesManager with ChangeNotifier {
       }
     }
 
+    for (var i in items) {
+      StatsManager().addFavoriteRecord(
+        id: i.id,
+        type: i.type.value,
+        folder: '$sourceFolder,$targetFolder',
+        action: FavoriteAction.move,
+      );
+    }
+
     // notifyListeners();
   }
 
@@ -758,6 +767,15 @@ class LocalFavoritesManager with ChangeNotifier {
       counts[targetFolder] = counts[targetFolder]! + items.length;
     }
 
+    for (var i in items) {
+      StatsManager().addFavoriteRecord(
+        id: i.id,
+        type: i.type.value,
+        folder: '$sourceFolder,$targetFolder',
+        action: FavoriteAction.add,
+      );
+    }
+
     notifyListeners();
   }
 
@@ -786,6 +804,14 @@ class LocalFavoritesManager with ChangeNotifier {
       return;
     }
     _db.execute("COMMIT");
+    for (var i in animes) {
+      StatsManager().addFavoriteRecord(
+        id: i.id,
+        type: i.type.value,
+        folder: folder,
+        action: FavoriteAction.remove,
+      );
+    }
     notifyListeners();
   }
 
@@ -844,6 +870,12 @@ class LocalFavoritesManager with ChangeNotifier {
     """,
       [id, type.value],
     );
+    StatsManager().addFavoriteRecord(
+      id: id,
+      type: type.value,
+      folder: folder,
+      action: FavoriteAction.remove,
+    );
     initCounts();
     notifyListeners();
   }
@@ -901,54 +933,6 @@ class LocalFavoritesManager with ChangeNotifier {
     notifyListeners();
   }
 
-  void onReadEnd(String id, AnimeType type) async {
-    _modifiedAfterLastCache = true;
-    for (final folder in folderNames) {
-      var rows = _db.select(
-        """
-        select * from "$folder"
-        where id == ? and type == ?;
-      """,
-        [id, type.value],
-      );
-      if (rows.isNotEmpty) {
-        var newTime = DateTime.now()
-            .toIso8601String()
-            .replaceFirst("T", " ")
-            .substring(0, 19);
-        String updateLocationSql = "";
-        if (appdata.settings['moveFavoriteAfterRead'] == "end") {
-          int maxValue =
-              _db.select("""
-            SELECT MAX(display_order) AS max_value
-            FROM "$folder";
-          """).firstOrNull?["max_value"] ??
-              0;
-          updateLocationSql = "display_order = ${maxValue + 1},";
-        } else if (appdata.settings['moveFavoriteAfterRead'] == "start") {
-          int minValue =
-              _db.select("""
-            SELECT MIN(display_order) AS min_value
-            FROM "$folder";
-          """).firstOrNull?["min_value"] ??
-              0;
-          updateLocationSql = "display_order = ${minValue - 1},";
-        }
-        _db.execute(
-          """
-            UPDATE "$folder"
-            SET 
-              $updateLocationSql
-              time = ?
-            WHERE id == ?;
-          """,
-          [newTime, id],
-        );
-      }
-    }
-    notifyListeners();
-  }
-
   List<FavoriteItem> searchInFolder(String folder, String keyword) {
     var keywordList = keyword.split(" ");
     keyword = keywordList.first;
@@ -987,24 +971,14 @@ class LocalFavoritesManager with ChangeNotifier {
     var keywordList = keyword.split(" ");
     keyword = keywordList.first;
     var animes = <FavoriteItemWithFolderInfo>[];
-    // 解析排序类型
-    final orderBy = switch (sortType) {
-      FavoriteSortType.nameAsc => 'name ASC',
-      FavoriteSortType.nameDesc => 'name DESC',
-      FavoriteSortType.timeAsc => 'time ASC',
-      FavoriteSortType.timeDesc => 'time DESC',
-      FavoriteSortType.displayOrderAsc => 'display_order ASC',
-      FavoriteSortType.displayOrderDesc => 'display_order DESC',
-      FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
-      FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
-    };
+
     for (var table in folderNames) {
       keyword = "%$keyword%";
       var res = _db.select(
         """
         SELECT * FROM "$table" 
         WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?
-        ORDER BY $orderBy;
+        ORDER BY ${sortType.orderBy};
       """,
         [keyword, keyword, keyword],
       );
@@ -1212,4 +1186,15 @@ enum FavoriteSortType {
     }
     return nameAsc;
   }
+
+  String get orderBy => switch (this) {
+    FavoriteSortType.nameAsc => 'name ASC',
+    FavoriteSortType.nameDesc => 'name DESC',
+    FavoriteSortType.timeAsc => 'time ASC',
+    FavoriteSortType.timeDesc => 'time DESC',
+    FavoriteSortType.displayOrderAsc => 'display_order ASC',
+    FavoriteSortType.displayOrderDesc => 'display_order DESC',
+    FavoriteSortType.recentlyWatchedAsc => 'recently_watched ASC',
+    FavoriteSortType.recentlyWatchedDesc => 'recently_watched DESC',
+  };
 }
