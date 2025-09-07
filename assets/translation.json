@@ -573,9 +573,21 @@
     "packageName": "包名",
     "appName": "应用名称",
     "buildSignature": "构建签名",
-    "installerStore": "安装商店",
+    "installerStore": "安装程序",
     "installTime": "安装时间",
-    "updateTime": "更新时间"
+    "updateTime": "更新时间",
+    "January": "一月",
+    "February": "二月",
+    "March": "三月",
+    "April": "四月",
+    "May": "五月",
+    "June": "六月",
+    "July": "七月",
+    "August": "八月",
+    "September": "九月",
+    "October": "十月",
+    "November": "十一月",
+    "December": "十二月"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

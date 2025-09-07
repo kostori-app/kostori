@@ -4,6 +4,7 @@ library;
 
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
@@ -79,11 +80,6 @@ class WatcherState extends State<Watcher>
 
   Timer? updateHistoryTimer;
 
-  @override
-  void update() {
-    setState(() {});
-  }
-
   AnimeType get type => widget.type;
 
   String get name => widget.name;
@@ -99,6 +95,11 @@ class WatcherState extends State<Watcher>
   var time = 0;
 
   var loaded = 0;
+
+  @override
+  void update() {
+    setState(() {});
+  }
 
   @override
   bool isLoading = false;
@@ -119,7 +120,7 @@ class WatcherState extends State<Watcher>
     currentState = this;
     lastWatchTime = widget.initialWatchEpisode ?? 1;
     episode = widget.initialEpisode ?? 1;
-    updateStats();
+    updateStats(int: true);
     playerController.player.stream.completed.listen((completed) {
       if (completed) {
         playNextEpisode();
@@ -345,25 +346,63 @@ class WatcherState extends State<Watcher>
         if (bangumiId != null) {
           history?.bangumiId = bangumiId;
         }
-        final todayRecord = statsDataImpl.totalWatchDurations.firstWhere(
-          (c) =>
-              c.date.year == DateTime.now().year &&
-              c.date.month == DateTime.now().month &&
-              c.date.day == DateTime.now().day,
-        );
-        final platformRecord = todayRecord.platformEventRecords.firstWhere(
-          (p) => p.platform == AppPlatform.current,
-        );
-        platformRecord.value += 1;
+
         HistoryManager().addHistoryAsync(history!);
         HistoryManager().addProgress(progress!, widget.anime.animeId);
-        stats.addStats(statsDataImpl);
+        updateTotalWatchDurations();
       }
     });
   }
 
-  void updateStats() async {
-    final (statsDataImpl, todayRecord, platformRecord) = await stats
+  void updateTotalWatchDurations() {
+    final now = DateTime.now();
+    DailyEvent? todayRecord = statsDataImpl.totalWatchDurations
+        .firstWhereOrNull(
+          (c) =>
+              c.date.year == now.year &&
+              c.date.month == now.month &&
+              c.date.day == now.day,
+        );
+
+    if (todayRecord != null) {
+      PlatformEventRecord? platformRecord = todayRecord.platformEventRecords
+          .firstWhereOrNull((p) => p.platform == AppPlatform.current);
+
+      if (platformRecord != null) {
+        platformRecord.value += 1;
+        platformRecord.date = now;
+      } else {
+        todayRecord.platformEventRecords.add(
+          PlatformEventRecord(
+            value: 1,
+            platform: AppPlatform.current,
+            dateStr: now.yyyymmddHHmmss,
+          ),
+        );
+      }
+    } else {
+      statsDataImpl.totalWatchDurations.add(
+        DailyEvent(
+          dateStr: now.yyyymmdd,
+          platformEventRecords: [
+            PlatformEventRecord(
+              value: 1,
+              platform: AppPlatform.current,
+              dateStr: now.yyyymmddHHmmss,
+            ),
+          ],
+        ),
+      );
+    }
+    stats.updateStatsWatch(
+      id: widget.anime.id,
+      type: widget.anime.sourceKey.hashCode,
+      totalWatchDurations: statsDataImpl.totalWatchDurations,
+    );
+  }
+
+  void updateStats({bool int = false}) async {
+    final (statsDataImpl, todayRecord, platformRecord) = stats
         .getOrCreateTodayPlatformRecord(
           id: widget.anime.id,
           type: widget.anime.sourceKey.hashCode,
@@ -376,7 +415,9 @@ class WatcherState extends State<Watcher>
       statsDataImpl.totalWatchDurations.add(todayRecord);
     }
     this.statsDataImpl = statsDataImpl;
-    await stats.addStats(statsDataImpl);
+    if (int) {
+      await stats.addStats(statsDataImpl);
+    }
   }
 
   @override

@@ -2,7 +2,7 @@
 
 part of 'anime_page.dart';
 
-String comment = '';
+Map<String, String> commentDrafts = {};
 
 abstract mixin class _AnimePageActions {
   final InfoController infoController = InfoController();
@@ -271,7 +271,9 @@ abstract mixin class _AnimePageActions {
     );
 
     if (selectedItem != null) {
-      await handleSelection(context, selectedItem);
+      await handleSelection(context, selectedItem).then((_) {
+        Navigator.pop(context);
+      });
     }
   }
 
@@ -438,6 +440,11 @@ abstract mixin class _AnimePageActions {
                     BottomInfoState.currentState?.queryBangumiEpisodeByID(
                       item.id,
                     );
+                    StatsManager().updateStatsBangumiId(
+                      history!.id,
+                      history!.type.value,
+                      item.id,
+                    );
                   }
                 } catch (e) {
                   Log.addLog(LogLevel.error, "绑定bangumiId", "$e");
@@ -498,10 +505,7 @@ abstract mixin class _AnimePageActions {
     showDialog(
       context: App.rootContext,
       builder: (context) {
-        return FocusScope(
-          node: FocusScopeNode(),
-          child: RatingDialog(statsDataImpl: statsDataImpl),
-        );
+        return RatingDialog(statsDataImpl: statsDataImpl);
       },
     );
   }
@@ -532,16 +536,21 @@ class _RatingDialogState extends State<RatingDialog> {
   }
 
   void _initializeData() async {
-    stats = await StatsManager().getOrCreateTodayEvents(
+    stats = StatsManager().getOrCreateTodayEvents(
       id: _statsDataImpl.id,
       type: _statsDataImpl.type,
     );
 
     setState(() {
       _rating = stats.ratingRecord.rating!.toDouble();
-      _showingDraft = comment.isNotEmpty == true;
+      _showingDraft = commentDrafts[stats.statsData.id]?.isNotEmpty == true;
+      if (!_showingDraft) {
+        commentDrafts[stats.statsData.id] = '';
+      }
       _commentController = TextEditingController(
-        text: _showingDraft ? comment : stats.commentRecord.comment,
+        text: _showingDraft
+            ? commentDrafts[stats.statsData.id]
+            : stats.commentRecord.comment,
       );
       _isLoading = false;
     });
@@ -551,7 +560,7 @@ class _RatingDialogState extends State<RatingDialog> {
     setState(() {
       _showingDraft = !_showingDraft;
       _commentController.text = (_showingDraft
-          ? comment
+          ? commentDrafts[stats.statsData.id]
           : stats.commentRecord.comment)!;
     });
   }
@@ -562,36 +571,88 @@ class _RatingDialogState extends State<RatingDialog> {
       final newRating = _rating.toInt();
       final newComment = _commentController.text;
       final now = DateTime.now();
+      final todayStr = now.yyyymmdd;
 
-      final stats = await StatsManager().getOrCreateTodayEvents(
-        id: _statsDataImpl.id,
-        type: _statsDataImpl.type,
-      );
+      int getTotalWatchDuration() {
+        int total = 0;
+
+        for (final dailyEvent in stats.statsData.totalWatchDurations) {
+          for (final record in dailyEvent.platformEventRecords) {
+            total += record.value;
+          }
+        }
+
+        return total;
+      }
 
       // 新增 rating 记录
       if (stats.ratingRecord.rating != newRating) {
+        DailyEvent? todayRecord = stats.statsData.rating.firstWhereOrNull((
+          dailyEvent,
+        ) {
+          return dailyEvent.date.year == now.year &&
+              dailyEvent.date.month == now.month &&
+              dailyEvent.date.day == now.day;
+        });
+
         final newRatingRecord = PlatformEventRecord(
-          value: stats.ratingRecord.value + 1,
+          value: todayRecord != null ? stats.ratingRecord.value + 1 : 1,
           platform: AppPlatform.current,
           rating: newRating,
           dateStr: now.yyyymmddHHmmss,
+          watchDuration:
+              getTotalWatchDuration() +
+              StatsManager().getOtherBangumiTotalWatch(
+                current: stats.statsData,
+                time: now,
+              ),
         );
-        stats.todayRating.platformEventRecords.add(newRatingRecord);
-        stats.todayRating.platformEventRecords.removeWhere((p) => p.value == 0);
+
+        if (todayRecord != null) {
+          todayRecord.platformEventRecords.add(newRatingRecord);
+          todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
+        } else {
+          // 如果今天没有记录，新建一个 DailyEvent
+          final newDailyEvent = DailyEvent(
+            dateStr: todayStr,
+            platformEventRecords: [newRatingRecord],
+          );
+          stats.statsData.rating.add(newDailyEvent);
+        }
       }
 
       // 新增 comment 记录
       if (stats.commentRecord.comment != newComment) {
+        DailyEvent? todayRecord = stats.statsData.comment.firstWhereOrNull((
+          dailyEvent,
+        ) {
+          return dailyEvent.date.year == now.year &&
+              dailyEvent.date.month == now.month &&
+              dailyEvent.date.day == now.day;
+        });
+
         final newCommentRecord = PlatformEventRecord(
-          value: stats.commentRecord.value + 1,
+          value: todayRecord != null ? stats.commentRecord.value + 1 : 1,
           platform: AppPlatform.current,
           comment: newComment,
           dateStr: now.yyyymmddHHmmss,
+          watchDuration:
+              getTotalWatchDuration() +
+              StatsManager().getOtherBangumiTotalWatch(
+                current: stats.statsData,
+                time: now,
+              ),
         );
-        stats.todayComment.platformEventRecords.add(newCommentRecord);
-        stats.todayComment.platformEventRecords.removeWhere(
-          (p) => p.value == 0,
-        );
+        if (todayRecord != null) {
+          todayRecord.platformEventRecords.add(newCommentRecord);
+          todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
+        } else {
+          final newDailyEvent = DailyEvent(
+            dateStr: todayStr,
+            platformEventRecords: [newCommentRecord],
+          );
+          stats.statsData.comment.add(newDailyEvent);
+        }
       }
 
       await StatsManager().updateStatsRatingAndComment(
@@ -600,11 +661,15 @@ class _RatingDialogState extends State<RatingDialog> {
         rating: stats.statsData.rating,
         comment: stats.statsData.comment,
       );
-
-      App.rootContext.showMessage(message: '应用成功');
-    } catch (e) {
+      if (stats.commentRecord.comment != newComment ||
+          stats.ratingRecord.rating != newRating) {
+        App.rootContext.showMessage(message: '应用成功');
+      } else {
+        App.rootContext.showMessage(message: '无改动');
+      }
+    } catch (e, s) {
       App.rootContext.showMessage(message: '应用失败');
-      Log.addLog(LogLevel.error, 'save statsDataImpl', e.toString());
+      Log.addLog(LogLevel.error, 'save statsDataImpl', '$e \n $s');
     } finally {
       Navigator.pop(context);
     }
@@ -635,16 +700,17 @@ class _RatingDialogState extends State<RatingDialog> {
                   Utils.getRatingLabel(_rating),
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                Text(' /'),
-                TextButton(
-                  onPressed: () {
+                Text(' / '),
+                GestureDetector(
+                  onTap: () {
                     setState(() {
                       _rating = 0;
+                      _commentController.text = '';
                     });
                   },
-                  child: const Text(
+                  child: Text(
                     '清除',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -676,7 +742,8 @@ class _RatingDialogState extends State<RatingDialog> {
                           controller: _commentController,
                           maxLines: null,
                           onChanged: (_) => setState(() {
-                            comment = _commentController.text;
+                            commentDrafts[stats.statsData.id] =
+                                _commentController.text;
                           }),
                           decoration: InputDecoration(
                             hintText: '写下你的评价...'.tl,
@@ -691,19 +758,9 @@ class _RatingDialogState extends State<RatingDialog> {
                     alignment: Alignment.centerLeft,
                     child: Row(
                       children: [
-                        Text(
-                          _showingDraft ? '草稿'.tl : '正文'.tl,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-                        ),
+                        Text(_showingDraft ? '草稿'.tl : '正文'.tl),
                         const SizedBox(width: 4),
-                        Text(
-                          "${_commentController.text.length} 字".tl,
-                          style: Theme.of(
-                            context,
-                          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
-                        ),
+                        Text("${_commentController.text.length} 字".tl),
                       ],
                     ),
                   ),
@@ -714,7 +771,7 @@ class _RatingDialogState extends State<RatingDialog> {
         ),
       ),
       actions: [
-        ElevatedButton(onPressed: _toggleDraftSaved, child: Text('切换草稿'.tl)),
+        ElevatedButton(onPressed: _toggleDraftSaved, child: Text('切换'.tl)),
         const SizedBox(width: 8),
         ElevatedButton(onPressed: _updateStats, child: Text('Update'.tl)),
       ],

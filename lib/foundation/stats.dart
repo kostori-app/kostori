@@ -1,8 +1,12 @@
 import 'dart:convert';
 
-import 'package:flutter/widgets.dart' show ChangeNotifier;
+import 'package:flutter/widgets.dart' show ChangeNotifier, debugPrint;
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 enum AppPlatform {
@@ -40,7 +44,8 @@ enum DailyEventType {
   comment,
   click,
   watch,
-  rating;
+  rating,
+  favorite;
 
   List<DailyEvent> getList(StatsDataImpl stats) {
     switch (this) {
@@ -52,6 +57,8 @@ enum DailyEventType {
         return stats.totalWatchDurations;
       case DailyEventType.rating:
         return stats.rating;
+      case DailyEventType.favorite:
+        return stats.favorite;
     }
   }
 }
@@ -66,6 +73,8 @@ class TodayEventBundle {
   final PlatformEventRecord watchRecord;
   final DailyEvent todayRating;
   final PlatformEventRecord ratingRecord;
+  final DailyEvent todayFavorite;
+  final PlatformEventRecord favoriteRecord;
 
   TodayEventBundle({
     required this.statsData,
@@ -77,6 +86,8 @@ class TodayEventBundle {
     required this.watchRecord,
     required this.todayRating,
     required this.ratingRecord,
+    required this.todayFavorite,
+    required this.favoriteRecord,
   });
 }
 
@@ -97,6 +108,52 @@ extension DateTimeFormat on DateTime {
         '${minute.toString().padLeft(2, '0')}:'
         '${second.toString().padLeft(2, '0')}';
   }
+
+  String get hhmmss {
+    return '${hour.toString().padLeft(2, '0')}:'
+        '${minute.toString().padLeft(2, '0')}:'
+        '${second.toString().padLeft(2, '0')}';
+  }
+}
+
+///收藏行为
+enum FavoriteAction {
+  add("add"),
+  move("move"),
+  remove("remove");
+
+  final String value;
+
+  const FavoriteAction(this.value);
+
+  static FavoriteAction? fromString(String? value) {
+    if (value == null) return null;
+    return FavoriteAction.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => throw ArgumentError("Invalid FavoriteAction: $value"),
+    );
+  }
+}
+
+/// 收藏状态（类型枚举）
+enum FavoriteType {
+  wantWatch("wish"), // 想看
+  watching("doing"), // 在看
+  watched("collect"), // 已看
+  paused("on hold"), // 搁置
+  dropped("dropped"); // 抛弃
+
+  final String value;
+
+  const FavoriteType(this.value);
+
+  static FavoriteType? fromString(String? value) {
+    if (value == null) return null;
+    return FavoriteType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => throw ArgumentError("Invalid FavoriteType: $value"),
+    );
+  }
 }
 
 class PlatformEventRecord {
@@ -105,12 +162,20 @@ class PlatformEventRecord {
   String? comment;
   int? rating;
   DateTime? date;
+  String? favorite;
+  FavoriteType? favoriteType;
+  FavoriteAction? favoriteAction;
+  int? watchDuration;
 
   PlatformEventRecord({
     required this.value,
     this.platform,
     this.comment,
     this.rating,
+    this.favorite,
+    this.favoriteType,
+    this.favoriteAction,
+    this.watchDuration,
     String? dateStr,
   }) : date = dateStr != null ? _parseDate(dateStr) : null;
 
@@ -149,6 +214,10 @@ class PlatformEventRecord {
           '${date!.minute.toString().padLeft(2, '0')}:'
           '${date!.second.toString().padLeft(2, '0')}';
     }
+    if (favorite != null) map['favorite'] = favorite;
+    if (favoriteType != null) map['favoriteType'] = favoriteType!.value;
+    if (favoriteAction != null) map['favoriteAction'] = favoriteAction!.value;
+    if (watchDuration != null) map['watchDuration'] = watchDuration;
 
     return map;
   }
@@ -163,6 +232,14 @@ class PlatformEventRecord {
       comment: json['comment'] as String?,
       rating: json['rating'] as int?,
       dateStr: json['date'] as String?,
+      favorite: json['favorite'] as String?,
+      favoriteType: json['favoriteType'] != null
+          ? FavoriteType.fromString(json['favoriteType'] as String)
+          : null,
+      favoriteAction: json['favoriteAction'] != null
+          ? FavoriteAction.fromString(json['favoriteAction'] as String)
+          : null,
+      watchDuration: json['watchDuration'] as int?,
     );
   }
 }
@@ -222,6 +299,9 @@ abstract class StatsData {
   /// 点赞状态
   bool get liked;
 
+  ///是否是bangumi来源
+  bool get isBangumi;
+
   /// 评论内容
   List<DailyEvent> get comment;
 
@@ -239,6 +319,9 @@ abstract class StatsData {
 
   ///评分
   List<DailyEvent> get rating;
+
+  ///收藏
+  List<DailyEvent> get favorite;
 }
 
 class StatsDataImpl implements StatsData {
@@ -255,6 +338,8 @@ class StatsDataImpl implements StatsData {
   @override
   bool liked;
   @override
+  bool isBangumi;
+  @override
   List<DailyEvent> comment;
   @override
   List<DailyEvent> totalClickCount;
@@ -266,6 +351,8 @@ class StatsDataImpl implements StatsData {
   List<DailyEvent> totalWatchDurations;
   @override
   List<DailyEvent> rating;
+  @override
+  List<DailyEvent> favorite;
 
   StatsDataImpl({
     required this.id,
@@ -274,16 +361,19 @@ class StatsDataImpl implements StatsData {
     this.bangumiId,
     required this.type,
     this.liked = false,
+    this.isBangumi = false,
     List<DailyEvent>? comment,
     List<DailyEvent>? totalClickCount,
     this.firstClickTime,
     this.lastClickTime,
     List<DailyEvent>? totalWatchDurations,
     List<DailyEvent>? rating,
+    List<DailyEvent>? favorite,
   }) : comment = comment ?? [],
        totalClickCount = totalClickCount ?? [],
        totalWatchDurations = totalWatchDurations ?? [],
-       rating = rating ?? [];
+       rating = rating ?? [],
+       favorite = favorite ?? [];
 
   /// 从数据库行创建实例
   factory StatsDataImpl.fromRow(Map<String, Object?> row) {
@@ -302,10 +392,12 @@ class StatsDataImpl implements StatsData {
       bangumiId: row['bangumiId'] as int?,
       type: row['type'] as int,
       liked: (row['liked'] as int?) == 1,
+      isBangumi: (row['isBangumi'] as int?) == 1,
       comment: parseList(row['comment'] as String?),
       totalClickCount: parseList(row['totalClickCount'] as String?),
       totalWatchDurations: parseList(row['totalWatchDurations'] as String?),
       rating: parseList(row['rating'] as String?),
+      favorite: parseList(row['favorite'] as String?),
       firstClickTime: row['firstClickTime'] != null
           ? DateTime.parse(row['firstClickTime'] as String)
           : null,
@@ -331,12 +423,14 @@ class StatsDataImpl implements StatsData {
       bangumiId: map['bangumiId'] as int?,
       type: map['type'] as int,
       liked: map['liked'] as bool? ?? false,
+      isBangumi: map['isBangumi'] as bool? ?? false,
       comment: parseList(map['comment'] as List<dynamic>?),
       totalClickCount: parseList(map['totalClickCount'] as List<dynamic>?),
       totalWatchDurations: parseList(
         map['totalWatchDurations'] as List<dynamic>?,
       ),
       rating: parseList(map['rating'] as List<dynamic>?),
+      favorite: parseList(map['favorite'] as List<dynamic>?),
       firstClickTime: map['firstClickTime'] != null
           ? DateTime.parse(map['firstClickTime'] as String)
           : null,
@@ -354,6 +448,7 @@ class StatsDataImpl implements StatsData {
     'bangumiId': bangumiId,
     'type': type,
     'liked': liked,
+    'isBangumi': isBangumi,
     'comment': jsonEncode(comment.map((e) => e.toJson()).toList()),
     'totalClickCount': jsonEncode(
       totalClickCount.map((e) => e.toJson()).toList(),
@@ -364,13 +459,31 @@ class StatsDataImpl implements StatsData {
     'rating': rating.isNotEmpty
         ? jsonEncode(rating.map((e) => e.toJson()).toList())
         : null,
+    'favorite': favorite.isNotEmpty
+        ? jsonEncode(favorite.map((e) => e.toJson()).toList())
+        : null,
     'firstClickTime': firstClickTime?.toIso8601String(),
     'lastClickTime': lastClickTime?.toIso8601String(),
   };
 
   @override
   String toString() {
-    return 'StatsDataImpl(id: $id, title: $title, type: $type, liked: $liked, firstClickTime: $firstClickTime, lastClickTime: $lastClickTime, ratingCount: ${rating.length})';
+    return 'StatsDataImpl('
+        'id: $id, '
+        'title: $title, '
+        'cover: $cover, '
+        'bangumiId: $bangumiId, '
+        'type: $type, '
+        'liked: $liked, '
+        'isBangumi: $isBangumi, '
+        'firstClickTime: $firstClickTime, '
+        'lastClickTime: $lastClickTime, '
+        'commentCount: ${comment.length}, '
+        'totalClickCount: ${totalClickCount.length}, '
+        'totalWatchDurations: ${totalWatchDurations.length}, '
+        'ratingCount: ${rating.length}, '
+        'favorite: ${favorite.length}'
+        ')';
   }
 }
 
@@ -405,18 +518,31 @@ class StatsManager with ChangeNotifier {
         firstClickTime text,
         lastClickTime text,
         totalWatchDurations text,
-        rating text
+        rating text,
+        favorite text,
+        isBangumi int
       );
     """);
+
+    //   var columns = _db.select("""
+    //       pragma table_info("stats");
+    //     """);
+    //   if (!columns.any((element) => element["name"] == "isBangumi")) {
+    //     _db.execute("""
+    //   alter table stats
+    //   add column isBangumi integer not null default 0;
+    // """);
+    //   }
 
     notifyListeners();
   }
 
   StatsDataImpl createStatsData({
     required String id,
-    required String? title,
-    required String? cover,
+    String? title,
+    String? cover,
     int? bangumiId,
+    bool? isBangumi,
     required int type,
   }) {
     final now = DateTime.now();
@@ -427,12 +553,14 @@ class StatsManager with ChangeNotifier {
       bangumiId: bangumiId,
       type: type,
       liked: false,
+      isBangumi: isBangumi ?? false,
       comment: [],
       totalClickCount: [],
       firstClickTime: now,
       lastClickTime: now,
       totalWatchDurations: [],
       rating: [],
+      favorite: [],
     );
   }
 
@@ -449,9 +577,11 @@ class StatsManager with ChangeNotifier {
         firstClickTime,
         lastClickTime,
         totalWatchDurations,
-        rating
+        rating,
+        favorite,
+        isBangumi
       )
-      values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     """;
 
   Future<void> addStats(StatsData newItem) async {
@@ -469,15 +599,14 @@ class StatsManager with ChangeNotifier {
       newItem.lastClickTime?.toIso8601String(),
       jsonEncode(newItem.totalWatchDurations.map((e) => e.toJson()).toList()),
       jsonEncode(newItem.rating.map((e) => e.toJson()).toList()),
+      jsonEncode(newItem.favorite.map((e) => e.toJson()).toList()),
+      newItem.isBangumi ? 1 : 0,
     ]);
 
     notifyListeners();
   }
 
-  Future<StatsDataImpl?> getStatsByIdAndType({
-    required String id,
-    required int type,
-  }) async {
+  StatsDataImpl? getStatsByIdAndType({required String id, required int type}) {
     final ResultSet result = _db.select(
       'SELECT * FROM stats WHERE id == ? AND type == ?;',
       [id, type],
@@ -492,17 +621,26 @@ class StatsManager with ChangeNotifier {
     return StatsDataImpl.fromRow(row);
   }
 
-  Future<List<StatsDataImpl>> getStatsAll() async {
+  List<StatsDataImpl> getStatsAll() {
     final result = _db.select("SELECT * FROM stats");
     if (result.isEmpty) return [];
+    final selectors = appdata.settings['statsSelectors'];
+    if (selectors == null || selectors == []) {
+      return result.map((row) {
+        return StatsDataImpl.fromRow(row);
+      }).toList();
+    } else {
+      final selectorList = List<int>.from(selectors);
 
-    return result.map((row) {
-      return StatsDataImpl.fromRow(row);
-    }).toList();
+      return result
+          .map((row) => StatsDataImpl.fromRow(row))
+          .where((stats) => !selectorList.contains(stats.type))
+          .toList();
+    }
   }
 
   Future<Map<DateTime, List<StatsDataImpl>>> getEventMap() async {
-    final allStats = await getStatsAll();
+    final allStats = getStatsAll();
     final map = <DateTime, List<StatsDataImpl>>{};
 
     for (var stats in allStats) {
@@ -511,6 +649,7 @@ class StatsManager with ChangeNotifier {
       allEvents.addAll(stats.totalClickCount);
       allEvents.addAll(stats.totalWatchDurations);
       allEvents.addAll(stats.rating);
+      allEvents.addAll(stats.favorite);
 
       final uniqueDates = allEvents.map((e) => e.date).toSet();
 
@@ -522,6 +661,7 @@ class StatsManager with ChangeNotifier {
     return map;
   }
 
+  ///更新喜欢事件
   Future<void> updateStatsLiked(String id, int type, bool liked) async {
     _db.execute("update stats set liked = ? where id = ? and type = ?", [
       liked ? 1 : 0,
@@ -532,6 +672,7 @@ class StatsManager with ChangeNotifier {
     notifyListeners();
   }
 
+  ///更新bangumiId
   Future<void> updateStatsBangumiId(String id, int type, int? bangumiId) async {
     if (bangumiId == null) return;
     _db.execute("update stats set bangumiId = ? where id = ? and type = ?", [
@@ -541,6 +682,45 @@ class StatsManager with ChangeNotifier {
     ]);
 
     notifyListeners();
+  }
+
+  ///更新观看事件
+  Future<void> updateStatsWatch({
+    required String id,
+    required int type,
+    required List<DailyEvent> totalWatchDurations,
+  }) async {
+    try {
+      _db.execute(
+        "update stats set totalWatchDurations = ? where id = ? and type = ?",
+        [
+          jsonEncode(totalWatchDurations.map((e) => e.toJson()).toList()),
+          id,
+          type,
+        ],
+      );
+      notifyListeners();
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'updateStatsWatch', e.toString());
+    }
+  }
+
+  ///更新收藏事件
+  Future<void> updateStatsFavorite({
+    required String id,
+    required int type,
+    required List<DailyEvent> favorite,
+  }) async {
+    try {
+      _db.execute("update stats set favorite = ? where id = ? and type = ?", [
+        jsonEncode(favorite.map((e) => e.toJson()).toList()),
+        id,
+        type,
+      ]);
+      notifyListeners();
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'updateStatsFavorite', e.toString());
+    }
   }
 
   /// 同时更新评分和评论
@@ -573,6 +753,95 @@ class StatsManager with ChangeNotifier {
     notifyListeners();
   }
 
+  ///获取除传入项外同个bangumiId一个时间之前的所有观看时间总和
+  int getOtherBangumiTotalWatch({
+    required StatsDataImpl current,
+    required DateTime time,
+  }) {
+    final allStats = getStatsAll();
+    int total = 0;
+
+    final compareTime = time.toUtc();
+
+    for (var stats in allStats) {
+      if (stats.bangumiId == current.bangumiId &&
+          (stats.id != current.id || stats.type != current.type)) {
+        for (var daily in stats.totalWatchDurations) {
+          for (var record in daily.platformEventRecords) {
+            if (record.date != null) {
+              final recordTime = record.date!.toUtc();
+              if (recordTime.isBefore(compareTime)) {
+                total += record.value;
+                debugPrint(
+                  'Adding ${record.value} from ${stats.id} on ${record.date}',
+                );
+              } else {
+                debugPrint(
+                  'Skipping ${record.value} from ${stats.id} on ${record.date}',
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+
+    debugPrint('Total watch duration for other bangumi: $total');
+    return total;
+  }
+
+  String? getLatestComment({required StatsDataImpl current}) {
+    final allStats = getStatsAll();
+
+    String? latestComment;
+    DateTime? latestDate;
+
+    for (var stats in allStats) {
+      if (stats.bangumiId == current.bangumiId &&
+          (stats.id != current.id || stats.type != current.type)) {
+        for (var daily in stats.comment) {
+          for (var record in daily.platformEventRecords) {
+            if (record.comment != null &&
+                record.comment!.isNotEmpty &&
+                record.date != null) {
+              if (latestDate == null || record.date!.isAfter(latestDate)) {
+                latestDate = record.date!;
+                latestComment = record.comment!;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return latestComment;
+  }
+
+  int? getLatestRating({required StatsDataImpl current}) {
+    final allStats = getStatsAll();
+
+    int? latestRating;
+    DateTime? latestDate;
+
+    for (var stats in allStats) {
+      if (stats.bangumiId == current.bangumiId &&
+          (stats.id != current.id || stats.type != current.type)) {
+        for (var daily in stats.rating) {
+          for (var record in daily.platformEventRecords) {
+            if (record.rating != null && record.date != null) {
+              if (latestDate == null || record.date!.isAfter(latestDate)) {
+                latestDate = record.date!;
+                latestRating = record.rating!;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return latestRating;
+  }
+
   final _cachedStatsIds = <String, bool>{};
 
   bool _modifiedAfterLastCache = true;
@@ -602,13 +871,13 @@ class StatsManager with ChangeNotifier {
 
 extension StatsHelper on StatsManager {
   /// 获取指定 animeId/sourceKey 对应的统计，并保证今天的平台记录存在
-  Future<(StatsDataImpl, DailyEvent, PlatformEventRecord)>
+  (StatsDataImpl, DailyEvent, PlatformEventRecord)
   getOrCreateTodayPlatformRecord({
     required String id,
     required int type,
     required DailyEventType targetType,
-  }) async {
-    final statsDataImpl = (await getStatsByIdAndType(id: id, type: type))!;
+  }) {
+    final statsDataImpl = (getStatsByIdAndType(id: id, type: type))!;
     final todayStr = DateTime.now().yyyymmdd;
 
     // 获取目标类型的列表
@@ -658,13 +927,10 @@ extension StatsHelper on StatsManager {
             platform: AppPlatform.current,
             comment: targetType == DailyEventType.comment ? '' : null,
             rating: targetType == DailyEventType.rating ? 0 : null,
-            dateStr:
-                '${now.year.toString().padLeft(4, '0')}-'
-                '${now.month.toString().padLeft(2, '0')}-'
-                '${now.day.toString().padLeft(2, '0')} '
-                '${now.hour.toString().padLeft(2, '0')}:'
-                '${now.minute.toString().padLeft(2, '0')}:'
-                '${now.second.toString().padLeft(2, '0')}',
+            favorite: targetType == DailyEventType.favorite ? '' : null,
+            favoriteType: null,
+            favoriteAction: null,
+            dateStr: now.yyyymmddHHmmss,
           );
           todayEvent.platformEventRecords.add(newRecord);
           return newRecord;
@@ -681,12 +947,16 @@ extension StatsHelper on StatsManager {
       return todayEvent.platformEventRecords.firstWhere(
         (p) => p.platform == AppPlatform.current,
         orElse: () {
+          final now = DateTime.now();
           final newRecord = PlatformEventRecord(
             value: 0,
             platform: AppPlatform.current,
             comment: null,
             rating: null,
-            dateStr: null,
+            favorite: null,
+            favoriteType: null,
+            favoriteAction: null,
+            dateStr: now.yyyymmddHHmmss,
           );
           todayEvent.platformEventRecords.add(newRecord);
           return newRecord;
@@ -701,11 +971,11 @@ extension StatsHelper on StatsManager {
   }
 
   ///初始化全部
-  Future<TodayEventBundle> getOrCreateTodayEvents({
+  TodayEventBundle getOrCreateTodayEvents({
     required String id,
     required int type,
-  }) async {
-    final statsData = (await getStatsByIdAndType(id: id, type: type))!;
+  }) {
+    final statsData = (getStatsByIdAndType(id: id, type: type))!;
     final todayStr = DateTime.now().yyyymmdd;
 
     DailyEvent getOrCreateDailyEvent(List<DailyEvent> list) {
@@ -726,12 +996,16 @@ extension StatsHelper on StatsManager {
       return event.platformEventRecords.firstWhere(
         (p) => p.platform == AppPlatform.current,
         orElse: () {
+          final now = DateTime.now();
           final newRecord = PlatformEventRecord(
             value: 0,
             platform: AppPlatform.current,
             comment: null,
             rating: null,
-            dateStr: null,
+            favorite: null,
+            favoriteType: null,
+            favoriteAction: null,
+            dateStr: now.yyyymmddHHmmss,
           );
           event.platformEventRecords.add(newRecord);
           return newRecord;
@@ -757,6 +1031,7 @@ extension StatsHelper on StatsManager {
       DailyEvent event, {
       bool initComment = false,
       bool initRating = false,
+      bool initFavorite = false,
     }) {
       if (event.platformEventRecords.isNotEmpty) {
         // 取 date 最新的记录
@@ -773,13 +1048,10 @@ extension StatsHelper on StatsManager {
           platform: AppPlatform.current,
           comment: initComment ? '' : null,
           rating: initRating ? 0 : null,
-          dateStr:
-              '${now.year.toString().padLeft(4, '0')}-'
-              '${now.month.toString().padLeft(2, '0')}-'
-              '${now.day.toString().padLeft(2, '0')} '
-              '${now.hour.toString().padLeft(2, '0')}:'
-              '${now.minute.toString().padLeft(2, '0')}:'
-              '${now.second.toString().padLeft(2, '0')}',
+          favorite: initFavorite ? '' : null,
+          favoriteType: null,
+          favoriteAction: null,
+          dateStr: now.yyyymmddHHmmss,
         );
         event.platformEventRecords.add(newRecord);
         return newRecord;
@@ -803,6 +1075,12 @@ extension StatsHelper on StatsManager {
     final todayRating = getLatestOrCreateDailyEvent(statsData.rating);
     final ratingRecord = getLatestPlatformRecord(todayRating, initRating: true);
 
+    final todayFavorite = getLatestOrCreateDailyEvent(statsData.favorite);
+    final favoriteRecord = getLatestPlatformRecord(
+      todayFavorite,
+      initFavorite: true,
+    );
+
     return TodayEventBundle(
       statsData: statsData,
       todayComment: todayComment,
@@ -813,6 +1091,76 @@ extension StatsHelper on StatsManager {
       watchRecord: watchRecord,
       todayRating: todayRating,
       ratingRecord: ratingRecord,
+      todayFavorite: todayFavorite,
+      favoriteRecord: favoriteRecord,
+    );
+  }
+
+  void addFavoriteRecord({
+    required String id,
+    required int type,
+    required String folder,
+    required FavoriteAction action,
+  }) {
+    final manager = StatsManager();
+
+    if (!manager.isExist(id, AnimeType(type))) {
+      try {
+        final history = HistoryManager().find(id, AnimeType(type));
+        final favorite = LocalFavoritesManager().findAnime(id, AnimeType(type));
+        if (history != null) {
+          manager.addStats(
+            manager.createStatsData(
+              id: id,
+              title: history.title,
+              cover: history.cover,
+              type: type,
+            ),
+          );
+        } else if (favorite != null) {
+          manager.addStats(
+            manager.createStatsData(
+              id: id,
+              title: favorite.title,
+              cover: favorite.cover,
+              type: type,
+            ),
+          );
+        } else {
+          manager.addStats(manager.createStatsData(id: id, type: type));
+        }
+      } catch (e) {
+        Log.addLog(LogLevel.error, 'addStats', e.toString());
+      }
+    }
+
+    final (statsDataImpl, todayFavorite, _) = manager
+        .getOrCreateTodayPlatformRecord(
+          id: id,
+          type: type,
+          targetType: DailyEventType.favorite,
+        );
+
+    final newFavoriteRecord = PlatformEventRecord(
+      value: 0,
+      platform: AppPlatform.current,
+      favorite: folder,
+      dateStr: DateTime.now().yyyymmddHHmmss,
+      favoriteAction: action,
+    );
+
+    todayFavorite.platformEventRecords.add(newFavoriteRecord);
+    todayFavorite.platformEventRecords.removeWhere(
+      (p) =>
+          p.favoriteAction == null &&
+          p.favorite == null &&
+          p.favoriteType == null,
+    );
+
+    manager.updateStatsFavorite(
+      id: id,
+      type: type,
+      favorite: statsDataImpl.favorite,
     );
   }
 }

@@ -128,7 +128,7 @@ dependencies:
   smtc_windows: ^1.1.0
   windows_taskbar: ^1.1.2
   extended_tabs: ^5.0.0
-  table_calendar: ^3.2.0
+  ensemble_table_calendar: ^3.1.2
 
 dev_dependencies:
   build_runner: ^2.4.9
