@@ -68,7 +68,7 @@ class SMTCManagerWindows {
           final artUri = _controller!.animeImg;
           updateMetadata(
             MusicMetadata(
-              title: WatcherState.currentState!.widget.anime.title,
+              title: WatcherState.currentState!.anime.title,
               artist: title,
               album: '',
               thumbnail: artUri,

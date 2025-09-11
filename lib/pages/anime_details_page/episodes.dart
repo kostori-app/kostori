@@ -67,72 +67,47 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
               children: [
                 Text("Playlist".tl),
                 const SizedBox(width: 5),
-                SizedBox(
-                  height: 34,
-                  child: TextButton(
-                    style: ButtonStyle(
-                      padding: WidgetStateProperty.all(EdgeInsets.zero),
-                    ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: Text('Playlist'.tl),
-                            content: StatefulBuilder(
-                              builder:
-                                  (
-                                    BuildContext context,
-                                    StateSetter innerSetState,
-                                  ) {
-                                    return Wrap(
-                                      spacing: 8,
-                                      runSpacing: 2,
-                                      children: [
-                                        for (
-                                          int i = 0;
-                                          i < state.anime.episode!.keys.length;
-                                          i++
-                                        ) ...<Widget>[
-                                          if (i == playList) ...<Widget>[
-                                            FilledButton(
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                                setState(() {
-                                                  playList = i;
-                                                });
-                                              },
-                                              child: Text(
-                                                state.anime.episode!.keys
-                                                    .elementAt(i),
-                                              ),
-                                            ),
-                                          ] else ...[
-                                            FilledButton.tonal(
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                                setState(() {
-                                                  playList = i;
-                                                });
-                                              },
-                                              child: Text(
-                                                state.anime.episode!.keys
-                                                    .elementAt(i),
-                                              ),
-                                            ),
-                                          ],
-                                        ],
-                                      ],
-                                    );
-                                  },
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    child: Text(
-                      state.anime.episode!.keys.elementAt(playList),
-                      style: const TextStyle(fontSize: 14),
+                MenuAnchor(
+                  consumeOutsideTap: true,
+                  builder: (_, MenuController controller, _) {
+                    return TextButton(
+                      style: ButtonStyle(
+                        padding: WidgetStateProperty.all(EdgeInsets.zero),
+                      ),
+                      onPressed: () {
+                        controller.isOpen
+                            ? controller.close()
+                            : controller.open();
+                      },
+                      child: Text(
+                        state.anime.episode!.keys.elementAt(playList),
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    );
+                  },
+                  menuChildren: List<MenuItemButton>.generate(
+                    state.anime.episode!.keys.length,
+                    (int i) => MenuItemButton(
+                      onPressed: () {
+                        setState(() {
+                          playList = i;
+                        });
+                      },
+                      child: Container(
+                        height: 40,
+                        constraints: const BoxConstraints(minWidth: 112),
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          state.anime.episode!.keys.elementAt(i),
+                          style: TextStyle(
+                            color: i == playList
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                            fontWeight: i == playList ? FontWeight.bold : null,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -185,23 +160,54 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                       : Theme.of(context).colorScheme.primary.toOpacity(0.3),
                   borderRadius: const BorderRadius.all(Radius.circular(12)),
                   child: InkWell(
-                    onTap: () => state.watch(i + 1, playList),
+                    onTap: () async => await WatcherState.currentState!
+                        .loadInfo(i + 1, playList)
+                        .then((_) {
+                          setState(() {});
+                        }),
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 4,
                       ),
-                      child: Center(
-                        child: Text(
-                          value,
-                          maxLines: 3,
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: visited ? context.colorScheme.outline : null,
+                      child: Row(
+                        children: [
+                          if (playList == state.playerController.currentRoad &&
+                              i ==
+                                  state.playerController.currentEpisoded -
+                                      1) ...[
+                            Image.asset(
+                              'assets/img/playing.gif',
+                              color: Theme.of(context).colorScheme.primary,
+                              height: 16,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              value,
+                              maxLines: 3,
+                              // textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: visited
+                                    ? (playList ==
+                                                  state
+                                                      .playerController
+                                                      .currentRoad &&
+                                              i ==
+                                                  state
+                                                          .playerController
+                                                          .currentEpisoded -
+                                                      1)
+                                          ? null
+                                          : context.colorScheme.outline
+                                    : null,
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),

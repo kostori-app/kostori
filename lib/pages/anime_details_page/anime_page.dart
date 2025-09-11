@@ -1,5 +1,6 @@
 // ignore_for_file: unused_element_parameter
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -32,6 +33,7 @@ import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
@@ -197,6 +199,27 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }
 
   @override
+  Future<void> onDataLoaded() async {
+    if (history == null) {
+      history = History.fromModel(model: data!);
+      HistoryManager().addHistory(history!);
+    }
+    history!.time = DateTime.now();
+    HistoryManager().addHistoryAsync(history!);
+    watcherController.history = history;
+
+    isBangumi = animeSource.isBangumi;
+
+    StatsDataImpl statsDataImpl = (stats.getStatsByIdAndType(
+      id: widget.id,
+      type: widget.sourceKey.hashCode,
+    ))!;
+
+    isLiked = statsDataImpl.liked;
+    watcherController.anime = data!;
+  }
+
+  @override
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
@@ -278,21 +301,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
               return [
                 SliverPadding(padding: EdgeInsets.only(top: 28)),
                 Watcher(
-                  type: anime.animeType,
-                  wid: anime.id,
-                  name: anime.title,
-                  episode: anime.episode,
-                  anime: anime,
-                  history: History.fromModel(
-                    model: anime,
-                    lastWatchEpisode: history?.lastWatchEpisode ?? 1,
-                    lastWatchTime: history?.lastWatchTime ?? 0,
-                    lastRoad: history?.lastRoad ?? 0,
-                    allEpisode: anime.episode!.length,
-                    bangumiId: history?.bangumiId,
-                    watchEpisode: history?.watchEpisode,
-                  ),
                   playerController: playerController,
+                  watcherController: watcherController,
                 ),
                 TabBar(
                   controller: tabController,
@@ -346,20 +356,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
-    isBangumi = animeSource.isBangumi;
-
-    StatsDataImpl statsDataImpl = (stats.getStatsByIdAndType(
-      id: widget.id,
-      type: widget.sourceKey.hashCode,
-    ))!;
-
-    isLiked = statsDataImpl.liked;
 
     return animeSource.loadAnimeInfo!(widget.id);
   }
-
-  @override
-  Future<void> onDataLoaded() async {}
 
   Widget animeTab() {
     return TabBarView(

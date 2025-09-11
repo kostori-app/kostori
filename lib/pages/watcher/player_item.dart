@@ -42,6 +42,8 @@ class _PlayerItemState extends State<PlayerItem>
   // 过渡动画
   late AnimationController? animationController;
 
+  PlayerController get playerController => widget.playerController;
+
   Timer? hideTimer;
   Timer? mouseScrollerTimer;
   Timer? hideVolumeUITimer;
@@ -60,32 +62,28 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   Future<void> increaseVolume() async {
-    await widget.playerController.setVolume(
-      widget.playerController.volume + 10,
-    );
+    await playerController.setVolume(playerController.volume + 10);
   }
 
   Future<void> decreaseVolume() async {
-    await widget.playerController.setVolume(
-      widget.playerController.volume - 10,
-    );
+    await playerController.setVolume(playerController.volume - 10);
   }
 
   void displayVideoController() {
     animationController?.forward();
     hideTimer?.cancel();
     startHideTimer();
-    widget.playerController.showVideoController = true;
+    playerController.showVideoController = true;
   }
 
   void hideVideoController() {
     animationController?.reverse();
     hideTimer?.cancel();
-    widget.playerController.showVideoController = false;
+    playerController.showVideoController = false;
   }
 
   void _handleTap() {
-    if (widget.playerController.showVideoController) {
+    if (playerController.showVideoController) {
       hideVideoController();
     } else {
       displayVideoController();
@@ -93,11 +91,11 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void _handleDoubleTap() {
-    widget.playerController.playOrPause();
+    playerController.playOrPause();
   }
 
   void _handleHove() {
-    if (!widget.playerController.showVideoController) {
+    if (!playerController.showVideoController) {
       displayVideoController();
     }
     hideTimer?.cancel();
@@ -105,11 +103,11 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void _handleMouseScroller() {
-    widget.playerController.showVolume = true;
+    playerController.showVolume = true;
     mouseScrollerTimer?.cancel();
     mouseScrollerTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) {
-        widget.playerController.showVolume = false;
+        playerController.showVolume = false;
       }
       mouseScrollerTimer = null;
     });
@@ -117,8 +115,8 @@ class _PlayerItemState extends State<PlayerItem>
 
   void startHideTimer() {
     hideTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted && widget.playerController.canHidePlayerPanel) {
-        widget.playerController.showVideoController = false;
+      if (mounted && playerController.canHidePlayerPanel) {
+        playerController.showVideoController = false;
         animationController?.reverse();
       }
       hideTimer = null;
@@ -130,27 +128,26 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void handleProgressBarDragStart(ThumbDragDetails details) {
-    widget.playerController.playerTimer?.cancel();
-    widget.playerController.pause();
+    playerController.playerTimer?.cancel();
+    playerController.pause();
     hideTimer?.cancel();
-    widget.playerController.showVideoController = true;
+    playerController.showVideoController = true;
     // _showPreview(details.timeStamp);
   }
 
   void handleProgressBarDragEnd() {
-    widget.playerController.play();
+    playerController.play();
     startHideTimer();
-    widget.playerController.playerTimer = widget.playerController
-        .getPlayerTimer();
+    playerController.playerTimer = playerController.getPlayerTimer();
     // _hidePreview();
   }
 
   void _handleKeyChangingVolume() {
-    widget.playerController.showVolume = true;
+    playerController.showVolume = true;
     hideVolumeUITimer?.cancel();
     hideVolumeUITimer = Timer(const Duration(seconds: 2), () {
       if (mounted) {
-        widget.playerController.showVolume = false;
+        playerController.showVolume = false;
       }
       hideVolumeUITimer = null;
     });
@@ -171,7 +168,7 @@ class _PlayerItemState extends State<PlayerItem>
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
-      builder: (_) => VideoInfoSheet(playerController: widget.playerController),
+      builder: (_) => VideoInfoSheet(playerController: playerController),
     );
   }
 
@@ -196,14 +193,14 @@ class _PlayerItemState extends State<PlayerItem>
     hideVolumeUITimer?.cancel();
     animationController?.dispose();
     animationController = null;
-    widget.playerController.showVideoController = true;
-    widget.playerController.showSeekTime = false;
-    widget.playerController.showBrightness = false;
-    widget.playerController.showVolume = false;
-    widget.playerController.showPlaySpeed = false;
-    widget.playerController.brightnessSeeking = false;
-    widget.playerController.volumeSeeking = false;
-    widget.playerController.canHidePlayerPanel = true;
+    playerController.showVideoController = true;
+    playerController.showSeekTime = false;
+    playerController.showBrightness = false;
+    playerController.showVolume = false;
+    playerController.showPlaySpeed = false;
+    playerController.brightnessSeeking = false;
+    playerController.volumeSeeking = false;
+    playerController.canHidePlayerPanel = true;
     super.dispose();
   }
 
@@ -216,8 +213,8 @@ class _PlayerItemState extends State<PlayerItem>
             color: Colors.black,
             child: MouseRegion(
               cursor:
-                  (widget.playerController.isFullScreen &&
-                      !widget.playerController.showVideoController)
+                  (playerController.isFullScreen &&
+                      !playerController.showVideoController)
                   ? SystemMouseCursors.none
                   : SystemMouseCursors.basic,
               onHover: (PointerEvent pointerEvent) {
@@ -229,9 +226,9 @@ class _PlayerItemState extends State<PlayerItem>
                           MediaQuery.of(context).size.height - 70) {
                     _handleHove();
                   } else {
-                    if (!widget.playerController.showVideoController) {
+                    if (!playerController.showVideoController) {
                       animationController?.forward();
-                      widget.playerController.showVideoController = true;
+                      playerController.showVideoController = true;
                     }
                   }
                 }
@@ -239,18 +236,18 @@ class _PlayerItemState extends State<PlayerItem>
               child: Listener(
                 onPointerSignal: (pointerSignal) {
                   //滚轮调节音量
-                  if (widget.playerController.isFullScreen) {
+                  if (playerController.isFullScreen) {
                     if (pointerSignal is PointerScrollEvent) {
                       _handleMouseScroller();
                       final scrollDelta = pointerSignal.scrollDelta;
                       final double volume =
-                          widget.playerController.volume - scrollDelta.dy / 60;
-                      widget.playerController.setVolume(volume);
+                          playerController.volume - scrollDelta.dy / 60;
+                      playerController.setVolume(volume);
                     }
                   }
                 },
                 child: SizedBox(
-                  height: widget.playerController.isFullScreen
+                  height: playerController.isFullScreen
                       ? (MediaQuery.of(context).size.height)
                       : (MediaQuery.of(context).size.width * 9.0 / 16.0),
                   width: MediaQuery.of(context).size.width,
@@ -268,7 +265,7 @@ class _PlayerItemState extends State<PlayerItem>
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.space) {
                                   try {
-                                    widget.playerController.playOrPause();
+                                    playerController.playOrPause();
                                     return KeyEventResult.handled; // 明确返回值
                                   } catch (e) {
                                     Log.addLog(
@@ -283,26 +280,21 @@ class _PlayerItemState extends State<PlayerItem>
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowRight) {
                                   try {
-                                    if (widget.playerController.playerTimer !=
-                                        null) {
-                                      widget.playerController.playerTimer!
-                                          .cancel();
+                                    if (playerController.playerTimer != null) {
+                                      playerController.playerTimer!.cancel();
                                     }
-                                    widget.playerController.currentPosition =
-                                        Duration(
-                                          seconds:
-                                              widget
-                                                  .playerController
-                                                  .currentPosition
-                                                  .inSeconds +
-                                              10,
-                                        );
-                                    widget.playerController.seek(
-                                      widget.playerController.currentPosition,
+                                    playerController.currentPosition = Duration(
+                                      seconds:
+                                          playerController
+                                              .currentPosition
+                                              .inSeconds +
+                                          10,
                                     );
-                                    widget.playerController.playerTimer = widget
-                                        .playerController
-                                        .getPlayerTimer();
+                                    playerController.seek(
+                                      playerController.currentPosition,
+                                    );
+                                    playerController.playerTimer =
+                                        playerController.getPlayerTimer();
                                     return KeyEventResult.handled;
                                   } catch (e) {
                                     Log.addLog(
@@ -318,8 +310,7 @@ class _PlayerItemState extends State<PlayerItem>
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowLeft) {
                                   int targetPosition =
-                                      widget
-                                          .playerController
+                                      playerController
                                           .currentPosition
                                           .inSeconds -
                                       10;
@@ -327,19 +318,17 @@ class _PlayerItemState extends State<PlayerItem>
                                     targetPosition = 0;
                                   }
                                   try {
-                                    if (widget.playerController.playerTimer !=
-                                        null) {
-                                      widget.playerController.playerTimer!
-                                          .cancel();
+                                    if (playerController.playerTimer != null) {
+                                      playerController.playerTimer!.cancel();
                                     }
-                                    widget.playerController.currentPosition =
-                                        Duration(seconds: targetPosition);
-                                    widget.playerController.seek(
-                                      widget.playerController.currentPosition,
+                                    playerController.currentPosition = Duration(
+                                      seconds: targetPosition,
                                     );
-                                    widget.playerController.playerTimer = widget
-                                        .playerController
-                                        .getPlayerTimer();
+                                    playerController.seek(
+                                      playerController.currentPosition,
+                                    );
+                                    playerController.playerTimer =
+                                        playerController.getPlayerTimer();
                                     return KeyEventResult.handled;
                                   } catch (e) {
                                     Log.addLog(
@@ -365,10 +354,8 @@ class _PlayerItemState extends State<PlayerItem>
                                 // Esc键处理
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.escape) {
-                                  if (widget.playerController.isFullScreen) {
-                                    widget.playerController.toggleFullScreen(
-                                      context,
-                                    );
+                                  if (playerController.isFullScreen) {
+                                    playerController.toggleFullScreen(context);
                                     return KeyEventResult.handled;
                                   }
                                 }
@@ -376,26 +363,19 @@ class _PlayerItemState extends State<PlayerItem>
                                 // F键处理
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.keyF) {
-                                  widget.playerController.toggleFullScreen(
-                                    context,
-                                  );
+                                  playerController.toggleFullScreen(context);
                                   return KeyEventResult.handled;
                                 }
                               } else if (event is KeyRepeatEvent) {
                                 // 右方向键长按
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowRight) {
-                                  if (widget.playerController.playbackSpeed <
-                                      widget.playerController.playbackSpeed *
-                                          2) {
-                                    if (!widget
-                                        .playerController
-                                        .showPlaySpeed) {
-                                      widget.playerController.showPlaySpeed =
-                                          true;
-                                      widget.playerController.setPlaybackSpeed(
-                                        widget.playerController.playbackSpeed *
-                                            2,
+                                  if (playerController.playbackSpeed <
+                                      playerController.playbackSpeed * 2) {
+                                    if (!playerController.showPlaySpeed) {
+                                      playerController.showPlaySpeed = true;
+                                      playerController.setPlaybackSpeed(
+                                        playerController.playbackSpeed * 2,
                                       );
                                     }
                                   }
@@ -404,29 +384,25 @@ class _PlayerItemState extends State<PlayerItem>
                                 // 右方向键抬起
                                 if (event.logicalKey ==
                                     LogicalKeyboardKey.arrowRight) {
-                                  if (widget.playerController.showPlaySpeed) {
-                                    widget.playerController.showPlaySpeed =
-                                        false;
-                                    widget.playerController.setPlaybackSpeed(
-                                      widget.playerController.playbackSpeed / 2,
+                                  if (playerController.showPlaySpeed) {
+                                    playerController.showPlaySpeed = false;
+                                    playerController.setPlaybackSpeed(
+                                      playerController.playbackSpeed / 2,
                                     );
                                   } else {
                                     try {
-                                      widget.playerController.playerTimer
-                                          ?.cancel();
-                                      widget.playerController.seek(
+                                      playerController.playerTimer?.cancel();
+                                      playerController.seek(
                                         Duration(
                                           seconds:
-                                              widget
-                                                  .playerController
+                                              playerController
                                                   .currentPosition
                                                   .inSeconds +
                                               10,
                                         ),
                                       );
-                                      widget.playerController.playerTimer =
-                                          widget.playerController
-                                              .getPlayerTimer();
+                                      playerController.playerTimer =
+                                          playerController.getPlayerTimer();
                                     } catch (e) {
                                       Log.addLog(
                                         LogLevel.error,
@@ -440,23 +416,16 @@ class _PlayerItemState extends State<PlayerItem>
                               return KeyEventResult.handled;
                             },
                             child: PlayerItemSurface(
-                              playerController: widget.playerController,
+                              playerController: playerController,
                             ),
                           ),
                         )
                       else
                         Center(
                           child: PlayerItemSurface(
-                            playerController: widget.playerController,
+                            playerController: playerController,
                           ),
                         ),
-                      // widget.playerController.player.state.buffering
-                      //     ? const Positioned.fill(
-                      //         child: Center(
-                      //           child: CircularProgressIndicator(),
-                      //         ),
-                      //       )
-                      //     : Container(),
                       GestureDetector(
                         onTap: () {
                           _handleTap();
@@ -466,18 +435,18 @@ class _PlayerItemState extends State<PlayerItem>
                         },
                         onLongPressStart: (_) {
                           setState(() {
-                            widget.playerController.showPlaySpeed = true;
+                            playerController.showPlaySpeed = true;
                           });
-                          widget.playerController.setPlaybackSpeed(
-                            widget.playerController.playbackSpeed * 2,
+                          playerController.setPlaybackSpeed(
+                            playerController.playbackSpeed * 2,
                           );
                         },
                         onLongPressEnd: (_) {
                           setState(() {
-                            widget.playerController.showPlaySpeed = false;
+                            playerController.showPlaySpeed = false;
                           });
-                          widget.playerController.setPlaybackSpeed(
-                            widget.playerController.playbackSpeed / 2,
+                          playerController.setPlaybackSpeed(
+                            playerController.playbackSpeed / 2,
                           );
                         },
                         child: Container(
@@ -493,8 +462,8 @@ class _PlayerItemState extends State<PlayerItem>
                         animationController: animationController!,
                         startHideTimer: startHideTimer,
                         cancelHideTimer: cancelHideTimer,
-                        playerController: widget.playerController,
                         showVideoInfo: showVideoInfo,
+                        playerController: playerController,
                       ),
                       // / 播放器手势控制
                       Positioned.fill(
@@ -504,43 +473,41 @@ class _PlayerItemState extends State<PlayerItem>
                         bottom: 15,
                         child: GestureDetector(
                           onHorizontalDragStart: (_) {
-                            animationController?.reverse();
-                            widget.playerController.isSeek = true;
+                            if (playerController.showVideoController) {
+                              animationController?.reverse();
+                            }
+
+                            playerController.isSeek = true;
                           },
                           onHorizontalDragUpdate: (DragUpdateDetails details) {
-                            widget.playerController.showSeekTime = true;
-                            widget.playerController.playerTimer?.cancel();
-                            widget.playerController.pause();
+                            playerController.showSeekTime = true;
+                            playerController.playerTimer?.cancel();
+                            playerController.pause();
                             final double scale =
                                 180000 / MediaQuery.sizeOf(context).width;
                             int ms =
-                                (widget
-                                            .playerController
+                                (playerController
                                             .currentPosition
                                             .inMilliseconds +
                                         (details.delta.dx * scale).round())
                                     .clamp(
                                       0,
-                                      widget
-                                          .playerController
-                                          .duration
-                                          .inMilliseconds,
+                                      playerController.duration.inMilliseconds,
                                     );
-                            widget.playerController.currentPosition = Duration(
+                            playerController.currentPosition = Duration(
                               milliseconds: ms,
                             );
                           },
                           onHorizontalDragEnd: (_) {
-                            widget.playerController.play();
-                            widget.playerController.seek(
-                              widget.playerController.currentPosition,
+                            playerController.play();
+                            playerController.seek(
+                              playerController.currentPosition,
                             );
-                            widget.playerController.isSeek = false;
-
-                            widget.playerController.playerTimer = widget
-                                .playerController
+                            playerController.isSeek = false;
+                            playerController.playerTimer?.cancel();
+                            playerController.playerTimer = playerController
                                 .getPlayerTimer();
-                            widget.playerController.showSeekTime = false;
+                            playerController.showSeekTime = false;
                           },
                           onVerticalDragUpdate:
                               (DragUpdateDetails details) async {
@@ -557,44 +524,42 @@ class _PlayerItemState extends State<PlayerItem>
 
                                 if (tapPosition < sectionWidth) {
                                   // 左边区域
-                                  widget.playerController.brightnessSeeking =
-                                      true;
-                                  widget.playerController.showBrightness = true;
+                                  playerController.brightnessSeeking = true;
+                                  playerController.showBrightness = true;
                                   final double level = (totalHeight) * 2;
                                   final double brightness =
-                                      widget.playerController.brightness -
+                                      playerController.brightness -
                                       delta / level;
                                   final double result = brightness.clamp(
                                     0.0,
                                     1.0,
                                   );
                                   setBrightness(result);
-                                  widget.playerController.brightness = result;
+                                  playerController.brightness = result;
                                 } else {
                                   // 右边区域
-                                  widget.playerController.volumeSeeking = true;
-                                  widget.playerController.showVolume = true;
+                                  playerController.volumeSeeking = true;
+                                  playerController.showVolume = true;
                                   final double level = (totalHeight) * 0.03;
                                   final double volume =
-                                      widget.playerController.volume -
-                                      delta / level;
-                                  widget.playerController.setVolume(volume);
+                                      playerController.volume - delta / level;
+                                  playerController.setVolume(volume);
                                 }
                               },
                           onVerticalDragEnd: (_) {
-                            if (widget.playerController.volumeSeeking) {
-                              widget.playerController.volumeSeeking = false;
+                            if (playerController.volumeSeeking) {
+                              playerController.volumeSeeking = false;
                               Future.delayed(const Duration(seconds: 1), () {
                                 FlutterVolumeController.updateShowSystemUI(
                                   true,
                                 );
                               });
                             }
-                            if (widget.playerController.brightnessSeeking) {
-                              widget.playerController.brightnessSeeking = false;
+                            if (playerController.brightnessSeeking) {
+                              playerController.brightnessSeeking = false;
                             }
-                            widget.playerController.showVolume = false;
-                            widget.playerController.showBrightness = false;
+                            playerController.showVolume = false;
+                            playerController.showBrightness = false;
                           },
                         ),
                       ),

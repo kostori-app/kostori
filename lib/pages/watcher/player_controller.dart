@@ -442,6 +442,7 @@ abstract class _PlayerController with Store {
     windowFrame.removeCloseListener(onWindowClose);
   }
 
+  @action
   Future<void> toggleFullScreen(
     BuildContext context, {
     bool isPortraitFullScreen = false,
@@ -502,6 +503,7 @@ abstract class _PlayerController with Store {
     }
   }
 
+  @action
   Future<void> setVolume(double value) async {
     value = value.clamp(0.0, 100.0);
     volume = value;

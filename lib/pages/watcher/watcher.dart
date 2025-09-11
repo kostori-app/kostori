@@ -11,14 +11,13 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
+import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:scrollview_observer/scrollview_observer.dart';
 
 extension WatcherContext on BuildContext {
   WatcherState get watcher => findAncestorStateOfType<WatcherState>()!;
@@ -27,37 +26,13 @@ extension WatcherContext on BuildContext {
 class Watcher extends StatefulWidget {
   const Watcher({
     super.key,
-    required this.type,
-    required this.wid,
-    required this.name,
-    required this.episode,
-    required this.anime,
-    required this.history,
-    this.initialWatchEpisode,
-    this.initialEpisode,
     required this.playerController,
+    required this.watcherController,
   });
 
-  final AnimeType type;
-
-  final String wid;
-
-  final String name;
-
-  final AnimeDetails anime;
-
-  /// null if the comic is a gallery
-  final Map<String, Map<String, String>>? episode;
-
-  /// Starts from 1, invalid values equal to 1
-  final int? initialWatchEpisode;
-
-  /// Starts from 1, invalid values equal to 1
-  final int? initialEpisode;
-
-  final History history;
-
   final PlayerController playerController;
+
+  final WatcherController watcherController;
 
   @override
   State<Watcher> createState() => WatcherState();
@@ -65,36 +40,30 @@ class Watcher extends StatefulWidget {
 
 class WatcherState extends State<Watcher>
     with _WatcherLocation, SingleTickerProviderStateMixin {
-  static WatcherState? currentState; // 静态变量
+  static WatcherState? currentState;
 
-  late final PlayerController playerController;
+  PlayerController get playerController => widget.playerController;
 
-  late GridObserverController observerController;
+  WatcherController get watcherController => widget.watcherController;
+
+  History get history => widget.watcherController.history!;
+
+  AnimeDetails get anime => widget.watcherController.anime!;
 
   final stats = StatsManager();
 
   // 当前播放列表
   late int currentRoad;
 
-  ScrollController scrollController = ScrollController();
-
   Timer? updateHistoryTimer;
 
-  AnimeType get type => widget.type;
+  AnimeType get type => anime.animeType;
 
-  String get name => widget.name;
+  String get name => anime.title;
 
-  History? history;
-
-  Progress? progress;
+  Progress? progressFind;
 
   late StatsDataImpl statsDataImpl;
-
-  dynamic ep;
-
-  var time = 0;
-
-  var loaded = 0;
 
   @override
   void update() {
@@ -105,43 +74,47 @@ class WatcherState extends State<Watcher>
   bool isLoading = false;
 
   @override
-  int get maxEpisode => widget.episode?.length ?? 1;
-
-  @override
-  void onPageChanged() {
-    updateHistory();
-  }
-
-  @override
   void initState() {
     super.initState();
-    observerController = GridObserverController(controller: scrollController);
-    playerController = widget.playerController;
     currentState = this;
-    lastWatchTime = widget.initialWatchEpisode ?? 1;
-    episode = widget.initialEpisode ?? 1;
+    playerController.changePlayerSettings();
+    epIndex = 1;
+    currentRoad = 0;
     updateStats(int: true);
     playerController.player.stream.completed.listen((completed) {
       if (completed) {
+        if (progressFind != null) {
+          try {
+            if (!progressFind!.isCompleted) {
+              HistoryManager().updateProgress(
+                historyId: anime.id,
+                type: anime.animeType,
+                episode: epIndex - 1,
+                road: playerController.currentRoad,
+                isCompleted: true,
+                endTime: DateTime.now(),
+              );
+              Log.addLog(
+                LogLevel.info,
+                "updateProgress",
+                "update progress successful",
+              );
+            }
+          } catch (e) {
+            Log.addLog(LogLevel.error, "updateProgress", e.toString());
+          }
+        }
+
         playNextEpisode();
       }
     });
-    history = widget.history;
-    progress = Progress.fromModel(
-      model: widget.anime,
-      episode: 0,
-      road: 0,
-      progressInMilli: 0,
-    );
-    Future.microtask(() {
+    Future.microtask(() async {
+      await _initializeProgress();
+      if (history.lastWatchEpisode != 0) {
+        loadInfo(history.lastWatchEpisode!, history.lastRoad!.toInt());
+      }
       updateHistory();
     });
-    if (history != null && history!.lastWatchEpisode != 0) {
-      loadInfo(history!.lastWatchEpisode, history!.lastRoad.toInt());
-    }
-    currentRoad = 0;
-    _initializeProgress();
-    playerController.changePlayerSettings();
   }
 
   @override
@@ -154,9 +127,8 @@ class WatcherState extends State<Watcher>
 
   @override
   void dispose() {
-    observerController.controller?.dispose();
-    playerController.dispose();
     updateHistoryTimer?.cancel();
+    playerController.dispose();
     playerController.disposeWindow();
     super.dispose();
   }
@@ -165,14 +137,13 @@ class WatcherState extends State<Watcher>
   Future<void> playNextEpisode() async {
     setState(() {
       // 如果已经是最后一集，避免超出范围
-      if (episode <
-          (widget.anime.episode!.values
+      if (epIndex <
+          (anime.episode!.values
               .elementAt(playerController.currentRoad)
               .length)) {
         try {
-          episode++;
-          loadNextlVideo(episode);
-          history?.watchEpisode.add(episode);
+          epIndex++;
+          loadNextlVideo(epIndex);
           showCenter(
             seconds: 1,
             icon: Gif(
@@ -217,96 +188,112 @@ class WatcherState extends State<Watcher>
   }
 
   Future<void> loadInfo(int episodeIndex, int road) async {
-    if (episodeIndex == loaded) {
-      return;
-    }
-
-    ep = widget.anime.episode?.values.elementAt(road);
-
-    Log.addLog(LogLevel.info, "加载剧集", "$episodeIndex");
-    episode = episodeIndex;
-    try {
-      var progressFind = await HistoryManager().progressFind(
-        widget.anime.id,
-        AnimeType(widget.anime.sourceKey.hashCode),
-        episode - 1,
-        road,
-      );
-      playerController.currentRoad = road;
-
-      history?.watchEpisode.add(episode);
-      history?.lastRoad = road;
-      progress?.road = road;
-      progress?.episode = episode - 1;
-
-      if (episodeIndex == history?.lastWatchEpisode) {
-        time = history!.lastWatchTime;
-      } else {
-        time = progressFind!.progressInMilli;
-      }
-      var res = await type.animeSource!.loadAnimePages!(
-        widget.wid,
-        ep?.keys.elementAt(episode - 1),
-      );
-      if (res is! String || res.isEmpty) {
-        Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
-        throw Exception("$res 不合法");
-      }
-      playerController.currentEpisoded = episodeIndex;
-      playerController.videoUrl = res;
-      await _play(res, episode, time);
-      loaded = episodeIndex;
-      playerController.playing = true;
-      playerController.updateCurrentSetName(episode);
-      updateHistory();
-    } catch (e, s) {
-      Log.addLog(LogLevel.error, "loadInfo", "$e\n$s");
-    }
+    await _loadEpisode(episodeIndex: episodeIndex, road: road);
   }
 
   Future<void> loadNextlVideo(int episodeIndex) async {
-    ep = widget.anime.episode?.values.elementAt(playerController.currentRoad);
-    episode = episodeIndex;
+    await _loadEpisode(
+      episodeIndex: episodeIndex,
+      road: playerController.currentRoad,
+      checkRemainingTime: true,
+    );
+  }
+
+  Future<void> _loadEpisode({
+    required int episodeIndex,
+    required int road,
+    bool checkRemainingTime = false,
+  }) async {
+    if (anime.episode == null || road >= anime.episode!.length) {
+      App.rootContext.showMessage(message: '线路不存在');
+      return;
+    }
+
+    if (!checkRemainingTime &&
+        episodeIndex == loaded &&
+        road == playerController.currentRoad) {
+      App.rootContext.showMessage(message: '加载重复集数');
+      return;
+    }
+    epIndex = episodeIndex;
     Log.addLog(LogLevel.info, "加载剧集", "$episodeIndex");
+
     try {
-      var progressFind = await HistoryManager().progressFind(
-        widget.anime.id,
-        AnimeType(widget.anime.sourceKey.hashCode),
-        episode - 1,
-        playerController.currentRoad,
+      final progressFind = HistoryManager().progressFind(
+        anime.id,
+        AnimeType(anime.sourceKey.hashCode),
+        epIndex - 1,
+        road,
       );
-
-      history?.watchEpisode.add(episode);
-      progress?.episode = episode - 1;
-
-      if (progressFind!.progressInMilli != 0) {
-        time = progressFind.progressInMilli;
-      } else {
-        time = 0;
+      if (progressFind == null) {
+        Log.addLog(
+          LogLevel.warning,
+          'progress not found',
+          '$episodeIndex-$road',
+        );
+        return;
       }
+      this.progressFind = progressFind;
+
+      if (progressFind.startTime == null) {
+        HistoryManager().updateProgress(
+          historyId: progressFind.historyId,
+          type: progressFind.type,
+          episode: progressFind.episode,
+          road: progressFind.road,
+          startTime: DateTime.now(),
+        );
+      }
+
+      if (checkRemainingTime) {
+        final remainingMillis =
+            playerController.player.state.duration.inMilliseconds -
+            playerController.player.state.position.inMilliseconds;
+        if (remainingMillis < 3 * 60 * 1000 && !progressFind.isCompleted) {
+          HistoryManager().updateProgress(
+            historyId: anime.id,
+            type: anime.animeType,
+            episode: epIndex - 1,
+            road: playerController.currentRoad,
+            isCompleted: true,
+            endTime: DateTime.now(),
+          );
+        }
+      }
+
+      time = progressFind.progressInMilli;
+
       var res = await type.animeSource!.loadAnimePages!(
-        widget.wid,
-        ep?.keys.elementAt(episode - 1),
+        anime.id,
+        anime.episode!.values.elementAt(road).keys.elementAt(epIndex - 1),
       );
+
       if (res is! String || res.isEmpty) {
         Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
+        App.rootContext.showMessage(message: '获取视频链接异常');
         throw Exception("$res 不合法");
       }
+
+      await _play(res, time);
+
+      playerController.currentRoad = road;
       playerController.currentEpisoded = episodeIndex;
       playerController.videoUrl = res;
-      await _play(res, episode, time);
-      loaded = episodeIndex;
-
       playerController.playing = true;
-      playerController.updateCurrentSetName(episode);
+      playerController.updateCurrentSetName(epIndex);
+
+      history.watchEpisode.add(epIndex);
+      history.lastRoad = road;
+
+      loaded = episodeIndex;
       updateHistory();
     } catch (e, s) {
-      Log.addLog(LogLevel.error, "loadNextlVideo", "$e\n$s");
-      rethrow;
+      Log.addLog(LogLevel.error, "_loadEpisode", "$e\n$s");
+      if (checkRemainingTime) rethrow;
     }
   }
 
-  Future<void> _play(String res, int order, int currentPlaybackTime) async {
+  Future<void> _play(String res, int currentPlaybackTime) async {
     try {
       if (mounted) {
         await playerController.player.open(Media(res));
@@ -326,8 +313,16 @@ class WatcherState extends State<Watcher>
         await sub.cancel();
         if (mounted) {
           try {
+            var remainingPlaybackTime = currentPlaybackTime;
+            if (progressFind!.isCompleted) {
+              final duration =
+                  playerController.player.state.duration.inMilliseconds;
+              if ((duration - remainingPlaybackTime).abs() <= 5000) {
+                remainingPlaybackTime = 0;
+              }
+            }
             await playerController.player.seek(
-              Duration(milliseconds: currentPlaybackTime),
+              Duration(milliseconds: remainingPlaybackTime),
             );
           } catch (_) {}
         }
@@ -336,19 +331,25 @@ class WatcherState extends State<Watcher>
     });
     // 等待 Completer 完成
     await completer.future;
+    updateHistoryTimer?.cancel();
     if (!mounted) return;
     updateHistoryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (playerController.player.state.playing) {
-        history?.lastWatchTime =
-            playerController.player.state.position.inMilliseconds;
-        progress?.progressInMilli =
+        history.lastWatchTime =
             playerController.player.state.position.inMilliseconds;
         if (bangumiId != null) {
-          history?.bangumiId = bangumiId;
+          history.bangumiId = bangumiId;
         }
 
-        HistoryManager().addHistoryAsync(history!);
-        HistoryManager().addProgress(progress!, widget.anime.animeId);
+        HistoryManager().addHistoryAsync(history);
+        HistoryManager().updateProgress(
+          historyId: anime.id,
+          type: anime.animeType,
+          episode: epIndex - 1,
+          road: playerController.currentRoad,
+          progressInMilli:
+              playerController.player.state.position.inMilliseconds,
+        );
         updateTotalWatchDurations();
       }
     });
@@ -394,9 +395,9 @@ class WatcherState extends State<Watcher>
         ),
       );
     }
-    stats.updateStatsWatch(
-      id: widget.anime.id,
-      type: widget.anime.sourceKey.hashCode,
+    stats.updateStats(
+      id: anime.id,
+      type: anime.sourceKey.hashCode,
       totalWatchDurations: statsDataImpl.totalWatchDurations,
     );
   }
@@ -404,8 +405,8 @@ class WatcherState extends State<Watcher>
   void updateStats({bool int = false}) async {
     final (statsDataImpl, todayRecord, platformRecord) = stats
         .getOrCreateTodayPlatformRecord(
-          id: widget.anime.id,
-          type: widget.anime.sourceKey.hashCode,
+          id: anime.id,
+          type: anime.sourceKey.hashCode,
           targetType: DailyEventType.watch,
         );
 
@@ -429,7 +430,7 @@ class WatcherState extends State<Watcher>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.0),
                 child: Hero(
-                  tag: widget.anime.id,
+                  tag: anime.id,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.width * 0.45,
@@ -445,7 +446,7 @@ class WatcherState extends State<Watcher>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
                 child: Hero(
-                  tag: widget.anime.id,
+                  tag: anime.id,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.width * 0.6,
@@ -461,70 +462,59 @@ class WatcherState extends State<Watcher>
 
   Future<void> _initializeProgress() async {
     // 获取所有需要处理的 episodes，并将每种类型的 road 设置为对应的数字
-    final allEpisodes = widget.anime.episode ?? {};
+    final allEpisodes = anime.episode ?? {};
 
     // 遍历 episodes
-    int roadCounter = 0; // 用于区分 episode, episode2, episode3 的 road 值
+    int roadCounter = 0;
     for (var entry in allEpisodes.entries) {
       final episodes = entry
           .value; // Map<String, String> { '1': '/path/to/episode1.mp4', ... }
 
       // 使用 entries.asMap() 来获取索引和键值对
       for (var index = 0; index < episodes.length; index++) {
-        final road = roadCounter; // 这里 road 值不随着 index 递增，而是随着 episodeType 递增
+        // 这里 road 值不随着 index 递增，而是随着 episodeType 递增
+        final road = roadCounter;
 
         // 检查是否已经存在
         final exists = await HistoryManager().checkIfProgressExists(
-          widget.anime.animeId, // historyId
-          AnimeType(widget.anime.sourceKey.hashCode), // type
-          index, // episode
-          road, // road
+          historyId: anime.animeId,
+          type: AnimeType(anime.sourceKey.hashCode),
+          episode: index,
+          road: road,
         );
+
         if (!exists) {
           // 不存在时插入数据
           final newProgress = Progress.fromModel(
-            model: widget.anime,
+            model: anime,
             episode: index,
             road: road,
             progressInMilli: 0,
           );
-          await HistoryManager().addProgress(newProgress, widget.anime.animeId);
+          await HistoryManager().addProgress(newProgress, anime.animeId);
         }
       }
-      roadCounter++; // 每处理一个类型的 episode 后，road 值递增
+      roadCounter++;
     }
   }
 
   void updateHistory() {
-    if (history != null) {
-      history!.lastWatchEpisode = episode;
-      history!.allEpisode = widget.episode!.values
-          .elementAt(playerController.currentRoad)
-          .length;
-      HistoryManager().addHistoryAsync(history!);
-    }
+    history.lastWatchEpisode = epIndex;
+    history.allEpisode =
+        anime.episode?.values.elementAt(playerController.currentRoad).length ??
+        0;
+    HistoryManager().addHistoryAsync(history);
   }
 }
 
 abstract mixin class _WatcherLocation {
-  int _lastWatchTime = 0;
-
-  int get lastWatchTime => _lastWatchTime;
-
-  set lastWatchTime(int value) {
-    _lastWatchTime = value;
-    onPageChanged();
-  }
-
-  int episode = 1;
-
-  int get maxEpisode;
+  int epIndex = 1;
 
   bool get isLoading;
 
+  var time = 0;
+
+  var loaded = 0;
+
   void update();
-
-  bool get enablePageAnimation => appdata.settings['enablePageAnimation'];
-
-  void onPageChanged();
 }

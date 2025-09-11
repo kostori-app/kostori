@@ -625,6 +625,34 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$toggleFullScreenAsyncAction = AsyncAction(
+    '_PlayerController.toggleFullScreen',
+    context: context,
+  );
+
+  @override
+  Future<void> toggleFullScreen(
+    BuildContext context, {
+    bool isPortraitFullScreen = false,
+  }) {
+    return _$toggleFullScreenAsyncAction.run(
+      () => super.toggleFullScreen(
+        context,
+        isPortraitFullScreen: isPortraitFullScreen,
+      ),
+    );
+  }
+
+  late final _$setVolumeAsyncAction = AsyncAction(
+    '_PlayerController.setVolume',
+    context: context,
+  );
+
+  @override
+  Future<void> setVolume(double value) {
+    return _$setVolumeAsyncAction.run(() => super.setVolume(value));
+  }
+
   @override
   String toString() {
     return '''

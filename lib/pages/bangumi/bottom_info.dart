@@ -1227,7 +1227,7 @@ class BottomInfoState extends State<BottomInfo>
                   EpisodeCommentsSheet(
                     episodeInfo: episodeInfo,
                     loadComments: loadComments,
-                    episode: WatcherState.currentState!.episode,
+                    episode: WatcherState.currentState!.epIndex,
                     infoController: infoController,
                   ),
                   topicsListBody,

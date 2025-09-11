@@ -7,6 +7,10 @@ Map<String, String> commentDrafts = {};
 abstract mixin class _AnimePageActions {
   final InfoController infoController = InfoController();
 
+  final WatcherController watcherController = WatcherController();
+
+  final PlayerController playerController = PlayerController();
+
   void update();
 
   AnimeDetails get anime;
