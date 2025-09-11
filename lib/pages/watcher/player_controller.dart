@@ -39,7 +39,6 @@ abstract class _PlayerController with Store {
   late ShadersController shadersController;
   late final PlayerAudioHandler audioHandler;
   late final Stream<String> timeStream;
-  late AnimationController animation;
 
   final FocusNode keyboardFocus = FocusNode();
 
@@ -55,8 +54,6 @@ abstract class _PlayerController with Store {
   late final player = Player(
     configuration: PlayerConfiguration(
       bufferSize: 1500 * 1024 * 1024,
-      osc: false,
-      // async: true,
       logLevel: MPVLogLevel.info,
     ),
   );
@@ -117,7 +114,7 @@ abstract class _PlayerController with Store {
 
   // 视频音量/亮度
   @observable
-  double volume = 0;
+  double volume = -1;
   @observable
   double brightness = 0;
 

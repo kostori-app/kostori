@@ -20,7 +20,9 @@ class VideoPage extends StatefulWidget {
 }
 
 class _VideoPageState extends State<VideoPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin, WindowListener {
+  PlayerController get playerController => widget.playerController;
+  late AnimationController animation;
   late Animation<Offset> _rightOffsetAnimation;
   late Animation<Offset> _bottomOffsetAnimation;
 
@@ -35,9 +37,9 @@ class _VideoPageState extends State<VideoPage>
   void menuJumpToCurrentEpisode() {
     Future.delayed(const Duration(milliseconds: 20), () {
       observerController.jumpTo(
-        index: widget.playerController.currentEpisoded > 1
-            ? widget.playerController.currentEpisoded - 1
-            : widget.playerController.currentEpisoded,
+        index: playerController.currentEpisoded > 1
+            ? playerController.currentEpisoded - 1
+            : playerController.currentEpisoded,
       );
     });
   }
@@ -47,6 +49,13 @@ class _VideoPageState extends State<VideoPage>
       widget.playerController.animation.forward();
       menuJumpToCurrentEpisode();
     }
+  }
+
+  void closeTabBodyAnimated() {
+    animation.reverse();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      playerController.showTabBody = false;
+    });
   }
 
   @override
@@ -61,27 +70,15 @@ class _VideoPageState extends State<VideoPage>
       vsync: this,
     );
 
-    _rightOffsetAnimation =
-        Tween<Offset>(
-          begin: const Offset(1.0, 0.0),
-          end: const Offset(0.0, 0.0),
-        ).animate(
-          CurvedAnimation(
-            parent: widget.playerController.animation,
-            curve: Curves.easeInOut,
-          ),
-        );
+    _rightOffsetAnimation = Tween<Offset>(
+      begin: const Offset(1.0, 0.0),
+      end: const Offset(0.0, 0.0),
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
 
-    _bottomOffsetAnimation =
-        Tween<Offset>(
-          begin: const Offset(0.0, 1.0),
-          end: const Offset(0.0, 0.0),
-        ).animate(
-          CurvedAnimation(
-            parent: widget.playerController.animation,
-            curve: Curves.easeInOut,
-          ),
-        );
+    _bottomOffsetAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 1.0),
+      end: const Offset(0.0, 0.0),
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
 
     widget.playerController.showTabBody = false;
     widget.playerController.currentRoad = 0;
@@ -124,11 +121,6 @@ class _VideoPageState extends State<VideoPage>
             );
           }
         }
-        Log.addLog(
-          LogLevel.info,
-          'videoPopScope.PopScope',
-          'isFullScreen: ${widget.playerController.isFullScreen} \n showTabBody: ${widget.playerController.showTabBody}',
-        );
       },
       child: Observer(
         builder: (context) => SafeArea(
@@ -234,7 +226,7 @@ class _VideoPageState extends State<VideoPage>
                       ),
                       // 毛玻璃背景
                       GestureDetector(
-                        onTap: widget.playerController.closeTabBodyAnimated,
+                        onTap: closeTabBodyAnimated,
                         child: SizedBox(
                           width: double.infinity,
                           height: double.infinity,
@@ -426,6 +418,7 @@ class _VideoPageState extends State<VideoPage>
                 widget.playerController.closeTabBodyAnimated();
                 widget.playerController.currentRoad = currentRoad;
                 widget.playerController.playEpisode(count0, currentRoad);
+                closeTabBodyAnimated();
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(
