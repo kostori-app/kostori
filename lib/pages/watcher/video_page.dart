@@ -25,6 +25,7 @@ class _VideoPageState extends State<VideoPage>
   late Animation<Offset> _bottomOffsetAnimation;
 
   late GridObserverController observerController;
+  final GlobalKey<OverlayState> _overlayKey = GlobalKey<OverlayState>();
 
   ScrollController scrollController = ScrollController();
 
@@ -52,7 +53,10 @@ class _VideoPageState extends State<VideoPage>
   void initState() {
     super.initState();
     observerController = GridObserverController(controller: scrollController);
-    widget.playerController.animation = AnimationController(
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      playerController.overlayKey = _overlayKey;
+    });
+    animation = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
@@ -86,6 +90,9 @@ class _VideoPageState extends State<VideoPage>
 
   @override
   void dispose() {
+    if (playerController.overlayKey == _overlayKey) {
+      playerController.overlayKey = null;
+    }
     observerController.controller?.dispose();
     super.dispose();
   }
@@ -267,6 +274,7 @@ class _VideoPageState extends State<VideoPage>
                   ),
                 ),
               ),
+              Overlay(key: _overlayKey),
             ],
           ),
         ),

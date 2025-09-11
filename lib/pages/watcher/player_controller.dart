@@ -45,6 +45,8 @@ abstract class _PlayerController with Store {
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
 
+  GlobalKey<OverlayState>? overlayKey;
+
   @observable
   bool loading = true;
   @observable
@@ -236,21 +238,14 @@ abstract class _PlayerController with Store {
 
   // 更新当前集数的方法
   void updateCurrentSetName(int newEpisode) {
-    currentSetName = WatcherState.currentState!.widget.anime.episode!.values
+    currentSetName = WatcherState.currentState!.anime.episode!.values
         .elementAt(currentRoad)
         .values
         .elementAt(newEpisode - 1);
-    videoUrl = WatcherState.currentState!.widget.anime.episode!.values
+    videoUrl = WatcherState.currentState!.anime.episode!.values
         .elementAt(currentRoad)
         .keys
         .elementAt(newEpisode - 1);
-  }
-
-  void closeTabBodyAnimated() {
-    animation.reverse();
-    Future.delayed(const Duration(milliseconds: 300), () {
-      showTabBody = false;
-    });
   }
 
   Future<void> changeAudioOutType() async {
@@ -304,7 +299,7 @@ abstract class _PlayerController with Store {
     player.setPlaylistMode(PlaylistMode.none);
     playerTimer = getPlayerTimer();
 
-    animeImg = WatcherState.currentState!.widget.anime.cover;
+    animeImg = WatcherState.currentState!.anime.cover;
 
     timeStream = Stream.periodic(
       const Duration(seconds: 1),
@@ -339,6 +334,16 @@ abstract class _PlayerController with Store {
     }
     if (superResolutionType != 1) {
       await setShader(superResolutionType);
+    }
+    if (App.isDesktop) {
+      volume = volume != -1 ? volume : 100;
+      await setVolume(volume);
+    } else {
+      // mobile is using system volume, don't setVolume here,
+      // or iOS will mute if system volume is too low (#732)
+      await FlutterVolumeController.getVolume().then((value) {
+        volume = (value ?? 0.0) * 100;
+      });
     }
   }
 
@@ -507,7 +512,7 @@ abstract class _PlayerController with Store {
       if (App.isDesktop) {
         await player.setVolume(value);
       } else {
-        await FlutterVolumeController.updateShowSystemUI(false);
+        FlutterVolumeController.updateShowSystemUI(false);
         await FlutterVolumeController.setVolume(value / 100);
       }
     } catch (_) {}
@@ -542,28 +547,30 @@ abstract class _PlayerController with Store {
   }
 
   void showScreenshotPopup(BuildContext context, String image, String name) {
+    final overlayState = overlayKey?.currentState ?? Overlay.of(context);
     _overlayTimer?.cancel();
     _overlayTimer = null;
 
     _overlayEntry?.remove();
     _overlayEntry = null;
 
+    final screenSize = MediaQuery.of(context).size;
+    double overlayWidth = screenSize.width * 0.2;
+    overlayWidth = overlayWidth.clamp(120.0, 240.0);
+    final overlayHeight = overlayWidth * 9 / 16;
+
     final entry = OverlayEntry(
       builder: (context) => Positioned(
-        right: isFullScreen ? 60 : 60,
-        top: isPortraitFullscreen
-            ? null
-            : isFullScreen
-            ? 70
-            : 90,
+        right: 60,
+        top: isPortraitFullscreen ? null : 60,
         bottom: isPortraitFullscreen ? 160 : null,
         child: Material(
           elevation: 8,
           color: Colors.black.toOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            width: 160,
-            height: 110,
+            width: overlayWidth,
+            height: overlayHeight,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
             child: Column(
@@ -610,7 +617,7 @@ abstract class _PlayerController with Store {
     );
 
     _overlayEntry = entry;
-    Overlay.of(context).insert(entry);
+    overlayState.insert(_overlayEntry!);
 
     _overlayTimer = Timer(const Duration(seconds: 3), () {
       if (_overlayEntry?.mounted ?? false) {
@@ -646,10 +653,12 @@ class FullscreenVideoPage extends StatefulWidget {
 }
 
 class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
+  PlayerController get playerController => widget.playerController;
+
   @override
   void dispose() {
-    if (widget.playerController.isFullScreen) {
-      widget.playerController.fullscreen();
+    if (playerController.isFullScreen) {
+      playerController.fullscreen();
     }
     super.dispose();
   }
@@ -660,10 +669,10 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
         MediaQuery.of(context).viewPadding.top <= 0 ||
         MediaQuery.of(context).viewPadding.top > 50;
     return Hero(
-      tag: WatcherState.currentState!.widget.anime.id,
+      tag: WatcherState.currentState!.anime.id,
       child: Observer(
         builder: (context) {
-          return widget.playerController.isPiPMode
+          return playerController.isPiPMode
               ? isPaddingCheckError
                     ? MediaQuery(
                         data: MediaQuery.of(context).copyWith(
@@ -674,15 +683,15 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
                           padding: const EdgeInsets.only(top: 15, bottom: 15),
                         ),
                         child: Video(
-                          controller: widget.playerController.playerController,
+                          controller: playerController.playerController,
                           controls: null,
                         ),
                       )
                     : Video(
-                        controller: widget.playerController.playerController,
+                        controller: playerController.playerController,
                         controls: null,
                       )
-              : VideoPage(playerController: widget.playerController);
+              : VideoPage(playerController: playerController);
         },
       ),
     );
