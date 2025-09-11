@@ -25,7 +25,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     super.initState();
     history = widget.history;
     if (history != null) {
-      playList = history!.lastRoad;
+      playList = history!.lastRoad!;
     }
   }
 

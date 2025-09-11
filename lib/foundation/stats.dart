@@ -661,85 +661,49 @@ class StatsManager with ChangeNotifier {
     return map;
   }
 
-  ///更新喜欢事件
-  Future<void> updateStatsLiked(String id, int type, bool liked) async {
-    _db.execute("update stats set liked = ? where id = ? and type = ?", [
-      liked ? 1 : 0,
-      id,
-      type,
-    ]);
-
-    notifyListeners();
-  }
-
-  ///更新bangumiId
-  Future<void> updateStatsBangumiId(String id, int type, int? bangumiId) async {
-    if (bangumiId == null) return;
-    _db.execute("update stats set bangumiId = ? where id = ? and type = ?", [
-      bangumiId,
-      id,
-      type,
-    ]);
-
-    notifyListeners();
-  }
-
-  ///更新观看事件
-  Future<void> updateStatsWatch({
+  /// 更新 Stats 相关字段
+  Future<void> updateStats({
     required String id,
     required int type,
-    required List<DailyEvent> totalWatchDurations,
-  }) async {
-    try {
-      _db.execute(
-        "update stats set totalWatchDurations = ? where id = ? and type = ?",
-        [
-          jsonEncode(totalWatchDurations.map((e) => e.toJson()).toList()),
-          id,
-          type,
-        ],
-      );
-      notifyListeners();
-    } catch (e) {
-      Log.addLog(LogLevel.error, 'updateStatsWatch', e.toString());
-    }
-  }
-
-  ///更新收藏事件
-  Future<void> updateStatsFavorite({
-    required String id,
-    required int type,
-    required List<DailyEvent> favorite,
-  }) async {
-    try {
-      _db.execute("update stats set favorite = ? where id = ? and type = ?", [
-        jsonEncode(favorite.map((e) => e.toJson()).toList()),
-        id,
-        type,
-      ]);
-      notifyListeners();
-    } catch (e) {
-      Log.addLog(LogLevel.error, 'updateStatsFavorite', e.toString());
-    }
-  }
-
-  /// 同时更新评分和评论
-  Future<void> updateStatsRatingAndComment(
-    String id,
-    int type, {
+    bool? liked,
+    int? bangumiId,
+    List<DailyEvent>? totalWatchDurations,
+    List<DailyEvent>? favorite,
     List<DailyEvent>? rating,
     List<DailyEvent>? comment,
   }) async {
     final updates = <String>[];
     final values = <dynamic>[];
 
+    if (liked != null) {
+      updates.add('liked = ?');
+      values.add(liked ? 1 : 0);
+    }
+
+    if (bangumiId != null) {
+      updates.add('bangumiId = ?');
+      values.add(bangumiId);
+    }
+
+    if (totalWatchDurations != null) {
+      updates.add('totalWatchDurations = ?');
+      values.add(
+        jsonEncode(totalWatchDurations.map((e) => e.toJson()).toList()),
+      );
+    }
+
+    if (favorite != null) {
+      updates.add('favorite = ?');
+      values.add(jsonEncode(favorite.map((e) => e.toJson()).toList()));
+    }
+
     if (rating != null) {
-      updates.add("rating = ?");
+      updates.add('rating = ?');
       values.add(jsonEncode(rating.map((e) => e.toJson()).toList()));
     }
 
     if (comment != null) {
-      updates.add("comment = ?");
+      updates.add('comment = ?');
       values.add(jsonEncode(comment.map((e) => e.toJson()).toList()));
     }
 
@@ -749,8 +713,12 @@ class StatsManager with ChangeNotifier {
         "UPDATE stats SET ${updates.join(', ')} WHERE id = ? AND type = ?";
     values.addAll([id, type]);
 
-    _db.execute(sql, values);
-    notifyListeners();
+    try {
+      _db.execute(sql, values);
+      notifyListeners();
+    } catch (e) {
+      Log.addLog(LogLevel.error, 'updateStats', e.toString());
+    }
   }
 
   ///获取除传入项外同个bangumiId一个时间之前的所有观看时间总和
@@ -834,6 +802,72 @@ class StatsManager with ChangeNotifier {
                 latestRating = record.rating!;
               }
             }
+          }
+        }
+      }
+    }
+
+    return latestRating;
+  }
+
+  /// 返回一个长度为 10 的 Map，键为 '1'..'10'，值为该评分出现的次数
+  Map<String, int> getLatestRatingsCountMap() {
+    final allStats = getStatsAll();
+    final int bangumiKey = 'bangumi'.hashCode;
+
+    final Map<int?, List<StatsDataImpl>> groups = {};
+    for (final s in allStats) {
+      groups.putIfAbsent(s.bangumiId, () => []).add(s);
+    }
+
+    final List<int> selectedRatings = [];
+
+    for (final entry in groups.entries) {
+      final bangumiId = entry.key;
+      final statsList = entry.value;
+
+      if (bangumiId != null) {
+        StatsDataImpl? bangumiStat;
+        for (final s in statsList) {
+          if (s.type == bangumiKey) {
+            bangumiStat = s;
+            break;
+          }
+        }
+        if (bangumiStat != null) {
+          final r = _getLatestRatingFromStats(bangumiStat);
+          if (r != null) selectedRatings.add(r);
+          continue;
+        }
+      }
+
+      for (final s in statsList) {
+        final r = _getLatestRatingFromStats(s);
+        if (r != null) selectedRatings.add(r);
+      }
+    }
+
+    final Map<String, int> result = {for (var i = 1; i <= 10; i++) '$i': 0};
+
+    for (final r in selectedRatings) {
+      if (r >= 1 && r <= 10) {
+        result['$r'] = (result['$r'] ?? 0) + 1;
+      }
+    }
+
+    return result;
+  }
+
+  int? _getLatestRatingFromStats(StatsDataImpl stats) {
+    DateTime? latestDate;
+    int? latestRating;
+
+    for (final daily in stats.rating) {
+      for (final record in daily.platformEventRecords) {
+        if (record.rating != null && record.date != null) {
+          if (latestDate == null || record.date!.isAfter(latestDate)) {
+            latestDate = record.date!;
+            latestRating = record.rating;
           }
         }
       }
@@ -1130,7 +1164,7 @@ extension StatsHelper on StatsManager {
           manager.addStats(manager.createStatsData(id: id, type: type));
         }
       } catch (e) {
-        Log.addLog(LogLevel.error, 'addStats', e.toString());
+        Log.addLog(LogLevel.error, 'addFavoriteRecord', e.toString());
       }
     }
 
@@ -1157,10 +1191,6 @@ extension StatsHelper on StatsManager {
           p.favoriteType == null,
     );
 
-    manager.updateStatsFavorite(
-      id: id,
-      type: type,
-      favorite: statsDataImpl.favorite,
-    );
+    manager.updateStats(id: id, type: type, favorite: statsDataImpl.favorite);
   }
 }

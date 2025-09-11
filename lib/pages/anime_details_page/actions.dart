@@ -43,8 +43,6 @@ abstract mixin class _AnimePageActions {
 
   bool isFavorite = false;
 
-  final PlayerController playerController = PlayerController();
-
   FavoriteItem _toFavoriteItem() {
     var tags = <String>[];
     for (var e in anime.tags.entries) {
@@ -444,10 +442,10 @@ abstract mixin class _AnimePageActions {
                     BottomInfoState.currentState?.queryBangumiEpisodeByID(
                       item.id,
                     );
-                    StatsManager().updateStatsBangumiId(
-                      history!.id,
-                      history!.type.value,
-                      item.id,
+                    StatsManager().updateStats(
+                      id: history!.id,
+                      type: history!.type.value,
+                      bangumiId: item.id,
                     );
                   }
                 } catch (e) {
@@ -487,10 +485,6 @@ abstract mixin class _AnimePageActions {
     );
   }
 
-  void watch([int? ep, int? road]) {
-    WatcherState.currentState!.loadInfo(ep!, road!); // 传递集数
-  }
-
   void onTapTag(String tag, String namespace) {
     var target = animeSource.handleClickTagEvent?.call(namespace, tag);
     var context = App.mainNavigatorKey!.currentContext!;
@@ -498,10 +492,10 @@ abstract mixin class _AnimePageActions {
   }
 
   void liked() {
-    StatsManager().updateStatsLiked(
-      anime.id,
-      anime.sourceKey.hashCode,
-      !isLiked,
+    StatsManager().updateStats(
+      id: anime.id,
+      type: anime.sourceKey.hashCode,
+      liked: !isLiked,
     );
   }
 
@@ -531,6 +525,8 @@ class _RatingDialogState extends State<RatingDialog> {
   bool _isLoading = true;
   late TextEditingController _commentController;
   late TodayEventBundle stats;
+  final manager = StatsManager();
+  TodayEventBundle? bangumiStats;
 
   @override
   void initState() {
@@ -545,16 +541,51 @@ class _RatingDialogState extends State<RatingDialog> {
       type: _statsDataImpl.type,
     );
 
+    if (stats.statsData.bangumiId != null) {
+      final bangumiItem = BangumiManager().getBangumiItem(
+        stats.statsData.bangumiId!,
+      );
+      if (bangumiItem != null) {
+        if (!manager.isExist(
+          bangumiItem.id.toString(),
+          AnimeType('bangumi'.hashCode),
+        )) {
+          try {
+            await manager.addStats(
+              manager.createStatsData(
+                id: bangumiItem.id.toString(),
+                title: bangumiItem.nameCn.isNotEmpty
+                    ? bangumiItem.nameCn
+                    : bangumiItem.name,
+                cover: bangumiItem.images['large'],
+                type: 'bangumi'.hashCode,
+                bangumiId: bangumiItem.id,
+                isBangumi: true,
+              ),
+            );
+          } catch (e, s) {
+            Log.addLog(LogLevel.error, 'RatingDialog.addStats', '$e\n$s');
+          }
+        }
+        bangumiStats = StatsManager().getOrCreateTodayEvents(
+          id: bangumiItem.id.toString(),
+          type: 'bangumi'.hashCode,
+        );
+      }
+    }
+
     setState(() {
-      _rating = stats.ratingRecord.rating!.toDouble();
-      _showingDraft = commentDrafts[stats.statsData.id]?.isNotEmpty == true;
+      final targetStats = bangumiStats ?? stats;
+      _rating = (targetStats.ratingRecord.rating ?? 0).toDouble();
+      final idKey = targetStats.statsData.id;
+      _showingDraft = commentDrafts[idKey]?.isNotEmpty == true;
       if (!_showingDraft) {
-        commentDrafts[stats.statsData.id] = '';
+        commentDrafts[idKey] = '';
       }
       _commentController = TextEditingController(
         text: _showingDraft
-            ? commentDrafts[stats.statsData.id]
-            : stats.commentRecord.comment,
+            ? commentDrafts[idKey]
+            : (targetStats.commentRecord.comment ?? ''),
       );
       _isLoading = false;
     });
@@ -562,16 +593,18 @@ class _RatingDialogState extends State<RatingDialog> {
 
   void _toggleDraftSaved() {
     setState(() {
+      final targetStats = bangumiStats ?? stats;
+      final idKey = targetStats.statsData.id;
       _showingDraft = !_showingDraft;
       _commentController.text = (_showingDraft
-          ? commentDrafts[stats.statsData.id]
-          : stats.commentRecord.comment)!;
+          ? commentDrafts[idKey]
+          : (targetStats.commentRecord.comment ?? ''))!;
     });
   }
 
-  // 更新评分和评论
   void _updateStats() async {
     try {
+      final targetStats = bangumiStats ?? stats;
       final newRating = _rating.toInt();
       final newComment = _commentController.text;
       final now = DateTime.now();
@@ -579,35 +612,32 @@ class _RatingDialogState extends State<RatingDialog> {
 
       int getTotalWatchDuration() {
         int total = 0;
-
-        for (final dailyEvent in stats.statsData.totalWatchDurations) {
+        for (final dailyEvent in targetStats.statsData.totalWatchDurations) {
           for (final record in dailyEvent.platformEventRecords) {
             total += record.value;
           }
         }
-
         return total;
       }
 
-      // 新增 rating 记录
-      if (stats.ratingRecord.rating != newRating) {
-        DailyEvent? todayRecord = stats.statsData.rating.firstWhereOrNull((
-          dailyEvent,
-        ) {
-          return dailyEvent.date.year == now.year &&
-              dailyEvent.date.month == now.month &&
-              dailyEvent.date.day == now.day;
-        });
+      if (targetStats.ratingRecord.rating != newRating) {
+        DailyEvent? todayRecord = targetStats.statsData.rating.firstWhereOrNull(
+          (dailyEvent) {
+            return dailyEvent.date.year == now.year &&
+                dailyEvent.date.month == now.month &&
+                dailyEvent.date.day == now.day;
+          },
+        );
 
         final newRatingRecord = PlatformEventRecord(
-          value: todayRecord != null ? stats.ratingRecord.value + 1 : 1,
+          value: todayRecord != null ? targetStats.ratingRecord.value + 1 : 1,
           platform: AppPlatform.current,
           rating: newRating,
           dateStr: now.yyyymmddHHmmss,
           watchDuration:
               getTotalWatchDuration() +
               StatsManager().getOtherBangumiTotalWatch(
-                current: stats.statsData,
+                current: targetStats.statsData,
                 time: now,
               ),
         );
@@ -616,37 +646,35 @@ class _RatingDialogState extends State<RatingDialog> {
           todayRecord.platformEventRecords.add(newRatingRecord);
           todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
         } else {
-          // 如果今天没有记录，新建一个 DailyEvent
           final newDailyEvent = DailyEvent(
             dateStr: todayStr,
             platformEventRecords: [newRatingRecord],
           );
-          stats.statsData.rating.add(newDailyEvent);
+          targetStats.statsData.rating.add(newDailyEvent);
         }
       }
 
-      // 新增 comment 记录
-      if (stats.commentRecord.comment != newComment) {
-        DailyEvent? todayRecord = stats.statsData.comment.firstWhereOrNull((
-          dailyEvent,
-        ) {
-          return dailyEvent.date.year == now.year &&
-              dailyEvent.date.month == now.month &&
-              dailyEvent.date.day == now.day;
-        });
+      if (targetStats.commentRecord.comment != newComment) {
+        DailyEvent? todayRecord = targetStats.statsData.comment
+            .firstWhereOrNull((dailyEvent) {
+              return dailyEvent.date.year == now.year &&
+                  dailyEvent.date.month == now.month &&
+                  dailyEvent.date.day == now.day;
+            });
 
         final newCommentRecord = PlatformEventRecord(
-          value: todayRecord != null ? stats.commentRecord.value + 1 : 1,
+          value: todayRecord != null ? targetStats.commentRecord.value + 1 : 1,
           platform: AppPlatform.current,
           comment: newComment,
           dateStr: now.yyyymmddHHmmss,
           watchDuration:
               getTotalWatchDuration() +
               StatsManager().getOtherBangumiTotalWatch(
-                current: stats.statsData,
+                current: targetStats.statsData,
                 time: now,
               ),
         );
+
         if (todayRecord != null) {
           todayRecord.platformEventRecords.add(newCommentRecord);
           todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
@@ -655,18 +683,19 @@ class _RatingDialogState extends State<RatingDialog> {
             dateStr: todayStr,
             platformEventRecords: [newCommentRecord],
           );
-          stats.statsData.comment.add(newDailyEvent);
+          targetStats.statsData.comment.add(newDailyEvent);
         }
       }
 
-      await StatsManager().updateStatsRatingAndComment(
-        _statsDataImpl.id,
-        _statsDataImpl.type,
-        rating: stats.statsData.rating,
-        comment: stats.statsData.comment,
+      await StatsManager().updateStats(
+        id: targetStats.statsData.id,
+        type: targetStats.statsData.type,
+        rating: targetStats.statsData.rating,
+        comment: targetStats.statsData.comment,
       );
-      if (stats.commentRecord.comment != newComment ||
-          stats.ratingRecord.rating != newRating) {
+
+      if (targetStats.commentRecord.comment != newComment ||
+          targetStats.ratingRecord.rating != newRating) {
         App.rootContext.showMessage(message: '应用成功');
       } else {
         App.rootContext.showMessage(message: '无改动');
@@ -746,7 +775,8 @@ class _RatingDialogState extends State<RatingDialog> {
                           controller: _commentController,
                           maxLines: null,
                           onChanged: (_) => setState(() {
-                            commentDrafts[stats.statsData.id] =
+                            final targetStats = bangumiStats ?? stats;
+                            commentDrafts[targetStats.statsData.id] =
                                 _commentController.text;
                           }),
                           decoration: InputDecoration(
