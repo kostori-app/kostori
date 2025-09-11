@@ -249,132 +249,96 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return Dialog(
-              insetPadding: const EdgeInsets.all(24),
-              backgroundColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    constraints: BoxConstraints(maxWidth: 500, maxHeight: 600),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.surface.toOpacity(0.22),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 标题栏
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Text(
-                                'Select @c'.tlParams({"c": category.title}),
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // 标签区
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: category.tags.map((tag) {
-                                final isSelected = currentSelected.contains(
-                                  tag,
-                                );
-                                return InputChip(
-                                  backgroundColor: Colors.black.toOpacity(0.5),
-                                  shape: StadiumBorder(
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .toOpacity(0.72)
-                                          : Theme.of(
-                                              context,
-                                            ).colorScheme.primary.withAlpha(4),
-                                    ),
-                                  ),
-                                  label: Text(tag),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      if (selected) {
-                                        if (!currentSelected.contains(tag)) {
-                                          currentSelected.add(tag);
-                                        }
-                                      } else {
-                                        currentSelected.remove(tag);
-                                      }
-                                    });
-                                  },
-                                  selectedColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary.toOpacity(0.22),
-                                  checkmarkColor: isSelected
+            return ContentDialog(
+              title: 'Select @c'.tlParams({"c": category.title}),
+              displayButton: false,
+              content: Container(
+                constraints: BoxConstraints(maxWidth: 500, maxHeight: 600),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 标签区
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: category.tags.map((tag) {
+                            final isSelected = currentSelected.contains(tag);
+                            return InputChip(
+                              backgroundColor: Colors.black.toOpacity(0.5),
+                              shape: StadiumBorder(
+                                side: BorderSide(
+                                  color: isSelected
                                       ? Theme.of(
                                           context,
                                         ).colorScheme.primary.toOpacity(0.72)
                                       : Theme.of(
                                           context,
                                         ).colorScheme.primary.withAlpha(4),
-                                  showCheckmark: true,
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                        // 操作栏
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: () =>
-                                    setState(() => currentSelected.clear()),
-                                child: Text('Clear'.tl),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('Cancel'.tl),
-                              ),
-                              const SizedBox(width: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  _updateSelectedTags(
-                                    category,
-                                    currentSelected,
-                                  );
-                                  Navigator.pop(context);
-                                },
-                                child: Text(
-                                  'Confirm (@c)'.tlParams({
-                                    "c": currentSelected.length,
-                                  }),
                                 ),
                               ),
-                            ],
-                          ),
+                              label: Text(tag),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    if (!currentSelected.contains(tag)) {
+                                      currentSelected.add(tag);
+                                    }
+                                  } else {
+                                    currentSelected.remove(tag);
+                                  }
+                                });
+                              },
+                              selectedColor: Theme.of(
+                                context,
+                              ).colorScheme.primary.toOpacity(0.22),
+                              checkmarkColor: isSelected
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.primary.toOpacity(0.72)
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.primary.withAlpha(4),
+                              showCheckmark: true,
+                            );
+                          }).toList(),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    // 操作栏
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          OutlinedButton(
+                            onPressed: () =>
+                                setState(() => currentSelected.clear()),
+                            child: Text('Clear'.tl),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Cancel'.tl),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              _updateSelectedTags(category, currentSelected);
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              'Confirm (@c)'.tlParams({
+                                "c": currentSelected.length,
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
