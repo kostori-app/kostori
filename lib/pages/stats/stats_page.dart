@@ -10,6 +10,7 @@ import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
+import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
@@ -29,6 +30,13 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
   void initState() {
     super.initState();
     controller = widget.controller;
+    DataSync().addListener(controller.loadEvents);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    DataSync().removeListener(controller.loadEvents);
   }
 
   @override
