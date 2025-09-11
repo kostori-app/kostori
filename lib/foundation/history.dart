@@ -148,13 +148,26 @@ class History implements Anime {
 
   @override
   String get description {
-    var res = "";
-    if (lastWatchEpisode >= 1) {
-      res += "Episode @ep".tlParams({"ep": lastWatchEpisode});
+    String formatMilliseconds(int milliseconds) {
+      final duration = Duration(milliseconds: milliseconds);
+      final minutes = duration.inMinutes;
+      final seconds = duration.inSeconds % 60;
+
+      return '$minutes:${seconds.toString().padLeft(2, '0')}';
     }
-    if (lastWatchTime >= 1) {
-      res += " ";
-      res += formatLastWatchTime(lastWatchTime);
+
+    var res = "";
+    res += '${type.animeSource?.name ?? "Unknown"} | ';
+    if ((lastWatchEpisode ?? 0) >= 1) {
+      res += "Currently seen @ep".tlParams({"ep": lastWatchEpisode ?? 0});
+    }
+    if ((lastWatchTime ?? 0) >= 1) {
+      if ((lastWatchEpisode ?? 0) >= 1) {
+        res += " | ";
+      }
+      res += "lastWatchTime @time".tlParams({
+        "time": formatMilliseconds(lastWatchTime ?? 0),
+      });
     }
     return res;
   }
