@@ -187,6 +187,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                 : bangumiItem.name,
             cover: bangumiItem.images['large']!,
             type: 'bangumi'.hashCode,
+            bangumiId: bangumiItem.id,
             isBangumi: true,
           ),
         );

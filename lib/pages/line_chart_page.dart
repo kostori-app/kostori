@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 
 class AppColors {
-  static const contentColorCyan = Color(0xFF00FFFF); // 示例颜色
+  static const contentColorCyan = Color(0xFF00FFFF);
   static const contentColorBlue = Color(0xFF0000FF);
 
-  static Color mainGridLineColor = Color(0x42A9A9A9).withAlpha(255); // 示例颜色
+  static Color mainGridLineColor = Color(0x42A9A9A9).withAlpha(255);
 }
 
 class LineChatPage extends StatefulWidget {
@@ -29,10 +29,7 @@ class _LineChatPageState extends State<LineChatPage> {
   bool showAvg = false;
 
   Widget bottomTitleWidgets(double value, TitleMeta meta) {
-    const style = TextStyle(
-      fontWeight: FontWeight.bold,
-      fontSize: 16,
-    );
+    const style = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
     Widget text;
     switch (value.toInt()) {
       case 0:
@@ -70,10 +67,7 @@ class _LineChatPageState extends State<LineChatPage> {
         break;
     }
 
-    return SideTitleWidget(
-      meta: meta,
-      child: text,
-    );
+    return SideTitleWidget(meta: meta, child: text);
   }
 
   double _calculateOptimalIntegerInterval(double maxValue) {
@@ -134,16 +128,10 @@ class _LineChatPageState extends State<LineChatPage> {
         horizontalInterval: bangumiItem.total.toDouble() * 1 / 10,
         verticalInterval: 1,
         getDrawingHorizontalLine: (value) {
-          return FlLine(
-            color: AppColors.mainGridLineColor,
-            strokeWidth: 2,
-          );
+          return FlLine(color: AppColors.mainGridLineColor, strokeWidth: 2);
         },
         getDrawingVerticalLine: (value) {
-          return FlLine(
-            color: AppColors.mainGridLineColor,
-            strokeWidth: 2,
-          );
+          return FlLine(color: AppColors.mainGridLineColor, strokeWidth: 2);
         },
       ),
       titlesData: FlTitlesData(
@@ -151,9 +139,7 @@ class _LineChatPageState extends State<LineChatPage> {
         rightTitles: const AxisTitles(
           sideTitles: SideTitles(showTitles: false),
         ),
-        topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
-        ),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -194,14 +180,10 @@ class _LineChatPageState extends State<LineChatPage> {
             FlSpot(9, bangumiItem.count!['10']!.toDouble()),
           ],
           isCurved: false,
-          gradient: LinearGradient(
-            colors: gradientColors,
-          ),
+          gradient: LinearGradient(colors: gradientColors),
           barWidth: 3,
           isStrokeCapRound: true,
-          dotData: const FlDotData(
-            show: false,
-          ),
+          dotData: const FlDotData(show: false),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
@@ -228,9 +210,7 @@ class _LineChatPageState extends State<LineChatPage> {
               top: 24,
               bottom: 12,
             ),
-            child: LineChart(
-              mainData(widget.bangumiItem),
-            ),
+            child: LineChart(mainData(widget.bangumiItem)),
           ),
         ),
       ],
@@ -246,8 +226,10 @@ class BangumiBarChartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final yInterval = _getYInterval(bangumiItem);
-    final maxY =
-        _ceilToInterval((bangumiItem.total.toDouble() * 2 / 3), yInterval);
+    final maxY = _ceilToInterval(
+      (bangumiItem.total.toDouble() * 2 / 3),
+      yInterval,
+    );
 
     return AspectRatio(
       aspectRatio: 1.6,
@@ -283,12 +265,13 @@ class BangumiBarChartPage extends StatelessWidget {
   }
 
   BarTouchData get barTouchData => BarTouchData(
-        enabled: true,
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipColor: (group) => Colors.transparent,
-          tooltipPadding: EdgeInsets.zero,
-          tooltipMargin: 8,
-          getTooltipItem: (
+    enabled: true,
+    touchTooltipData: BarTouchTooltipData(
+      getTooltipColor: (group) => Colors.transparent,
+      tooltipPadding: EdgeInsets.zero,
+      tooltipMargin: 8,
+      getTooltipItem:
+          (
             BarChartGroupData group,
             int groupIndex,
             BarChartRodData rod,
@@ -302,8 +285,8 @@ class BangumiBarChartPage extends StatelessWidget {
               ),
             );
           },
-        ),
-      );
+    ),
+  );
 
   List<BarChartGroupData> _buildBarGroups(BangumiItem item) {
     final gradient = LinearGradient(
@@ -336,8 +319,10 @@ class BangumiBarChartPage extends StatelessWidget {
     return SideTitleWidget(
       meta: meta,
       space: 4,
-      child: Text('${value.toInt() + 1}',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      child: Text(
+        '${value.toInt() + 1}',
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -353,8 +338,129 @@ class BangumiBarChartPage extends StatelessWidget {
     final base = pow(10, exponent).toDouble();
     final candidates = [1, 2, 5, 10, 15].map((m) => m * base).toList();
 
-    return candidates.firstWhere((i) => (maxValue / i).ceil() <= 15,
-        orElse: () => 15 * base);
+    return candidates.firstWhere(
+      (i) => (maxValue / i).ceil() <= 15,
+      orElse: () => 15 * base,
+    );
+  }
+
+  double _ceilToInterval(double value, double interval) {
+    return (value / interval).ceil() * interval;
+  }
+}
+
+class IntListBarChartPage extends StatelessWidget {
+  final List<int> values;
+
+  const IntListBarChartPage({super.key, required this.values});
+
+  @override
+  Widget build(BuildContext context) {
+    final maxValue = values.isEmpty ? 1.0 : values.reduce(max).toDouble();
+    final yInterval = _calculateOptimalIntegerInterval(maxValue);
+    final maxY = _ceilToInterval(maxValue + 1, yInterval); // +1 margin
+
+    return AspectRatio(
+      aspectRatio: 1.2, // 更扁，条子高度更短
+      child: BarChart(
+        BarChartData(
+          maxY: maxY > 0 ? maxY : 1,
+          alignment: BarChartAlignment.spaceAround,
+          barTouchData: barTouchData,
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: _bottomTitles,
+                reservedSize: 28,
+              ),
+            ),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(show: true),
+          barGroups: _buildBarGroups(values),
+        ),
+      ),
+    );
+  }
+
+  BarTouchData get barTouchData => BarTouchData(
+    enabled: true,
+    touchTooltipData: BarTouchTooltipData(
+      getTooltipColor: (group) => Colors.transparent,
+      tooltipPadding: EdgeInsets.zero,
+      tooltipMargin: 8,
+      getTooltipItem:
+          (
+            BarChartGroupData group,
+            int groupIndex,
+            BarChartRodData rod,
+            int rodIndex,
+          ) {
+            return BarTooltipItem(
+              rod.toY.round().toString(),
+              const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+            );
+          },
+    ),
+  );
+
+  List<BarChartGroupData> _buildBarGroups(List<int> values) {
+    final gradient = const LinearGradient(
+      colors: [Colors.tealAccent, Colors.blueAccent],
+      begin: Alignment.bottomCenter,
+      end: Alignment.topCenter,
+    );
+
+    return List.generate(values.length, (index) {
+      final count = values[index].toDouble();
+      return BarChartGroupData(
+        x: index,
+        showingTooltipIndicators: [0],
+        barRods: [
+          BarChartRodData(
+            toY: count,
+            gradient: gradient,
+            width: 12,
+            // 条子宽一点看起来更短
+            borderSide: BorderSide.none,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _bottomTitles(double value, TitleMeta meta) {
+    return SideTitleWidget(
+      meta: meta,
+      space: 4,
+      child: Text(
+        '${value.toInt() + 1}',
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  double _calculateOptimalIntegerInterval(double maxValue) {
+    if (maxValue <= 0 || maxValue.isNaN || maxValue.isInfinite) return 1.0;
+    final rawInterval = (maxValue / 10).clamp(1e-10, double.infinity); // 每10格
+    final exponent = (log(rawInterval) / ln10).floor();
+    final base = pow(10, exponent).toDouble();
+    final candidates = [1, 2, 5, 10, 15].map((m) => m * base).toList();
+    return candidates.firstWhere(
+      (i) => (maxValue / i).ceil() <= 10,
+      orElse: () => 10 * base,
+    );
   }
 
   double _ceilToInterval(double value, double interval) {

@@ -11,6 +11,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
+import 'package:kostori/pages/stats/stats_view_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
@@ -76,6 +77,7 @@ class _MePageState extends State<MePage> {
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
         const _ImageManipulation(),
+        _StatsViewPage(),
         _StatsCalendarPage(),
         SliverPadding(padding: EdgeInsets.only(top: context.padding.bottom)),
       ],
@@ -467,5 +469,14 @@ class _StatsCalendarPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(child: StatsCalendarPage(controller: controller));
+  }
+}
+
+class _StatsViewPage extends StatelessWidget {
+  const _StatsViewPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(child: StatsViewPage());
   }
 }

@@ -92,10 +92,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     );
     if (!isUpdateBangumiBind && history?.bangumiId != null) {
       Bangumi.getBangumiInfoBind(history!.bangumiId as int);
-      stats.updateStatsBangumiId(
-        widget.id,
-        widget.sourceKey.hashCode,
-        history!.bangumiId,
+      stats.updateStats(
+        id: widget.id,
+        type: widget.sourceKey.hashCode,
+        bangumiId: history!.bangumiId,
       );
       isUpdateBangumiBind = true;
     }
