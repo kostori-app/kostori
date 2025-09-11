@@ -416,7 +416,7 @@ class StatItemWidget extends StatelessWidget {
 
   final height =
       (App.isAndroid || MediaQuery.of(App.rootContext).size.width <= 700)
-      ? 240.0
+      ? 210.0
       : 300.0;
 
   DailyEvent? _getDailyEvent(List<DailyEvent> events) {
@@ -919,12 +919,25 @@ class StatItemWidget extends StatelessWidget {
       return bangumiItem != null
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [Text(bangumiItem.nameCn), Text(bangumiItem.name)],
+              children: [
+                Text(
+                  bangumiItem.nameCn,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  bangumiItem.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             )
           : stats.title != null
           ? Text(
               stats.title!,
               style: const TextStyle(fontWeight: FontWeight.bold),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             )
           : const SizedBox.shrink();
     }
@@ -971,8 +984,8 @@ class StatItemWidget extends StatelessWidget {
                         const Icon(Icons.event, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '当日最后点击: ${latestClickRecord?.date!.hhmmss}',
-                          style: const TextStyle(fontSize: 14),
+                          '当日最后点击: \n${latestClickRecord?.date!.hhmmss}',
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
@@ -995,8 +1008,8 @@ class StatItemWidget extends StatelessWidget {
                         const Icon(Icons.access_time, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '当日最后观看: ${latestWatchRecord?.date!.hhmmss}',
-                          style: const TextStyle(fontSize: 14),
+                          '当日最后观看: \n${latestWatchRecord?.date!.hhmmss}',
+                          style: const TextStyle(fontSize: 12),
                         ),
                       ],
                     ),
@@ -1019,15 +1032,15 @@ class StatItemWidget extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.all(12.0),
-      child: MediaQuery.of(context).size.width >= 700
+      child: MediaQuery.of(context).size.width >= 850
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  flex: 1,
+                  flex: 3,
                   child: buildTitleWidget(context, bangumiItem),
                 ),
-                Expanded(flex: 1, child: buildInfoWidget(context)),
+                Flexible(flex: 2, child: buildInfoWidget(context)),
               ],
             )
           : Column(
