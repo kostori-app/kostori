@@ -183,6 +183,11 @@ class Settings with ChangeNotifier {
     'noProxyOverrides': ['bgm', 'bangumi'],
     'ignoreBadCertificate': false,
     'statsSelectors': [],
+    'FavoriteTypeWish': 'none',
+    'FavoriteTypeDoing': 'none',
+    'FavoriteTypeCollect': 'none',
+    'FavoriteTypeOnHold': 'none',
+    'FavoriteTypeDropped': 'none',
   };
 
   dynamic operator [](String key) {

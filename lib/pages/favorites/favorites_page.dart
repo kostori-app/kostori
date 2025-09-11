@@ -69,7 +69,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
       this.isNetwork = isNetwork;
       this.folder = folder;
     });
-    // folderList?.update();
     appdata.implicitData['favoriteFolder'] = {
       'name': folder,
       'isNetwork': isNetwork,
