@@ -14,6 +14,9 @@ class PlayerAudioHandler extends BaseAudioHandler {
   Timer? _headsetButtonClickTimer;
   bool _willPlayWhenReady = true;
 
+  Timer? _throttleTimer;
+  bool _pendingBroadcast = false;
+
   Timer _createHeadsetClicksTimer(FutureOr<void> Function() callback) {
     return Timer(const Duration(milliseconds: 250), () async {
       try {
@@ -35,32 +38,40 @@ class PlayerAudioHandler extends BaseAudioHandler {
       _clearListeners();
 
       _controller = controller;
-
       final player = controller.player;
 
-      // 监听播放状态
-      _subscriptions.add(
-        player.stream.playing.listen((_) => _broadcastState()),
-      );
+      final streams = [
+        player.stream.playing,
+        player.stream.completed,
+        player.stream.buffering,
+        player.stream.position,
+      ];
 
-      // 监听播放完成事件
-      _subscriptions.add(
-        player.stream.completed.listen((_) => _broadcastState()),
-      );
-
-      // 监听缓冲状态变化
-      _subscriptions.add(
-        player.stream.buffering.listen((_) => _broadcastState()),
-      );
-
-      // 监听播放进度变化
-      _subscriptions.add(
-        player.stream.position.listen((_) => _broadcastState()),
-      );
+      for (final stream in streams) {
+        _subscriptions.add(
+          stream.listen((_) {
+            if (_throttleTimer == null) {
+              // 没有定时器时立即触发一次
+              _broadcastState();
+              _throttleTimer = Timer(const Duration(seconds: 1), () {
+                _throttleTimer = null;
+                // 如果期间有新的事件标记为待触发，则触发一次
+                if (_pendingBroadcast) {
+                  _pendingBroadcast = false;
+                  _broadcastState();
+                }
+              });
+            } else {
+              // 定时器期间有事件来了，标记为待触发
+              _pendingBroadcast = true;
+            }
+          }),
+        );
+      }
 
       // 设置 Controller 后，立即广播一次当前状态
       _broadcastState();
-      Log.addLog(LogLevel.info, "setController", '初始化系统通知栏');
+      // Log.addLog(LogLevel.info, "setController", '初始化系统通知栏');
     } catch (e) {
       Log.addLog(LogLevel.error, "setController", e.toString());
     }
@@ -68,14 +79,19 @@ class PlayerAudioHandler extends BaseAudioHandler {
 
   // 统一的取消监听方法
   Future<void> _clearListeners() async {
-    try {
-      for (final subscription in _subscriptions) {
-        subscription.cancel();
+    // 修复：创建一个副本进行迭代，防止并发修改
+    final subscriptionsCopy = List.from(_subscriptions);
+    for (final sub in subscriptionsCopy) {
+      try {
+        await sub.cancel();
+      } catch (e) {
+        Log.addLog(LogLevel.error, "_clearListeners", e.toString());
       }
-      _subscriptions.clear();
-    } catch (e) {
-      Log.addLog(LogLevel.error, "_clearListeners", e.toString());
     }
+    _subscriptions.clear();
+    _throttleTimer?.cancel();
+    _throttleTimer = null;
+    _pendingBroadcast = false;
   }
 
   void _broadcastState() {
@@ -90,7 +106,7 @@ class PlayerAudioHandler extends BaseAudioHandler {
     mediaItem.add(
       MediaItem(
         id: _controller!.videoUrl,
-        title: WatcherState.currentState!.widget.anime.title,
+        title: WatcherState.currentState!.anime.title,
         artUri: artUri.isNotEmpty ? Uri.parse(artUri) : null,
         artist: title,
         duration: _controller!.duration,
