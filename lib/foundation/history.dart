@@ -42,13 +42,13 @@ class History implements Anime {
   @override
   String cover;
 
-  int lastWatchEpisode; // 上次观看番剧集数
+  int? lastWatchEpisode; // 上次观看番剧集数
 
-  int lastWatchTime; // 上次观看时间
+  int? lastWatchTime; // 上次观看时间
 
-  int lastRoad; //上次播放列表
+  int? lastRoad; //上次播放列表
 
-  int allEpisode; //全部集数
+  int? allEpisode; //全部集数
 
   int? bangumiId;
 
@@ -62,11 +62,11 @@ class History implements Anime {
 
   History.fromModel({
     required HistoryMixin model,
-    required this.lastWatchEpisode,
-    required this.lastWatchTime,
-    required this.lastRoad,
-    required this.allEpisode,
-    required this.bangumiId,
+    this.lastWatchEpisode = 0,
+    this.lastWatchTime = 0,
+    this.lastRoad = 0,
+    this.allEpisode = 0,
+    this.bangumiId,
     Set<int>? watchEpisode,
     DateTime? time,
   }) : type = model.historyType,
