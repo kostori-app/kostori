@@ -89,7 +89,9 @@ Future<void> _checkAppUpdates() async {
   AnimeSourceSettings.checkAnimeSourceUpdate();
   await Bangumi.getCalendarData();
   await Bangumi.checkBangumiData();
-  await checkUpdateUi(true, true);
+  if (appdata.settings['checkUpdateOnStart']) {
+    await checkUpdateUi(false, true);
+  }
 }
 
 void checkUpdates() {
