@@ -366,10 +366,14 @@ class _ShareWidgetState extends State<ShareWidget> {
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       bangumiItem.name,
                                       style: TextStyle(fontSize: 12),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 16),
                                     Row(
