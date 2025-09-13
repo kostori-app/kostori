@@ -8,7 +8,9 @@ import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/stats.dart';
+import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:mobx/mobx.dart';
 
 part 'stats_controller.g.dart';
@@ -39,51 +41,7 @@ abstract class _StatsController with Store {
 
   @computed
   List<StatsDataImpl> get entriesForSelectedDay {
-    final selected = selectedDay ?? focusedDay;
-
-    final entries = eventMap.entries
-        .firstWhere(
-          (e) => isSameDay(e.key, selected),
-          orElse: () => MapEntry(DateTime(0), <StatsDataImpl>[]),
-        )
-        .value;
-
-    DateTime? latestFromDailyList(List<DailyEvent> list) {
-      for (final de in list) {
-        if (isSameDay(de.date, selected)) {
-          DateTime? maxDt;
-          for (final r in de.platformEventRecords) {
-            final dt = r.date;
-            if (dt != null && (maxDt == null || dt.isAfter(maxDt))) {
-              maxDt = dt;
-            }
-          }
-          return maxDt;
-        }
-      }
-      return null;
-    }
-
-    DateTime? latestForStats(StatsDataImpl s) {
-      final candidates = <DateTime?>[
-        latestFromDailyList(s.comment),
-        latestFromDailyList(s.totalClickCount),
-        latestFromDailyList(s.totalWatchDurations),
-        latestFromDailyList(s.rating),
-        latestFromDailyList(s.favorite),
-      ];
-      DateTime? mx;
-      for (final c in candidates) {
-        if (c != null && (mx == null || c.isAfter(mx))) mx = c;
-      }
-      return mx;
-    }
-
-    return [...entries]..sort((a, b) {
-      final aDt = latestForStats(a) ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bDt = latestForStats(b) ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return bDt.compareTo(aDt);
-    });
+    return getEntriesForTimeRange(TimeRange.daily);
   }
 
   @computed
@@ -220,5 +178,59 @@ abstract class _StatsController with Store {
       orElse: () => MapEntry(day, <StatsDataImpl>[]),
     );
     return matchEntry.value;
+  }
+
+  List<StatsDataImpl> getEntriesForTimeRange(TimeRange timeRange) {
+    final selected = selectedDay ?? focusedDay;
+
+    final entries = eventMap.entries
+        .where((entry) {
+          switch (timeRange) {
+            case TimeRange.daily:
+              return isSameDay(entry.key, selected);
+            case TimeRange.weekly:
+              return Utils.isSameWeek(entry.key, selected);
+            case TimeRange.monthly:
+              return Utils.isSameMonth(entry.key, selected);
+            case TimeRange.quarterly:
+              return Utils.isSameQuarter(entry.key, selected);
+            case TimeRange.halfYearly:
+              return Utils.isSameHalfYear(entry.key, selected);
+            case TimeRange.yearly:
+              return Utils.isSameYear(entry.key, selected);
+          }
+        })
+        .expand((e) => e.value)
+        .toList();
+
+    return entries..sort((a, b) {
+      final aTime = _getLatestActivityTime(a, selected);
+      final bTime = _getLatestActivityTime(b, selected);
+      return bTime.compareTo(aTime);
+    });
+  }
+
+  DateTime _getLatestActivityTime(StatsDataImpl stat, DateTime selectedDate) {
+    DateTime latestTime = DateTime.fromMillisecondsSinceEpoch(0);
+
+    void updateLatest(List<DailyEvent> events) {
+      for (final event in events) {
+        if (isSameDay(event.date, selectedDate)) {
+          for (final record in event.platformEventRecords) {
+            if (record.date != null && record.date!.isAfter(latestTime)) {
+              latestTime = record.date!;
+            }
+          }
+        }
+      }
+    }
+
+    updateLatest(stat.totalClickCount);
+    updateLatest(stat.totalWatchDurations);
+    updateLatest(stat.comment);
+    updateLatest(stat.rating);
+    updateLatest(stat.favorite);
+
+    return latestTime;
   }
 }

@@ -1,18 +1,28 @@
-import 'package:collection/collection.dart';
+library;
+
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
+import 'package:word_cloud/word_cloud_data.dart';
+import 'package:word_cloud/word_cloud_shape.dart';
+import 'package:word_cloud/word_cloud_view.dart';
+
+part 'stat_item_card.dart';
+
+part 'stats_overview.dart';
 
 class StatsCalendarPage extends StatefulWidget {
   const StatsCalendarPage({super.key, required this.controller});
@@ -39,6 +49,53 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
     DataSync().removeListener(controller.loadEvents);
   }
 
+  void showStats({
+    required List<StatsDataImpl> stats,
+    required String title,
+    required TimeRange timeRange,
+  }) {
+    showPopUpWidget(
+      App.rootContext,
+      StatefulBuilder(
+        builder: (context, setState) {
+          return StatsOverviewScreen(
+            stats: stats,
+            selectedDay: controller.selectedDay ?? controller.focusedDay,
+            title: title,
+            timeRange: timeRange,
+          );
+        },
+      ),
+    );
+  }
+
+  List<List<StatsDataImpl>> _groupEntriesByBangumiId(
+    List<StatsDataImpl> entries,
+  ) {
+    final Map<int?, List<StatsDataImpl>> groups = {};
+
+    for (final entry in entries) {
+      final bangumiId = entry.bangumiId;
+      groups.putIfAbsent(bangumiId, () => []).add(entry);
+    }
+
+    final List<List<StatsDataImpl>> result = [];
+
+    final groupsWithId = groups.entries
+        .where((entry) => entry.key != null)
+        .map((entry) => entry.value)
+        .toList();
+
+    result.addAll(groupsWithId);
+
+    final independentEntries = groups[null] ?? [];
+    for (final entry in independentEntries) {
+      result.add([entry]);
+    }
+
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Observer(
@@ -49,8 +106,9 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
             child: CircularProgressIndicator(),
           );
         }
-
-        final entries = controller.entriesForSelectedDay;
+        final groupedEntries = _groupEntriesByBangumiId(
+          controller.entriesForSelectedDay,
+        );
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
@@ -85,6 +143,71 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                     ),
                     const Spacer(),
                     IconButton(
+                      tooltip: '周统计',
+                      icon: const Icon(Icons.date_range),
+                      onPressed: () async {
+                        showStats(
+                          stats: controller.getEntriesForTimeRange(
+                            TimeRange.weekly,
+                          ),
+                          title: '周统计',
+                          timeRange: TimeRange.weekly,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      tooltip: '月统计',
+                      icon: const Icon(Icons.calendar_month),
+                      onPressed: () async {
+                        showStats(
+                          stats: controller.getEntriesForTimeRange(
+                            TimeRange.monthly,
+                          ),
+                          title: '月统计',
+                          timeRange: TimeRange.monthly,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      tooltip: '季统计',
+                      icon: const Icon(Icons.event_note_rounded),
+                      onPressed: () async {
+                        showStats(
+                          stats: controller.getEntriesForTimeRange(
+                            TimeRange.quarterly,
+                          ),
+                          title: '季统计',
+                          timeRange: TimeRange.quarterly,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      tooltip: '半年统计',
+                      icon: const Icon(Icons.event),
+                      onPressed: () async {
+                        showStats(
+                          stats: controller.getEntriesForTimeRange(
+                            TimeRange.halfYearly,
+                          ),
+                          title: '半年统计',
+                          timeRange: TimeRange.halfYearly,
+                        );
+                      },
+                    ),
+                    IconButton(
+                      tooltip: '年统计',
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        showStats(
+                          stats: controller.getEntriesForTimeRange(
+                            TimeRange.yearly,
+                          ),
+                          title: '年统计',
+                          timeRange: TimeRange.yearly,
+                        );
+                      },
+                    ),
+                    IconButton(
                       tooltip: '来源清单',
                       icon: const Icon(Icons.list_alt),
                       onPressed: () async {
@@ -95,7 +218,7 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                     ),
                     IconButton(
                       tooltip: '选择日期',
-                      icon: const Icon(Icons.calendar_month),
+                      icon: const Icon(Icons.edit_calendar_rounded),
                       onPressed: () async {
                         final pickedDate = await showDatePicker(
                           context: context,
@@ -308,7 +431,7 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
               ),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
-                child: entries.isNotEmpty
+                child: groupedEntries.isNotEmpty
                     ? Column(
                         key: const ValueKey('entries_column'),
                         children: [
@@ -344,9 +467,23 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    '${entries.length}',
+                                    '${groupedEntries.length}',
                                     style: ts.s12,
                                   ),
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  tooltip: '天统计',
+                                  icon: const Icon(Icons.today),
+                                  onPressed: () async {
+                                    showStats(
+                                      stats: controller.getEntriesForTimeRange(
+                                        TimeRange.daily,
+                                      ),
+                                      title: '天统计',
+                                      timeRange: TimeRange.daily,
+                                    );
+                                  },
                                 ),
                               ],
                             ),
@@ -357,10 +494,12 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                               vertical: 5,
                             ),
                             child: Column(
-                              children: List.generate(entries.length, (index) {
-                                final stats = entries[index];
+                              children: List.generate(groupedEntries.length, (
+                                index,
+                              ) {
+                                final statGroup = groupedEntries[index];
                                 return Padding(
-                                  key: ValueKey(stats.id),
+                                  key: ValueKey(statGroup.first.id),
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 8,
                                   ),
@@ -383,7 +522,7 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                                       child: InkWell(
                                         onTap: () {},
                                         child: StatItemWidget(
-                                          stats: stats,
+                                          statsGroup: statGroup,
                                           selectedDay:
                                               controller.selectedDay ??
                                               controller.focusedDay,
@@ -403,660 +542,6 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
           ),
         );
       },
-    );
-  }
-}
-
-class StatItemWidget extends StatelessWidget {
-  final StatsDataImpl stats;
-
-  final DateTime selectedDay;
-
-  StatItemWidget({super.key, required this.stats, required this.selectedDay});
-
-  final height =
-      (App.isAndroid || MediaQuery.of(App.rootContext).size.width <= 700)
-      ? 210.0
-      : 300.0;
-
-  DailyEvent? _getDailyEvent(List<DailyEvent> events) {
-    for (final event in events) {
-      if (_isSameDay(event.date, selectedDay)) {
-        return event;
-      }
-    }
-    return null;
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
-
-  String formatHMSForRating({int? seconds}) {
-    seconds ??= 0;
-
-    if (seconds <= 0) return '';
-
-    final h = seconds ~/ 3600;
-    final m = (seconds % 3600) ~/ 60;
-    final s = seconds % 60;
-
-    final parts = <String>[];
-    if (h > 0) parts.add('${h}h');
-    if (m > 0) parts.add('${m}m');
-    if (s > 0 || parts.isEmpty) parts.add('${s}s');
-
-    return '(评价时 ${parts.join(' ')})';
-  }
-
-  Widget buildAllEventsWidget(BuildContext context) {
-    final commentEvent = _getDailyEvent(stats.comment);
-    final ratingEvent = _getDailyEvent(stats.rating);
-    final favoriteEvent = _getDailyEvent(stats.favorite);
-
-    if ((commentEvent == null || commentEvent.platformEventRecords.isEmpty) &&
-        (ratingEvent == null || ratingEvent.platformEventRecords.isEmpty) &&
-        (favoriteEvent == null || favoriteEvent.platformEventRecords.isEmpty)) {
-      return const SizedBox.shrink();
-    }
-
-    final List<Map<String, dynamic>> allRecords = [];
-
-    void addEventRecords(
-      DailyEvent? event,
-      DailyEventType type,
-      List<DailyEvent> list,
-    ) {
-      if (event == null) return;
-      final dailyIndex = list.indexOf(event);
-      for (int ri = 0; ri < event.platformEventRecords.length; ri++) {
-        allRecords.add({
-          'type': type,
-          'dailyIndex': dailyIndex,
-          'recordIndex': ri,
-          'dailyList': list,
-          'record': event.platformEventRecords[ri],
-        });
-      }
-    }
-
-    addEventRecords(commentEvent, DailyEventType.comment, stats.comment);
-    addEventRecords(ratingEvent, DailyEventType.rating, stats.rating);
-    addEventRecords(favoriteEvent, DailyEventType.favorite, stats.favorite);
-
-    allRecords.sort(
-      (a, b) => (a['record'] as PlatformEventRecord).date!.compareTo(
-        (b['record'] as PlatformEventRecord).date!,
-      ),
-    );
-
-    return buildMaterialWidget(
-      context: context,
-      widget: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: allRecords.map((entry) {
-          final type = entry['type'] as DailyEventType;
-          final dailyIndex = entry['dailyIndex'] as int;
-          final recordIndex = entry['recordIndex'] as int;
-          final dailyList = entry['dailyList'] as List<DailyEvent>;
-          final record = entry['record'] as PlatformEventRecord;
-
-          switch (type) {
-            case DailyEventType.comment:
-              if (dailyList.length == 1 || dailyIndex == 0) {
-                final text = recordIndex == 0
-                    ? '${record.date!.hhmmss} 创建了评论 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                          .tl
-                    : '${record.date!.hhmmss} 第${record.value - 1}次修改了评论 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                          .tl;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(text, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          record.comment ?? '',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              } else {
-                int sum = 0;
-                for (int i = 0; i < dailyIndex; i++) {
-                  final rList = dailyList[i].platformEventRecords;
-                  if (rList.isNotEmpty) sum += rList.last.value;
-                }
-                final text =
-                    '${record.date!.hhmmss} 第${sum + record.value - 1}次修改了评论 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                        .tl;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(text, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          record.comment ?? '',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              }
-
-            case DailyEventType.rating:
-              if (dailyList.length == 1 || dailyIndex == 0) {
-                final text = recordIndex == 0
-                    ? '${record.date!.hhmmss} 创建了评级 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                          .tl
-                    : '${record.date!.hhmmss} 第${record.value - 1}次修改了评级 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                          .tl;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(text, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          record.rating.toString(),
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(Utils.getRatingLabel(record.rating!)),
-                        ),
-                        const SizedBox(width: 4),
-                        RatingBarIndicator(
-                          itemCount: 5,
-                          rating: record.rating! / 2,
-                          itemBuilder: (context, index) =>
-                              const Icon(Icons.star_rounded),
-                          itemSize: 20.0,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              } else {
-                int sum = 0;
-                for (int i = 0; i < dailyIndex; i++) {
-                  final rList = dailyList[i].platformEventRecords;
-                  if (rList.isNotEmpty) sum += rList.last.value;
-                }
-                final text =
-                    '${record.date!.hhmmss} 第${sum + record.value - 1}次修改了评级 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                        .tl;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(text, style: const TextStyle(fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          record.rating.toString(),
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(Utils.getRatingLabel(record.rating!)),
-                        ),
-                        const SizedBox(width: 4),
-                        RatingBarIndicator(
-                          itemCount: 5,
-                          rating: record.rating! / 2,
-                          itemBuilder: (context, index) =>
-                              const Icon(Icons.star_rounded),
-                          itemSize: 20.0,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                );
-              }
-
-            case DailyEventType.favorite:
-              String actionText;
-              switch (record.favoriteAction) {
-                case FavoriteAction.add:
-                  actionText = "添加到 ${record.favorite?.tl ?? '未知文件夹'}";
-                  break;
-                case FavoriteAction.remove:
-                  actionText = "从 ${record.favorite?.tl ?? '未知文件夹'} 删除";
-                  break;
-                case FavoriteAction.move:
-                  if (record.favorite != null &&
-                      record.favorite!.contains(',')) {
-                    final parts = record.favorite!.split(',');
-                    actionText = "从 ${parts[0].tl} 移动到 ${parts[1].tl}";
-                  } else {
-                    actionText = "移动操作，目标未知".tl;
-                  }
-                  break;
-                default:
-                  actionText = "操作未知".tl;
-                  break;
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${record.date!.hhmmss} $actionText',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-              );
-
-            default:
-              return const SizedBox.shrink();
-          }
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget buildClickWidget(BuildContext context) {
-    final clickEvent = _getDailyEvent(stats.totalClickCount);
-
-    if (clickEvent == null || clickEvent.platformEventRecords.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final children = <Widget>[];
-    int totalClicks = 0;
-    final recordStrings = <String>[];
-    for (final record in clickEvent.platformEventRecords) {
-      recordStrings.add('在${record.platform?.value ?? '未知'}点击${record.value}次');
-      totalClicks += record.value;
-    }
-
-    children.add(
-      Text(
-        '本日点击次数: $totalClicks',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-      ),
-    );
-    children.add(const SizedBox(height: 4));
-
-    children.add(
-      Text(recordStrings.join(', '), style: const TextStyle(fontSize: 14)),
-    );
-
-    return buildMaterialWidget(
-      context: context,
-      widget: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildWatchWidget(BuildContext context) {
-    final watchEvent = _getDailyEvent(stats.totalWatchDurations);
-
-    if (watchEvent == null || watchEvent.platformEventRecords.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    int totalSeconds = 0;
-
-    String formatHMS(int seconds) {
-      final h = seconds ~/ 3600;
-      final m = (seconds % 3600) ~/ 60;
-      final s = seconds % 60;
-
-      final parts = <String>[];
-      if (h > 0) parts.add('${h}h');
-      if (m > 0) parts.add('${m}m');
-      if (s > 0 || parts.isEmpty) parts.add('${s}s');
-
-      return parts.join(' ');
-    }
-
-    final children = <Widget>[];
-
-    final recordStrings = <String>[];
-    for (final record in watchEvent.platformEventRecords) {
-      recordStrings.add(
-        '在${record.platform?.value ?? '未知'}观看: ${formatHMS(record.value)}',
-      );
-      totalSeconds += record.value;
-    }
-
-    children.add(
-      Text(
-        '本日观看时长: ${formatHMS(totalSeconds)}',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-      ),
-    );
-    children.add(const SizedBox(height: 4));
-
-    children.add(
-      Text(recordStrings.join(', '), style: const TextStyle(fontSize: 14)),
-    );
-
-    if (totalSeconds == 0) {
-      return const SizedBox.shrink();
-    }
-
-    return buildMaterialWidget(
-      context: context,
-      widget: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildMaterialWidget({
-    required BuildContext context,
-    required Widget widget,
-  }) {
-    return Material(
-      elevation: 2,
-      color: Theme.of(context).colorScheme.secondaryContainer.toOpacity(0.72),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: widget,
-      ),
-    );
-  }
-
-  Widget buildInfoWidget(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '记录: ',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 6),
-        buildClickWidget(context),
-        SizedBox(height: 6),
-        buildWatchWidget(context),
-        SizedBox(height: 6),
-        buildAllEventsWidget(context),
-        SizedBox(height: 6),
-      ],
-    );
-  }
-
-  Widget buildTitleWidget(BuildContext context, BangumiItem? bangumiItem) {
-    DailyEvent? todayWatchEvent = stats.totalWatchDurations.firstWhereOrNull((
-      event,
-    ) {
-      return event.date.year == selectedDay.year &&
-          event.date.month == selectedDay.month &&
-          event.date.day == selectedDay.day;
-    });
-    DailyEvent? todayClickEvent = stats.totalClickCount.firstWhereOrNull((
-      event,
-    ) {
-      return event.date.year == selectedDay.year &&
-          event.date.month == selectedDay.month &&
-          event.date.day == selectedDay.day;
-    });
-
-    PlatformEventRecord? latestWatchRecord;
-    PlatformEventRecord? latestClickRecord;
-
-    if (todayWatchEvent != null) {
-      final nonNullRecords = todayWatchEvent.platformEventRecords
-          .where((r) => r.date != null)
-          .toList();
-      if (nonNullRecords.isNotEmpty) {
-        latestWatchRecord = nonNullRecords.reduce((a, b) {
-          return a.date!.isAfter(b.date!) ? a : b;
-        });
-      }
-    }
-    if (todayClickEvent != null) {
-      final nonNullRecords = todayClickEvent.platformEventRecords
-          .where((r) => r.date != null)
-          .toList();
-      if (nonNullRecords.isNotEmpty) {
-        latestClickRecord = nonNullRecords.reduce((a, b) {
-          return a.date!.isAfter(b.date!) ? a : b;
-        });
-      }
-    }
-
-    Widget buildCoverWidget() {
-      String cover;
-      if (bangumiItem != null) {
-        cover = bangumiItem.images['large']!;
-      } else {
-        cover = stats.cover!;
-      }
-
-      if (stats.cover == null && bangumiItem == null) {
-        return const SizedBox.shrink();
-      }
-
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Hero(
-          tag: '$stats.id',
-          child: BangumiWidget.kostoriImage(
-            context,
-            cover,
-            width: height * 0.72,
-            height: height,
-            showPlaceholder: true,
-          ),
-        ),
-      );
-    }
-
-    Widget buildTypeWidget() {
-      String type;
-      if (stats.isBangumi) {
-        type = 'bangumi';
-      } else {
-        type = AnimeType(stats.type).sourceKey;
-      }
-
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.secondaryContainer,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.pix, size: 16),
-            const SizedBox(width: 4),
-            Text(type, style: const TextStyle(fontSize: 14)),
-          ],
-        ),
-      );
-    }
-
-    Widget titleBuild() {
-      return bangumiItem != null
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  bangumiItem.nameCn,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  bangumiItem.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            )
-          : stats.title != null
-          ? Text(
-              stats.title!,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            )
-          : const SizedBox.shrink();
-    }
-
-    return SizedBox(
-      height: height,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          buildCoverWidget(),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                titleBuild(),
-                Spacer(),
-                Row(
-                  children: [
-                    Icon(
-                      stats.liked ? Icons.favorite : Icons.favorite_border,
-                      color: Colors.redAccent,
-                      size: 28,
-                    ),
-                    SizedBox(width: 8),
-                    buildTypeWidget(),
-                  ],
-                ),
-                if (latestClickRecord?.date != null) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.event, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          '当日最后点击: \n${latestClickRecord?.date!.hhmmss}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (latestWatchRecord?.date != null) ...[
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.access_time, size: 16),
-                        const SizedBox(width: 4),
-                        Text(
-                          '当日最后观看: \n${latestWatchRecord?.date!.hhmmss}',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 6),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    BangumiItem? bangumiItem;
-    if (stats.bangumiId != null) {
-      bangumiItem = BangumiManager().getBangumiItem(stats.bangumiId!);
-    }
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: MediaQuery.of(context).size.width >= 850
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: buildTitleWidget(context, bangumiItem),
-                ),
-                Flexible(flex: 2, child: buildInfoWidget(context)),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: buildTitleWidget(context, bangumiItem)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                buildInfoWidget(context),
-              ],
-            ),
     );
   }
 }
@@ -1089,5 +574,41 @@ class DayCell extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _formatHMS(int seconds) {
+  final h = seconds ~/ 3600;
+  final m = (seconds % 3600) ~/ 60;
+  final s = seconds % 60;
+
+  final parts = <String>[];
+  if (h > 0) parts.add('${h}h');
+  if (m > 0) parts.add('${m}m');
+  if (s > 0 || parts.isEmpty) parts.add('${s}s');
+
+  return parts.join(' ');
+}
+
+bool _isSameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+DailyEvent? _getDailyEvent(List<DailyEvent> events, DateTime date) {
+  for (final event in events) {
+    if (_isSameDay(event.date, date)) {
+      return event;
+    }
+  }
+  return null;
+}
+
+String _getSourceType(int type) {
+  if (type == 'bangumi'.hashCode) {
+    return 'bangumi';
+  }
+  try {
+    return AnimeType(type).sourceKey;
+  } catch (e) {
+    return 'unknown';
   }
 }

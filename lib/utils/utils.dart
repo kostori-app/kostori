@@ -2,6 +2,7 @@
 
 import 'dart:math';
 
+import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gif/gif.dart';
@@ -307,13 +308,35 @@ class Utils {
   }
 
   static String getRatingLabel(num score) {
-    // 将评分四舍五入为整数
     int roundedScore = score.round();
-    // 确保评分在 1 到 10 的范围内
     roundedScore = roundedScore.clamp(1, 10);
-
-    // 返回对应的标签
     return ratingLabels[roundedScore] ?? '暂无';
+  }
+
+  static bool isSameWeek(DateTime date1, DateTime date2) {
+    final startOfWeek1 = date1.subtract(Duration(days: date1.weekday - 1));
+    final startOfWeek2 = date2.subtract(Duration(days: date2.weekday - 1));
+    return isSameDay(startOfWeek1, startOfWeek2);
+  }
+
+  static bool isSameMonth(DateTime date1, DateTime date2) {
+    return date1.year == date2.year && date1.month == date2.month;
+  }
+
+  static bool isSameQuarter(DateTime date1, DateTime date2) {
+    final quarter1 = (date1.month - 1) ~/ 3 + 1;
+    final quarter2 = (date2.month - 1) ~/ 3 + 1;
+    return date1.year == date2.year && quarter1 == quarter2;
+  }
+
+  static bool isSameHalfYear(DateTime date1, DateTime date2) {
+    final halfYear1 = date1.month <= 6 ? 1 : 2;
+    final halfYear2 = date2.month <= 6 ? 1 : 2;
+    return date1.year == date2.year && halfYear1 == halfYear2;
+  }
+
+  static bool isSameYear(DateTime date1, DateTime date2) {
+    return date1.year == date2.year;
   }
 
   // 时间显示，刚刚，x分钟前
