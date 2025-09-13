@@ -276,12 +276,35 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   }
 
   List<Tab> getTabs() {
+    final String wish = appdata.settings['FavoriteTypeWish'] ?? 'wish';
+    final String doing = appdata.settings['FavoriteTypeDoing'] ?? 'doing';
+    final String collect = appdata.settings['FavoriteTypeCollect'] ?? 'collect';
+    final String onHold = appdata.settings['FavoriteTypeOnHold'] ?? 'on_hold';
+    final String dropped = appdata.settings['FavoriteTypeDropped'] ?? 'dropped';
+
+    final Map<String, IconData> iconMap = {
+      wish: Icons.star_rounded,
+      doing: Icons.favorite,
+      collect: Icons.task_alt_outlined,
+      onHold: Icons.access_time,
+      dropped: Icons.heart_broken,
+    };
+
     return favoritesController.folders.map((name) {
       int count = manager.folderAnimes(name);
+      final IconData? iconData = iconMap[name];
       return Tab(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (iconData != null) ...[
+              Icon(
+                iconData,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              const SizedBox(width: 4),
+            ],
             Flexible(
               fit: FlexFit.loose,
               child: Text(
