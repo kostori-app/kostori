@@ -228,7 +228,7 @@ class AnimeTile extends StatelessWidget {
                       width: 24,
                       color: Colors.redAccent,
                       child: const Icon(
-                        Icons.star,
+                        Icons.star_rounded,
                         size: 16,
                         color: Colors.white,
                       ),
