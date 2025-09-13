@@ -177,7 +177,21 @@ abstract class _StatsController with Store {
       (e) => isSameDay(e.key, day),
       orElse: () => MapEntry(day, <StatsDataImpl>[]),
     );
-    return matchEntry.value;
+
+    // 滤除相同 bangumiId 的条目
+    final Map<int?, StatsDataImpl> uniqueEvents = {};
+    for (final event in matchEntry.value) {
+      if (event.bangumiId != null) {
+        if (!uniqueEvents.containsKey(event.bangumiId)) {
+          uniqueEvents[event.bangumiId] = event;
+        }
+      } else {
+        // 对于没有 bangumiId 的条目，使用 id 作为键
+        uniqueEvents[event.hashCode] = event;
+      }
+    }
+
+    return uniqueEvents.values.toList();
   }
 
   List<StatsDataImpl> getEntriesForTimeRange(TimeRange timeRange) {

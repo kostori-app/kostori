@@ -395,9 +395,17 @@ class StatsOverview extends StatelessWidget {
     final List<RankedStatsItem> rankedItemsWithCover = getRankedCoverItems(
       _deduplicatedStats,
     );
-    final int totalActiveCount = _deduplicatedStats.where((stat) {
-      return _calculateWeightedActivityScore(stat) > 0;
-    }).length;
+
+    int totalActiveCount = 0;
+    final seenBangumiIds = <int?>{};
+
+    for (final stat in _deduplicatedStats) {
+      if (_calculateWeightedActivityScore(stat) > 0) {
+        if (stat.bangumiId == null || seenBangumiIds.add(stat.bangumiId)) {
+          totalActiveCount++;
+        }
+      }
+    }
 
     final height = 140.0;
     final width = height * 0.72;
@@ -622,7 +630,9 @@ class StatsOverview extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
-        if (_topFiveTagNames.isNotEmpty && _bangumiItems.length != 1) ...[
+        if (_topFiveTagNames.isNotEmpty &&
+            _bangumiItems.length != 1 &&
+            _bangumiItems.isNotEmpty) ...[
           buildMaterialWidget(
             context: context,
             widget: Column(
@@ -668,7 +678,9 @@ class StatsOverview extends StatelessWidget {
           const SizedBox(height: 6),
         ],
 
-        if (_sortedTagCounts.isNotEmpty && _bangumiItems.length != 1) ...[
+        if (_sortedTagCounts.isNotEmpty &&
+            _bangumiItems.length != 1 &&
+            _bangumiItems.isNotEmpty) ...[
           buildMaterialWidget(
             context: context,
             widget: Column(
@@ -691,7 +703,7 @@ class StatsOverview extends StatelessWidget {
                         mapwidth: constraints.maxWidth - 50,
                         mapheight: 300,
                         mintextsize: 8,
-                        maxtextsize: 38,
+                        maxtextsize: App.isAndroid ? 30 : 38,
                         colorlist: standardColorMap.keys.toList(),
                         shape: WordCloudCircle(
                           radius: constraints.maxWidth - 100,

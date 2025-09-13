@@ -290,7 +290,6 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                     onFormatChanged: controller.onFormatChanged,
                     eventLoader: controller.getEventsForDay,
                     daysOfWeekHeight: 24,
-                    // rowHeight: 24,
                     daysOfWeekStyle: DaysOfWeekStyle(
                       weekdayStyle: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
