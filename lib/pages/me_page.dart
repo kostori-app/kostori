@@ -79,7 +79,9 @@ class _MePageState extends State<MePage> {
         const _ImageManipulation(),
         _StatsViewPage(),
         _StatsCalendarPage(),
-        SliverPadding(padding: EdgeInsets.only(top: context.padding.bottom)),
+        SliverPadding(
+          padding: EdgeInsets.only(top: context.padding.bottom + 56),
+        ),
       ],
     );
 

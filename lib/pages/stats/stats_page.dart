@@ -142,70 +142,97 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                       ),
                     ),
                     const Spacer(),
-                    IconButton(
-                      tooltip: '周统计',
-                      icon: const Icon(Icons.date_range),
-                      onPressed: () async {
-                        showStats(
-                          stats: controller.getEntriesForTimeRange(
-                            TimeRange.weekly,
-                          ),
-                          title: '周统计',
-                          timeRange: TimeRange.weekly,
+                    MenuAnchor(
+                      builder: (context, controller, child) {
+                        return IconButton(
+                          tooltip: '时间范围统计',
+                          icon: const Icon(Icons.timeline),
+                          onPressed: () {
+                            if (controller.isOpen) {
+                              controller.close();
+                            } else {
+                              controller.open();
+                            }
+                          },
                         );
                       },
-                    ),
-                    IconButton(
-                      tooltip: '月统计',
-                      icon: const Icon(Icons.calendar_month),
-                      onPressed: () async {
-                        showStats(
-                          stats: controller.getEntriesForTimeRange(
-                            TimeRange.monthly,
+                      menuChildren: [
+                        MenuItemButton(
+                          onPressed: () async {
+                            showStats(
+                              stats: controller.getEntriesForTimeRange(
+                                TimeRange.weekly,
+                              ),
+                              title: '周统计',
+                              timeRange: TimeRange.weekly,
+                            );
+                          },
+                          child: const ListTile(
+                            leading: Icon(Icons.date_range, size: 20),
+                            title: Text('周统计'),
                           ),
-                          title: '月统计',
-                          timeRange: TimeRange.monthly,
-                        );
-                      },
-                    ),
-                    IconButton(
-                      tooltip: '季统计',
-                      icon: const Icon(Icons.event_note_rounded),
-                      onPressed: () async {
-                        showStats(
-                          stats: controller.getEntriesForTimeRange(
-                            TimeRange.quarterly,
+                        ),
+                        MenuItemButton(
+                          onPressed: () async {
+                            showStats(
+                              stats: controller.getEntriesForTimeRange(
+                                TimeRange.monthly,
+                              ),
+                              title: '月统计',
+                              timeRange: TimeRange.monthly,
+                            );
+                          },
+                          child: const ListTile(
+                            leading: Icon(Icons.calendar_month, size: 20),
+                            title: Text('月统计'),
                           ),
-                          title: '季统计',
-                          timeRange: TimeRange.quarterly,
-                        );
-                      },
-                    ),
-                    IconButton(
-                      tooltip: '半年统计',
-                      icon: const Icon(Icons.event),
-                      onPressed: () async {
-                        showStats(
-                          stats: controller.getEntriesForTimeRange(
-                            TimeRange.halfYearly,
+                        ),
+                        MenuItemButton(
+                          onPressed: () async {
+                            showStats(
+                              stats: controller.getEntriesForTimeRange(
+                                TimeRange.quarterly,
+                              ),
+                              title: '季统计',
+                              timeRange: TimeRange.quarterly,
+                            );
+                          },
+                          child: const ListTile(
+                            leading: Icon(Icons.event_note_rounded, size: 20),
+                            title: Text('季统计'),
                           ),
-                          title: '半年统计',
-                          timeRange: TimeRange.halfYearly,
-                        );
-                      },
-                    ),
-                    IconButton(
-                      tooltip: '年统计',
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () async {
-                        showStats(
-                          stats: controller.getEntriesForTimeRange(
-                            TimeRange.yearly,
+                        ),
+                        MenuItemButton(
+                          onPressed: () async {
+                            showStats(
+                              stats: controller.getEntriesForTimeRange(
+                                TimeRange.halfYearly,
+                              ),
+                              title: '半年统计',
+                              timeRange: TimeRange.halfYearly,
+                            );
+                          },
+                          child: const ListTile(
+                            leading: Icon(Icons.event, size: 20),
+                            title: Text('半年统计'),
                           ),
-                          title: '年统计',
-                          timeRange: TimeRange.yearly,
-                        );
-                      },
+                        ),
+                        MenuItemButton(
+                          onPressed: () async {
+                            showStats(
+                              stats: controller.getEntriesForTimeRange(
+                                TimeRange.yearly,
+                              ),
+                              title: '年统计',
+                              timeRange: TimeRange.yearly,
+                            );
+                          },
+                          child: const ListTile(
+                            leading: Icon(Icons.calendar_today, size: 20),
+                            title: Text('年统计'),
+                          ),
+                        ),
+                      ],
                     ),
                     IconButton(
                       tooltip: '来源清单',
