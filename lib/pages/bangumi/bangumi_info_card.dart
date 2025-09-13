@@ -161,6 +161,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
 
   final manager = StatsManager();
   late StatsDataImpl stats;
+  bool isLiked = false;
 
   int? latestRating;
 
@@ -169,6 +170,14 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
       id: bangumiItem.id.toString(),
       type: 'bangumi'.hashCode,
     )!;
+  }
+
+  void liked() {
+    StatsManager().updateGroupLiked(
+      id: bangumiItem.id.toString(),
+      type: 'bangumi'.hashCode,
+      targetLiked: !isLiked,
+    );
   }
 
   @override
@@ -196,6 +205,10 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
       }
     }
     setStats();
+    isLiked = manager.getGroupLikedStatus(
+      id: bangumiItem.id.toString(),
+      type: 'bangumi'.hashCode,
+    );
     latestRating = manager.getLatestRating(current: stats);
   }
 
@@ -322,20 +335,65 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                                 '${widget.heroTag}-${widget.bangumiItem.id}',
                               );
                             },
-                            borderRadius: BorderRadius.circular(
-                              12,
-                            ), // 水波纹保持一致圆角
+                            borderRadius: BorderRadius.circular(12),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: Hero(
                                 tag: (widget.heroTag == null)
                                     ? widget.bangumiItem.id
                                     : '${widget.heroTag}-${widget.bangumiItem.id}',
-                                child: BangumiWidget.kostoriImage(
-                                  context,
-                                  widget.bangumiItem.images['large']!,
+                                child: SizedBox(
                                   width: width,
                                   height: height,
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: BangumiWidget.kostoriImage(
+                                          context,
+                                          widget.bangumiItem.images['large']!,
+                                          width: width,
+                                          height: height,
+                                        ),
+                                      ),
+                                      Positioned(
+                                        right: 8,
+                                        bottom: 8,
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
+                                            onTap: () {
+                                              liked();
+                                              setState(() {
+                                                isLiked = !isLiked;
+                                              });
+                                            },
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              child: AnimatedSwitcher(
+                                                duration: const Duration(
+                                                  milliseconds: 500,
+                                                ),
+                                                child: Icon(
+                                                  isLiked
+                                                      ? Icons.favorite
+                                                      : Icons.favorite_border,
+                                                  color: isLiked
+                                                      ? Colors.redAccent
+                                                      : Theme.of(
+                                                          context,
+                                                        ).colorScheme.primary,
+                                                  size: 24,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),

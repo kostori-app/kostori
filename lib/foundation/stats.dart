@@ -606,6 +606,41 @@ class StatsManager with ChangeNotifier {
     notifyListeners();
   }
 
+  /// 获取指定条目及其同组条目的点赞状态
+  /// 如果同组（相同 bangumiId）中任意一个条目为 liked=true，则返回 true
+  bool getGroupLikedStatus({required String id, required int type}) {
+    final ResultSet initialResult = _db.select(
+      'SELECT * FROM stats WHERE id == ? AND type == ?;',
+      [id, type],
+    );
+
+    if (initialResult.isEmpty) {
+      return false;
+    }
+
+    final StatsDataImpl initialItem = StatsDataImpl.fromRow(
+      initialResult.first,
+    );
+
+    if (initialItem.liked) {
+      return true;
+    }
+
+    if (initialItem.bangumiId != null) {
+      final ResultSet groupResult = _db.select(
+        'SELECT COUNT(*) as count FROM stats WHERE bangumiId = ? AND id != ? AND liked = 1;',
+        [initialItem.bangumiId, id],
+      );
+
+      if (groupResult.isNotEmpty) {
+        final int likedCount = groupResult.first['count'] as int;
+        return likedCount > 0;
+      }
+    }
+
+    return false;
+  }
+
   StatsDataImpl? getStatsByIdAndType({required String id, required int type}) {
     final ResultSet result = _db.select(
       'SELECT * FROM stats WHERE id == ? AND type == ?;',
@@ -718,6 +753,33 @@ class StatsManager with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       Log.addLog(LogLevel.error, 'updateStats', e.toString());
+    }
+  }
+
+  void updateGroupLiked({
+    required String id,
+    required int type,
+    required bool targetLiked,
+  }) {
+    final StatsDataImpl? currentItem = getStatsByIdAndType(id: id, type: type);
+    if (currentItem == null) return;
+
+    if (targetLiked) {
+      _db.execute('UPDATE stats SET liked = 1 WHERE id = ? AND type = ?;', [
+        id,
+        type,
+      ]);
+    } else {
+      if (currentItem.bangumiId != null) {
+        _db.execute('UPDATE stats SET liked = 0 WHERE bangumiId = ?;', [
+          currentItem.bangumiId,
+        ]);
+      } else {
+        _db.execute('UPDATE stats SET liked = 0 WHERE id = ? AND type = ?;', [
+          id,
+          type,
+        ]);
+      }
     }
   }
 

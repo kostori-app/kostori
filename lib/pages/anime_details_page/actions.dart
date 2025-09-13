@@ -492,10 +492,10 @@ abstract mixin class _AnimePageActions {
   }
 
   void liked() {
-    StatsManager().updateStats(
+    StatsManager().updateGroupLiked(
       id: anime.id,
       type: anime.sourceKey.hashCode,
-      liked: !isLiked,
+      targetLiked: !isLiked,
     );
   }
 

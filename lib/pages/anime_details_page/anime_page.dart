@@ -77,7 +77,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   var scrollController = ScrollController();
 
   bool isDownloaded = false;
-  bool isUpdateBangumiBind = false;
   bool isBangumi = false;
 
   final stats = StatsManager();
@@ -90,24 +89,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
-    if (!isUpdateBangumiBind && history?.bangumiId != null) {
-      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
-      stats.updateStats(
-        id: widget.id,
-        type: widget.sourceKey.hashCode,
-        bangumiId: history!.bangumiId,
-      );
-      isUpdateBangumiBind = true;
-    }
     if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||
         newHistory?.lastWatchTime != history?.lastWatchTime) {
       history = newHistory;
-      if (history?.bangumiId == null) {
-        debugPrint('isBangumi是: $isBangumi');
-        if (isBangumi) {
-          updateBangumiId();
-        }
-      }
+
       update();
     }
   }
@@ -209,13 +194,22 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     watcherController.history = history;
 
     isBangumi = animeSource.isBangumi;
-
-    StatsDataImpl statsDataImpl = (stats.getStatsByIdAndType(
+    if (history?.bangumiId == null) {
+      debugPrint('isBangumi是: $isBangumi');
+      if (isBangumi) {
+        updateBangumiId();
+      }
+    }
+    isLiked = stats.getGroupLikedStatus(
+      id: data!.id,
+      type: data!.sourceKey.hashCode,
+    );
+    Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+    stats.updateStats(
       id: widget.id,
       type: widget.sourceKey.hashCode,
-    ))!;
-
-    isLiked = statsDataImpl.liked;
+      bangumiId: history!.bangumiId,
+    );
     watcherController.anime = data!;
   }
 
