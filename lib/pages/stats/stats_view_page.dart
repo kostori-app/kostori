@@ -1,18 +1,4 @@
-import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:kostori/components/components.dart';
-import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/stats.dart';
-import 'package:kostori/pages/line_chart_page.dart';
-import 'package:kostori/utils/translations.dart';
-import 'package:word_cloud/word_cloud_data.dart';
-import 'package:word_cloud/word_cloud_shape.dart';
-import 'package:word_cloud/word_cloud_view.dart';
+part of 'stats_page.dart';
 
 class StatsViewPage extends StatefulWidget {
   const StatsViewPage({super.key});
@@ -293,34 +279,6 @@ class _StatsViewPageState extends State<StatsViewPage> {
     return SizedBox(
       height: 300,
       child: IntListBarChartPage(values: ratingList),
-    );
-  }
-}
-
-class ResponsiveWordCloud extends StatefulWidget {
-  final List<Map<String, dynamic>> wordCloudData;
-
-  const ResponsiveWordCloud({super.key, required this.wordCloudData});
-
-  @override
-  State<ResponsiveWordCloud> createState() => _ResponsiveWordCloudState();
-}
-
-class _ResponsiveWordCloudState extends State<ResponsiveWordCloud> {
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return WordCloudView(
-          data: WordCloudData(data: widget.wordCloudData),
-          mapwidth: constraints.maxWidth,
-          mapheight: 300,
-          mintextsize: 12,
-          maxtextsize: 38,
-          colorlist: standardColorMap.keys.toList(),
-          shape: WordCloudCircle(radius: constraints.maxWidth - 200),
-        );
-      },
     );
   }
 }

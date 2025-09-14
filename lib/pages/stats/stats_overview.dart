@@ -363,8 +363,6 @@ class StatsOverview extends StatelessWidget {
         )
         .toList();
 
-    final wordCloudData = WordCloudData(data: dataList);
-
     int totalClicks = 0;
     int totalWatchSeconds = 0;
     int totalComments = 0;
@@ -695,21 +693,10 @@ class StatsOverview extends StatelessWidget {
                     ),
                   ),
                 ),
-                Center(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return WordCloudView(
-                        data: wordCloudData,
-                        mapwidth: constraints.maxWidth - 50,
-                        mapheight: 300,
-                        mintextsize: 8,
-                        maxtextsize: App.isAndroid ? 30 : 38,
-                        colorlist: standardColorMap.keys.toList(),
-                        shape: WordCloudCircle(
-                          radius: constraints.maxWidth - 100,
-                        ),
-                      );
-                    },
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: ResponsiveWordCloud(wordCloudData: dataList),
                   ),
                 ),
                 const SizedBox(height: 16),

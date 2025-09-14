@@ -11,7 +11,6 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
-import 'package:kostori/pages/stats/stats_view_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
@@ -305,7 +304,6 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
   @override
   void initState() {
     super.initState();
-    // 延迟执行避免在构建期间修改provider
     Future.microtask(() async {
       final files = await loadKostoriImages();
       if (!mounted) return;
@@ -436,7 +434,6 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                                 allUrls: images,
                                 initialIndex: index,
                               );
-                              // provider管理，不用调用loadImages
                             },
                             child: SizedBox(
                               width: 300 * 1.8,
