@@ -76,6 +76,8 @@ abstract class _PlayerController with Store {
   bool isFullScreen = false;
   @observable
   bool isSeek = false;
+  @observable
+  bool glimmerEffect = false;
 
   /// 视频超分
   /// 1. OFF
@@ -290,7 +292,7 @@ abstract class _PlayerController with Store {
         await pp.setProperty("ao", "audiotrack");
       }
     }
-
+    glimmerEffect = appdata.implicitData['glimmerEffect'] ?? false;
     await player.setAudioTrack(AudioTrack.auto());
 
     player.setPlaylistMode(PlaylistMode.none);
@@ -305,19 +307,19 @@ abstract class _PlayerController with Store {
 
     if (App.isAndroid) {
       Timer? debounceTimer;
-      _pipStatusSubscription = Floating().pipStatusStream
-          .distinct() // 避免重复状态
-          .listen((status) {
-            debounceTimer?.cancel();
-            debounceTimer = Timer(const Duration(milliseconds: 100), () {
-              if (status == PiPStatus.enabled && !isPiPMode) {
-                enterPiPMode();
-              } else if (status != PiPStatus.enabled && isPiPMode) {
-                App.rootContext.pop();
-                isPiPMode = false;
-              }
-            });
-          });
+      _pipStatusSubscription = Floating().pipStatusStream.distinct().listen((
+        status,
+      ) {
+        debounceTimer?.cancel();
+        debounceTimer = Timer(const Duration(milliseconds: 100), () {
+          if (status == PiPStatus.enabled && !isPiPMode) {
+            enterPiPMode();
+          } else if (status != PiPStatus.enabled && isPiPMode) {
+            App.rootContext.pop();
+            isPiPMode = false;
+          }
+        });
+      });
     }
 
     if (App.isAndroid) {
@@ -588,6 +590,7 @@ abstract class _PlayerController with Store {
                         mime: 'image/png',
                       );
                     },
+                    onLongPress: () async {},
                     child: Stack(
                       children: [
                         Positioned.fill(

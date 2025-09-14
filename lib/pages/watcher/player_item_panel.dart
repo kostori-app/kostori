@@ -34,6 +34,7 @@ class PlayerItemPanel extends StatefulWidget {
     required this.startHideTimer,
     required this.cancelHideTimer,
     required this.showVideoInfo,
+    required this.glimmerEffectMode,
   });
 
   final PlayerController playerController;
@@ -44,6 +45,7 @@ class PlayerItemPanel extends StatefulWidget {
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
   final void Function() showVideoInfo;
+  final void Function() glimmerEffectMode;
 
   @override
   State<PlayerItemPanel> createState() => _PlayerItemPanelState();
@@ -57,6 +59,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   late Animation<Offset> rightOffsetAnimation;
   final TextEditingController textController = TextEditingController();
   final FocusNode textFieldFocus = FocusNode();
+
+  bool glimmerEffect = appdata.implicitData['glimmerEffect'] ?? false;
 
   String saveAddress = '';
 
@@ -270,8 +274,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         if (App.isAndroid)
           MenuEntry(
             text: (appdata.settings['audioOutType'] ?? true)
-                ? "Audio Option: \nLow Latency".tl
-                : "Audio Option: \nCompatibility".tl,
+                ? "Audio Option: \n Low Latency".tl
+                : "Audio Option: \n Compatibility".tl,
             onClick: () async {
               try {
                 await playerController.changeAudioOutType();
@@ -281,6 +285,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               }
             },
           ),
+        MenuEntry(
+          text: !playerController.glimmerEffect ? "微光模式:关".tl : "微光模式:开".tl,
+          onClick: () {
+            widget.glimmerEffectMode();
+          },
+        ),
         MenuEntry(
           text: "Remote Cast".tl,
           onClick: () {

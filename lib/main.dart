@@ -365,7 +365,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ),
                 );
               }
-              //有点问题,只能暂时解决
 
               return _SystemUiProvider(
                 Material(

@@ -98,7 +98,7 @@ dependencies:
       ref: 09e756b1f1b04e6298318d99ec20a787fb360f59
       path: packages/scrollable_positioned_list
   scrollview_observer: ^1.22.0
-  share_plus: ^11.1.0
+  share_plus: ^12.0.0
   shared_preferences: ^2.5.3
   shared_preferences_android: ^2.4.11
   shimmer_animation: ^2.1.0
@@ -184,7 +184,6 @@ msix_config:
 
 flutter:
   uses-material-design: true
-
   assets:
     - images/
     - assets/shaders/

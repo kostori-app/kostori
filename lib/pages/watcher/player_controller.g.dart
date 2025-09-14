@@ -121,6 +121,24 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$glimmerEffectAtom = Atom(
+    name: '_PlayerController.glimmerEffect',
+    context: context,
+  );
+
+  @override
+  bool get glimmerEffect {
+    _$glimmerEffectAtom.reportRead();
+    return super.glimmerEffect;
+  }
+
+  @override
+  set glimmerEffect(bool value) {
+    _$glimmerEffectAtom.reportWrite(value, super.glimmerEffect, () {
+      super.glimmerEffect = value;
+    });
+  }
+
   late final _$superResolutionTypeAtom = Atom(
     name: '_PlayerController.superResolutionType',
     context: context,
@@ -662,6 +680,7 @@ audioOutType: ${audioOutType},
 isPiPMode: ${isPiPMode},
 isFullScreen: ${isFullScreen},
 isSeek: ${isSeek},
+glimmerEffect: ${glimmerEffect},
 superResolutionType: ${superResolutionType},
 showPreviewImage: ${showPreviewImage},
 playing: ${playing},

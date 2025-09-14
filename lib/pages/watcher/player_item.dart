@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/gestures.dart';
@@ -7,10 +8,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -52,6 +55,13 @@ class _PlayerItemState extends State<PlayerItem>
   String formattedTime = '';
 
   int? hoveredIndex;
+
+  void glimmerEffectMode() {
+    appdata.implicitData['glimmerEffect'] = !playerController.glimmerEffect;
+    appdata.writeImplicitData();
+    playerController.glimmerEffect = !playerController.glimmerEffect;
+    setState(() {});
+  }
 
   Future<void> setBrightness(double value) async {
     try {
@@ -172,9 +182,14 @@ class _PlayerItemState extends State<PlayerItem>
     );
   }
 
+  void update() {
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addObserver(this);
     animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -254,6 +269,12 @@ class _PlayerItemState extends State<PlayerItem>
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
+                      if (playerController.glimmerEffect)
+                        Positioned.fill(
+                          child: AmbientShaderVideo(
+                            controller: playerController,
+                          ),
+                        ),
                       if (App.isDesktop)
                         Center(
                           child: Focus(
@@ -266,7 +287,7 @@ class _PlayerItemState extends State<PlayerItem>
                                     LogicalKeyboardKey.space) {
                                   try {
                                     playerController.playOrPause();
-                                    return KeyEventResult.handled; // 明确返回值
+                                    return KeyEventResult.handled;
                                   } catch (e) {
                                     Log.addLog(
                                       LogLevel.error,
@@ -464,6 +485,7 @@ class _PlayerItemState extends State<PlayerItem>
                         cancelHideTimer: cancelHideTimer,
                         showVideoInfo: showVideoInfo,
                         playerController: playerController,
+                        glimmerEffectMode: glimmerEffectMode,
                       ),
                       // / 播放器手势控制
                       Positioned.fill(
@@ -571,6 +593,75 @@ class _PlayerItemState extends State<PlayerItem>
           ),
         );
       },
+    );
+  }
+}
+
+class AmbientShaderVideo extends StatefulWidget {
+  final PlayerController controller;
+
+  const AmbientShaderVideo({super.key, required this.controller});
+
+  @override
+  State<AmbientShaderVideo> createState() => _AmbientShaderVideoState();
+}
+
+class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.scale(
+      scale: 1.1,
+      child: ImageFiltered(
+        imageFilter: ImageFilter.blur(
+          sigmaX: 120,
+          sigmaY: 120,
+          tileMode: TileMode.mirror,
+        ),
+        child: ShaderMask(
+          shaderCallback: (bounds) {
+            return RadialGradient(
+              center: Alignment.center,
+              radius: 0.6,
+              colors: [Colors.transparent, Colors.black.toOpacity(0.15)],
+              stops: [0.0, 1.0],
+            ).createShader(bounds);
+          },
+          blendMode: BlendMode.multiply,
+          child: ColorFiltered(
+            colorFilter: const ColorFilter.matrix([
+              1.05,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1.05,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1.05,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+            ]), // 轻微亮度增强
+            child: Video(
+              controller: widget.controller.playerController,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
