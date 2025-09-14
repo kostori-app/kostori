@@ -43,6 +43,63 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     });
   }
 
+  void showEp({required int ep, required int road}) {
+    final progressFind = HistoryManager().progressFind(
+      state.anime.id,
+      AnimeType(state.anime.sourceKey.hashCode),
+      ep,
+      road,
+    );
+
+    if (progressFind == null) {
+      showDialog(
+        context: App.rootContext,
+        builder: (context) {
+          return const ContentDialog(content: Text("没有找到该集的观看记录"));
+        },
+      );
+      return;
+    }
+
+    final p = progressFind;
+
+    String formatHMS(int milliseconds) {
+      final totalSeconds = (milliseconds / 1000).round();
+      final h = totalSeconds ~/ 3600;
+      final m = (totalSeconds % 3600) ~/ 60;
+      final s = totalSeconds % 60;
+
+      final parts = <String>[];
+      if (h > 0) parts.add('${h}h');
+      if (h > 0 || m > 0) parts.add('${m}m');
+      parts.add('${s}s');
+
+      return parts.join(' ');
+    }
+
+    showDialog(
+      context: App.rootContext,
+      builder: (context) {
+        return ContentDialog(
+          title: "观看记录",
+          displayButton: false,
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("第 ${p.episode + 1} 集"),
+                Text("观看时长: ${formatHMS(p.progressInMilli)}"),
+                Text("是否完成: ${p.isCompleted ? "是" : "否"}"),
+                if (p.startTime != null) Text("开始时间: ${p.startTime}"),
+                if (p.endTime != null) Text("结束时间: ${p.endTime}"),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 获取所有播放列表（例如，ep1, ep2, ep3...）
@@ -146,8 +203,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                 i = currentEps.length - i - 1; // 反向排序
               }
 
-              var key = currentEps.keys.elementAt(i); // 获取集数名称
-              var value = currentEps[key]!; // 获取集数内容
+              var key = currentEps.keys.elementAt(i);
+              var value = currentEps[key]!;
               bool visited = (history?.watchEpisode ?? const {}).contains(
                 i + 1,
               );
@@ -165,6 +222,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                         .then((_) {
                           setState(() {});
                         }),
+                    onLongPress: () {
+                      showEp(ep: i, road: playList);
+                    },
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
