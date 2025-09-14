@@ -541,40 +541,10 @@ class _RatingDialogState extends State<RatingDialog> {
       type: _statsDataImpl.type,
     );
 
-    if (stats.statsData.bangumiId != null) {
-      final bangumiItem = BangumiManager().getBangumiItem(
-        stats.statsData.bangumiId!,
-      );
-      if (bangumiItem != null) {
-        if (!manager.isExist(
-          bangumiItem.id.toString(),
-          AnimeType('bangumi'.hashCode),
-        )) {
-          try {
-            await manager.addStats(
-              manager.createStatsData(
-                id: bangumiItem.id.toString(),
-                title: bangumiItem.nameCn.isNotEmpty
-                    ? bangumiItem.nameCn
-                    : bangumiItem.name,
-                cover: bangumiItem.images['large'],
-                type: 'bangumi'.hashCode,
-                bangumiId: bangumiItem.id,
-                isBangumi: true,
-              ),
-            );
-          } catch (e, s) {
-            Log.addLog(LogLevel.error, 'RatingDialog.addStats', '$e\n$s');
-          }
-        }
-        bangumiStats = StatsManager().getOrCreateTodayEvents(
-          id: bangumiItem.id.toString(),
-          type: 'bangumi'.hashCode,
-        );
-      }
-    }
-
     setState(() {
+      bangumiStats = manager.getOrCreateBangumiStats(
+        statsDataImpl: stats.statsData,
+      );
       final targetStats = bangumiStats ?? stats;
       _rating = (targetStats.ratingRecord.rating ?? 0).toDouble();
       final idKey = targetStats.statsData.id;

@@ -141,10 +141,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       id: widget.id,
       type: widget.sourceKey.hashCode,
     );
+    final bangumiStats = stats.getOrCreateBangumiStats(
+      statsDataImpl: s.statsData,
+    );
+    final TodayEventBundle targetStats = bangumiStats ?? s;
 
     statsDataImpl = s.statsData;
     todayComment = s.todayComment;
-    commentRecord = s.commentRecord;
+    commentRecord = targetStats.commentRecord;
 
     todayClick = s.todayClick;
     clickRecord = s.clickRecord;
@@ -153,7 +157,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     watchRecord = s.watchRecord;
 
     todayRating = s.todayRating;
-    ratingRecord = s.ratingRecord;
+    ratingRecord = targetStats.ratingRecord;
 
     ratingValue = ratingRecord?.rating ?? 0;
   }
@@ -204,7 +208,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       id: data!.id,
       type: data!.sourceKey.hashCode,
     );
-    Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+    if (history!.bangumiId != null) {
+      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+    }
     stats.updateStats(
       id: widget.id,
       type: widget.sourceKey.hashCode,

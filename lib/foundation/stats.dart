@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart' show ChangeNotifier, debugPrint;
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
@@ -1254,5 +1255,47 @@ extension StatsHelper on StatsManager {
     );
 
     manager.updateStats(id: id, type: type, favorite: statsDataImpl.favorite);
+  }
+
+  TodayEventBundle? getOrCreateBangumiStats({
+    required StatsDataImpl statsDataImpl,
+  }) {
+    if (statsDataImpl.bangumiId == null) {
+      return null;
+    }
+
+    final bangumiItem = BangumiManager().getBangumiItem(
+      statsDataImpl.bangumiId!,
+    );
+
+    if (bangumiItem == null) {
+      return null;
+    }
+
+    final bangumiType = AnimeType('bangumi'.hashCode);
+    if (!isExist(bangumiItem.id.toString(), bangumiType)) {
+      try {
+        addStats(
+          createStatsData(
+            id: bangumiItem.id.toString(),
+            title: bangumiItem.nameCn.isNotEmpty
+                ? bangumiItem.nameCn
+                : bangumiItem.name,
+            cover: bangumiItem.images['large'],
+            type: 'bangumi'.hashCode,
+            bangumiId: bangumiItem.id,
+            isBangumi: true,
+          ),
+        );
+      } catch (e, s) {
+        Log.addLog(LogLevel.error, 'RatingDialog.addStats', '$e\n$s');
+        return null;
+      }
+    }
+
+    return StatsManager().getOrCreateTodayEvents(
+      id: bangumiItem.id.toString(),
+      type: 'bangumi'.hashCode,
+    );
   }
 }
