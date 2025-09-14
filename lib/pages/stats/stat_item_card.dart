@@ -92,6 +92,7 @@ class StatItemWidget extends StatelessWidget {
       context: context,
       widget: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+
         children: allRecords.map((entry) {
           final type = entry['type'] as DailyEventType;
           final dailyIndex = entry['dailyIndex'] as int;
@@ -121,9 +122,11 @@ class StatItemWidget extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(
-                          record.comment ?? '',
-                          style: const TextStyle(fontSize: 14),
+                        Expanded(
+                          child: Text(
+                            record.comment ?? '',
+                            style: const TextStyle(fontSize: 14),
+                          ),
                         ),
                       ],
                     ),
@@ -154,9 +157,11 @@ class StatItemWidget extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(
-                          record.comment ?? '',
-                          style: const TextStyle(fontSize: 14),
+                        Expanded(
+                          child: Text(
+                            record.comment ?? '',
+                            style: const TextStyle(fontSize: 14),
+                          ),
                         ),
                       ],
                     ),
@@ -384,7 +389,7 @@ class StatItemWidget extends StatelessWidget {
       final watchEvent = _getDailyEvent(stats.totalWatchDurations, selectedDay);
       if (watchEvent != null) {
         for (final record in watchEvent.platformEventRecords) {
-          final sourceType = _getSourceType(stats.type); // 使用处理过的sourceType
+          final sourceType = _getSourceType(stats.type);
           recordStrings.add(
             '[$sourceType] ${record.platform?.value ?? '未知'}观看: ${_formatHMS(record.value)}',
           );
