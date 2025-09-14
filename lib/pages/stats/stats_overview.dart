@@ -363,8 +363,6 @@ class StatsOverview extends StatelessWidget {
         )
         .toList();
 
-    final wordCloudData = WordCloudData(data: dataList);
-
     int totalClicks = 0;
     int totalWatchSeconds = 0;
     int totalComments = 0;
