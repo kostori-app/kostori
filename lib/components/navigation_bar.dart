@@ -210,14 +210,19 @@ class NaviPaneState extends State<NaviPane>
   Widget buildMainView() {
     return HeroControllerScope(
       controller: MaterialApp.createMaterialHeroController(),
-      child: Navigator(
-        observers: [widget.observer],
-        key: widget.navigatorKey,
-        onGenerateRoute: (settings) => AppPageRoute(
-          preventRebuild: false,
-          builder: (context) {
-            return _NaviMainView(state: this);
-          },
+      child: NavigatorPopHandler(
+        onPopWithResult: (result) {
+          widget.navigatorKey.currentState?.maybePop(result);
+        },
+        child: Navigator(
+          observers: [widget.observer],
+          key: widget.navigatorKey,
+          onGenerateRoute: (settings) => AppPageRoute(
+            preventRebuild: false,
+            builder: (context) {
+              return _NaviMainView(state: this);
+            },
+          ),
         ),
       ),
     );
@@ -599,15 +604,7 @@ class _NaviPopScope extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget res = App.isIOS
-        ? child
-        : PopScope(
-            canPop: App.isAndroid ? false : true,
-            onPopInvokedWithResult: (value, result) {
-              action();
-            },
-            child: child,
-          );
+    Widget res = child;
     if (popGesture) {
       res = GestureDetector(
         onPanStart: (details) {

@@ -1,7 +1,9 @@
 import 'dart:math';
 import 'dart:ui';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/app.dart';
 
 const double _kBackGestureWidth = 20.0;
 const int _kMaxDroppedSwipePageForwardAnimationTime = 800;
@@ -114,20 +116,33 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
   }
 
   @override
-  Widget buildTransitions(BuildContext context, Animation<double> animation,
-      Animation<double> secondaryAnimation, Widget child) {
-    return SlidePageTransitionBuilder().buildTransitions(
-        this,
-        context,
-        animation,
-        secondaryAnimation,
-        enableIOSGesture
-            ? IOSBackGestureDetector(
-                gestureWidth: _kBackGestureWidth,
-                enabledCallback: () => _isPopGestureEnabled<T>(this),
-                onStartPopGesture: () => _startPopGesture(this),
-                child: child)
-            : child);
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    PageTransitionsBuilder builder;
+    if (App.isAndroid) {
+      builder = PredictiveBackPageTransitionsBuilder();
+    } else {
+      builder = SlidePageTransitionBuilder();
+    }
+
+    return builder.buildTransitions(
+      this,
+      context,
+      animation,
+      secondaryAnimation,
+      enableIOSGesture
+          ? IOSBackGestureDetector(
+              gestureWidth: _kBackGestureWidth,
+              enabledCallback: () => _isPopGestureEnabled<T>(this),
+              onStartPopGesture: () => _startPopGesture(this),
+              child: child,
+            )
+          : child,
+    );
   }
 
   IOSBackGestureController _startPopGesture(PageRoute<T> route) {
@@ -157,22 +172,30 @@ class IOSBackGestureController {
     if (animateForward) {
       final droppedPageForwardAnimationTime = min(
         lerpDouble(
-                _kMaxDroppedSwipePageForwardAnimationTime, 0, controller.value)!
-            .floor(),
+          _kMaxDroppedSwipePageForwardAnimationTime,
+          0,
+          controller.value,
+        )!.floor(),
         _kMaxPageBackAnimationTime,
       );
-      controller.animateTo(1.0,
-          duration: Duration(milliseconds: droppedPageForwardAnimationTime),
-          curve: animationCurve);
+      controller.animateTo(
+        1.0,
+        duration: Duration(milliseconds: droppedPageForwardAnimationTime),
+        curve: animationCurve,
+      );
     } else {
       navigator.pop();
       if (controller.isAnimating) {
         final droppedPageBackAnimationTime = lerpDouble(
-                0, _kMaxDroppedSwipePageForwardAnimationTime, controller.value)!
-            .floor();
-        controller.animateBack(0.0,
-            duration: Duration(milliseconds: droppedPageBackAnimationTime),
-            curve: animationCurve);
+          0,
+          _kMaxDroppedSwipePageForwardAnimationTime,
+          controller.value,
+        )!.floor();
+        controller.animateBack(
+          0.0,
+          duration: Duration(milliseconds: droppedPageBackAnimationTime),
+          curve: animationCurve,
+        );
       }
     }
 
@@ -194,12 +217,13 @@ class IOSBackGestureController {
 }
 
 class IOSBackGestureDetector extends StatefulWidget {
-  const IOSBackGestureDetector(
-      {required this.enabledCallback,
-      required this.child,
-      required this.gestureWidth,
-      required this.onStartPopGesture,
-      super.key});
+  const IOSBackGestureDetector({
+    required this.enabledCallback,
+    required this.child,
+    required this.gestureWidth,
+    required this.onStartPopGesture,
+    super.key,
+  });
 
   final double gestureWidth;
 
@@ -280,8 +304,11 @@ class _IOSBackGestureDetectorState extends State<IOSBackGestureDetector> {
   void _handleDragEnd(DragEndDetails details) {
     assert(mounted);
     assert(_backGestureController != null);
-    _backGestureController!.dragEnd(_convertToLogical(
-        details.velocity.pixelsPerSecond.dx / context.size!.width));
+    _backGestureController!.dragEnd(
+      _convertToLogical(
+        details.velocity.pixelsPerSecond.dx / context.size!.width,
+      ),
+    );
     _backGestureController = null;
   }
 
@@ -295,43 +322,38 @@ class _IOSBackGestureDetectorState extends State<IOSBackGestureDetector> {
     assert(mounted);
     assert(_backGestureController != null);
     _backGestureController!.dragUpdate(
-        _convertToLogical(details.primaryDelta! / context.size!.width));
+      _convertToLogical(details.primaryDelta! / context.size!.width),
+    );
   }
 }
 
 class SlidePageTransitionBuilder extends PageTransitionsBuilder {
   @override
   Widget buildTransitions<T>(
-      PageRoute<T> route,
-      BuildContext context,
-      Animation<double> animation,
-      Animation<double> secondaryAnimation,
-      Widget child) {
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
     return SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(1, 0),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.ease,
-        )),
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: Offset.zero,
-            end: const Offset(-0.4, 0),
-          ).animate(CurvedAnimation(
-            parent: secondaryAnimation,
-            curve: Curves.ease,
-          )),
-          child: PhysicalModel(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.zero,
-            clipBehavior: Clip.hardEdge,
-            elevation: 6,
-            child: Material(
-              child: child,
+      position: Tween<Offset>(
+        begin: const Offset(1, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.ease)),
+      child: SlideTransition(
+        position: Tween<Offset>(begin: Offset.zero, end: const Offset(-0.4, 0))
+            .animate(
+              CurvedAnimation(parent: secondaryAnimation, curve: Curves.ease),
             ),
-          ),
-        ));
+        child: PhysicalModel(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.zero,
+          clipBehavior: Clip.hardEdge,
+          elevation: 6,
+          child: Material(child: child),
+        ),
+      ),
+    );
   }
 }
