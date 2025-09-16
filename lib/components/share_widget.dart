@@ -193,7 +193,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
             child: Column(
               children: [
-                SizedBox(height: 64.0),
+                SizedBox(height: 32.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Row(
@@ -314,7 +314,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
             child: Column(
               children: [
-                SizedBox(height: 64.0),
+                SizedBox(height: 32.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: LayoutBuilder(
@@ -678,7 +678,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
             child: Column(
               children: [
-                SizedBox(height: 64.0),
+                SizedBox(height: 32.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 6,
@@ -772,6 +772,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                     itemCount: keyList.length,
                     gridDelegate: SliverGridDelegateWithBangumiItems(
                       widget.useBriefMode!,
+                      fixedCrossAxisCount: 3,
                     ),
                     itemBuilder: (context, index) {
                       return widget.useBriefMode!
@@ -820,7 +821,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
             child: Column(
               children: [
-                SizedBox(height: 64.0),
+                SizedBox(height: 32.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 6,
