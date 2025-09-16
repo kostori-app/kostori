@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -353,9 +352,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     List<String> selectedTagsInCategory,
   ) async {
     setState(() {
-      // 先把这个分类原来选中的标签从tags中移除
       tags.removeWhere((tag) => category.tags.contains(tag));
-      // 再把最新选中的标签加进去
       tags.addAll(selectedTagsInCategory);
     });
     setState(() {
@@ -373,49 +370,35 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ClipRect(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.toOpacity(0.22),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    // filled: true,
-                    fillColor: Theme.of(context).cardColor,
-                    hintText: 'Enter keywords...'.tl,
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onSubmitted: (value) async {
-                    setState(() {
-                      tags.add(value);
-                      _isLoading = true;
-                      bangumiItems.clear();
-                    });
-                    context.pop();
-                    final newItems = await bangumiSearch();
-                    bangumiItems = newItems;
-                    if (mounted) {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                    }
-                  },
-                ),
+        return ContentDialog(
+          displayButton: false,
+          title: '增加标签',
+          content: TextField(
+            autofocus: true,
+            decoration: InputDecoration(
+              // filled: true,
+              fillColor: Theme.of(context).cardColor,
+              hintText: 'Enter keywords...'.tl,
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
             ),
+            onSubmitted: (value) async {
+              setState(() {
+                tags.add(value);
+                _isLoading = true;
+                bangumiItems.clear();
+              });
+              context.pop();
+              final newItems = await bangumiSearch();
+              bangumiItems = newItems;
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
           ),
         );
       },
@@ -534,6 +517,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     );
   }
 
+  // 时间选择对话框
   void _showAirEndDateDialog(BuildContext context) {
     DateTime now = DateTime.now();
     DateTime? air = Utils.safeParseDate(airDate);
@@ -570,11 +554,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   "${date.day.toString().padLeft(2, '0')}";
             }
 
-            return AlertDialog(
-              title: Text("Select Date".tl),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+            return ContentDialog(
+              title: "Select Date".tl,
               content: SizedBox(
                 width: 350,
                 child: Column(
@@ -1216,10 +1197,13 @@ class TagCategory {
 }
 
 class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
-  SliverGridDelegateWithBangumiItems(this.useBriefMode);
+  SliverGridDelegateWithBangumiItems(
+    this.useBriefMode, {
+    this.fixedCrossAxisCount,
+  });
 
   final bool useBriefMode;
-
+  final int? fixedCrossAxisCount;
   final double scale = 1.toDouble();
 
   @override
@@ -1237,9 +1221,16 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
   ) {
     const minCrossAxisExtent = 360;
     final itemHeight = 192 * scale;
-    int crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
-        .floor();
-    crossAxisCount = math.min(3, math.max(1, crossAxisCount)); // 限制1-3列
+
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
+          .floor();
+      crossAxisCount = math.min(3, math.max(1, crossAxisCount)); // 限制1-3列
+    }
+
     return SliverGridRegularTileLayout(
       crossAxisCount: crossAxisCount,
       mainAxisStride: itemHeight,
@@ -1257,18 +1248,25 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
     final maxCrossAxisExtent = 192.0 * scale;
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
-    int crossAxisCount =
-        (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing))
-            .ceil();
-    // Ensure a minimum count of 1, can be zero and result in an infinite extent
-    // below when the window size is 0.
-    crossAxisCount = math.max(1, crossAxisCount);
+
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      crossAxisCount =
+          (constraints.crossAxisExtent /
+                  (maxCrossAxisExtent + crossAxisSpacing))
+              .ceil();
+      crossAxisCount = math.max(1, crossAxisCount); // 确保最小为1
+    }
+
     final double usableCrossAxisExtent = math.max(
       0.0,
       constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1),
     );
     final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
     final double childMainAxisExtent = childCrossAxisExtent / childAspectRatio;
+
     return SliverGridRegularTileLayout(
       crossAxisCount: crossAxisCount,
       mainAxisStride: childMainAxisExtent,
@@ -1283,7 +1281,9 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
   bool shouldRelayout(covariant SliverGridDelegate oldDelegate) {
     if (oldDelegate is! SliverGridDelegateWithBangumiItems) return true;
     if (oldDelegate.scale != scale ||
-        oldDelegate.useBriefMode != useBriefMode) {
+        oldDelegate.useBriefMode != useBriefMode ||
+        oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount) {
+      // 新增：检查固定列数变化
       return true;
     }
     return false;
