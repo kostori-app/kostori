@@ -4,12 +4,15 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/bean/card/episode_comments_sheet.dart';
+import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
+import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
+import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart'
     show BangumiSearchPage;
@@ -19,10 +22,6 @@ import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-import '../../components/bean/card/reviews_card.dart';
-import '../../components/bean/card/topics_card.dart';
-import '../../foundation/bangumi/topics/topics_item.dart';
 
 class BottomInfo extends StatefulWidget {
   const BottomInfo({
@@ -1228,7 +1227,7 @@ class BottomInfoState extends State<BottomInfo>
                   EpisodeCommentsSheet(
                     episodeInfo: episodeInfo,
                     loadComments: loadComments,
-                    episode: WatcherState.currentState!.episode,
+                    episode: WatcherState.currentState!.epIndex,
                     infoController: infoController,
                   ),
                   topicsListBody,

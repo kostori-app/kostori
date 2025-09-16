@@ -309,7 +309,7 @@ class _AppScrollBarState extends State<AppScrollBar> {
         _innerPosition = pos.position;
       }
     } else {
-      _outerPosition = widget.controller.position;
+      _outerPosition = Scrollable.of(notification.context!).position;
     }
 
     double outerOffset = _outerPosition?.pixels ?? 0.0;

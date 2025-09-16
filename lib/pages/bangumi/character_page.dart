@@ -1,19 +1,18 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
-
-import '../../components/bangumi_widget.dart';
-import '../../components/components.dart';
-import '../../components/share_widget.dart';
-import '../../foundation/app.dart';
-import '../../foundation/bangumi/character/character_casts_item.dart';
 
 class CharacterPage extends StatefulWidget {
   const CharacterPage({super.key, required this.characterID});

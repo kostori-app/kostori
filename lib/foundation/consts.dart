@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/utils/translations.dart';
-
-import '../utils/utils.dart';
-import 'app.dart';
-import 'appdata.dart';
+import 'package:kostori/utils/utils.dart';
 
 const changePoint = 600;
 

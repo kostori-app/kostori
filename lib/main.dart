@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:audio_service/audio_service.dart';
 import 'package:desktop_webview_window/desktop_webview_window.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
@@ -11,21 +10,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/components/window_frame.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/pages/auth_page.dart';
-import 'package:kostori/pages/watcher/player_audio_handler.dart';
+import 'package:kostori/pages/main_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
-
-import 'components/components.dart';
-import 'components/window_frame.dart';
-import 'foundation/app.dart';
-import 'foundation/appdata.dart';
-import 'foundation/log.dart';
-import 'init.dart';
-import 'pages/main_page.dart';
 
 void main(List<String> args) {
   if (runWebViewTitleBarWidget(args)) return;
@@ -34,9 +31,7 @@ void main(List<String> args) {
       () async {
         WidgetsFlutterBinding.ensureInitialized();
         MediaKit.ensureInitialized();
-        if (App.isAndroid) {
-          await AudioServiceManager().initializeHandler();
-        }
+
         await init();
 
         runApp(ProviderScope(child: MyApp()));
@@ -348,6 +343,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               );
             };
             if (widget != null) {
+              if (isPaddingCheckError && App.isAndroid) {
+                widget = MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    viewPadding: const EdgeInsets.only(top: 15, bottom: 15),
+                    padding: const EdgeInsets.only(top: 15, bottom: 15),
+                  ),
+                  child: widget,
+                );
+              }
               widget = OverlayWidget(widget);
               if (App.isDesktop) {
                 widget = Shortcuts(
@@ -361,20 +365,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   ),
                 );
               }
-              //有点问题,只能暂时解决
-              if (isPaddingCheckError) {
-                return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    padding: MediaQuery.of(context).padding.copyWith(top: 24),
-                  ),
-                  child: _SystemUiProvider(
-                    Material(
-                      color: App.isLinux ? Colors.transparent : null,
-                      child: widget,
-                    ),
-                  ),
-                );
-              }
+
               return _SystemUiProvider(
                 Material(
                   color: App.isLinux ? Colors.transparent : null,
@@ -427,42 +418,4 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
     PointerDeviceKind.stylus,
     PointerDeviceKind.trackpad,
   };
-}
-
-class AudioServiceManager {
-  static final AudioServiceManager _instance = AudioServiceManager._internal();
-
-  factory AudioServiceManager() => _instance;
-
-  AudioServiceManager._internal();
-
-  PlayerAudioHandler? _handler;
-  bool _isInitialized = false;
-
-  PlayerAudioHandler get handler {
-    if (!_isInitialized) {
-      Log.addLog(
-        LogLevel.error,
-        'handler',
-        "AudioHandler has not been initialized yet",
-      );
-      throw Exception('AudioHandler has not been initialized yet');
-    }
-    return _handler!;
-  }
-
-  // 初始化 handler
-  Future<void> initializeHandler() async {
-    _handler = await AudioService.init(
-      builder: () => PlayerAudioHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.axlmly.kostori',
-        androidNotificationChannelName: 'Kostori',
-        androidNotificationChannelDescription: 'Kostori Media Notification',
-        androidNotificationOngoing: false,
-        androidStopForegroundOnPause: true,
-      ),
-    );
-    _isInitialized = true;
-  }
 }

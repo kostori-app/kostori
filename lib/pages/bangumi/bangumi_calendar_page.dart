@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -11,9 +13,6 @@ import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
-
-import '../../components/bangumi_widget.dart';
-import '../../components/misc_components.dart';
 
 class BangumiCalendarPage extends StatefulWidget {
   const BangumiCalendarPage({super.key});

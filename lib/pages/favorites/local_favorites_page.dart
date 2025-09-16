@@ -32,14 +32,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
 
   bool searchMode = false;
   bool searchAllMode = false;
-
+  bool showFB = false;
   bool multiSelectMode = false;
+  bool isLoading = false;
 
   int? lastSelectedIndex;
 
   LocalFavoritesManager get manager => LocalFavoritesManager();
-
-  bool isLoading = false;
 
   Map<String, List<FavoriteItem>> searchResults = {};
 
@@ -160,9 +159,34 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     return true;
   }
 
+  void onScroll() {
+    if (scrollController.offset > 50) {
+      if (!showFB) {
+        setState(() {
+          showFB = true;
+        });
+      }
+    } else {
+      if (showFB) {
+        setState(() {
+          showFB = false;
+        });
+      }
+    }
+  }
+
+  void scrollToTop() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
   @override
   void initState() {
-    // favoritesController.isRefreshEnabled = true;
     var sort = appdata.implicitData["favori_sort"] ?? "displayOrder_asc";
     sortType = FavoriteSortType.fromString(sort);
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
@@ -206,6 +230,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
       });
     });
     updateAnimes();
+    scrollController.addListener(onScroll);
     manager.addListener(updateAnimes);
     super.initState();
   }
@@ -213,7 +238,9 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   @override
   void dispose() {
     favoritesController.tabController.dispose();
+    scrollController.removeListener(onScroll);
     manager.removeListener(updateAnimes);
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -249,12 +276,35 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   }
 
   List<Tab> getTabs() {
+    final String wish = appdata.settings['FavoriteTypeWish'] ?? 'wish';
+    final String doing = appdata.settings['FavoriteTypeDoing'] ?? 'doing';
+    final String collect = appdata.settings['FavoriteTypeCollect'] ?? 'collect';
+    final String onHold = appdata.settings['FavoriteTypeOnHold'] ?? 'on_hold';
+    final String dropped = appdata.settings['FavoriteTypeDropped'] ?? 'dropped';
+
+    final Map<String, IconData> iconMap = {
+      wish: Icons.star_rounded,
+      doing: Icons.favorite,
+      collect: Icons.task_alt_outlined,
+      onHold: Icons.access_time,
+      dropped: Icons.heart_broken,
+    };
+
     return favoritesController.folders.map((name) {
       int count = manager.folderAnimes(name);
+      final IconData? iconData = iconMap[name];
       return Tab(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (iconData != null) ...[
+              Icon(
+                iconData,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+              const SizedBox(width: 4),
+            ],
             Flexible(
               fit: FlexFit.loose,
               child: Text(
@@ -399,7 +449,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
 
     Widget body = NestedScrollView(
       controller: scrollController,
-      physics: const ClampingScrollPhysics(),
       headerSliverBuilder: (context, innerBoxIsScrolled) => [
         if (!searchAllMode && !searchMode && !multiSelectMode)
           SliverAppbar(
@@ -715,6 +764,28 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                 () =>
                                     AnimePage(id: a.id, sourceKey: a.sourceKey),
                               );
+                              final stats = StatsManager();
+                              if (!stats.isExist(
+                                a.id,
+                                AnimeType(a.sourceKey.hashCode),
+                              )) {
+                                try {
+                                  stats.addStats(
+                                    stats.createStatsData(
+                                      id: a.id,
+                                      title: a.title,
+                                      cover: a.cover,
+                                      type: a.sourceKey.hashCode,
+                                    ),
+                                  );
+                                } catch (e) {
+                                  Log.addLog(
+                                    LogLevel.error,
+                                    'addStats',
+                                    e.toString(),
+                                  );
+                                }
+                              }
                               manager.updateRecentlyWatched(
                                 a.id,
                                 AnimeType(a.sourceKey.hashCode),
@@ -781,6 +852,61 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               }).toList(),
             ),
     );
+    body = Stack(
+      children: [
+        Positioned.fill(child: body),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            opacity: showFB ? 1 : 0,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20, right: 0),
+              child: GridSpeedDial(
+                icon: Icons.menu,
+                activeIcon: Icons.close,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                spacing: 6,
+                spaceBetweenChildren: 4,
+                direction: SpeedDialDirection.up,
+                childPadding: const EdgeInsets.all(6),
+                childrens: [
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.refresh),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () async {
+                        await updateAnimes();
+                      },
+                    ),
+                  ],
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.vertical_align_top),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () => scrollToTop(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
     body = AppScrollBar(
       topPadding:
           52.0 + MediaQuery.of(context).padding.top + tab.preferredSize.height,
@@ -795,17 +921,32 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
       key: PageStorageKey("${favoritesController.folders}"),
       canPop: multiSelectMode == false && searchAllMode == false,
       onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         if (multiSelectMode) {
           setState(() {
             multiSelectMode = false;
             selectedAnimes.clear();
           });
+          if (App.isAndroid) {
+            Log.addLog(
+              LogLevel.info,
+              'multiSelectMode',
+              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
+            );
+          }
         } else if (searchAllMode) {
           setState(() {
             searchAllMode = false;
             keyword = "";
             updateAnimes();
           });
+          if (App.isAndroid) {
+            Log.addLog(
+              LogLevel.info,
+              'searchAllMode',
+              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
+            );
+          }
         }
       },
       child: body,

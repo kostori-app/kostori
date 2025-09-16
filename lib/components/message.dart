@@ -445,6 +445,7 @@ class ContentDialog extends StatelessWidget {
     this.dismissible = true,
     this.actions = const [],
     this.cancel,
+    this.displayButton = true,
   });
 
   final String? title;
@@ -456,6 +457,8 @@ class ContentDialog extends StatelessWidget {
   final bool dismissible;
 
   final VoidCallback? cancel;
+
+  final bool displayButton;
 
   @override
   Widget build(BuildContext context) {
@@ -482,24 +485,26 @@ class ContentDialog extends StatelessWidget {
             child: this.content,
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              const SizedBox(width: 24),
-              Button.text(
-                onPressed: () {
-                  if (cancel != null) {
-                    cancel;
-                  }
-                  Navigator.pop(context);
-                },
-                child: Text("Cancel".tl),
-              ),
-              const Spacer(),
-              ...actions,
-            ],
-          ).paddingRight(12),
-          const SizedBox(height: 24),
+          if (displayButton) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                const SizedBox(width: 24),
+                Button.text(
+                  onPressed: () {
+                    if (cancel != null) {
+                      cancel;
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: Text("Cancel".tl),
+                ),
+                const Spacer(),
+                ...actions,
+              ],
+            ).paddingRight(12),
+            const SizedBox(height: 24),
+          ],
         ],
       ),
     );
@@ -514,8 +519,8 @@ class ContentDialog extends StatelessWidget {
         ),
       ),
       insetPadding: context.width < 400
-          ? const EdgeInsets.symmetric(horizontal: 4, vertical: 100)
-          : const EdgeInsets.symmetric(horizontal: 16, vertical: 100),
+          ? const EdgeInsets.symmetric(horizontal: 4)
+          : const EdgeInsets.symmetric(horizontal: 16),
       elevation: 2,
       shadowColor: context.colorScheme.shadow,
       backgroundColor: context.colorScheme.surface.toOpacity(0.3),

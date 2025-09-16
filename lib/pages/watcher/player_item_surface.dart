@@ -13,17 +13,17 @@ class PlayerItemSurface extends StatefulWidget {
 }
 
 class _PlayerItemSurfaceState extends State<PlayerItemSurface> {
+  PlayerController get playerController => widget.playerController;
+
   @override
   Widget build(BuildContext context) {
     return Observer(
-      builder: (_) {
+      builder: (context) {
         return AspectRatio(
-          aspectRatio: widget.playerController.isPortraitFullscreen
-              ? 9 / 16
-              : 16 / 9,
+          aspectRatio: playerController.isPortraitFullscreen ? 9 / 16 : 16 / 9,
           child: Video(
-            controller: widget.playerController.playerController,
-            // controls: NoVideoControls,
+            controller: playerController.playerController,
+            fill: Colors.transparent,
           ),
         );
       },

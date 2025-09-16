@@ -8,6 +8,14 @@ class LocalFavoritesSettings extends StatefulWidget {
 }
 
 class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
+  final excludeSet = {
+    appdata.settings['FavoriteTypeWish'],
+    appdata.settings['FavoriteTypeDoing'],
+    appdata.settings['FavoriteTypeCollect'],
+    appdata.settings['FavoriteTypeOnHold'],
+    appdata.settings['FavoriteTypeDropped'],
+  };
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -30,9 +38,71 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                       "Long press on the favorite button to quickly add to this folder"
                           .tl,
                   optionTranslation: {
-                    for (var e in LocalFavoritesManager().folderNames) e: e,
+                    for (var e in LocalFavoritesManager().folderNames)
+                      if (e != 'default') e: e,
                   },
                 ),
+                SelectSetting(
+                  title: "Favorite Type".tl + "Wish".tl,
+                  settingKey: "FavoriteTypeWish",
+                  help: "Mark the selected favorites as".tl + "Wish".tl,
+                  optionTranslation: {
+                    'none': 'none',
+                    for (var e in LocalFavoritesManager().folderNames)
+                      if (e != 'default' && !excludeSet.contains(e) ||
+                          e == appdata.settings['FavoriteTypeWish'])
+                        e: e,
+                  },
+                ),
+                SelectSetting(
+                  title: "Favorite Type".tl + "Doing".tl,
+                  settingKey: "FavoriteTypeDoing",
+                  help: "Mark the selected favorites as".tl + "Doing".tl,
+                  optionTranslation: {
+                    'none': 'none',
+                    for (var e in LocalFavoritesManager().folderNames)
+                      if (e != 'default' && !excludeSet.contains(e) ||
+                          e == appdata.settings['FavoriteTypeDoing'])
+                        e: e,
+                  },
+                ),
+                SelectSetting(
+                  title: "Favorite Type".tl + "Collect".tl,
+                  settingKey: "FavoriteTypeCollect",
+                  help: "Mark the selected favorites as".tl + "Collect".tl,
+                  optionTranslation: {
+                    'none': 'none',
+                    for (var e in LocalFavoritesManager().folderNames)
+                      if (e != 'default' && !excludeSet.contains(e) ||
+                          e == appdata.settings['FavoriteTypeCollect'])
+                        e: e,
+                  },
+                ),
+                SelectSetting(
+                  title: "Favorite Type".tl + "On Hold".tl,
+                  settingKey: "FavoriteTypeOnHold",
+                  help: "Mark the selected favorites as".tl + "On Hold".tl,
+                  optionTranslation: {
+                    'none': 'none',
+                    for (var e in LocalFavoritesManager().folderNames)
+                      if (e != 'default' && !excludeSet.contains(e) ||
+                          e == appdata.settings['FavoriteTypeOnHold'])
+                        e: e,
+                  },
+                ),
+                SelectSetting(
+                  title: "Favorite Type".tl + "Dropped".tl,
+                  settingKey: "FavoriteTypeDropped",
+                  help: "Mark the selected favorites as".tl + "Dropped".tl,
+                  optionTranslation: {
+                    'none': 'none',
+                    for (var e in LocalFavoritesManager().folderNames)
+                      if (e != 'default' && !excludeSet.contains(e) ||
+                          e == appdata.settings['FavoriteTypeDropped'])
+                        e: e,
+                  },
+                ),
+
                 const SizedBox(height: 8),
               ],
             ),

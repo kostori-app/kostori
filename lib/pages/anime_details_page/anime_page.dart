@@ -1,14 +1,19 @@
 // ignore_for_file: unused_element_parameter
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -20,22 +25,20 @@ import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
-import 'package:kostori/pages/search_result_page.dart';
+import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/pages/watcher/watcher_controller.dart';
+import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import 'package:url_launcher/url_launcher_string.dart';
-
-import '../../components/bangumi_widget.dart';
-import '../../components/misc_components.dart';
-import '../../components/share_widget.dart';
-import '../../utils/data_sync.dart';
-import '../bangumi/info_controller.dart';
 
 part 'actions.dart';
 
@@ -74,8 +77,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   var scrollController = ScrollController();
 
   bool isDownloaded = false;
-  bool isUpdateBangumiBind = false;
   bool isBangumi = false;
+
+  final stats = StatsManager();
 
   BangumiItem? get bangumiItem => bangumiBindInfo;
   late TabController tabController;
@@ -85,19 +89,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
-    if (!isUpdateBangumiBind && history?.bangumiId != null) {
-      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
-      isUpdateBangumiBind = true;
-    }
     if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||
         newHistory?.lastWatchTime != history?.lastWatchTime) {
       history = newHistory;
-      if (history?.bangumiId == null) {
-        debugPrint('isBangumi是: $isBangumi');
-        if (isBangumi) {
-          updateBangumiId();
-        }
-      }
+
       update();
     }
   }
@@ -109,6 +104,62 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       );
       update();
     }
+  }
+
+  Future<void> updateStatsClicks() async {
+    if (!stats.isExist(widget.id, AnimeType(widget.sourceKey.hashCode))) {
+      try {
+        stats.addStats(
+          stats.createStatsData(
+            id: widget.id,
+            title: widget.title,
+            cover: widget.cover,
+            type: widget.sourceKey.hashCode,
+          ),
+        );
+      } catch (e) {
+        Log.addLog(LogLevel.error, 'addStats', e.toString());
+      }
+    }
+
+    final (statsDataImpl, todayClick, platformRecord) = stats
+        .getOrCreateTodayPlatformRecord(
+          id: widget.id,
+          type: widget.sourceKey.hashCode,
+          targetType: DailyEventType.click,
+        );
+    final now = DateTime.now();
+    platformRecord.value += 1;
+    platformRecord.date = now;
+    statsDataImpl.lastClickTime = now;
+
+    await stats.addStats(statsDataImpl);
+  }
+
+  Future<void> updateStats() async {
+    final s = stats.getOrCreateTodayEvents(
+      id: widget.id,
+      type: widget.sourceKey.hashCode,
+    );
+    final bangumiStats = stats.getOrCreateBangumiStats(
+      statsDataImpl: s.statsData,
+    );
+    final TodayEventBundle targetStats = bangumiStats ?? s;
+
+    statsDataImpl = s.statsData;
+    todayComment = s.todayComment;
+    commentRecord = targetStats.commentRecord;
+
+    todayClick = s.todayClick;
+    clickRecord = s.clickRecord;
+
+    todayWatch = s.todayWatch;
+    watchRecord = s.watchRecord;
+
+    todayRating = s.todayRating;
+    ratingRecord = targetStats.ratingRecord;
+
+    ratingValue = ratingRecord?.rating ?? 0;
   }
 
   @override
@@ -124,9 +175,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   void initState() {
+    updateStatsClicks();
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
     BangumiManager().addListener(updateBangumiBind);
+    StatsManager().addListener(updateStats);
     tabController = TabController(length: 3, vsync: this);
     tabController.addListener(() {
       setState(() {});
@@ -135,10 +188,43 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }
 
   @override
+  Future<void> onDataLoaded() async {
+    if (history == null) {
+      history = History.fromModel(model: data!);
+      HistoryManager().addHistory(history!);
+    }
+    history!.time = DateTime.now();
+    HistoryManager().addHistoryAsync(history!);
+    watcherController.history = history;
+
+    isBangumi = animeSource.isBangumi;
+    if (history?.bangumiId == null) {
+      debugPrint('isBangumi是: $isBangumi');
+      if (isBangumi) {
+        updateBangumiId();
+      }
+    }
+    isLiked = stats.getGroupLikedStatus(
+      id: data!.id,
+      type: data!.sourceKey.hashCode,
+    );
+    if (history!.bangumiId != null) {
+      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+    }
+    stats.updateStats(
+      id: widget.id,
+      type: widget.sourceKey.hashCode,
+      bangumiId: history!.bangumiId,
+    );
+    watcherController.anime = data!;
+  }
+
+  @override
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
     BangumiManager().removeListener(updateBangumiBind);
+    StatsManager().removeListener(updateStats);
     Future.microtask(() {
       DataSync().onDataChanged();
     });
@@ -157,17 +243,32 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   Future<void> updateBangumiId() async {
     if (Utils.containsIllegalCharacters(anime.title)) {
+      Log.addLog(LogLevel.warning, 'updateBangumiId', '名称不合法: ${anime.title}');
       return;
     }
     var res = await Bangumi.combinedBangumiSearch(anime.title);
-    if (res.isEmpty ||
-        !Utils.isHalfOverlap(anime.title, res.first.nameCn) ||
-        !Utils.isHalfOverlap(anime.title, res.first.name)) {
+    if (res.isEmpty) {
+      debugPrint('res isEmpty');
       return;
-    } else {
-      history?.bangumiId = res.first.id;
-      HistoryManager().addHistoryAsync(history!);
     }
+
+    bool matched =
+        Utils.isHalfOverlap(anime.title, res.first.name) ||
+        Utils.isHalfOverlap(anime.title, res.first.nameCn);
+
+    if (!matched) {
+      debugPrint(Utils.isHalfOverlap(anime.title, res.first.name).toString());
+      debugPrint(Utils.isHalfOverlap(anime.title, res.first.nameCn).toString());
+      Log.addLog(
+        LogLevel.warning,
+        'updateBangumiId',
+        '名称不匹配: ${anime.title} - ${res.first.nameCn} - ${res.first.name}',
+      );
+      return;
+    }
+
+    history?.bangumiId = res.first.id;
+    HistoryManager().addHistoryAsync(history!);
   }
 
   void onScroll() {
@@ -195,25 +296,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         Positioned.fill(
           child: NestedScrollView(
             controller: scrollController,
-            physics: const ClampingScrollPhysics(),
+            physics: const BouncingScrollPhysics(),
             headerSliverBuilder: (context, innerBoxIsScrolled) {
               return [
                 SliverPadding(padding: EdgeInsets.only(top: 28)),
                 Watcher(
-                  type: anime.animeType,
-                  wid: anime.id,
-                  name: anime.title,
-                  episode: anime.episode,
-                  anime: anime,
-                  history: History.fromModel(
-                    model: anime,
-                    lastWatchEpisode: history?.lastWatchEpisode ?? 1,
-                    lastWatchTime: history?.lastWatchTime ?? 0,
-                    lastRoad: history?.lastRoad ?? 0,
-                    allEpisode: anime.episode!.length,
-                    bangumiId: history?.bangumiId,
-                    watchEpisode: history?.watchEpisode,
-                  ),
+                  playerController: playerController,
+                  watcherController: watcherController,
                 ),
                 TabBar(
                   controller: tabController,
@@ -267,23 +356,22 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
-    isBangumi = animeSource.isBangumi;
 
     return animeSource.loadAnimeInfo!(widget.id);
-  }
-
-  @override
-  Future<void> onDataLoaded() async {
-    isLiked = anime.isLiked ?? false;
-    isFavorite = anime.isFavorite ?? false;
   }
 
   Widget animeTab() {
     return TabBarView(
       controller: tabController,
+      physics: const BouncingScrollPhysics(),
       children: [
         CustomScrollView(
-          slivers: [...buildTitle(), buildDescription(), buildInfo()],
+          slivers: [
+            ...buildTitle(),
+            buildComment(),
+            buildDescription(),
+            buildInfo(),
+          ],
         ),
         CustomScrollView(slivers: [buildEpisodes()]),
         CustomScrollView(slivers: [buildRecommend()]),
@@ -332,7 +420,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     yield SliverLazyToBoxAdapter(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 300),
+        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 345 + 16),
         margin: const EdgeInsets.symmetric(vertical: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -343,183 +431,223 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
             return SizedBox(
               width: constraints.maxWidth,
-              height: imageHeight,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              height: imageHeight + 45 + 16,
+              child: Column(
                 children: [
-                  const SizedBox(width: 16),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: () {
-                        (history?.bangumiId == null || bangumiItem == null)
-                            ? BangumiWidget.showImagePreview(
-                                context,
-                                anime.cover,
-                                anime.title,
-                                "cover${widget.heroID}",
-                              )
-                            : BangumiWidget.showImagePreview(
-                                context,
-                                bangumiItem!.images['large']!,
-                                bangumiItem!.nameCn,
-                                "cover${widget.heroID}",
-                              );
-                      },
-                      child: Hero(
-                        tag: "cover${widget.heroID}",
-                        child: Container(
-                          width: imageWidth,
-                          height: imageHeight,
-                          decoration: BoxDecoration(
-                            color: context.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: context.colorScheme.outlineVariant,
-                                blurRadius: 1,
-                                offset: const Offset(0, 1),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(width: 16),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () {
+                            (history?.bangumiId == null || bangumiItem == null)
+                                ? BangumiWidget.showImagePreview(
+                                    context,
+                                    anime.cover,
+                                    anime.title,
+                                    "cover${widget.heroID}",
+                                  )
+                                : BangumiWidget.showImagePreview(
+                                    context,
+                                    bangumiItem!.images['large']!,
+                                    bangumiItem!.nameCn,
+                                    "cover${widget.heroID}",
+                                  );
+                          },
+                          child: Hero(
+                            tag: "cover${widget.heroID}",
+                            child: Container(
+                              width: imageWidth,
+                              height: imageHeight,
+                              decoration: BoxDecoration(
+                                color: context.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: context.colorScheme.outlineVariant,
+                                    blurRadius: 1,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: AnimatedImage(
-                            image: CachedImageProvider(
-                              widget.cover ?? anime.cover,
-                              sourceKey: anime.sourceKey,
-                              aid: anime.id,
+                              clipBehavior: Clip.antiAlias,
+                              child: AnimatedImage(
+                                image: CachedImageProvider(
+                                  widget.cover ?? anime.cover,
+                                  sourceKey: anime.sourceKey,
+                                  aid: anime.id,
+                                ),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
                             ),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
                           ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: SizedBox(
+                          height: imageHeight,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  var context =
+                                      App.mainNavigatorKey!.currentContext!;
+                                  context.to(
+                                    () => AggregatedSearchPage(
+                                      keyword: anime.title,
+                                    ),
+                                  );
+                                },
+                                onLongPress: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: anime.title),
+                                  );
+                                  App.rootContext.showMessage(
+                                    message: '已复制到剪贴板.',
+                                  );
+                                },
+                                child: Text(
+                                  anime.title,
+                                  style: ts.s18,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (anime.subTitle != null)
+                                SelectableText(
+                                  anime.subTitle!,
+                                  style: ts.s14,
+                                  maxLines: 2,
+                                ).paddingVertical(4),
+                              Text(
+                                AnimeSource.find(anime.sourceKey)?.name ?? '',
+                                style: ts.s12,
+                              ),
+                              const Spacer(),
+                              if (bangumiItem != null)
+                                Align(
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '${bangumiItem?.collection?['doing']} 在看',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                      ),
+                                      Text(' / '),
+                                      Text(
+                                        '${bangumiItem?.collection?['collect']} 看过',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.error,
+                                        ),
+                                      ),
+                                      Text(' / '),
+                                      Text(
+                                        '${bangumiItem?.collection?['dropped']} 抛弃',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (bangumiItem != null)
+                                Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${bangumiItem?.score}',
+                                        style: ts.s24,
+                                      ),
+                                      SizedBox(width: 5),
+                                      Container(
+                                        padding: EdgeInsets.all(
+                                          2.0,
+                                        ), // 可选，设置内边距
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ), // 设置圆角半径
+                                          border: Border.all(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .secondaryContainer
+                                                .toOpacity(0.72),
+                                            width: 2.0, // 设置边框宽度
+                                          ),
+                                        ),
+                                        child: Text(
+                                          Utils.getRatingLabel(
+                                            bangumiItem!.score,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start, // 右对齐
+                                        children: [
+                                          RatingBarIndicator(
+                                            itemCount: 5,
+                                            rating:
+                                                bangumiItem!.score.toDouble() /
+                                                2,
+                                            itemBuilder: (context, index) =>
+                                                const Icon(Icons.star_rounded),
+                                            itemSize: 20.0,
+                                          ),
+                                          Text(
+                                            '@t reviews | #@r'.tlParams({
+                                              'r': bangumiItem!.rank,
+                                              't': bangumiItem!.total,
+                                            }),
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              SizedBox(
+                                height: 45,
+                                child: _buildActionButtons(
+                                  context,
+                                  anime,
+                                  true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            var context = App.mainNavigatorKey!.currentContext!;
-                            context.to(
-                              () => AggregatedSearchPage(keyword: anime.title),
-                            );
-                          },
-                          onLongPress: () {
-                            Clipboard.setData(ClipboardData(text: anime.title));
-                            App.rootContext.showMessage(message: '已复制到剪贴板.');
-                          },
-                          child: Text(
-                            anime.title,
-                            style: ts.s18,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (anime.subTitle != null)
-                          SelectableText(
-                            anime.subTitle!,
-                            style: ts.s14,
-                            maxLines: 2,
-                          ).paddingVertical(4),
-                        Text(
-                          AnimeSource.find(anime.sourceKey)?.name ?? '',
-                          style: ts.s12,
-                        ),
-                        const Spacer(),
-                        if (bangumiItem != null)
-                          Align(
-                            child: Row(
-                              children: [
-                                Text(
-                                  '${bangumiItem?.collection?['doing']} 在看',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
-                                ),
-                                Text(' / '),
-                                Text(
-                                  '${bangumiItem?.collection?['collect']} 看过',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                ),
-                                Text(' / '),
-                                Text(
-                                  '${bangumiItem?.collection?['dropped']} 抛弃',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        if (bangumiItem != null)
-                          Align(
-                            alignment: Alignment.topLeft,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text('${bangumiItem?.score}', style: ts.s24),
-                                SizedBox(width: 5),
-                                Container(
-                                  padding: EdgeInsets.all(2.0), // 可选，设置内边距
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(
-                                      8,
-                                    ), // 设置圆角半径
-                                    border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .secondaryContainer
-                                          .toOpacity(0.72),
-                                      width: 2.0, // 设置边框宽度
-                                    ),
-                                  ),
-                                  child: Text(
-                                    Utils.getRatingLabel(bangumiItem!.score),
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start, // 右对齐
-                                  children: [
-                                    RatingBarIndicator(
-                                      itemCount: 5,
-                                      rating: bangumiItem!.score.toDouble() / 2,
-                                      itemBuilder: (context, index) =>
-                                          const Icon(Icons.star_rounded),
-                                      itemSize: 20.0,
-                                    ),
-                                    Text(
-                                      '@t reviews | #@r'.tlParams({
-                                        'r': bangumiItem!.rank,
-                                        't': bangumiItem!.total,
-                                      }),
-                                      style: TextStyle(fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        SizedBox(
-                          height: 45,
-                          child: _buildActionButtons(context, anime),
-                        ),
-                      ],
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: SizedBox(
+                      height: 45,
+                      child: _buildActionButtons(context, anime, false),
                     ),
                   ),
                 ],
@@ -531,51 +659,133 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, AnimeDetails anime) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    AnimeDetails anime,
+    bool isZero,
+  ) {
     return ListView(
       scrollDirection: Axis.horizontal,
       children: [
-        _ActionButton(
-          icon: const Icon(Icons.star_border),
-          activeIcon: const Icon(Icons.star),
-          isActive: isFavorite || isAddToLocalFav,
-          text: 'Favorite'.tl,
-          onPressed: openFavPanel,
-          onLongPressed: quickFavorite,
-          iconColor: context.useTextColor(Colors.purple),
-        ),
-        _ActionButton(
-          icon: const Icon(Icons.share),
-          text: 'Share'.tl,
-          onPressed: share,
-          iconColor: context.useTextColor(Colors.blue),
-        ),
-        _ActionButton(
-          icon: ClipOval(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: SvgPicture.asset(
-                'assets/img/bangumi_icon.svg',
-                fit: BoxFit.fill, // 强制填充
+        if (isZero)
+          _ActionButton(
+            icon: const Icon(Icons.star_border_rounded),
+            activeIcon: const Icon(Icons.star_rounded),
+            isActive: isFavorite || isAddToLocalFav,
+            text: 'Favorite'.tl,
+            onPressed: openFavPanel,
+            onLongPressed: quickFavorite,
+            iconColor: context.useTextColor(Colors.purple),
+          ),
+        if (isZero)
+          _ActionButton(
+            icon: const Icon(Icons.share),
+            text: 'Share'.tl,
+            onPressed: share,
+            iconColor: Theme.of(context).colorScheme.inversePrimary,
+          ),
+        if (!isZero)
+          _ActionButton(
+            icon: const Icon(Icons.favorite_border),
+            activeIcon: const Icon(Icons.favorite),
+            isActive: isLiked,
+            text: 'Liked'.tl,
+            onPressed: () {
+              liked();
+              setState(() {
+                isLiked = !isLiked;
+              });
+              if (isLiked) {
+                App.rootContext.showMessage(message: '点赞成功');
+              } else {
+                App.rootContext.showMessage(message: '取消点赞');
+              }
+            },
+            iconColor: Colors.redAccent,
+          ),
+        if (!isZero)
+          _ActionButton(
+            icon: (ratingValue != 0)
+                ? Row(
+                    children: [
+                      Text(Utils.getRatingLabel(ratingValue as int)),
+                      SizedBox(width: 4),
+                      RatingBarIndicator(
+                        itemCount: 5,
+                        rating: ratingValue!.toDouble() / 2,
+                        itemBuilder: (context, index) =>
+                            const Icon(Icons.star_rounded),
+                        itemSize: 20.0,
+                      ),
+                    ],
+                  )
+                : const Icon(Icons.comment),
+            text: (ratingValue == 0) ? 'Rating'.tl : '',
+            onPressed: () async {
+              await showRatingDialog(statsDataImpl!).then((_) {
+                setState(() {});
+              });
+            },
+            iconColor: Theme.of(context).colorScheme.primary,
+          ),
+        if (!isZero)
+          _ActionButton(
+            icon: ClipOval(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: SvgPicture.asset(
+                  'assets/img/bangumi_icon.svg',
+                  fit: BoxFit.fill,
+                ),
               ),
             ),
+            text: 'Bangumi'.tl,
+            onPressed: () async {
+              bangumiBottomInfo(context);
+            },
+            // iconColor: context.useTextColor(Colors.blue),
           ),
-          text: 'Bangumi'.tl,
-          onPressed: () async {
-            bangumiBottomInfo(context);
-          },
-          // iconColor: context.useTextColor(Colors.blue),
-        ),
-        if (anime.url != null)
+        if (anime.url != null && !isZero)
           _ActionButton(
             icon: const Icon(Icons.open_in_browser),
             text: 'Open in Browser'.tl,
             onPressed: () => launchUrlString(anime.url!),
-            iconColor: context.useTextColor(Colors.blueGrey),
+            iconColor: Theme.of(context).colorScheme.secondary,
           ),
       ],
     ).fixHeight(48);
+  }
+
+  Widget buildComment() {
+    if (commentRecord == null || commentRecord!.comment!.isEmpty) {
+      return const SliverPadding(padding: EdgeInsets.zero);
+    }
+    return SliverToBoxAdapter(
+      child: Column(
+        children: [
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              width: 120,
+              height: 2,
+              decoration: BoxDecoration(
+                color: Colors.grey.toOpacity(0.4),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListTile(title: Text("我的评价".tl)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SelectableText(
+              commentRecord!.comment!,
+            ).fixWidth(double.infinity),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget buildDescription() {
@@ -600,7 +810,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           ListTile(title: Text("Description".tl)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SelectableText(anime.description!).fixWidth(double.infinity),
+            child: SelectableText(anime.description!),
           ),
           const SizedBox(height: 16),
           Center(

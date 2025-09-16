@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-import '../../../foundation/bangumi/comment/comment_item.dart';
-
 class EpisodeCommentsCard extends StatelessWidget {
-  EpisodeCommentsCard(
-      {super.key, required this.commentItem, required this.replyIndex}) {
+  EpisodeCommentsCard({
+    super.key,
+    required this.commentItem,
+    required this.replyIndex,
+  }) {
     isBone = false;
   }
 
@@ -63,8 +65,9 @@ class EpisodeCommentsCard extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage:
-                        NetworkImage(commentItem!.comment.user.avatar.large),
+                    backgroundImage: NetworkImage(
+                      commentItem!.comment.user.avatar.large,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Column(
@@ -74,13 +77,12 @@ class EpisodeCommentsCard extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                              Utils.dateFormat(commentItem!.comment.createdAt)),
-                          const SizedBox(
-                            width: 4,
+                            Utils.dateFormat(commentItem!.comment.createdAt),
                           ),
-                          Text('#${replyIndex + 1}')
+                          const SizedBox(width: 4),
+                          Text('#${replyIndex + 1}'),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ],
@@ -90,10 +92,7 @@ class EpisodeCommentsCard extends StatelessWidget {
 
               /// 子评论（楼中楼）
               if (commentItem!.replies.isNotEmpty)
-                _ChildRepliesList(
-                  replies: commentItem!.replies,
-                  id: id,
-                ),
+                _ChildRepliesList(replies: commentItem!.replies, id: id),
             ],
             if (commentItem!.comment.state == 6)
               Card(
@@ -109,7 +108,8 @@ class EpisodeCommentsCard extends StatelessWidget {
                       CircleAvatar(
                         radius: 20,
                         backgroundImage: NetworkImage(
-                            commentItem!.comment.user.avatar.large),
+                          commentItem!.comment.user.avatar.large,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -134,7 +134,7 @@ class EpisodeCommentsCard extends StatelessWidget {
                     ],
                   ),
                 ),
-              )
+              ),
           ],
         ),
       ),
@@ -143,10 +143,7 @@ class EpisodeCommentsCard extends StatelessWidget {
 }
 
 class _ChildRepliesList extends StatefulWidget {
-  const _ChildRepliesList({
-    required this.replies,
-    required this.id,
-  });
+  const _ChildRepliesList({required this.replies, required this.id});
 
   final List<EpisodeComment> replies;
   final int id;
@@ -162,8 +159,9 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
   Widget build(BuildContext context) {
     final int total = widget.replies.length;
     final int maxDisplay = 3;
-    final int displayCount =
-        _showAll ? total : (total > maxDisplay ? maxDisplay : total);
+    final int displayCount = _showAll
+        ? total
+        : (total > maxDisplay ? maxDisplay : total);
 
     if (total < 1) return const SizedBox();
 
@@ -177,9 +175,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Divider(
-                  color: Theme.of(context).dividerColor.withAlpha(60),
-                ),
+                Divider(color: Theme.of(context).dividerColor.withAlpha(60)),
                 Row(
                   children: [
                     CircleAvatar(
@@ -197,14 +193,17 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                             Text('#${index + 1}'),
                             if (reply.creatorID == widget.id)
                               Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 8),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .secondaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondaryContainer,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Text('层主'),

@@ -7,10 +7,10 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/cookie_jar.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
-
-import 'io.dart';
 
 Future<File> exportAppData() async {
   var time = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -25,15 +25,18 @@ Future<File> exportAppData() async {
     var historyFile = FilePath.join(dataPath, "history.db");
     var localFavoriteFile = FilePath.join(dataPath, "local_favorite.db");
     var bangumiFile = FilePath.join(dataPath, "bangumi.db");
+    var statsFile = FilePath.join(dataPath, "stats.db");
     var appdata = FilePath.join(dataPath, "appdata.json");
     var cookies = FilePath.join(dataPath, "cookie.db");
     zipFile.addFile("history.db", historyFile);
     zipFile.addFile("local_favorite.db", localFavoriteFile);
     zipFile.addFile("bangumi.db", bangumiFile);
+    zipFile.addFile("stats.db", statsFile);
     zipFile.addFile("appdata.json", appdata);
     zipFile.addFile("cookie.db", cookies);
-    for (var file
-        in Directory(FilePath.join(dataPath, "anime_source")).listSync()) {
+    for (var file in Directory(
+      FilePath.join(dataPath, "anime_source"),
+    ).listSync()) {
       if (file is File) {
         zipFile.addFile("anime_source/${file.name}", file.path);
       }
@@ -57,6 +60,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     var historyFile = cacheDir.joinFile("history.db");
     var localFavoriteFile = cacheDir.joinFile("local_favorite.db");
     var bangumiFile = cacheDir.joinFile("bangumi.db");
+    var statsFile = cacheDir.joinFile("stats.db");
     var appdataFile = cacheDir.joinFile("appdata.json");
     var cookieFile = cacheDir.joinFile("cookie.db");
     if (checkVersion && appdataFile.existsSync()) {
@@ -74,10 +78,12 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     }
     if (await localFavoriteFile.exists()) {
       LocalFavoritesManager().close();
-      File(FilePath.join(App.dataPath, "local_favorite.db"))
-          .deleteIfExistsSync();
-      localFavoriteFile
-          .renameSync(FilePath.join(App.dataPath, "local_favorite.db"));
+      File(
+        FilePath.join(App.dataPath, "local_favorite.db"),
+      ).deleteIfExistsSync();
+      localFavoriteFile.renameSync(
+        FilePath.join(App.dataPath, "local_favorite.db"),
+      );
       LocalFavoritesManager().init();
     }
     if (await bangumiFile.exists()) {
@@ -85,6 +91,12 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
       bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
       BangumiManager().init();
+    }
+    if (await statsFile.exists()) {
+      StatsManager().close();
+      File(FilePath.join(App.dataPath, "stats.db")).deleteIfExistsSync();
+      statsFile.renameSync(FilePath.join(App.dataPath, "stats.db"));
+      StatsManager().init();
     }
     if (await appdataFile.exists()) {
       var content = await appdataFile.readAsString();
@@ -95,19 +107,23 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       SingleInstanceCookieJar.instance?.dispose();
       File(FilePath.join(App.dataPath, "cookie.db")).deleteIfExistsSync();
       cookieFile.renameSync(FilePath.join(App.dataPath, "cookie.db"));
-      SingleInstanceCookieJar.instance =
-          SingleInstanceCookieJar(FilePath.join(App.dataPath, "cookie.db"))
-            ..init();
+      SingleInstanceCookieJar.instance = SingleInstanceCookieJar(
+        FilePath.join(App.dataPath, "cookie.db"),
+      )..init();
     }
     var animeSourceDir = FilePath.join(cacheDirPath, "anime_source");
     if (Directory(animeSourceDir).existsSync()) {
-      Directory(FilePath.join(App.dataPath, "anime_source"))
-          .deleteIfExistsSync(recursive: true);
+      Directory(
+        FilePath.join(App.dataPath, "anime_source"),
+      ).deleteIfExistsSync(recursive: true);
       Directory(FilePath.join(App.dataPath, "anime_source")).createSync();
       for (var file in Directory(animeSourceDir).listSync()) {
         if (file is File) {
-          var targetFile =
-              FilePath.join(App.dataPath, "anime_source", file.name);
+          var targetFile = FilePath.join(
+            App.dataPath,
+            "anime_source",
+            file.name,
+          );
           await file.copy(targetFile);
         }
       }

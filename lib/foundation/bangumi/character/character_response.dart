@@ -1,4 +1,4 @@
-import 'character_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_item.dart';
 
 class CharacterResponse {
   final List<CharacterItem> characterList;

@@ -39,7 +39,6 @@ import java.util.TimerTask
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 
 class MainActivity : AudioServiceFragmentActivity() {
-    var volumeListen = VolumeListen()
     var listening = false
 
     private val CHANNEL = "kostori/network_speed"
@@ -204,24 +203,6 @@ class MainActivity : AudioServiceFragmentActivity() {
             }
         }
 
-        val channel = EventChannel(flutterEngine.dartExecutor.binaryMessenger, "kostori/volume")
-        channel.setStreamHandler(
-            object : EventChannel.StreamHandler {
-                override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
-                    listening = true
-                    volumeListen.onUp = {
-                        events.success(1)
-                    }
-                    volumeListen.onDown = {
-                        events.success(2)
-                    }
-                }
-
-                override fun onCancel(arguments: Any?) {
-                    listening = false
-                }
-            })
-
         val storageChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "kostori/storage")
         storageChannel.setMethodCallHandler { _, res ->
             requestStoragePermission { result ->
@@ -257,23 +238,6 @@ class MainActivity : AudioServiceFragmentActivity() {
         } else {
             "No Proxy"
         }
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (listening) {
-            when (keyCode) {
-                KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                    volumeListen.down()
-                    return true
-                }
-
-                KeyEvent.KEYCODE_VOLUME_UP -> {
-                    volumeListen.up()
-                    return true
-                }
-            }
-        }
-        return super.onKeyDown(keyCode, event)
     }
 
     /// Ensure that the directory is accessible by dart:io
@@ -457,16 +421,3 @@ class MainActivity : AudioServiceFragmentActivity() {
         }
     }
 }
-
-class VolumeListen {
-    var onUp = fun() {}
-    var onDown = fun() {}
-    fun up() {
-        onUp()
-    }
-
-    fun down() {
-        onDown()
-    }
-}
-

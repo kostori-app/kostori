@@ -94,6 +94,22 @@ class AnimeTile extends StatelessWidget {
       );
     }
 
+    final stats = StatsManager();
+    if (!stats.isExist(anime.id, AnimeType(anime.sourceKey.hashCode))) {
+      try {
+        stats.addStats(
+          stats.createStatsData(
+            id: anime.id,
+            title: anime.title,
+            cover: anime.cover,
+            type: anime.sourceKey.hashCode,
+          ),
+        );
+      } catch (e) {
+        Log.addLog(LogLevel.error, 'addStats', e.toString());
+      }
+    }
+
     LocalFavoritesManager().updateRecentlyWatched(
       anime.id,
       AnimeType(anime.sourceKey.hashCode),
@@ -212,7 +228,7 @@ class AnimeTile extends StatelessWidget {
                       width: 24,
                       color: Colors.redAccent,
                       child: const Icon(
-                        Icons.star,
+                        Icons.star_rounded,
                         size: 16,
                         color: Colors.white,
                       ),

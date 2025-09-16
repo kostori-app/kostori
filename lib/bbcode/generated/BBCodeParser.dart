@@ -1,8 +1,7 @@
 // ignore_for_file: file_names, constant_identifier_names, prefer_function_declarations_over_variables, non_constant_identifier_names, use_super_parameters
 
 import 'package:antlr4/antlr4.dart';
-
-import 'BBCodeListener.dart';
+import 'package:kostori/bbcode/generated/BBCodeListener.dart';
 
 const int RULE_document = 0,
     RULE_element = 1,
@@ -12,12 +11,14 @@ const int RULE_document = 0,
     RULE_sticker = 5;
 
 class BBCodeParser extends Parser {
-  static final checkVersion =
-      () => RuntimeMetaData.checkVersion('4.13.2', RuntimeMetaData.VERSION);
+  static final checkVersion = () =>
+      RuntimeMetaData.checkVersion('4.13.2', RuntimeMetaData.VERSION);
   static const int TOKEN_EOF = IntStream.EOF;
 
   static final List<DFA> _decisionToDFA = List.generate(
-      _ATN.numberOfDecisions, (i) => DFA(_ATN.getDecisionState(i), i));
+    _ATN.numberOfDecisions,
+    (i) => DFA(_ATN.getDecisionState(i), i),
+  );
   static final PredictionContextCache _sharedContextCache =
       PredictionContextCache();
   static const int TOKEN_T__0 = 1,
@@ -56,7 +57,7 @@ class BBCodeParser extends Parser {
     'tag',
     'plain',
     'bgm',
-    'sticker'
+    'sticker',
   ];
 
   static final List<String?> _LITERAL_NAMES = [
@@ -87,7 +88,7 @@ class BBCodeParser extends Parser {
     "'(=///=)'",
     "'(=.,=)'",
     "'(:P)'",
-    "'(LOL)'"
+    "'(LOL)'",
   ];
   static final List<String?> _SYMBOLIC_NAMES = [
     null,
@@ -118,10 +119,12 @@ class BBCodeParser extends Parser {
     null,
     null,
     null,
-    "STRING"
+    "STRING",
   ];
-  static final Vocabulary VOCABULARY =
-      VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+  static final Vocabulary VOCABULARY = VocabularyImpl(
+    _LITERAL_NAMES,
+    _SYMBOLIC_NAMES,
+  );
 
   @override
   Vocabulary get vocabulary {
@@ -140,8 +143,12 @@ class BBCodeParser extends Parser {
   }
 
   BBCodeParser(TokenStream input) : super(input) {
-    interpreter =
-        ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
+    interpreter = ParserATNSimulator(
+      this,
+      _ATN,
+      _decisionToDFA,
+      _sharedContextCache,
+    );
   }
 
   DocumentContext document() {
@@ -908,7 +915,7 @@ class BBCodeParser extends Parser {
     30,
     36,
     46,
-    50
+    50,
   ];
 
   static final ATN _ATN = ATNDeserializer().deserialize(_serializedATN);
@@ -916,12 +923,17 @@ class BBCodeParser extends Parser {
 
 class DocumentContext extends ParserRuleContext {
   TerminalNode? EOF() => getToken(BBCodeParser.TOKEN_EOF, 0);
+
   List<ElementContext> elements() => getRuleContexts<ElementContext>();
+
   ElementContext? element(int i) => getRuleContext<ElementContext>(i);
+
   DocumentContext([ParserRuleContext? parent, int? invokingState])
-      : super(parent, invokingState);
+    : super(parent, invokingState);
+
   @override
   int get ruleIndex => RULE_document;
+
   @override
   void enterRule(ParseTreeListener listener) {
     if (listener is BBCodeListener) listener.enterDocument(this);
@@ -935,13 +947,19 @@ class DocumentContext extends ParserRuleContext {
 
 class ElementContext extends ParserRuleContext {
   TagContext? tag() => getRuleContext<TagContext>(0);
+
   PlainContext? plain() => getRuleContext<PlainContext>(0);
+
   BgmContext? bgm() => getRuleContext<BgmContext>(0);
+
   StickerContext? sticker() => getRuleContext<StickerContext>(0);
+
   ElementContext([ParserRuleContext? parent, int? invokingState])
-      : super(parent, invokingState);
+    : super(parent, invokingState);
+
   @override
   int get ruleIndex => RULE_element;
+
   @override
   void enterRule(ParseTreeListener listener) {
     if (listener is BBCodeListener) listener.enterElement(this);
@@ -957,14 +975,21 @@ class TagContext extends ParserRuleContext {
   Token? tagName;
   Token? attr;
   ElementContext? content;
+
   List<TerminalNode> STRINGs() => getTokens(BBCodeParser.TOKEN_STRING);
+
   TerminalNode? STRING(int i) => getToken(BBCodeParser.TOKEN_STRING, i);
+
   List<ElementContext> elements() => getRuleContexts<ElementContext>();
+
   ElementContext? element(int i) => getRuleContext<ElementContext>(i);
+
   TagContext([ParserRuleContext? parent, int? invokingState])
-      : super(parent, invokingState);
+    : super(parent, invokingState);
+
   @override
   int get ruleIndex => RULE_tag;
+
   @override
   void enterRule(ParseTreeListener listener) {
     if (listener is BBCodeListener) listener.enterTag(this);
@@ -978,11 +1003,15 @@ class TagContext extends ParserRuleContext {
 
 class PlainContext extends ParserRuleContext {
   List<TerminalNode> STRINGs() => getTokens(BBCodeParser.TOKEN_STRING);
+
   TerminalNode? STRING(int i) => getToken(BBCodeParser.TOKEN_STRING, i);
+
   PlainContext([ParserRuleContext? parent, int? invokingState])
-      : super(parent, invokingState);
+    : super(parent, invokingState);
+
   @override
   int get ruleIndex => RULE_plain;
+
   @override
   void enterRule(ParseTreeListener listener) {
     if (listener is BBCodeListener) listener.enterPlain(this);
@@ -996,11 +1025,15 @@ class PlainContext extends ParserRuleContext {
 
 class BgmContext extends ParserRuleContext {
   Token? id;
+
   TerminalNode? STRING() => getToken(BBCodeParser.TOKEN_STRING, 0);
+
   BgmContext([ParserRuleContext? parent, int? invokingState])
-      : super(parent, invokingState);
+    : super(parent, invokingState);
+
   @override
   int get ruleIndex => RULE_bgm;
+
   @override
   void enterRule(ParseTreeListener listener) {
     if (listener is BBCodeListener) listener.enterBgm(this);
@@ -1014,9 +1047,11 @@ class BgmContext extends ParserRuleContext {
 
 class StickerContext extends ParserRuleContext {
   StickerContext([ParserRuleContext? parent, int? invokingState])
-      : super(parent, invokingState);
+    : super(parent, invokingState);
+
   @override
   int get ruleIndex => RULE_sticker;
+
   @override
   void enterRule(ParseTreeListener listener) {
     if (listener is BBCodeListener) listener.enterSticker(this);

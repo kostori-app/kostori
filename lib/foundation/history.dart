@@ -8,10 +8,9 @@ import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sqlite3/sqlite3.dart';
-
-import 'favorites.dart';
 
 typedef HistoryType = AnimeType;
 
@@ -43,13 +42,13 @@ class History implements Anime {
   @override
   String cover;
 
-  int lastWatchEpisode; // 上次观看番剧集数
+  int? lastWatchEpisode; // 上次观看番剧集数
 
-  int lastWatchTime; // 上次观看时间
+  int? lastWatchTime; // 上次观看时间
 
-  int lastRoad; //上次播放列表
+  int? lastRoad; //上次播放列表
 
-  int allEpisode; //全部集数
+  int? allEpisode; //全部集数
 
   int? bangumiId;
 
@@ -63,11 +62,11 @@ class History implements Anime {
 
   History.fromModel({
     required HistoryMixin model,
-    required this.lastWatchEpisode,
-    required this.lastWatchTime,
-    required this.lastRoad,
-    required this.allEpisode,
-    required this.bangumiId,
+    this.lastWatchEpisode = 0,
+    this.lastWatchTime = 0,
+    this.lastRoad = 0,
+    this.allEpisode = 0,
+    this.bangumiId,
     Set<int>? watchEpisode,
     DateTime? time,
   }) : type = model.historyType,
@@ -149,13 +148,26 @@ class History implements Anime {
 
   @override
   String get description {
-    var res = "";
-    if (lastWatchEpisode >= 1) {
-      res += "Episode @ep".tlParams({"ep": lastWatchEpisode});
+    String formatMilliseconds(int milliseconds) {
+      final duration = Duration(milliseconds: milliseconds);
+      final minutes = duration.inMinutes;
+      final seconds = duration.inSeconds % 60;
+
+      return '$minutes:${seconds.toString().padLeft(2, '0')}';
     }
-    if (lastWatchTime >= 1) {
-      res += " ";
-      res += formatLastWatchTime(lastWatchTime);
+
+    var res = "";
+    res += '${type.animeSource?.name ?? "Unknown"} | ';
+    if ((lastWatchEpisode ?? 0) >= 1) {
+      res += "Currently seen @ep".tlParams({"ep": lastWatchEpisode ?? 0});
+    }
+    if ((lastWatchTime ?? 0) >= 1) {
+      if ((lastWatchEpisode ?? 0) >= 1) {
+        res += " | ";
+      }
+      res += "lastWatchTime @time".tlParams({
+        "time": formatMilliseconds(lastWatchTime ?? 0),
+      });
     }
     return res;
   }
@@ -204,49 +216,146 @@ class History implements Anime {
   }
 }
 
+enum HistoryTimeGroup {
+  today,
+  yesterday,
+  last3Days,
+  last7Days,
+  last30Days,
+  last3Months,
+  last6Months,
+  thisYear,
+  older,
+}
+
+class HistoryGroup {
+  final HistoryTimeGroup group;
+  final List<History> items;
+  final bool isExpanded;
+
+  HistoryGroup({
+    required this.group,
+    required this.items,
+    required this.isExpanded,
+  });
+}
+
+extension HistoryTimeGroupExt on HistoryTimeGroup {
+  String get title {
+    switch (this) {
+      case HistoryTimeGroup.today:
+        return "Today".tl;
+      case HistoryTimeGroup.yesterday:
+        return "Yesterday".tl;
+      case HistoryTimeGroup.last3Days:
+        return "Last 3 Days".tl;
+      case HistoryTimeGroup.last7Days:
+        return "Last 7 Days".tl;
+      case HistoryTimeGroup.last30Days:
+        return "Last 30 Days".tl;
+      case HistoryTimeGroup.last3Months:
+        return "Last 3 Months".tl;
+      case HistoryTimeGroup.last6Months:
+        return "Last 6 Months".tl;
+      case HistoryTimeGroup.thisYear:
+        return "This Year".tl;
+      case HistoryTimeGroup.older:
+        return "Older".tl;
+    }
+  }
+
+  int get order {
+    switch (this) {
+      case HistoryTimeGroup.today:
+        return 0;
+      case HistoryTimeGroup.yesterday:
+        return 1;
+      case HistoryTimeGroup.last3Days:
+        return 2;
+      case HistoryTimeGroup.last7Days:
+        return 3;
+      case HistoryTimeGroup.last30Days:
+        return 4;
+      case HistoryTimeGroup.last3Months:
+        return 5;
+      case HistoryTimeGroup.last6Months:
+        return 6;
+      case HistoryTimeGroup.thisYear:
+        return 7;
+      case HistoryTimeGroup.older:
+        return 8;
+    }
+  }
+}
+
+HistoryTimeGroup groupByTime(DateTime time) {
+  final now = DateTime.now();
+  final itemDay = DateTime(time.year, time.month, time.day);
+  final today = DateTime(now.year, now.month, now.day);
+
+  final differenceInDays = today.difference(itemDay).inDays;
+
+  if (differenceInDays == 0) {
+    return HistoryTimeGroup.today;
+  } else if (differenceInDays == 1) {
+    return HistoryTimeGroup.yesterday;
+  } else if (differenceInDays <= 3) {
+    return HistoryTimeGroup.last3Days;
+  } else if (differenceInDays <= 7) {
+    return HistoryTimeGroup.last7Days;
+  } else if (differenceInDays <= 30) {
+    return HistoryTimeGroup.last30Days;
+  } else if (differenceInDays <= 90) {
+    return HistoryTimeGroup.last3Months;
+  } else if (differenceInDays <= 180) {
+    return HistoryTimeGroup.last6Months;
+  } else if (time.year == now.year) {
+    return HistoryTimeGroup.thisYear;
+  } else {
+    return HistoryTimeGroup.older;
+  }
+}
+
 class Progress {
   String historyId;
   int episode;
   int road;
   int progressInMilli;
   HistoryType type;
+  bool isCompleted;
+  DateTime? startTime;
+  DateTime? endTime;
 
   Progress.fromModel({
     required HistoryMixin model,
     required this.episode,
     required this.road,
     required this.progressInMilli,
+    this.isCompleted = false,
+    this.startTime,
+    this.endTime,
   }) : type = model.historyType,
        historyId = model.id;
 
-  Map<String, dynamic> toMap() {
-    return {
-      'type': type,
-      'historyId': historyId,
-      'episode': episode,
-      'road': road,
-      'progressInMilli': progressInMilli,
-    };
-  }
-
-  Progress.fromMap(Map<String, dynamic> map)
-    : type = HistoryType(map['type']),
-      historyId = map['historyId'],
-      episode = map['episode'],
-      road = map['road'],
-      progressInMilli = map['progressInMilli'];
+  Progress.fromRow(Map<String, Object?> row)
+    : type = HistoryType(row['type'] as int),
+      historyId = row['historyId'] as String,
+      episode = row['episode'] as int,
+      road = row['road'] as int,
+      progressInMilli = row['progressInMilli'] as int,
+      isCompleted = (row['isCompleted'] ?? 0) == 1,
+      startTime = row['startTime'] != null
+          ? DateTime.tryParse(row['startTime'] as String)
+          : null,
+      endTime = row['endTime'] != null
+          ? DateTime.tryParse(row['endTime'] as String)
+          : null;
 
   @override
   String toString() {
-    return 'Progress{type: $type, historyId: $historyId, episode: $episode, road: $road, progressInMilli: $progressInMilli}';
+    return 'Progress{type: $type, historyId: $historyId, episode: $episode, road: $road, progressInMilli: $progressInMilli, '
+        'isCompleted: $isCompleted, startTime: $startTime, endTime: $endTime}';
   }
-
-  Progress.fromRow(Row row)
-    : type = HistoryType(row['type']),
-      historyId = row['historyId'],
-      episode = row['episode'],
-      road = row['road'],
-      progressInMilli = row['progressInMilli'];
 }
 
 class HistoryManager with ChangeNotifier {
@@ -294,15 +403,18 @@ class HistoryManager with ChangeNotifier {
       """);
 
     _db.execute('''
-  CREATE TABLE IF NOT EXISTS progress (
-    type int,
-    historyId TEXT,
-    episode INT,
-    road INT,
-    progressInMilli INT,
-    PRIMARY KEY (type, episode, road, historyId),
-    FOREIGN KEY (historyId) REFERENCES History(id)
-  );
+        create table if not exists progress (
+          type int,
+          historyId text,
+          episode int,
+          road int,
+          progressInMilli int,
+          isCompleted int,
+          startTime text,
+          endTime text,
+          PRIMARY KEY (type, episode, road, historyId),
+          FOREIGN KEY (historyId) REFERENCES History(id)
+        );
 ''');
 
     var columns = _db.select("""
@@ -319,6 +431,31 @@ class HistoryManager with ChangeNotifier {
           alter table history
           add column viewMore text;
         """);
+    }
+
+    var progressColumns = _db.select("""
+  pragma table_info("progress");
+""");
+
+    if (!progressColumns.any((element) => element["name"] == "isCompleted")) {
+      _db.execute("""
+    alter table progress
+    add column isCompleted int default 0;
+  """);
+    }
+
+    if (!progressColumns.any((element) => element["name"] == "startTime")) {
+      _db.execute("""
+    alter table progress
+    add column startTime text;
+  """);
+    }
+
+    if (!progressColumns.any((element) => element["name"] == "endTime")) {
+      _db.execute("""
+    alter table progress
+    add column endTime text;
+  """);
     }
 
     notifyListeners();
@@ -408,49 +545,6 @@ class HistoryManager with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addProgress(Progress newProgress, String historyId) async {
-    _db.execute(
-      '''
-    INSERT OR REPLACE INTO progress (
-      type,
-      historyId,
-      episode,
-      road,
-      progressInMilli
-    ) VALUES (?, ?, ?, ?, ?);
-    ''',
-      [
-        newProgress.type.value, // Progress 的类型 (如 episode, episode2, episode3)
-        historyId, // 引用的 History ID
-        newProgress.episode, // 集数
-        newProgress.road, // 路径
-        newProgress.progressInMilli, // 进度存储为毫秒数
-      ],
-    );
-
-    updateCache(); // 更新缓存
-    notifyListeners(); // 通知监听器
-  }
-
-  Future<bool> checkIfProgressExists(
-    String historyId,
-    AnimeType type,
-    int episode,
-    int road,
-  ) async {
-    final result = _db.select(
-      '''
-    SELECT COUNT(*) as count
-    FROM progress
-    WHERE historyId = ? AND type = ? AND episode = ? AND road = ?;
-    ''',
-      [historyId, type.value, episode, road],
-    );
-
-    // 如果查询结果中返回的 count 大于 0，说明该历史记录已经存在
-    return result.isNotEmpty && (result.first['count'] as int) > 0;
-  }
-
   void clearHistory() {
     _db.execute("delete from history;");
     _db.execute("delete from progress;");
@@ -515,25 +609,6 @@ class HistoryManager with ChangeNotifier {
     );
     updateCache();
     notifyListeners();
-  }
-
-  Future<Progress?> progressFind(
-    String historyId,
-    AnimeType type,
-    int episode,
-    int road,
-  ) async {
-    var res = _db.select(
-      '''
-    select * from progress
-    where historyId == ? and type == ? and episode == ? and road == ?;
-    ''',
-      [historyId, type.value, episode, road],
-    );
-    if (res.isEmpty) {
-      return null;
-    }
-    return Progress.fromRow(res.first);
   }
 
   List<History> bangumiByIDFind(int id) {
@@ -637,5 +712,119 @@ class HistoryManager with ChangeNotifier {
     }
     updateCache();
     notifyListeners();
+  }
+}
+
+extension ProgressHelper on HistoryManager {
+  Future<void> addProgress(Progress newProgress, String historyId) async {
+    _db.execute(
+      '''
+    INSERT OR REPLACE INTO progress (
+      type,
+      historyId,
+      episode,
+      road,
+      progressInMilli,
+      isCompleted,
+      startTime,
+      endTime
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    ''',
+      [
+        newProgress.type.value,
+        historyId,
+        newProgress.episode,
+        newProgress.road,
+        newProgress.progressInMilli,
+        newProgress.isCompleted,
+        newProgress.startTime,
+        newProgress.endTime,
+      ],
+    );
+  }
+
+  Future<bool> checkIfProgressExists({
+    required String historyId,
+    required AnimeType type,
+    required int episode,
+    required int road,
+  }) async {
+    final result = _db.select(
+      '''
+    SELECT COUNT(*) as count
+    FROM progress
+    WHERE historyId = ? AND type = ? AND episode = ? AND road = ?;
+    ''',
+      [historyId, type.value, episode, road],
+    );
+
+    // 如果查询结果中返回的 count 大于 0，说明该历史记录已经存在
+    return result.isNotEmpty && (result.first['count'] as int) > 0;
+  }
+
+  Progress? progressFind(
+    String historyId,
+    AnimeType type,
+    int episode,
+    int road,
+  ) {
+    var res = _db.select(
+      '''
+    select * from progress
+    where historyId == ? and type == ? and episode == ? and road == ?;
+    ''',
+      [historyId, type.value, episode, road],
+    );
+    if (res.isEmpty) {
+      return null;
+    }
+    return Progress.fromRow(res.first);
+  }
+
+  Future<void> updateProgress({
+    required String historyId,
+    required AnimeType type,
+    required int episode,
+    required int road,
+    int? progressInMilli,
+    bool? isCompleted,
+    DateTime? startTime,
+    DateTime? endTime,
+  }) async {
+    final updates = <String>[];
+    final values = <dynamic>[];
+
+    if (progressInMilli != null) {
+      updates.add('progressInMilli = ?');
+      values.add(progressInMilli);
+    }
+
+    if (isCompleted != null) {
+      updates.add('isCompleted = ?');
+      values.add(isCompleted ? 1 : 0);
+    }
+
+    if (startTime != null) {
+      updates.add('startTime = ?');
+      values.add(startTime.toIso8601String());
+    }
+
+    if (endTime != null) {
+      updates.add('endTime = ?');
+      values.add(endTime.toIso8601String());
+    }
+
+    if (updates.isEmpty) return;
+
+    values.addAll([historyId, type.value, episode, road]);
+
+    final sql =
+        '''
+    UPDATE progress
+    SET ${updates.join(', ')}
+    WHERE historyId = ? AND type = ? AND episode = ? AND road = ?;
+  ''';
+
+    _db.execute(sql, values);
   }
 }

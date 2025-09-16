@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -25,19 +26,17 @@ class BangumiPage extends StatefulWidget {
   State<BangumiPage> createState() => _BangumiPageState();
 }
 
-class _BangumiPageState extends State<BangumiPage>
-    with AutomaticKeepAliveClientMixin {
+class _BangumiPageState extends State<BangumiPage> {
   final ScrollController scrollController = ScrollController();
   List<BangumiItem> bangumiItems = [];
   bool isLoadingMore = false;
-
-  @override
-  bool get wantKeepAlive => true;
+  bool showFB = false;
 
   @override
   void initState() {
     super.initState();
     scrollController.addListener(scrollListener);
+    scrollController.addListener(onScroll);
     if (bangumiItems.isEmpty) {
       queryBangumiByTrend();
     }
@@ -46,6 +45,8 @@ class _BangumiPageState extends State<BangumiPage>
   @override
   void dispose() {
     scrollController.removeListener(scrollListener);
+    scrollController.removeListener(onScroll);
+    scrollController.dispose();
     super.dispose();
   }
 
@@ -54,6 +55,32 @@ class _BangumiPageState extends State<BangumiPage>
             scrollController.position.maxScrollExtent - 200 &&
         !isLoadingMore) {
       queryBangumiByTrend();
+    }
+  }
+
+  void onScroll() {
+    if (scrollController.offset > 50) {
+      if (!showFB) {
+        setState(() {
+          showFB = true;
+        });
+      }
+    } else {
+      if (showFB) {
+        setState(() {
+          showFB = false;
+        });
+      }
+    }
+  }
+
+  void scrollToTop() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
@@ -66,6 +93,11 @@ class _BangumiPageState extends State<BangumiPage>
     bangumiItems.addAll(result);
     isLoadingMore = false;
     if (mounted) setState(() {});
+  }
+
+  Future<void> resetBangumiTrend() async {
+    bangumiItems.clear();
+    await queryBangumiByTrend();
   }
 
   List<Widget> buildBangumiTrendingSlivers(BuildContext context) {
@@ -142,7 +174,6 @@ class _BangumiPageState extends State<BangumiPage>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     Widget widget = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
@@ -150,6 +181,61 @@ class _BangumiPageState extends State<BangumiPage>
         const _SearchBar(),
         const _Timetable(),
         ...buildBangumiTrendingSlivers(context),
+      ],
+    );
+    widget = Stack(
+      children: [
+        Positioned.fill(child: widget),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            opacity: showFB ? 1 : 0,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20, right: 0),
+              child: GridSpeedDial(
+                icon: Icons.menu,
+                activeIcon: Icons.close,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                spacing: 6,
+                spaceBetweenChildren: 4,
+                direction: SpeedDialDirection.up,
+                childPadding: const EdgeInsets.all(6),
+                childrens: [
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.refresh),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () async {
+                        await resetBangumiTrend();
+                      },
+                    ),
+                  ],
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.vertical_align_top),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () => scrollToTop(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
     widget = AppScrollBar(
@@ -160,6 +246,7 @@ class _BangumiPageState extends State<BangumiPage>
         child: widget,
       ),
     );
+
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
 }

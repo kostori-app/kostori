@@ -1,4 +1,4 @@
-import 'avatar_item.dart';
+import 'package:kostori/foundation/bangumi/avatar_item.dart';
 
 class Creator {
   final Avatar avatar;

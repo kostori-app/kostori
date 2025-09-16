@@ -291,7 +291,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
       child: Center(
         child: TextButton(
           onPressed: () {
-            newFolder().then((value) {
+            newFolder().then((_) {
               setState(() {
                 favoritesController.isRefreshEnabled = true;
               });

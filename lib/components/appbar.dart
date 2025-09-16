@@ -8,6 +8,7 @@ class Appbar extends StatefulWidget implements PreferredSizeWidget {
     this.backgroundColor,
     this.style = AppbarStyle.blur,
     super.key,
+    this.bottom,
   });
 
   final Widget title;
@@ -20,11 +21,13 @@ class Appbar extends StatefulWidget implements PreferredSizeWidget {
 
   final AppbarStyle style;
 
+  final PreferredSizeWidget? bottom;
+
   @override
   State<Appbar> createState() => _AppbarState();
 
   @override
-  Size get preferredSize => const Size.fromHeight(56);
+  Size get preferredSize => const Size.fromHeight(56 * 2);
 }
 
 class _AppbarState extends State<Appbar> {
@@ -77,37 +80,49 @@ class _AppbarState extends State<Appbar> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomHeight = widget.bottom?.preferredSize.height ?? 0;
     var content = Container(
       decoration: BoxDecoration(
         color:
             widget.backgroundColor ??
             context.colorScheme.surface.toOpacity(0.72),
       ),
-      height: _kAppBarHeight + context.padding.top,
-      child: Row(
-        children: [
-          const SizedBox(width: 8),
-          widget.leading ??
-              Tooltip(
-                message: "Back".tl,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new),
-                  onPressed: () => Navigator.maybePop(context),
+      height: _kAppBarHeight + context.padding.top + bottomHeight,
+      child: Padding(
+        padding: EdgeInsets.only(top: context.padding.top),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const SizedBox(width: 8),
+                widget.leading ??
+                    Tooltip(
+                      message: "Back".tl,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new),
+                        onPressed: () => Navigator.maybePop(context),
+                      ),
+                    ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DefaultTextStyle(
+                    style: DefaultTextStyle.of(
+                      context,
+                    ).style.copyWith(fontSize: 20),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    child: widget.title,
+                  ),
                 ),
-              ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: DefaultTextStyle(
-              style: DefaultTextStyle.of(context).style.copyWith(fontSize: 20),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              child: widget.title,
+                ...?widget.actions,
+                const SizedBox(width: 8),
+              ],
             ),
-          ),
-          ...?widget.actions,
-          const SizedBox(width: 8),
-        ],
-      ).paddingTop(context.padding.top),
+            if (widget.bottom != null) widget.bottom!,
+          ],
+        ),
+      ),
     );
     if (widget.style == AppbarStyle.shadow) {
       return Material(

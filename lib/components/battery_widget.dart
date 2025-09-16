@@ -97,7 +97,9 @@ class BatteryWidgetState extends State<BatteryWidget>
 
   @override
   Widget build(BuildContext context) {
-    if (!_hasBattery) return const SizedBox.shrink();
+    if (!_hasBattery) {
+      return const SizedBox.shrink();
+    }
 
     return SizedBox(
       // height: 20,

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/bean/card/topics_card.dart';
+import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-
-import '../../components/bean/card/topics_card.dart';
-import '../../components/error_widget.dart';
-import '../../components/misc_components.dart';
-import 'info_controller.dart';
 
 class BangumiSubjectTabPage extends StatefulWidget {
   const BangumiSubjectTabPage({super.key});
@@ -114,81 +113,89 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
             if (isScrollingDown &&
                 metrics.pixels >= metrics.maxScrollExtent - 200) {
               loadMoreTopicsLatest(
-                  offset: infoController.topicsLatestList.length);
+                offset: infoController.topicsLatestList.length,
+              );
             }
             return true;
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('最新讨论'),
             slivers: <Widget>[
-              SliverLayoutBuilder(builder: (context, _) {
-                if (infoController.topicsLatestList.isNotEmpty) {
-                  return SliverList.builder(
-                    itemCount: infoController.topicsLatestList.length,
-                    itemBuilder: (context, index) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > 950
-                                ? 950
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: TopicsCard(
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (infoController.topicsLatestList.isNotEmpty) {
+                    return SliverList.builder(
+                      itemCount: infoController.topicsLatestList.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: TopicsCard(
                                 topicsInfoItem:
-                                    infoController.topicsLatestList[index]),
+                                    infoController.topicsLatestList[index],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (topicsLatestQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              loadMoreTopicsLatest();
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SliverList.builder(
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > 950
+                              ? 950
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: Skeletonizer.zone(
+                            child: ListTile(
+                              leading: Bone.circle(size: 36),
+                              title: Bone.text(width: 100),
+                              subtitle: Bone.text(width: 80),
+                            ),
                           ),
                         ),
                       );
                     },
                   );
-                }
-                if (topicsLatestQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadMoreTopicsLatest();
-                          },
-                          text: 'Reload'.tl,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return SliverList.builder(
-                  itemCount: 4,
-                  itemBuilder: (context, _) {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width > 950
-                            ? 950
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                },
+              ),
               if (topicsLatestIsLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -211,81 +218,89 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
             if (isScrollingDown &&
                 metrics.pixels >= metrics.maxScrollExtent - 200) {
               loadMoreTopicsTrending(
-                  offset: infoController.topicsTrendingList.length);
+                offset: infoController.topicsTrendingList.length,
+              );
             }
             return true;
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            scrollBehavior: const ScrollBehavior().copyWith(
-              scrollbars: false,
-            ),
+            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
             key: PageStorageKey<String>('热门讨论'),
             slivers: <Widget>[
-              SliverLayoutBuilder(builder: (context, _) {
-                if (infoController.topicsTrendingList.isNotEmpty) {
-                  return SliverList.builder(
-                    itemCount: infoController.topicsTrendingList.length,
-                    itemBuilder: (context, index) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > 950
-                                ? 950
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: TopicsCard(
+              SliverLayoutBuilder(
+                builder: (context, _) {
+                  if (infoController.topicsTrendingList.isNotEmpty) {
+                    return SliverList.builder(
+                      itemCount: infoController.topicsTrendingList.length,
+                      itemBuilder: (context, index) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: TopicsCard(
                                 topicsInfoItem:
-                                    infoController.topicsTrendingList[index]),
+                                    infoController.topicsTrendingList[index],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
+                  if (topicsTrendingQueryTimeout) {
+                    return SliverFillRemaining(
+                      child: GeneralErrorWidget(
+                        errMsg: "Nobody's posted anything yet...".tl,
+                        actions: [
+                          GeneralErrorButton(
+                            onPressed: () {
+                              loadMoreTopicsLatest();
+                            },
+                            text: 'Reload'.tl,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return SliverList.builder(
+                    itemCount: 4,
+                    itemBuilder: (context, _) {
+                      return Align(
+                        alignment: Alignment.topCenter,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width > 950
+                              ? 950
+                              : MediaQuery.sizeOf(context).width - 32,
+                          child: Skeletonizer.zone(
+                            child: ListTile(
+                              leading: Bone.circle(size: 36),
+                              title: Bone.text(width: 100),
+                              subtitle: Bone.text(width: 80),
+                            ),
                           ),
                         ),
                       );
                     },
                   );
-                }
-                if (topicsTrendingQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: "Nobody's posted anything yet...".tl,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadMoreTopicsLatest();
-                          },
-                          text: 'Reload'.tl,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return SliverList.builder(
-                  itemCount: 4,
-                  itemBuilder: (context, _) {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width > 950
-                            ? 950
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                },
+              ),
               if (topicsTrendingIsLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Center(
                       child: MiscComponents.placeholder(
-                          context, 40, 40, Colors.transparent),
+                        context,
+                        40,
+                        40,
+                        Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
@@ -352,7 +367,7 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

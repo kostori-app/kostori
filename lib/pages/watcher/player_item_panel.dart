@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:gif/gif.dart';
-import 'package:kostori/components/BatteryWidget.dart';
+import 'package:kostori/components/battery_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -34,6 +34,7 @@ class PlayerItemPanel extends StatefulWidget {
     required this.startHideTimer,
     required this.cancelHideTimer,
     required this.showVideoInfo,
+    required this.glimmerEffectMode,
   });
 
   final PlayerController playerController;
@@ -44,12 +45,14 @@ class PlayerItemPanel extends StatefulWidget {
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
   final void Function() showVideoInfo;
+  final void Function() glimmerEffectMode;
 
   @override
   State<PlayerItemPanel> createState() => _PlayerItemPanelState();
 }
 
 class _PlayerItemPanelState extends State<PlayerItemPanel> {
+  PlayerController get playerController => widget.playerController;
   late bool haEnable;
   late Animation<Offset> topOffsetAnimation;
   late Animation<Offset> bottomOffsetAnimation;
@@ -57,8 +60,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   final TextEditingController textController = TextEditingController();
   final FocusNode textFieldFocus = FocusNode();
 
-  Timer? timer;
-  String formattedTime = '';
+  bool glimmerEffect = appdata.implicitData['glimmerEffect'] ?? false;
+
   String saveAddress = '';
 
   void _showPlaybackSpeedDialog(BuildContext context) {
@@ -89,7 +92,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                 ListTile(
                   title: Text('${speed}x'),
                   onTap: () {
-                    widget.playerController.setPlaybackSpeed(speed);
+                    playerController.setPlaybackSpeed(speed);
                     Navigator.pop(context);
                   },
                 ),
@@ -105,22 +108,22 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     App.rootContext.showMessage(message: '正在截图中...'.tl);
     if (App.isAndroid) {
-      Uint8List? screenData = await widget.playerController.player.screenshot();
+      Uint8List? screenData = await playerController.player.screenshot();
       try {
         final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
         if (folder != null) {
           final file = File(
-            '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
+            '${folder.path}/${WatcherState.currentState!.anime.title}_$timestamp.png',
           );
           await file.writeAsBytes(screenData!);
           setState(() {
             saveAddress =
-                '${folder.path}/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
+                '${folder.path}/${WatcherState.currentState!.anime.title}_$timestamp.png';
           });
-          widget.playerController.showScreenshotPopup(
+          playerController.showScreenshotPopup(
             context,
             saveAddress,
-            '${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
+            '${WatcherState.currentState!.anime.title}_$timestamp.png',
           );
           showCenter(
             seconds: 1,
@@ -145,8 +148,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
       }
     } else {
       try {
-        Uint8List? screenData = await widget.playerController.player
-            .screenshot();
+        Uint8List? screenData = await playerController.player.screenshot();
         // 获取桌面平台的文档目录
         final directory = await getApplicationDocumentsDirectory();
         // 目标文件夹路径
@@ -161,16 +163,16 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         }
 
         final filePath =
-            '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
+            '$folderPath/${WatcherState.currentState!.anime.title}_$timestamp.png';
         // 将图像保存为文件
         final file = File(filePath);
         await file.writeAsBytes(screenData!);
         saveAddress =
-            '$folderPath/${WatcherState.currentState!.widget.anime.title}_$timestamp.png';
-        widget.playerController.showScreenshotPopup(
+            '$folderPath/${WatcherState.currentState!.anime.title}_$timestamp.png';
+        playerController.showScreenshotPopup(
           context,
           saveAddress,
-          '${WatcherState.currentState!.widget.anime.title}_$timestamp.png',
+          '${WatcherState.currentState!.anime.title}_$timestamp.png',
         );
         showCenter(
           seconds: 1,
@@ -194,10 +196,10 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
   List<MenuItemButton> _buildShaderMenuItems(BuildContext context) {
     return List.generate(3, (index) {
       final type = index + 1;
-      final isSelected = widget.playerController.superResolutionType == type;
+      final isSelected = playerController.superResolutionType == type;
 
       return MenuItemButton(
-        onPressed: () => widget.playerController.setShader(type),
+        onPressed: () => playerController.setShader(type),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           child: Text(
@@ -258,21 +260,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             curve: Curves.easeInOut,
           ),
         );
-    timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      setState(() {
-        DateTime now = DateTime.now();
-        formattedTime =
-            '${now.hour.toString().padLeft(2, '0')}:'
-            '${now.minute.toString().padLeft(2, '0')}:'
-            '${now.second.toString().padLeft(2, '0')}';
-      });
-    });
   }
 
   @override
   void dispose() {
     super.dispose();
-    timer!.cancel();
   }
 
   MenuButton _buildMenuItems() {
@@ -282,11 +274,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
         if (App.isAndroid)
           MenuEntry(
             text: (appdata.settings['audioOutType'] ?? true)
-                ? "Audio Option: Low Latency".tl
-                : "Audio Option: Compatibility".tl,
+                ? "Audio Option: \n Low Latency".tl
+                : "Audio Option: \n Compatibility".tl,
             onClick: () async {
               try {
-                await widget.playerController.changeAudioOutType();
+                await playerController.changeAudioOutType();
                 App.rootContext.showMessage(message: "Switch Successful".tl);
               } catch (e) {
                 App.rootContext.showMessage(message: "Switch Failed".tl);
@@ -294,20 +286,24 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             },
           ),
         MenuEntry(
-          text: "Remote Cast".tl,
+          text: !playerController.glimmerEffect ? "微光模式:关".tl : "微光模式:开".tl,
           onClick: () {
-            bool needRestart = widget.playerController.playing;
-            widget.playerController.pause();
-            RemotePlay()
-                .castVideo(widget.playerController.videoUrl)
-                .whenComplete(() {
-                  if (needRestart) {
-                    widget.playerController.play();
-                  }
-                });
+            widget.glimmerEffectMode();
           },
         ),
-        if (!widget.playerController.isFullScreen)
+        MenuEntry(
+          text: "Remote Cast".tl,
+          onClick: () {
+            bool needRestart = playerController.playing;
+            playerController.pause();
+            RemotePlay().castVideo(playerController.videoUrl).whenComplete(() {
+              if (needRestart) {
+                playerController.play();
+              }
+            });
+          },
+        ),
+        if (!playerController.isFullScreen)
           MenuEntry(
             text: "Logs".tl,
             onClick: () {
@@ -334,9 +330,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             //底部进度条
             AnimatedOpacity(
               opacity:
-                  ((!widget.playerController.isFullScreen &&
-                          !widget.playerController.showVideoController) ||
-                      widget.playerController.isSeek)
+                  ((!playerController.isFullScreen &&
+                          !playerController.showVideoController) ||
+                      playerController.isSeek)
                   ? 1.0
                   : 0.0,
               duration: Duration(seconds: 1),
@@ -350,8 +346,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       tween: Tween<double>(
-                        begin: widget.playerController.isSeek ? 0.0 : 1.0,
-                        end: widget.playerController.isSeek ? 1.0 : 0.0,
+                        begin: playerController.isSeek ? 0.0 : 1.0,
+                        end: playerController.isSeek ? 1.0 : 0.0,
                       ),
                       builder: (context, value, child) {
                         return Opacity(
@@ -386,8 +382,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOut,
                       tween: Tween<double>(
-                        begin: widget.playerController.isSeek ? 0 : 1,
-                        end: widget.playerController.isSeek ? 1 : 0,
+                        begin: playerController.isSeek ? 0 : 1,
+                        end: playerController.isSeek ? 1 : 0,
                       ),
                       builder: (context, value, child) {
                         return ProgressBar(
@@ -404,17 +400,17 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             context,
                           ).colorScheme.primary.toOpacity(0.2),
                           timeLabelLocation: TimeLabelLocation.none,
-                          progress: widget.playerController.currentPosition,
-                          buffered: widget.playerController.buffer,
-                          total: widget.playerController.duration,
+                          progress: playerController.currentPosition,
+                          buffered: playerController.buffer,
+                          total: playerController.duration,
                           onSeek: (duration) {
-                            widget.playerController.seek(duration);
+                            playerController.seek(duration);
                           },
                           onDragStart: (details) {
                             widget.handleProgressBarDragStart(details);
                           },
                           onDragUpdate: (details) {
-                            widget.playerController.currentPosition =
+                            playerController.currentPosition =
                                 details.timeStamp;
                           },
                           onDragEnd: () {
@@ -438,7 +434,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                 child: SlideTransition(
                   position: topOffsetAnimation,
                   child: Container(
-                    height: widget.playerController.isPortraitFullscreen
+                    height: playerController.isPortraitFullscreen
                         ? MediaQuery.of(context).padding.top + 120
                         : 50,
                     decoration: BoxDecoration(
@@ -465,31 +461,60 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               ),
             ),
             // 底部渐变半透明区域
-            Stack(
-              children: [
-                // Animated 底部面板
-                AnimatedPositioned(
-                  duration: Duration(seconds: 1),
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
+            AnimatedPositioned(
+              duration: Duration(seconds: 1),
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: bottomOffsetAnimation,
+                child: Container(
+                  height: playerController.isPortraitFullscreen ? 140 : 50,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.0, 0.3, 0.6, 1.0],
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.toOpacity(0.3),
+                        Colors.black.toOpacity(0.6),
+                        Colors.black,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.toOpacity(0.2),
+                        blurRadius: 20.0,
+                        spreadRadius: 5.0,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // 右侧渐变半透明区域
+            if (!playerController.isPortraitFullscreen)
+              AnimatedPositioned(
+                duration: Duration(seconds: 1),
+                top: 0,
+                bottom: 0,
+                right: 0,
+                child: Visibility(
                   child: SlideTransition(
-                    position: bottomOffsetAnimation,
+                    position: rightOffsetAnimation,
                     child: Container(
-                      height: widget.playerController.isPortraitFullscreen
-                          ? 140
-                          : 50,
+                      width: 60,
                       decoration: BoxDecoration(
-                        color: Colors.black,
                         gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          stops: const [0.0, 0.3, 0.6, 1.0],
+                          begin: Alignment.centerRight,
+                          end: Alignment.centerLeft,
                           colors: [
-                            Colors.transparent,
-                            Colors.black.toOpacity(0.3),
+                            Colors.black.toOpacity(0.8),
                             Colors.black.toOpacity(0.6),
-                            Colors.black,
+                            Colors.black.toOpacity(0.3),
+                            Colors.transparent,
                           ],
                         ),
                         boxShadow: [
@@ -503,54 +528,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     ),
                   ),
                 ),
-                //会有几px的透明空隙
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 1,
-                  child: Container(color: Colors.black),
-                ),
-              ],
-            ),
-            // 右侧渐变半透明区域
-            AnimatedPositioned(
-              duration: Duration(seconds: 1),
-              top: 0,
-              bottom: 0,
-              right: 0,
-              child: Visibility(
-                child: SlideTransition(
-                  position: rightOffsetAnimation,
-                  child: Container(
-                    width: 60,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerRight,
-                        end: Alignment.centerLeft,
-                        colors: [
-                          Colors.black.toOpacity(0.8),
-                          Colors.black.toOpacity(0.6),
-                          Colors.black.toOpacity(0.3),
-                          Colors.transparent,
-                        ],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.toOpacity(0.2),
-                          blurRadius: 20.0, // 边缘模糊
-                          spreadRadius: 5.0,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ),
-            ),
             // 顶部进度条
             Positioned(
-              top: widget.playerController.isPortraitFullscreen ? 140 : 50,
-              child: widget.playerController.showSeekTime
+              top: playerController.isPortraitFullscreen ? 140 : 50,
+              child: playerController.showSeekTime
                   ? Wrap(
                       alignment: WrapAlignment.center,
                       children: <Widget>[
@@ -558,19 +540,15 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           padding: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
                             color: Colors.black.toOpacity(0.5),
-                            borderRadius: BorderRadius.circular(8.0), // 圆角
+                            borderRadius: BorderRadius.circular(8.0),
                           ),
                           child: Text(
-                            widget.playerController.currentPosition.compareTo(
-                                      widget
-                                          .playerController
-                                          .player
-                                          .state
-                                          .position,
+                            playerController.currentPosition.compareTo(
+                                      playerController.player.state.position,
                                     ) >
                                     0
-                                ? '快进 ${widget.playerController.currentPosition.inSeconds - widget.playerController.player.state.position.inSeconds} 秒'
-                                : '快退 ${widget.playerController.player.state.position.inSeconds - widget.playerController.currentPosition.inSeconds} 秒',
+                                ? '快进 ${playerController.currentPosition.inSeconds - playerController.player.state.position.inSeconds} 秒'
+                                : '快退 ${playerController.player.state.position.inSeconds - playerController.currentPosition.inSeconds} 秒',
                             style: const TextStyle(color: Colors.white),
                           ),
                         ),
@@ -580,8 +558,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             ),
             // 顶部播放速度条
             Positioned(
-              top: widget.playerController.isPortraitFullscreen ? 140 : 50,
-              child: widget.playerController.showPlaySpeed
+              top: playerController.isPortraitFullscreen ? 140 : 50,
+              child: playerController.showPlaySpeed
                   ? Wrap(
                       alignment: WrapAlignment.center,
                       children: <Widget>[
@@ -603,7 +581,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 fps: 40,
                               ),
                               Text(
-                                '${widget.playerController.playbackSpeed.toInt()}X',
+                                '${playerController.playbackSpeed.toInt()}X',
                                 style: TextStyle(color: Colors.white),
                               ),
                             ],
@@ -615,8 +593,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             ),
             // 亮度条
             Positioned(
-              top: widget.playerController.isPortraitFullscreen ? 140 : 50,
-              child: widget.playerController.showBrightness
+              top: playerController.isPortraitFullscreen ? 140 : 50,
+              child: playerController.showBrightness
                   ? Wrap(
                       alignment: WrapAlignment.center,
                       children: <Widget>[
@@ -633,7 +611,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 color: Colors.white,
                               ),
                               Text(
-                                ' ${(widget.playerController.brightness * 100).toInt()} %',
+                                ' ${(playerController.brightness * 100).toInt()} %',
                                 style: const TextStyle(color: Colors.white),
                               ),
                             ],
@@ -645,8 +623,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             ),
             // 音量条
             Positioned(
-              top: widget.playerController.isPortraitFullscreen ? 140 : 50,
-              child: widget.playerController.showVolume
+              top: playerController.isPortraitFullscreen ? 140 : 50,
+              child: playerController.showVolume
                   ? Wrap(
                       alignment: WrapAlignment.center,
                       children: <Widget>[
@@ -654,7 +632,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           padding: const EdgeInsets.all(8.0),
                           decoration: BoxDecoration(
                             color: Colors.black.toOpacity(0.5),
-                            borderRadius: BorderRadius.circular(8.0), // 圆角
+                            borderRadius: BorderRadius.circular(8.0),
                           ),
                           child: Row(
                             children: <Widget>[
@@ -663,7 +641,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 color: Colors.white,
                               ),
                               Text(
-                                ' ${(widget.playerController.volume).toInt()}%',
+                                ' ${(playerController.volume).toInt()}%',
                                 style: const TextStyle(color: Colors.white),
                               ),
                             ],
@@ -674,7 +652,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                   : Container(),
             ),
             // 侧边栏:截图,快进
-            if (!widget.playerController.isPortraitFullscreen)
+            if (!playerController.isPortraitFullscreen)
               Positioned(
                 right: 10,
                 top: 60,
@@ -683,8 +661,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     position: rightOffsetAnimation,
                     child: MouseRegion(
                       cursor:
-                          (widget.playerController.isFullScreen &&
-                              !widget.playerController.showVideoController)
+                          (playerController.isFullScreen &&
+                              !playerController.showVideoController)
                           ? SystemMouseCursors.none
                           : SystemMouseCursors.basic,
                       onEnter: (_) {
@@ -705,8 +683,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           IconButton(
                             icon: Icon(Icons.refresh, color: Colors.white),
                             onPressed: () {
-                              widget.playerController.seek(
-                                widget.playerController.currentPosition +
+                              playerController.seek(
+                                playerController.currentPosition +
                                     Duration(seconds: 80),
                               );
                             },
@@ -718,7 +696,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                 ),
               ),
             // 自定义顶部组件
-            if (!widget.playerController.isPortraitFullscreen)
+            if (!playerController.isPortraitFullscreen)
               Positioned(
                 top: 0,
                 left: 0,
@@ -728,8 +706,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     position: topOffsetAnimation,
                     child: MouseRegion(
                       cursor:
-                          (widget.playerController.isFullScreen &&
-                              !widget.playerController.showVideoController)
+                          (playerController.isFullScreen &&
+                              !playerController.showVideoController)
                           ? SystemMouseCursors.none
                           : SystemMouseCursors.basic,
                       onEnter: (_) {
@@ -740,18 +718,16 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         widget.startHideTimer();
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.only(right: 10, left: 0),
                         child: Row(
                           children: [
                             IconButton(
                               color: Colors.white,
                               icon: const Icon(Icons.arrow_back_ios_new),
                               onPressed: () {
-                                if (widget.playerController.isFullScreen) {
+                                if (playerController.isFullScreen) {
                                   // 检查是否是桌面环境，分别处理全屏逻辑
-                                  widget.playerController.toggleFullScreen(
-                                    context,
-                                  );
+                                  playerController.toggleFullScreen(context);
                                 } else {
                                   // 如果不是全屏，退出当前页面
                                   Navigator.pop(context);
@@ -759,12 +735,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               },
                             ),
                             //标题集数显示
-                            (widget.playerController.isFullScreen)
+                            (playerController.isFullScreen)
                                 ? Expanded(
                                     child: LayoutBuilder(
                                       builder: (context, constraints) {
                                         final text =
-                                            '${WatcherState.currentState!.widget.anime.title} ${widget.playerController.currentSetName}';
+                                            '${WatcherState.currentState!.anime.title} ${playerController.currentSetName}';
                                         const style = TextStyle(
                                           color: Colors.white,
                                           fontSize: 16,
@@ -825,9 +801,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 : Expanded(
                                     child: LayoutBuilder(
                                       builder: (context, constraints) {
-                                        final text = widget
-                                            .playerController
-                                            .currentSetName;
+                                        final text =
+                                            playerController.currentSetName;
                                         const style = TextStyle(
                                           color: Colors.white,
                                           fontSize: 16,
@@ -890,14 +865,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               consumeOutsideTap: true,
                               onOpen: () {
                                 widget.cancelHideTimer();
-                                widget.playerController.canHidePlayerPanel =
-                                    false;
+                                playerController.canHidePlayerPanel = false;
                               },
                               onClose: () {
                                 widget.cancelHideTimer();
                                 widget.startHideTimer();
-                                widget.playerController.canHidePlayerPanel =
-                                    true;
+                                playerController.canHidePlayerPanel = true;
                               },
                               builder:
                                   (
@@ -921,17 +894,23 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               menuChildren: _buildShaderMenuItems(context),
                             ),
 
-                            if (widget.playerController.isFullScreen) ...[
+                            if (playerController.isFullScreen) ...[
                               const SizedBox(width: 4),
                               //时间
-                              Text(
-                                formattedTime,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium!.fontSize,
-                                ),
+                              StreamBuilder<String>(
+                                stream: playerController.timeStream,
+                                initialData: playerController.formatNow(),
+                                builder: (context, snapshot) {
+                                  return Text(
+                                    snapshot.data ?? '--:--:--',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium!.fontSize,
+                                    ),
+                                  );
+                                },
                               ),
                               const SizedBox(width: 8),
                               //安卓流量速度显示
@@ -956,14 +935,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 ),
                               ),
                               onPressed: () {
-                                if (widget.playerController.playbackSpeed < 2) {
-                                  widget.playerController.setPlaybackSpeed(2);
+                                if (playerController.playbackSpeed < 2) {
+                                  playerController.setPlaybackSpeed(2);
                                 } else {
-                                  widget.playerController.setPlaybackSpeed(1);
+                                  playerController.setPlaybackSpeed(1);
                                 }
                               },
                               child: Text(
-                                '${widget.playerController.playbackSpeed}X',
+                                '${playerController.playbackSpeed}X',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -988,8 +967,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     position: topOffsetAnimation,
                     child: MouseRegion(
                       cursor:
-                          (widget.playerController.isFullScreen &&
-                              !widget.playerController.showVideoController)
+                          (playerController.isFullScreen &&
+                              !playerController.showVideoController)
                           ? SystemMouseCursors.none
                           : SystemMouseCursors.basic,
                       onEnter: (_) {
@@ -1004,7 +983,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         children: [
                           Padding(
                             padding: EdgeInsets.only(
-                              left: 10,
+                              left: 0,
                               right: 10,
                               top: MediaQuery.of(context).padding.top,
                             ),
@@ -1014,9 +993,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   color: Colors.white,
                                   icon: const Icon(Icons.arrow_back_ios_new),
                                   onPressed: () {
-                                    if (widget.playerController.isFullScreen) {
+                                    if (playerController.isFullScreen) {
                                       // 检查是否是桌面环境，分别处理全屏逻辑
-                                      widget.playerController.toggleFullScreen(
+                                      playerController.toggleFullScreen(
                                         context,
                                       );
                                     } else {
@@ -1026,12 +1005,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   },
                                 ),
                                 //标题集数显示
-                                (widget.playerController.isFullScreen)
+                                (playerController.isFullScreen)
                                     ? Expanded(
                                         child: LayoutBuilder(
                                           builder: (context, constraints) {
                                             final text =
-                                                '${WatcherState.currentState!.widget.anime.title} ${widget.playerController.currentSetName}';
+                                                '${WatcherState.currentState!.anime.title} ${playerController.currentSetName}';
                                             const style = TextStyle(
                                               color: Colors.white,
                                               fontSize: 16,
@@ -1096,9 +1075,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     : Expanded(
                                         child: LayoutBuilder(
                                           builder: (context, constraints) {
-                                            final text = widget
-                                                .playerController
-                                                .currentSetName;
+                                            final text =
+                                                playerController.currentSetName;
                                             const style = TextStyle(
                                               color: Colors.white,
                                               fontSize: 16,
@@ -1174,14 +1152,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   consumeOutsideTap: true,
                                   onOpen: () {
                                     widget.cancelHideTimer();
-                                    widget.playerController.canHidePlayerPanel =
-                                        false;
+                                    playerController.canHidePlayerPanel = false;
                                   },
                                   onClose: () {
                                     widget.cancelHideTimer();
                                     widget.startHideTimer();
-                                    widget.playerController.canHidePlayerPanel =
-                                        true;
+                                    playerController.canHidePlayerPanel = true;
                                   },
                                   builder:
                                       (
@@ -1205,17 +1181,23 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   menuChildren: _buildShaderMenuItems(context),
                                 ),
 
-                                if (widget.playerController.isFullScreen) ...[
+                                if (playerController.isFullScreen) ...[
                                   const SizedBox(width: 4),
                                   //时间
-                                  Text(
-                                    formattedTime,
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: Theme.of(
-                                        context,
-                                      ).textTheme.titleMedium!.fontSize,
-                                    ),
+                                  StreamBuilder<String>(
+                                    stream: playerController.timeStream,
+                                    initialData: playerController.formatNow(),
+                                    builder: (context, snapshot) {
+                                      return Text(
+                                        snapshot.data ?? '--:--:--',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium!.fontSize,
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(width: 8),
                                   //安卓流量速度显示
@@ -1240,19 +1222,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     ),
                                   ),
                                   onPressed: () {
-                                    if (widget.playerController.playbackSpeed <
-                                        2) {
-                                      widget.playerController.setPlaybackSpeed(
-                                        2,
-                                      );
+                                    if (playerController.playbackSpeed < 2) {
+                                      playerController.setPlaybackSpeed(2);
                                     } else {
-                                      widget.playerController.setPlaybackSpeed(
-                                        1,
-                                      );
+                                      playerController.setPlaybackSpeed(1);
                                     }
                                   },
                                   child: Text(
-                                    '${widget.playerController.playbackSpeed}X',
+                                    '${playerController.playbackSpeed}X',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
@@ -1269,7 +1246,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                 ),
               ),
             // 自定义播放器底部组件
-            if (!widget.playerController.isPortraitFullscreen)
+            if (!playerController.isPortraitFullscreen)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -1279,8 +1256,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     position: bottomOffsetAnimation,
                     child: MouseRegion(
                       cursor:
-                          (widget.playerController.isFullScreen &&
-                              !widget.playerController.showVideoController)
+                          (playerController.isFullScreen &&
+                              !playerController.showVideoController)
                           ? SystemMouseCursors.none
                           : SystemMouseCursors.basic,
                       onEnter: (_) {
@@ -1303,34 +1280,31 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 );
                               },
                               child: Icon(
-                                widget.playerController.playing
+                                playerController.playing
                                     ? Icons.pause
                                     : Icons.play_arrow,
-                                key: ValueKey<bool>(
-                                  widget.playerController.playing,
-                                ),
+                                key: ValueKey<bool>(playerController.playing),
                               ),
                             ),
                             onPressed: () {
-                              if (widget.playerController.playing) {
-                                widget.playerController.pause();
+                              if (playerController.playing) {
+                                playerController.pause();
                               } else {
-                                widget.playerController.play();
+                                playerController.play();
                               }
                             },
                           ),
                           // 更换选集
-                          (widget.playerController.isFullScreen)
+                          (playerController.isFullScreen)
                               ? IconButton(
                                   color: Colors.white,
                                   icon: const Icon(Icons.skip_next),
                                   onPressed: () async {
-                                    // if (widget.playerController.loading) {
+                                    // if (playerController.loading) {
                                     //   return;
                                     // }
-                                    widget.playerController.pause();
-                                    await widget.playerController
-                                        .playNextEpisode();
+                                    playerController.pause();
+                                    await playerController.playNextEpisode();
                                   },
                                 )
                               : Container(),
@@ -1344,17 +1318,17 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 fontSize: 12.0,
                                 fontFeatures: [FontFeature.tabularFigures()],
                               ),
-                              progress: widget.playerController.currentPosition,
-                              buffered: widget.playerController.buffer,
-                              total: widget.playerController.duration,
+                              progress: playerController.currentPosition,
+                              buffered: playerController.buffer,
+                              total: playerController.duration,
                               onSeek: (duration) {
-                                widget.playerController.seek(duration);
+                                playerController.seek(duration);
                               },
                               onDragStart: (details) {
                                 widget.handleProgressBarDragStart(details);
                               },
                               onDragUpdate: (details) => {
-                                widget.playerController.currentPosition =
+                                playerController.currentPosition =
                                     details.timeStamp,
                               },
                               onDragEnd: () {
@@ -1365,14 +1339,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           Container(
                             padding: const EdgeInsets.only(left: 10.0),
                             child: Text(
-                              "${Utils.durationToString(widget.playerController.currentPosition)} / ${Utils.durationToString(widget.playerController.duration)}",
+                              "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16.0,
                               ),
                             ),
                           ),
-                          (widget.playerController.isFullScreen)
+                          (playerController.isFullScreen)
                               ? IconButton(
                                   color: Colors.white,
                                   onPressed: () {
@@ -1381,23 +1355,22 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   icon: const Icon(Icons.speed),
                                 )
                               : Container(),
-                          (widget.playerController.isFullScreen)
+                          (playerController.isFullScreen)
                               ? IconButton(
                                   color: Colors.white,
                                   onPressed: () {
-                                    widget.playerController.showTabBody =
-                                        !widget.playerController.showTabBody;
+                                    playerController.showTabBody =
+                                        !playerController.showTabBody;
                                     widget.openMenu();
                                   },
                                   icon: Icon(
-                                    widget.playerController.showTabBody
+                                    playerController.showTabBody
                                         ? Icons.menu_open
                                         : Icons.menu_open_outlined,
                                   ),
                                 )
                               : Container(),
-                          (!widget.playerController.isFullScreen &&
-                                  App.isAndroid)
+                          (!playerController.isFullScreen && App.isAndroid)
                               ? IconButton(
                                   icon: const Icon(
                                     Icons.picture_in_picture_alt,
@@ -1409,25 +1382,24 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                       final status = await floating.pipStatus;
                                       if (status == PiPStatus.disabled ||
                                           status == PiPStatus.automatic) {
-                                        widget.playerController.enterPiPMode();
+                                        playerController.enterPiPMode();
                                       } else if (status == PiPStatus.enabled) {
-                                        widget.playerController.exitPiPMode();
+                                        playerController.exitPiPMode();
                                       }
                                     }
                                   },
                                 )
                               : Container(),
-                          if (App.isAndroid &&
-                              !widget.playerController.isFullScreen)
+                          if (App.isAndroid && !playerController.isFullScreen)
                             IconButton(
                               color: Colors.white,
                               icon: Icon(
-                                widget.playerController.isFullScreen
+                                playerController.isFullScreen
                                     ? Icons.fullscreen_exit
                                     : Icons.crop_portrait,
                               ),
                               onPressed: () {
-                                widget.playerController.toggleFullScreen(
+                                playerController.toggleFullScreen(
                                   context,
                                   isPortraitFullScreen: true,
                                 );
@@ -1436,12 +1408,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           IconButton(
                             color: Colors.white,
                             icon: Icon(
-                              widget.playerController.isFullScreen
+                              playerController.isFullScreen
                                   ? Icons.fullscreen_exit
                                   : Icons.fullscreen,
                             ),
                             onPressed: () {
-                              widget.playerController.toggleFullScreen(context);
+                              playerController.toggleFullScreen(context);
                             },
                           ),
                         ],
@@ -1460,8 +1432,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                     position: bottomOffsetAnimation,
                     child: MouseRegion(
                       cursor:
-                          (widget.playerController.isFullScreen &&
-                              !widget.playerController.showVideoController)
+                          (playerController.isFullScreen &&
+                              !playerController.showVideoController)
                           ? SystemMouseCursors.none
                           : SystemMouseCursors.basic,
                       onEnter: (_) {
@@ -1485,17 +1457,17 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 fontSize: 12.0,
                                 fontFeatures: [FontFeature.tabularFigures()],
                               ),
-                              progress: widget.playerController.currentPosition,
-                              buffered: widget.playerController.buffer,
-                              total: widget.playerController.duration,
+                              progress: playerController.currentPosition,
+                              buffered: playerController.buffer,
+                              total: playerController.duration,
                               onSeek: (duration) {
-                                widget.playerController.seek(duration);
+                                playerController.seek(duration);
                               },
                               onDragStart: (details) {
                                 widget.handleProgressBarDragStart(details);
                               },
                               onDragUpdate: (details) => {
-                                widget.playerController.currentPosition =
+                                playerController.currentPosition =
                                     details.timeStamp,
                               },
                               onDragEnd: () {
@@ -1512,7 +1484,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 Container(
                                   padding: const EdgeInsets.only(left: 10.0),
                                   child: Text(
-                                    "${Utils.durationToString(widget.playerController.currentPosition)} / ${Utils.durationToString(widget.playerController.duration)}",
+                                    "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 16.0,
@@ -1537,8 +1509,8 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     color: Colors.white,
                                   ),
                                   onPressed: () {
-                                    widget.playerController.seek(
-                                      widget.playerController.currentPosition +
+                                    playerController.seek(
+                                      playerController.currentPosition +
                                           Duration(seconds: 80),
                                     );
                                   },
@@ -1563,19 +1535,19 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                       );
                                     },
                                     child: Icon(
-                                      widget.playerController.playing
+                                      playerController.playing
                                           ? Icons.pause
                                           : Icons.play_arrow,
                                       key: ValueKey<bool>(
-                                        widget.playerController.playing,
+                                        playerController.playing,
                                       ),
                                     ),
                                   ),
                                   onPressed: () {
-                                    if (widget.playerController.playing) {
-                                      widget.playerController.pause();
+                                    if (playerController.playing) {
+                                      playerController.pause();
                                     } else {
-                                      widget.playerController.play();
+                                      playerController.play();
                                     }
                                   },
                                 ),
@@ -1584,11 +1556,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                   color: Colors.white,
                                   icon: const Icon(Icons.skip_next),
                                   onPressed: () {
-                                    // if (widget.playerController.loading) {
+                                    // if (playerController.loading) {
                                     //   return;
                                     // }
-                                    widget.playerController.pause();
-                                    widget.playerController.playNextEpisode();
+                                    playerController.pause();
+                                    playerController.playNextEpisode();
                                   },
                                 ),
                                 const Spacer(),
@@ -1602,12 +1574,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 IconButton(
                                   color: Colors.white,
                                   onPressed: () {
-                                    widget.playerController.showTabBody =
-                                        !widget.playerController.showTabBody;
+                                    playerController.showTabBody =
+                                        !playerController.showTabBody;
                                     widget.openMenu();
                                   },
                                   icon: Icon(
-                                    widget.playerController.showTabBody
+                                    playerController.showTabBody
                                         ? Icons.menu_open
                                         : Icons.menu_open_outlined,
                                   ),
@@ -1615,14 +1587,12 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 IconButton(
                                   color: Colors.white,
                                   icon: Icon(
-                                    widget.playerController.isFullScreen
+                                    playerController.isFullScreen
                                         ? Icons.fullscreen_exit
                                         : Icons.fullscreen,
                                   ),
                                   onPressed: () {
-                                    widget.playerController.toggleFullScreen(
-                                      context,
-                                    );
+                                    playerController.toggleFullScreen(context);
                                   },
                                 ),
                               ],

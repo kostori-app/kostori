@@ -1,4 +1,4 @@
-import 'images_item.dart';
+import 'package:kostori/foundation/bangumi/images_item.dart';
 
 class Subject {
   final int id;

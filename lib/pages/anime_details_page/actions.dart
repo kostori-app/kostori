@@ -2,8 +2,14 @@
 
 part of 'anime_page.dart';
 
+Map<String, String> commentDrafts = {};
+
 abstract mixin class _AnimePageActions {
   final InfoController infoController = InfoController();
+
+  final WatcherController watcherController = WatcherController();
+
+  final PlayerController playerController = PlayerController();
 
   void update();
 
@@ -15,7 +21,21 @@ abstract mixin class _AnimePageActions {
 
   BangumiItem? bangumiBindInfo;
 
-  bool isLiking = false;
+  StatsDataImpl? statsDataImpl;
+
+  DailyEvent? todayComment;
+  PlatformEventRecord? commentRecord;
+
+  DailyEvent? todayClick;
+  PlatformEventRecord? clickRecord;
+
+  DailyEvent? todayWatch;
+  PlatformEventRecord? watchRecord;
+
+  DailyEvent? todayRating;
+  PlatformEventRecord? ratingRecord;
+
+  int? ratingValue;
 
   bool isLiked = false;
 
@@ -95,16 +115,24 @@ abstract mixin class _AnimePageActions {
               ),
               height: 60,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ), // 圆角效果
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Row(
                 children: [
-                  const Image(
-                    image: AssetImage("images/app_icon.png"),
-                    filterQuality: FilterQuality.medium,
-                  ),
+                  if (appdata.implicitData['nameAvatar'] == null ||
+                      appdata.implicitData['nameAvatar'] == '')
+                    const Image(
+                      image: AssetImage("images/app_icon.png"),
+                      filterQuality: FilterQuality.medium,
+                    )
+                  else
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundImage: NetworkImage(
+                        appdata.implicitData['nameAvatar'],
+                      ),
+                      backgroundColor: Colors.transparent,
+                    ),
                   Spacer(),
                   ElevatedButton(
                     onPressed: () async {
@@ -117,10 +145,17 @@ abstract mixin class _AnimePageActions {
             ),
             // 下面是 BottomInfo 内容
             Expanded(
-              child: BottomInfo(
-                bangumiId: bangumiId,
-                infoController: infoController,
-              ),
+              child: bangumiId == null
+                  ? MiscComponents.placeholder(
+                      context,
+                      100,
+                      100,
+                      Colors.transparent,
+                    )
+                  : BottomInfo(
+                      bangumiId: bangumiId,
+                      infoController: infoController,
+                    ),
             ),
           ],
         );
@@ -160,23 +195,18 @@ abstract mixin class _AnimePageActions {
             : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
-      context: context,
+      context: App.rootContext,
       builder: (context) {
-        // 使用 StatefulBuilder 实现搜索框和动态搜索功能
         return StatefulBuilder(
           builder: (context, setState) {
-            // 更新搜索结果的函数
             Future<void> fetchSearchResults(String query) async {
-              FocusScope.of(context).unfocus();
+              FocusScope.of(App.rootContext).unfocus();
               if (query.isEmpty) {
-                // 如果搜索框为空，则默认展示初始数据
                 res = await Bangumi.combinedBangumiSearch(anime.title);
               } else {
-                // 否则根据用户输入重新搜索
                 res = await Bangumi.combinedBangumiSearch(query);
               }
 
-              // 如果搜索结果为空，提示用户
               if (res.isEmpty) {
                 showCenter(
                   seconds: 3,
@@ -195,50 +225,47 @@ abstract mixin class _AnimePageActions {
               setState(() {});
             }
 
-            return Scaffold(
-              body: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverAppBar(
-                    pinned: true,
-                    floating: true,
-                    snap: true,
-                    elevation: 0,
-                    automaticallyImplyLeading: false,
-                    flexibleSpace: ClipRect(
-                      child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(
-                          color: context.colorScheme.surface.toOpacity(0.22),
-                        ),
-                      ),
-                    ),
-                    backgroundColor: Colors.transparent,
-                    title: SizedBox(
-                      height: 52,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: TextField(
-                          autofocus: true,
-                          style: const TextStyle(fontSize: 16),
-                          decoration: InputDecoration(
-                            labelText: anime.title,
-                            hintText: 'Enter keywords...'.tl,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16.0),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.transparent,
-                          ),
-                          onSubmitted: fetchSearchResults,
-                          onChanged: (value) => value,
-                        ),
+            return NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverAppBar(
+                  pinned: true,
+                  floating: true,
+                  snap: true,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  flexibleSpace: ClipRect(
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        color: context.colorScheme.surface.toOpacity(0.22),
                       ),
                     ),
                   ),
-                ],
-                body: _buildResultsList(context, res, fetchSearchResults),
-              ),
+                  backgroundColor: Colors.transparent,
+                  title: SizedBox(
+                    height: 52,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: TextField(
+                        style: const TextStyle(fontSize: 16),
+                        decoration: InputDecoration(
+                          labelText: anime.title,
+                          hintText: 'Enter keywords...'.tl,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16.0),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.transparent,
+                        ),
+                        onSubmitted: fetchSearchResults,
+                        onChanged: (value) => value,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              body: _buildResultsList(res, fetchSearchResults),
             );
           },
         );
@@ -246,27 +273,25 @@ abstract mixin class _AnimePageActions {
     );
 
     if (selectedItem != null) {
-      await handleSelection(context, selectedItem);
+      await handleSelection(context, selectedItem).then((_) {
+        Navigator.pop(context);
+      });
     }
   }
 
-  Widget _buildResultsList(
-    BuildContext context,
-    List<BangumiItem> items,
-    Function(String) onSearch,
-  ) {
+  Widget _buildResultsList(List<BangumiItem> items, Function(String) onSearch) {
     if (items.isEmpty) {
       return Center(child: Text('暂无搜索结果'));
     }
 
     return ListView.builder(
-      padding: EdgeInsets.only(top: 16), // 给顶部留出空间
+      padding: EdgeInsets.only(top: 16),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
         return InkWell(
           onTap: () {
-            Navigator.pop(context, item); // 返回选中的项
+            Navigator.pop(context, item);
           },
           splashColor: Theme.of(
             context,
@@ -342,7 +367,7 @@ abstract mixin class _AnimePageActions {
                                   ),
                                   SizedBox(width: 5),
                                   Container(
-                                    padding: EdgeInsets.all(2.0), // 可选，设置内边距
+                                    padding: EdgeInsets.all(2.0),
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(
                                         8,
@@ -352,7 +377,7 @@ abstract mixin class _AnimePageActions {
                                             .colorScheme
                                             .secondaryContainer
                                             .toOpacity(0.72),
-                                        width: 2.0, // 设置边框宽度
+                                        width: 2.0,
                                       ),
                                     ),
                                     child: Text(
@@ -361,8 +386,7 @@ abstract mixin class _AnimePageActions {
                                   ),
                                   SizedBox(width: 4),
                                   Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.end, // 右对齐
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       RatingBarIndicator(
                                         itemCount: 5,
@@ -399,8 +423,6 @@ abstract mixin class _AnimePageActions {
 
   // 处理选择后的操作
   Future<void> handleSelection(BuildContext context, BangumiItem item) async {
-    // 模拟延迟操作，可以替换成其他操作（如网络请求等）
-    // await Future.delayed(Duration(seconds: 1));
     showDialog(
       context: context,
       builder: (context) {
@@ -419,6 +441,11 @@ abstract mixin class _AnimePageActions {
                     BottomInfoState.currentState?.queryBangumiInfoByID(item.id);
                     BottomInfoState.currentState?.queryBangumiEpisodeByID(
                       item.id,
+                    );
+                    StatsManager().updateStats(
+                      id: history!.id,
+                      type: history!.type.value,
+                      bangumiId: item.id,
                     );
                   }
                 } catch (e) {
@@ -458,23 +485,300 @@ abstract mixin class _AnimePageActions {
     );
   }
 
-  void watch([int? ep, int? road]) {
-    WatcherState.currentState!.loadInfo(ep!, road!); // 传递集数
+  void onTapTag(String tag, String namespace) {
+    var target = animeSource.handleClickTagEvent?.call(namespace, tag);
+    var context = App.mainNavigatorKey!.currentContext!;
+    target?.jump(context);
   }
 
-  void onTapTag(String tag, String namespace) {
-    var config =
-        animeSource.handleClickTagEvent?.call(namespace, tag) ??
-        {'action': 'search', 'keyword': tag};
-    var context = App.mainNavigatorKey!.currentContext!;
-    if (config['action'] == 'search') {
-      context.to(
-        () => SearchResultPage(
-          text: config['keyword'] ?? '',
-          sourceKey: animeSource.key,
-          options: const [],
-        ),
+  void liked() {
+    StatsManager().updateGroupLiked(
+      id: anime.id,
+      type: anime.sourceKey.hashCode,
+      targetLiked: !isLiked,
+    );
+  }
+
+  Future<void> showRatingDialog(StatsDataImpl statsDataImpl) async {
+    showDialog(
+      context: App.rootContext,
+      builder: (context) {
+        return RatingDialog(statsDataImpl: statsDataImpl);
+      },
+    );
+  }
+}
+
+class RatingDialog extends StatefulWidget {
+  const RatingDialog({super.key, required this.statsDataImpl});
+
+  final StatsDataImpl statsDataImpl;
+
+  @override
+  State<RatingDialog> createState() => _RatingDialogState();
+}
+
+class _RatingDialogState extends State<RatingDialog> {
+  late StatsDataImpl _statsDataImpl;
+  late double _rating;
+  late bool _showingDraft;
+  bool _isLoading = true;
+  late TextEditingController _commentController;
+  late TodayEventBundle stats;
+  final manager = StatsManager();
+  TodayEventBundle? bangumiStats;
+
+  @override
+  void initState() {
+    super.initState();
+    _statsDataImpl = widget.statsDataImpl;
+    _initializeData();
+  }
+
+  void _initializeData() async {
+    stats = StatsManager().getOrCreateTodayEvents(
+      id: _statsDataImpl.id,
+      type: _statsDataImpl.type,
+    );
+
+    setState(() {
+      bangumiStats = manager.getOrCreateBangumiStats(
+        statsDataImpl: stats.statsData,
       );
+      final targetStats = bangumiStats ?? stats;
+      _rating = (targetStats.ratingRecord.rating ?? 0).toDouble();
+      final idKey = targetStats.statsData.id;
+      _showingDraft = commentDrafts[idKey]?.isNotEmpty == true;
+      if (!_showingDraft) {
+        commentDrafts[idKey] = '';
+      }
+      _commentController = TextEditingController(
+        text: _showingDraft
+            ? commentDrafts[idKey]
+            : (targetStats.commentRecord.comment ?? ''),
+      );
+      _isLoading = false;
+    });
+  }
+
+  void _toggleDraftSaved() {
+    setState(() {
+      final targetStats = bangumiStats ?? stats;
+      final idKey = targetStats.statsData.id;
+      _showingDraft = !_showingDraft;
+      _commentController.text = (_showingDraft
+          ? commentDrafts[idKey]
+          : (targetStats.commentRecord.comment ?? ''))!;
+    });
+  }
+
+  void _updateStats() async {
+    try {
+      final targetStats = bangumiStats ?? stats;
+      final newRating = _rating.toInt();
+      final newComment = _commentController.text;
+      final now = DateTime.now();
+      final todayStr = now.yyyymmdd;
+
+      int getTotalWatchDuration() {
+        int total = 0;
+        for (final dailyEvent in targetStats.statsData.totalWatchDurations) {
+          for (final record in dailyEvent.platformEventRecords) {
+            total += record.value;
+          }
+        }
+        return total;
+      }
+
+      if (targetStats.ratingRecord.rating != newRating) {
+        DailyEvent? todayRecord = targetStats.statsData.rating.firstWhereOrNull(
+          (dailyEvent) {
+            return dailyEvent.date.year == now.year &&
+                dailyEvent.date.month == now.month &&
+                dailyEvent.date.day == now.day;
+          },
+        );
+
+        final newRatingRecord = PlatformEventRecord(
+          value: todayRecord != null ? targetStats.ratingRecord.value + 1 : 1,
+          platform: AppPlatform.current,
+          rating: newRating,
+          dateStr: now.yyyymmddHHmmss,
+          watchDuration:
+              getTotalWatchDuration() +
+              StatsManager().getOtherBangumiTotalWatch(
+                current: targetStats.statsData,
+                time: now,
+              ),
+        );
+
+        if (todayRecord != null) {
+          todayRecord.platformEventRecords.add(newRatingRecord);
+          todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
+        } else {
+          final newDailyEvent = DailyEvent(
+            dateStr: todayStr,
+            platformEventRecords: [newRatingRecord],
+          );
+          targetStats.statsData.rating.add(newDailyEvent);
+        }
+      }
+
+      if (targetStats.commentRecord.comment != newComment) {
+        DailyEvent? todayRecord = targetStats.statsData.comment
+            .firstWhereOrNull((dailyEvent) {
+              return dailyEvent.date.year == now.year &&
+                  dailyEvent.date.month == now.month &&
+                  dailyEvent.date.day == now.day;
+            });
+
+        final newCommentRecord = PlatformEventRecord(
+          value: todayRecord != null ? targetStats.commentRecord.value + 1 : 1,
+          platform: AppPlatform.current,
+          comment: newComment,
+          dateStr: now.yyyymmddHHmmss,
+          watchDuration:
+              getTotalWatchDuration() +
+              StatsManager().getOtherBangumiTotalWatch(
+                current: targetStats.statsData,
+                time: now,
+              ),
+        );
+
+        if (todayRecord != null) {
+          todayRecord.platformEventRecords.add(newCommentRecord);
+          todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
+        } else {
+          final newDailyEvent = DailyEvent(
+            dateStr: todayStr,
+            platformEventRecords: [newCommentRecord],
+          );
+          targetStats.statsData.comment.add(newDailyEvent);
+        }
+      }
+
+      await StatsManager().updateStats(
+        id: targetStats.statsData.id,
+        type: targetStats.statsData.type,
+        rating: targetStats.statsData.rating,
+        comment: targetStats.statsData.comment,
+      );
+
+      if (targetStats.commentRecord.comment != newComment ||
+          targetStats.ratingRecord.rating != newRating) {
+        App.rootContext.showMessage(message: '应用成功');
+      } else {
+        App.rootContext.showMessage(message: '无改动');
+      }
+    } catch (e, s) {
+      App.rootContext.showMessage(message: '应用失败');
+      Log.addLog(LogLevel.error, 'save statsDataImpl', '$e \n $s');
+    } finally {
+      Navigator.pop(context);
     }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return ContentDialog(
+      title: "Rating".tl,
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  Utils.getRatingLabel(_rating),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(' / '),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _rating = 0;
+                      _commentController.text = '';
+                    });
+                  },
+                  child: Text(
+                    '清除',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            RatingBar.builder(
+              initialRating: _rating / 2,
+              minRating: 0,
+              maxRating: 5,
+              allowHalfRating: true,
+              itemBuilder: (context, index) => const Icon(Icons.star_rounded),
+              itemSize: 30,
+              onRatingUpdate: (newRating) {
+                setState(() {
+                  _rating = newRating * 2;
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 240),
+                    child: Scrollbar(
+                      child: SingleChildScrollView(
+                        child: TextField(
+                          controller: _commentController,
+                          maxLines: null,
+                          onChanged: (_) => setState(() {
+                            final targetStats = bangumiStats ?? stats;
+                            commentDrafts[targetStats.statsData.id] =
+                                _commentController.text;
+                          }),
+                          decoration: InputDecoration(
+                            hintText: '写下你的评价...'.tl,
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      children: [
+                        Text(_showingDraft ? '草稿'.tl : '正文'.tl),
+                        const SizedBox(width: 4),
+                        Text("${_commentController.text.length} 字".tl),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        ElevatedButton(onPressed: _toggleDraftSaved, child: Text('切换'.tl)),
+        const SizedBox(width: 8),
+        ElevatedButton(onPressed: _updateStats, child: Text('Update'.tl)),
+      ],
+    );
   }
 }

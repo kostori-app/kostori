@@ -16,6 +16,11 @@ class _AboutSettingsState extends State<AboutSettings> {
   bool isUpdateLog = false;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
@@ -163,9 +168,133 @@ class _AboutSettingsState extends State<AboutSettings> {
             ),
           ),
         ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: "Info".tl,
+                  icon: Icons.radio_button_unchecked_outlined,
+                ),
+                ListTile(
+                  title: Text("设备信息".tl),
+                  trailing: Button.filled(
+                    child: Text("Open".tl),
+                    onPressed: () async {
+                      await DeviceInfo.showDeviceInfoDialog();
+                    },
+                  ).fixHeight(32),
+                ),
+                ListTile(
+                  title: Text("软件信息".tl),
+                  trailing: Button.filled(
+                    child: Text("Open".tl),
+                    onPressed: () async {
+                      await showDeviceInfoDialog();
+                    },
+                  ).fixHeight(32),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
+}
+
+Future<void> showDeviceInfoDialog() async {
+  final packageInfo = await PackageInfo.fromPlatform();
+  final appMap = {
+    "appName".tl: packageInfo.appName,
+    "packageName".tl: packageInfo.packageName,
+    "version".tl: packageInfo.version,
+    "buildNumber".tl: packageInfo.buildNumber,
+    if (packageInfo.buildSignature.isNotEmpty)
+      "buildSignature".tl: packageInfo.buildSignature,
+    if ((packageInfo.installerStore?.isNotEmpty ?? false))
+      "installerStore".tl: packageInfo.installerStore!,
+    if (packageInfo.installTime != null)
+      "installTime".tl: packageInfo.installTime!.toIso8601String(),
+    if (packageInfo.updateTime != null)
+      "updateTime".tl: packageInfo.updateTime!.toIso8601String(),
+  };
+
+  final infoMap = appMap;
+
+  showDialog(
+    context: App.rootContext,
+    builder: (context) {
+      return ContentDialog(
+        title: "应用信息",
+        content: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: 500.0),
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false, overscroll: false),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: infoMap.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Material(
+                        color: context.brightness == Brightness.light
+                            ? Colors.white.toOpacity(0.72)
+                            : const Color(0xFF1E1E1E).toOpacity(0.72),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: InkWell(
+                          onLongPress: () {
+                            Clipboard.setData(
+                              ClipboardData(
+                                text: '${entry.key}: ${entry.value}',
+                              ),
+                            );
+                            App.rootContext.showMessage(message: '复制成功');
+                          },
+                          onTap: () {},
+                          child: ListTile(
+                            dense: true,
+                            title: Text(
+                              entry.key,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(entry.value),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () {
+              final allText = infoMap.entries
+                  .map((e) => '${e.key}: ${e.value}')
+                  .join('\n');
+              Clipboard.setData(ClipboardData(text: allText));
+              App.rootContext.showMessage(message: '全部复制成功');
+            },
+            child: Text("Copy".tl),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 Future<Map<bool, String?>> checkUpdate() async {

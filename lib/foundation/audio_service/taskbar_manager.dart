@@ -1,9 +1,8 @@
 import 'dart:async';
 
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:windows_taskbar/windows_taskbar.dart';
-
-import '../../foundation/log.dart';
 
 class TaskbarManager {
   TaskbarManager._privateConstructor();

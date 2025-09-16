@@ -3,17 +3,19 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
+import 'package:kostori/pages/stats/stats_controller.dart';
+import 'package:kostori/pages/stats/stats_page.dart';
+import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sliver_tools/sliver_tools.dart';
-
-import '../components/components.dart';
-import '../foundation/consts.dart';
-import '../foundation/log.dart';
-import '../utils/data_sync.dart';
-import '../utils/io.dart';
-import 'image_manipulation_page/image_manipulation_page.dart';
 
 class MePage extends StatefulWidget {
   const MePage({super.key});
@@ -23,15 +25,132 @@ class MePage extends StatefulWidget {
 }
 
 class _MePageState extends State<MePage> {
+  final ScrollController scrollController = ScrollController();
+
+  bool showFB = false;
+
+  void onScroll() {
+    if (scrollController.offset > 50) {
+      if (!showFB) {
+        setState(() {
+          showFB = true;
+        });
+      }
+    } else {
+      if (showFB) {
+        setState(() {
+          showFB = false;
+        });
+      }
+    }
+  }
+
+  void scrollToTop() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController.addListener(onScroll);
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(onScroll);
+    scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    var widget = SmoothCustomScrollView(
+    Widget widget = SmoothCustomScrollView(
+      controller: scrollController,
       slivers: [
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
         const _ImageManipulation(),
+        _StatsViewPage(),
+        _StatsCalendarPage(),
+        SliverPadding(
+          padding: EdgeInsets.only(top: context.padding.bottom + 56),
+        ),
       ],
     );
+
+    widget = Stack(
+      children: [
+        Positioned.fill(child: widget),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            opacity: showFB ? 1 : 0,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20, right: 0),
+              child: GridSpeedDial(
+                icon: Icons.menu,
+                activeIcon: Icons.close,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                spacing: 6,
+                spaceBetweenChildren: 4,
+                direction: SpeedDialDirection.up,
+                childPadding: const EdgeInsets.all(6),
+                childrens: [
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.refresh),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () {
+                        setState(() {
+                          showFB = false;
+                        });
+                      },
+                    ),
+                  ],
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.vertical_align_top),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () => scrollToTop(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    widget = AppScrollBar(
+      topPadding: 56,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
+
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
 }
@@ -185,9 +304,9 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
   @override
   void initState() {
     super.initState();
-    // 延迟执行避免在构建期间修改provider
     Future.microtask(() async {
       final files = await loadKostoriImages();
+      if (!mounted) return;
       ref.read(imagesProvider.notifier).setImages(files);
     });
   }
@@ -240,10 +359,10 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
             color: Theme.of(context).colorScheme.outlineVariant,
             width: 0.6,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           onTap: () {
             context.to(() => ImageManipulationPage(initialImages: images));
           },
@@ -315,7 +434,6 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                                 allUrls: images,
                                 initialIndex: index,
                               );
-                              // provider管理，不用调用loadImages
                             },
                             child: SizedBox(
                               width: 300 * 1.8,
@@ -339,5 +457,25 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
         ),
       ),
     );
+  }
+}
+
+class _StatsCalendarPage extends StatelessWidget {
+  _StatsCalendarPage();
+
+  final StatsController controller = StatsController();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(child: StatsCalendarPage(controller: controller));
+  }
+}
+
+class _StatsViewPage extends StatelessWidget {
+  const _StatsViewPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(child: StatsViewPage());
   }
 }

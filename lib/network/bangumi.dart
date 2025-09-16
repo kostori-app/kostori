@@ -7,22 +7,21 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_response.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_response.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
+import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
+import 'package:kostori/foundation/bangumi/reviews/reviews_response.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_response.dart';
+import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
+import 'package:kostori/foundation/bangumi/topics/topics_response.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
-
-import '../foundation/bangumi/character/character_casts_item.dart';
-import '../foundation/bangumi/reviews/reviews_comments_item.dart';
-import '../foundation/bangumi/reviews/reviews_info_item.dart';
-import '../foundation/bangumi/reviews/reviews_response.dart';
-import '../foundation/bangumi/topics/topics_info_item.dart';
-import '../foundation/bangumi/topics/topics_response.dart';
 
 class Bangumi {
   static Future<List<BangumiItem>> bangumiPostSearch(
@@ -463,6 +462,7 @@ class Bangumi {
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
+      BangumiManager().clearBnagumiCalendar();
       for (dynamic jsonDayList in jsonData) {
         List<BangumiItem> bangumiList = [];
         final jsonList = jsonDayList['items'];
@@ -487,7 +487,7 @@ class Bangumi {
   static Future<void> getCalendarData() async {
     try {
       var res = await getCalendar();
-      BangumiManager().clearBnagumiCalendar();
+
       for (dynamic jsonlist in res) {
         BangumiManager().batchAddBangumiCalendar(jsonlist);
       }
@@ -501,7 +501,6 @@ class Bangumi {
       var res = await getBangumiInfoByID(id);
       if (res != null) {
         BangumiManager().addBangumiBinding(res);
-        Log.addLog(LogLevel.info, 'bangumiGetBangumiInfoBind', '绑定$id成功');
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'bangumiGetBangumiInfoBind', '$e\n$s');
@@ -534,7 +533,7 @@ class Bangumi {
       final last100Items = bangumiDataList.length > 200
           ? bangumiDataList.sublist(bangumiDataList.length - 200)
           : bangumiDataList;
-
+      BangumiManager().clearBangumiData();
       BangumiManager().batchAddBangumiData(last100Items);
     } on DioException catch (e, s) {
       Log.addLog(
@@ -585,7 +584,7 @@ class Bangumi {
           'checkBangumiData',
           '${jsonData['tag_name']}',
         );
-        BangumiManager().clearBangumiData();
+
         await getBangumiData();
         App.rootContext.showMessage(
           message:
@@ -623,8 +622,6 @@ class Bangumi {
       );
       final jsonData = res.data;
       Log.addLog(LogLevel.info, 'bangumi', '${jsonData['tag_name']}');
-      BangumiManager().clearBangumiData();
-      BangumiManager().clearBnagumiCalendar();
       appdata.settings['getBangumiAllEpInfoTime'] = null;
       Log.addLog(LogLevel.info, 'bangumi', 'Cleared bangumi data successfully');
       await getBangumiData();

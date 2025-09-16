@@ -1,4 +1,4 @@
-import '../user_item.dart';
+import 'package:kostori/foundation/bangumi/user_item.dart';
 
 class ReviewsCommentsItem {
   final int id;

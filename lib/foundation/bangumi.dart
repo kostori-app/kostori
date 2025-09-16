@@ -5,10 +5,9 @@ import 'package:flutter/widgets.dart' show ChangeNotifier;
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:sqlite3/sqlite3.dart';
-
-import 'log.dart';
 
 class BangumiData {
   String? title;
@@ -481,6 +480,20 @@ class BangumiManager with ChangeNotifier {
       if (res.isEmpty) {
         return null;
       }
+    }
+    return BangumiItem.fromRow(res.first);
+  }
+
+  BangumiItem? getBangumiItem(int id) {
+    var res = _db.select(
+      """
+    select * from bangumi_binding
+    where id == ?;
+  """,
+      [id],
+    );
+    if (res.isEmpty) {
+      return null;
     }
     return BangumiItem.fromRow(res.first);
   }

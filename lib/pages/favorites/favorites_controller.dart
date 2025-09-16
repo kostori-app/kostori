@@ -1,10 +1,9 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/network/bangumi.dart';
 import 'package:mobx/mobx.dart';
-
-import '../../foundation/bangumi/bangumi_item.dart';
-import '../../foundation/favorites.dart';
-import '../../network/bangumi.dart';
 
 part 'favorites_controller.g.dart';
 

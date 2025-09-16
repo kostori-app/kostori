@@ -1,4 +1,4 @@
-import 'actor_item.dart';
+import 'package:kostori/foundation/bangumi/character/actor_item.dart';
 
 class CharacterAvator {
   final String small;

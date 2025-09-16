@@ -2,17 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/pages/bangumi/bangumi_page.dart';
+import 'package:kostori/pages/categories_page.dart';
 import 'package:kostori/pages/explore_Page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
 import 'package:kostori/pages/history_page.dart';
+import 'package:kostori/pages/me_page.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
-
-import '../foundation/appdata.dart';
-import 'categories_page.dart';
-import 'me_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -48,7 +47,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   final _pages = [
-    const MePage(key: PageStorageKey('me')),
+    MePage(),
     const BangumiPage(key: PageStorageKey('bangumi')),
     const FavoritesPage(key: PageStorageKey('favorites')),
     const HistoryPage(key: PageStorageKey('history')),

@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
-
-import 'app.dart';
 
 class LogItem {
   final LogLevel level;
@@ -19,6 +20,9 @@ class LogItem {
 enum LogLevel { error, warning, info }
 
 class Log {
+  static final _controller = StreamController<List<LogItem>>.broadcast();
+
+  static Stream<List<LogItem>> get stream => _controller.stream;
   static final List<LogItem> _logs = <LogItem>[];
 
   static List<LogItem> get logs => _logs;
@@ -40,7 +44,7 @@ class Log {
   static IOSink? _file;
 
   static void addLog(LogLevel level, String title, String content) {
-    if (_file == null) {
+    if (_file == null && App.isInitialized) {
       Directory dir;
       if (App.isAndroid) {
         dir = Directory(App.externalStoragePath!);
@@ -73,6 +77,7 @@ class Log {
     }
 
     _logs.add(newLog);
+    _controller.add(List.unmodifiable(_logs));
     if (_file != null) {
       _file!.write(newLog.toString());
     }

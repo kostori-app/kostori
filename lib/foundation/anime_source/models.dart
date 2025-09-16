@@ -151,8 +151,6 @@ class AnimeDetails with HistoryMixin {
   final Map<String, List<String>> tags;
 
   /// id-name
-  // final Map<String, String>? episode;
-
   final Map<String, Map<String, String>>? episode;
 
   final List<String>? thumbnails;

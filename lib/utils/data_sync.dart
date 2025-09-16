@@ -1,6 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/foundation.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -8,15 +10,11 @@ import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/network/app_dio.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/data.dart';
+import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
-
 import 'package:webdav_client/webdav_client.dart' hide File;
-
-import '../components/components.dart';
-import '../components/window_frame.dart';
-import 'io.dart';
 
 class DataSync with ChangeNotifier {
   DataSync._() {
@@ -134,8 +132,8 @@ class DataSync with ChangeNotifier {
         appdata.settings['dataVersion']++;
         await appdata.saveData(false);
         var data = await exportAppData();
-        var time =
-            (DateTime.now().millisecondsSinceEpoch ~/ 86400000).toString();
+        var time = (DateTime.now().millisecondsSinceEpoch ~/ 86400000)
+            .toString();
         var filename = time;
         filename += '-';
         filename += appdata.settings['dataVersion'].toString();
@@ -202,8 +200,11 @@ class DataSync with ChangeNotifier {
         if (file == null) {
           throw 'No data file found';
         }
-        var version =
-            file.name!.split('-').elementAtOrNull(1)?.split('.').first;
+        var version = file.name!
+            .split('-')
+            .elementAtOrNull(1)
+            ?.split('.')
+            .first;
         if (version != null && int.tryParse(version) != null) {
           var currentVersion = appdata.settings['dataVersion'];
           if (currentVersion != null && int.parse(version) <= currentVersion) {

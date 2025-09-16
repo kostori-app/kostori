@@ -1,9 +1,8 @@
 import 'dart:convert';
 
+import 'package:kostori/foundation/bangumi/bangumi_tag.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:sqlite3/sqlite3.dart';
-
-import 'bangumi_tag.dart';
 
 class BangumiItem {
   int id;

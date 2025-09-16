@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:extended_tabs/extended_tabs.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,15 +11,18 @@ import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/audio_service/audio_service_manager.dart';
+import 'package:kostori/foundation/audio_service/player_audio_handler.dart';
+import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
+import 'package:kostori/foundation/audio_service/taskbar_manager.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
-import 'package:kostori/pages/watcher/player_audio_handler.dart';
-import 'package:kostori/pages/watcher/taskbar_manager.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/io.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -27,9 +31,6 @@ import 'package:screen_brightness_platform_interface/screen_brightness_platform_
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../../main.dart';
-import 'SMTC_manager_windows.dart';
-
 part 'player_controller.g.dart';
 
 class PlayerController = _PlayerController with _$PlayerController;
@@ -37,8 +38,13 @@ class PlayerController = _PlayerController with _$PlayerController;
 abstract class _PlayerController with Store {
   late ShadersController shadersController;
   late final PlayerAudioHandler audioHandler;
+  late final Stream<String> timeStream;
+
+  final FocusNode keyboardFocus = FocusNode();
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
+
+  GlobalKey<OverlayState>? overlayKey;
 
   @observable
   bool loading = true;
@@ -48,8 +54,6 @@ abstract class _PlayerController with Store {
   late final player = Player(
     configuration: PlayerConfiguration(
       bufferSize: 1500 * 1024 * 1024,
-      osc: false,
-      async: true,
       logLevel: MPVLogLevel.info,
     ),
   );
@@ -72,6 +76,8 @@ abstract class _PlayerController with Store {
   bool isFullScreen = false;
   @observable
   bool isSeek = false;
+  @observable
+  bool glimmerEffect = false;
 
   /// 视频超分
   /// 1. OFF
@@ -110,7 +116,7 @@ abstract class _PlayerController with Store {
 
   // 视频音量/亮度
   @observable
-  double volume = 0;
+  double volume = -1;
   @observable
   double brightness = 0;
 
@@ -163,20 +169,20 @@ abstract class _PlayerController with Store {
 
   int? get playerHeight => player.state.height;
 
-  String get playerVideoParams => player.state.videoParams.toString();
+  VideoParams get playerVideoParams => player.state.videoParams;
 
-  String get playerAudioParams => player.state.audioParams.toString();
+  AudioParams get playerAudioParams => player.state.audioParams;
 
-  String get playerPlaylist => player.state.playlist.toString();
+  Playlist get playerPlaylist => player.state.playlist;
 
-  String get playerAudioTracks => player.state.track.audio.toString();
+  AudioTrack get playerAudioTracks => player.state.track.audio;
 
-  String get playerVideoTracks => player.state.track.video.toString();
+  VideoTrack get playerVideoTracks => player.state.track.video;
 
   String get playerAudioBitrate => player.state.audioBitrate.toString();
 
   /// 播放器内部日志
-  List<String> playerLog = [];
+  List<PlayerLog> playerLog = [];
 
   /// 播放器日志订阅
   StreamSubscription<PlayerLog>? playerLogSubscription;
@@ -231,11 +237,11 @@ abstract class _PlayerController with Store {
 
   // 更新当前集数的方法
   void updateCurrentSetName(int newEpisode) {
-    currentSetName = WatcherState.currentState!.widget.anime.episode!.values
+    currentSetName = WatcherState.currentState!.anime.episode!.values
         .elementAt(currentRoad)
         .values
         .elementAt(newEpisode - 1);
-    videoUrl = WatcherState.currentState!.widget.anime.episode!.values
+    videoUrl = WatcherState.currentState!.anime.episode!.values
         .elementAt(currentRoad)
         .keys
         .elementAt(newEpisode - 1);
@@ -253,6 +259,13 @@ abstract class _PlayerController with Store {
     appdata.writeImplicitData();
   }
 
+  String formatNow() {
+    final now = DateTime.now();
+    return '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
+  }
+
   Future<void> changePlayerSettings() async {
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
@@ -262,7 +275,7 @@ abstract class _PlayerController with Store {
     playerLog.clear();
     await playerLogSubscription?.cancel();
     playerLogSubscription = player.stream.log.listen((event) {
-      playerLog.add(event.toString());
+      playerLog.add(event);
     });
 
     var pp = player.platform as NativePlayer;
@@ -279,29 +292,34 @@ abstract class _PlayerController with Store {
         await pp.setProperty("ao", "audiotrack");
       }
     }
-
+    glimmerEffect = appdata.implicitData['glimmerEffect'] ?? false;
     await player.setAudioTrack(AudioTrack.auto());
 
     player.setPlaylistMode(PlaylistMode.none);
     playerTimer = getPlayerTimer();
 
-    animeImg = WatcherState.currentState!.widget.anime.cover;
+    animeImg = WatcherState.currentState!.anime.cover;
+
+    timeStream = Stream.periodic(
+      const Duration(seconds: 1),
+      (_) => formatNow(),
+    ).asBroadcastStream();
 
     if (App.isAndroid) {
       Timer? debounceTimer;
-      _pipStatusSubscription = Floating().pipStatusStream
-          .distinct() // 避免重复状态
-          .listen((status) {
-            debounceTimer?.cancel();
-            debounceTimer = Timer(const Duration(milliseconds: 100), () {
-              if (status == PiPStatus.enabled && !isPiPMode) {
-                enterPiPMode();
-              } else if (status != PiPStatus.enabled && isPiPMode) {
-                App.rootContext.pop();
-                isPiPMode = false;
-              }
-            });
-          });
+      _pipStatusSubscription = Floating().pipStatusStream.distinct().listen((
+        status,
+      ) {
+        debounceTimer?.cancel();
+        debounceTimer = Timer(const Duration(milliseconds: 100), () {
+          if (status == PiPStatus.enabled && !isPiPMode) {
+            enterPiPMode();
+          } else if (status != PiPStatus.enabled && isPiPMode) {
+            App.rootContext.pop();
+            isPiPMode = false;
+          }
+        });
+      });
     }
 
     if (App.isAndroid) {
@@ -315,6 +333,16 @@ abstract class _PlayerController with Store {
     }
     if (superResolutionType != 1) {
       await setShader(superResolutionType);
+    }
+    if (App.isDesktop) {
+      volume = volume != -1 ? volume : 100;
+      await setVolume(volume);
+    } else {
+      // mobile is using system volume, don't setVolume here,
+      // or iOS will mute if system volume is too low (#732)
+      await FlutterVolumeController.getVolume().then((value) {
+        volume = (value ?? 0.0) * 100;
+      });
     }
   }
 
@@ -373,7 +401,7 @@ abstract class _PlayerController with Store {
     } catch (_) {}
     if (App.isAndroid) {
       try {
-        audioHandler.clearController();
+        audioHandler.stop();
       } catch (e) {
         Log.addLog(LogLevel.error, "clearController", e.toString());
       }
@@ -416,6 +444,7 @@ abstract class _PlayerController with Store {
     windowFrame.removeCloseListener(onWindowClose);
   }
 
+  @action
   Future<void> toggleFullScreen(
     BuildContext context, {
     bool isPortraitFullScreen = false,
@@ -426,7 +455,7 @@ abstract class _PlayerController with Store {
 
       if (isFullScreen) {
         // 退出全屏
-        App.rootContext.pop();
+        App.pop();
       } else {
         // 进入全屏
         Future.microtask(() {
@@ -440,11 +469,9 @@ abstract class _PlayerController with Store {
       // --- 移动端逻辑 ---
 
       if (isFullScreen) {
-        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        App.rootContext.pop();
-        await SystemChrome.setPreferredOrientations([
-          DeviceOrientation.portraitUp,
-        ]);
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        App.pop();
+        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         isPortraitFullscreen = false;
         WakelockPlus.disable();
       } else {
@@ -454,11 +481,9 @@ abstract class _PlayerController with Store {
           overlays: SystemUiOverlay.values,
         );
         if (isPortraitFullScreen) {
-          await SystemChrome.setPreferredOrientations([
-            DeviceOrientation.portraitUp,
-          ]);
+          SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         } else {
-          await SystemChrome.setPreferredOrientations([
+          SystemChrome.setPreferredOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
           ]);
@@ -480,6 +505,7 @@ abstract class _PlayerController with Store {
     }
   }
 
+  @action
   Future<void> setVolume(double value) async {
     value = value.clamp(0.0, 100.0);
     volume = value;
@@ -487,7 +513,7 @@ abstract class _PlayerController with Store {
       if (App.isDesktop) {
         await player.setVolume(value);
       } else {
-        await FlutterVolumeController.updateShowSystemUI(false);
+        FlutterVolumeController.updateShowSystemUI(false);
         await FlutterVolumeController.setVolume(value / 100);
       }
     } catch (_) {}
@@ -522,28 +548,30 @@ abstract class _PlayerController with Store {
   }
 
   void showScreenshotPopup(BuildContext context, String image, String name) {
+    final overlayState = overlayKey?.currentState ?? Overlay.of(context);
     _overlayTimer?.cancel();
     _overlayTimer = null;
 
     _overlayEntry?.remove();
     _overlayEntry = null;
 
+    final screenSize = MediaQuery.of(context).size;
+    double overlayWidth = screenSize.width * 0.2;
+    overlayWidth = overlayWidth.clamp(180.0, 240.0);
+    final overlayHeight = overlayWidth * 9 / 16;
+
     final entry = OverlayEntry(
       builder: (context) => Positioned(
-        right: isFullScreen ? 60 : 60,
-        top: isPortraitFullscreen
-            ? null
-            : isFullScreen
-            ? 70
-            : 90,
+        right: 60,
+        top: isPortraitFullscreen ? null : 60,
         bottom: isPortraitFullscreen ? 160 : null,
         child: Material(
           elevation: 8,
           color: Colors.black.toOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            width: 160,
-            height: 110,
+            width: overlayWidth,
+            height: overlayHeight,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
             child: Column(
@@ -562,6 +590,7 @@ abstract class _PlayerController with Store {
                         mime: 'image/png',
                       );
                     },
+                    onLongPress: () async {},
                     child: Stack(
                       children: [
                         Positioned.fill(
@@ -569,7 +598,10 @@ abstract class _PlayerController with Store {
                         ),
                         Align(
                           alignment: Alignment.bottomCenter,
-                          child: Text('点击分享', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                            '点击分享'.tl,
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ],
                     ),
@@ -580,7 +612,9 @@ abstract class _PlayerController with Store {
                     await pause();
                     context.to(() => ImageManipulationPage());
                   },
-                  child: Center(child: SizedBox(height: 20, child: Text('编辑'))),
+                  child: Center(
+                    child: SizedBox(height: 20, child: Text('编辑'.tl)),
+                  ),
                 ),
               ],
             ),
@@ -590,7 +624,7 @@ abstract class _PlayerController with Store {
     );
 
     _overlayEntry = entry;
-    Overlay.of(context).insert(entry);
+    overlayState.insert(_overlayEntry!);
 
     _overlayTimer = Timer(const Duration(seconds: 3), () {
       if (_overlayEntry?.mounted ?? false) {
@@ -626,49 +660,514 @@ class FullscreenVideoPage extends StatefulWidget {
 }
 
 class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
+  PlayerController get playerController => widget.playerController;
+
   @override
   void dispose() {
-    if (widget.playerController.isFullScreen) {
-      widget.playerController.fullscreen();
+    if (playerController.isFullScreen) {
+      playerController.fullscreen();
     }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    var isPaddingCheckError =
-        MediaQuery.of(context).viewPadding.top <= 0 ||
-        MediaQuery.of(context).viewPadding.top > 50;
     return Hero(
-      tag: WatcherState.currentState!.widget.anime.id,
+      tag: WatcherState.currentState!.anime.id,
       child: Observer(
         builder: (context) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: widget.playerController.isPiPMode
-                ? isPaddingCheckError
-                      ? MediaQuery(
-                          data: MediaQuery.of(context).copyWith(
-                            viewPadding: const EdgeInsets.only(
-                              top: 15,
-                              bottom: 15,
-                            ),
-                            padding: const EdgeInsets.only(top: 15, bottom: 15),
-                          ),
-                          child: Video(
-                            controller:
-                                widget.playerController.playerController,
-                            controls: null,
-                          ),
-                        )
-                      : Video(
-                          controller: widget.playerController.playerController,
-                          controls: null,
-                        )
-                : VideoPage(playerController: widget.playerController),
-          );
+          return playerController.isPiPMode
+              ? Video(
+                  controller: playerController.playerController,
+                  controls: null,
+                )
+              : VideoPage(playerController: playerController);
         },
       ),
     );
   }
+}
+
+class ParamCard extends StatelessWidget {
+  final String title;
+  final Map<String, Object?> params;
+
+  const ParamCard({super.key, required this.title, required this.params});
+
+  @override
+  Widget build(BuildContext context) {
+    // 拼接所有文本用于长按复制
+    final String allText = [
+      title,
+      ...params.entries
+          .where((e) => e.value != null)
+          .map((e) => '${e.key}: ${e.value}'),
+    ].join('\n');
+
+    return Material(
+      elevation: 2,
+      color: Theme.of(context).brightness == Brightness.light
+          ? Colors.white.toOpacity(0.72)
+          : const Color(0xFF1E1E1E).toOpacity(0.72),
+      shadowColor: Theme.of(context).colorScheme.shadow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: allText));
+          App.rootContext.showMessage(message: '复制成功');
+        },
+        child: Container(
+          width: 300,
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...params.entries
+                  .where((e) => e.value != null)
+                  .map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: SelectableText.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '${e.key}: ',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(text: e.value.toString()),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MediaInfoWidget extends StatelessWidget {
+  final VideoParams? videoParams;
+  final AudioParams? audioParams;
+  final AudioTrack? audioTrack;
+  final VideoTrack? videoTrack;
+  final String? audioBitrate;
+
+  const MediaInfoWidget({
+    super.key,
+    this.videoParams,
+    this.audioParams,
+    this.audioTrack,
+    this.videoTrack,
+    this.audioBitrate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [];
+
+    // ==== Video Card ====
+    if (videoParams != null) {
+      final Map<String, Object?> videoMap = {
+        'Pixel Format'.tl: videoParams!.pixelformat,
+        'HW Pixel Format'.tl: videoParams!.hwPixelformat,
+        'Resolution'.tl: '${videoParams!.w}x${videoParams!.h}',
+        'Display Width'.tl: videoParams!.dw,
+        'Display Height'.tl: videoParams!.dh,
+        'Aspect'.tl: videoParams!.aspect,
+        'Pixel Aspect Ratio'.tl: videoParams!.par,
+        'Colormatrix'.tl: videoParams!.colormatrix,
+        'Color Levels'.tl: videoParams!.colorlevels,
+        'Primaries'.tl: videoParams!.primaries,
+        'Gamma'.tl: videoParams!.gamma,
+        'Signal Peak'.tl: videoParams!.sigPeak,
+        'Lights'.tl: videoParams!.light,
+        'Chroma Location'.tl: videoParams!.chromaLocation,
+        'Rotate'.tl: videoParams!.rotate,
+        'Stereo In'.tl: videoParams!.stereoIn,
+        'Average Bpp'.tl: videoParams!.averageBpp,
+        'Alpha'.tl: videoParams!.alpha,
+      };
+
+      // 合并 VideoTrack 信息
+      if (videoTrack != null) {
+        videoMap.addAll({
+          'Track ID'.tl: videoTrack!.id,
+          'Track Title'.tl: videoTrack!.title,
+          'Track Language'.tl: videoTrack!.language,
+          'Track Image'.tl: videoTrack!.image,
+          'Track Album Art'.tl: videoTrack!.albumart,
+          'Track Codec'.tl: videoTrack!.codec,
+          'Track Decoder'.tl: videoTrack!.decoder,
+          'Track Width'.tl: videoTrack!.w,
+          'Track Height'.tl: videoTrack!.h,
+          'Track Channels Count'.tl: videoTrack!.channelscount,
+          'Track Channels'.tl: videoTrack!.channels,
+          'Track Sample Rate'.tl: videoTrack!.samplerate,
+          'Track FPS'.tl: videoTrack!.fps,
+          'Track Bitrate'.tl: videoTrack!.bitrate,
+          'Track Rotate'.tl: videoTrack!.rotate,
+          'Track PAR'.tl: videoTrack!.par,
+          'Track Audio Channels'.tl: videoTrack!.audiochannels,
+        });
+      }
+
+      cards.add(ParamCard(title: 'Video'.tl, params: videoMap));
+    }
+
+    // ==== Audio Card ====
+    if (audioParams != null) {
+      final Map<String, Object?> audioMap = {
+        'Format'.tl: audioParams!.format,
+        'Sample Rate'.tl: audioParams!.sampleRate,
+        'Channels'.tl: audioParams!.channels,
+        'Channel Count'.tl: audioParams!.channelCount,
+        'HR Channels'.tl: audioParams!.hrChannels,
+      };
+
+      // 合并 AudioTrack 信息
+      if (audioTrack != null) {
+        audioMap.addAll({
+          'Track ID'.tl: audioTrack!.id,
+          'Track Title'.tl: audioTrack!.title,
+          'Track Language'.tl: audioTrack!.language,
+          'URI Track'.tl: audioTrack!.uri,
+          'Track Image'.tl: audioTrack!.image,
+          'Track Album Art'.tl: audioTrack!.albumart,
+          'Track Codec'.tl: audioTrack!.codec,
+          'Track Decoder'.tl: audioTrack!.decoder,
+          'Track Width'.tl: audioTrack!.w,
+          'Track Height'.tl: audioTrack!.h,
+          'Channels Count'.tl: audioTrack!.channelscount,
+          'Channels'.tl: audioTrack!.channels,
+          'Track Sample Rate'.tl: audioTrack!.samplerate,
+          'FPS'.tl: audioTrack!.fps,
+          'Bitrate'.tl: audioTrack!.bitrate,
+          'Rotate'.tl: audioTrack!.rotate,
+          'PAR'.tl: audioTrack!.par,
+          'Audio Channels'.tl: audioTrack!.audiochannels,
+        });
+      }
+
+      if (audioBitrate != null) {
+        audioMap.addAll({'AudioBitrate'.tl: audioBitrate});
+      }
+
+      cards.add(ParamCard(title: 'Audio'.tl, params: audioMap));
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: cards
+              .map(
+                (card) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: card,
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class MediaWidget extends StatelessWidget {
+  final Media media;
+
+  const MediaWidget({super.key, required this.media});
+
+  @override
+  Widget build(BuildContext context) {
+    final String allText = media.uri;
+
+    return Material(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: allText));
+          App.rootContext.showMessage(message: '复制成功');
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Media'.tl,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(media.uri, style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VideoInfoSheet extends StatefulWidget {
+  final PlayerController playerController;
+
+  const VideoInfoSheet({super.key, required this.playerController});
+
+  @override
+  _VideoInfoSheetState createState() => _VideoInfoSheetState();
+}
+
+class _VideoInfoSheetState extends State<VideoInfoSheet>
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  late TabController _tabControllerZero;
+  late TabController _tabControllerOne;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabControllerZero = TabController(length: 2, vsync: this);
+    _tabControllerOne = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return SizedBox(
+      child: Column(
+        children: [
+          ExtendedTabBar(
+            controller: _tabControllerZero,
+            tabs: [
+              Tab(text: 'Status'.tl),
+              Tab(text: 'Log'.tl),
+            ],
+            indicatorSize: TabBarIndicatorSize.tab,
+          ),
+          Expanded(
+            child: ExtendedTabBarView(
+              shouldIgnorePointerWhenScrolling: false,
+              controller: _tabControllerZero,
+              children: [_buildVideoInfoTab(), _buildVideoLogTab()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoInfoTab() {
+    return Material(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 单独显示 Media
+              if (widget.playerController.playerPlaylist.medias.isNotEmpty)
+                MediaWidget(
+                  media: widget.playerController.playerPlaylist.medias.first,
+                ),
+
+              Material(
+                child: InkWell(
+                  onLongPress: () {
+                    Clipboard.setData(
+                      ClipboardData(text: widget.playerController.videoUrl),
+                    );
+                    App.rootContext.showMessage(message: '复制成功');
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          'Source'.tl,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          'URI: ${widget.playerController.videoUrl}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              MediaInfoWidget(
+                videoParams: widget.playerController.playerVideoParams,
+                audioParams: widget.playerController.playerAudioParams,
+                audioTrack: widget.playerController.playerAudioTracks,
+                videoTrack: widget.playerController.playerVideoTracks,
+                audioBitrate: widget.playerController.playerAudioBitrate,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoLogTab() {
+    final logs = widget.playerController.playerLog;
+
+    // 按等级分类
+    final Map<String, List<PlayerLog>> logsByLevel = {
+      'info': [],
+      'warn': [],
+      'error': [],
+    };
+    for (var log in logs) {
+      if (logsByLevel.containsKey(log.level)) {
+        logsByLevel[log.level]!.add(log);
+      } else {
+        logsByLevel['info']!.add(log);
+      }
+    }
+
+    return Scaffold(
+      appBar: ExtendedTabBar(
+        controller: _tabControllerOne,
+        tabs: logsByLevel.keys
+            .map((level) => Tab(text: level.toUpperCase()))
+            .toList(),
+      ),
+      body: ExtendedTabBarView(
+        shouldIgnorePointerWhenScrolling: false,
+        controller: _tabControllerOne,
+        children: logsByLevel.keys.map((level) {
+          final levelLogs = logsByLevel[level]!;
+
+          return Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: ListView.separated(
+              itemCount: levelLogs.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final log = levelLogs[index];
+                return Material(
+                  elevation: 2,
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? Colors.white.toOpacity(0.85)
+                      : const Color(0xFF1E1E1E).toOpacity(0.85),
+                  shadowColor: Theme.of(context).colorScheme.shadow,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 6,
+                              ),
+                              child: Text(
+                                log.prefix,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: log.level == 'error'
+                                    ? Theme.of(context).colorScheme.error
+                                    : log.level == 'warn'
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.errorContainer
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 6,
+                              ),
+                              child: Text(
+                                log.level,
+                                style: TextStyle(
+                                  color: log.level == 'error'
+                                      ? Colors.white
+                                      : Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          log.text,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: log.text));
+                              App.rootContext.showMessage(message: '复制成功');
+                            },
+                            child: Text("Copy".tl),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        }).toList(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.copy),
+        onPressed: () {
+          Clipboard.setData(
+            ClipboardData(text: widget.playerController.playerLog.join('\n')),
+          );
+          App.rootContext.showMessage(message: '复制成功');
+        },
+      ),
+    );
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }

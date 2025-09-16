@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -14,10 +13,9 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
-
-import 'bangumi_info_page.dart';
 
 class BangumiSearchPage extends StatefulWidget {
   const BangumiSearchPage({super.key, this.tag});
@@ -250,132 +248,96 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
-            return Dialog(
-              insetPadding: const EdgeInsets.all(24),
-              backgroundColor: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    constraints: BoxConstraints(maxWidth: 500, maxHeight: 600),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.surface.toOpacity(0.22),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 标题栏
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Text(
-                                'Select @c'.tlParams({"c": category.title}),
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                              const Spacer(),
-                              IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // 标签区
-                        Expanded(
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: category.tags.map((tag) {
-                                final isSelected = currentSelected.contains(
-                                  tag,
-                                );
-                                return InputChip(
-                                  backgroundColor: Colors.black.toOpacity(0.5),
-                                  shape: StadiumBorder(
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? Theme.of(context)
-                                                .colorScheme
-                                                .primary
-                                                .toOpacity(0.72)
-                                          : Theme.of(
-                                              context,
-                                            ).colorScheme.primary.withAlpha(4),
-                                    ),
-                                  ),
-                                  label: Text(tag),
-                                  selected: isSelected,
-                                  onSelected: (selected) {
-                                    setState(() {
-                                      if (selected) {
-                                        if (!currentSelected.contains(tag)) {
-                                          currentSelected.add(tag);
-                                        }
-                                      } else {
-                                        currentSelected.remove(tag);
-                                      }
-                                    });
-                                  },
-                                  selectedColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary.toOpacity(0.22),
-                                  checkmarkColor: isSelected
+            return ContentDialog(
+              title: 'Select @c'.tlParams({"c": category.title}),
+              displayButton: false,
+              content: Container(
+                constraints: BoxConstraints(maxWidth: 500, maxHeight: 600),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 标签区
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: category.tags.map((tag) {
+                            final isSelected = currentSelected.contains(tag);
+                            return InputChip(
+                              backgroundColor: Colors.black.toOpacity(0.5),
+                              shape: StadiumBorder(
+                                side: BorderSide(
+                                  color: isSelected
                                       ? Theme.of(
                                           context,
                                         ).colorScheme.primary.toOpacity(0.72)
                                       : Theme.of(
                                           context,
                                         ).colorScheme.primary.withAlpha(4),
-                                  showCheckmark: true,
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                        // 操作栏
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              OutlinedButton(
-                                onPressed: () =>
-                                    setState(() => currentSelected.clear()),
-                                child: Text('Clear'.tl),
-                              ),
-                              const Spacer(),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('Cancel'.tl),
-                              ),
-                              const SizedBox(width: 16),
-                              ElevatedButton(
-                                onPressed: () {
-                                  _updateSelectedTags(
-                                    category,
-                                    currentSelected,
-                                  );
-                                  Navigator.pop(context);
-                                },
-                                child: Text(
-                                  'Confirm (@c)'.tlParams({
-                                    "c": currentSelected.length,
-                                  }),
                                 ),
                               ),
-                            ],
-                          ),
+                              label: Text(tag),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    if (!currentSelected.contains(tag)) {
+                                      currentSelected.add(tag);
+                                    }
+                                  } else {
+                                    currentSelected.remove(tag);
+                                  }
+                                });
+                              },
+                              selectedColor: Theme.of(
+                                context,
+                              ).colorScheme.primary.toOpacity(0.22),
+                              checkmarkColor: isSelected
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.primary.toOpacity(0.72)
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.primary.withAlpha(4),
+                              showCheckmark: true,
+                            );
+                          }).toList(),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    // 操作栏
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          OutlinedButton(
+                            onPressed: () =>
+                                setState(() => currentSelected.clear()),
+                            child: Text('Clear'.tl),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text('Cancel'.tl),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              _updateSelectedTags(category, currentSelected);
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              'Confirm (@c)'.tlParams({
+                                "c": currentSelected.length,
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -390,9 +352,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     List<String> selectedTagsInCategory,
   ) async {
     setState(() {
-      // 先把这个分类原来选中的标签从tags中移除
       tags.removeWhere((tag) => category.tags.contains(tag));
-      // 再把最新选中的标签加进去
       tags.addAll(selectedTagsInCategory);
     });
     setState(() {
@@ -410,49 +370,35 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ClipRect(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.toOpacity(0.22),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    // filled: true,
-                    fillColor: Theme.of(context).cardColor,
-                    hintText: 'Enter keywords...'.tl,
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  onSubmitted: (value) async {
-                    setState(() {
-                      tags.add(value);
-                      _isLoading = true;
-                      bangumiItems.clear();
-                    });
-                    context.pop();
-                    final newItems = await bangumiSearch();
-                    bangumiItems = newItems;
-                    if (mounted) {
-                      setState(() {
-                        _isLoading = false;
-                      });
-                    }
-                  },
-                ),
+        return ContentDialog(
+          displayButton: false,
+          title: '增加标签',
+          content: TextField(
+            autofocus: true,
+            decoration: InputDecoration(
+              // filled: true,
+              fillColor: Theme.of(context).cardColor,
+              hintText: 'Enter keywords...'.tl,
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
               ),
             ),
+            onSubmitted: (value) async {
+              setState(() {
+                tags.add(value);
+                _isLoading = true;
+                bangumiItems.clear();
+              });
+              context.pop();
+              final newItems = await bangumiSearch();
+              bangumiItems = newItems;
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            },
           ),
         );
       },
@@ -571,6 +517,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
     );
   }
 
+  // 时间选择对话框
   void _showAirEndDateDialog(BuildContext context) {
     DateTime now = DateTime.now();
     DateTime? air = Utils.safeParseDate(airDate);
@@ -607,11 +554,8 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   "${date.day.toString().padLeft(2, '0')}";
             }
 
-            return AlertDialog(
-              title: Text("Select Date".tl),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+            return ContentDialog(
+              title: "Select Date".tl,
               content: SizedBox(
                 width: 350,
                 child: Column(
@@ -1253,10 +1197,13 @@ class TagCategory {
 }
 
 class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
-  SliverGridDelegateWithBangumiItems(this.useBriefMode);
+  SliverGridDelegateWithBangumiItems(
+    this.useBriefMode, {
+    this.fixedCrossAxisCount,
+  });
 
   final bool useBriefMode;
-
+  final int? fixedCrossAxisCount;
   final double scale = 1.toDouble();
 
   @override
@@ -1274,9 +1221,16 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
   ) {
     const minCrossAxisExtent = 360;
     final itemHeight = 192 * scale;
-    int crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
-        .floor();
-    crossAxisCount = math.min(3, math.max(1, crossAxisCount)); // 限制1-3列
+
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
+          .floor();
+      crossAxisCount = math.min(3, math.max(1, crossAxisCount)); // 限制1-3列
+    }
+
     return SliverGridRegularTileLayout(
       crossAxisCount: crossAxisCount,
       mainAxisStride: itemHeight,
@@ -1294,18 +1248,25 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
     final maxCrossAxisExtent = 192.0 * scale;
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
-    int crossAxisCount =
-        (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing))
-            .ceil();
-    // Ensure a minimum count of 1, can be zero and result in an infinite extent
-    // below when the window size is 0.
-    crossAxisCount = math.max(1, crossAxisCount);
+
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      crossAxisCount =
+          (constraints.crossAxisExtent /
+                  (maxCrossAxisExtent + crossAxisSpacing))
+              .ceil();
+      crossAxisCount = math.max(1, crossAxisCount); // 确保最小为1
+    }
+
     final double usableCrossAxisExtent = math.max(
       0.0,
       constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1),
     );
     final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
     final double childMainAxisExtent = childCrossAxisExtent / childAspectRatio;
+
     return SliverGridRegularTileLayout(
       crossAxisCount: crossAxisCount,
       mainAxisStride: childMainAxisExtent,
@@ -1320,7 +1281,9 @@ class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
   bool shouldRelayout(covariant SliverGridDelegate oldDelegate) {
     if (oldDelegate is! SliverGridDelegateWithBangumiItems) return true;
     if (oldDelegate.scale != scale ||
-        oldDelegate.useBriefMode != useBriefMode) {
+        oldDelegate.useBriefMode != useBriefMode ||
+        oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount) {
+      // 新增：检查固定列数变化
       return true;
     }
     return false;

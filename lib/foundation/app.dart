@@ -3,17 +3,17 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'bangumi.dart';
-import 'favorites.dart';
-import 'history.dart';
 
 export "context.dart";
 export "widget_utils.dart";
 
 class _App {
-  final version = "1.2.4";
+  final version = "1.2.5";
 
   bool get isAndroid => Platform.isAndroid;
 
@@ -45,6 +45,8 @@ class _App {
     return deviceLocale;
   }
 
+  bool isInitialized = false;
+
   late String dataPath;
   late String cachePath;
   String? externalStoragePath;
@@ -62,6 +64,8 @@ class _App {
   final LocalFavoritesManager favorites = LocalFavoritesManager();
 
   final BangumiManager bangumi = BangumiManager();
+
+  final StatsManager stats = StatsManager();
 
   void rootPop() {
     rootNavigatorKey.currentState?.maybePop();
@@ -81,6 +85,7 @@ class _App {
     if (isAndroid) {
       externalStoragePath = (await getExternalStorageDirectory())!.path;
     }
+    isInitialized = true;
   }
 
   Future<void> initComponents() async {
@@ -89,6 +94,7 @@ class _App {
       history.init(),
       favorites.init(),
       bangumi.init(),
+      stats.init(),
     ]);
   }
 
