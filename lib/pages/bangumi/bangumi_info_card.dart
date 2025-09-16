@@ -209,13 +209,13 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
       id: bangumiItem.id.toString(),
       type: 'bangumi'.hashCode,
     );
-    latestRating = manager.getLatestRating(current: stats);
+    latestRating =
+        stats.rating.lastOrNull?.platformEventRecords.lastOrNull?.rating;
   }
 
   Widget _button() {
     return Row(
       children: [
-        // 搜索按钮
         FilledButton.tonal(
           onPressed: () {
             final context = App.mainNavigatorKey!.currentContext!;

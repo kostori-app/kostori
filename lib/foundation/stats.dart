@@ -848,31 +848,6 @@ class StatsManager with ChangeNotifier {
     return latestComment;
   }
 
-  int? getLatestRating({required StatsDataImpl current}) {
-    final allStats = getStatsAll();
-
-    int? latestRating;
-    DateTime? latestDate;
-
-    for (var stats in allStats) {
-      if (stats.bangumiId == current.bangumiId &&
-          (stats.id != current.id || stats.type != current.type)) {
-        for (var daily in stats.rating) {
-          for (var record in daily.platformEventRecords) {
-            if (record.rating != null && record.date != null) {
-              if (latestDate == null || record.date!.isAfter(latestDate)) {
-                latestDate = record.date!;
-                latestRating = record.rating!;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return latestRating;
-  }
-
   /// 返回一个长度为 10 的 Map，键为 '1'..'10'，值为该评分出现的次数
   Map<String, int> getLatestRatingsCountMap() {
     final allStats = getStatsAll();
