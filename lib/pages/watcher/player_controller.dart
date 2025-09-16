@@ -557,7 +557,7 @@ abstract class _PlayerController with Store {
 
     final screenSize = MediaQuery.of(context).size;
     double overlayWidth = screenSize.width * 0.2;
-    overlayWidth = overlayWidth.clamp(120.0, 240.0);
+    overlayWidth = overlayWidth.clamp(180.0, 240.0);
     final overlayHeight = overlayWidth * 9 / 16;
 
     final entry = OverlayEntry(
@@ -598,7 +598,10 @@ abstract class _PlayerController with Store {
                         ),
                         Align(
                           alignment: Alignment.bottomCenter,
-                          child: Text('点击分享', style: TextStyle(fontSize: 12)),
+                          child: Text(
+                            '点击分享'.tl,
+                            style: TextStyle(fontSize: 12),
+                          ),
                         ),
                       ],
                     ),
@@ -609,7 +612,9 @@ abstract class _PlayerController with Store {
                     await pause();
                     context.to(() => ImageManipulationPage());
                   },
-                  child: Center(child: SizedBox(height: 20, child: Text('编辑'))),
+                  child: Center(
+                    child: SizedBox(height: 20, child: Text('编辑'.tl)),
+                  ),
                 ),
               ],
             ),
@@ -667,32 +672,15 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
-    var isPaddingCheckError =
-        MediaQuery.of(context).viewPadding.top <= 0 ||
-        MediaQuery.of(context).viewPadding.top > 50;
     return Hero(
       tag: WatcherState.currentState!.anime.id,
       child: Observer(
         builder: (context) {
           return playerController.isPiPMode
-              ? isPaddingCheckError
-                    ? MediaQuery(
-                        data: MediaQuery.of(context).copyWith(
-                          viewPadding: const EdgeInsets.only(
-                            top: 15,
-                            bottom: 15,
-                          ),
-                          padding: const EdgeInsets.only(top: 15, bottom: 15),
-                        ),
-                        child: Video(
-                          controller: playerController.playerController,
-                          controls: null,
-                        ),
-                      )
-                    : Video(
-                        controller: playerController.playerController,
-                        controls: null,
-                      )
+              ? Video(
+                  controller: playerController.playerController,
+                  controls: null,
+                )
               : VideoPage(playerController: playerController);
         },
       ),
