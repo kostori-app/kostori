@@ -43,6 +43,39 @@ abstract mixin class _AnimePageActions {
 
   bool isFavorite = false;
 
+  Future<void> initializeProgress() async {
+    final allEpisodes = anime.episode ?? {};
+
+    int roadCounter = 0;
+    for (var entry in allEpisodes.entries) {
+      final episodes = entry
+          .value; // Map<String, String> { '1': '/path/to/episode1.mp4', ... }
+
+      for (var index = 0; index < episodes.length; index++) {
+        // 这里 road 值不随着 index 递增，而是随着 episodeType 递增
+        final road = roadCounter;
+
+        final exists = await HistoryManager().checkIfProgressExists(
+          historyId: anime.animeId,
+          type: AnimeType(anime.sourceKey.hashCode),
+          episode: index,
+          road: road,
+        );
+
+        if (!exists) {
+          final newProgress = Progress.fromModel(
+            model: anime,
+            episode: index,
+            road: road,
+            progressInMilli: 0,
+          );
+          await HistoryManager().addProgress(newProgress, anime.animeId);
+        }
+      }
+      roadCounter++;
+    }
+  }
+
   FavoriteItem _toFavoriteItem() {
     var tags = <String>[];
     for (var e in anime.tags.entries) {
