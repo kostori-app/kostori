@@ -480,8 +480,8 @@ class BottomInfoState extends State<BottomInfo>
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Align(
                   child: BangumiWidget.buildStatsRow(
-                    context,
-                    infoController.bangumiItem,
+                    context: context,
+                    bangumiItem: infoController.bangumiItem,
                   ),
                 ),
               ),

@@ -707,8 +707,8 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                       (bangumiItem.collection != null && !widget.isLoading)
                           ? Align(
                               child: BangumiWidget.buildStatsRow(
-                                context,
-                                infoController.bangumiItem,
+                                context: context,
+                                bangumiItem: infoController.bangumiItem,
                               ),
                             )
                           : Padding(

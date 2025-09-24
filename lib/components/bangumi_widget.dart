@@ -638,7 +638,11 @@ class BangumiWidget {
     );
   }
 
-  static Widget buildStatsRow(BuildContext context, BangumiItem bangumiItem) {
+  static Widget buildStatsRow({
+    required BuildContext context,
+    required BangumiItem bangumiItem,
+    bool isCenter = false,
+  }) {
     final collection = bangumiItem.collection!;
     final total = collection.values.fold<int>(0, (sum, val) => sum + val);
 
@@ -660,19 +664,27 @@ class BangumiWidget {
     ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: isCenter
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: isCenter
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.start,
           children: [
-            ...stats.expand(
-              (stat) => [
-                Text(
-                  '${formatCount(collection[stat.key] ?? 0)} ${stat.label}',
+            ...stats.expand((stat) sync* {
+              yield Text(
+                '${formatCount(collection[stat.key] ?? 0)} ${stat.label}',
+                style: TextStyle(fontSize: 12, color: stat.color),
+              );
+              if (stat != stats.last) {
+                yield Text(
+                  ' / ',
                   style: TextStyle(fontSize: 12, color: stat.color),
-                ),
-                const Text(' / '),
-              ],
-            ),
+                );
+              }
+            }),
           ],
         ),
         SizedBox(height: 3),

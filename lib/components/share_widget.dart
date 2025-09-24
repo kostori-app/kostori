@@ -426,7 +426,11 @@ class _ShareWidgetState extends State<ShareWidget> {
                     horizontal: 16,
                   ),
                   child: Align(
-                    child: BangumiWidget.buildStatsRow(context, bangumiItem),
+                    child: BangumiWidget.buildStatsRow(
+                      context: context,
+                      bangumiItem: bangumiItem,
+                      isCenter: true,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
