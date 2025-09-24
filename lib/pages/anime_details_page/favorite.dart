@@ -106,7 +106,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     children: [
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pop(); // 取消关闭对话框
+                          Navigator.of(context).pop();
                         },
                         child: Text("Cancel".tl),
                       ),
@@ -115,25 +115,33 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                         onPressed: selectedLocalFolders.isEmpty
                             ? null
                             : () async {
-                                // 执行添加操作
-                                for (final folder in selectedLocalFolders.where(
-                                  (f) => !added.contains(f),
-                                )) {
-                                  LocalFavoritesManager().addAnime(
-                                    folder,
-                                    widget.favoriteItem,
-                                  );
-                                }
+                                for (final folder in selectedLocalFolders) {
+                                  final alreadyIn = added.contains(folder);
 
-                                // 执行删除操作
-                                for (final folder in selectedLocalFolders.where(
-                                  (f) => added.contains(f),
-                                )) {
-                                  LocalFavoritesManager().deleteAnimeWithId(
-                                    folder,
-                                    widget.cid,
-                                    widget.type,
-                                  );
+                                  if (!alreadyIn) {
+                                    if (added.isNotEmpty) {
+                                      for (final source in added) {
+                                        LocalFavoritesManager().moveFavorite(
+                                          source,
+                                          folder,
+                                          widget.cid,
+                                          widget.type,
+                                        );
+                                      }
+                                    } else {
+                                      LocalFavoritesManager().addAnime(
+                                        folder,
+                                        widget.favoriteItem,
+                                      );
+                                    }
+                                  } else {
+                                    // 删除逻辑
+                                    LocalFavoritesManager().deleteAnimeWithId(
+                                      folder,
+                                      widget.cid,
+                                      widget.type,
+                                    );
+                                  }
                                 }
 
                                 // 更新状态
@@ -145,7 +153,8 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                     );
                                     selectedLocalFolders.clear();
                                   });
-                                  widget.onFavorite(foldersToAdd > 0);
+
+                                  widget.onFavorite(added.isNotEmpty);
                                   Navigator.of(context).pop();
                                 }
                               },
