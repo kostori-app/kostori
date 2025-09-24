@@ -710,12 +710,14 @@ class LocalFavoritesManager with ChangeNotifier {
     }
 
     for (var i in items) {
-      StatsManager().addFavoriteRecord(
-        id: i.id,
-        type: i.type.value,
-        folder: '$sourceFolder,$targetFolder',
-        action: FavoriteAction.move,
-      );
+      if (sourceFolder != targetFolder) {
+        StatsManager().addFavoriteRecord(
+          id: i.id,
+          type: i.type.value,
+          folder: '$sourceFolder,$targetFolder',
+          action: FavoriteAction.move,
+        );
+      }
     }
 
     // notifyListeners();
