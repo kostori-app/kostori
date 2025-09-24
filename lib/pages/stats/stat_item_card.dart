@@ -511,7 +511,7 @@ class StatItemWidget extends StatelessWidget {
       if (bangumiItem != null) {
         cover = bangumiItem.images['large']!;
       } else {
-        cover = stats.cover!;
+        cover = stats.cover ?? '';
       }
 
       if (stats.cover == null && bangumiItem == null) {
