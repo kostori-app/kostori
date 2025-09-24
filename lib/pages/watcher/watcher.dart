@@ -109,7 +109,6 @@ class WatcherState extends State<Watcher>
       }
     });
     Future.microtask(() async {
-      await _initializeProgress();
       if (history.lastWatchEpisode != 0) {
         loadInfo(history.lastWatchEpisode!, history.lastRoad!.toInt());
       }
@@ -458,44 +457,6 @@ class WatcherState extends State<Watcher>
               ),
             ),
     );
-  }
-
-  Future<void> _initializeProgress() async {
-    // 获取所有需要处理的 episodes，并将每种类型的 road 设置为对应的数字
-    final allEpisodes = anime.episode ?? {};
-
-    // 遍历 episodes
-    int roadCounter = 0;
-    for (var entry in allEpisodes.entries) {
-      final episodes = entry
-          .value; // Map<String, String> { '1': '/path/to/episode1.mp4', ... }
-
-      // 使用 entries.asMap() 来获取索引和键值对
-      for (var index = 0; index < episodes.length; index++) {
-        // 这里 road 值不随着 index 递增，而是随着 episodeType 递增
-        final road = roadCounter;
-
-        // 检查是否已经存在
-        final exists = await HistoryManager().checkIfProgressExists(
-          historyId: anime.animeId,
-          type: AnimeType(anime.sourceKey.hashCode),
-          episode: index,
-          road: road,
-        );
-
-        if (!exists) {
-          // 不存在时插入数据
-          final newProgress = Progress.fromModel(
-            model: anime,
-            episode: index,
-            road: road,
-            progressInMilli: 0,
-          );
-          await HistoryManager().addProgress(newProgress, anime.animeId);
-        }
-      }
-      roadCounter++;
-    }
   }
 
   void updateHistory() {
