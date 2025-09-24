@@ -217,6 +217,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       bangumiId: history!.bangumiId,
     );
     watcherController.anime = data!;
+    await initializeProgress();
   }
 
   @override
