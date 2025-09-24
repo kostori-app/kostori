@@ -127,41 +127,56 @@ class _ShareWidgetState extends State<ShareWidget> {
   Widget score(BuildContext context, BangumiItem bangumiItem) {
     return Align(
       alignment: Alignment.bottomRight,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
         children: [
-          if (bangumiItem.total >= 20) ...[
-            Text('${bangumiItem.score}', style: TextStyle(fontSize: 28.0)),
-            SizedBox(width: 5),
-            Container(
-              padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
-                  width: 1.0,
-                ),
-              ),
-              child: Text(Utils.getRatingLabel(bangumiItem.score)),
-            ),
-            SizedBox(width: 4),
-          ],
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              RatingBarIndicator(
-                itemCount: 5,
-                rating: bangumiItem.score.toDouble() / 2,
-                itemBuilder: (context, index) => const Icon(Icons.star_rounded),
-                itemSize: 18.0,
-              ),
-              Text(
-                '@t reviews | #@r'.tlParams({
-                  'r': bangumiItem.rank,
-                  't': bangumiItem.total,
-                }),
-                style: TextStyle(fontSize: 12),
+              if (bangumiItem.total >= 20) ...[
+                Text('${bangumiItem.score}', style: TextStyle(fontSize: 24.0)),
+                SizedBox(width: 3),
+                Container(
+                  padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.toOpacity(0.72),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Text(
+                    Utils.getRatingLabel(bangumiItem.score),
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  RatingBarIndicator(
+                    itemCount: 5,
+                    rating: bangumiItem.score.toDouble() / 2,
+                    itemBuilder: (context, index) =>
+                        const Icon(Icons.star_rounded),
+                    itemSize: 12.0,
+                  ),
+                  Text(
+                    '@t reviews | #@r'.tlParams({
+                      'r': bangumiItem.rank,
+                      't': bangumiItem.total,
+                    }),
+                    style: TextStyle(fontSize: 8),
+                  ),
+                ],
               ),
             ],
           ),
@@ -319,7 +334,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      double height = constraints.maxWidth / 2;
+                      double height = constraints.maxWidth / 1.5;
                       double width = height * 0.72;
                       return Container(
                         width: constraints.maxWidth,
@@ -348,7 +363,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -363,7 +378,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                                           ? bangumiItem.nameCn
                                           : bangumiItem.name,
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
                                       maxLines: 3,
@@ -371,7 +386,7 @@ class _ShareWidgetState extends State<ShareWidget> {
                                     ),
                                     Text(
                                       bangumiItem.name,
-                                      style: TextStyle(fontSize: 12),
+                                      style: TextStyle(fontSize: 8),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -397,17 +412,19 @@ class _ShareWidgetState extends State<ShareWidget> {
                                                 width: 1.0,
                                               ),
                                             ),
-                                            child: Text(bangumiItem.airDate),
+                                            child: Text(
+                                              bangumiItem.airDate,
+                                              style: TextStyle(fontSize: 12),
+                                            ),
                                           ),
-                                        SizedBox(width: 12.0),
-                                        BangumiWidget.bangumiTimeText(
-                                          bangumiItem,
-                                          currentWeekEp,
-                                          isCompleted,
-                                        ),
                                       ],
                                     ),
-
+                                    SizedBox(height: 6.0),
+                                    BangumiWidget.bangumiTimeText(
+                                      bangumiItem,
+                                      currentWeekEp,
+                                      isCompleted,
+                                    ),
                                     Spacer(),
                                     score(context, bangumiItem),
                                   ],
