@@ -654,10 +654,32 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
               0,
               1,
               0,
-            ]), // 轻微亮度增强
-            child: Video(
-              controller: widget.controller.playerController,
-              fit: BoxFit.cover,
+            ]),
+            child: Stack(
+              children: [
+                Video(
+                  controller: widget.controller.playerController,
+                  fit: BoxFit.cover,
+                  controls: null,
+                ),
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 1.0,
+                      colors: [
+                        Colors.transparent,
+                        Color.fromRGBO(0, 0, 0, 0.2),
+                        Color.fromRGBO(0, 0, 0, 0.5),
+                        Color.fromRGBO(0, 0, 0, 0.7),
+                      ],
+                      stops: [0.0, 0.6, 0.85, 1.0],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
