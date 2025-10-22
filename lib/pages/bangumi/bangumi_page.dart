@@ -32,6 +32,8 @@ class _BangumiPageState extends State<BangumiPage> {
   bool isLoadingMore = false;
   bool showFB = false;
 
+  int count = 0;
+
   @override
   void initState() {
     super.initState();
@@ -87,9 +89,8 @@ class _BangumiPageState extends State<BangumiPage> {
   Future<void> queryBangumiByTrend() async {
     isLoadingMore = true;
     setState(() {});
-    var result = await Bangumi.getBangumiTrendsList(
-      offset: bangumiItems.length,
-    );
+    var result = await Bangumi.getBangumiTrendsList(offset: count * 24);
+    count += 1;
     bangumiItems.addAll(result);
     isLoadingMore = false;
     if (mounted) setState(() {});
