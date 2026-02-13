@@ -19,7 +19,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   share_plus
   sqlite3_flutter_libs
   url_launcher_windows
-  volume_controller
   window_manager
   windows_taskbar
 )
