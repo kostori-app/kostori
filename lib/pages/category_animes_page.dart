@@ -1,4 +1,5 @@
 import "package:flutter/material.dart";
+import "package:kostori/components/anime_list.dart";
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:kostori/foundation/app.dart";
