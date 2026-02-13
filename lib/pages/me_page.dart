@@ -94,47 +94,50 @@ class _MePageState extends State<MePage> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             opacity: showFB ? 1 : 0,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20, right: 0),
-              child: GridSpeedDial(
-                icon: Icons.menu,
-                activeIcon: Icons.close,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                spacing: 6,
-                spaceBetweenChildren: 4,
-                direction: SpeedDialDirection.up,
-                childPadding: const EdgeInsets.all(6),
-                childrens: [
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.refresh),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () {
-                        setState(() {
-                          showFB = false;
-                        });
-                      },
-                    ),
+            child: Visibility(
+              visible: showFB,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20, right: 0),
+                child: GridSpeedDial(
+                  icon: Icons.menu,
+                  activeIcon: Icons.close,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  spacing: 6,
+                  spaceBetweenChildren: 4,
+                  direction: SpeedDialDirection.up,
+                  childPadding: const EdgeInsets.all(6),
+                  childrens: [
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.refresh),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () {
+                          setState(() {
+                            showFB = false;
+                          });
+                        },
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.vertical_align_top),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () => scrollToTop(),
+                      ),
+                    ],
                   ],
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.vertical_align_top),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () => scrollToTop(),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
