@@ -188,6 +188,7 @@ class Settings with ChangeNotifier {
     'FavoriteTypeCollect': 'none',
     'FavoriteTypeOnHold': 'none',
     'FavoriteTypeDropped': 'none',
+    'animeListDisplayMode': 'paging',
   };
 
   dynamic operator [](String key) {
