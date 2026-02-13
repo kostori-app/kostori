@@ -440,7 +440,7 @@ LoadingDialogController showLoadingDialog(
 class ContentDialog extends StatelessWidget {
   const ContentDialog({
     super.key,
-    this.title, // 如果不传 title 将不会展示
+    this.title,
     required this.content,
     this.dismissible = true,
     this.actions = const [],
@@ -449,52 +449,43 @@ class ContentDialog extends StatelessWidget {
   });
 
   final String? title;
-
   final Widget content;
-
   final List<Widget> actions;
-
   final bool dismissible;
-
   final VoidCallback? cancel;
-
   final bool displayButton;
 
   @override
   Widget build(BuildContext context) {
-    var content = SingleChildScrollView(
+    var dialogContent = SingleChildScrollView(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          title != null
-              ? Padding(
-                  padding: const EdgeInsets.only(
-                    left: 24.0,
-                    top: 24,
-                    bottom: 12,
-                  ),
-                  child: Text(
-                    title!,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                )
-              : const SizedBox.shrink(),
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 24.0, top: 24, bottom: 12),
+              child: Text(
+                title!,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           Padding(
-            padding: const EdgeInsets.only(left: 24.0, right: 24),
-            child: this.content,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: content,
           ),
           const SizedBox(height: 16),
-          if (displayButton) ...[
+          if (displayButton)
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 const SizedBox(width: 24),
                 Button.text(
                   onPressed: () {
-                    if (cancel != null) {
-                      cancel;
-                    }
+                    cancel?.call();
                     Navigator.pop(context);
                   },
                   child: Text("Cancel".tl),
@@ -503,11 +494,11 @@ class ContentDialog extends StatelessWidget {
                 ...actions,
               ],
             ).paddingRight(12),
-            const SizedBox(height: 24),
-          ],
+          if (displayButton) const SizedBox(height: 24),
         ],
       ),
     );
+
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -515,7 +506,7 @@ class ContentDialog extends StatelessWidget {
           color: context.brightness == Brightness.dark
               ? Colors.white.toOpacity(0.1)
               : Colors.black.toOpacity(0.1),
-          width: 1.0,
+          width: 1,
         ),
       ),
       insetPadding: context.width < 400
@@ -529,27 +520,16 @@ class ContentDialog extends StatelessWidget {
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
           child: Container(
+            constraints: const BoxConstraints(maxWidth: 600),
             decoration: BoxDecoration(
               color: context.colorScheme.surface.toOpacity(0.22),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              alignment: Alignment.topCenter,
-              child: IntrinsicWidth(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: 600,
-                    minWidth: math.min(400, context.width - 16),
-                  ),
-                  child: MediaQuery.removePadding(
-                    removeTop: true,
-                    removeBottom: true,
-                    context: context,
-                    child: content,
-                  ),
-                ),
-              ),
+            child: MediaQuery.removePadding(
+              removeTop: true,
+              removeBottom: true,
+              context: context,
+              child: dialogContent,
             ),
           ),
         ),
