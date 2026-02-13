@@ -170,45 +170,53 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
     });
     return ContentDialog(
       title: "Settings".tl,
-      content: Column(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            title: Text("Search in".tl),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: 320),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                title: Text("Search in".tl),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: sources.map((e) {
+                  return OptionChip(
+                    text: e.name.tl,
+                    isSelected: searchTarget == e.key,
+                    onTap: () {
+                      setState(() {
+                        searchTarget = e.key;
+                        options.clear();
+                        final searchOptions =
+                            AnimeSource.find(
+                              searchTarget,
+                            )!.searchPageData!.searchOptions ??
+                            <SearchOptions>[];
+                        options = searchOptions
+                            .map((e) => e.defaultValue)
+                            .toList();
+                        onChanged();
+                      });
+                    },
+                  );
+                }).toList(),
+              ).fixWidth(double.infinity).paddingHorizontal(16),
+              buildSearchOptions(),
+            ],
           ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: sources.map((e) {
-              return OptionChip(
-                text: e.name.tl,
-                isSelected: searchTarget == e.key,
-                onTap: () {
-                  setState(() {
-                    searchTarget = e.key;
-                    options.clear();
-                    final searchOptions =
-                        AnimeSource.find(
-                          searchTarget,
-                        )!.searchPageData!.searchOptions ??
-                        <SearchOptions>[];
-                    options = searchOptions.map((e) => e.defaultValue).toList();
-                    onChanged();
-                  });
-                },
-              );
-            }).toList(),
-          ).fixWidth(double.infinity).paddingHorizontal(16),
-          buildSearchOptions(),
-          const SizedBox(height: 24),
-          FilledButton(
-            child: Text("Confirm".tl),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-        ],
+        ),
       ).fixWidth(double.infinity),
+      actions: [
+        FilledButton(
+          child: Text("Confirm".tl),
+          onPressed: () {
+            context.pop();
+          },
+        ),
+      ],
     );
   }
 
