@@ -957,26 +957,12 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
             multiSelectMode = false;
             selectedAnimes.clear();
           });
-          if (App.isAndroid) {
-            Log.addLog(
-              LogLevel.info,
-              'multiSelectMode',
-              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
-            );
-          }
         } else if (searchAllMode) {
           setState(() {
             searchAllMode = false;
-            keyword = "";
+            favoritesController.isRefreshEnabled = true;
             updateAnimes();
           });
-          if (App.isAndroid) {
-            Log.addLog(
-              LogLevel.info,
-              'searchAllMode',
-              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
-            );
-          }
         }
       },
       child: body,
