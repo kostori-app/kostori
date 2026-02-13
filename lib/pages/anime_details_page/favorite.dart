@@ -115,27 +115,38 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                         onPressed: selectedLocalFolders.isEmpty
                             ? null
                             : () async {
-                                for (final folder in selectedLocalFolders) {
-                                  final alreadyIn = added.contains(folder);
+                                final containsAny = selectedLocalFolders.any(
+                                  (f) => added.contains(f),
+                                );
+                                final notContainsAny = selectedLocalFolders.any(
+                                  (f) => !added.contains(f),
+                                );
 
-                                  if (!alreadyIn) {
-                                    if (added.isNotEmpty) {
-                                      for (final source in added) {
-                                        LocalFavoritesManager().moveFavorite(
-                                          source,
-                                          folder,
-                                          widget.cid,
-                                          widget.type,
-                                        );
-                                      }
-                                    } else {
-                                      LocalFavoritesManager().addAnime(
-                                        folder,
-                                        widget.favoriteItem,
-                                      );
-                                    }
-                                  } else {
-                                    // 删除逻辑
+                                if (containsAny && notContainsAny) {
+                                  final targets = [
+                                    ...selectedLocalFolders.where(
+                                      (f) => !added.contains(f),
+                                    ),
+                                    ...selectedLocalFolders.where(
+                                      (f) => added.contains(f),
+                                    ),
+                                  ];
+                                  final sources = added.toList();
+                                  LocalFavoritesManager().moveFavorite(
+                                    sources,
+                                    targets,
+                                    widget.cid,
+                                    widget.type,
+                                  );
+                                } else if (notContainsAny) {
+                                  for (final folder in selectedLocalFolders) {
+                                    LocalFavoritesManager().addAnime(
+                                      folder,
+                                      widget.favoriteItem,
+                                    );
+                                  }
+                                } else if (containsAny) {
+                                  for (final folder in selectedLocalFolders) {
                                     LocalFavoritesManager().deleteAnimeWithId(
                                       folder,
                                       widget.cid,
@@ -144,7 +155,6 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                   }
                                 }
 
-                                // 更新状态
                                 if (mounted) {
                                   setState(() {
                                     added = LocalFavoritesManager().find(
@@ -156,6 +166,20 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
 
                                   widget.onFavorite(added.isNotEmpty);
                                   Navigator.of(context).pop();
+                                  showCenter(
+                                    seconds: 1,
+                                    icon: Gif(
+                                      image: AssetImage('assets/img/check.gif'),
+                                      height: 80,
+                                      fps: 120,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      autostart: Autostart.once,
+                                    ),
+                                    message: '操作成功',
+                                    context: context,
+                                  );
                                 }
                               },
                         child: Text('OK'.tl),
