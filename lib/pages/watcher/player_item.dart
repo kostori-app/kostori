@@ -11,7 +11,9 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/player_item_base_panel.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
+import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
@@ -447,6 +449,15 @@ class _PlayerItemState extends State<PlayerItem>
                             playerController: playerController,
                           ),
                         ),
+                      PlayerItemBasePanel(
+                        playerController: playerController,
+                        handleProgressBarDragStart: handleProgressBarDragStart,
+                        handleProgressBarDragEnd: handleProgressBarDragEnd,
+                        animationController: animationController!,
+                        currentPosition: playerController.currentPosition,
+                        buffer: playerController.buffer,
+                        duration: playerController.duration,
+                      ),
                       GestureDetector(
                         onTap: () {
                           _handleTap();
@@ -476,17 +487,32 @@ class _PlayerItemState extends State<PlayerItem>
                           height: double.infinity,
                         ),
                       ),
-                      PlayerItemPanel(
-                        openMenu: widget.openMenu,
-                        handleProgressBarDragStart: handleProgressBarDragStart,
-                        handleProgressBarDragEnd: handleProgressBarDragEnd,
-                        animationController: animationController!,
-                        startHideTimer: startHideTimer,
-                        cancelHideTimer: cancelHideTimer,
-                        showVideoInfo: showVideoInfo,
-                        playerController: playerController,
-                        glimmerEffectMode: glimmerEffectMode,
-                      ),
+                      if (!playerController.isPortraitFullscreen)
+                        PlayerItemPanel(
+                          openMenu: widget.openMenu,
+                          handleProgressBarDragStart:
+                              handleProgressBarDragStart,
+                          handleProgressBarDragEnd: handleProgressBarDragEnd,
+                          animationController: animationController!,
+                          startHideTimer: startHideTimer,
+                          cancelHideTimer: cancelHideTimer,
+                          showVideoInfo: showVideoInfo,
+                          playerController: playerController,
+                          glimmerEffectMode: glimmerEffectMode,
+                        )
+                      else
+                        PlayerItemPortraitPanel(
+                          playerController: playerController,
+                          openMenu: widget.openMenu,
+                          handleProgressBarDragStart:
+                              handleProgressBarDragStart,
+                          handleProgressBarDragEnd: handleProgressBarDragEnd,
+                          animationController: animationController!,
+                          startHideTimer: startHideTimer,
+                          cancelHideTimer: cancelHideTimer,
+                          showVideoInfo: showVideoInfo,
+                          glimmerEffectMode: glimmerEffectMode,
+                        ),
                       // / 播放器手势控制
                       Positioned.fill(
                         left: 16,
