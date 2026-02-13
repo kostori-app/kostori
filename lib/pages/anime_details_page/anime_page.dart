@@ -447,7 +447,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                             (history?.bangumiId == null || bangumiItem == null)
                                 ? BangumiWidget.showImagePreview(
                                     context,
-                                    anime.cover,
+                                    widget.cover ?? anime.cover,
                                     anime.title,
                                     "cover${widget.heroID}",
                                   )
@@ -504,6 +504,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     () => AggregatedSearchPage(
                                       keyword: anime.title,
                                     ),
+                                    iosFullScreenGesture: false,
                                   );
                                 },
                                 onLongPress: () {
