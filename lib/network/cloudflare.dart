@@ -130,13 +130,18 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
         var head =
             await controller.evaluateJavascript("document.head.innerHTML") ??
             "";
+        var body =
+            await controller.evaluateJavascript("document.body.innerHTML") ??
+            "";
         if (appdata.settings['debugInfo']) {
           Log.info("Cloudflare", "Checking head: $head");
         }
         var isChallenging =
             head.contains('#challenge-success-text') ||
             head.contains("#challenge-error-text") ||
-            head.contains("#challenge-form");
+            head.contains("#challenge-form") ||
+            body.contains("challenge-platform") ||
+            body.contains("window._cf_chl_opt");
         if (!isChallenging) {
           Log.info(
             "Cloudflare",
@@ -163,17 +168,20 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
     bool success = false;
     void check(InAppWebViewController controller) async {
       var head =
-          (await controller.evaluateJavascript(
-            source: "document.head.innerHTML",
-          ))?.toString() ??
-          '';
+          await controller.evaluateJavascript(source: "document.head.innerHTML")
+              as String;
+      var body =
+          await controller.evaluateJavascript(source: "document.body.innerHTML")
+              as String;
       if (appdata.settings['debugInfo']) {
         Log.info("Cloudflare", "Checking head: $head");
       }
       var isChallenging =
           head.contains('#challenge-success-text') ||
           head.contains("#challenge-error-text") ||
-          head.contains("#challenge-form");
+          head.contains("#challenge-form") ||
+          body.contains("challenge-platform") ||
+          body.contains("window._cf_chl_opt");
       if (!isChallenging) {
         Log.info(
           "Cloudflare",
