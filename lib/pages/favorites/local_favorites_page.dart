@@ -735,7 +735,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                     selections: selectedAnimes,
                     enableFavorite: false,
                     onTap: multiSelectMode
-                        ? (a) {
+                        ? (a, heroID) {
                             setState(() {
                               if (selectedAnimes.containsKey(
                                 a as FavoriteItem,
@@ -753,7 +753,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                   -1;
                             });
                           }
-                        : (a) {
+                        : (a, heroID) {
                             if (a.viewMore != null &&
                                 a.viewMore?.attributes != null) {
                               var context =
@@ -761,8 +761,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                               a.viewMore!.jump(context);
                             } else {
                               App.mainNavigatorKey?.currentContext?.to(
-                                () =>
-                                    AnimePage(id: a.id, sourceKey: a.sourceKey),
+                                () => AnimePage(
+                                  id: a.id,
+                                  sourceKey: a.sourceKey,
+                                  cover: a.cover,
+                                  title: a.title,
+                                  heroID: heroID,
+                                ),
                               );
                               final stats = StatsManager();
                               if (!stats.isExist(
@@ -792,7 +797,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                               );
                             }
                           },
-                    onLongPressed: (a) {
+                    onLongPressed: (a, heroID) {
                       setState(() {
                         if (!multiSelectMode) {
                           multiSelectMode = true;

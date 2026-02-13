@@ -331,7 +331,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       selections: selectedAnimes,
                       onLongPressed: null,
                       onTap: multiSelectMode
-                          ? (c) {
+                          ? (c, heroID) {
                               setState(() {
                                 if (selectedAnimes.containsKey(c as History)) {
                                   selectedAnimes.remove(c);
@@ -343,7 +343,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                 }
                               });
                             }
-                          : (a) {
+                          : (a, heroID) {
                               if (a.viewMore != null) {
                                 var context =
                                     App.mainNavigatorKey!.currentContext!;
@@ -353,6 +353,9 @@ class _HistoryPageState extends State<HistoryPage> {
                                   () => AnimePage(
                                     id: a.id,
                                     sourceKey: a.sourceKey,
+                                    cover: a.cover,
+                                    title: a.title,
+                                    heroID: heroID,
                                   ),
                                 );
                                 final stats = StatsManager();
@@ -377,11 +380,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                     );
                                   }
                                 }
-                                LocalFavoritesManager().updateRecentlyWatched(
-                                  a.id,
-                                  AnimeType(a.sourceKey.hashCode),
-                                );
                               }
+                              LocalFavoritesManager().updateRecentlyWatched(
+                                a.id,
+                                AnimeType(a.sourceKey.hashCode),
+                              );
                             },
                       badgeBuilder: (c) => AnimeSource.find(c.sourceKey)?.name,
                       menuBuilder: (c) => [
@@ -449,43 +452,46 @@ class _HistoryPageState extends State<HistoryPage> {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             opacity: showFB ? 1 : 0,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20, right: 0),
-              child: GridSpeedDial(
-                icon: Icons.menu,
-                activeIcon: Icons.close,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                spacing: 6,
-                spaceBetweenChildren: 4,
-                direction: SpeedDialDirection.up,
-                childPadding: const EdgeInsets.all(6),
-                childrens: [
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.refresh),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: onUpdate,
-                    ),
+            child: Visibility(
+              visible: showFB,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20, right: 0),
+                child: GridSpeedDial(
+                  icon: Icons.menu,
+                  activeIcon: Icons.close,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  spacing: 6,
+                  spaceBetweenChildren: 4,
+                  direction: SpeedDialDirection.up,
+                  childPadding: const EdgeInsets.all(6),
+                  childrens: [
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.refresh),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: onUpdate,
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.vertical_align_top),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: scrollToTop,
+                      ),
+                    ],
                   ],
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.vertical_align_top),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: scrollToTop,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),

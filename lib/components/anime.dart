@@ -789,9 +789,9 @@ class SliverGridAnimes extends StatefulWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  final void Function(Anime)? onTap;
+  final void Function(Anime, int heroID)? onTap;
 
-  final void Function(Anime)? onLongPressed;
+  final void Function(Anime, int heroID)? onLongPressed;
 
   final bool? enableFavorite;
 
@@ -912,9 +912,9 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  final void Function(Anime)? onTap;
+  final void Function(Anime, int heroID)? onTap;
 
-  final void Function(Anime)? onLongPressed;
+  final void Function(Anime, int heroID)? onLongPressed;
 
   final bool? enableFavorite;
 
@@ -946,14 +946,17 @@ class _SliverGridAnimes extends StatelessWidget {
             enableHistory: enableHistory ?? false,
             badge: badge,
             menuOptions: menuBuilder?.call(animes[index]),
-            onTap: onTap != null ? () => onTap!(animes[index]) : null,
+            onTap: onTap != null
+                ? () => onTap!(animes[index], heroIDs[index])
+                : null,
             onLongPressed: onLongPressed != null
-                ? () => onLongPressed!(animes[index])
+                ? () => onLongPressed!(animes[index], heroIDs[index])
                 : null,
             heroID: heroIDs[index],
           );
           if (selection == null) return anime;
           return AnimatedContainer(
+            key: ValueKey(animes[index].id),
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
               color: isSelected
@@ -992,9 +995,11 @@ class _SliverGridAnimes extends StatelessWidget {
             enableHistory: enableHistory ?? false,
             badge: badge,
             menuOptions: menuBuilder?.call(animes[index]),
-            onTap: onTap != null ? () => onTap!(animes[index]) : null,
+            onTap: onTap != null
+                ? () => onTap!(animes[index], heroIDs[index])
+                : null,
             onLongPressed: onLongPressed != null
-                ? () => onLongPressed!(animes[index])
+                ? () => onLongPressed!(animes[index], heroIDs[index])
                 : null,
             heroID: heroIDs[index],
           );
@@ -1902,6 +1907,7 @@ class SimpleAnimeTile extends StatelessWidget {
     required this.anime,
     this.onTap,
     this.withTitle = false,
+    this.heroID,
   });
 
   final Anime anime;
@@ -1909,6 +1915,8 @@ class SimpleAnimeTile extends StatelessWidget {
   final void Function()? onTap;
 
   final bool withTitle;
+
+  final int? heroID;
 
   @override
   Widget build(BuildContext context) {
@@ -1935,13 +1943,23 @@ class SimpleAnimeTile extends StatelessWidget {
       child: child,
     );
 
+    if (heroID != null) {
+      child = Hero(tag: "cover$heroID", child: child);
+    }
+
     child = AnimatedTapRegion(
       borderRadius: 12,
       onTap:
           onTap ??
           () {
             context.to(
-              () => AnimePage(id: anime.id, sourceKey: anime.sourceKey),
+              () => AnimePage(
+                id: anime.id,
+                sourceKey: anime.sourceKey,
+                cover: anime.cover,
+                title: anime.title,
+                heroID: heroID,
+              ),
             );
           },
       child: child,
