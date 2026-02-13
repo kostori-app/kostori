@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
