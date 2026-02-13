@@ -32,6 +32,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
 
   bool searchMode = false;
   bool searchAllMode = false;
+  bool searchHasUpper = false;
   bool showFB = false;
   bool multiSelectMode = false;
   bool isLoading = false;
@@ -489,7 +490,11 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               onTap: context.width < _kTwoPanelChangeWidth
                   ? favPage.showFolderSelector
                   : null,
-              child: Text(favPage.folder != null ? '' : "Unselected".tl),
+              child: Text(
+                favPage.folder != null
+                    ? LocalFavoritesManager().totalAnimes.toString()
+                    : "Unselected".tl,
+              ),
             ),
             actions: [
               Tooltip(
@@ -739,16 +744,16 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               ),
             )
           : TabBarView(
-              key: PageStorageKey("${favoritesController.folders}"),
-              controller: favoritesController.tabController,
-              children: favoritesController.folders.map((name) {
+              key: PageStorageKey("${widget.favoritesController.folders}"),
+              controller: widget.favoritesController.tabController,
+              children: widget.favoritesController.folders.map((name) {
                 return Observer(
                   builder: (context) => SliverGridAnimes(
                     key: PageStorageKey("local_$name"),
                     asSliver: false,
                     animes: searchAllMode
                         ? (searchResults[name] ?? [])
-                        : (favoritesController.animes[name] ?? []),
+                        : (widget.favoritesController.animes[name] ?? []),
                     selections: selectedAnimes,
                     enableFavorite: false,
                     onTap: multiSelectMode
@@ -808,11 +813,11 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                   );
                                 }
                               }
-                              manager.updateRecentlyWatched(
-                                a.id,
-                                AnimeType(a.sourceKey.hashCode),
-                              );
                             }
+                            manager.updateRecentlyWatched(
+                              a.id,
+                              AnimeType(a.sourceKey.hashCode),
+                            );
                           },
                     onLongPressed: (a, heroID) {
                       setState(() {
@@ -884,45 +889,48 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             opacity: showFB ? 1 : 0,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20, right: 0),
-              child: GridSpeedDial(
-                icon: Icons.menu,
-                activeIcon: Icons.close,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                spacing: 6,
-                spaceBetweenChildren: 4,
-                direction: SpeedDialDirection.up,
-                childPadding: const EdgeInsets.all(6),
-                childrens: [
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.refresh),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () async {
-                        await updateAnimes();
-                      },
-                    ),
+            child: Visibility(
+              visible: showFB,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 20, right: 0),
+                child: GridSpeedDial(
+                  icon: Icons.menu,
+                  activeIcon: Icons.close,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                  spacing: 6,
+                  spaceBetweenChildren: 4,
+                  direction: SpeedDialDirection.up,
+                  childPadding: const EdgeInsets.all(6),
+                  childrens: [
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.refresh),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () async {
+                          await updateAnimes();
+                        },
+                      ),
+                    ],
+                    [
+                      SpeedDialChild(
+                        child: const Icon(Icons.vertical_align_top),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimaryContainer,
+                        onTap: () => scrollToTop(),
+                      ),
+                    ],
                   ],
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.vertical_align_top),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () => scrollToTop(),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
