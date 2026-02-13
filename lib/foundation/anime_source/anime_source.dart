@@ -263,6 +263,8 @@ class AnimeSource {
 
   final StarRatingFunc? starRatingFunc;
 
+  final Map<String, String>? httpHeaders;
+
   Future<void> loadData() async {
     var file = File("${App.dataPath}/anime_source/$key.data");
     if (await file.exists()) {
@@ -335,6 +337,7 @@ class AnimeSource {
     this.enableTagsTranslate,
     this.starRatingFunc,
     this.isBangumi,
+    this.httpHeaders,
   );
 }
 
