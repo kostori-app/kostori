@@ -908,7 +908,6 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   builder: (context, setState) {
                     return ShareWidget(
                       selectedBangumiItems: selectedBangumiItems,
-                      useBriefMode: useBriefMode,
                       tag: tags,
                       sort: sortTypeToOption[sort],
                       airDate: airDate,

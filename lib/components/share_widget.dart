@@ -5,18 +5,21 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/bangumi.dart';
-import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
@@ -56,7 +59,6 @@ class ShareWidget extends StatefulWidget {
     this.id,
     this.selectedBangumiItems,
     this.anime,
-    this.useBriefMode,
     this.airDate,
     this.tag,
     this.sort,
@@ -69,8 +71,6 @@ class ShareWidget extends StatefulWidget {
   final Map<BangumiItem, bool>? selectedBangumiItems;
 
   final AnimeDetails? anime;
-
-  final bool? useBriefMode;
 
   final String? airDate;
 
@@ -92,11 +92,18 @@ class _ShareWidgetState extends State<ShareWidget> {
 
   late final BangumiItem bangumiItem;
   late final List<EpisodeInfo> allEpisodes;
+  late final List<BangumiSRI> bangumiSRI;
+  late final List<CommentItem> commentsList;
+  late final StatsDataImpl stats;
 
   late int id;
   late AnimeDetails anime;
   late Map<BangumiItem, bool> selectedBangumiItems;
   late CharacterFullItem characterFullItem;
+
+  int? latestRating;
+  String? latestComment;
+  int? watchDuration;
 
   @override
   void initState() {
@@ -119,6 +126,34 @@ class _ShareWidgetState extends State<ShareWidget> {
   Future<void> queryBangumi() async {
     bangumiItem = (await BangumiManager().bindFind(id))!;
     allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+    bangumiSRI = await Bangumi.getBangumiSRIByID(id);
+    commentsList = (await Bangumi.getBangumiCommentsByID(
+      id,
+      offset: 0,
+    )).commentList;
+    try {
+      stats = StatsManager().getStatsByIdAndType(
+        id: bangumiItem.id.toString(),
+        type: 'bangumi'.hashCode,
+      )!;
+      latestRating =
+          stats.rating.lastOrNull?.platformEventRecords.lastOrNull?.rating;
+      latestComment =
+          stats.comment.lastOrNull?.platformEventRecords.lastOrNull?.comment;
+      watchDuration =
+          stats
+              .comment
+              .lastOrNull
+              ?.platformEventRecords
+              .lastOrNull
+              ?.watchDuration ??
+          stats
+              .rating
+              .lastOrNull
+              ?.platformEventRecords
+              .lastOrNull
+              ?.watchDuration;
+    } catch (_) {}
     setState(() {
       isLoding = false;
     });
@@ -129,6 +164,31 @@ class _ShareWidgetState extends State<ShareWidget> {
       alignment: Alignment.bottomRight,
       child: Column(
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  RatingBarIndicator(
+                    itemCount: 5,
+                    rating: bangumiItem.score.toDouble() / 2,
+                    itemBuilder: (context, index) =>
+                        const Icon(Icons.star_rounded),
+                    itemSize: 12.0,
+                  ),
+                  Text(
+                    '@t reviews | #@r'.tlParams({
+                      'r': bangumiItem.rank,
+                      't': bangumiItem.total,
+                    }),
+                    style: TextStyle(fontSize: 8),
+                  ),
+                ],
+              ),
+            ],
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -153,31 +213,6 @@ class _ShareWidgetState extends State<ShareWidget> {
                   ),
                 ),
               ],
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  RatingBarIndicator(
-                    itemCount: 5,
-                    rating: bangumiItem.score.toDouble() / 2,
-                    itemBuilder: (context, index) =>
-                        const Icon(Icons.star_rounded),
-                    itemSize: 12.0,
-                  ),
-                  Text(
-                    '@t reviews | #@r'.tlParams({
-                      'r': bangumiItem.rank,
-                      't': bangumiItem.total,
-                    }),
-                    style: TextStyle(fontSize: 8),
-                  ),
-                ],
-              ),
             ],
           ),
         ],
@@ -563,6 +598,80 @@ class _ShareWidgetState extends State<ShareWidget> {
                     }).toList(),
                   ),
                 ),
+                if (bangumiSRI.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'Linked Items'.tl,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text('${bangumiSRI.length}', style: ts.s12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final crossAxisCount = 3;
+                        final spacing = 8.0;
+                        final totalSpacing = (crossAxisCount - 1) * spacing;
+                        final itemWidth =
+                            (constraints.maxWidth - totalSpacing) /
+                            crossAxisCount;
+                        final imageHeight = itemWidth * 1.3;
+
+                        return Wrap(
+                          spacing: spacing,
+                          runSpacing: 16,
+                          children: bangumiSRI.map((item) {
+                            return BangumiHorizontalCard(
+                              bangumiItem: item,
+                              width: itemWidth,
+                              imageHeight: imageHeight,
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ),
+                ],
                 if (bangumiItem.total >= 20) ...[
                   const SizedBox(height: 8),
                   Center(
@@ -666,6 +775,146 @@ class _ShareWidgetState extends State<ShareWidget> {
                         : BangumiBarChartPage(bangumiItem: bangumiItem),
                   ),
                 ],
+                if (commentsList.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '最新评论'.tl,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${commentsList.length >= 5 ? 5 : commentsList.length}',
+                            style: ts.s12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 16,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: 5,
+                      itemBuilder: (context, index) {
+                        final commentItem = commentsList[index];
+                        return CommentsCard(commentItem: commentItem);
+                      },
+                    ),
+                  ),
+                ],
+                if (latestComment != null || latestRating != null) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          '我的评价'.tl,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 24,
+                    ),
+                    child: Column(
+                      children: [
+                        if (latestRating != null) ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                child: Image(
+                                  image: AssetImage("images/app_icon.png"),
+                                  filterQuality: FilterQuality.medium,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Kostori'),
+                                  Text(
+                                    '评价时 ${Utils.formatHMS(watchDuration ?? 0)}',
+                                  ),
+                                ],
+                              ),
+                              Spacer(),
+                              RatingBarIndicator(
+                                itemCount: 5,
+                                rating: latestRating!.toDouble() / 2,
+                                itemBuilder: (context, index) =>
+                                    const Icon(Icons.star_rounded),
+                                itemSize: 20.0,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        if (latestComment != null)
+                          Row(
+                            children: [Expanded(child: Text(latestComment!))],
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -755,6 +1004,20 @@ class _ShareWidgetState extends State<ShareWidget> {
                             fontSize: 20,
                           ),
                         ),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('${keyList.length}', style: ts.s12),
+                      ),
                     ],
                   ),
                 ),
@@ -783,31 +1046,30 @@ class _ShareWidgetState extends State<ShareWidget> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 6,
-                    horizontal: 16,
-                  ),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: keyList.length,
-                    gridDelegate: SliverGridDelegateWithBangumiItems(
-                      widget.useBriefMode!,
-                      fixedCrossAxisCount: 3,
-                    ),
-                    itemBuilder: (context, index) {
-                      return widget.useBriefMode!
-                          ? BangumiWidget.buildBriefMode(
-                              context,
-                              keyList[index],
-                              '',
-                              showPlaceholder: false,
-                            )
-                          : BangumiWidget.buildDetailedMode(
-                              context,
-                              keyList[index],
-                              '',
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossAxisCount = 3;
+                      final spacing = 8.0;
+                      final totalSpacing = (crossAxisCount - 1) * spacing;
+                      final itemWidth =
+                          (constraints.maxWidth - totalSpacing) /
+                          crossAxisCount;
+                      final itemHeight = itemWidth * 1.4;
+
+                      return Center(
+                        child: Wrap(
+                          spacing: spacing,
+                          runSpacing: 16,
+                          children: keyList.map((item) {
+                            return BangumiGridCard(
+                              bangumiItem: item,
+                              width: itemWidth,
+                              height: itemHeight,
                             );
+                          }).toList(),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -996,6 +1258,256 @@ class _ShareWidgetState extends State<ShareWidget> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class BangumiGridCard extends StatelessWidget {
+  final BangumiItem bangumiItem;
+  final double width;
+  final double height;
+
+  const BangumiGridCard({
+    required this.bangumiItem,
+    required this.width,
+    required this.height,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget scoreWidget() {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (bangumiItem.total >= 20) ...[
+            Text(
+              '${bangumiItem.score}',
+              style: TextStyle(
+                fontSize: App.isAndroid ? 13 : 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              RatingBarIndicator(
+                itemCount: 5,
+                rating: bangumiItem.score / 2,
+                itemBuilder: (context, index) => const Icon(Icons.star_rounded),
+                itemSize: App.isAndroid ? 12 : 14,
+              ),
+              Text(
+                '@t reviews | #@r'.tlParams({
+                  'r': bangumiItem.rank,
+                  't': bangumiItem.total,
+                }),
+                style: TextStyle(
+                  fontSize: App.isAndroid ? 7 : 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: width,
+          height: height,
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: BangumiWidget.kostoriImage(
+                  context,
+                  bangumiItem.images['large']!,
+                  width: width,
+                  height: height,
+                  showPlaceholder: true,
+                ),
+              ),
+              if (bangumiItem.airDate.isNotEmpty)
+                Positioned(
+                  bottom: App.isAndroid ? 34 : 40,
+                  right: 4,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Opacity(
+                                  opacity: 0.6,
+                                  child: Image.asset(
+                                    'assets/img/noise.png',
+                                    // 模拟毛玻璃颗粒的纹理图
+                                    fit: BoxFit.cover,
+                                    color:
+                                        context.brightness == Brightness.light
+                                        ? Colors.white.toOpacity(0.3)
+                                        : Colors.black.toOpacity(0.3),
+                                    colorBlendMode: BlendMode.srcOver,
+                                  ),
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color:
+                                        context.brightness == Brightness.light
+                                        ? Colors.white.toOpacity(0.3)
+                                        : Colors.black.toOpacity(0.3),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+                          child: Text(
+                            bangumiItem.airDate,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Opacity(
+                                opacity: 0.6,
+                                child: Image.asset(
+                                  'assets/img/noise.png',
+                                  fit: BoxFit.cover,
+                                  color: context.brightness == Brightness.light
+                                      ? Colors.white.toOpacity(0.3)
+                                      : Colors.black.toOpacity(0.3),
+                                  colorBlendMode: BlendMode.srcOver,
+                                ),
+                              ),
+                            ),
+
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: context.brightness == Brightness.light
+                                      ? Colors.white.toOpacity(0.3)
+                                      : Colors.black.toOpacity(0.3),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
+                        child: scoreWidget(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: width,
+          child: Text(
+            bangumiItem.nameCn.isNotEmpty
+                ? bangumiItem.nameCn
+                : bangumiItem.name,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class BangumiHorizontalCard extends StatelessWidget {
+  final BangumiSRI bangumiItem;
+  final double width;
+  final double imageHeight;
+
+  const BangumiHorizontalCard({
+    required this.bangumiItem,
+    required this.width,
+    required this.imageHeight,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = bangumiItem.nameCn.isEmpty
+        ? bangumiItem.name
+        : bangumiItem.nameCn;
+
+    return SizedBox(
+      width: width,
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AspectRatio(
+              aspectRatio: width / imageHeight,
+              child: Ink.image(
+                image: CachedImageProvider(
+                  bangumiItem.images['large']!,
+                  sourceKey: 'bangumi',
+                ),
+                fit: BoxFit.cover,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Center(
+                child: Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: Center(
+                child: Text(
+                  bangumiItem.relation,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
