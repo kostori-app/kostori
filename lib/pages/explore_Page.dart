@@ -177,52 +177,80 @@ class _ExplorePageState extends State<ExplorePage>
               ),
             ),
             Positioned(
-              bottom: 10,
+              bottom: 30,
               right: 10,
               child: AnimatedOpacity(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 opacity: showFB ? 1 : 0,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 20, right: 0),
-                  child: GridSpeedDial(
-                    icon: Icons.menu,
-                    activeIcon: Icons.close,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    spacing: 6,
-                    spaceBetweenChildren: 4,
-                    direction: SpeedDialDirection.up,
-                    childPadding: const EdgeInsets.all(6),
-                    childrens: [
-                      [
-                        SpeedDialChild(
-                          child: const Icon(Icons.refresh),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: refresh,
-                        ),
+                child: Visibility(
+                  visible: showFB,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 20, right: 0),
+                    child: GridSpeedDial(
+                      icon: Icons.menu,
+                      activeIcon: Icons.close,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      spacing: 6,
+                      spaceBetweenChildren: 4,
+                      direction: SpeedDialDirection.up,
+                      childPadding: const EdgeInsets.all(6),
+                      childrens: [
+                        [
+                          SpeedDialChild(
+                            child: const Icon(Icons.refresh),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                            onTap: refresh,
+                          ),
+                        ],
+                        [
+                          SpeedDialChild(
+                            child: const Icon(Icons.vertical_align_top),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                            onTap: () =>
+                                GlobalState.find<_SingleExplorePageState>(
+                                  pages[controller.index],
+                                ).toTop(),
+                          ),
+                        ],
+                        [
+                          SpeedDialChild(
+                            child:
+                                appdata.settings['animeListDisplayMode'] ==
+                                    'paging'
+                                ? Icon(Icons.view_cozy_outlined)
+                                : Icon(Icons.menu),
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
+                            onTap: () {
+                              appdata.settings['animeListDisplayMode'] =
+                                  appdata.settings['animeListDisplayMode'] ==
+                                      'paging'
+                                  ? 'continuous'
+                                  : 'paging';
+                              appdata.saveData();
+                              refresh;
+                              setState(() {});
+                            },
+                          ),
+                        ],
                       ],
-                      [
-                        SpeedDialChild(
-                          child: const Icon(Icons.vertical_align_top),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: () =>
-                              GlobalState.find<_SingleExplorePageState>(
-                                pages[controller.index],
-                              ).toTop(),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),
