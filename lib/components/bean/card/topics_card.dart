@@ -99,7 +99,7 @@ class TopicsCard extends StatelessWidget {
     final page = BangumiTopicsPage(id: topics.id);
 
     if (!isBottom) {
-      context.to(() => page);
+      context.to(() => page, iosFullScreenGesture: false);
     } else {
       showModalBottomSheet(
         isScrollControlled: true,

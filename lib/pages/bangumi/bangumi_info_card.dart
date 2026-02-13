@@ -227,6 +227,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                 bangumiPage: true,
                 keywords: bangumiItem.alias,
               ),
+              iosFullScreenGesture: false,
             );
           },
           style: FilledButton.styleFrom(

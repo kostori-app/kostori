@@ -221,6 +221,7 @@ class _InfoTabViewState extends State<InfoTabView>
                             allEpisodes: widget.allEpisodes,
                             infoController: widget.infoController,
                           ),
+                          iosFullScreenGesture: false,
                         );
                       },
                       child: Text('more'.tl),
@@ -262,6 +263,7 @@ class _InfoTabViewState extends State<InfoTabView>
                                         episode: episode,
                                         infoController: widget.infoController,
                                       ),
+                                      iosFullScreenGesture: false,
                                     );
                                   },
                                   onLongPress: () {
@@ -438,7 +440,7 @@ class _InfoTabViewState extends State<InfoTabView>
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          clipBehavior: Clip.antiAlias, // 确保圆角裁剪对 Ink.image 生效
+                          clipBehavior: Clip.antiAlias,
                           child: InkWell(
                             onTap: () {
                               App.mainNavigatorKey?.currentContext?.to(
