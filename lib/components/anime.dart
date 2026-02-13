@@ -1416,39 +1416,39 @@ class _BangumiCardState extends State<BangumiCard> {
       children: [
         Text(
           '${bangumiItem.score}',
-          style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
         ),
         SizedBox(width: 5),
         Container(
-          padding: EdgeInsets.fromLTRB(8, 5, 8, 5), // 可选，设置内边距
+          padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8), // 设置圆角半径
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
-              width: 1.0, // 设置边框宽度
+              width: 1.0,
             ),
           ),
           child: Text(
             Utils.getRatingLabel(bangumiItem.score),
-            style: TextStyle(fontSize: 10.0, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
           ),
         ),
         SizedBox(width: 4),
         Column(
-          crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             RatingBarIndicator(
               itemCount: 5,
               rating: bangumiItem.score.toDouble() / 2,
               itemBuilder: (context, index) => const Icon(Icons.star_rounded),
-              itemSize: 16.0,
+              itemSize: 10.0,
             ),
             Text(
               '@t reviews | #@r'.tlParams({
                 'r': bangumiItem.rank,
                 't': bangumiItem.total,
               }),
-              style: TextStyle(fontSize: 10),
+              style: TextStyle(fontSize: 8),
             ),
           ],
         ),
@@ -1470,7 +1470,6 @@ class _BangumiCardState extends State<BangumiCard> {
         clipBehavior: Clip.antiAlias,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // **背景图片（无Hero）**
             Widget backgroundImage = BangumiWidget.kostoriImage(
               context,
               image!,
@@ -1486,8 +1485,6 @@ class _BangumiCardState extends State<BangumiCard> {
               clipBehavior: Clip.antiAlias,
               child: backgroundImage,
             );
-
-            // **前景图片（保留Hero动画）**
             Widget foregroundImage = Hero(
               tag: '${widget.heroTag}-${widget.bangumiItem.id}',
               child: BangumiWidget.kostoriImage(
@@ -1520,21 +1517,14 @@ class _BangumiCardState extends State<BangumiCard> {
 
             return Stack(
               children: [
-                // 图片作为背景层（可调整透明度或添加滤镜）
                 Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.2, // 调整背景图片透明度
-                    child: backgroundImage,
-                  ),
+                  child: Opacity(opacity: 0.2, child: backgroundImage),
                 ),
-
-                // 保持原有的Column布局
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 原有图片显示
                       SizedBox(
                         height: constraints.maxHeight * 0.85,
                         width: constraints.maxWidth,
@@ -1545,20 +1535,17 @@ class _BangumiCardState extends State<BangumiCard> {
                               bottom: App.isAndroid ? 42 : 46,
                               right: 8,
                               child: ClipRRect(
-                                // 确保圆角区域也能正确裁剪模糊效果
                                 borderRadius: BorderRadius.circular(8),
                                 child: Stack(
                                   children: [
                                     Positioned.fill(
                                       child: Stack(
                                         children: [
-                                          // 背景噪声图（建议用半透明 PNG 或 SVG）
                                           Positioned.fill(
                                             child: Opacity(
                                               opacity: 0.6,
                                               child: Image.asset(
                                                 'assets/img/noise.png',
-                                                // 模拟毛玻璃颗粒的纹理图
                                                 fit: BoxFit.cover,
                                                 color:
                                                     context.brightness ==
@@ -1574,8 +1561,6 @@ class _BangumiCardState extends State<BangumiCard> {
                                               ),
                                             ),
                                           ),
-
-                                          // 渐变遮罩（调整透明度过渡）
                                           Positioned.fill(
                                             child: Container(
                                               decoration: BoxDecoration(
@@ -1594,7 +1579,6 @@ class _BangumiCardState extends State<BangumiCard> {
                                         ],
                                       ),
                                     ),
-                                    // 原有内容（需要在模糊层之上）
                                     Padding(
                                       padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
                                       child: Text(
@@ -1613,20 +1597,17 @@ class _BangumiCardState extends State<BangumiCard> {
                               bottom: 4,
                               right: 4,
                               child: ClipRRect(
-                                // 确保圆角区域也能正确裁剪模糊效果
                                 borderRadius: BorderRadius.circular(8),
                                 child: Stack(
                                   children: [
                                     Positioned.fill(
                                       child: Stack(
                                         children: [
-                                          // 背景噪声图（建议用半透明 PNG 或 SVG）
                                           Positioned.fill(
                                             child: Opacity(
                                               opacity: 0.6,
                                               child: Image.asset(
                                                 'assets/img/noise.png',
-                                                // 模拟毛玻璃颗粒的纹理图
                                                 fit: BoxFit.cover,
                                                 color:
                                                     context.brightness ==
@@ -1642,8 +1623,6 @@ class _BangumiCardState extends State<BangumiCard> {
                                               ),
                                             ),
                                           ),
-
-                                          // 渐变遮罩（调整透明度过渡）
                                           Positioned.fill(
                                             child: Container(
                                               decoration: BoxDecoration(
@@ -1662,8 +1641,6 @@ class _BangumiCardState extends State<BangumiCard> {
                                         ],
                                       ),
                                     ),
-
-                                    // 原有内容（需要在模糊层之上）
                                     Padding(
                                       padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
                                       child: _score(),
@@ -1675,7 +1652,6 @@ class _BangumiCardState extends State<BangumiCard> {
                           ],
                         ),
                       ),
-                      // 文字部分
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(
