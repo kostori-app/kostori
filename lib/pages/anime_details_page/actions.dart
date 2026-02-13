@@ -459,8 +459,8 @@ abstract mixin class _AnimePageActions {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Determine the binding: @a ?'.tlParams({"a": item.name})),
+        return ContentDialog(
+          title: 'Determine the binding: @a ?'.tlParams({"a": item.name}),
           content: Text(item.airDate),
           actions: [
             TextButton(
@@ -487,11 +487,7 @@ abstract mixin class _AnimePageActions {
                 App.rootContext.showMessage(message: '绑定bangumiId成功');
                 Navigator.pop(context);
               },
-              child: Text('Ok'.tl),
-            ),
-            TextButton(
-              onPressed: () => {Navigator.pop(context)},
-              child: Text('Close'.tl),
+              child: Text('OK'.tl),
             ),
           ],
         );
