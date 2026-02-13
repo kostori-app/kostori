@@ -420,7 +420,6 @@ class _MixedExplorePageState
 
   Iterable<Widget> buildSlivers(BuildContext context, List<Object> data) sync* {
     List<Anime> cache = [];
-    bool isGrid = false;
     for (var part in data) {
       if (part is ExplorePagePart) {
         if (cache.isNotEmpty) {
@@ -432,13 +431,12 @@ class _MixedExplorePageState
         yield const SliverToBoxAdapter(child: Divider());
       } else if (part is ExploreGridPart) {
         cache.addAll(part.animes);
-        isGrid = true;
       } else {
         cache.addAll(part as List<Anime>);
       }
     }
     if (cache.isNotEmpty) {
-      yield SliverGridAnimes(animes: (cache), isGrid: isGrid);
+      yield SliverGridAnimes(animes: (cache));
     }
   }
 

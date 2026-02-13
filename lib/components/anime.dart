@@ -19,7 +19,6 @@ class AnimeTile extends StatelessWidget {
     super.key,
     required this.anime,
     this.isRecommend = false,
-    this.isGrid = false,
     this.enableLongPressed = true,
     this.enableFavorite = true,
     this.enableHistory = false,
@@ -39,8 +38,6 @@ class AnimeTile extends StatelessWidget {
   final bool enableHistory;
 
   final bool isRecommend;
-
-  final bool isGrid;
 
   final String? badge;
 
@@ -67,21 +64,9 @@ class AnimeTile extends StatelessWidget {
           heroID: heroID,
         ),
       );
-    } else if (isGrid) {
-      if (anime.viewMore != null && anime.viewMore?.attributes != null) {
-        var context = App.mainNavigatorKey!.currentContext!;
-        anime.viewMore!.jump(context);
-      } else {
-        App.mainNavigatorKey?.currentContext?.to(
-          () => AnimePage(
-            id: anime.id,
-            sourceKey: anime.sourceKey,
-            cover: anime.cover,
-            title: anime.title,
-            heroID: heroID,
-          ),
-        );
-      }
+    } else if (anime.viewMore != null && anime.viewMore?.attributes != null) {
+      var context = App.mainNavigatorKey!.currentContext!;
+      anime.viewMore!.jump(context);
     } else {
       App.mainNavigatorKey?.currentContext?.to(
         () => AnimePage(
@@ -775,7 +760,6 @@ class SliverGridAnimes extends StatefulWidget {
     this.enableFavorite,
     this.enableHistory,
     this.isRecommend,
-    this.isGrid,
     this.asSliver = true,
   });
 
@@ -798,8 +782,6 @@ class SliverGridAnimes extends StatefulWidget {
   final bool? enableHistory;
 
   final bool? isRecommend;
-
-  final bool? isGrid;
 
   final bool asSliver;
 
@@ -877,7 +859,6 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
       enableFavorite: widget.enableFavorite,
       enableHistory: widget.enableHistory,
       isRecommend: widget.isRecommend,
-      isGrid: widget.isGrid,
       asSliver: widget.asSliver,
     );
   }
@@ -896,7 +877,6 @@ class _SliverGridAnimes extends StatelessWidget {
     this.enableFavorite,
     this.enableHistory,
     this.isRecommend,
-    this.isGrid,
     this.asSliver = true,
   });
 
@@ -922,8 +902,6 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final bool? isRecommend;
 
-  final bool? isGrid;
-
   final bool asSliver;
 
   @override
@@ -941,7 +919,6 @@ class _SliverGridAnimes extends StatelessWidget {
           var anime = AnimeTile(
             anime: animes[index],
             isRecommend: isRecommend ?? false,
-            isGrid: isGrid ?? false,
             enableFavorite: enableFavorite ?? true,
             enableHistory: enableHistory ?? false,
             badge: badge,
@@ -990,7 +967,6 @@ class _SliverGridAnimes extends StatelessWidget {
           var anime = AnimeTile(
             anime: animes[index],
             isRecommend: isRecommend ?? false,
-            isGrid: isGrid ?? false,
             enableFavorite: enableFavorite ?? true,
             enableHistory: enableHistory ?? false,
             badge: badge,
