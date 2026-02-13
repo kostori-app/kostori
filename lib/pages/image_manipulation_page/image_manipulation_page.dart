@@ -436,7 +436,7 @@ class SelectImagesPage extends StatefulWidget {
 
   const SelectImagesPage({
     super.key,
-    this.maxSelection = 9,
+    this.maxSelection = 16,
     required this.onSelected,
     this.initialDirectory,
     this.filter,
