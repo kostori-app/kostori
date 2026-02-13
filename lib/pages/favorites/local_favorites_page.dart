@@ -134,24 +134,41 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     });
   }
 
+  bool checkKeyWordMatch(String keyword, String compare, bool needEqual) {
+    String temp = compare;
+
+    if (!searchHasUpper) {
+      temp = temp.toLowerCase();
+    }
+    if (needEqual) {
+      return keyword == temp;
+    }
+    return temp.contains(keyword);
+  }
+
   bool matchKeyword(String keyword, FavoriteItem anime) {
     var list = keyword.split(" ");
     for (var k in list) {
       if (k.isEmpty) continue;
-      if (anime.title.contains(k)) {
+      if (keyword == anime.type.sourceKey) {
+        return true;
+      }
+      if (checkKeyWordMatch(k, anime.title, false)) {
         continue;
-      } else if (anime.subtitle != null && anime.subtitle!.contains(k)) {
+      } else if (anime.subtitle != null &&
+          checkKeyWordMatch(k, anime.subtitle!, false)) {
         continue;
       } else if (anime.tags.any((tag) {
-        if (tag == k) {
+        if (checkKeyWordMatch(k, tag, true)) {
           return true;
-        } else if (tag.contains(':') && tag.split(':')[1] == k) {
+        } else if (tag.contains(':') &&
+            checkKeyWordMatch(k, tag.split(':')[1], true)) {
           return true;
         }
         return false;
       })) {
         continue;
-      } else if (anime.author == k) {
+      } else if (checkKeyWordMatch(k, anime.author, true)) {
         continue;
       }
       return false;
@@ -695,13 +712,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               ),
             ),
             title: TextField(
-              autofocus: true,
               decoration: InputDecoration(
-                hintText: "Search All".tl,
+                hintText: keyword.isNotEmpty ? keyword : "Search All".tl,
                 border: UnderlineInputBorder(),
               ),
               onChanged: (v) {
                 keyword = v;
+                searchHasUpper = keyword.contains(RegExp(r'[A-Z]'));
                 updateSearchAllResult();
               },
             ).paddingBottom(4).paddingRight(8),
