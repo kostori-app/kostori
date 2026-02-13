@@ -474,6 +474,9 @@ class WatcherState extends State<Watcher>
     history.allEpisode =
         anime.episode?.values.elementAt(playerController.currentRoad).length ??
         0;
+    if (anime.cover.isNotEmpty) {
+      history.cover = anime.cover;
+    }
     HistoryManager().addHistoryAsync(history);
   }
 }
