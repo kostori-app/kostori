@@ -26,7 +26,7 @@ class StatItemWidget extends StatelessWidget {
   String formatHMSForRating({int? seconds}) {
     seconds ??= 0;
     if (seconds <= 0) return '';
-    return '(评价时 ${_formatHMS(seconds)})';
+    return '(评价时 ${Utils.formatHMS(seconds)})';
   }
 
   Widget buildAllEventsWidget(BuildContext context) {
@@ -391,7 +391,7 @@ class StatItemWidget extends StatelessWidget {
         for (final record in watchEvent.platformEventRecords) {
           final sourceType = _getSourceType(stats.type);
           recordStrings.add(
-            '[$sourceType] ${record.platform?.value ?? '未知'}观看: ${_formatHMS(record.value)}',
+            '[$sourceType] ${record.platform?.value ?? '未知'}观看: ${Utils.formatHMS(record.value)}',
           );
           totalSeconds += record.value;
         }
@@ -404,7 +404,7 @@ class StatItemWidget extends StatelessWidget {
 
     final children = [
       Text(
-        '本日观看时长: ${_formatHMS(totalSeconds)}',
+        '本日观看时长: ${Utils.formatHMS(totalSeconds)}',
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
       ),
       const SizedBox(height: 4),

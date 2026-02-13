@@ -8,6 +8,7 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -266,7 +267,6 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                         }
                       },
                     ),
-                    const SizedBox(width: 10),
                   ],
                 ),
               ).paddingHorizontal(16),
@@ -628,27 +628,14 @@ class _ResponsiveWordCloudState extends State<ResponsiveWordCloud> {
           data: WordCloudData(data: widget.wordCloudData),
           mapwidth: constraints.maxWidth,
           mapheight: 300,
-          mintextsize: 6,
-          maxtextsize: 28,
+          mintextsize: 5,
+          maxtextsize: 32,
           colorlist: standardColorMap.keys.toList(),
           shape: WordCloudCircle(radius: constraints.maxWidth - 100),
         );
       },
     );
   }
-}
-
-String _formatHMS(int seconds) {
-  final h = seconds ~/ 3600;
-  final m = (seconds % 3600) ~/ 60;
-  final s = seconds % 60;
-
-  final parts = <String>[];
-  if (h > 0) parts.add('${h}h');
-  if (m > 0) parts.add('${m}m');
-  if (s > 0 || parts.isEmpty) parts.add('${s}s');
-
-  return parts.join(' ');
 }
 
 bool _isSameDay(DateTime a, DateTime b) =>
