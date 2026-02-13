@@ -50,6 +50,8 @@ class WatcherState extends State<Watcher>
 
   AnimeDetails get anime => widget.watcherController.anime!;
 
+  AnimeSource get animeSource => AnimeSource.find(anime.sourceKey)!;
+
   final stats = StatsManager();
 
   // 当前播放列表
@@ -64,6 +66,8 @@ class WatcherState extends State<Watcher>
   Progress? progressFind;
 
   late StatsDataImpl statsDataImpl;
+
+  Map<String, String>? headers = {};
 
   @override
   void update() {
@@ -109,6 +113,7 @@ class WatcherState extends State<Watcher>
       }
     });
     Future.microtask(() async {
+      headers = animeSource.httpHeaders;
       if (history.lastWatchEpisode != 0) {
         loadInfo(history.lastWatchEpisode!, history.lastRoad!.toInt());
       }
@@ -130,6 +135,11 @@ class WatcherState extends State<Watcher>
     playerController.dispose();
     playerController.disposeWindow();
     super.dispose();
+  }
+
+  // 动态添加或更新请求头
+  void setHeader(String key, String value) {
+    headers?[key] = value;
   }
 
   // 播放下一集的逻辑
@@ -295,7 +305,7 @@ class WatcherState extends State<Watcher>
   Future<void> _play(String res, int currentPlaybackTime) async {
     try {
       if (mounted) {
-        await playerController.player.open(Media(res));
+        await playerController.player.open(Media(res, httpHeaders: headers));
       }
     } catch (e, s) {
       Log.addLog(LogLevel.error, "openMedia", "$e\n$s");
