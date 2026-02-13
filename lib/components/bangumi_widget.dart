@@ -52,7 +52,7 @@ class BangumiWidget {
             SizedBox(width: 4),
           ],
           Column(
-            crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               RatingBarIndicator(
                 itemCount: 5,
@@ -158,7 +158,6 @@ class BangumiWidget {
                                           opacity: 0.6,
                                           child: Image.asset(
                                             'assets/img/noise.png',
-                                            // 模拟毛玻璃颗粒的纹理图
                                             fit: BoxFit.cover,
                                             color:
                                                 context.brightness ==
@@ -169,7 +168,6 @@ class BangumiWidget {
                                           ),
                                         ),
                                       ),
-                                      // 渐变遮罩（调整透明度过渡）
                                       Positioned.fill(
                                         child: Container(
                                           decoration: BoxDecoration(
@@ -184,7 +182,6 @@ class BangumiWidget {
                                     ],
                                   ),
                                 ),
-                                // 原有内容（需要在模糊层之上）
                                 Padding(
                                   padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
                                   child: Text(
