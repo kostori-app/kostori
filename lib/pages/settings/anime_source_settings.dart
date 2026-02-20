@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     show InAppWebViewController;
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -543,11 +544,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         }
 
         if (index == 1 && json == null) {
-          return Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-            ).fixWidth(24).fixHeight(24),
-          );
+          return Center(child: KostoriRefreshIndicator());
         }
 
         index--;
