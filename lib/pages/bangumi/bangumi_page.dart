@@ -98,6 +98,7 @@ class _BangumiPageState extends State<BangumiPage> {
 
   Future<void> resetBangumiTrend() async {
     bangumiItems.clear();
+    count = 0;
     await queryBangumiByTrend();
   }
 
