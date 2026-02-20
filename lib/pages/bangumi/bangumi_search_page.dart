@@ -837,7 +837,44 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
         final item = history[index].keyword;
         return ListTile(
           leading: const Icon(Icons.history),
-          title: Text(item),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item, style: ts.s14.copyWith(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.repeat,
+                    size: 14,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${history[index].useCount} 次',
+                    style: ts.s12.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Icon(
+                    Icons.schedule,
+                    size: 14,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    Utils.formatTime(history[index].lastUsedAt),
+                    style: ts.s12.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
           onTap: () => _performSearch(item),
           trailing: IconButton(
             icon: const Icon(Icons.clear),
