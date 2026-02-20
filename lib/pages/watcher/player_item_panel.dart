@@ -7,11 +7,8 @@ import 'package:kostori/components/battery_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
-import 'package:kostori/utils/remote.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 
@@ -26,7 +23,7 @@ class PlayerItemPanel extends StatefulWidget {
     required this.startHideTimer,
     required this.cancelHideTimer,
     required this.showVideoInfo,
-    required this.glimmerEffectMode,
+    required this.buildMenuItems,
   });
 
   final PlayerController playerController;
@@ -37,7 +34,7 @@ class PlayerItemPanel extends StatefulWidget {
   final void Function() startHideTimer;
   final void Function() cancelHideTimer;
   final void Function() showVideoInfo;
-  final void Function() glimmerEffectMode;
+  final MenuButton buildMenuItems;
 
   @override
   State<PlayerItemPanel> createState() => _PlayerItemPanelState();
@@ -66,59 +63,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
     super.dispose();
   }
 
-  MenuButton _buildMenuItems() {
-    return MenuButton(
-      message: "More".tl,
-      entries: [
-        if (App.isAndroid)
-          MenuEntry(
-            text: (appdata.settings['audioOutType'] ?? true)
-                ? "Audio Option: \n Low Latency".tl
-                : "Audio Option: \n Compatibility".tl,
-            onClick: () async {
-              try {
-                await playerController.changeAudioOutType();
-                App.rootContext.showMessage(message: "Switch Successful".tl);
-              } catch (e) {
-                App.rootContext.showMessage(message: "Switch Failed".tl);
-              }
-            },
-          ),
-        MenuEntry(
-          text: !playerController.glimmerEffect ? "微光模式:关".tl : "微光模式:开".tl,
-          onClick: () {
-            widget.glimmerEffectMode();
-          },
-        ),
-        MenuEntry(
-          text: "Remote Cast".tl,
-          onClick: () {
-            bool needRestart = playerController.playing;
-            playerController.pause();
-            RemotePlay().castVideo(playerController.videoUrl).whenComplete(() {
-              if (needRestart) {
-                playerController.play();
-              }
-            });
-          },
-        ),
-        if (!playerController.isFullScreen)
-          MenuEntry(
-            text: "Logs".tl,
-            onClick: () {
-              context.to(() => const LogsPage());
-            },
-          ),
-        MenuEntry(
-          text: "Player Details".tl,
-          onClick: () {
-            widget.showVideoInfo();
-          },
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Observer(
@@ -130,14 +74,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             Positioned(
               right: 10,
               top: 60,
-              child: Visibility(
-                visible: playerController.showVideoController,
-                child: FadeTransition(
-                  opacity: fadeAnimation,
+              child: FadeTransition(
+                opacity: fadeAnimation,
+                child: IgnorePointer(
+                  ignoring: !playerController.showVideoController,
                   child: MouseRegion(
                     cursor:
                         (playerController.isFullScreen &&
-                            !playerController.showVideoController)
+                            widget.animationController.value == 0)
                         ? SystemMouseCursors.none
                         : SystemMouseCursors.basic,
                     onEnter: (_) {
@@ -197,14 +141,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               top: 0,
               left: 0,
               right: 0,
-              child: Visibility(
-                visible: playerController.showVideoController,
-                child: FadeTransition(
-                  opacity: fadeAnimation,
+              child: FadeTransition(
+                opacity: fadeAnimation,
+                child: IgnorePointer(
+                  ignoring: !playerController.showVideoController,
                   child: MouseRegion(
                     cursor:
                         (playerController.isFullScreen &&
-                            !playerController.showVideoController)
+                            widget.animationController.value == 0)
                         ? SystemMouseCursors.none
                         : SystemMouseCursors.basic,
                     onEnter: (_) {
@@ -440,7 +384,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               ),
                             ),
                           ),
-                          _buildMenuItems(),
+                          widget.buildMenuItems,
                         ],
                       ),
                     ),
@@ -453,14 +397,14 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: Visibility(
-                visible: playerController.showVideoController,
-                child: FadeTransition(
-                  opacity: fadeAnimation,
+              child: FadeTransition(
+                opacity: fadeAnimation,
+                child: IgnorePointer(
+                  ignoring: !playerController.showVideoController,
                   child: MouseRegion(
                     cursor:
                         (playerController.isFullScreen &&
-                            !playerController.showVideoController)
+                            widget.animationController.value == 0)
                         ? SystemMouseCursors.none
                         : SystemMouseCursors.basic,
                     onEnter: (_) {

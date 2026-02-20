@@ -7,14 +7,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_base_panel.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:kostori/utils/remote.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
@@ -186,6 +190,59 @@ class _PlayerItemState extends State<PlayerItem>
 
   void update() {
     setState(() {});
+  }
+
+  MenuButton _buildMenuItems() {
+    return MenuButton(
+      message: "More".tl,
+      entries: [
+        if (App.isAndroid)
+          MenuEntry(
+            text: (appdata.settings['audioOutType'] ?? true)
+                ? "Audio Option: \n Low Latency".tl
+                : "Audio Option: \n Compatibility".tl,
+            onClick: () async {
+              try {
+                await playerController.changeAudioOutType();
+                App.rootContext.showMessage(message: "Switch Successful".tl);
+              } catch (e) {
+                App.rootContext.showMessage(message: "Switch Failed".tl);
+              }
+            },
+          ),
+        MenuEntry(
+          text: !playerController.glimmerEffect ? "微光模式:关".tl : "微光模式:开".tl,
+          onClick: () {
+            glimmerEffectMode();
+          },
+        ),
+        MenuEntry(
+          text: "Remote Cast".tl,
+          onClick: () {
+            bool needRestart = playerController.playing;
+            playerController.pause();
+            RemotePlay().castVideo(playerController.videoUrl).whenComplete(() {
+              if (needRestart) {
+                playerController.play();
+              }
+            });
+          },
+        ),
+        if (!playerController.isFullScreen)
+          MenuEntry(
+            text: "Logs".tl,
+            onClick: () {
+              context.to(() => const LogsPage());
+            },
+          ),
+        MenuEntry(
+          text: "Player Details".tl,
+          onClick: () {
+            showVideoInfo();
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -498,7 +555,7 @@ class _PlayerItemState extends State<PlayerItem>
                           cancelHideTimer: cancelHideTimer,
                           showVideoInfo: showVideoInfo,
                           playerController: playerController,
-                          glimmerEffectMode: glimmerEffectMode,
+                          buildMenuItems: _buildMenuItems(),
                         )
                       else
                         PlayerItemPortraitPanel(
@@ -511,7 +568,7 @@ class _PlayerItemState extends State<PlayerItem>
                           startHideTimer: startHideTimer,
                           cancelHideTimer: cancelHideTimer,
                           showVideoInfo: showVideoInfo,
-                          glimmerEffectMode: glimmerEffectMode,
+                          buildMenuItems: _buildMenuItems(),
                         ),
                       // / 播放器手势控制
                       Positioned.fill(
