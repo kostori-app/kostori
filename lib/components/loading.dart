@@ -41,23 +41,20 @@ class NetworkError extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(
-            height: 8,
-          ),
+          const SizedBox(height: 8),
           Text(
             cfe == null ? message : "Cloudflare verification required".tl,
             textAlign: TextAlign.center,
             maxLines: 3,
           ),
-          if (retry != null)
-            const SizedBox(
-              height: 12,
-            ),
+          if (retry != null) const SizedBox(height: 12),
           if (retry != null)
             if (cfe != null)
               FilledButton(
                 onPressed: () => passCloudflare(
-                    CloudflareException.fromString(message)!, retry!),
+                  CloudflareException.fromString(message)!,
+                  retry!,
+                ),
                 child: Text('Verify'.tl),
               )
             else
@@ -72,15 +69,11 @@ class NetworkError extends StatelessWidget {
       body = Column(
         children: [
           const Appbar(title: Text("")),
-          Expanded(
-            child: body,
-          )
+          Expanded(child: body),
         ],
       );
     }
-    return Material(
-      child: body,
-    );
+    return Material(child: body);
   }
 }
 
@@ -92,9 +85,7 @@ class ListLoadingIndicator extends StatelessWidget {
     return const SizedBox(
       width: double.infinity,
       height: 80,
-      child: Center(
-        child: FiveDotLoadingAnimation(),
-      ),
+      child: Center(child: FiveDotLoadingAnimation()),
     );
   }
 }
@@ -106,10 +97,9 @@ class SliverListLoadingIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     // SliverToBoxAdapter can not been lazy loaded.
     // Use SliverList to make sure the animation can be lazy loaded.
-    return SliverList.list(children: const [
-      SizedBox(),
-      ListLoadingIndicator(),
-    ]);
+    return SliverList.list(
+      children: const [SizedBox(), ListLoadingIndicator()],
+    );
   }
 }
 
@@ -176,10 +166,7 @@ abstract class LoadingState<T extends StatefulWidget, S extends Object>
   }
 
   Widget buildError() {
-    return NetworkError(
-      message: error!,
-      retry: retry,
-    );
+    return NetworkError(message: error!, retry: retry);
   }
 
   @override
@@ -315,17 +302,11 @@ abstract class MultiPageLoadingState<T extends StatefulWidget, S extends Object>
   }
 
   Widget buildLoading(BuildContext context) {
-    return Center(
-      child: const CircularProgressIndicator().fixWidth(32).fixHeight(32),
-    );
+    return Center(child: const KostoriRefreshIndicator());
   }
 
   Widget buildError(BuildContext context, String error) {
-    return NetworkError(
-      withAppbar: false,
-      message: error,
-      retry: reset,
-    );
+    return NetworkError(withAppbar: false, message: error, retry: reset);
   }
 
   @override
@@ -386,7 +367,7 @@ class _FiveDotLoadingAnimationState extends State<FiveDotLoadingAnimation>
     Colors.green,
     Colors.blue,
     Colors.yellow,
-    Colors.purple
+    Colors.purple,
   ];
 
   static const _padding = 12.0;
@@ -398,16 +379,15 @@ class _FiveDotLoadingAnimationState extends State<FiveDotLoadingAnimation>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return SizedBox(
-            width: _dotSize * 5 + _padding * 6,
-            height: _height,
-            child: Stack(
-              children: List.generate(5, (index) => buildDot(index)),
-            ),
-          );
-        });
+      animation: _controller,
+      builder: (context, child) {
+        return SizedBox(
+          width: _dotSize * 5 + _padding * 6,
+          height: _height,
+          child: Stack(children: List.generate(5, (index) => buildDot(index))),
+        );
+      },
+    );
   }
 
   Widget buildDot(int index) {
@@ -415,7 +395,8 @@ class _FiveDotLoadingAnimationState extends State<FiveDotLoadingAnimation>
     var startValue = index * 0.8;
     return Positioned(
       left: index * _dotSize + (index + 1) * _padding,
-      bottom: (math.sin(math.pi / 2 * (value - startValue).clamp(0, 2))) *
+      bottom:
+          (math.sin(math.pi / 2 * (value - startValue).clamp(0, 2))) *
           (_height - _dotSize),
       child: Container(
         width: _dotSize,
