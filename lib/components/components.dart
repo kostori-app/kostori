@@ -28,6 +28,7 @@ import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/image_loader/history_image_provider.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';

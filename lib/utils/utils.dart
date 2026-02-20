@@ -340,7 +340,7 @@ class Utils {
   }
 
   // 时间显示，刚刚，x分钟前
-  static String dateFormat(dynamic timeStamp, {formatType = 'list'}) {
+  static String dateFormat(int timeStamp, {formatType = 'list'}) {
     // 当前时间
     int time = (DateTime.now().millisecondsSinceEpoch / 1000).round();
     // 对比
@@ -451,6 +451,34 @@ class Utils {
     if (s > 0 || parts.isEmpty) parts.add('${s}s');
 
     return parts.join(' ');
+  }
+
+  static String formatTime(int timestamp) {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    // 超过7天显示日期
+    if (diff.inDays >= 7) {
+      final pattern = now.year == date.year
+          ? 'MM月dd日 HH:mm'
+          : 'yyyy年MM月dd日 HH:mm';
+
+      return DateFormat(pattern).format(date);
+    }
+
+    // 7天内显示相对时间
+    if (diff.inDays > 0) {
+      return '${diff.inDays} 天前';
+    }
+    if (diff.inHours > 0) {
+      return '${diff.inHours} 小时前';
+    }
+    if (diff.inMinutes > 0) {
+      return '${diff.inMinutes} 分钟前';
+    }
+
+    return '刚刚';
   }
 
   static String buildShadersAbsolutePath(

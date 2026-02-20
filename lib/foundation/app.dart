@@ -6,6 +6,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -67,6 +68,8 @@ class _App {
 
   final StatsManager stats = StatsManager();
 
+  final SearchHistoryManager searchHistory = SearchHistoryManager();
+
   void rootPop() {
     rootNavigatorKey.currentState?.maybePop();
   }
@@ -95,6 +98,7 @@ class _App {
       favorites.init(),
       bangumi.init(),
       stats.init(),
+      searchHistory.init(),
     ]);
   }
 

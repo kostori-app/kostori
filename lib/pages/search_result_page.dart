@@ -4,6 +4,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
@@ -41,7 +42,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
       setState(() {
         this.text = text!;
       });
-      appdata.addSearchHistory(text);
+      SearchHistoryManager().addSearch(text);
       controller.currentText = text;
     }
   }
@@ -66,8 +67,9 @@ class _SearchResultPageState extends State<SearchResultPage> {
     controller = SearchBarController(currentText: text, onSearch: search);
     options = widget.options ?? const [];
     validateOptions();
-    appdata.addSearchHistory(text);
-    appdata.saveData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SearchHistoryManager().addSearch(text);
+    });
     super.initState();
   }
 

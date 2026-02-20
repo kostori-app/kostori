@@ -897,8 +897,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
                 if (selectedKeyword != null) {
                   controller.onSearch?.call(selectedKeyword);
                   editingController.text = selectedKeyword;
-                  appdata.addSearchHistory(selectedKeyword);
-                  appdata.saveData();
+                  SearchHistoryManager().addSearch(selectedKeyword);
                 }
               },
               icon: const Icon(Icons.change_history),

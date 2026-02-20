@@ -199,7 +199,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     isBangumi = animeSource.isBangumi;
     if (history?.bangumiId == null) {
-      debugPrint('isBangumi是: $isBangumi');
+      debugPrint('isBangumi: $isBangumi');
       if (isBangumi) {
         updateBangumiId();
       }

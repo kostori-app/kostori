@@ -12,6 +12,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/translations.dart';
@@ -810,8 +811,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       keyword = value;
 
       // 保存历史，去重
-      appdata.addSearchHistory(value);
-      appdata.saveData();
+      SearchHistoryManager().addSearch(keyword);
 
       setState(() {
         _isLoading = true;
@@ -830,9 +830,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   Widget _searchHistorySliver() {
+    final history = SearchHistoryManager().getSearchAll();
+
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        final item = appdata.searchHistory[index];
+        final item = history[index].keyword;
         return ListTile(
           leading: const Icon(Icons.history),
           title: Text(item),
@@ -840,13 +842,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
           trailing: IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
-              appdata.removeSearchHistory(item);
-              appdata.saveData();
+              SearchHistoryManager().deleteSearch(item);
               setState(() {});
             },
           ),
         );
-      }, childCount: appdata.searchHistory.length),
+      }, childCount: history.length),
     );
   }
 
