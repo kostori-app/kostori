@@ -52,6 +52,26 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
         return Stack(
           alignment: Alignment.center,
           children: [
+            FadeTransition(
+              opacity: fadeAnimation,
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment.center,
+                    radius: 1.0,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.toOpacity(0.2),
+                      Colors.black.toOpacity(0.5),
+                      Colors.black.toOpacity(0.7),
+                    ],
+                    stops: const [0.0, 0.6, 0.85, 1.0],
+                  ),
+                ),
+              ),
+            ),
             //底部进度条
             AnimatedOpacity(
               opacity:
@@ -148,26 +168,6 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                       },
                     ),
                   ],
-                ),
-              ),
-            ),
-            FadeTransition(
-              opacity: fadeAnimation,
-              child: Container(
-                width: double.infinity,
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.center,
-                    radius: 1.0,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.toOpacity(0.2),
-                      Colors.black.toOpacity(0.5),
-                      Colors.black.toOpacity(0.7),
-                    ],
-                    stops: const [0.0, 0.6, 0.85, 1.0],
-                  ),
                 ),
               ),
             ),
