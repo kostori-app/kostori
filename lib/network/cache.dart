@@ -79,7 +79,9 @@ class NetworkCacheManager implements Interceptor {
 
   @override
   void onRequest(
-      RequestOptions options, RequestInterceptorHandler handler) async {
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     if (options.method != "GET") {
       return handler.next(options);
     }
@@ -101,36 +103,52 @@ class NetworkCacheManager implements Interceptor {
     var diff = time.difference(cache.time);
     if (options.headers['cache-time'] == 'long' &&
         diff < const Duration(hours: 6)) {
-      return handler.resolve(Response(
-        requestOptions: options,
-        data: cache.data,
-        headers: Headers.fromMap(cache.responseHeaders)
-          ..set('kostori-cache', 'true'),
-        statusCode: 200,
-      ));
-    } else if (diff < const Duration(seconds: 5)) {
-      return handler.resolve(Response(
-        requestOptions: options,
-        data: cache.data,
-        headers: Headers.fromMap(cache.responseHeaders)
-          ..set('kostori-cache', 'true'),
-        statusCode: 200,
-      ));
-    } else if (diff < const Duration(hours: 2)) {
-      var o = options.copyWith(
-        method: "HEAD",
-      );
-      var dio = AppDio();
-      var response = await dio.fetch(o);
-      if (response.statusCode == 200 &&
-          compareHeaders(cache.responseHeaders, response.headers.map)) {
-        return handler.resolve(Response(
+      return handler.resolve(
+        Response(
           requestOptions: options,
           data: cache.data,
           headers: Headers.fromMap(cache.responseHeaders)
             ..set('kostori-cache', 'true'),
           statusCode: 200,
-        ));
+        ),
+      );
+    } else if (diff < const Duration(seconds: 5)) {
+      return handler.resolve(
+        Response(
+          requestOptions: options,
+          data: cache.data,
+          headers: Headers.fromMap(cache.responseHeaders)
+            ..set('kostori-cache', 'true'),
+          statusCode: 200,
+        ),
+      );
+    } else if (diff < const Duration(hours: 2)) {
+      var o = options.copyWith(method: "HEAD");
+      var dio = AppDio();
+      try {
+        var response = await dio.fetch(o);
+        if (response.statusCode == 200 &&
+            compareHeaders(cache.responseHeaders, response.headers.map)) {
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              data: cache.data,
+              headers: Headers.fromMap(cache.responseHeaders)
+                ..set('kostori-cache', 'true'),
+              statusCode: 200,
+            ),
+          );
+        }
+      } catch (e) {
+        return handler.resolve(
+          Response(
+            requestOptions: options,
+            data: cache.data,
+            headers: Headers.fromMap(cache.responseHeaders)
+              ..set('kostori-cache', 'true'),
+            statusCode: 200,
+          ),
+        );
       }
     }
     removeCache(options.uri);
@@ -184,7 +202,9 @@ class NetworkCacheManager implements Interceptor {
 
   @override
   void onResponse(
-      Response<dynamic> response, ResponseInterceptorHandler handler) {
+    Response<dynamic> response,
+    ResponseInterceptorHandler handler,
+  ) {
     if (response.requestOptions.method != "GET") {
       return handler.next(response);
     }
