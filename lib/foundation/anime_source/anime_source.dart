@@ -202,7 +202,7 @@ class AnimeSource {
   /// Category data used to build a static category tags page.
   final CategoryData? categoryData;
 
-  /// Category comics data used to build a comics page with a category tag.
+  /// Category animes data used to build a animes page with a category tag.
   final CategoryAnimesData? categoryAnimesData;
 
   /// Favorite data used to build favorite page.

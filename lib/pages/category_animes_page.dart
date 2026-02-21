@@ -39,7 +39,7 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
     for (final source in AnimeSource.all()) {
       if (source.categoryData?.key == widget.categoryKey) {
         if (source.categoryAnimesData == null) {
-          throw "The comic source ${source.name} does not support category comics";
+          throw "The anime source ${source.name} does not support category animes";
         }
         data = source.categoryAnimesData!;
         if (data.options != null) {

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
-
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 
@@ -33,11 +32,11 @@ extension AppTranslation on String {
     var data = await rootBundle.load("assets/translation.json");
     var json = jsonDecode(utf8.decode(data.buffer.asUint8List()));
     translations = {
-      for (var e in json.entries) e.key: Map<String, String>.from(e.value)
+      for (var e in json.entries) e.key: Map<String, String>.from(e.value),
     };
   }
 
-  /// Translate a string using specified comic source
+  /// Translate a string using specified anime source
   String ts(String sourceKey) {
     var animeSource = AnimeSource.find(sourceKey);
     if (animeSource == null || animeSource.translations == null) {

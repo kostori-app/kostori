@@ -146,7 +146,7 @@ class _CategoryPage extends StatelessWidget {
 
   CategoryData get data => getCategoryDataWithKey(category);
 
-  String findComicSourceKey() {
+  String findAnimeSourceKey() {
     for (var source in AnimeSource.all()) {
       if (source.categoryData?.key == category) {
         return source.key;
