@@ -735,12 +735,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               child: SizedBox(
                 height: 200,
                 width: 200,
-                child: MiscComponents.placeholder(
-                  context,
-                  200,
-                  200,
-                  Colors.transparent,
-                ),
+                child: KostoriRefreshIndicator(),
               ),
             )
           : TabBarView(

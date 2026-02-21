@@ -1,10 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -161,14 +161,7 @@ class _BangumiPageState extends State<BangumiPage> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Center(
-              child: MiscComponents.placeholder(
-                context,
-                40,
-                40,
-                Colors.transparent,
-              ),
-            ),
+            child: Center(child: PolygonRefreshIndicator(size: 40)),
           ),
         ),
     ];

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
@@ -8,7 +9,6 @@ import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/error_widget.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
@@ -292,9 +292,8 @@ class BottomInfoState extends State<BottomInfo>
   Widget get infoBodyBone {
     return LayoutBuilder(
       builder: (context, constraints) {
-        double height = constraints.maxHeight;
         double width = constraints.maxWidth;
-        return MiscComponents.placeholder(context, width, height);
+        return PolygonRefreshIndicator(size: width);
       },
     );
   }
@@ -957,14 +956,7 @@ class BottomInfoState extends State<BottomInfo>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],
@@ -1059,14 +1051,7 @@ class BottomInfoState extends State<BottomInfo>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],
@@ -1161,14 +1146,7 @@ class BottomInfoState extends State<BottomInfo>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],

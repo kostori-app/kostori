@@ -1237,7 +1237,7 @@ class _ShareWidgetState extends State<ShareWidget> {
     if (isLoding) {
       return PopUpWidgetScaffold(
         title: 'Screenshot Share'.tl,
-        body: MiscComponents.placeholder(context, 100, 100, Colors.transparent),
+        body: Center(child: KostoriRefreshIndicator()),
       );
     }
 

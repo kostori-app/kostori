@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_card.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
@@ -6,7 +7,6 @@ import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/error_widget.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
@@ -773,14 +773,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],
@@ -877,14 +870,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],
@@ -983,14 +969,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],

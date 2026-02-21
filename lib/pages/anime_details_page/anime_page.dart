@@ -10,9 +10,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
@@ -1162,12 +1162,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
             children: [
               Align(
                 alignment: Alignment.center,
-                child: MiscComponents.placeholder(
-                  context,
-                  50,
-                  50,
-                  Colors.transparent,
-                ),
+                child: Center(child: PolygonRefreshIndicator(size: 50)),
               ),
               Positioned(
                 top: 8,

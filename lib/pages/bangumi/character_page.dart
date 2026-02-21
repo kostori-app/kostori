@@ -1,11 +1,11 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/error_widget.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
@@ -148,10 +148,8 @@ class _CharacterPageState extends State<CharacterPage> {
                     Expanded(
                       child: loadingCharacter
                           ? Center(
-                              child: MiscComponents.placeholder(
-                                context,
-                                constraints.maxWidth,
-                                constraints.maxHeight,
+                              child: PolygonRefreshIndicator(
+                                size: constraints.maxWidth,
                               ),
                             )
                           : (characterFullItem.id == 0

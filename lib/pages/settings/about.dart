@@ -885,14 +885,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
     return ContentDialog(
       title: "New version available".tl,
       content: isLoading
-          ? Center(
-              child: MiscComponents.placeholder(
-                context,
-                50,
-                50,
-                Colors.transparent,
-              ),
-            )
+          ? Center(child: KostoriRefreshIndicator())
           : Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

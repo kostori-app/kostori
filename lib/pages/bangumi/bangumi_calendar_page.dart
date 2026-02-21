@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -408,7 +408,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          MiscComponents.placeholder(context, 100, 100, Colors.transparent),
+          Center(child: PolygonRefreshIndicator(size: 100)),
           const SizedBox(height: 16),
           Text('正在加载时间表数据...', style: Theme.of(context).textTheme.bodyMedium),
         ],

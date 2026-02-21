@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:gif/gif.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
@@ -1182,12 +1182,7 @@ class BangumiWidget {
     bool enableDefaultSize = true,
   }) {
     if (_failedImageUrls.contains(imageUrl)) {
-      return MiscComponents.placeholder(
-        context,
-        width,
-        height,
-        Colors.transparent,
-      );
+      return Center(child: PolygonRefreshIndicator(size: 50));
     }
 
     //   //// We need this to shink memory usage

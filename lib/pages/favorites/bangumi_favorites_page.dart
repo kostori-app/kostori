@@ -260,14 +260,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -310,14 +303,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -360,14 +346,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -410,14 +389,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -460,14 +432,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],

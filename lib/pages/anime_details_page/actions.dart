@@ -179,12 +179,7 @@ abstract mixin class _AnimePageActions {
             // 下面是 BottomInfo 内容
             Expanded(
               child: bangumiId == null
-                  ? MiscComponents.placeholder(
-                      context,
-                      100,
-                      100,
-                      Colors.transparent,
-                    )
+                  ? Center(child: PolygonRefreshIndicator(size: 100))
                   : BottomInfo(
                       bangumiId: bangumiId,
                       infoController: infoController,
