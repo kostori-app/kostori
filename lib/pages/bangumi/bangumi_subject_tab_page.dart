@@ -6,6 +6,7 @@ import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+//bangumiPage页的
 class BangumiSubjectTabPage extends StatefulWidget {
   const BangumiSubjectTabPage({super.key});
 
