@@ -172,9 +172,24 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                             );
                           },
                           onLongPress: () => _showSaveDialog(img),
-                          child: Hero(
-                            tag: img,
-                            child: BangumiWidget.kostoriImage(context, img),
+                          child: Image.network(
+                            img,
+                            fit: BoxFit.contain, // 保持原比例
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (_, _, _) =>
+                                const Icon(Icons.broken_image),
                           ),
                         ),
                       ),
@@ -198,11 +213,21 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                   child: GestureDetector(
                     onTap: () =>
                         BangumiWidget.showImagePreview(context, url, '', url),
-                    child: BangumiWidget.kostoriImage(
-                      context,
+                    child: Image.network(
                       url,
-                      width: 24,
-                      height: 24,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
                     ),
                   ),
                 );
@@ -216,14 +241,21 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                       '',
                       'https://bangumi.tv/img/smiles/${e.id}.gif',
                     ),
-                    child: Hero(
-                      tag: 'https://bangumi.tv/img/smiles/${e.id}.gif',
-                      child: BangumiWidget.kostoriImage(
-                        context,
-                        'https://bangumi.tv/img/smiles/${e.id}.gif',
-                        width: 24,
-                        height: 24,
-                      ),
+                    child: Image.network(
+                      'https://bangumi.tv/img/smiles/${e.id}.gif',
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, _, _) => const Icon(Icons.broken_image),
                     ),
                   ),
                 );
