@@ -109,7 +109,7 @@ class WatcherState extends State<Watcher>
           }
         }
 
-        playNextEpisode();
+        playNextEpisode(checkRemainingTime: false);
       }
     });
     Future.microtask(() async {
@@ -143,7 +143,7 @@ class WatcherState extends State<Watcher>
   }
 
   // 播放下一集的逻辑
-  Future<void> playNextEpisode() async {
+  Future<void> playNextEpisode({bool checkRemainingTime = true}) async {
     setState(() {
       // 如果已经是最后一集，避免超出范围
       if (epIndex <
@@ -152,7 +152,7 @@ class WatcherState extends State<Watcher>
               .length)) {
         try {
           epIndex++;
-          loadNextlVideo(epIndex);
+          loadNextlVideo(epIndex, checkRemainingTime: checkRemainingTime);
           showCenter(
             seconds: 1,
             icon: Gif(
@@ -200,11 +200,14 @@ class WatcherState extends State<Watcher>
     await _loadEpisode(episodeIndex: episodeIndex, road: road);
   }
 
-  Future<void> loadNextlVideo(int episodeIndex) async {
+  Future<void> loadNextlVideo(
+    int episodeIndex, {
+    bool checkRemainingTime = true,
+  }) async {
     await _loadEpisode(
       episodeIndex: episodeIndex,
       road: playerController.currentRoad,
-      checkRemainingTime: true,
+      checkRemainingTime: checkRemainingTime,
     );
   }
 
