@@ -290,14 +290,16 @@ class _CapsulePainter extends CustomPainter {
   final Color color;
   final double angle;
 
+  final Paint _paint = Paint()..isAntiAlias = true;
+  final Path _path = Path();
+
   _CapsulePainter({required this.color, required this.angle});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final paint = Paint()
-      ..color = color
-      ..isAntiAlias = true;
+    _paint.color = color;
+
     double w = size.width * 0.65;
     double h = size.height * 0.45;
 
@@ -306,31 +308,37 @@ class _CapsulePainter extends CustomPainter {
     canvas.rotate(angle);
     canvas.translate(-center.dx, -center.dy);
 
-    final rRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: center, width: w, height: h),
-      Radius.circular(h / 2),
-    );
-    canvas.drawShadow(Path()..addRRect(rRect), Colors.black26, 4.0, true);
-    canvas.drawRRect(rRect, paint);
+    final rect = Rect.fromCenter(center: center, width: w, height: h);
+    final rRect = RRect.fromRectAndRadius(rect, Radius.circular(h / 2));
+
+    _path.reset();
+    _path.addRRect(rRect);
+
+    canvas.drawShadow(_path, Colors.black26, 4.0, true);
+    canvas.drawRRect(rRect, _paint);
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _CapsulePainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.angle != angle;
+  }
 }
 
 class _FootballPainter extends CustomPainter {
   final Color color;
   final double angle;
 
+  final Paint _paint = Paint()..isAntiAlias = true;
+  final Path _path = Path();
+
   _FootballPainter({required this.color, required this.angle});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final paint = Paint()
-      ..color = color
-      ..isAntiAlias = true;
+    _paint.color = color;
+
     double w = size.width * 0.68;
     double h = size.height * 0.52;
 
@@ -339,10 +347,10 @@ class _FootballPainter extends CustomPainter {
     canvas.rotate(angle);
     canvas.translate(-center.dx, -center.dy);
 
-    final path = Path();
-    path.moveTo(center.dx - w / 2, center.dy);
+    _path.reset();
+    _path.moveTo(center.dx - w / 2, center.dy);
 
-    path.cubicTo(
+    _path.cubicTo(
       center.dx - w / 2,
       center.dy - h * 0.62,
       center.dx + w / 2,
@@ -350,7 +358,7 @@ class _FootballPainter extends CustomPainter {
       center.dx + w / 2,
       center.dy,
     );
-    path.cubicTo(
+    _path.cubicTo(
       center.dx + w / 2,
       center.dy + h * 0.62,
       center.dx - w / 2,
@@ -358,20 +366,25 @@ class _FootballPainter extends CustomPainter {
       center.dx - w / 2,
       center.dy,
     );
-    path.close();
+    _path.close();
 
-    canvas.drawShadow(path, Colors.black26, 4.0, true);
-    canvas.drawPath(path, paint);
+    canvas.drawShadow(_path, Colors.black26, 4.0, true);
+    canvas.drawPath(_path, _paint);
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _FootballPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.angle != angle;
+  }
 }
 
 class _PolygonPainter extends CustomPainter {
   final double sides;
   final Color color;
+
+  final Paint _paint = Paint()..isAntiAlias = true;
+  final Path _path = Path();
 
   _PolygonPainter({required this.sides, required this.color});
 
@@ -380,41 +393,54 @@ class _PolygonPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final outerRadius = size.width / 2 * 0.85;
     final innerRadius = outerRadius * 0.55;
-    final paint = Paint()
-      ..color = color
-      ..isAntiAlias = true;
+
+    _paint.color = color;
+    _path.reset();
 
     int vertexCount = (sides * 2).round();
     if (vertexCount < 6) vertexCount = 6;
     double angleStep = (2 * pi) / vertexCount;
 
-    List<Offset> points = List.generate(vertexCount, (i) {
+    for (int i = 0; i < vertexCount; i++) {
       double angle = (angleStep * i) - pi / 2;
       double r = (i % 2 == 0) ? outerRadius : innerRadius;
-      return Offset(center.dx + r * cos(angle), center.dy + r * sin(angle));
-    });
+      Offset pCurr = Offset(
+        center.dx + r * cos(angle),
+        center.dy + r * sin(angle),
+      );
 
-    final path = Path();
-    const double cornerSize = 0.7;
-    for (int i = 0; i < points.length; i++) {
-      Offset pPrev = points[(i + points.length - 1) % points.length];
-      Offset pCurr = points[i];
-      Offset pNext = points[(i + 1) % points.length];
+      double anglePrev = (angleStep * (i - 1)) - pi / 2;
+      double rPrev = ((i - 1) % 2 == 0) ? outerRadius : innerRadius;
+      Offset pPrev = Offset(
+        center.dx + rPrev * cos(anglePrev),
+        center.dy + rPrev * sin(anglePrev),
+      );
+
+      double angleNext = (angleStep * (i + 1)) - pi / 2;
+      double rNext = ((i + 1) % 2 == 0) ? outerRadius : innerRadius;
+      Offset pNext = Offset(
+        center.dx + rNext * cos(angleNext),
+        center.dy + rNext * sin(angleNext),
+      );
+
+      const double cornerSize = 0.7;
       Offset start = Offset.lerp(pCurr, pPrev, cornerSize)!;
       Offset end = Offset.lerp(pCurr, pNext, cornerSize)!;
+
       if (i == 0) {
-        path.moveTo(start.dx, start.dy);
+        _path.moveTo(start.dx, start.dy);
       } else {
-        path.lineTo(start.dx, start.dy);
+        _path.lineTo(start.dx, start.dy);
       }
-      path.quadraticBezierTo(pCurr.dx, pCurr.dy, end.dx, end.dy);
+      _path.quadraticBezierTo(pCurr.dx, pCurr.dy, end.dx, end.dy);
     }
-    path.close();
-    canvas.drawShadow(path, Colors.black26, 4.0, true);
-    canvas.drawPath(path, paint);
+    _path.close();
+
+    canvas.drawShadow(_path, Colors.black26, 4.0, true);
+    canvas.drawPath(_path, _paint);
   }
 
   @override
   bool shouldRepaint(covariant _PolygonPainter oldDelegate) =>
-      oldDelegate.sides != sides;
+      oldDelegate.sides != sides || oldDelegate.color != color;
 }
