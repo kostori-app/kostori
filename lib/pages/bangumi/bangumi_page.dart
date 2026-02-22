@@ -182,7 +182,7 @@ class _BangumiPageState extends State<BangumiPage> {
       children: [
         Positioned.fill(child: widget),
         Positioned(
-          bottom: 10,
+          bottom: 15,
           right: 10,
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 300),
@@ -229,6 +229,61 @@ class _BangumiPageState extends State<BangumiPage> {
                       ),
                     ],
                   ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 2,
+          right: 2,
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            opacity: showFB ? 1 : 0,
+            child: IgnorePointer(
+              ignoring: !showFB,
+              child: Transform.scale(
+                scale: 1.2,
+                alignment: Alignment.bottomRight,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.toOpacity(0.25),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 10,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${bangumiItems.length} 个条目',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontSize: 10,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
