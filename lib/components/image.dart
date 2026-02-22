@@ -311,11 +311,7 @@ class _AnimatedImageState extends State<AnimatedImage>
       }
     } else {
       result = Skeletonizer.zone(
-        child: Bone(
-          height: widget.height,
-          width: widget.width ?? 100,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        child: Bone(height: widget.height, width: widget.width ?? 100),
       );
     }
 
