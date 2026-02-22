@@ -13,7 +13,7 @@ import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.da
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';

@@ -7,7 +7,7 @@ import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';

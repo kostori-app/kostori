@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
-import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';

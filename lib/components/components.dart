@@ -14,7 +14,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import 'package:kostori/components/bangumi_widget.dart';
-import 'package:kostori/components/misc_components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
