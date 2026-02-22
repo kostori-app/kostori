@@ -184,8 +184,8 @@ class _ExplorePageState extends State<ExplorePage>
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 opacity: showFB ? 1 : 0,
-                child: Visibility(
-                  visible: showFB,
+                child: IgnorePointer(
+                  ignoring: !showFB,
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 20, right: 0),
                     child: GridSpeedDial(
