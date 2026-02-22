@@ -172,6 +172,10 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
   late AnimationController _controller;
   final List<int> _shapeSides = [4, 2, 6, 5, 8, 4, 1, 5, 10, 6, 2];
 
+  final Map<int, Path> _polygonCache = {};
+  final Path _capsulePath = Path();
+  final Path _footballPath = Path();
+
   @override
   void initState() {
     super.initState();
@@ -187,8 +191,10 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
       builder: (context, constraints) {
         double effectiveSize =
             widget.size ?? min(constraints.maxWidth, constraints.maxHeight);
-
         if (effectiveSize == double.infinity) effectiveSize = 50.0;
+
+        _prepareCapsulePath(effectiveSize);
+        _prepareFootballPath(effectiveSize);
 
         return AnimatedBuilder(
           animation: _controller,
@@ -204,7 +210,6 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
             double rotateCurve = const _CustomBackOutCurve(
               0.8,
             ).transform(rotateT);
-
             double rotationStep = 1.5 * pi;
             double rotation =
                 (index * rotationStep) + (rotateCurve * rotationStep);
@@ -218,10 +223,6 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
             double scaleCurve = Curves.easeOutBack.transform(scaleT);
             double scale = 0.95 + (0.05 * scaleCurve);
 
-            double capsuleOpacity = (currentSides == 2.0) ? 1.0 : 0.0;
-            double footballOpacity = (currentSides == 1.0) ? 1.0 : 0.0;
-            double polygonOpacity = (currentSides >= 3.0) ? 1.0 : 0.0;
-
             return Transform.scale(
               scale: scale,
               child: Transform.rotate(
@@ -229,34 +230,14 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
                 child: SizedBox(
                   width: effectiveSize,
                   height: effectiveSize,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (polygonOpacity > 0)
-                        CustomPaint(
-                          size: Size(effectiveSize, effectiveSize),
-                          painter: _PolygonPainter(
-                            sides: currentSides,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      if (capsuleOpacity > 0)
-                        CustomPaint(
-                          size: Size(effectiveSize, effectiveSize),
-                          painter: _CapsulePainter(
-                            color: Theme.of(context).colorScheme.primary,
-                            angle: pi / 4,
-                          ),
-                        ),
-                      if (footballOpacity > 0)
-                        CustomPaint(
-                          size: Size(effectiveSize, effectiveSize),
-                          painter: _FootballPainter(
-                            color: Theme.of(context).colorScheme.primary,
-                            angle: pi / 4,
-                          ),
-                        ),
-                    ],
+                  child: CustomPaint(
+                    painter: _OptimizedShapePainter(
+                      sides: currentSides,
+                      color: Theme.of(context).colorScheme.primary,
+                      polygonCache: _polygonCache,
+                      capsulePath: _capsulePath,
+                      footballPath: _footballPath,
+                    ),
                   ),
                 ),
               ),
@@ -267,11 +248,134 @@ class _PolygonRefreshIndicatorState extends State<PolygonRefreshIndicator>
     );
   }
 
+  void _prepareCapsulePath(double size) {
+    final w = size * 0.65;
+    final h = size * 0.45;
+    final center = Offset(size / 2, size / 2);
+    _capsulePath.reset();
+    final rect = Rect.fromCenter(center: center, width: w, height: h);
+    _capsulePath.addRRect(
+      RRect.fromRectAndRadius(rect, Radius.circular(h / 2)),
+    );
+  }
+
+  void _prepareFootballPath(double size) {
+    final w = size * 0.68;
+    final h = size * 0.52;
+    final center = Offset(size / 2, size / 2);
+    _footballPath.reset();
+    _footballPath.moveTo(center.dx - w / 2, center.dy);
+    _footballPath.cubicTo(
+      center.dx - w / 2,
+      center.dy - h * 0.62,
+      center.dx + w / 2,
+      center.dy - h * 0.62,
+      center.dx + w / 2,
+      center.dy,
+    );
+    _footballPath.cubicTo(
+      center.dx + w / 2,
+      center.dy + h * 0.62,
+      center.dx - w / 2,
+      center.dy + h * 0.62,
+      center.dx - w / 2,
+      center.dy,
+    );
+    _footballPath.close();
+  }
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
+}
+
+class _OptimizedShapePainter extends CustomPainter {
+  final double sides;
+  final Color color;
+
+  final Map<int, Path> polygonCache;
+  final Path capsulePath;
+  final Path footballPath;
+
+  _OptimizedShapePainter({
+    required this.sides,
+    required this.color,
+    required this.polygonCache,
+    required this.capsulePath,
+    required this.footballPath,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..isAntiAlias = true;
+    canvas.save();
+    if (sides == 2) {
+      canvas.drawPath(capsulePath, paint);
+    } else if (sides == 1) {
+      canvas.drawPath(footballPath, paint);
+    } else {
+      final int intSides = sides.toInt();
+      if (!polygonCache.containsKey(intSides)) {
+        polygonCache[intSides] = _buildPolygonPath(intSides, size);
+      }
+      canvas.drawPath(polygonCache[intSides]!, paint);
+    }
+    canvas.restore();
+  }
+
+  Path _buildPolygonPath(int sides, Size size) {
+    final path = Path();
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerRadius = size.width / 2 * 0.85;
+    final innerRadius = outerRadius * 0.55;
+    int vertexCount = (sides * 2).round();
+    if (vertexCount < 6) vertexCount = 6;
+    double angleStep = (2 * pi) / vertexCount;
+
+    for (int i = 0; i < vertexCount; i++) {
+      double angle = (angleStep * i) - pi / 2;
+      double r = (i % 2 == 0) ? outerRadius : innerRadius;
+      final pCurr = Offset(
+        center.dx + r * cos(angle),
+        center.dy + r * sin(angle),
+      );
+
+      double anglePrev = (angleStep * (i - 1)) - pi / 2;
+      double rPrev = ((i - 1) % 2 == 0) ? outerRadius : innerRadius;
+      final pPrev = Offset(
+        center.dx + rPrev * cos(anglePrev),
+        center.dy + rPrev * sin(anglePrev),
+      );
+
+      double angleNext = (angleStep * (i + 1)) - pi / 2;
+      double rNext = ((i + 1) % 2 == 0) ? outerRadius : innerRadius;
+      final pNext = Offset(
+        center.dx + rNext * cos(angleNext),
+        center.dy + rNext * sin(angleNext),
+      );
+
+      const double cornerSize = 0.7;
+      final start = Offset.lerp(pCurr, pPrev, cornerSize)!;
+      final end = Offset.lerp(pCurr, pNext, cornerSize)!;
+
+      if (i == 0) {
+        path.moveTo(start.dx, start.dy);
+      } else {
+        path.lineTo(start.dx, start.dy);
+      }
+      path.quadraticBezierTo(pCurr.dx, pCurr.dy, end.dx, end.dy);
+    }
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(covariant _OptimizedShapePainter oldDelegate) =>
+      oldDelegate.sides != sides || oldDelegate.color != color;
 }
 
 class _CustomBackOutCurve extends Curve {
@@ -284,163 +388,4 @@ class _CustomBackOutCurve extends Curve {
     t = t - 1.0;
     return t * t * ((s + 1) * t + s) + 1.0;
   }
-}
-
-class _CapsulePainter extends CustomPainter {
-  final Color color;
-  final double angle;
-
-  final Paint _paint = Paint()..isAntiAlias = true;
-  final Path _path = Path();
-
-  _CapsulePainter({required this.color, required this.angle});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    _paint.color = color;
-
-    double w = size.width * 0.65;
-    double h = size.height * 0.45;
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(angle);
-    canvas.translate(-center.dx, -center.dy);
-
-    final rect = Rect.fromCenter(center: center, width: w, height: h);
-    final rRect = RRect.fromRectAndRadius(rect, Radius.circular(h / 2));
-
-    _path.reset();
-    _path.addRRect(rRect);
-
-    canvas.drawShadow(_path, Colors.black26, 4.0, true);
-    canvas.drawRRect(rRect, _paint);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _CapsulePainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.angle != angle;
-  }
-}
-
-class _FootballPainter extends CustomPainter {
-  final Color color;
-  final double angle;
-
-  final Paint _paint = Paint()..isAntiAlias = true;
-  final Path _path = Path();
-
-  _FootballPainter({required this.color, required this.angle});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    _paint.color = color;
-
-    double w = size.width * 0.68;
-    double h = size.height * 0.52;
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(angle);
-    canvas.translate(-center.dx, -center.dy);
-
-    _path.reset();
-    _path.moveTo(center.dx - w / 2, center.dy);
-
-    _path.cubicTo(
-      center.dx - w / 2,
-      center.dy - h * 0.62,
-      center.dx + w / 2,
-      center.dy - h * 0.62,
-      center.dx + w / 2,
-      center.dy,
-    );
-    _path.cubicTo(
-      center.dx + w / 2,
-      center.dy + h * 0.62,
-      center.dx - w / 2,
-      center.dy + h * 0.62,
-      center.dx - w / 2,
-      center.dy,
-    );
-    _path.close();
-
-    canvas.drawShadow(_path, Colors.black26, 4.0, true);
-    canvas.drawPath(_path, _paint);
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant _FootballPainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.angle != angle;
-  }
-}
-
-class _PolygonPainter extends CustomPainter {
-  final double sides;
-  final Color color;
-
-  final Paint _paint = Paint()..isAntiAlias = true;
-  final Path _path = Path();
-
-  _PolygonPainter({required this.sides, required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = size.width / 2 * 0.85;
-    final innerRadius = outerRadius * 0.55;
-
-    _paint.color = color;
-    _path.reset();
-
-    int vertexCount = (sides * 2).round();
-    if (vertexCount < 6) vertexCount = 6;
-    double angleStep = (2 * pi) / vertexCount;
-
-    for (int i = 0; i < vertexCount; i++) {
-      double angle = (angleStep * i) - pi / 2;
-      double r = (i % 2 == 0) ? outerRadius : innerRadius;
-      Offset pCurr = Offset(
-        center.dx + r * cos(angle),
-        center.dy + r * sin(angle),
-      );
-
-      double anglePrev = (angleStep * (i - 1)) - pi / 2;
-      double rPrev = ((i - 1) % 2 == 0) ? outerRadius : innerRadius;
-      Offset pPrev = Offset(
-        center.dx + rPrev * cos(anglePrev),
-        center.dy + rPrev * sin(anglePrev),
-      );
-
-      double angleNext = (angleStep * (i + 1)) - pi / 2;
-      double rNext = ((i + 1) % 2 == 0) ? outerRadius : innerRadius;
-      Offset pNext = Offset(
-        center.dx + rNext * cos(angleNext),
-        center.dy + rNext * sin(angleNext),
-      );
-
-      const double cornerSize = 0.7;
-      Offset start = Offset.lerp(pCurr, pPrev, cornerSize)!;
-      Offset end = Offset.lerp(pCurr, pNext, cornerSize)!;
-
-      if (i == 0) {
-        _path.moveTo(start.dx, start.dy);
-      } else {
-        _path.lineTo(start.dx, start.dy);
-      }
-      _path.quadraticBezierTo(pCurr.dx, pCurr.dy, end.dx, end.dy);
-    }
-    _path.close();
-
-    canvas.drawShadow(_path, Colors.black26, 4.0, true);
-    canvas.drawPath(_path, _paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _PolygonPainter oldDelegate) =>
-      oldDelegate.sides != sides || oldDelegate.color != color;
 }
