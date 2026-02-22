@@ -339,7 +339,7 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                       //安卓流量速度显示
                                       (App.isAndroid)
                                           ? SizedBox(
-                                              width: 64,
+                                              width: 32,
                                               child: SpeedMonitorWidget(),
                                             )
                                           : Container(),

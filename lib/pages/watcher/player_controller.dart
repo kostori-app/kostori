@@ -85,7 +85,7 @@ abstract class _PlayerController with Store {
       ],
     ),
   );
-  VideoController? playerController;
+  late VideoController playerController;
 
   @observable
   bool audioOutType = true;
@@ -325,7 +325,7 @@ abstract class _PlayerController with Store {
       superResolutionType = 1;
     }
 
-    playerController ??= VideoController(
+    playerController = VideoController(
       player,
       configuration: VideoControllerConfiguration(
         vo: videoRenderer,
@@ -789,7 +789,7 @@ abstract class _PlayerController with Store {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     App.rootContext.showMessage(message: '正在截图中...'.tl);
     if (App.isAndroid) {
-      Uint8List? screenData = await playerController!.player.screenshot();
+      Uint8List? screenData = await playerController.player.screenshot();
       try {
         final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
         if (folder != null) {
@@ -827,7 +827,7 @@ abstract class _PlayerController with Store {
       }
     } else {
       try {
-        Uint8List? screenData = await playerController!.player.screenshot();
+        Uint8List? screenData = await playerController.player.screenshot();
         // 获取桌面平台的文档目录
         final directory = await getApplicationDocumentsDirectory();
         // 目标文件夹路径
@@ -921,7 +921,7 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
         builder: (context) {
           return playerController.isPiPMode
               ? Video(
-                  controller: playerController.playerController!,
+                  controller: playerController.playerController,
                   controls: null,
                 )
               : VideoPage(playerController: playerController);
