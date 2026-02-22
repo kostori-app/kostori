@@ -26,19 +26,33 @@ class BangumiPage extends StatefulWidget {
   State<BangumiPage> createState() => _BangumiPageState();
 }
 
-class _BangumiPageState extends State<BangumiPage> {
+class _BangumiPageState extends State<BangumiPage>
+    with SingleTickerProviderStateMixin {
   final ScrollController scrollController = ScrollController();
   List<BangumiItem> bangumiItems = [];
   bool isLoadingMore = false;
   bool showFB = false;
-
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
   int count = 0;
 
   @override
   void initState() {
     super.initState();
+
+    // 动画控制器
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+
     scrollController.addListener(scrollListener);
     scrollController.addListener(onScroll);
+
     if (bangumiItems.isEmpty) {
       queryBangumiByTrend();
     }
@@ -49,6 +63,7 @@ class _BangumiPageState extends State<BangumiPage> {
     scrollController.removeListener(scrollListener);
     scrollController.removeListener(onScroll);
     scrollController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -61,18 +76,13 @@ class _BangumiPageState extends State<BangumiPage> {
   }
 
   void onScroll() {
-    if (scrollController.offset > 50) {
-      if (!showFB) {
-        setState(() {
-          showFB = true;
-        });
-      }
-    } else {
-      if (showFB) {
-        setState(() {
-          showFB = false;
-        });
-      }
+    final shouldShow = scrollController.offset > 50;
+    if (shouldShow && !showFB) {
+      showFB = true;
+      _controller.forward();
+    } else if (!shouldShow && showFB) {
+      showFB = false;
+      _controller.reverse();
     }
   }
 
@@ -137,7 +147,6 @@ class _BangumiPageState extends State<BangumiPage> {
           ),
         ),
       ),
-
       // Grid 部分
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -155,7 +164,6 @@ class _BangumiPageState extends State<BangumiPage> {
           gridDelegate: SliverGridDelegateWithBangumiItems(true),
         ),
       ),
-
       // 加载更多指示器
       if (isLoadingMore)
         SliverToBoxAdapter(
@@ -178,110 +186,115 @@ class _BangumiPageState extends State<BangumiPage> {
         ...buildBangumiTrendingSlivers(context),
       ],
     );
+
     widget = Stack(
       children: [
         Positioned.fill(child: widget),
+        // FAB
         Positioned(
           bottom: 15,
           right: 10,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
             child: IgnorePointer(
               ignoring: !showFB,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 20, right: 0),
-                child: GridSpeedDial(
-                  icon: Icons.menu,
-                  activeIcon: Icons.close,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  spacing: 6,
-                  spaceBetweenChildren: 4,
-                  direction: SpeedDialDirection.up,
-                  childPadding: const EdgeInsets.all(6),
-                  childrens: [
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.refresh),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: () async {
-                          await resetBangumiTrend();
-                        },
-                      ),
+                child: RepaintBoundary(
+                  child: GridSpeedDial(
+                    icon: Icons.menu,
+                    activeIcon: Icons.close,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    spacing: 6,
+                    spaceBetweenChildren: 4,
+                    direction: SpeedDialDirection.up,
+                    childPadding: const EdgeInsets.all(6),
+                    childrens: [
+                      [
+                        SpeedDialChild(
+                          child: const Icon(Icons.refresh),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: () async {
+                            await resetBangumiTrend();
+                          },
+                        ),
+                      ],
+                      [
+                        SpeedDialChild(
+                          child: const Icon(Icons.vertical_align_top),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: () => scrollToTop(),
+                        ),
+                      ],
                     ],
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: () => scrollToTop(),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
+        // 条目数量浮动框
         Positioned(
           bottom: 2,
           right: 2,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
             child: IgnorePointer(
               ignoring: !showFB,
               child: Transform.scale(
                 scale: 1.2,
                 alignment: Alignment.bottomRight,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.toOpacity(0.25),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 10,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${bangumiItems.length} 个条目',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                                fontSize: 10,
-                              ),
-                        ),
-                      ],
+                child: RepaintBoundary(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.toOpacity(0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 10,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${bangumiItems.length} 个条目',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
+                                  fontSize: 10,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -291,6 +304,7 @@ class _BangumiPageState extends State<BangumiPage> {
         ),
       ],
     );
+
     widget = AppScrollBar(
       topPadding: 82,
       controller: scrollController,

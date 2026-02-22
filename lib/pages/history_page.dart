@@ -21,12 +21,14 @@ class HistoryPage extends StatefulWidget {
   State<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
+class _HistoryPageState extends State<HistoryPage>
+    with SingleTickerProviderStateMixin {
   bool showFB = false;
   bool multiSelectMode = false;
 
   Map<HistoryTimeGroup, bool> expandedStates = {};
-
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
   var animes = HistoryManager().getAll();
   Map<History, bool> selectedAnimes = {};
   final scrollController = ScrollController();
@@ -62,6 +64,14 @@ class _HistoryPageState extends State<HistoryPage> {
     expandedStates = fromJsonMap(
       Map<String, dynamic>.from(appdata.implicitData['expandedStates'] ?? {}),
     );
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
     super.initState();
   }
 
@@ -70,6 +80,7 @@ class _HistoryPageState extends State<HistoryPage> {
     HistoryManager().removeListener(onUpdate);
     scrollController.removeListener(onScroll);
     scrollController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -126,10 +137,13 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void onScroll() {
-    if (scrollController.offset > 50) {
-      if (!showFB) setState(() => showFB = true);
-    } else {
-      if (showFB) setState(() => showFB = false);
+    final shouldShow = scrollController.offset > 50;
+    if (shouldShow && !showFB) {
+      showFB = true;
+      _controller.forward();
+    } else if (!shouldShow && showFB) {
+      showFB = false;
+      _controller.reverse();
     }
   }
 
@@ -448,10 +462,8 @@ class _HistoryPageState extends State<HistoryPage> {
         Positioned(
           bottom: 10,
           right: 10,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
             child: IgnorePointer(
               ignoring: !showFB,
               child: Padding(

@@ -20,6 +20,9 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   late _FavoritesPageState favPage;
   late FavoriteSortType sortType;
 
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
   FavoritesController get favoritesController => widget.favoritesController;
 
   Map<Anime, bool> selectedAnimes = {};
@@ -178,18 +181,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   }
 
   void onScroll() {
-    if (scrollController.offset > 50) {
-      if (!showFB) {
-        setState(() {
-          showFB = true;
-        });
-      }
-    } else {
-      if (showFB) {
-        setState(() {
-          showFB = false;
-        });
-      }
+    final shouldShow = scrollController.offset > 50;
+    if (shouldShow && !showFB) {
+      showFB = true;
+      _controller.forward();
+    } else if (!shouldShow && showFB) {
+      showFB = false;
+      _controller.reverse();
     }
   }
 
@@ -250,6 +248,14 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     updateAnimes();
     scrollController.addListener(onScroll);
     manager.addListener(updateAnimes);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
     super.initState();
   }
 
@@ -259,6 +265,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     scrollController.removeListener(onScroll);
     manager.removeListener(updateAnimes);
     scrollController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -880,10 +887,8 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
         Positioned(
           bottom: 10,
           right: 10,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
             child: IgnorePointer(
               ignoring: !showFB,
               child: Padding(

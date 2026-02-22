@@ -31,7 +31,6 @@ class _ExplorePageState extends State<ExplorePage>
   late final ExploreController exploreController;
 
   bool get showFB => exploreController.showFB;
-
   double location = 0;
 
   late List<String> pages;
@@ -77,6 +76,7 @@ class _ExplorePageState extends State<ExplorePage>
     controller = TabController(length: pages.length, vsync: this);
     appdata.settings.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
+    exploreController.initController(this);
     super.initState();
   }
 
@@ -91,6 +91,7 @@ class _ExplorePageState extends State<ExplorePage>
     controller.dispose();
     appdata.settings.removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
+    exploreController.dispose();
     super.dispose();
   }
 
@@ -180,10 +181,8 @@ class _ExplorePageState extends State<ExplorePage>
             Positioned(
               bottom: 30,
               right: 10,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                opacity: showFB ? 1 : 0,
+              child: FadeTransition(
+                opacity: exploreController.fadeAnimation,
                 child: IgnorePointer(
                   ignoring: !showFB,
                   child: Padding(
@@ -306,17 +305,13 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   }
 
   void onScroll() {
-    if (scrollController.offset > 200) {
-      if (!showFB) {
-        setState(() {
-          exploreController.showFB = true;
-        });
+    if (scrollController.offset > 50) {
+      if (!exploreController.showFB) {
+        exploreController.show();
       }
     } else {
-      if (showFB) {
-        setState(() {
-          exploreController.showFB = false;
-        });
+      if (exploreController.showFB) {
+        exploreController.hide();
       }
     }
   }

@@ -24,27 +24,53 @@ class MePage extends StatefulWidget {
   State<MePage> createState() => _MePageState();
 }
 
-class _MePageState extends State<MePage> {
+class _MePageState extends State<MePage> with SingleTickerProviderStateMixin {
   final ScrollController scrollController = ScrollController();
+
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
 
   bool showFB = false;
 
+  @override
+  void initState() {
+    super.initState();
+
+    // AnimationController 控制淡入淡出动画
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+
+    // 滚动监听
+    scrollController.addListener(onScroll);
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(onScroll);
+    scrollController.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // 滚动时控制动画
   void onScroll() {
-    if (scrollController.offset > 50) {
-      if (!showFB) {
-        setState(() {
-          showFB = true;
-        });
-      }
-    } else {
-      if (showFB) {
-        setState(() {
-          showFB = false;
-        });
-      }
+    final shouldShow = scrollController.offset > 50;
+    if (shouldShow && !showFB) {
+      showFB = true;
+      _controller.forward();
+    } else if (!shouldShow && showFB) {
+      showFB = false;
+      _controller.reverse();
     }
   }
 
+  // 滚动到顶部
   void scrollToTop() {
     if (scrollController.hasClients) {
       scrollController.animateTo(
@@ -56,20 +82,8 @@ class _MePageState extends State<MePage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    scrollController.addListener(onScroll);
-  }
-
-  @override
-  void dispose() {
-    scrollController.removeListener(onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // 主列表
     Widget widget = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
@@ -84,59 +98,60 @@ class _MePageState extends State<MePage> {
       ],
     );
 
+    // Stack + Floating Button
     widget = Stack(
       children: [
         Positioned.fill(child: widget),
         Positioned(
           bottom: 10,
           right: 10,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
             child: IgnorePointer(
               ignoring: !showFB,
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 20, right: 0),
-                child: GridSpeedDial(
-                  icon: Icons.menu,
-                  activeIcon: Icons.close,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  spacing: 6,
-                  spaceBetweenChildren: 4,
-                  direction: SpeedDialDirection.up,
-                  childPadding: const EdgeInsets.all(6),
-                  childrens: [
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.refresh),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: () {
-                          setState(() {
+                child: RepaintBoundary(
+                  child: GridSpeedDial(
+                    icon: Icons.menu,
+                    activeIcon: Icons.close,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    spacing: 6,
+                    spaceBetweenChildren: 4,
+                    direction: SpeedDialDirection.up,
+                    childPadding: const EdgeInsets.all(6),
+                    childrens: [
+                      [
+                        SpeedDialChild(
+                          child: const Icon(Icons.refresh),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: () {
+                            // 隐藏按钮
                             showFB = false;
-                          });
-                        },
-                      ),
+                            _controller.reverse();
+                          },
+                        ),
+                      ],
+                      [
+                        SpeedDialChild(
+                          child: const Icon(Icons.vertical_align_top),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: () => scrollToTop(),
+                        ),
+                      ],
                     ],
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: () => scrollToTop(),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -145,6 +160,7 @@ class _MePageState extends State<MePage> {
       ],
     );
 
+    // 滚动条封装
     widget = AppScrollBar(
       topPadding: 56,
       controller: scrollController,
@@ -154,6 +170,7 @@ class _MePageState extends State<MePage> {
       ),
     );
 
+    // 横向间距适配
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
 }

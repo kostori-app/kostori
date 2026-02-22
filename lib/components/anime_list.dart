@@ -48,7 +48,8 @@ class AnimeList extends StatefulWidget {
   State<AnimeList> createState() => AnimeListState();
 }
 
-class AnimeListState extends State<AnimeList> {
+class AnimeListState extends State<AnimeList>
+    with SingleTickerProviderStateMixin {
   int? _maxPage;
 
   final Map<int, List<Anime>> _data = {};
@@ -58,6 +59,9 @@ class AnimeListState extends State<AnimeList> {
   String? _error;
 
   final Map<int, bool> _loading = {};
+
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
 
   String? _nextUrl;
 
@@ -77,10 +81,13 @@ class AnimeListState extends State<AnimeList> {
   };
 
   void onScroll() {
-    if (scrollController.offset > 50) {
-      if (!showFB) setState(() => showFB = true);
-    } else {
-      if (showFB) setState(() => showFB = false);
+    final shouldShow = scrollController.offset > 50;
+    if (shouldShow && !showFB) {
+      showFB = true;
+      _controller.forward();
+    } else if (!shouldShow && showFB) {
+      showFB = false;
+      _controller.reverse();
     }
   }
 
@@ -128,6 +135,14 @@ class AnimeListState extends State<AnimeList> {
   @override
   void initState() {
     scrollController.addListener(onScroll);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
     super.initState();
   }
 
@@ -135,6 +150,7 @@ class AnimeListState extends State<AnimeList> {
   void dispose() {
     scrollController.removeListener(onScroll);
     scrollController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -513,10 +529,8 @@ class AnimeListState extends State<AnimeList> {
         Positioned(
           bottom: 30,
           right: 10,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
+          child: FadeTransition(
+            opacity: _fadeAnimation,
             child: IgnorePointer(
               ignoring: !showFB,
               child: Padding(
