@@ -1,8 +1,8 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:kostori/components/battery_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -285,36 +285,70 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
 
                               if (playerController.isFullScreen) ...[
                                 const SizedBox(width: 4),
-                                //时间
-                                StreamBuilder<String>(
-                                  stream: playerController.timeStream,
-                                  initialData: playerController.formatNow(),
-                                  builder: (context, snapshot) {
-                                    return Text(
-                                      snapshot.data ?? '--:--:--',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: Theme.of(
-                                          context,
-                                        ).textTheme.titleMedium!.fontSize,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black12,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Utils.buildTimeIcon(
+                                        playerController.currentTime,
                                       ),
-                                    );
-                                  },
+                                      const SizedBox(width: 6),
+                                      //时间
+                                      StreamBuilder<String>(
+                                        stream: playerController.timeStream,
+                                        initialData: playerController
+                                            .formatNow(),
+                                        builder: (context, snapshot) {
+                                          return Text(
+                                            snapshot.data ?? '--:--:--',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: Theme.of(
+                                                context,
+                                              ).textTheme.titleMedium!.fontSize,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 1,
+                                        height: 12,
+                                        color: Colors.white24,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      //电池
+                                      BatteryWidget(),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        width: 1,
+                                        height: 12,
+                                        color: Colors.white24,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      NetworkStatusWidget(),
+                                      const SizedBox(width: 6),
+                                      //安卓流量速度显示
+                                      (App.isAndroid)
+                                          ? SizedBox(
+                                              width: 64,
+                                              child: SpeedMonitorWidget(),
+                                            )
+                                          : Container(),
+                                      (App.isAndroid)
+                                          ? const SizedBox(width: 8)
+                                          : Container(),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
-                                //安卓流量速度显示
-                                (App.isAndroid)
-                                    ? SizedBox(
-                                        width: 64,
-                                        child: SpeedMonitorWidget(),
-                                      )
-                                    : Container(),
-                                (App.isAndroid)
-                                    ? const SizedBox(width: 8)
-                                    : Container(),
-                                //电池
-                                BatteryWidget(),
-                                const SizedBox(width: 4),
                               ],
                               //倍数状态条
                               TextButton(

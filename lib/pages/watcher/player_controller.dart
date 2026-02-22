@@ -47,6 +47,8 @@ abstract class _PlayerController with Store {
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
 
+  DateTime currentTime = DateTime.now();
+
   GlobalKey<OverlayState>? overlayKey;
 
   @observable
@@ -265,6 +267,7 @@ abstract class _PlayerController with Store {
 
   String formatNow() {
     final now = DateTime.now();
+    currentTime = DateTime.now();
     return '${now.hour.toString().padLeft(2, '0')}:'
         '${now.minute.toString().padLeft(2, '0')}:'
         '${now.second.toString().padLeft(2, '0')}';

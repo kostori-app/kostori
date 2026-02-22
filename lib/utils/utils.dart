@@ -440,6 +440,28 @@ class Utils {
     return date;
   }
 
+  /// 根据时间段获取时间图标
+  static Widget buildTimeIcon(DateTime time) {
+    final hour = time.hour;
+
+    IconData iconData;
+    if (hour >= 6 && hour < 11) {
+      // Morning
+      iconData = Icons.wb_twilight;
+    } else if (hour >= 11 && hour < 17) {
+      // Day
+      iconData = Icons.wb_sunny_outlined;
+    } else if (hour >= 17 && hour < 19) {
+      // Evening
+      iconData = Icons.wb_twilight;
+    } else {
+      // Night
+      iconData = Icons.nights_stay_outlined;
+    }
+
+    return Icon(iconData, color: Colors.white, size: 16);
+  }
+
   static String formatHMS(int seconds) {
     final h = seconds ~/ 3600;
     final m = (seconds % 3600) ~/ 60;

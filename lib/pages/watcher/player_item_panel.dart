@@ -3,8 +3,8 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:kostori/components/battery_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/system_status_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
@@ -175,126 +175,58 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               }
                             },
                           ),
-                          //标题集数显示
-                          (playerController.isFullScreen)
-                              ? Expanded(
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final text =
-                                          '${WatcherState.currentState!.anime.title} ${playerController.currentSetName}';
-                                      const style = TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      );
+                          //标题显示
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final text =
+                                    WatcherState.currentState!.anime.title;
+                                const style = TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                );
 
-                                      final textPainter = TextPainter(
-                                        text: TextSpan(
-                                          text: text,
-                                          style: style,
-                                        ),
-                                        maxLines: 1,
-                                        textDirection: TextDirection.ltr,
-                                      )..layout(maxWidth: constraints.maxWidth);
+                                final textPainter = TextPainter(
+                                  text: TextSpan(text: text, style: style),
+                                  maxLines: 1,
+                                  textDirection: TextDirection.ltr,
+                                )..layout(maxWidth: constraints.maxWidth);
 
-                                      final shouldScroll =
-                                          textPainter.width >=
-                                          constraints.maxWidth - 30;
+                                final shouldScroll =
+                                    textPainter.width >=
+                                    constraints.maxWidth - 30;
 
-                                      return SizedBox(
-                                        height: 24,
-                                        child: ClipRect(
-                                          child: shouldScroll
-                                              ? Marquee(
-                                                  text: text,
-                                                  style: style,
-                                                  scrollAxis: Axis.horizontal,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  blankSpace: 10.0,
-                                                  velocity: 40.0,
-                                                  pauseAfterRound:
-                                                      Duration.zero,
-                                                  startPadding: 10.0,
-                                                  accelerationDuration:
-                                                      Duration.zero,
-                                                  decelerationDuration:
-                                                      Duration.zero,
-                                                )
-                                              : Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: Text(
-                                                    text,
-                                                    style: style,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                        ),
-                                      );
-                                    },
+                                return SizedBox(
+                                  height: 24,
+                                  child: ClipRect(
+                                    child: shouldScroll
+                                        ? Marquee(
+                                            text: text,
+                                            style: style,
+                                            scrollAxis: Axis.horizontal,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
+                                            blankSpace: 10.0,
+                                            velocity: 40.0,
+                                            pauseAfterRound: Duration.zero,
+                                            startPadding: 10.0,
+                                            accelerationDuration: Duration.zero,
+                                            decelerationDuration: Duration.zero,
+                                          )
+                                        : Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              text,
+                                              style: style,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
                                   ),
-                                )
-                              : Expanded(
-                                  child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final text =
-                                          playerController.currentSetName;
-                                      const style = TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      );
-
-                                      final textPainter = TextPainter(
-                                        text: TextSpan(
-                                          text: text,
-                                          style: style,
-                                        ),
-                                        maxLines: 1,
-                                        textDirection: TextDirection.ltr,
-                                      )..layout(maxWidth: constraints.maxWidth);
-
-                                      final shouldScroll =
-                                          textPainter.width >=
-                                          constraints.maxWidth - 20;
-
-                                      return SizedBox(
-                                        height: 24,
-                                        child: ClipRect(
-                                          child: shouldScroll
-                                              ? Marquee(
-                                                  text: text,
-                                                  style: style,
-                                                  scrollAxis: Axis.horizontal,
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.end,
-                                                  blankSpace: 10.0,
-                                                  velocity: 40.0,
-                                                  pauseAfterRound:
-                                                      Duration.zero,
-                                                  startPadding: 10.0,
-                                                  accelerationDuration:
-                                                      Duration.zero,
-                                                  decelerationDuration:
-                                                      Duration.zero,
-                                                )
-                                              : Align(
-                                                  alignment:
-                                                      Alignment.centerLeft,
-                                                  child: Text(
-                                                    text,
-                                                    style: style,
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
+                                );
+                              },
+                            ),
+                          ),
                           //超分
                           MenuAnchor(
                             consumeOutsideTap: true,
@@ -333,36 +265,69 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
                           if (playerController.isFullScreen) ...[
                             const SizedBox(width: 4),
-                            //时间
-                            StreamBuilder<String>(
-                              stream: playerController.timeStream,
-                              initialData: playerController.formatNow(),
-                              builder: (context, snapshot) {
-                                return Text(
-                                  snapshot.data ?? '--:--:--',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium!.fontSize,
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black12,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Utils.buildTimeIcon(
+                                    playerController.currentTime,
                                   ),
-                                );
-                              },
+                                  const SizedBox(width: 6),
+                                  //时间
+                                  StreamBuilder<String>(
+                                    stream: playerController.timeStream,
+                                    initialData: playerController.formatNow(),
+                                    builder: (context, snapshot) {
+                                      return Text(
+                                        snapshot.data ?? '--:--:--',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium!.fontSize,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 1,
+                                    height: 12,
+                                    color: Colors.white24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  //电池
+                                  BatteryWidget(),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 1,
+                                    height: 12,
+                                    color: Colors.white24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  NetworkStatusWidget(),
+                                  const SizedBox(width: 6),
+                                  //安卓流量速度显示
+                                  (App.isAndroid)
+                                      ? SizedBox(
+                                          width: 64,
+                                          child: SpeedMonitorWidget(),
+                                        )
+                                      : Container(),
+                                  (App.isAndroid)
+                                      ? const SizedBox(width: 8)
+                                      : Container(),
+                                ],
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            //安卓流量速度显示
-                            (App.isAndroid)
-                                ? SizedBox(
-                                    width: 64,
-                                    child: SpeedMonitorWidget(),
-                                  )
-                                : Container(),
-                            (App.isAndroid)
-                                ? const SizedBox(width: 8)
-                                : Container(),
-                            //电池
-                            BatteryWidget(),
-                            const SizedBox(width: 4),
                           ],
                           //倍数状态条
                           TextButton(
@@ -419,8 +384,77 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+                            SizedBox(width: 10),
                             Container(
-                              padding: const EdgeInsets.only(left: 10.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black12,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final text = playerController.currentSetName;
+                                  const style = TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  );
+
+                                  final textPainter = TextPainter(
+                                    text: TextSpan(text: text, style: style),
+                                    maxLines: 1,
+                                    textDirection: TextDirection.ltr,
+                                  )..layout(maxWidth: constraints.maxWidth);
+
+                                  final shouldScroll =
+                                      textPainter.width >=
+                                      constraints.maxWidth - 20;
+
+                                  return SizedBox(
+                                    height: 24,
+                                    child: ClipRect(
+                                      child: shouldScroll
+                                          ? Marquee(
+                                              text: text,
+                                              style: style,
+                                              scrollAxis: Axis.horizontal,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.end,
+                                              blankSpace: 10.0,
+                                              velocity: 40.0,
+                                              pauseAfterRound: Duration.zero,
+                                              startPadding: 10.0,
+                                              accelerationDuration:
+                                                  Duration.zero,
+                                              decelerationDuration:
+                                                  Duration.zero,
+                                            )
+                                          : Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                text,
+                                                style: style,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black12,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
                               child: Text(
                                 "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
                                 style: TextStyle(
