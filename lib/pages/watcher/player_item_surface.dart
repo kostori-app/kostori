@@ -22,7 +22,7 @@ class _PlayerItemSurfaceState extends State<PlayerItemSurface> {
         return AspectRatio(
           aspectRatio: playerController.isPortraitFullscreen ? 9 / 16 : 16 / 9,
           child: Video(
-            controller: playerController.playerController,
+            controller: playerController.playerController!,
             fill: Colors.transparent,
           ),
         );

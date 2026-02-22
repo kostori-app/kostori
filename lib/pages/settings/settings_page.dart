@@ -57,6 +57,8 @@ part 'local_favorites.dart';
 
 part 'network.dart';
 
+part 'player_settings.dart';
+
 part 'setting_components.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -78,6 +80,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   final categories = <String>[
     "Explore",
     "Fanyuan",
+    "Player",
     "Appearance",
     "Local Favorites",
     "APP",
@@ -88,6 +91,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   final icons = <IconData>[
     Icons.explore,
     Icons.source,
+    Icons.display_settings_rounded,
     Icons.color_lens,
     Icons.collections_bookmark_rounded,
     Icons.apps,
@@ -468,11 +472,12 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
             : SizedBox(),
       0 => const ExploreSettings(),
       1 => const AnimeSourceSettings(),
-      2 => const AppearanceSettings(),
-      3 => const LocalFavoritesSettings(),
-      4 => const AppSettings(),
-      5 => const NetworkSettings(),
-      6 => const AboutSettings(),
+      2 => const PlayerSettings(),
+      3 => const AppearanceSettings(),
+      4 => const LocalFavoritesSettings(),
+      5 => const AppSettings(),
+      6 => const NetworkSettings(),
+      7 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }

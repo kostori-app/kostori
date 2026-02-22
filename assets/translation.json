@@ -603,7 +603,14 @@
     "Wish": "想看",
     "Collect": "已看",
     "On Hold": "搁置",
-    "Dropped": "抛弃"
+    "Dropped": "抛弃",
+    "Player": "播放器",
+    "Audio Option": "音频选项(使用OpenSLES)",
+    "Hardware Decoding": "硬件解码",
+    "Hardware decoder": "硬件解码器",
+    "Video renderer": "视频渲染器",
+    "Video synchronization mode": "视频同步模式",
+    "Enable No Proxy Overrides": "启用无代理覆盖"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

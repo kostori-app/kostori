@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ import 'package:kostori/foundation/audio_service/player_audio_handler.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/foundation/audio_service/taskbar_manager.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
@@ -51,6 +53,11 @@ abstract class _PlayerController with Store {
 
   GlobalKey<OverlayState>? overlayKey;
 
+  String? videoRenderer;
+  bool hAenable = true;
+  late String videoSync;
+  late String hardwareDecoder;
+
   @observable
   bool loading = true;
   @observable
@@ -60,16 +67,25 @@ abstract class _PlayerController with Store {
     configuration: PlayerConfiguration(
       bufferSize: 1500 * 1024 * 1024,
       logLevel: MPVLogLevel.info,
+      protocolWhitelist: const [
+        'file',
+        'http',
+        'https',
+        'tcp',
+        'tls',
+        'crypto',
+        'hls',
+        'applehttp',
+        'udp',
+        'rtp',
+        'data',
+        'httpproxy',
+        'content',
+        'fd',
+      ],
     ),
   );
-  late final playerController = VideoController(
-    player,
-    configuration: VideoControllerConfiguration(
-      enableHardwareAcceleration: true,
-      hwdec: 'auto-safe',
-      androidAttachSurfaceAfterVideoParameters: false,
-    ),
-  );
+  VideoController? playerController;
 
   @observable
   bool audioOutType = true;
@@ -262,7 +278,7 @@ abstract class _PlayerController with Store {
       await pp.setProperty("ao", "audiotrack");
     }
     appdata.settings['audioOutType'] = audioOutType;
-    appdata.writeImplicitData();
+    appdata.saveData();
   }
 
   String formatNow() {
@@ -277,6 +293,47 @@ abstract class _PlayerController with Store {
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
     audioOutType = appdata.settings['audioOutType'] ?? true;
+    hAenable = appdata.settings['hAenable'] ?? true;
+    hardwareDecoder = appdata.settings['hardwareDecoder'] ?? 'auto-safe';
+    videoSync = appdata.settings['videoSynchronizationMode'] ?? 'audio';
+
+    if (App.isAndroid) {
+      final info = await DeviceInfo.getDeviceInfo();
+
+      final String androidVideoRenderer =
+          appdata.settings['animeListDisplayMode'];
+
+      if (androidVideoRenderer == 'auto') {
+        // Android 14 及以上使用基于 Vulkan 的 MPV GPU-NEXT 视频输出，着色器性能更好
+        // GPU-NEXT 需要 Vulkan 1.2 支持
+        // 避免 Android 14 及以下设备上部分机型 Vulkan 支持不佳导致的黑屏问题
+        final int androidSdkVersion =
+            (info as AndroidDeviceInfo).version.sdkInt;
+        if (androidSdkVersion >= 34) {
+          videoRenderer = 'gpu-next';
+        } else {
+          videoRenderer = 'gpu';
+        }
+      } else {
+        videoRenderer = androidVideoRenderer;
+      }
+    }
+
+    if (videoRenderer == 'mediacodec_embed') {
+      hAenable = true;
+      hardwareDecoder = 'mediacodec';
+      superResolutionType = 1;
+    }
+
+    playerController ??= VideoController(
+      player,
+      configuration: VideoControllerConfiguration(
+        vo: videoRenderer,
+        enableHardwareAcceleration: hAenable,
+        hwdec: hAenable ? hardwareDecoder : 'no',
+        androidAttachSurfaceAfterVideoParameters: false,
+      ),
+    );
 
     // 记录播放器内部日志
     playerLog.clear();
@@ -291,6 +348,7 @@ abstract class _PlayerController with Store {
     // 该设置可以在所有平台上正确启用双重缓存
     await pp.setProperty("demuxer-cache-dir", await Utils.getPlayerTempPath());
     await pp.setProperty("af", "scaletempo2=max-speed=8");
+    await pp.setProperty("video-sync", videoSync);
     if (App.isAndroid) {
       await pp.setProperty("volume-max", "100");
       if (audioOutType) {
@@ -299,6 +357,19 @@ abstract class _PlayerController with Store {
         await pp.setProperty("ao", "audiotrack");
       }
     }
+
+    if (appdata.settings['proxy'] != 'direct' &&
+        appdata.settings['proxy'] != 'system') {
+      if (appdata.settings['proxy'] != null) {
+        String proxyUrl = appdata.settings['proxy'];
+        if (!proxyUrl.startsWith('http://')) {
+          proxyUrl = 'http://$proxyUrl';
+        }
+        await pp.setProperty('http-proxy', proxyUrl);
+        Log.addLog(LogLevel.info, 'Player: HTTP 代理设置', proxyUrl);
+      }
+    }
+
     glimmerEffect = appdata.implicitData['glimmerEffect'] ?? false;
     await player.setAudioTrack(AudioTrack.auto());
 
@@ -718,7 +789,7 @@ abstract class _PlayerController with Store {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     App.rootContext.showMessage(message: '正在截图中...'.tl);
     if (App.isAndroid) {
-      Uint8List? screenData = await playerController.player.screenshot();
+      Uint8List? screenData = await playerController!.player.screenshot();
       try {
         final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
         if (folder != null) {
@@ -756,7 +827,7 @@ abstract class _PlayerController with Store {
       }
     } else {
       try {
-        Uint8List? screenData = await playerController.player.screenshot();
+        Uint8List? screenData = await playerController!.player.screenshot();
         // 获取桌面平台的文档目录
         final directory = await getApplicationDocumentsDirectory();
         // 目标文件夹路径
@@ -850,7 +921,7 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
         builder: (context) {
           return playerController.isPiPMode
               ? Video(
-                  controller: playerController.playerController,
+                  controller: playerController.playerController!,
                   controls: null,
                 )
               : VideoPage(playerController: playerController);

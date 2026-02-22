@@ -741,7 +741,7 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
             child: Stack(
               children: [
                 Video(
-                  controller: widget.controller.playerController,
+                  controller: widget.controller.playerController!,
                   fit: BoxFit.cover,
                   controls: null,
                 ),
