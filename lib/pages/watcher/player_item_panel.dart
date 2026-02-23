@@ -386,70 +386,41 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                           children: [
                             SizedBox(width: 10),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 6,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: playerController.isFullScreen
+                                    ? 16
+                                    : 8,
+                                vertical: playerController.isFullScreen ? 6 : 4,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.black12,
                                 borderRadius: BorderRadius.circular(20),
                               ),
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final text = playerController.currentSetName;
-                                  const style = TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                  );
-
-                                  final textPainter = TextPainter(
-                                    text: TextSpan(text: text, style: style),
-                                    maxLines: 1,
-                                    textDirection: TextDirection.ltr,
-                                  )..layout(maxWidth: constraints.maxWidth);
-
-                                  final shouldScroll =
-                                      textPainter.width >=
-                                      constraints.maxWidth - 20;
-
-                                  return SizedBox(
-                                    height: 24,
-                                    child: ClipRect(
-                                      child: shouldScroll
-                                          ? Marquee(
-                                              text: text,
-                                              style: style,
-                                              scrollAxis: Axis.horizontal,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.end,
-                                              blankSpace: 10.0,
-                                              velocity: 40.0,
-                                              pauseAfterRound: Duration.zero,
-                                              startPadding: 10.0,
-                                              accelerationDuration:
-                                                  Duration.zero,
-                                              decelerationDuration:
-                                                  Duration.zero,
-                                            )
-                                          : Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: Text(
-                                                text,
-                                                style: style,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
+                              child: SizedBox(
+                                height: playerController.isFullScreen ? 24 : 20,
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    playerController.currentSetName,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: playerController.isFullScreen
+                                          ? 16
+                                          : 12,
                                     ),
-                                  );
-                                },
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ),
                             ),
                             Spacer(),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 6,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: playerController.isFullScreen
+                                    ? 16
+                                    : 8,
+                                vertical: playerController.isFullScreen ? 6 : 4,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.black12,
@@ -459,7 +430,9 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 "${Utils.durationToString(playerController.currentPosition)} / ${Utils.durationToString(playerController.duration)}",
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 16.0,
+                                  fontSize: playerController.isFullScreen
+                                      ? 16
+                                      : 12,
                                 ),
                               ),
                             ),
