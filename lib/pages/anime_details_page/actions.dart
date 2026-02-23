@@ -140,12 +140,7 @@ abstract mixin class _AnimePageActions {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: EdgeInsets.only(
-                left: 20,
-                top: 12,
-                right: 20,
-                bottom: 12,
-              ),
+              padding: EdgeInsets.only(left: 20, right: 20),
               height: 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -167,11 +162,11 @@ abstract mixin class _AnimePageActions {
                       backgroundColor: Colors.transparent,
                     ),
                   Spacer(),
-                  ElevatedButton(
-                    onPressed: () async {
+                  IconButton(
+                    onPressed: () {
                       bangumiBottomInfoSelect(context);
-                    }, // 按钮点击事件
-                    child: Text('Match Bangumi ID'.tl), // 按钮文本
+                    },
+                    icon: const Icon(Icons.adjust),
                   ),
                 ],
               ),
@@ -191,119 +186,42 @@ abstract mixin class _AnimePageActions {
     );
   }
 
-  // 显示 BottomSheet，并允许选择一个项目
-  Future<void> bangumiBottomInfoSelect(BuildContext context) async {
-    var res = await Bangumi.combinedBangumiSearch(anime.title);
-    // 如果 res 是 null 或者数据不正确，显示检索失败提示
-    if (res.isEmpty) {
-      showCenter(
-        seconds: 3,
-        icon: Gif(
-          image: AssetImage('assets/img/warning.gif'),
-          height: 64,
-          fps: 120,
-          // color: Theme.of(context).colorScheme.primary,
-          autostart: Autostart.once,
-        ),
-        message: '检索失败',
-        context: context,
-      );
-    }
+  bool isSelecting = false;
 
-    // 显示 BottomSheet
+  Future<void> bangumiBottomInfoSelect(BuildContext context) async {
+    if (isSelecting) return;
+    isSelecting = true;
+
     final selectedItem = await showModalBottomSheet<BangumiItem>(
       isScrollControlled: true,
       enableDrag: false,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
-        maxWidth: (App.isDesktop)
+        maxWidth: MediaQuery.of(context).size.width <= 600
+            ? MediaQuery.of(context).size.width
+            : (App.isDesktop)
             ? MediaQuery.of(context).size.width *
                   9 /
                   16 // 设置最大宽度
             : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
-      context: App.rootContext,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            Future<void> fetchSearchResults(String query) async {
-              FocusScope.of(App.rootContext).unfocus();
-              if (query.isEmpty) {
-                res = await Bangumi.combinedBangumiSearch(anime.title);
-              } else {
-                res = await Bangumi.combinedBangumiSearch(query);
-              }
-
-              if (res.isEmpty) {
-                showCenter(
-                  seconds: 3,
-                  icon: Gif(
-                    image: AssetImage('assets/img/warning.gif'),
-                    height: 64,
-                    fps: 120,
-                    autostart: Autostart.once,
-                  ),
-                  message: '未找到相关结果，请尝试其他关键字',
-                  context: context,
-                );
-              }
-
-              // 更新状态
-              setState(() {});
-            }
-
-            return NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                SliverAppBar(
-                  pinned: true,
-                  floating: true,
-                  snap: true,
-                  elevation: 0,
-                  automaticallyImplyLeading: false,
-                  flexibleSpace: ClipRect(
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        color: context.colorScheme.surface.toOpacity(0.22),
-                      ),
-                    ),
-                  ),
-                  backgroundColor: Colors.transparent,
-                  title: SizedBox(
-                    height: 52,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: TextField(
-                        style: const TextStyle(fontSize: 16),
-                        decoration: InputDecoration(
-                          labelText: anime.title,
-                          hintText: 'Enter keywords...'.tl,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16.0),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor: Colors.transparent,
-                        ),
-                        onSubmitted: fetchSearchResults,
-                        onChanged: (value) => value,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              body: _buildResultsList(res, fetchSearchResults),
-            );
+      context: context,
+      builder: (_) {
+        return _BangumiSearchSheet(
+          initialQuery: anime.title,
+          resultsBuilder: (context, res, fetch) {
+            return _buildResultsList(res, fetch);
           },
         );
       },
     );
 
+    isSelecting = false;
+
     if (selectedItem != null) {
-      await handleSelection(context, selectedItem).then((_) {
-        Navigator.pop(context);
-      });
+      await handleSelection(context, selectedItem);
+      Navigator.pop(context);
     }
   }
 
@@ -317,131 +235,135 @@ abstract mixin class _AnimePageActions {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return InkWell(
-          onTap: () {
-            Navigator.pop(context, item);
-          },
-          splashColor: Theme.of(
-            context,
-          ).colorScheme.secondaryContainer.toOpacity(0.72),
-          highlightColor: Theme.of(
-            context,
-          ).colorScheme.secondaryContainer.toOpacity(0.72),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                double height =
-                    constraints.maxWidth *
-                    (App.isDesktop
-                        ? (constraints.maxWidth > 1024 ? 6 / 16 : 10 / 16)
-                        : 10 / 16);
-                double width = height * 0.72;
+        return Padding(
+          padding: EdgeInsetsGeometry.symmetric(horizontal: 16),
+          child: InkWell(
+            onTap: () {
+              Navigator.pop(context, item);
+            },
+            splashColor: Theme.of(
+              context,
+            ).colorScheme.secondaryContainer.toOpacity(0.72),
+            highlightColor: Theme.of(
+              context,
+            ).colorScheme.secondaryContainer.toOpacity(0.72),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  double height =
+                      constraints.maxWidth *
+                      (App.isDesktop
+                          ? (constraints.maxWidth > 1024 ? 6 / 16 : 10 / 16)
+                          : 10 / 16);
+                  double width = height * 0.72;
 
-                return SizedBox(
-                  width: constraints.maxWidth,
-                  height: height,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: BangumiWidget.kostoriImage(
-                          context,
-                          item.images['large']!,
-                          width: width,
-                          height: height,
+                  return SizedBox(
+                    width: constraints.maxWidth,
+                    height: height,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: BangumiWidget.kostoriImage(
+                            context,
+                            item.images['large']!,
+                            width: width,
+                            height: height,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 12.0),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Bangumi ID: ${item.id}',
-                              style: TextStyle(
-                                fontSize: 18.0,
-                                fontWeight: FontWeight.bold,
+                        SizedBox(width: 12.0),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Bangumi ID: ${item.id}',
+                                style: TextStyle(
+                                  fontSize: 18.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Text(
-                              item.nameCn,
-                              style: TextStyle(
-                                fontSize: 18.0,
-                                fontWeight: FontWeight.bold,
+                              Text(
+                                item.nameCn,
+                                style: TextStyle(
+                                  fontSize: 18.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Text(item.name, style: TextStyle(fontSize: 14.0)),
-                            Text('放送日期: ${item.airDate}'),
-                            const SizedBox(height: 10),
-                            Text(
-                              item.summary,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 12),
-                            ),
-                            const Spacer(),
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '${item.score}',
-                                    style: TextStyle(fontSize: 32.0),
-                                  ),
-                                  SizedBox(width: 5),
-                                  Container(
-                                    padding: EdgeInsets.all(2.0),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                        8,
-                                      ), // 设置圆角半径
-                                      border: Border.all(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondaryContainer
-                                            .toOpacity(0.72),
-                                        width: 2.0,
+                              Text(item.name, style: TextStyle(fontSize: 14.0)),
+                              Text('放送日期: ${item.airDate}'),
+                              const SizedBox(height: 10),
+                              Text(
+                                item.summary,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              const Spacer(),
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '${item.score}',
+                                      style: TextStyle(fontSize: 32.0),
+                                    ),
+                                    SizedBox(width: 5),
+                                    Container(
+                                      padding: EdgeInsets.all(2.0),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          8,
+                                        ), // 设置圆角半径
+                                        border: Border.all(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .secondaryContainer
+                                              .toOpacity(0.72),
+                                          width: 2.0,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        Utils.getRatingLabel(item.score),
                                       ),
                                     ),
-                                    child: Text(
-                                      Utils.getRatingLabel(item.score),
+                                    SizedBox(width: 4),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        RatingBarIndicator(
+                                          itemCount: 5,
+                                          rating: item.score.toDouble() / 2,
+                                          itemBuilder: (context, index) =>
+                                              const Icon(Icons.star_rounded),
+                                          itemSize: 20.0,
+                                        ),
+                                        Text(
+                                          '@t reviews | #@r'.tlParams({
+                                            'r': item.rank,
+                                            't': item.total,
+                                          }),
+                                          style: TextStyle(fontSize: 12),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  SizedBox(width: 4),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      RatingBarIndicator(
-                                        itemCount: 5,
-                                        rating: item.score.toDouble() / 2,
-                                        itemBuilder: (context, index) =>
-                                            const Icon(Icons.star_rounded),
-                                        itemSize: 20.0,
-                                      ),
-                                      Text(
-                                        '@t reviews | #@r'.tlParams({
-                                          'r': item.rank,
-                                          't': item.total,
-                                        }),
-                                        style: TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         );
@@ -803,6 +725,108 @@ class _RatingDialogState extends State<RatingDialog> {
         const SizedBox(width: 8),
         ElevatedButton(onPressed: _updateStats, child: Text('Update'.tl)),
       ],
+    );
+  }
+}
+
+class _BangumiSearchSheet extends StatefulWidget {
+  final String initialQuery;
+
+  final Widget Function(
+    BuildContext context,
+    List<BangumiItem> results,
+    Future<void> Function(String) fetch,
+  )
+  resultsBuilder;
+
+  const _BangumiSearchSheet({
+    required this.initialQuery,
+    required this.resultsBuilder,
+  });
+
+  @override
+  State<_BangumiSearchSheet> createState() => _BangumiSearchSheetState();
+}
+
+class _BangumiSearchSheetState extends State<_BangumiSearchSheet> {
+  List<BangumiItem> res = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSearchResults(widget.initialQuery);
+  }
+
+  Future<void> fetchSearchResults(String query) async {
+    setState(() => isLoading = true);
+    final effectiveQuery = query.isEmpty ? widget.initialQuery : query;
+    final result = await Bangumi.combinedBangumiSearch(effectiveQuery);
+
+    if (!mounted) return;
+    setState(() {
+      res = result;
+      isLoading = false;
+    });
+    if (result.isEmpty) {
+      showCenter(
+        seconds: 3,
+        icon: Gif(
+          image: AssetImage('assets/img/warning.gif'),
+          height: 64,
+          fps: 120,
+          autostart: Autostart.once,
+        ),
+        message: '未找到相关结果，请尝试其他关键字',
+        context: context,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return NestedScrollView(
+      headerSliverBuilder: (_, _) => [
+        SliverAppBar(
+          pinned: true,
+          floating: true,
+          snap: true,
+          automaticallyImplyLeading: false,
+          flexibleSpace: ClipRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                color: context.colorScheme.surface.toOpacity(0.22),
+              ),
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          title: SizedBox(
+            height: 52,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: TextField(
+                style: const TextStyle(fontSize: 16),
+                decoration: InputDecoration(
+                  labelText: widget.initialQuery,
+                  hintText: 'Enter keywords...'.tl,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16.0),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                ),
+                onSubmitted: fetchSearchResults,
+                onChanged: (value) => value,
+              ),
+            ),
+          ),
+        ),
+      ],
+      body: isLoading
+          ? const Center(child: KostoriRefreshIndicator())
+          : widget.resultsBuilder(context, res, fetchSearchResults),
     );
   }
 }

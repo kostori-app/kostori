@@ -9,6 +9,7 @@ import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
@@ -290,12 +291,7 @@ class BottomInfoState extends State<BottomInfo>
   }
 
   Widget get infoBodyBone {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double width = constraints.maxWidth;
-        return PolygonRefreshIndicator(size: width);
-      },
-    );
+    return KostoriRefreshIndicator();
   }
 
   Widget get infoBody {

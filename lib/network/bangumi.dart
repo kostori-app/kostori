@@ -716,18 +716,18 @@ class Bangumi {
       return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'bangumiGetBangumiEpisodeAllByID', '$e\n$s');
-      return []; // 返回空列表而不是null
+      return [];
     }
   }
 
-  static Future<EpisodeCommentResponse> getBangumiCommentsByEpisodeID(
+  static Future<EpisodeCommentResponse> getEpisodeCommentsByEpisodeID(
     int id,
   ) async {
     EpisodeCommentResponse commentResponse =
         EpisodeCommentResponse.fromTemplate();
     try {
       final res = await AppDio().request(
-        '${Api.bangumiEpisodeByIDNext}$id/comments',
+        Api.formatUrl(Api.episodeCommentsByIDNext, [id]),
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
@@ -740,35 +740,56 @@ class Bangumi {
 
   static Future<CharacterCommentResponse> getCharacterCommentsByCharacterID(
     int id,
-  ) async {
-    CharacterCommentResponse commentResponse =
-        CharacterCommentResponse.fromTemplate();
-    try {
-      final res = await AppDio().request(
-        '${Api.bangumiCharacterByIDNext}$id/comments',
-        options: Options(method: 'GET', headers: bangumiHTTPHeader),
-      );
-      final jsonData = res.data;
-      commentResponse = CharacterCommentResponse.fromJson(jsonData);
-    } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getCharacterCommentsByCharacterID', '$e\n$s');
-    }
-    return commentResponse;
+  ) {
+    final url = Api.formatUrl(Api.characterCommentsByIDNext, [id]);
+    return _fetchComments(url, 'getCharacterCommentsByCharacterID');
   }
 
-  static Future<CharacterFullItem> getCharacterByCharacterID(int id) async {
-    CharacterFullItem characterFullItem = CharacterFullItem.fromTemplate();
+  static Future<CharacterCommentResponse> getPersonCommentsByPersonID(int id) {
+    final url = Api.formatUrl(Api.personCommentsByPersonIDNext, [id]);
+    return _fetchComments(url, 'getPersonCommentsByPersonID');
+  }
+
+  static Future<CharacterCommentResponse> _fetchComments(
+    String url,
+    String logTag,
+  ) async {
     try {
       final res = await AppDio().request(
-        Api.formatUrl(Api.characterInfoByCharacterIDNext, [id]),
+        url,
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
-      final jsonData = res.data;
-      characterFullItem = CharacterFullItem.fromJson(jsonData);
+      return CharacterCommentResponse.fromJson(res.data);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getCharacterByCharacterID', '$e\n$s');
+      Log.addLog(LogLevel.error, logTag, '$e\n$s');
+      return CharacterCommentResponse.fromTemplate();
     }
-    return characterFullItem;
+  }
+
+  static Future<CharacterFullItem> getCharacterByCharacterID(int id) {
+    final url = Api.formatUrl(Api.characterInfoByCharacterIDNext, [id]);
+    return _fetchCharacter(url, 'getCharacterByCharacterID');
+  }
+
+  static Future<CharacterFullItem> getPersonByPersonID(int id) {
+    final url = Api.formatUrl(Api.personByPersonIDNext, [id]);
+    return _fetchCharacter(url, 'getCharacterByPersonID');
+  }
+
+  static Future<CharacterFullItem> _fetchCharacter(
+    String url,
+    String logTag,
+  ) async {
+    try {
+      final res = await AppDio().request(
+        url,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
+      return CharacterFullItem.fromJson(res.data);
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, logTag, '$e\n$s');
+      return CharacterFullItem.fromTemplate();
+    }
   }
 
   static Future<List<CharacterCastsItem>> getCharacterCastsByCharacterID(
@@ -800,6 +821,36 @@ class Bangumi {
       Log.addLog(LogLevel.error, 'getCharacterCastsByCharacterID', '$e\n$s');
     }
     return characterCastsItems;
+  }
+
+  static Future<List<CharacterPersonCastsItem>> getCastsByPersonId(
+    int id, {
+    int offset = 0,
+    int type = 0,
+  }) async {
+    List<CharacterPersonCastsItem> characterPersonCastsItem = [];
+    var params = <String, dynamic>{
+      'subjectType': 2,
+      'type': type,
+      'limit': 20,
+      'offset': offset,
+    };
+    try {
+      final res = await AppDio().request(
+        Api.formatUrl(Api.castsByPersonIDNext, [id]),
+        queryParameters: params,
+        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+      );
+      final jsonData = res.data['data'];
+      for (dynamic jsonItem in jsonData) {
+        characterPersonCastsItem.add(
+          CharacterPersonCastsItem.fromJson(jsonItem),
+        );
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'getCastsByPersonId', '$e\n$s');
+    }
+    return characterPersonCastsItem;
   }
 
   static Future<Map<bool, BangumiItem?>> isBangumiExists(int id) async {

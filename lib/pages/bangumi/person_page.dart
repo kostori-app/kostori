@@ -1,0 +1,849 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:kostori/components/animated.dart';
+import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/bean/card/character_comments_card.dart';
+import 'package:kostori/components/components.dart';
+import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
+import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
+import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/utils/translations.dart';
+
+class PersonPage extends StatefulWidget {
+  const PersonPage({super.key, required this.personID});
+
+  final int personID;
+
+  @override
+  State<PersonPage> createState() => _PersonPageState();
+}
+
+class _PersonPageState extends State<PersonPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late CharacterFullItem characterFullItem;
+  bool loadingPerson = false;
+  bool loadingPersonCasts = false;
+  bool loadingComments = false;
+  List<CharacterCommentItem> commentsList = [];
+  List<CharacterPersonCastsItem> characterPersonCastsList = [];
+  bool commentsQueryTimeout = false;
+  bool characterPersonCastsQueryTimeout = false;
+
+  int currentType = 0;
+
+  Future<void> loadPerson() async {
+    setState(() {
+      loadingPerson = true;
+    });
+    await Bangumi.getPersonByPersonID(widget.personID).then((character) {
+      characterFullItem = character;
+    });
+    if (mounted) {
+      setState(() {
+        loadingPerson = false;
+      });
+    }
+  }
+
+  Future<void> loadComments() async {
+    setState(() {
+      loadingComments = true;
+    });
+    await Bangumi.getPersonCommentsByPersonID(widget.personID).then((value) {
+      commentsList = value.commentList;
+      if (commentsList.isEmpty && mounted) {
+        setState(() {
+          commentsQueryTimeout = true;
+        });
+      }
+    });
+    if (mounted) {
+      setState(() {
+        loadingComments = false;
+      });
+    }
+  }
+
+  Future<void> loadPersonCasts({int offset = 0, int type = 0}) async {
+    setState(() {
+      loadingPersonCasts = true;
+    });
+    await Bangumi.getCastsByPersonId(
+      widget.personID,
+      offset: offset,
+      type: type,
+    ).then((value) {
+      characterPersonCastsList.addAll(value);
+      if (characterPersonCastsList.isEmpty && mounted) {
+        setState(() {
+          characterPersonCastsQueryTimeout = true;
+        });
+      }
+    });
+    if (mounted) {
+      setState(() {
+        loadingPersonCasts = false;
+      });
+    }
+  }
+
+  Map<String, int> relationValue = {
+    'Main character'.tl: 1,
+    'Supporting character'.tl: 2,
+    'Cameo'.tl: 3,
+    'Idle corner'.tl: 4,
+  };
+
+  String getRelationName(int type) {
+    return relationValue.entries
+        .firstWhere(
+          (entry) => entry.value == type,
+          orElse: () => MapEntry('Unknown'.tl, -1),
+        )
+        .key;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    loadPerson();
+    _tabController.addListener(() {
+      final index = _tabController.index;
+      if (index == 1 &&
+          commentsList.isEmpty &&
+          !loadingComments &&
+          !commentsQueryTimeout) {
+        loadComments();
+      }
+
+      if (index == 2 &&
+          characterPersonCastsList.isEmpty &&
+          !loadingPersonCasts &&
+          !characterPersonCastsQueryTimeout) {
+        loadPersonCasts();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: Material(
+              child: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: '声优资料'),
+                  Tab(text: '吐槽箱'),
+                  Tab(text: '角色关联'),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [personInfoBody, personCommentsBody, personCastsBody],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget get personInfoBody {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  children: [
+                    Expanded(
+                      child: loadingPerson
+                          ? Center(child: KostoriRefreshIndicator())
+                          : (characterFullItem.id == 0
+                                ? GeneralErrorWidget(
+                                    errMsg:
+                                        "Nobody's posted anything yet...".tl,
+                                    actions: [
+                                      GeneralErrorButton(
+                                        onPressed: () {
+                                          loadPerson();
+                                        },
+                                        text: 'Reload'.tl,
+                                      ),
+                                    ],
+                                  )
+                                : SizedBox(
+                                    width: double.infinity,
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        InkWell(
+                                          onTap: () {
+                                            BangumiWidget.showImagePreview(
+                                              context,
+                                              characterFullItem.image,
+                                              characterFullItem.nameCN,
+                                              characterFullItem.image,
+                                            );
+                                          },
+                                          child: SizedBox(
+                                            width: constraints.maxWidth * 0.6,
+                                            height: constraints.maxHeight,
+                                            child: Hero(
+                                              tag: characterFullItem.image,
+                                              child: BangumiWidget.kostoriImage(
+                                                context,
+                                                characterFullItem.image,
+                                                width: constraints.maxWidth,
+                                                height: constraints.maxHeight,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(
+                                                16.0,
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    characterFullItem.name,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .headlineSmall
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color:
+                                                              Theme.of(context)
+                                                                  .colorScheme
+                                                                  .tertiary,
+                                                        ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    maxLines: 2,
+                                                  ),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          top: 4.0,
+                                                          bottom: 12.0,
+                                                        ),
+                                                    child: Text(
+                                                      characterFullItem.nameCN,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleMedium
+                                                          ?.copyWith(
+                                                            color: Colors
+                                                                .grey[700],
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  const Divider(),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 8.0,
+                                                        ),
+                                                    child: Text(
+                                                      'Profile Information'.tl,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    characterFullItem.infobox
+                                                        .map(
+                                                          (item) =>
+                                                              '${item.key}: ${item.values.map((v) => v.value).join(", ")}',
+                                                        )
+                                                        .join("\n"),
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodyMedium,
+                                                    textAlign:
+                                                        TextAlign.justify,
+                                                  ),
+                                                  const SizedBox(height: 16.0),
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 8.0,
+                                                        ),
+                                                    child: Text(
+                                                      'Character Introduction'
+                                                          .tl,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    characterFullItem.summary,
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodyMedium,
+                                                    textAlign:
+                                                        TextAlign.justify,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: FilledButton.icon(
+            onPressed: () {
+              showPopUpWidget(
+                App.rootContext,
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return ShareWidget(characterFullItem: characterFullItem);
+                  },
+                ),
+              );
+            },
+            label: Text('Share'.tl),
+            icon: Icon(Icons.share),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget get personCommentsBody {
+    return Builder(
+      builder: (BuildContext context) {
+        return CustomScrollView(
+          scrollBehavior: const ScrollBehavior().copyWith(
+            // Scrollbars' movement is not linear so hide it.
+            scrollbars: false,
+            // Enable mouse drag to refresh
+            dragDevices: {
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.touch,
+              PointerDeviceKind.trackpad,
+            },
+          ),
+          key: PageStorageKey<String>('吐槽箱'),
+          slivers: [
+            SliverLayoutBuilder(
+              builder: (context, _) {
+                if (commentsList.isNotEmpty) {
+                  return SliverList.separated(
+                    addAutomaticKeepAlives: false,
+                    itemCount: commentsList.length,
+                    itemBuilder: (context, index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: CharacterCommentsCard(
+                                commentItem: commentsList[index],
+                                replyIndex: index,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    separatorBuilder: (BuildContext context, int index) {
+                      return SafeArea(
+                        top: false,
+                        bottom: false,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: SizedBox(
+                              width: MediaQuery.sizeOf(context).width > 950
+                                  ? 950
+                                  : MediaQuery.sizeOf(context).width - 32,
+                              child: Divider(
+                                thickness: 0.5,
+                                indent: 10,
+                                endIndent: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
+                if (commentsQueryTimeout) {
+                  return SliverFillRemaining(
+                    child: GeneralErrorWidget(
+                      errMsg: 'Failed to load, please try again.'.tl,
+                      actions: [
+                        GeneralErrorButton(
+                          onPressed: () {
+                            loadComments();
+                          },
+                          text: 'Reload'.tl,
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return SliverList.builder(
+                  itemCount: 4,
+                  itemBuilder: (context, _) {
+                    return SafeArea(
+                      top: false,
+                      bottom: false,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SizedBox(
+                            width: MediaQuery.sizeOf(context).width > 950
+                                ? 950
+                                : MediaQuery.sizeOf(context).width - 32,
+                            child: CharacterCommentsCard.bone(),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget get personCastsBody {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Builder(
+            builder: (BuildContext context) {
+              return NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification.metrics.axis != Axis.vertical) {
+                    return false;
+                  }
+
+                  if (notification is ScrollUpdateNotification) {
+                    final metrics = notification.metrics;
+
+                    if (metrics.maxScrollExtent > 0 &&
+                        metrics.pixels >= metrics.maxScrollExtent - 20 &&
+                        !loadingPersonCasts) {
+                      loadPersonCasts(offset: characterPersonCastsList.length);
+                    }
+                  }
+
+                  return false;
+                },
+                child: CustomScrollView(
+                  scrollBehavior: const ScrollBehavior().copyWith(
+                    // Scrollbars' movement is not linear so hide it.
+                    scrollbars: false,
+                    // Enable mouse drag to refresh
+                    dragDevices: {
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.trackpad,
+                    },
+                  ),
+                  key: PageStorageKey<String>('角色关联'),
+                  slivers: [
+                    if (characterPersonCastsList.isNotEmpty)
+                      SliverList.separated(
+                        addAutomaticKeepAlives: false,
+                        itemCount: characterPersonCastsList.length,
+                        itemBuilder: (context, index) {
+                          return SafeArea(
+                            top: false,
+                            bottom: false,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: SizedBox(
+                                  width: MediaQuery.sizeOf(context).width > 950
+                                      ? 950
+                                      : MediaQuery.sizeOf(context).width - 32,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    child: Card(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                      ),
+                                                  width: 120 * 0.68,
+                                                  height: 120,
+                                                  child: InkWell(
+                                                    onTap: () {
+                                                      final imageUrl =
+                                                          characterPersonCastsList[index]
+                                                              .character
+                                                              .images
+                                                              .large;
+                                                      if (imageUrl.isNotEmpty) {
+                                                        BangumiWidget.showImagePreview(
+                                                          context,
+                                                          imageUrl,
+                                                          characterFullItem
+                                                              .nameCN,
+                                                          imageUrl,
+                                                        );
+                                                      }
+                                                    },
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    child: Hero(
+                                                      tag:
+                                                          characterPersonCastsList[index]
+                                                              .character
+                                                              .images
+                                                              .large,
+                                                      child: ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                        child:
+                                                            characterPersonCastsList[index]
+                                                                .character
+                                                                .images
+                                                                .large
+                                                                .isNotEmpty
+                                                            ? BangumiWidget.kostoriImage(
+                                                                context,
+                                                                characterPersonCastsList[index]
+                                                                    .character
+                                                                    .images
+                                                                    .large,
+                                                                width:
+                                                                    210 * 0.68,
+                                                                height: 210,
+                                                              )
+                                                            : SizedBox(
+                                                                width:
+                                                                    210 * 0.68,
+                                                                height: 210,
+                                                                child: const Icon(
+                                                                  Icons.person,
+                                                                  size: 48,
+                                                                ),
+                                                              ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      characterPersonCastsList[index]
+                                                          .character
+                                                          .name
+                                                          .trim(),
+                                                      style: const TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      characterPersonCastsList[index]
+                                                          .character
+                                                          .nameCN
+                                                          .trim()
+                                                          .replaceAll(
+                                                            RegExp(r'\s+'),
+                                                            ' ',
+                                                          ),
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.grey,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      characterPersonCastsList[index]
+                                                          .character
+                                                          .info
+                                                          .trim()
+                                                          .replaceAll(
+                                                            RegExp(r'\s+'),
+                                                            ' ',
+                                                          ),
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                      maxLines: 3,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            Divider(
+                                              thickness: 0.5,
+                                              indent: 10,
+                                              endIndent: 10,
+                                            ),
+                                            SizedBox(
+                                              height: 240,
+                                              child: ListView.builder(
+                                                scrollDirection:
+                                                    Axis.horizontal,
+                                                itemCount:
+                                                    characterPersonCastsList[index]
+                                                        .relations
+                                                        .length,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                    ),
+                                                itemBuilder: (context, i) {
+                                                  final item =
+                                                      characterPersonCastsList[index]
+                                                          .relations[i]
+                                                          .subject;
+                                                  final type =
+                                                      characterPersonCastsList[index]
+                                                          .relations[i]
+                                                          .type;
+
+                                                  return SizedBox(
+                                                    child: Column(
+                                                      children: [
+                                                        SizedBox(
+                                                          width: 210 * 0.68,
+                                                          height: 210,
+                                                          child: BangumiWidget.buildBriefMode(
+                                                            context,
+                                                            item,
+                                                            'Reviews${item.id}$index',
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          getRelationName(type),
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 12,
+                                                              ),
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        separatorBuilder: (BuildContext context, int index) {
+                          return SafeArea(
+                            top: false,
+                            bottom: false,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+                                child: SizedBox(
+                                  width: MediaQuery.sizeOf(context).width > 950
+                                      ? 950
+                                      : MediaQuery.sizeOf(context).width - 32,
+                                  child: Divider(
+                                    thickness: 0.5,
+                                    indent: 10,
+                                    endIndent: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    else if (characterPersonCastsQueryTimeout)
+                      SliverFillRemaining(
+                        child: GeneralErrorWidget(
+                          errMsg: 'Failed to load, please try again.'.tl,
+                          actions: [
+                            GeneralErrorButton(
+                              onPressed: () {
+                                loadPersonCasts();
+                              },
+                              text: 'Reload'.tl,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      SliverList.builder(
+                        itemCount: 4,
+                        itemBuilder: (context, _) {
+                          return SafeArea(
+                            top: false,
+                            bottom: false,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: SizedBox(
+                                  width: MediaQuery.sizeOf(context).width > 950
+                                      ? 950
+                                      : MediaQuery.sizeOf(context).width - 32,
+                                  child: CharacterCommentsCard.bone(),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    if (loadingPersonCasts)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Center(
+                            child: PolygonRefreshIndicator(size: 40),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: PopupMenuButton<int>(
+            onSelected: (value) async {
+              setState(() {
+                currentType = value;
+                characterPersonCastsList.clear();
+                characterPersonCastsQueryTimeout = false;
+              });
+
+              await loadPersonCasts(offset: 0, type: value);
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(value: 0, child: Text('All'.tl)),
+              PopupMenuItem(value: 1, child: Text(getRelationName(1))),
+              PopupMenuItem(value: 2, child: Text(getRelationName(2))),
+              PopupMenuItem(value: 3, child: Text(getRelationName(3))),
+              PopupMenuItem(value: 4, child: Text(getRelationName(4))),
+            ],
+            child: FilledButton.icon(
+              onPressed: null,
+              label: Row(
+                children: [
+                  Text(
+                    currentType == 0 ? 'All'.tl : getRelationName(currentType),
+                  ),
+                  Text('(${characterPersonCastsList.length})'),
+                ],
+              ),
+              icon: const Icon(Icons.filter_alt),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

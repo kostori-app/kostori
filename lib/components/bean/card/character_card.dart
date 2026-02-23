@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/pages/bangumi/character_page.dart';
 import 'package:kostori/foundation/bangumi/character/character_item.dart';
+import 'package:kostori/pages/bangumi/character_page.dart';
+import 'package:kostori/pages/bangumi/person_page.dart';
 
 class CharacterCard extends StatelessWidget {
-  const CharacterCard({
-    super.key,
-    required this.characterItem,
-  });
+  const CharacterCard({super.key, required this.characterItem});
 
   final CharacterItem characterItem;
 
@@ -26,11 +24,13 @@ class CharacterCard extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: contentMaxWidth),
         child: Card(
           elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () => _showCharacterPage(context),
+            onLongPress: () => _showPersonPage(context),
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(
@@ -64,10 +64,9 @@ class CharacterCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     characterItem.relation,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.grey[600]),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -86,13 +85,32 @@ class CharacterCard extends StatelessWidget {
         maxWidth: MediaQuery.of(context).size.width < 600
             ? MediaQuery.of(context).size.width
             : App.isDesktop
-                ? MediaQuery.of(context).size.width * 9 / 16
-                : MediaQuery.of(context).size.width,
+            ? MediaQuery.of(context).size.width * 9 / 16
+            : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
       builder: (context) {
         return CharacterPage(characterID: characterItem.id);
+      },
+    );
+  }
+
+  void _showPersonPage(BuildContext context) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+        maxWidth: MediaQuery.of(context).size.width < 600
+            ? MediaQuery.of(context).size.width
+            : App.isDesktop
+            ? MediaQuery.of(context).size.width * 9 / 16
+            : MediaQuery.of(context).size.width,
+      ),
+      clipBehavior: Clip.antiAlias,
+      context: context,
+      builder: (context) {
+        return PersonPage(personID: characterItem.actorList.first.id);
       },
     );
   }

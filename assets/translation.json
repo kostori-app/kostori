@@ -149,7 +149,6 @@
     "Long press and drag to reorder.": "长按并拖动以重新排序。",
     "Long press on the favorite button to quickly add to this folder": "长按收藏按钮快速添加到这个文件夹",
     "Long press to zoom": "长按缩放",
-    "Match Bangumi ID": "匹配bangumiId",
     "Me": "个人",
     "Move To First": "移动到最前",
     "Move favorite after reading": "观看后移动收藏",
@@ -314,6 +313,7 @@
     "Main character": "主角",
     "Supporting character": "配角",
     "Cameo": "客串",
+    "Idle corner": "闲角",
     "Unknown": "未知",
     "Debug Info": "调试信息",
     "Install": "安装",
@@ -610,7 +610,13 @@
     "Hardware decoder": "硬件解码器",
     "Video renderer": "视频渲染器",
     "Video synchronization mode": "视频同步模式",
-    "Enable No Proxy Overrides": "启用无代理覆盖"
+    "Enable No Proxy Overrides": "启用无代理覆盖",
+    "Actor": "演员",
+    "Dub": "配音",
+    "Chinese Dub": "中配",
+    "Japanese Dub": "日配",
+    "English Dub": "英配",
+    "Korean Dub": "韩配"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",
@@ -762,7 +768,6 @@
     "Long press and drag to reorder.": "長按並拖動以重新排序。",
     "Long press on the favorite button to quickly add to this folder": "長按收藏按鈕快速添加到這個文件夾",
     "Long press to zoom": "長按縮放",
-    "Match Bangumi ID": "匹配bangumiId",
     "Me": "個人",
     "Move To First": "移動到最前",
     "Move favorite after reading": "觀看後移動收藏",

@@ -30,21 +30,33 @@ class Api {
       'https://raw.githubusercontent.com/kostori-app/kostori-configs/master/index.json';
 
   ///Next
-  // 角色
-  static const String bangumiCharacterByIDNext =
-      'https://next.bgm.tv/p1/characters/';
+  // 角色吐槽箱
+  static const String characterCommentsByIDNext =
+      'https://next.bgm.tv/p1/characters/{0}/comments';
 
-  // 剧集
-  static const String bangumiEpisodeByIDNext =
-      'https://next.bgm.tv/p1/episodes/';
+  // 剧集吐槽箱
+  static const String episodeCommentsByIDNext =
+      'https://next.bgm.tv/p1/episodes/{0}/comments';
 
-  // 角色
+  // 获取角色
   static const String characterInfoByCharacterIDNext =
       'https://next.bgm.tv/p1/characters/{0}';
 
   // 角色关联
   static const String characterCastsByCharacterIDNext =
       'https://next.bgm.tv/p1/characters/{0}/casts';
+
+  // 获取人物
+  static const String personByPersonIDNext =
+      'https://next.bgm.tv/p1/persons/{0}';
+
+  // 人物出演角色
+  static const String castsByPersonIDNext =
+      'https://next.bgm.tv/p1/persons/{0}/casts';
+
+  // 人物吐槽箱
+  static const String personCommentsByPersonIDNext =
+      'https://next.bgm.tv/p1/persons/{0}/comments';
 
   // 制作
   static const String bangumiStaffByIDNext =
