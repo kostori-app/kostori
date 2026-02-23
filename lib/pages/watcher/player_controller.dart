@@ -63,7 +63,7 @@ abstract class _PlayerController with Store {
   @observable
   bool isPortraitFullscreen = false;
 
-  late final player = Player(
+  late Player player = Player(
     configuration: PlayerConfiguration(
       bufferSize: 1500 * 1024 * 1024,
       logLevel: MPVLogLevel.info,
@@ -85,7 +85,15 @@ abstract class _PlayerController with Store {
       ],
     ),
   );
-  late VideoController playerController;
+  late VideoController playerController = VideoController(
+    player,
+    configuration: VideoControllerConfiguration(
+      vo: videoRenderer,
+      enableHardwareAcceleration: hAenable,
+      hwdec: hAenable ? hardwareDecoder : 'no',
+      androidAttachSurfaceAfterVideoParameters: false,
+    ),
+  );
 
   @observable
   bool audioOutType = true;
@@ -489,7 +497,7 @@ abstract class _PlayerController with Store {
       TaskbarManager.instance.dispose();
     }
     _pipStatusSubscription?.cancel();
-    player.dispose();
+    await player.dispose();
   }
 
   void fullscreen() async {
