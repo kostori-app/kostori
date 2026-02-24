@@ -3,6 +3,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
@@ -353,43 +354,42 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
             if (didPop) return;
             context.pop();
           },
-          child: Scaffold(
-            appBar: AppBar(
-              title: Text('Timetable'.tl),
-              leading: IconButton(
-                onPressed: () {
-                  Navigator.maybePop(context);
-                },
-                icon: Icon(Icons.arrow_back_ios_new),
-              ),
-              actions: [
-                IconButton(
-                  onPressed: () {
-                    appdata.settings['getBangumiAllEpInfoTime'] = null;
-                    appdata.saveData();
-                    setState(() {
-                      _isLoading = true;
-                      _initializeData();
-                    });
-                  },
-                  icon: Icon(Icons.restart_alt),
-                  tooltip: '刷新状态',
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
+            child: Scaffold(
+              appBar: Appbar(
+                title: Text('Timetable'.tl),
+                actions: [
+                  IconButton(
+                    onPressed: () {
+                      appdata.settings['getBangumiAllEpInfoTime'] = null;
+                      appdata.saveData();
+                      setState(() {
+                        _isLoading = true;
+                        _initializeData();
+                      });
+                    },
+                    icon: Icon(Icons.restart_alt),
+                    tooltip: '刷新状态',
+                  ),
+                ],
+                bottom: TabBar(
+                  controller: controller,
+                  tabs: getTabs(),
+                  isScrollable: true,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  tabAlignment: TabAlignment.center,
                 ),
-              ],
-              bottom: TabBar(
-                controller: controller,
-                tabs: getTabs(),
-                isScrollable: true,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                tabAlignment: TabAlignment.center,
               ),
+              body: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 950.0),
+                  child: _buildBody(orientation),
+                ),
+              ), // 修改body构建方式
             ),
-            body: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: 950.0),
-                child: _buildBody(orientation),
-              ),
-            ), // 修改body构建方式
           ),
         );
       },
@@ -432,7 +432,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     Orientation orientation,
   ) {
     final List<Widget> listViewList = [];
-    final DateTime currentTime = DateTime.now().toLocal(); // 当前本地时间
+    final DateTime currentTime = DateTime.now().toLocal();
     final String currentTimeStr = DateFormat('HH:mm').format(currentTime);
     final int currentWeekday = currentTime.weekday; // 1 ~ 7
 
@@ -537,7 +537,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
               Icon(
                 Icons.access_time,
                 size: iconSize,
-                color: Theme.of(context).colorScheme.tertiary,
+                color: Theme.of(context).colorScheme.primary,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -545,14 +545,14 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                   DateFormat('HH:mm').format(currentTime),
                   style: TextStyle(
                     fontSize: textSize,
-                    color: Theme.of(context).colorScheme.tertiary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
               Expanded(
                 child: Divider(
-                  color: Theme.of(context).colorScheme.tertiary,
+                  color: Theme.of(context).colorScheme.primary,
                   thickness: dividerThickness,
                 ),
               ),
@@ -684,17 +684,17 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                             5,
                                             8,
                                             5,
-                                          ), // 可选，设置内边距
+                                          ),
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(
                                               8,
-                                            ), // 设置圆角半径
+                                            ),
                                             border: Border.all(
                                               color: Theme.of(context)
                                                   .colorScheme
                                                   .primary
                                                   .toOpacity(0.72),
-                                              width: 1.0, // 设置边框宽度
+                                              width: 1.0,
                                             ),
                                           ),
                                           child: Text(
@@ -710,7 +710,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                                       ],
                                       Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.end, // 右对齐
+                                            CrossAxisAlignment.end,
                                         children: [
                                           RatingBarIndicator(
                                             itemCount: 5,

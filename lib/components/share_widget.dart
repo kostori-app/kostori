@@ -10,6 +10,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
@@ -1277,6 +1278,41 @@ class BangumiGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+
+    Widget containerBackground(Widget child) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.6)
+                : Colors.black.toOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: child,
+        ),
+      );
+    }
+
+    Widget backdropFilter(Widget child) {
+      return BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          color: context.brightness == Brightness.light
+              ? Colors.white.toOpacity(0.3)
+              : Colors.black.toOpacity(0.3),
+          child: child,
+        ),
+      );
+    }
+
     Widget scoreWidget() {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -1295,6 +1331,14 @@ class BangumiGridCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              Text(
+                '#${bangumiItem.rank}',
+                style: TextStyle(
+                  fontSize: App.isAndroid ? 7 : 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
               RatingBarIndicator(
                 itemCount: 5,
                 rating: bangumiItem.score / 2,
@@ -1302,10 +1346,7 @@ class BangumiGridCard extends StatelessWidget {
                 itemSize: App.isAndroid ? 12 : 14,
               ),
               Text(
-                '@t reviews | #@r'.tlParams({
-                  'r': bangumiItem.rank,
-                  't': bangumiItem.total,
-                }),
+                '@t reviews'.tlParams({'t': bangumiItem.total}),
                 style: TextStyle(
                   fontSize: App.isAndroid ? 7 : 9,
                   fontWeight: FontWeight.bold,
@@ -1333,101 +1374,45 @@ class BangumiGridCard extends StatelessWidget {
                   bangumiItem.images['large']!,
                   width: width,
                   height: height,
-                  showPlaceholder: true,
                 ),
               ),
-              if (bangumiItem.airDate.isNotEmpty)
-                Positioned(
-                  bottom: App.isAndroid ? 34 : 40,
-                  right: 4,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: Stack(
-                            children: [
-                              Positioned.fill(
-                                child: Opacity(
-                                  opacity: 0.6,
-                                  child: Image.asset(
-                                    'assets/img/noise.png',
-                                    // 模拟毛玻璃颗粒的纹理图
-                                    fit: BoxFit.cover,
-                                    color:
-                                        context.brightness == Brightness.light
-                                        ? Colors.white.toOpacity(0.3)
-                                        : Colors.black.toOpacity(0.3),
-                                    colorBlendMode: BlendMode.srcOver,
-                                  ),
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color:
-                                        context.brightness == Brightness.light
-                                        ? Colors.white.toOpacity(0.3)
-                                        : Colors.black.toOpacity(0.3),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-                          child: Text(
-                            bangumiItem.airDate,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              Positioned(
-                bottom: 4,
-                right: 4,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Stack(
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Positioned.fill(
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Opacity(
-                                opacity: 0.6,
-                                child: Image.asset(
-                                  'assets/img/noise.png',
-                                  fit: BoxFit.cover,
-                                  color: context.brightness == Brightness.light
-                                      ? Colors.white.toOpacity(0.3)
-                                      : Colors.black.toOpacity(0.3),
-                                  colorBlendMode: BlendMode.srcOver,
+                      if (bangumiItem.airDate.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: animeCardUseBlur
+                              ? backdropFilter(
+                                  Text(
+                                    bangumiItem.airDate,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                )
+                              : containerBackground(
+                                  Text(
+                                    bangumiItem.airDate,
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: context.brightness == Brightness.light
-                                      ? Colors.white.toOpacity(0.3)
-                                      : Colors.black.toOpacity(0.3),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-                        child: scoreWidget(),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: animeCardUseBlur
+                            ? backdropFilter(scoreWidget())
+                            : containerBackground(scoreWidget()),
                       ),
                     ],
                   ),

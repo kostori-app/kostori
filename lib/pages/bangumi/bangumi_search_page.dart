@@ -469,11 +469,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             ? false
             : selectedBangumiItems[bangumiItems[index]] ?? false;
         var bangumi = useBriefMode
-            ? BangumiWidget.buildBriefMode(
-                context,
-                bangumiItems[index],
-                'search',
-                showPlaceholder: false,
+            ? BangumiBriefCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'search',
                 onTap: multiSelectMode
                     ? (a) {
                         onTap(a);
@@ -483,10 +481,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   onLongPressed(a);
                 },
               )
-            : BangumiWidget.buildDetailedMode(
-                context,
-                bangumiItems[index],
-                'search',
+            : BangumiDetailedCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'search',
                 onTap: multiSelectMode
                     ? (a) {
                         onTap(a);
@@ -558,9 +555,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             return ContentDialog(
               title: "Select Date".tl,
               content: SizedBox(
-                width: 350,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     ListTile(
                       title: Text("Start Date".tl),
@@ -586,11 +581,6 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     });
                   },
                   child: Text("Clear Date".tl),
-                ),
-                // const Spacer(),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text("Cancel".tl),
                 ),
                 ElevatedButton(
                   onPressed: () async {

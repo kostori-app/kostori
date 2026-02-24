@@ -5,6 +5,7 @@ import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -153,11 +154,9 @@ class _BangumiPageState extends State<BangumiPage>
         sliver: SliverGrid(
           delegate: SliverChildBuilderDelegate((context, index) {
             return bangumiItems.isNotEmpty
-                ? BangumiWidget.buildBriefMode(
-                    context,
-                    bangumiItems[index],
-                    'Trending$index',
-                    showPlaceholder: false,
+                ? BangumiBriefCard(
+                    bangumiItem: bangumiItems[index],
+                    heroTag: 'Trending$index',
                   )
                 : null;
           }, childCount: bangumiItems.length),
@@ -190,58 +189,39 @@ class _BangumiPageState extends State<BangumiPage>
     widget = Stack(
       children: [
         Positioned.fill(child: widget),
-        // FAB
         Positioned(
           bottom: 15,
           right: 10,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: IgnorePointer(
-              ignoring: !showFB,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, right: 0),
-                child: RepaintBoundary(
-                  child: GridSpeedDial(
-                    icon: Icons.menu,
-                    activeIcon: Icons.close,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    spacing: 6,
-                    spaceBetweenChildren: 4,
-                    direction: SpeedDialDirection.up,
-                    childPadding: const EdgeInsets.all(6),
-                    childrens: [
-                      [
-                        SpeedDialChild(
-                          child: const Icon(Icons.refresh),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: () async {
-                            await resetBangumiTrend();
-                          },
-                        ),
-                      ],
-                      [
-                        SpeedDialChild(
-                          child: const Icon(Icons.vertical_align_top),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                          onTap: () => scrollToTop(),
-                        ),
-                      ],
-                    ],
-                  ),
+          child: FloatingMenu(
+            controller: scrollController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () async {
+                    await resetBangumiTrend();
+                  },
                 ),
-              ),
-            ),
+              ],
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () => scrollToTop(),
+                ),
+              ],
+            ],
           ),
         ),
         // 条目数量浮动框

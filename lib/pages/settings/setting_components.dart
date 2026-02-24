@@ -2,20 +2,22 @@
 
 part of 'settings_page.dart';
 
+enum SwitchDataSource { settings, implicit }
+
 class _SwitchSetting extends StatefulWidget {
   const _SwitchSetting({
     required this.title,
     required this.settingKey,
+    this.dataSource = SwitchDataSource.settings,
     this.onChanged,
     this.subtitle,
+    super.key,
   });
 
   final String title;
-
   final String settingKey;
-
+  final SwitchDataSource dataSource;
   final VoidCallback? onChanged;
-
   final String? subtitle;
 
   @override
@@ -23,21 +25,39 @@ class _SwitchSetting extends StatefulWidget {
 }
 
 class _SwitchSettingState extends State<_SwitchSetting> {
+  bool _getValue() {
+    if (widget.dataSource == SwitchDataSource.settings) {
+      final value = appdata.settings[widget.settingKey];
+      if (value is bool) return value;
+      return false;
+    } else {
+      final value = appdata.implicitData[widget.settingKey];
+      if (value is bool) return value;
+      return false;
+    }
+  }
+
+  void _setValue(bool value) {
+    if (widget.dataSource == SwitchDataSource.settings) {
+      appdata.settings[widget.settingKey] = value;
+      appdata.saveData();
+    } else {
+      appdata.implicitData[widget.settingKey] = value;
+      appdata.writeImplicitData();
+    }
+    widget.onChanged?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
-    assert(appdata.settings[widget.settingKey] is bool);
-
     return ListTile(
       title: Text(widget.title),
       subtitle: widget.subtitle == null ? null : Text(widget.subtitle!),
       trailing: CustomSwitch(
-        value: appdata.settings[widget.settingKey],
+        value: _getValue(),
         onChanged: (value) {
           setState(() {
-            appdata.settings[widget.settingKey] = value;
-          });
-          appdata.saveData().then((_) {
-            widget.onChanged?.call();
+            _setValue(value);
           });
         },
       ),
