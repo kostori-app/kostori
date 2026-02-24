@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/animated.dart';
+import 'package:kostori/components/grid_speed_dial.dart';
 
 class KostoriRefreshIndicator extends StatefulWidget {
   const KostoriRefreshIndicator({super.key});
@@ -75,6 +76,88 @@ class _KostoriRefreshIndicatorState extends State<KostoriRefreshIndicator>
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class FloatingMenu extends StatefulWidget {
+  final ScrollController controller;
+
+  final List<List<SpeedDialChild>> child;
+
+  const FloatingMenu({
+    super.key,
+    required this.controller,
+    required this.child,
+  });
+
+  @override
+  State<FloatingMenu> createState() => FloatingMenuState();
+}
+
+class FloatingMenuState extends State<FloatingMenu>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
+  bool show = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+
+    widget.controller.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final shouldShow = widget.controller.offset > 50;
+
+    if (shouldShow != show) {
+      setState(() => show = shouldShow);
+      shouldShow ? _controller.forward() : _controller.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onScroll);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: IgnorePointer(
+        ignoring: !show,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 20, right: 0),
+          child: RepaintBoundary(
+            child: GridSpeedDial(
+              icon: Icons.menu,
+              activeIcon: Icons.close,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              spacing: 6,
+              spaceBetweenChildren: 4,
+              direction: SpeedDialDirection.up,
+              childPadding: const EdgeInsets.all(6),
+              childrens: widget.child,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -20,9 +20,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   late _FavoritesPageState favPage;
   late FavoriteSortType sortType;
 
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
   FavoritesController get favoritesController => widget.favoritesController;
 
   Map<Anime, bool> selectedAnimes = {};
@@ -36,7 +33,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   bool searchMode = false;
   bool searchAllMode = false;
   bool searchHasUpper = false;
-  bool showFB = false;
   bool multiSelectMode = false;
   bool isLoading = false;
 
@@ -180,17 +176,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     return true;
   }
 
-  void onScroll() {
-    final shouldShow = scrollController.offset > 50;
-    if (shouldShow && !showFB) {
-      showFB = true;
-      _controller.forward();
-    } else if (!shouldShow && showFB) {
-      showFB = false;
-      _controller.reverse();
-    }
-  }
-
   void scrollToTop() {
     if (scrollController.hasClients) {
       scrollController.animateTo(
@@ -246,26 +231,15 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
       });
     });
     updateAnimes();
-    scrollController.addListener(onScroll);
     manager.addListener(updateAnimes);
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
     super.initState();
   }
 
   @override
   void dispose() {
     favoritesController.tabController.dispose();
-    scrollController.removeListener(onScroll);
     manager.removeListener(updateAnimes);
     scrollController.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
@@ -646,22 +620,30 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                     text: "Favorite actions".tl,
                     onClick: () async {
                       favoritesController.isRefreshEnabled = true;
-                      await _FavoriteDialog.show(
+                      final bool? changed = await _FavoriteDialog.show(
                         context: context,
                         selectedAnimes: selectedAnimes,
                         favPage: favPage,
                         cancel: () => _cancel(),
                         favoritesController: favoritesController,
-                      ).then((_) {
+                      );
+
+                      if (changed == true) {
                         manager.initCounts();
-                        Future.delayed(const Duration(seconds: 1), () async {
-                          if (!mounted) return;
-                          favoritesController.isRefreshEnabled = true;
-                          await updateAnimes();
-                          favoritesController.tabs = getTabs();
+
+                        favoritesController.isRefreshEnabled = true;
+
+                        await updateAnimes();
+
+                        multiSelectMode = false;
+                        selectedAnimes.clear();
+
+                        favoritesController.tabs = getTabs();
+
+                        if (mounted) {
                           setState(() {});
-                        });
-                      });
+                        }
+                      }
                     },
                   ),
                   MenuEntry(
@@ -887,52 +869,36 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
         Positioned(
           bottom: 10,
           right: 10,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: IgnorePointer(
-              ignoring: !showFB,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, right: 0),
-                child: GridSpeedDial(
-                  icon: Icons.menu,
-                  activeIcon: Icons.close,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  spacing: 6,
-                  spaceBetweenChildren: 4,
-                  direction: SpeedDialDirection.up,
-                  childPadding: const EdgeInsets.all(6),
-                  childrens: [
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.refresh),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: () async {
-                          await updateAnimes();
-                        },
-                      ),
-                    ],
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: () => scrollToTop(),
-                      ),
-                    ],
-                  ],
+          child: FloatingMenu(
+            controller: scrollController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () async {
+                    await updateAnimes();
+                  },
                 ),
-              ),
-            ),
+              ],
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () => scrollToTop(),
+                ),
+              ],
+            ],
           ),
         ),
       ],

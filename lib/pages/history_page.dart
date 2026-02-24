@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -21,14 +22,10 @@ class HistoryPage extends StatefulWidget {
   State<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage>
-    with SingleTickerProviderStateMixin {
-  bool showFB = false;
+class _HistoryPageState extends State<HistoryPage> {
   bool multiSelectMode = false;
 
   Map<HistoryTimeGroup, bool> expandedStates = {};
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
   var animes = HistoryManager().getAll();
   Map<History, bool> selectedAnimes = {};
   final scrollController = ScrollController();
@@ -60,17 +57,8 @@ class _HistoryPageState extends State<HistoryPage>
   @override
   void initState() {
     HistoryManager().addListener(onUpdate);
-    scrollController.addListener(onScroll);
     expandedStates = fromJsonMap(
       Map<String, dynamic>.from(appdata.implicitData['expandedStates'] ?? {}),
-    );
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
     );
     super.initState();
   }
@@ -78,9 +66,7 @@ class _HistoryPageState extends State<HistoryPage>
   @override
   void dispose() {
     HistoryManager().removeListener(onUpdate);
-    scrollController.removeListener(onScroll);
     scrollController.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
@@ -133,17 +119,6 @@ class _HistoryPageState extends State<HistoryPage>
       );
     } else {
       HistoryManager().remove(anime.id, AnimeType(anime.sourceKey.hashCode));
-    }
-  }
-
-  void onScroll() {
-    final shouldShow = scrollController.offset > 50;
-    if (shouldShow && !showFB) {
-      showFB = true;
-      _controller.forward();
-    } else if (!shouldShow && showFB) {
-      showFB = false;
-      _controller.reverse();
     }
   }
 
@@ -462,50 +437,34 @@ class _HistoryPageState extends State<HistoryPage>
         Positioned(
           bottom: 10,
           right: 10,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: IgnorePointer(
-              ignoring: !showFB,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, right: 0),
-                child: GridSpeedDial(
-                  icon: Icons.menu,
-                  activeIcon: Icons.close,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  spacing: 6,
-                  spaceBetweenChildren: 4,
-                  direction: SpeedDialDirection.up,
-                  childPadding: const EdgeInsets.all(6),
-                  childrens: [
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.refresh),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: onUpdate,
-                      ),
-                    ],
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: scrollToTop,
-                      ),
-                    ],
-                  ],
+          child: FloatingMenu(
+            controller: scrollController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: onUpdate,
                 ),
-              ),
-            ),
+              ],
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: scrollToTop,
+                ),
+              ],
+            ],
           ),
         ),
       ],
