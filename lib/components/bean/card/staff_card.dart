@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class StaffCard extends StatelessWidget {
   const StaffCard({
     super.key,
     required this.staffFullItem,
+    this.isBone = false,
   });
+  const StaffCard.bone({super.key}) : staffFullItem = null, isBone = true;
 
-  final StaffFullItem staffFullItem;
+  final bool isBone;
+  final StaffFullItem? staffFullItem;
 
   @override
   Widget build(BuildContext context) {
-    final avatarUrl = staffFullItem.staff.images?.grid;
+    if (isBone) return _buildBone(context);
+    final avatarUrl = staffFullItem!.staff.images?.grid;
     final isDesktop = MediaQuery.sizeOf(context).width > 600;
     final maxWidth = isDesktop ? 600.0 : double.infinity;
 
@@ -21,8 +26,9 @@ class StaffCard extends StatelessWidget {
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: Card(
           elevation: 2,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: () {
@@ -45,16 +51,16 @@ class StaffCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          staffFullItem.staff.name,
+                          staffFullItem!.staff.name,
                           style: Theme.of(context).textTheme.titleMedium,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (staffFullItem.staff.nameCN.isNotEmpty)
+                        if (staffFullItem!.staff.nameCN.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              staffFullItem.staff.nameCN,
+                              staffFullItem!.staff.nameCN,
                               style: Theme.of(context).textTheme.bodySmall,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -65,14 +71,53 @@ class StaffCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    staffFullItem.positions.isNotEmpty
-                        ? staffFullItem.positions[0].type.cn
+                    staffFullItem!.positions.isNotEmpty
+                        ? staffFullItem!.positions[0].type.cn
                         : '',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.grey[600]),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBone(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width > 600;
+    final contentMaxWidth = isDesktop ? 600.0 : double.infinity;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: contentMaxWidth),
+        child: Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Skeletonizer.zone(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  Bone.circle(size: 48),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Bone.text(width: 100),
+                        const SizedBox(height: 4),
+                        Bone.text(width: 80),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Bone.text(width: 40),
                 ],
               ),
             ),

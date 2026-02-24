@@ -14,6 +14,7 @@ import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class PersonPage extends StatefulWidget {
   const PersonPage({super.key, required this.personID});
@@ -507,7 +508,7 @@ class _PersonPageState extends State<PersonPage>
                       PointerDeviceKind.trackpad,
                     },
                   ),
-                  key: PageStorageKey<String>('角色关联'),
+                  key: PageStorageKey<String>('声优角色关联'),
                   slivers: [
                     if (characterPersonCastsList.isNotEmpty)
                       SliverList.separated(
@@ -609,61 +610,64 @@ class _PersonPageState extends State<PersonPage>
                                                     ),
                                                   ),
                                                 ),
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      characterPersonCastsList[index]
-                                                          .character
-                                                          .name
-                                                          .trim(),
-                                                      style: const TextStyle(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        characterPersonCastsList[index]
+                                                            .character
+                                                            .name
+                                                            .trim(),
+                                                        style: const TextStyle(
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      characterPersonCastsList[index]
-                                                          .character
-                                                          .nameCN
-                                                          .trim()
-                                                          .replaceAll(
-                                                            RegExp(r'\s+'),
-                                                            ' ',
-                                                          ),
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                        color: Colors.grey,
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        characterPersonCastsList[index]
+                                                            .character
+                                                            .nameCN
+                                                            .trim()
+                                                            .replaceAll(
+                                                              RegExp(r'\s+'),
+                                                              ' ',
+                                                            ),
+                                                        style: const TextStyle(
+                                                          fontSize: 14,
+                                                          color: Colors.grey,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      characterPersonCastsList[index]
-                                                          .character
-                                                          .info
-                                                          .trim()
-                                                          .replaceAll(
-                                                            RegExp(r'\s+'),
-                                                            ' ',
-                                                          ),
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: Colors.grey,
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        characterPersonCastsList[index]
+                                                            .character
+                                                            .info
+                                                            .trim()
+                                                            .replaceAll(
+                                                              RegExp(r'\s+'),
+                                                              ' ',
+                                                            ),
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey,
+                                                        ),
+                                                        maxLines: 3,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
                                                       ),
-                                                      maxLines: 3,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
                                               ],
                                             ),
@@ -696,28 +700,50 @@ class _PersonPageState extends State<PersonPage>
                                                           .type;
 
                                                   return SizedBox(
-                                                    child: Column(
+                                                    width: 240 * 0.68,
+                                                    height: 240,
+                                                    child: Stack(
                                                       children: [
-                                                        SizedBox(
-                                                          width: 210 * 0.68,
-                                                          height: 210,
-                                                          child: BangumiWidget.buildBriefMode(
-                                                            context,
-                                                            item,
-                                                            'Reviews${item.id}$index',
+                                                        Positioned.fill(
+                                                          child: BangumiBriefCard(
+                                                            bangumiItem: item,
+                                                            heroTag:
+                                                                'Reviews$index',
                                                           ),
                                                         ),
-                                                        const SizedBox(
-                                                          height: 4,
-                                                        ),
-                                                        Text(
-                                                          getRelationName(type),
-                                                          style:
-                                                              const TextStyle(
-                                                                fontSize: 12,
+                                                        Positioned(
+                                                          left: 8,
+                                                          top: 8,
+                                                          child: Container(
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 4,
+                                                                ),
+                                                            decoration: BoxDecoration(
+                                                              color: Theme.of(context)
+                                                                  .colorScheme
+                                                                  .secondaryContainer,
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    12,
+                                                                  ),
+                                                            ),
+                                                            child: Text(
+                                                              getRelationName(
+                                                                type,
                                                               ),
-                                                          textAlign:
-                                                              TextAlign.center,
+                                                              style: const TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                            ),
+                                                          ),
                                                         ),
                                                       ],
                                                     ),
@@ -787,7 +813,7 @@ class _PersonPageState extends State<PersonPage>
                                   width: MediaQuery.sizeOf(context).width > 950
                                       ? 950
                                       : MediaQuery.sizeOf(context).width - 32,
-                                  child: CharacterCommentsCard.bone(),
+                                  child: _buildBone(),
                                 ),
                               ),
                             ),
@@ -844,6 +870,83 @@ class _PersonPageState extends State<PersonPage>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBone() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Card(
+        child: Skeletonizer.zone(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Bone(
+                        width: 120 * 0.68,
+                        height: 120,
+                        uniRadius: 12,
+                      ),
+                    ),
+                    // 3. 角色信息：利用 Bone.text 和 Bone.multiText
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Bone.text(fontSize: 16, width: 100),
+                          const SizedBox(height: 2),
+                          const Bone.text(fontSize: 14, width: 80),
+                          const SizedBox(height: 2),
+                          const Bone.multiText(fontSize: 12, lines: 3),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(thickness: 0.5, indent: 10, endIndent: 10),
+                SizedBox(
+                  height: 240,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: 3,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    itemBuilder: (context, i) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: SizedBox(
+                          width: 240 * 0.68,
+                          height: 240,
+                          child: Stack(
+                            children: [
+                              const Positioned.fill(child: Bone(uniRadius: 12)),
+                              Positioned(
+                                left: 8,
+                                top: 8,
+                                child: Bone(
+                                  width: 50,
+                                  height: 24,
+                                  uniRadius: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

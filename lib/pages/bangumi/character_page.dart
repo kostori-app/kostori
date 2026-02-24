@@ -14,6 +14,7 @@ import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class CharacterPage extends StatefulWidget {
   const CharacterPage({super.key, required this.characterID});
@@ -515,10 +516,10 @@ class _CharacterPageState extends State<CharacterPage>
                                     children: [
                                       SizedBox(
                                         height: 160,
-                                        child: BangumiWidget.buildDetailedMode(
-                                          context,
-                                          characterCastsList[index].subject,
-                                          'Casts$index',
+                                        child: BangumiDetailedCard(
+                                          bangumiItem:
+                                              characterCastsList[index].subject,
+                                          heroTag: 'Casts$index',
                                         ),
                                       ),
                                       Padding(
@@ -690,7 +691,7 @@ class _CharacterPageState extends State<CharacterPage>
                             width: MediaQuery.sizeOf(context).width > 950
                                 ? 950
                                 : MediaQuery.sizeOf(context).width - 32,
-                            child: CharacterCommentsCard.bone(),
+                            child: _buildCastsBone(),
                           ),
                         ),
                       ),
@@ -702,6 +703,52 @@ class _CharacterPageState extends State<CharacterPage>
           ],
         );
       },
+    );
+  }
+
+  Widget _buildCastsBone() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Card(
+        child: Skeletonizer.zone(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(
+                  height: 160,
+                  child: Bone(
+                    width: double.infinity,
+                    height: 160,
+                    uniRadius: 12,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List.generate(
+                          2,
+                          (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Bone(width: 180, height: 28, uniRadius: 8),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      const Bone.text(fontSize: 16, width: 60),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

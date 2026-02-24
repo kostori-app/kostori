@@ -26,7 +26,6 @@ import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 class BottomInfo extends StatefulWidget {
   const BottomInfo({
@@ -1030,13 +1029,7 @@ class BottomInfoState extends State<BottomInfo>
                           width: MediaQuery.sizeOf(context).width > maxWidth
                               ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
-                          child: Skeletonizer.zone(
-                            child: ListTile(
-                              leading: Bone.circle(size: 36),
-                              title: Bone.text(width: 100),
-                              subtitle: Bone.text(width: 80),
-                            ),
-                          ),
+                          child: TopicsCard.bone(),
                         ),
                       );
                     },
@@ -1125,13 +1118,7 @@ class BottomInfoState extends State<BottomInfo>
                           width: MediaQuery.sizeOf(context).width > maxWidth
                               ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
-                          child: Skeletonizer.zone(
-                            child: ListTile(
-                              leading: Bone.circle(size: 36),
-                              title: Bone.text(width: 100),
-                              subtitle: Bone.text(width: 80),
-                            ),
-                          ),
+                          child: ReviewsCard.bone(),
                         ),
                       );
                     },
@@ -1206,13 +1193,7 @@ class BottomInfoState extends State<BottomInfo>
                         width: MediaQuery.sizeOf(context).width > maxWidth
                             ? maxWidth
                             : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
+                        child: CharacterCard.bone(),
                       ),
                     );
                   },
@@ -1278,13 +1259,7 @@ class BottomInfoState extends State<BottomInfo>
                         width: MediaQuery.sizeOf(context).width > maxWidth
                             ? maxWidth
                             : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
+                        child: StaffCard.bone(),
                       ),
                     );
                   },

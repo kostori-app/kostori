@@ -217,10 +217,10 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
                                         child: SizedBox(
                                           width: 160,
                                           height: 240,
-                                          child: BangumiWidget.buildBriefMode(
-                                            context,
-                                            bangumiReviewsSubjects[index],
-                                            'Reviews$index',
+                                          child: BangumiBriefCard(
+                                            bangumiItem:
+                                                bangumiReviewsSubjects[index],
+                                            heroTag: 'Reviews$index',
                                           ),
                                         ),
                                       );

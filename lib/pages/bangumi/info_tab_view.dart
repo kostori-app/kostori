@@ -417,7 +417,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
-                  height: 240,
+                  height: 220,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: widget.bangumiSRI.length,
@@ -465,57 +465,81 @@ class _InfoTabViewState extends State<InfoTabView>
                               );
                             },
                             borderRadius: BorderRadius.circular(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                            child: Stack(
                               children: [
-                                // 封面图改成 Ink.image
-                                Ink.image(
-                                  image: CachedImageProvider(
-                                    item.images['large']!,
-                                    sourceKey: 'bangumi',
-                                  ),
-                                  width: 140,
-                                  height: 180,
-                                  fit: BoxFit.cover,
-                                ),
+                                Positioned.fill(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      // 封面图改成 Ink.image
+                                      Ink.image(
+                                        image: CachedImageProvider(
+                                          item.images['large']!,
+                                          sourceKey: 'bangumi',
+                                        ),
+                                        width: 140,
+                                        height: 180,
+                                        fit: BoxFit.cover,
+                                      ),
 
-                                // 标题
-                                Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: Center(
-                                    child: SizedBox(
-                                      height: 20,
-                                      child: shouldScroll
-                                          ? Marquee(
-                                              text: title,
-                                              style: style,
-                                              scrollAxis: Axis.horizontal,
-                                              blankSpace: 10.0,
-                                              velocity: 40.0,
-                                              pauseAfterRound: Duration.zero,
-                                              accelerationDuration:
-                                                  Duration.zero,
-                                              decelerationDuration:
-                                                  Duration.zero,
-                                            )
-                                          : Text(
-                                              title,
-                                              style: style,
-                                              textAlign: TextAlign.center,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
+                                      // 标题
+                                      Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: Center(
+                                          child: SizedBox(
+                                            height: 20,
+                                            child: shouldScroll
+                                                ? Marquee(
+                                                    text: title,
+                                                    style: style,
+                                                    scrollAxis: Axis.horizontal,
+                                                    blankSpace: 10.0,
+                                                    velocity: 40.0,
+                                                    pauseAfterRound:
+                                                        Duration.zero,
+                                                    accelerationDuration:
+                                                        Duration.zero,
+                                                    decelerationDuration:
+                                                        Duration.zero,
+                                                  )
+                                                : Text(
+                                                    title,
+                                                    style: style,
+                                                    textAlign: TextAlign.center,
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 8,
+                                  top: 8,
+                                  child: // 关联关系
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
                                     ),
-                                  ),
-                                ),
-
-                                // 关联关系
-                                Padding(
-                                  padding: const EdgeInsets.all(2.0),
-                                  child: Center(
-                                    child: Text(
-                                      item.relation,
-                                      style: const TextStyle(fontSize: 14),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.secondaryContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        item.relation,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -853,13 +877,7 @@ class _InfoTabViewState extends State<InfoTabView>
                           width: MediaQuery.sizeOf(context).width > maxWidth
                               ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
-                          child: Skeletonizer.zone(
-                            child: ListTile(
-                              leading: Bone.circle(size: 36),
-                              title: Bone.text(width: 100),
-                              subtitle: Bone.text(width: 80),
-                            ),
-                          ),
+                          child: TopicsCard.bone(),
                         ),
                       );
                     },
@@ -952,13 +970,7 @@ class _InfoTabViewState extends State<InfoTabView>
                           width: MediaQuery.sizeOf(context).width > maxWidth
                               ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
-                          child: Skeletonizer.zone(
-                            child: ListTile(
-                              leading: Bone.circle(size: 36),
-                              title: Bone.text(width: 100),
-                              subtitle: Bone.text(width: 80),
-                            ),
-                          ),
+                          child: ReviewsCard.bone(),
                         ),
                       );
                     },
@@ -1035,13 +1047,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         width: MediaQuery.sizeOf(context).width > maxWidth
                             ? maxWidth
                             : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
+                        child: CharacterCard.bone(),
                       ),
                     );
                   },
@@ -1110,13 +1116,7 @@ class _InfoTabViewState extends State<InfoTabView>
                         width: MediaQuery.sizeOf(context).width > maxWidth
                             ? maxWidth
                             : MediaQuery.sizeOf(context).width - 32,
-                        child: Skeletonizer.zone(
-                          child: ListTile(
-                            leading: Bone.circle(size: 36),
-                            title: Bone.text(width: 100),
-                            subtitle: Bone.text(width: 80),
-                          ),
-                        ),
+                        child: StaffCard.bone(),
                       ),
                     );
                   },
