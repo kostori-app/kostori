@@ -527,7 +527,6 @@ class StatItemWidget extends StatelessWidget {
             cover,
             width: height * 0.72,
             height: height,
-            showPlaceholder: true,
           ),
         ),
       );

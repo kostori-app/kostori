@@ -505,7 +505,6 @@ class StatsOverview extends StatelessWidget {
                                       stat.cover!,
                                       width: width,
                                       height: height,
-                                      showPlaceholder: true,
                                     ),
                                   ),
 

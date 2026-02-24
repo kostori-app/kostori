@@ -442,7 +442,7 @@ class ContentDialog extends StatelessWidget {
     super.key,
     this.title,
     required this.content,
-    this.dismissible = true,
+    this.isDismissible = false,
     this.actions = const [],
     this.cancel,
     this.displayButton = true,
@@ -451,7 +451,7 @@ class ContentDialog extends StatelessWidget {
   final String? title;
   final Widget content;
   final List<Widget> actions;
-  final bool dismissible;
+  final bool isDismissible;
   final VoidCallback? cancel;
   final bool displayButton;
 
@@ -486,7 +486,9 @@ class ContentDialog extends StatelessWidget {
                 Button.text(
                   onPressed: () {
                     cancel?.call();
-                    Navigator.pop(context);
+                    if (!isDismissible) {
+                      Navigator.pop(context);
+                    }
                   },
                   child: Text("Cancel".tl),
                 ),
@@ -529,7 +531,7 @@ class ContentDialog extends StatelessWidget {
               removeTop: true,
               removeBottom: true,
               context: context,
-              child: dialogContent,
+              child: Material(color: Colors.transparent, child: dialogContent),
             ),
           ),
         ),

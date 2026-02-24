@@ -16,20 +16,18 @@ class _FavoriteDialog extends StatefulWidget {
   final VoidCallback cancel;
   final FavoritesController favoritesController;
 
-  static Future<void> show({
+  static Future<bool?> show({
     required BuildContext context,
     required Map<Anime, bool> selectedAnimes,
     required _FavoritesPageState favPage,
-    // required VoidCallback updateAnimes,
     required VoidCallback cancel,
     required FavoritesController favoritesController,
-  }) async {
-    return showDialog(
+  }) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => _FavoriteDialog(
         selectedAnimes: selectedAnimes,
         favPage: favPage,
-        // updateAnimes: updateAnimes,
         cancel: cancel,
         favoritesController: favoritesController,
       ),
@@ -88,130 +86,18 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
       foldersToAdd = widget.selectedAnimes.length;
     }
 
-    return Dialog(
-      insetPadding: const EdgeInsets.all(16),
-      child: ConstrainedBox(
+    return ContentDialog(
+      title: "Favorite".tl,
+      content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                "Favorite".tl,
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-            const Divider(height: 1),
             Expanded(child: buildLocalContent()),
             const Divider(height: 1),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      // 编辑功能暂不实现
-                    },
-                    child: Text("Edit".tl),
-                  ),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(); // 取消关闭对话框
-                        },
-                        child: Text("Cancel".tl),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: selectedLocalFolders.isEmpty
-                            ? null
-                            : () async {
-                                // 执行移动操作
-                                if (selectedLocalFolders.length > 1 &&
-                                    selectedLocalFolders.contains(
-                                      widget.favPage.folder,
-                                    )) {
-                                  var animes = widget.selectedAnimes.keys
-                                      .map((e) => e as FavoriteItem)
-                                      .toList();
-                                  final sortedFolders = [
-                                    ...selectedLocalFolders.where(
-                                      (f) =>
-                                          f != widget.favPage.folder as String,
-                                    ),
-                                    ...selectedLocalFolders.where(
-                                      (f) =>
-                                          f == widget.favPage.folder as String,
-                                    ),
-                                  ];
-
-                                  for (var f in sortedFolders) {
-                                    LocalFavoritesManager().batchMoveFavorites(
-                                      widget.favPage.folder as String,
-                                      f,
-                                      animes,
-                                    );
-                                  }
-                                } else if (selectedLocalFolders.length == 1 &&
-                                    selectedLocalFolders.contains(
-                                      widget.favPage.folder,
-                                    )) {
-                                  for (var a in widget.selectedAnimes.keys) {
-                                    LocalFavoritesManager().deleteAnimeWithId(
-                                      widget.favPage.folder as String,
-                                      a.id,
-                                      (a as FavoriteItem).type,
-                                    );
-                                  }
-                                } else {
-                                  // 执行添加操作
-                                  var animes = widget.selectedAnimes.keys
-                                      .map((e) => e as FavoriteItem)
-                                      .toList();
-                                  for (var f in selectedLocalFolders) {
-                                    LocalFavoritesManager().batchCopyFavorites(
-                                      widget.favPage.folder as String,
-                                      f,
-                                      animes,
-                                    );
-                                  }
-                                }
-
-                                // 更新状态
-                                if (mounted) {
-                                  setState(() {
-                                    widget.cancel();
-                                  });
-                                  showCenter(
-                                    seconds: 1,
-                                    icon: Gif(
-                                      image: AssetImage('assets/img/check.gif'),
-                                      height: 80,
-                                      fps: 120,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      autostart: Autostart.once,
-                                    ),
-                                    message: '操作成功',
-                                    context: context,
-                                  );
-                                  Navigator.of(context).pop();
-                                }
-                              },
-                        child: Text('OK'.tl),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
             // 添加操作统计信息
             if (selectedLocalFolders.isNotEmpty)
-              Padding(
+              Container(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   "@a to add • @b to remove • @c to move".tlParams({
@@ -219,14 +105,92 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     "b": foldersToRemove,
                     "c": foldersToMove,
                   }),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
           ],
         ),
       ),
+      isDismissible: true,
+      cancel: () => Navigator.of(context).pop(false),
+      actions: [
+        FilledButton(
+          onPressed: selectedLocalFolders.isEmpty
+              ? null
+              : () async {
+                  bool hasChanged = false;
+                  if (selectedLocalFolders.length > 1 &&
+                      selectedLocalFolders.contains(widget.favPage.folder)) {
+                    var animes = widget.selectedAnimes.keys
+                        .map((e) => e as FavoriteItem)
+                        .toList();
+
+                    final sortedFolders = [
+                      ...selectedLocalFolders.where(
+                        (f) => f != widget.favPage.folder as String,
+                      ),
+                      ...selectedLocalFolders.where(
+                        (f) => f == widget.favPage.folder as String,
+                      ),
+                    ];
+
+                    for (var f in sortedFolders) {
+                      LocalFavoritesManager().batchMoveFavorites(
+                        widget.favPage.folder as String,
+                        f,
+                        animes,
+                      );
+                    }
+
+                    hasChanged = true;
+                  } else if (selectedLocalFolders.length == 1 &&
+                      selectedLocalFolders.contains(widget.favPage.folder)) {
+                    for (var a in widget.selectedAnimes.keys) {
+                      LocalFavoritesManager().deleteAnimeWithId(
+                        widget.favPage.folder as String,
+                        a.id,
+                        (a as FavoriteItem).type,
+                      );
+                    }
+
+                    hasChanged = true;
+                  } else {
+                    var animes = widget.selectedAnimes.keys
+                        .map((e) => e as FavoriteItem)
+                        .toList();
+
+                    for (var f in selectedLocalFolders) {
+                      LocalFavoritesManager().batchCopyFavorites(
+                        widget.favPage.folder as String,
+                        f,
+                        animes,
+                      );
+                    }
+
+                    hasChanged = true;
+                  }
+
+                  if (mounted && hasChanged) {
+                    showCenter(
+                      seconds: 1,
+                      icon: Gif(
+                        image: const AssetImage('assets/img/check.gif'),
+                        height: 80,
+                        fps: 120,
+                        color: Theme.of(context).colorScheme.primary,
+                        autostart: Autostart.once,
+                      ),
+                      message: '操作成功',
+                      context: context,
+                    );
+                  }
+                  if (mounted) {
+                    Navigator.of(context).pop(hasChanged);
+                  }
+                },
+          child: Text('OK'.tl),
+        ),
+      ],
     );
   }
 
@@ -261,7 +225,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
           },
           title: Row(
             children: [
-              Text(folder),
+              Text(folder.tl),
               const SizedBox(width: 8),
               if (isAdded)
                 Container(
