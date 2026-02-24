@@ -202,7 +202,7 @@ class AnimeSource {
   /// Category data used to build a static category tags page.
   final CategoryData? categoryData;
 
-  /// Category comics data used to build a comics page with a category tag.
+  /// Category animes data used to build a animes page with a category tag.
   final CategoryAnimesData? categoryAnimesData;
 
   /// Favorite data used to build favorite page.
@@ -262,6 +262,8 @@ class AnimeSource {
   final bool enableTagsTranslate;
 
   final StarRatingFunc? starRatingFunc;
+
+  final Map<String, String>? httpHeaders;
 
   Future<void> loadData() async {
     var file = File("${App.dataPath}/anime_source/$key.data");
@@ -335,6 +337,7 @@ class AnimeSource {
     this.enableTagsTranslate,
     this.starRatingFunc,
     this.isBangumi,
+    this.httpHeaders,
   );
 }
 

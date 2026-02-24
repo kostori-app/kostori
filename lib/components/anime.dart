@@ -19,7 +19,6 @@ class AnimeTile extends StatelessWidget {
     super.key,
     required this.anime,
     this.isRecommend = false,
-    this.isGrid = false,
     this.enableLongPressed = true,
     this.enableFavorite = true,
     this.enableHistory = false,
@@ -39,8 +38,6 @@ class AnimeTile extends StatelessWidget {
   final bool enableHistory;
 
   final bool isRecommend;
-
-  final bool isGrid;
 
   final String? badge;
 
@@ -67,21 +64,9 @@ class AnimeTile extends StatelessWidget {
           heroID: heroID,
         ),
       );
-    } else if (isGrid) {
-      if (anime.viewMore != null && anime.viewMore?.attributes != null) {
-        var context = App.mainNavigatorKey!.currentContext!;
-        anime.viewMore!.jump(context);
-      } else {
-        App.mainNavigatorKey?.currentContext?.to(
-          () => AnimePage(
-            id: anime.id,
-            sourceKey: anime.sourceKey,
-            cover: anime.cover,
-            title: anime.title,
-            heroID: heroID,
-          ),
-        );
-      }
+    } else if (anime.viewMore != null && anime.viewMore?.attributes != null) {
+      var context = App.mainNavigatorKey!.currentContext!;
+      anime.viewMore!.jump(context);
     } else {
       App.mainNavigatorKey?.currentContext?.to(
         () => AnimePage(
@@ -775,7 +760,6 @@ class SliverGridAnimes extends StatefulWidget {
     this.enableFavorite,
     this.enableHistory,
     this.isRecommend,
-    this.isGrid,
     this.asSliver = true,
   });
 
@@ -789,17 +773,15 @@ class SliverGridAnimes extends StatefulWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  final void Function(Anime)? onTap;
+  final void Function(Anime, int heroID)? onTap;
 
-  final void Function(Anime)? onLongPressed;
+  final void Function(Anime, int heroID)? onLongPressed;
 
   final bool? enableFavorite;
 
   final bool? enableHistory;
 
   final bool? isRecommend;
-
-  final bool? isGrid;
 
   final bool asSliver;
 
@@ -877,7 +859,6 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
       enableFavorite: widget.enableFavorite,
       enableHistory: widget.enableHistory,
       isRecommend: widget.isRecommend,
-      isGrid: widget.isGrid,
       asSliver: widget.asSliver,
     );
   }
@@ -896,7 +877,6 @@ class _SliverGridAnimes extends StatelessWidget {
     this.enableFavorite,
     this.enableHistory,
     this.isRecommend,
-    this.isGrid,
     this.asSliver = true,
   });
 
@@ -912,17 +892,15 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final List<MenuEntry> Function(Anime)? menuBuilder;
 
-  final void Function(Anime)? onTap;
+  final void Function(Anime, int heroID)? onTap;
 
-  final void Function(Anime)? onLongPressed;
+  final void Function(Anime, int heroID)? onLongPressed;
 
   final bool? enableFavorite;
 
   final bool? enableHistory;
 
   final bool? isRecommend;
-
-  final bool? isGrid;
 
   final bool asSliver;
 
@@ -941,19 +919,21 @@ class _SliverGridAnimes extends StatelessWidget {
           var anime = AnimeTile(
             anime: animes[index],
             isRecommend: isRecommend ?? false,
-            isGrid: isGrid ?? false,
             enableFavorite: enableFavorite ?? true,
             enableHistory: enableHistory ?? false,
             badge: badge,
             menuOptions: menuBuilder?.call(animes[index]),
-            onTap: onTap != null ? () => onTap!(animes[index]) : null,
+            onTap: onTap != null
+                ? () => onTap!(animes[index], heroIDs[index])
+                : null,
             onLongPressed: onLongPressed != null
-                ? () => onLongPressed!(animes[index])
+                ? () => onLongPressed!(animes[index], heroIDs[index])
                 : null,
             heroID: heroIDs[index],
           );
           if (selection == null) return anime;
           return AnimatedContainer(
+            key: ValueKey(animes[index].id),
             duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
               color: isSelected
@@ -987,14 +967,15 @@ class _SliverGridAnimes extends StatelessWidget {
           var anime = AnimeTile(
             anime: animes[index],
             isRecommend: isRecommend ?? false,
-            isGrid: isGrid ?? false,
             enableFavorite: enableFavorite ?? true,
             enableHistory: enableHistory ?? false,
             badge: badge,
             menuOptions: menuBuilder?.call(animes[index]),
-            onTap: onTap != null ? () => onTap!(animes[index]) : null,
+            onTap: onTap != null
+                ? () => onTap!(animes[index], heroIDs[index])
+                : null,
             onLongPressed: onLongPressed != null
-                ? () => onLongPressed!(animes[index])
+                ? () => onLongPressed!(animes[index], heroIDs[index])
                 : null,
             heroID: heroIDs[index],
           );
@@ -1043,581 +1024,6 @@ String? isBlocked(Anime item) {
     }
   }
   return null;
-}
-
-class AnimeList extends StatefulWidget {
-  const AnimeList({
-    super.key,
-    this.loadPage,
-    this.loadNext,
-    this.leadingSliver,
-    this.trailingSliver,
-    this.errorLeading,
-    this.menuBuilder,
-    this.controller,
-    this.refreshHandlerCallback,
-    this.enablePageStorage = false,
-  });
-
-  final Future<Res<List<Anime>>> Function(int page)? loadPage;
-
-  final Future<Res<List<Anime>>> Function(String? next)? loadNext;
-
-  final Widget? leadingSliver;
-
-  final Widget? trailingSliver;
-
-  final Widget? errorLeading;
-
-  final List<MenuEntry> Function(Anime)? menuBuilder;
-
-  final ScrollController? controller;
-
-  final void Function(VoidCallback c)? refreshHandlerCallback;
-
-  final bool enablePageStorage;
-
-  @override
-  State<AnimeList> createState() => AnimeListState();
-}
-
-class AnimeListState extends State<AnimeList> {
-  int? _maxPage;
-
-  final Map<int, List<Anime>> _data = {};
-
-  int _page = 1;
-
-  String? _error;
-
-  final Map<int, bool> _loading = {};
-
-  String? _nextUrl;
-
-  late bool enablePageStorage = widget.enablePageStorage;
-
-  Map<String, dynamic> get state => {
-    'maxPage': _maxPage,
-    'data': _data,
-    'page': _page,
-    'error': _error,
-    'loading': _loading,
-    'nextUrl': _nextUrl,
-  };
-
-  void restoreState(Map<String, dynamic>? state) {
-    if (state == null || !enablePageStorage) {
-      return;
-    }
-    _maxPage = state['maxPage'];
-    _data.clear();
-    _data.addAll(state['data']);
-    _page = state['page'];
-    _error = state['error'];
-    _loading.clear();
-    _loading.addAll(state['loading']);
-    _nextUrl = state['nextUrl'];
-  }
-
-  void storeState() {
-    if (enablePageStorage) {
-      PageStorage.of(context).writeState(context, state);
-    }
-  }
-
-  void refresh() {
-    _data.clear();
-    _page = 1;
-    _maxPage = null;
-    _error = null;
-    _nextUrl = null;
-    _loading.clear();
-    storeState();
-    setState(() {});
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    restoreState(PageStorage.of(context).readState(context));
-    widget.refreshHandlerCallback?.call(refresh);
-  }
-
-  void remove(Anime c) {
-    if (_data[_page] == null || !_data[_page]!.remove(c)) {
-      for (var page in _data.values) {
-        if (page.remove(c)) {
-          break;
-        }
-      }
-    }
-    setState(() {});
-  }
-
-  Widget _buildCompactPageSelector() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              String value = '';
-              showDialog(
-                context: App.rootContext,
-                builder: (context) {
-                  return ContentDialog(
-                    title: "Jump to page".tl,
-                    content: TextField(
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: "Page".tl),
-                      inputFormatters: <TextInputFormatter>[
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      onChanged: (v) {
-                        value = v;
-                      },
-                    ).paddingHorizontal(16),
-                    actions: [
-                      Button.filled(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          var page = int.tryParse(value);
-                          if (page == null) {
-                            context.showMessage(message: "Invalid page".tl);
-                          } else {
-                            if (page > 0 &&
-                                (_maxPage == null || page <= _maxPage!)) {
-                              setState(() {
-                                _error = null;
-                                _page = page;
-                              });
-                            } else {
-                              context.showMessage(message: "Invalid page".tl);
-                            }
-                          }
-                        },
-                        child: Text("Apply".tl),
-                      ),
-                    ],
-                  );
-                },
-              );
-            },
-            child: Container(
-              margin: EdgeInsets.zero,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
-              ),
-            ),
-          ),
-        ),
-        Row(
-          children: [
-            _buildAnimeButton(
-              context: context,
-              icon: Icons.chevron_left,
-              tooltip: "Back".tl,
-              enabled: _page > 1,
-              onPressed: _page > 1
-                  ? () {
-                      setState(() {
-                        _error = null;
-                        _page--;
-                      });
-                    }
-                  : null,
-            ),
-            const SizedBox(width: 12),
-            _buildAnimeButton(
-              context: context,
-              icon: Icons.chevron_right,
-              tooltip: "Next".tl,
-              enabled: _page < (_maxPage ?? (_page + 1)),
-              onPressed: _page < (_maxPage ?? (_page + 1))
-                  ? () {
-                      setState(() {
-                        _error = null;
-                        _page++;
-                      });
-                    }
-                  : null,
-            ),
-          ],
-        ),
-      ],
-    ).paddingVertical(8).paddingHorizontal(24);
-  }
-
-  Widget _buildFullPageSelector() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        SizedBox(),
-        Row(
-          children: [
-            _buildAnimeButton(
-              context: context,
-              icon: Icons.first_page,
-              tooltip: "First".tl,
-              enabled: _page > 1,
-              onPressed: _page > 1
-                  ? () {
-                      setState(() {
-                        _error = null;
-                        _page = 1;
-                      });
-                    }
-                  : null,
-            ),
-            const SizedBox(width: 4),
-            _buildAnimeButton(
-              context: context,
-              icon: Icons.chevron_left,
-              tooltip: "Back".tl,
-              enabled: _page > 1,
-              onPressed: _page > 1
-                  ? () {
-                      setState(() {
-                        _error = null;
-                        _page--;
-                      });
-                    }
-                  : null,
-            ),
-            const SizedBox(width: 8),
-            Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  String value = '';
-                  showDialog(
-                    context: App.rootContext,
-                    builder: (context) {
-                      return ContentDialog(
-                        title: "Jump to page".tl,
-                        content: TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(labelText: "Page".tl),
-                          inputFormatters: <TextInputFormatter>[
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          onChanged: (v) {
-                            value = v;
-                          },
-                        ).paddingHorizontal(16),
-                        actions: [
-                          Button.filled(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              var page = int.tryParse(value);
-                              if (page == null) {
-                                context.showMessage(message: "Invalid page".tl);
-                              } else {
-                                if (page > 0 &&
-                                    (_maxPage == null || page <= _maxPage!)) {
-                                  setState(() {
-                                    _error = null;
-                                    _page = page;
-                                  });
-                                } else {
-                                  context.showMessage(
-                                    message: "Invalid page".tl,
-                                  );
-                                }
-                              }
-                            },
-                            child: Text("Apply".tl),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                child: Container(
-                  margin: EdgeInsets.zero,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest.toOpacity(0.3),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            _buildAnimeButton(
-              context: context,
-              icon: Icons.chevron_right,
-              tooltip: "Next".tl,
-              enabled: _page < (_maxPage ?? (_page + 1)),
-              onPressed: _page < (_maxPage ?? (_page + 1))
-                  ? () {
-                      setState(() {
-                        _error = null;
-                        _page++;
-                      });
-                    }
-                  : null,
-            ),
-            const SizedBox(width: 4),
-            _buildAnimeButton(
-              context: context,
-              icon: Icons.last_page,
-              tooltip: "Last".tl,
-              enabled: _page < (_maxPage ?? (_page + 1)),
-              onPressed: _page < (_maxPage ?? (_page + 1))
-                  ? () {
-                      setState(() {
-                        _error = null;
-                        _page = _maxPage ?? (_page + 1);
-                      });
-                    }
-                  : null,
-            ),
-          ],
-        ),
-        SizedBox(),
-      ],
-    ).paddingVertical(8).paddingHorizontal(24);
-  }
-
-  Widget _buildAnimeButton({
-    required BuildContext context,
-    required IconData icon,
-    required String tooltip,
-    required bool enabled,
-    required VoidCallback? onPressed,
-    double size = 48,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: Ink(
-          width: size,
-          height: size,
-          child: InkWell(
-            onTap: enabled ? onPressed : null,
-            borderRadius: BorderRadius.circular(16),
-            overlayColor: WidgetStateProperty.resolveWith((states) {
-              if (states.contains(WidgetState.pressed)) {
-                return Theme.of(context).colorScheme.primary.toOpacity(0.2);
-              }
-              if (states.contains(WidgetState.hovered)) {
-                return Theme.of(context).colorScheme.secondary.toOpacity(0.1);
-              }
-              return null;
-            }),
-            child: Center(
-              child: Icon(
-                icon,
-                color: enabled
-                    ? colorScheme.primary
-                    : colorScheme.onSurface.toOpacity(0.3),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _loadPage(int page) async {
-    if (widget.loadPage == null && widget.loadNext == null) {
-      _error = "loadPage and loadNext can't be null at the same time";
-      Future.microtask(() {
-        setState(() {});
-      });
-    }
-    if (_loading[page] == true) {
-      return;
-    }
-    _loading[page] = true;
-    try {
-      if (widget.loadPage != null) {
-        var res = await widget.loadPage!(page);
-        if (!mounted) return;
-        if (res.success) {
-          if (res.data.isEmpty) {
-            _data[page] = const [];
-            setState(() {
-              _maxPage = page;
-            });
-          } else {
-            setState(() {
-              _data[page] = res.data;
-              if (res.subData != null && res.subData is int) {
-                _maxPage = res.subData;
-              }
-            });
-          }
-        } else {
-          setState(() {
-            _error = res.errorMessage ?? "Unknown error".tl;
-          });
-        }
-      } else {
-        try {
-          while (_data[page] == null) {
-            await _fetchNext();
-          }
-          if (mounted) {
-            setState(() {});
-          }
-        } catch (e) {
-          if (mounted) {
-            setState(() {
-              _error = e.toString();
-            });
-          }
-        }
-      }
-    } finally {
-      _loading[page] = false;
-      storeState();
-    }
-  }
-
-  Future<void> _fetchNext() async {
-    var res = await widget.loadNext!(_nextUrl);
-    _data[_data.length + 1] = res.data;
-    if (res.subData == null) {
-      _maxPage = _data.length;
-    } else {
-      _nextUrl = res.subData;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_error != null) {
-      return Stack(
-        children: [
-          Positioned.fill(
-            child: Column(
-              children: [
-                if (widget.errorLeading != null) widget.errorLeading!,
-                Expanded(
-                  child: NetworkError(
-                    withAppbar: false,
-                    message: _error!,
-                    retry: () {
-                      setState(() {
-                        _error = null;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            right: 0,
-            left: 0,
-            bottom: 0,
-            child: Stack(
-              children: [
-                ClipRect(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                    child: Container(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surface.toOpacity(0.85),
-                      child: _buildCompactPageSelector(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-    if (_data[_page] == null) {
-      _loadPage(_page);
-      return Column(
-        children: [
-          if (widget.errorLeading != null) widget.errorLeading!,
-          const Expanded(child: Center(child: CircularProgressIndicator())),
-        ],
-      );
-    }
-
-    Widget pageSelecto = Container(
-      height: 46,
-      decoration: BoxDecoration(color: Colors.transparent),
-      child: context.width <= changePoint
-          ? _buildCompactPageSelector()
-          : _buildFullPageSelector(),
-    );
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: SmoothCustomScrollView(
-            key: enablePageStorage ? PageStorageKey('scroll$_page') : null,
-            controller: widget.controller,
-            slivers: [
-              if (widget.leadingSliver != null) widget.leadingSliver!,
-              SliverGridAnimes(
-                animes: _data[_page] ?? const [],
-                menuBuilder: widget.menuBuilder,
-                isGrid: true,
-              ),
-              if (widget.trailingSliver != null) widget.trailingSliver!,
-              SliverPadding(
-                padding: EdgeInsets.only(
-                  bottom: 46 + MediaQuery.of(context).padding.bottom + 4,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          right: 0,
-          left: 0,
-          bottom: 0,
-          child: Stack(
-            children: [
-              ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                  child: Container(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surface.toOpacity(0.85),
-                    child: pageSelecto,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class StarRating extends StatelessWidget {
@@ -1902,6 +1308,7 @@ class SimpleAnimeTile extends StatelessWidget {
     required this.anime,
     this.onTap,
     this.withTitle = false,
+    this.heroID,
   });
 
   final Anime anime;
@@ -1909,6 +1316,8 @@ class SimpleAnimeTile extends StatelessWidget {
   final void Function()? onTap;
 
   final bool withTitle;
+
+  final int? heroID;
 
   @override
   Widget build(BuildContext context) {
@@ -1935,13 +1344,23 @@ class SimpleAnimeTile extends StatelessWidget {
       child: child,
     );
 
+    if (heroID != null) {
+      child = Hero(tag: "cover$heroID", child: child);
+    }
+
     child = AnimatedTapRegion(
       borderRadius: 12,
       onTap:
           onTap ??
           () {
             context.to(
-              () => AnimePage(id: anime.id, sourceKey: anime.sourceKey),
+              () => AnimePage(
+                id: anime.id,
+                sourceKey: anime.sourceKey,
+                cover: anime.cover,
+                title: anime.title,
+                heroID: heroID,
+              ),
             );
           },
       child: child,
@@ -1997,39 +1416,47 @@ class _BangumiCardState extends State<BangumiCard> {
       children: [
         Text(
           '${bangumiItem.score}',
-          style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
         ),
         SizedBox(width: 5),
         Container(
-          padding: EdgeInsets.fromLTRB(8, 5, 8, 5), // 可选，设置内边距
+          padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8), // 设置圆角半径
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
-              width: 1.0, // 设置边框宽度
+              width: 1.0,
             ),
           ),
           child: Text(
             Utils.getRatingLabel(bangumiItem.score),
-            style: TextStyle(fontSize: 10.0, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
           ),
         ),
         SizedBox(width: 4),
         Column(
-          crossAxisAlignment: CrossAxisAlignment.end, // 右对齐
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            Text(
+              '#${bangumiItem.rank}',
+              style: TextStyle(
+                fontSize: App.isAndroid ? 7 : 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
             RatingBarIndicator(
               itemCount: 5,
-              rating: bangumiItem.score.toDouble() / 2,
+              rating: bangumiItem.score / 2,
               itemBuilder: (context, index) => const Icon(Icons.star_rounded),
-              itemSize: 16.0,
+              itemSize: App.isAndroid ? 12 : 14,
             ),
             Text(
-              '@t reviews | #@r'.tlParams({
-                'r': bangumiItem.rank,
-                't': bangumiItem.total,
-              }),
-              style: TextStyle(fontSize: 10),
+              '@t reviews'.tlParams({'t': bangumiItem.total}),
+              style: TextStyle(
+                fontSize: App.isAndroid ? 7 : 9,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -2040,6 +1467,39 @@ class _BangumiCardState extends State<BangumiCard> {
   @override
   Widget build(BuildContext context) {
     String? image = widget.bangumiItem.images['large'];
+    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+    Widget containerBackground(Widget child) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.6)
+                : Colors.black.toOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: child,
+        ),
+      );
+    }
+
+    Widget backdropFilter(Widget child) {
+      return BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          color: context.brightness == Brightness.light
+              ? Colors.white.toOpacity(0.3)
+              : Colors.black.toOpacity(0.3),
+          child: child,
+        ),
+      );
+    }
 
     return AnimatedTapRegion(
       borderRadius: 8,
@@ -2051,7 +1511,6 @@ class _BangumiCardState extends State<BangumiCard> {
         clipBehavior: Clip.antiAlias,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // **背景图片（无Hero）**
             Widget backgroundImage = BangumiWidget.kostoriImage(
               context,
               image!,
@@ -2067,8 +1526,6 @@ class _BangumiCardState extends State<BangumiCard> {
               clipBehavior: Clip.antiAlias,
               child: backgroundImage,
             );
-
-            // **前景图片（保留Hero动画）**
             Widget foregroundImage = Hero(
               tag: '${widget.heroTag}-${widget.bangumiItem.id}',
               child: BangumiWidget.kostoriImage(
@@ -2101,153 +1558,57 @@ class _BangumiCardState extends State<BangumiCard> {
 
             return Stack(
               children: [
-                // 图片作为背景层（可调整透明度或添加滤镜）
                 Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.2, // 调整背景图片透明度
-                    child: backgroundImage,
-                  ),
+                  child: Opacity(opacity: 0.2, child: backgroundImage),
                 ),
-
-                // 保持原有的Column布局
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 原有图片显示
                       SizedBox(
                         height: constraints.maxHeight * 0.85,
                         width: constraints.maxWidth,
                         child: Stack(
                           children: [
                             Positioned.fill(child: foregroundImage),
-                            Positioned(
-                              bottom: App.isAndroid ? 42 : 46,
-                              right: 8,
-                              child: ClipRRect(
-                                // 确保圆角区域也能正确裁剪模糊效果
-                                borderRadius: BorderRadius.circular(8),
-                                child: Stack(
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    Positioned.fill(
-                                      child: Stack(
-                                        children: [
-                                          // 背景噪声图（建议用半透明 PNG 或 SVG）
-                                          Positioned.fill(
-                                            child: Opacity(
-                                              opacity: 0.6,
-                                              child: Image.asset(
-                                                'assets/img/noise.png',
-                                                // 模拟毛玻璃颗粒的纹理图
-                                                fit: BoxFit.cover,
-                                                color:
-                                                    context.brightness ==
-                                                        Brightness.light
-                                                    ? Colors.white.toOpacity(
-                                                        0.3,
-                                                      )
-                                                    : Colors.black.toOpacity(
-                                                        0.3,
-                                                      ),
-                                                colorBlendMode:
-                                                    BlendMode.srcOver,
+                                    if (bangumiItem.airTime != null)
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: animeCardUseBlur
+                                            ? backdropFilter(
+                                                Text(
+                                                  bangumiItem.airDate,
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              )
+                                            : containerBackground(
+                                                Text(
+                                                  bangumiItem.airDate,
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
-
-                                          // 渐变遮罩（调整透明度过渡）
-                                          Positioned.fill(
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    context.brightness ==
-                                                        Brightness.light
-                                                    ? Colors.white.toOpacity(
-                                                        0.3,
-                                                      )
-                                                    : Colors.black.toOpacity(
-                                                        0.3,
-                                                      ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
                                       ),
-                                    ),
-                                    // 原有内容（需要在模糊层之上）
-                                    Padding(
-                                      padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-                                      child: Text(
-                                        '放送时间: ${DateFormat('HH:mm').format(DateTime.parse(bangumiItem.airTime as String).toLocal())}',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 4,
-                              right: 4,
-                              child: ClipRRect(
-                                // 确保圆角区域也能正确裁剪模糊效果
-                                borderRadius: BorderRadius.circular(8),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Stack(
-                                        children: [
-                                          // 背景噪声图（建议用半透明 PNG 或 SVG）
-                                          Positioned.fill(
-                                            child: Opacity(
-                                              opacity: 0.6,
-                                              child: Image.asset(
-                                                'assets/img/noise.png',
-                                                // 模拟毛玻璃颗粒的纹理图
-                                                fit: BoxFit.cover,
-                                                color:
-                                                    context.brightness ==
-                                                        Brightness.light
-                                                    ? Colors.white.toOpacity(
-                                                        0.3,
-                                                      )
-                                                    : Colors.black.toOpacity(
-                                                        0.3,
-                                                      ),
-                                                colorBlendMode:
-                                                    BlendMode.srcOver,
-                                              ),
-                                            ),
-                                          ),
-
-                                          // 渐变遮罩（调整透明度过渡）
-                                          Positioned.fill(
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    context.brightness ==
-                                                        Brightness.light
-                                                    ? Colors.white.toOpacity(
-                                                        0.3,
-                                                      )
-                                                    : Colors.black.toOpacity(
-                                                        0.3,
-                                                      ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-
-                                    // 原有内容（需要在模糊层之上）
-                                    Padding(
-                                      padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-                                      child: _score(),
+                                    const SizedBox(height: 4),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: animeCardUseBlur
+                                          ? backdropFilter(_score())
+                                          : containerBackground(_score()),
                                     ),
                                   ],
                                 ),
@@ -2256,7 +1617,6 @@ class _BangumiCardState extends State<BangumiCard> {
                           ],
                         ),
                       ),
-                      // 文字部分
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(

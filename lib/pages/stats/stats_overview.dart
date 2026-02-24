@@ -20,15 +20,35 @@ class StatsOverviewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
       title: title,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: StatsOverview(
-            stats: stats,
-            selectedDate: selectedDay,
-            timeRange: timeRange,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: RepaintBoundary(
+                  key: repaintKey,
+                  child: StatsOverview(
+                    stats: stats,
+                    selectedDate: selectedDay,
+                    timeRange: timeRange,
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            bottom: 10,
+            right: 10,
+            child: FilledButton(
+              onPressed: () {
+                captureAndSave();
+                App.rootContext.pop();
+              },
+              child: Text('Share'.tl),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -352,6 +372,23 @@ class StatsOverview extends StatelessWidget {
     );
   }
 
+  String _timeRangeTitle(TimeRange range) {
+    switch (range) {
+      case TimeRange.daily:
+        return '当天';
+      case TimeRange.weekly:
+        return '当周';
+      case TimeRange.monthly:
+        return '当月';
+      case TimeRange.quarterly:
+        return '当季';
+      case TimeRange.halfYearly:
+        return '半年';
+      case TimeRange.yearly:
+        return '当年';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dataList = _sortedTagCounts
@@ -411,6 +448,22 @@ class StatsOverview extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        SizedBox(height: 32.0),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Text(
+                _timeRangeTitle(timeRange),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+
         if (rankedItemsWithCover.isNotEmpty) ...[
           buildMaterialWidget(
             context: context,
@@ -452,7 +505,6 @@ class StatsOverview extends StatelessWidget {
                                       stat.cover!,
                                       width: width,
                                       height: height,
-                                      showPlaceholder: true,
                                     ),
                                   ),
 
@@ -585,7 +637,7 @@ class StatsOverview extends StatelessWidget {
                       context,
                       icon: Icons.play_circle_fill,
                       title: '观看时长',
-                      value: _formatHMS(totalWatchSeconds),
+                      value: Utils.formatHMS(totalWatchSeconds),
                       color: Colors.green,
                     ),
                     _buildStatCard(

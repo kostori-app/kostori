@@ -88,11 +88,17 @@ class _AboutSettingsState extends State<AboutSettings> {
                       setState(() {
                         isUpdateLog = true;
                       });
-                      await updateLog(context).then((value) {
-                        setState(() {
-                          isUpdateLog = false;
-                        });
-                      });
+                      try {
+                        await updateLog(context);
+                      } catch (e) {
+                        App.rootContext.showMessage(message: '请求失败');
+                      } finally {
+                        if (mounted) {
+                          setState(() {
+                            isUpdateLog = false;
+                          });
+                        }
+                      }
                     },
                   ).fixHeight(32),
                 ),
@@ -355,11 +361,25 @@ bool _compareVersion(String version1, String version2) {
 }
 
 Future<void> updateLog(BuildContext context) async {
-  final response = await AppDio().request(
-    'https://api.github.com/repos/kostori-app/kostori/releases',
-    options: Options(method: 'GET'),
-  );
-  final releases = response.data as List;
+  List<dynamic> releases;
+  try {
+    final response = await AppDio().request(
+      'https://api.github.com/repos/kostori-app/kostori/releases',
+      options: Options(method: 'GET'),
+    );
+
+    releases = response.data as List;
+  } on DioException catch (e) {
+    final message =
+        e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
+
+    App.rootContext.showMessage(message: message);
+
+    return;
+  } catch (e) {
+    App.rootContext.showMessage(message: e.toString());
+    return;
+  }
   final dragProgress = ValueNotifier(0.0);
 
   showGeneralDialog(
@@ -885,14 +905,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
     return ContentDialog(
       title: "New version available".tl,
       content: isLoading
-          ? Center(
-              child: MiscComponents.placeholder(
-                context,
-                50,
-                50,
-                Colors.transparent,
-              ),
-            )
+          ? Center(child: KostoriRefreshIndicator())
           : Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

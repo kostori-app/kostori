@@ -7,12 +7,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
+import 'package:kostori/pages/watcher/player_item_base_panel.dart';
 import 'package:kostori/pages/watcher/player_item_panel.dart';
+import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
+import 'package:kostori/utils/remote.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
@@ -184,6 +190,59 @@ class _PlayerItemState extends State<PlayerItem>
 
   void update() {
     setState(() {});
+  }
+
+  MenuButton _buildMenuItems() {
+    return MenuButton(
+      message: "More".tl,
+      entries: [
+        if (App.isAndroid)
+          MenuEntry(
+            text: (appdata.settings['audioOutType'] ?? true)
+                ? "Audio Option: \n Low Latency".tl
+                : "Audio Option: \n Compatibility".tl,
+            onClick: () async {
+              try {
+                await playerController.changeAudioOutType();
+                App.rootContext.showMessage(message: "Switch Successful".tl);
+              } catch (e) {
+                App.rootContext.showMessage(message: "Switch Failed".tl);
+              }
+            },
+          ),
+        MenuEntry(
+          text: !playerController.glimmerEffect ? "微光模式:关".tl : "微光模式:开".tl,
+          onClick: () {
+            glimmerEffectMode();
+          },
+        ),
+        MenuEntry(
+          text: "Remote Cast".tl,
+          onClick: () {
+            bool needRestart = playerController.playing;
+            playerController.pause();
+            RemotePlay().castVideo(playerController.videoUrl).whenComplete(() {
+              if (needRestart) {
+                playerController.play();
+              }
+            });
+          },
+        ),
+        if (!playerController.isFullScreen)
+          MenuEntry(
+            text: "Logs".tl,
+            onClick: () {
+              context.to(() => const LogsPage());
+            },
+          ),
+        MenuEntry(
+          text: "Player Details".tl,
+          onClick: () {
+            showVideoInfo();
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -447,6 +506,15 @@ class _PlayerItemState extends State<PlayerItem>
                             playerController: playerController,
                           ),
                         ),
+                      PlayerItemBasePanel(
+                        playerController: playerController,
+                        handleProgressBarDragStart: handleProgressBarDragStart,
+                        handleProgressBarDragEnd: handleProgressBarDragEnd,
+                        animationController: animationController!,
+                        currentPosition: playerController.currentPosition,
+                        buffer: playerController.buffer,
+                        duration: playerController.duration,
+                      ),
                       GestureDetector(
                         onTap: () {
                           _handleTap();
@@ -476,17 +544,32 @@ class _PlayerItemState extends State<PlayerItem>
                           height: double.infinity,
                         ),
                       ),
-                      PlayerItemPanel(
-                        openMenu: widget.openMenu,
-                        handleProgressBarDragStart: handleProgressBarDragStart,
-                        handleProgressBarDragEnd: handleProgressBarDragEnd,
-                        animationController: animationController!,
-                        startHideTimer: startHideTimer,
-                        cancelHideTimer: cancelHideTimer,
-                        showVideoInfo: showVideoInfo,
-                        playerController: playerController,
-                        glimmerEffectMode: glimmerEffectMode,
-                      ),
+                      if (!playerController.isPortraitFullscreen)
+                        PlayerItemPanel(
+                          openMenu: widget.openMenu,
+                          handleProgressBarDragStart:
+                              handleProgressBarDragStart,
+                          handleProgressBarDragEnd: handleProgressBarDragEnd,
+                          animationController: animationController!,
+                          startHideTimer: startHideTimer,
+                          cancelHideTimer: cancelHideTimer,
+                          showVideoInfo: showVideoInfo,
+                          playerController: playerController,
+                          buildMenuItems: _buildMenuItems(),
+                        )
+                      else
+                        PlayerItemPortraitPanel(
+                          playerController: playerController,
+                          openMenu: widget.openMenu,
+                          handleProgressBarDragStart:
+                              handleProgressBarDragStart,
+                          handleProgressBarDragEnd: handleProgressBarDragEnd,
+                          animationController: animationController!,
+                          startHideTimer: startHideTimer,
+                          cancelHideTimer: cancelHideTimer,
+                          showVideoInfo: showVideoInfo,
+                          buildMenuItems: _buildMenuItems(),
+                        ),
                       // / 播放器手势控制
                       Positioned.fill(
                         left: 16,
@@ -654,10 +737,32 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
               0,
               1,
               0,
-            ]), // 轻微亮度增强
-            child: Video(
-              controller: widget.controller.playerController,
-              fit: BoxFit.cover,
+            ]),
+            child: Stack(
+              children: [
+                Video(
+                  controller: widget.controller.playerController,
+                  fit: BoxFit.cover,
+                  controls: null,
+                ),
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 1.0,
+                      colors: [
+                        Colors.transparent,
+                        Color.fromRGBO(0, 0, 0, 0.2),
+                        Color.fromRGBO(0, 0, 0, 0.5),
+                        Color.fromRGBO(0, 0, 0, 0.7),
+                      ],
+                      stops: [0.0, 0.6, 0.85, 1.0],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

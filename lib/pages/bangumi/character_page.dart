@@ -5,14 +5,16 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/error_widget.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class CharacterPage extends StatefulWidget {
   const CharacterPage({super.key, required this.characterID});
@@ -23,13 +25,15 @@ class CharacterPage extends StatefulWidget {
   State<CharacterPage> createState() => _CharacterPageState();
 }
 
-class _CharacterPageState extends State<CharacterPage> {
+class _CharacterPageState extends State<CharacterPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
   late CharacterFullItem characterFullItem;
-  bool loadingCharacter = true;
-  bool loadingCharacterCasts = true;
+  bool loadingCharacter = false;
+  bool loadingCharacterCasts = false;
+  bool loadingComments = false;
   List<CharacterCommentItem> commentsList = [];
   List<CharacterCastsItem> characterCastsList = [];
-  bool loadingComments = true;
   bool commentsQueryTimeout = false;
   bool characterCastsQueryTimeout = false;
 
@@ -94,43 +98,61 @@ class _CharacterPageState extends State<CharacterPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadCharacter();
-      loadComments();
-      loadCharacterCasts();
+    _tabController = TabController(length: 3, vsync: this);
+    loadCharacter();
+    _tabController.addListener(() {
+      final index = _tabController.index;
+      if (index == 1 &&
+          commentsList.isEmpty &&
+          !loadingComments &&
+          !commentsQueryTimeout) {
+        loadComments();
+      }
+
+      if (index == 2 &&
+          characterCastsList.isEmpty &&
+          !loadingCharacterCasts &&
+          !characterCastsQueryTimeout) {
+        loadCharacterCasts();
+      }
     });
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        body: Column(
-          children: [
-            const PreferredSize(
-              preferredSize: Size.fromHeight(kToolbarHeight),
-              child: Material(
-                child: TabBar(
-                  tabs: [
-                    Tab(text: '角色资料'),
-                    Tab(text: '吐槽箱'),
-                    Tab(text: '角色关联'),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  characterInfoBody,
-                  characterCommentsBody,
-                  characterCastsBody,
+    return Scaffold(
+      body: Column(
+        children: [
+          PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight),
+            child: Material(
+              child: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: '角色资料'),
+                  Tab(text: '吐槽箱'),
+                  Tab(text: '角色关联'),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                characterInfoBody,
+                characterCommentsBody,
+                characterCastsBody,
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -147,13 +169,7 @@ class _CharacterPageState extends State<CharacterPage> {
                   children: [
                     Expanded(
                       child: loadingCharacter
-                          ? Center(
-                              child: MiscComponents.placeholder(
-                                context,
-                                constraints.maxWidth,
-                                constraints.maxHeight,
-                              ),
-                            )
+                          ? Center(child: KostoriRefreshIndicator())
                           : (characterFullItem.id == 0
                                 ? GeneralErrorWidget(
                                     errMsg:
@@ -250,7 +266,7 @@ class _CharacterPageState extends State<CharacterPage> {
                                                       'Profile Information'.tl,
                                                       style: Theme.of(context)
                                                           .textTheme
-                                                          .titleSmall
+                                                          .titleLarge
                                                           ?.copyWith(
                                                             fontWeight:
                                                                 FontWeight.bold,
@@ -276,7 +292,7 @@ class _CharacterPageState extends State<CharacterPage> {
                                                           .tl,
                                                       style: Theme.of(context)
                                                           .textTheme
-                                                          .titleSmall
+                                                          .titleLarge
                                                           ?.copyWith(
                                                             fontWeight:
                                                                 FontWeight.bold,
@@ -494,73 +510,123 @@ class _CharacterPageState extends State<CharacterPage> {
                                   horizontal: 8,
                                 ),
                                 child: Card(
-                                  child: Row(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      Expanded(
-                                        child: SizedBox(
-                                          width: 950,
-                                          height: 160,
-                                          child: Stack(
-                                            children: [
-                                              // 主内容：Bangumi Widget
-                                              BangumiWidget.buildDetailedMode(
-                                                context,
-                                                characterCastsList[index]
-                                                    .subject,
-                                                'Casts$index',
-                                              ),
-                                              // 右侧中间的 Text，忽略点击事件
-                                              Positioned(
-                                                right: 8,
-                                                bottom: 8,
-                                                child: IgnorePointer(
-                                                  ignoring: true, // 忽略点击事件
-                                                  child: Column(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.end,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment.end,
-                                                    children: [
-                                                      Text(
-                                                        getRelationName(
-                                                          characterCastsList[index]
-                                                              .type,
-                                                        ).toString(),
-                                                        style: const TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.bold,
+                                      SizedBox(
+                                        height: 160,
+                                        child: BangumiDetailedCard(
+                                          bangumiItem:
+                                              characterCastsList[index].subject,
+                                          heroTag: 'Casts$index',
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: characterCastsList[index].casts.map((
+                                                cast,
+                                              ) {
+                                                final actor = cast.person;
+                                                final relation = cast.relation;
+                                                final name =
+                                                    actor.nameCN.isNotEmpty
+                                                    ? actor.nameCN
+                                                    : actor.name;
+
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        bottom: 6,
+                                                      ),
+                                                  child: Material(
+                                                    color: Colors.transparent,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                    child: InkWell(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                      onTap: () =>
+                                                          _showPersonPage(
+                                                            context,
+                                                            actor.id,
+                                                          ),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 6,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.black12,
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                        ),
+                                                        child: Row(
+                                                          children: [
+                                                            Text(
+                                                              'Voice Actor: @c'
+                                                                  .tlParams({
+                                                                    'c': name,
+                                                                  }),
+                                                              style:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                  ),
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 8,
+                                                            ),
+                                                            Container(
+                                                              width: 1,
+                                                              height: 12,
+                                                              color: Colors
+                                                                  .white24,
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 8,
+                                                            ),
+                                                            Text(
+                                                              relation.nameStr,
+                                                              style:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        12,
+                                                                  ),
+                                                            ),
+                                                          ],
                                                         ),
                                                       ),
-                                                      const SizedBox(height: 4),
-                                                      Text(
-                                                        'Voice Actor: @c'.tlParams({
-                                                          'c':
-                                                              characterCastsList[index]
-                                                                  .actors
-                                                                  .isNotEmpty
-                                                              ? (characterCastsList[index]
-                                                                        .actors[0]
-                                                                        .nameCN
-                                                                        .isNotEmpty
-                                                                    ? characterCastsList[index]
-                                                                          .actors[0]
-                                                                          .nameCN
-                                                                    : characterCastsList[index]
-                                                                          .actors[0]
-                                                                          .name)
-                                                              : '',
-                                                        }),
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                        ),
-                                                      ),
-                                                    ],
+                                                    ),
                                                   ),
-                                                ),
+                                                );
+                                              }).toList(),
+                                            ),
+                                            Spacer(),
+                                            Text(
+                                              getRelationName(
+                                                characterCastsList[index].type,
+                                              ).toString(),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -604,7 +670,7 @@ class _CharacterPageState extends State<CharacterPage> {
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
-                            loadComments();
+                            loadCharacterCasts();
                           },
                           text: 'Reload'.tl,
                         ),
@@ -625,7 +691,7 @@ class _CharacterPageState extends State<CharacterPage> {
                             width: MediaQuery.sizeOf(context).width > 950
                                 ? 950
                                 : MediaQuery.sizeOf(context).width - 32,
-                            child: CharacterCommentsCard.bone(),
+                            child: _buildCastsBone(),
                           ),
                         ),
                       ),
@@ -636,6 +702,71 @@ class _CharacterPageState extends State<CharacterPage> {
             ),
           ],
         );
+      },
+    );
+  }
+
+  Widget _buildCastsBone() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Card(
+        child: Skeletonizer.zone(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(
+                  height: 160,
+                  child: Bone(
+                    width: double.infinity,
+                    height: 160,
+                    uniRadius: 12,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: List.generate(
+                          2,
+                          (index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Bone(width: 180, height: 28, uniRadius: 8),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      const Bone.text(fontSize: 16, width: 60),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPersonPage(BuildContext context, int id) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+        maxWidth: MediaQuery.of(context).size.width < 600
+            ? MediaQuery.of(context).size.width
+            : App.isDesktop
+            ? MediaQuery.of(context).size.width * 9 / 16
+            : MediaQuery.of(context).size.width,
+      ),
+      clipBehavior: Clip.antiAlias,
+      context: context,
+      builder: (context) {
+        return PersonPage(personID: id);
       },
     );
   }

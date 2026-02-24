@@ -16,8 +16,13 @@ class CategoriesPage extends StatefulWidget {
   State<CategoriesPage> createState() => _CategoriesPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage> {
+class _CategoriesPageState extends State<CategoriesPage>
+    with
+        TickerProviderStateMixin,
+        AutomaticKeepAliveClientMixin<CategoriesPage> {
   var categories = <String>[];
+
+  late TabController controller;
 
   void onSettingsChanged() {
     var categories = List.from(
@@ -35,6 +40,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       setState(() {
         this.categories = categories;
       });
+      controller = TabController(length: categories.length, vsync: this);
     }
   }
 
@@ -53,6 +59,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
         .where((element) => allCategories.contains(element))
         .toList();
     appdata.settings.addListener(onSettingsChanged);
+    controller = TabController(length: categories.length, vsync: this);
   }
 
   void addPage() {
@@ -62,6 +69,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   @override
   void dispose() {
     super.dispose();
+    controller.dispose();
     appdata.settings.removeListener(onSettingsChanged);
   }
 
@@ -88,43 +96,45 @@ class _CategoriesPageState extends State<CategoriesPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     if (categories.isEmpty) {
       return buildEmpty();
     }
 
     return Material(
-      child: DefaultTabController(
-        length: categories.length,
-        key: Key(categories.toString()),
-        child: Column(
-          children: [
-            AppTabBar(
-              key: PageStorageKey(categories.toString()),
-              tabs: categories.map((e) {
-                String title = e;
-                try {
-                  title = getCategoryDataWithKey(e).title;
-                } catch (e) {
-                  //
-                }
-                return Tab(text: title, key: Key(e));
-              }).toList(),
-              actionButton: TabActionButton(
-                icon: const Icon(Icons.add),
-                text: "Add".tl,
-                onPressed: addPage,
-              ),
-            ).paddingTop(context.padding.top),
-            Expanded(
-              child: TabBarView(
-                children: categories.map((e) => _CategoryPage(e)).toList(),
-              ),
+      child: Column(
+        children: [
+          AppTabBar(
+            controller: controller,
+            key: PageStorageKey(categories.toString()),
+            tabs: categories.map((e) {
+              String title = e;
+              try {
+                title = getCategoryDataWithKey(e).title;
+              } catch (e) {
+                //
+              }
+              return Tab(text: title, key: Key(e));
+            }).toList(),
+            actionButton: TabActionButton(
+              icon: const Icon(Icons.add),
+              text: "Add".tl,
+              onPressed: addPage,
             ),
-          ],
-        ),
+          ).paddingTop(context.padding.top),
+          Expanded(
+            child: TabBarView(
+              controller: controller,
+              children: categories.map((e) => _CategoryPage(e)).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 typedef ClickTagCallback = void Function(String, String?);
@@ -136,7 +146,7 @@ class _CategoryPage extends StatelessWidget {
 
   CategoryData get data => getCategoryDataWithKey(category);
 
-  String findComicSourceKey() {
+  String findAnimeSourceKey() {
     for (var source in AnimeSource.all()) {
       if (source.categoryData?.key == category) {
         return source.key;

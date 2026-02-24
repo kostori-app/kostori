@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:dlna_dart/dlna.dart';
 import 'package:flutter/material.dart';
-
-import 'package:kostori/components/bean/dialog/dialog_helper.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 
@@ -11,77 +9,175 @@ class RemotePlay {
   Future<void> castVideo(String video) async {
     final searcher = DLNAManager();
     final dlna = await searcher.start();
+
     List<Widget> dlnaDevice = [];
-    await KostoriDialog.show(builder: (BuildContext context) {
-      return StatefulBuilder(builder: (context, setState) {
-        return AlertDialog(
-          title: const Text('远程投屏'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: dlnaDevice,
-            ),
-          ),
-          actions: [
-            const SizedBox(width: 20),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                searcher.stop();
-              },
-              child: Text(
-                '退出',
-                style: TextStyle(color: Theme.of(context).colorScheme.outline),
+    bool isSearching = false;
+    StreamSubscription? subscription;
+
+    await showModalBottomSheet(
+      context: App.rootContext,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(App.rootContext).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            '远程投屏',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+
+                          /// 退出
+                          TextButton(
+                            onPressed: () {
+                              subscription?.cancel();
+                              Navigator.of(context).pop();
+                            },
+                            child: Text(
+                              '退出',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.outline,
+                              ),
+                            ),
+                          ),
+
+                          /// 搜索
+                          TextButton(
+                            onPressed: () {
+                              if (isSearching) return;
+
+                              setState(() {
+                                isSearching = true;
+                                dlnaDevice.clear();
+                              });
+
+                              App.rootContext.showMessage(message: '开始搜索');
+
+                              subscription?.cancel();
+
+                              subscription = dlna.devices.stream.listen((
+                                deviceList,
+                              ) {
+                                setState(() {
+                                  dlnaDevice.clear();
+
+                                  deviceList.forEach((key, value) {
+                                    final type = value.info.deviceType.split(
+                                      ':',
+                                    )[3];
+
+                                    dlnaDevice.add(
+                                      ListTile(
+                                        leading: _deviceUPnPIcon(type),
+                                        title: Text(value.info.friendlyName),
+                                        subtitle: Text(type),
+                                        onTap: () {
+                                          try {
+                                            App.rootContext.showMessage(
+                                              message:
+                                                  '尝试投屏至 ${value.info.friendlyName}',
+                                            );
+                                            DLNADevice(
+                                              value.info,
+                                            ).setUrl(video);
+                                            DLNADevice(value.info).play();
+                                          } catch (e) {
+                                            Log.addLog(
+                                              LogLevel.error,
+                                              'DLNA',
+                                              '$e',
+                                            );
+                                            App.rootContext.showMessage(
+                                              message: 'DLNA 异常: $e',
+                                            );
+                                          }
+                                        },
+                                      ),
+                                    );
+                                  });
+
+                                  isSearching = false;
+                                });
+                              });
+                            },
+                            child: isSearching
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('搜索中...'),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Icon(Icons.search, size: 18),
+                                      SizedBox(width: 6),
+                                      Text('搜索'),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      /// 列表区域
+                      Expanded(
+                        child: dlnaDevice.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.devices_other,
+                                      size: 64,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      isSearching ? '正在搜索设备...' : '未找到设备',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.grey[600]),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView(children: dlnaDevice),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            TextButton(
-                onPressed: () {
-                  setState(() {});
-                  App.rootContext.showMessage(message: '开始搜索');
-                  try {
-                    dlna.devices.stream.listen((deviceList) {
-                      dlnaDevice = [];
-                      deviceList.forEach((key, value) async {
-                        debugPrint('Key: $key');
-                        debugPrint(
-                            'Value: ${value.info.friendlyName} ${value.info.deviceType} ${value.info.URLBase}');
-                        setState(() {
-                          dlnaDevice.add(ListTile(
-                              leading: _deviceUPnPIcon(
-                                  value.info.deviceType.split(':')[3]),
-                              title: Text(value.info.friendlyName),
-                              subtitle:
-                                  Text(value.info.deviceType.split(':')[3]),
-                              onTap: () {
-                                try {
-                                  App.rootContext.showMessage(
-                                      message:
-                                          '尝试投屏至 ${value.info.friendlyName}');
-                                  DLNADevice(value.info).setUrl(video);
-                                  DLNADevice(value.info).play();
-                                } catch (e) {
-                                  Log.addLog(LogLevel.error, 'DLNA', '$e');
-                                  App.rootContext.showMessage(
-                                      message:
-                                          'DLNA 异常: $e \n尝试重新进入 DLNA 投屏或切换设备');
-                                }
-                              }));
-                        });
-                      });
-                    });
-                  } catch (e) {
-                    Log.addLog(LogLevel.error, 'DLNA', '$e');
-                    App.rootContext.showMessage(message: '已在监听');
-                  }
-                },
-                child: Text(
-                  '搜索',
-                  style:
-                      TextStyle(color: Theme.of(context).colorScheme.outline),
-                )),
-          ],
+            );
+          },
         );
-      });
-    }, onDismiss: () {
+      },
+    ).whenComplete(() {
+      subscription?.cancel();
       searcher.stop();
     });
   }
@@ -89,7 +185,6 @@ class RemotePlay {
   Icon _deviceUPnPIcon(String deviceType) {
     switch (deviceType) {
       case 'MediaRenderer':
-        return const Icon(Icons.cast_connected);
       case 'MediaServer':
         return const Icon(Icons.cast_connected);
       case 'InternetGatewayDevice':

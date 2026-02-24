@@ -280,32 +280,51 @@ class _DNSOverrides extends StatefulWidget {
 }
 
 class __DNSOverridesState extends State<_DNSOverrides> {
-  var overrides = <(TextEditingController, TextEditingController)>[];
+  var overrides = <(bool, TextEditingController, TextEditingController)>[];
 
   @override
   void initState() {
-    for (var entry in (appdata.settings['dnsOverrides'] as Map).entries) {
-      if (entry.key is String && entry.value is String) {
+    super.initState();
+
+    final stored = appdata.settings['dnsOverrides'] as Map? ?? {};
+
+    for (var entry in stored.entries) {
+      if (entry.key is String && entry.value is Map) {
+        final ip = (entry.value['ip'] ?? '') as String;
+        final enabled = (entry.value['enabled'] ?? true) as bool;
         overrides.add((
+          enabled,
+          TextEditingController(text: entry.key),
+          TextEditingController(text: ip),
+        ));
+      } else if (entry.key is String && entry.value is String) {
+        overrides.add((
+          true,
           TextEditingController(text: entry.key),
           TextEditingController(text: entry.value),
         ));
       }
     }
-    super.initState();
+  }
+
+  void _saveData() {
+    final map = <String, Map<String, dynamic>>{};
+
+    for (var entry in overrides) {
+      map[entry.$2.text] = {'ip': entry.$3.text, 'enabled': entry.$1};
+    }
+
+    appdata.settings['dnsOverrides'] = map;
+    appdata.saveData();
+    JsEngine().resetDio();
   }
 
   @override
   void dispose() {
-    var map = <String, String>{};
     for (var entry in overrides) {
-      map[entry.$1.text] = entry.$2.text;
-      entry.$1.dispose();
       entry.$2.dispose();
+      entry.$3.dispose();
     }
-    appdata.settings['dnsOverrides'] = map;
-    appdata.saveData();
-    JsEngine().resetDio();
     super.dispose();
   }
 
@@ -325,17 +344,14 @@ class __DNSOverridesState extends State<_DNSOverrides> {
               settingKey: "sni",
             ),
             const SizedBox(height: 8),
-            Container(
-              height: 1,
-              margin: EdgeInsets.symmetric(horizontal: 8),
-              color: context.colorScheme.outlineVariant,
-            ),
+            Divider(color: context.colorScheme.outlineVariant, height: 1),
             for (var i = 0; i < overrides.length; i++) buildOverride(i),
             const SizedBox(height: 8),
             TextButton.icon(
               onPressed: () {
                 setState(() {
                   overrides.add((
+                    true,
                     TextEditingController(),
                     TextEditingController(),
                   ));
@@ -352,50 +368,74 @@ class __DNSOverridesState extends State<_DNSOverrides> {
 
   Widget buildOverride(int index) {
     var entry = overrides[index];
-    return Container(
+
+    return Card(
       key: ValueKey(index),
-      height: 48,
-      margin: EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: context.colorScheme.outlineVariant),
-          left: BorderSide(color: context.colorScheme.outlineVariant),
-          right: BorderSide(color: context.colorScheme.outlineVariant),
-        ),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.colorScheme.outlineVariant),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: "Domain".tl,
-              ),
-              controller: entry.$1,
-            ).paddingHorizontal(8),
-          ),
-          Container(width: 1, color: context.colorScheme.outlineVariant),
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: "IP".tl,
-              ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
               controller: entry.$2,
-            ).paddingHorizontal(8),
-          ),
-          Container(width: 1, color: context.colorScheme.outlineVariant),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () {
-              setState(() {
-                overrides[index].$1.dispose();
-                overrides[index].$2.dispose();
-                overrides.removeAt(index);
-              });
-            },
-          ),
-        ],
+              decoration: InputDecoration(
+                labelText: "Domain".tl,
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 12,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                // IP
+                Expanded(
+                  child: TextField(
+                    controller: entry.$3,
+                    decoration: InputDecoration(
+                      labelText: "IP".tl,
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // 开关
+                _InlineSwitch(
+                  value: entry.$1,
+                  onChanged: (v) {
+                    setState(() {
+                      overrides[index] = (v, entry.$2, entry.$3);
+                      _saveData();
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () {
+                    setState(() {
+                      entry.$2.dispose();
+                      entry.$3.dispose();
+                      overrides.removeAt(index);
+                      _saveData();
+                    });
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -409,27 +449,41 @@ class _NoProxyOverrides extends StatefulWidget {
 }
 
 class __NoProxyOverridesState extends State<_NoProxyOverrides> {
-  List<TextEditingController> overrides = [];
+  var overrides = <(bool, TextEditingController)>[];
 
   @override
   void initState() {
     super.initState();
-    final noProxyOverrides = appdata.settings['noProxyOverrides'] ?? [];
-    overrides = (noProxyOverrides as List)
-        .map((e) => TextEditingController(text: e.toString()))
-        .toList();
+    final stored = appdata.settings['noProxyOverrides'] as List? ?? [];
+    overrides = [];
+
+    for (var i = 0; i < stored.length; i++) {
+      final e = stored[i];
+      if (e is Map) {
+        final domain = e['domain']?.toString() ?? '';
+        final enabled = e['enabled'] as bool? ?? true;
+        overrides.add((enabled, TextEditingController(text: domain)));
+      } else {
+        overrides.add((true, TextEditingController(text: e.toString())));
+      }
+    }
+  }
+
+  void _saveData() {
+    final list = <Map<String, dynamic>>[];
+    for (var entry in overrides) {
+      list.add({'domain': entry.$2.text, 'enabled': entry.$1});
+    }
+    appdata.settings['noProxyOverrides'] = list;
+    appdata.saveData();
+    JsEngine().resetDio();
   }
 
   @override
   void dispose() {
-    final newList = <String>[];
-    for (var controller in overrides) {
-      newList.add(controller.text);
-      controller.dispose();
+    for (var entry in overrides) {
+      entry.$2.dispose();
     }
-    appdata.settings['noProxyOverrides'] = newList;
-    appdata.saveData();
-    JsEngine().resetDio();
     super.dispose();
   }
 
@@ -445,11 +499,8 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
               settingKey: "enableNoProxyOverrides",
             ),
             const SizedBox(height: 8),
-            Container(
-              height: 1,
-              margin: EdgeInsets.symmetric(horizontal: 8),
-              color: context.colorScheme.outlineVariant,
-            ),
+            Divider(color: context.colorScheme.outlineVariant, height: 1),
+            const SizedBox(height: 8),
             for (var i = 0; i < overrides.length; i++) buildOverride(i),
             const SizedBox(height: 8),
             TextButton.icon(
@@ -457,7 +508,7 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
               label: Text("Add".tl),
               onPressed: () {
                 setState(() {
-                  overrides.add(TextEditingController());
+                  overrides.add((true, TextEditingController()));
                 });
               },
             ),
@@ -468,41 +519,71 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
   }
 
   Widget buildOverride(int index) {
-    var controller = overrides[index];
-    return Container(
+    final entry = overrides[index];
+
+    return Card(
       key: ValueKey(index),
-      height: 48,
-      margin: EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: context.colorScheme.outlineVariant),
-          left: BorderSide(color: context.colorScheme.outlineVariant),
-          right: BorderSide(color: context.colorScheme.outlineVariant),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: entry.$2,
+                decoration: InputDecoration(
+                  labelText: "Domain".tl,
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 12,
+                  ),
+                ),
+                onChanged: (_) => _saveData(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _InlineSwitch(
+              value: entry.$1,
+              onChanged: (v) {
+                setState(() {
+                  overrides[index] = (v, entry.$2);
+                  _saveData();
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () {
+                setState(() {
+                  entry.$2.dispose();
+                  overrides.removeAt(index);
+                  _saveData();
+                });
+              },
+            ),
+          ],
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: "Domain".tl,
-              ),
-            ).paddingHorizontal(8),
-          ),
-          Container(width: 1, color: context.colorScheme.outlineVariant),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () {
-              setState(() {
-                overrides[index].dispose();
-                overrides.removeAt(index);
-              });
-            },
-          ),
-        ],
-      ),
+    );
+  }
+}
+
+class _InlineSwitch extends StatelessWidget {
+  const _InlineSwitch({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: CustomSwitch(value: value, onChanged: onChanged),
     );
   }
 }

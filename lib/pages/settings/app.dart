@@ -121,7 +121,10 @@ class _AppSettingsState extends State<AppSettings> {
                 _CallbackSetting(
                   title: "Open Log".tl,
                   actionTitle: 'Open'.tl,
-                  callback: () => context.to(() => const LogsPage()),
+                  callback: () => context.to(
+                    () => const LogsPage(),
+                    iosFullScreenGesture: false,
+                  ),
                 ),
                 _SwitchSetting(title: "Debug Info".tl, settingKey: "debugInfo"),
                 const SizedBox(height: 8),

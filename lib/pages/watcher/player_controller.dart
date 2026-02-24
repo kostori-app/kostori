@@ -2,12 +2,15 @@
 
 import 'dart:async';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:gif/gif.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -16,6 +19,7 @@ import 'package:kostori/foundation/audio_service/player_audio_handler.dart';
 import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/foundation/audio_service/taskbar_manager.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
@@ -27,6 +31,7 @@ import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mobx/mobx.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
@@ -44,24 +49,48 @@ abstract class _PlayerController with Store {
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
 
+  DateTime currentTime = DateTime.now();
+
   GlobalKey<OverlayState>? overlayKey;
+
+  String? videoRenderer;
+  bool hAenable = true;
+  late String videoSync;
+  late String hardwareDecoder;
 
   @observable
   bool loading = true;
   @observable
   bool isPortraitFullscreen = false;
 
-  late final player = Player(
+  late Player player = Player(
     configuration: PlayerConfiguration(
       bufferSize: 1500 * 1024 * 1024,
       logLevel: MPVLogLevel.info,
+      protocolWhitelist: const [
+        'file',
+        'http',
+        'https',
+        'tcp',
+        'tls',
+        'crypto',
+        'hls',
+        'applehttp',
+        'udp',
+        'rtp',
+        'data',
+        'httpproxy',
+        'content',
+        'fd',
+      ],
     ),
   );
-  late final playerController = VideoController(
+  late VideoController playerController = VideoController(
     player,
     configuration: VideoControllerConfiguration(
-      enableHardwareAcceleration: true,
-      hwdec: 'auto-safe',
+      vo: videoRenderer,
+      enableHardwareAcceleration: hAenable,
+      hwdec: hAenable ? hardwareDecoder : 'no',
       androidAttachSurfaceAfterVideoParameters: false,
     ),
   );
@@ -110,7 +139,8 @@ abstract class _PlayerController with Store {
   // 视频地址
   @observable
   String videoUrl = '';
-
+  @observable
+  String saveAddress = '';
   @observable
   bool showTabBody = false;
 
@@ -256,11 +286,12 @@ abstract class _PlayerController with Store {
       await pp.setProperty("ao", "audiotrack");
     }
     appdata.settings['audioOutType'] = audioOutType;
-    appdata.writeImplicitData();
+    appdata.saveData();
   }
 
   String formatNow() {
     final now = DateTime.now();
+    currentTime = DateTime.now();
     return '${now.hour.toString().padLeft(2, '0')}:'
         '${now.minute.toString().padLeft(2, '0')}:'
         '${now.second.toString().padLeft(2, '0')}';
@@ -270,6 +301,47 @@ abstract class _PlayerController with Store {
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
     audioOutType = appdata.settings['audioOutType'] ?? true;
+    hAenable = appdata.settings['hAenable'] ?? true;
+    hardwareDecoder = appdata.settings['hardwareDecoder'] ?? 'auto-safe';
+    videoSync = appdata.settings['videoSynchronizationMode'] ?? 'audio';
+
+    if (App.isAndroid) {
+      final info = await DeviceInfo.getDeviceInfo();
+
+      final String androidVideoRenderer =
+          appdata.settings['animeListDisplayMode'];
+
+      if (androidVideoRenderer == 'auto') {
+        // Android 14 及以上使用基于 Vulkan 的 MPV GPU-NEXT 视频输出，着色器性能更好
+        // GPU-NEXT 需要 Vulkan 1.2 支持
+        // 避免 Android 14 及以下设备上部分机型 Vulkan 支持不佳导致的黑屏问题
+        final int androidSdkVersion =
+            (info as AndroidDeviceInfo).version.sdkInt;
+        if (androidSdkVersion >= 34) {
+          videoRenderer = 'gpu-next';
+        } else {
+          videoRenderer = 'gpu';
+        }
+      } else {
+        videoRenderer = androidVideoRenderer;
+      }
+    }
+
+    if (videoRenderer == 'mediacodec_embed') {
+      hAenable = true;
+      hardwareDecoder = 'mediacodec';
+      superResolutionType = 1;
+    }
+
+    playerController = VideoController(
+      player,
+      configuration: VideoControllerConfiguration(
+        vo: videoRenderer,
+        enableHardwareAcceleration: hAenable,
+        hwdec: hAenable ? hardwareDecoder : 'no',
+        androidAttachSurfaceAfterVideoParameters: false,
+      ),
+    );
 
     // 记录播放器内部日志
     playerLog.clear();
@@ -284,6 +356,7 @@ abstract class _PlayerController with Store {
     // 该设置可以在所有平台上正确启用双重缓存
     await pp.setProperty("demuxer-cache-dir", await Utils.getPlayerTempPath());
     await pp.setProperty("af", "scaletempo2=max-speed=8");
+    await pp.setProperty("video-sync", videoSync);
     if (App.isAndroid) {
       await pp.setProperty("volume-max", "100");
       if (audioOutType) {
@@ -292,6 +365,19 @@ abstract class _PlayerController with Store {
         await pp.setProperty("ao", "audiotrack");
       }
     }
+
+    if (appdata.settings['proxy'] != 'direct' &&
+        appdata.settings['proxy'] != 'system') {
+      if (appdata.settings['proxy'] != null) {
+        String proxyUrl = appdata.settings['proxy'];
+        if (!proxyUrl.startsWith('http://')) {
+          proxyUrl = 'http://$proxyUrl';
+        }
+        await pp.setProperty('http-proxy', proxyUrl);
+        Log.addLog(LogLevel.info, 'Player: HTTP 代理设置', proxyUrl);
+      }
+    }
+
     glimmerEffect = appdata.implicitData['glimmerEffect'] ?? false;
     await player.setAudioTrack(AudioTrack.auto());
 
@@ -411,7 +497,7 @@ abstract class _PlayerController with Store {
       TaskbarManager.instance.dispose();
     }
     _pipStatusSubscription?.cancel();
-    player.dispose();
+    await player.dispose();
   }
 
   void fullscreen() async {
@@ -491,6 +577,8 @@ abstract class _PlayerController with Store {
 
         App.rootContext.to(
           () => FullscreenVideoPage(playerController: this as PlayerController),
+          enableIOSGesture: false,
+          iosFullScreenGesture: false,
         );
       }
     }
@@ -610,7 +698,10 @@ abstract class _PlayerController with Store {
                 InkWell(
                   onTap: () async {
                     await pause();
-                    context.to(() => ImageManipulationPage());
+                    context.to(
+                      () => ImageManipulationPage(),
+                      iosFullScreenGesture: false,
+                    );
                   },
                   child: Center(
                     child: SizedBox(height: 20, child: Text('编辑'.tl)),
@@ -647,6 +738,166 @@ abstract class _PlayerController with Store {
   Future<void> exitPiPMode() async {
     await Floating().cancelOnLeavePiP();
     isPiPMode = false;
+  }
+
+  String getShaderTypeName(int type) {
+    switch (type) {
+      case 1:
+        return '关闭';
+      case 2:
+        return '效率档';
+      case 3:
+        return '质量档';
+      default:
+        return '未知';
+    }
+  }
+
+  void showPlaybackSpeedDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('选择播放速度'),
+        content: SingleChildScrollView(
+          // 添加 SingleChildScrollView
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (double speed in [
+                0.5,
+                0.75,
+                1.0,
+                1.5,
+                2.0,
+                3.0,
+                4.0,
+                5.0,
+                6.0,
+                7.0,
+                8.0,
+                10.0,
+                20.0,
+              ])
+                ListTile(
+                  title: Text('${speed}x'),
+                  onTap: () {
+                    setPlaybackSpeed(speed);
+                    Navigator.pop(context);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> captureAndSaveScreenshot({required BuildContext context}) async {
+    saveAddress = '';
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    App.rootContext.showMessage(message: '正在截图中...'.tl);
+    if (App.isAndroid) {
+      Uint8List? screenData = await playerController.player.screenshot();
+      try {
+        final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
+        if (folder != null) {
+          final file = File(
+            '${folder.path}/${WatcherState.currentState!.anime.title}_$timestamp.png',
+          );
+          await file.writeAsBytes(screenData!);
+          saveAddress =
+              '${folder.path}/${WatcherState.currentState!.anime.title}_$timestamp.png';
+          showScreenshotPopup(
+            context,
+            saveAddress,
+            '${WatcherState.currentState!.anime.title}_$timestamp.png',
+          );
+          showCenter(
+            seconds: 1,
+            icon: Gif(
+              image: AssetImage('assets/img/check.gif'),
+              height: 80,
+              fps: 120,
+              color: Theme.of(context).colorScheme.primary,
+              autostart: Autostart.once,
+            ),
+            message: '截图成功',
+            context: App.rootContext,
+          );
+          const platform = MethodChannel('kostori/media');
+          await platform.invokeMethod('scanFolder', {'path': folder.path});
+          Log.addLog(LogLevel.info, '保存文件成功', '');
+        } else {
+          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+        }
+      } catch (e) {
+        Log.addLog(LogLevel.error, '截图失败', '$e');
+      }
+    } else {
+      try {
+        Uint8List? screenData = await playerController.player.screenshot();
+        // 获取桌面平台的文档目录
+        final directory = await getApplicationDocumentsDirectory();
+        // 目标文件夹路径
+        final folderPath = '${directory.path}/Kostori';
+        // 检查文件夹是否存在，如果不存在则创建它
+        final folder = Directory(folderPath);
+        if (!await folder.exists()) {
+          await folder.create(recursive: true);
+          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+        } else {
+          Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
+        }
+
+        final filePath =
+            '$folderPath/${WatcherState.currentState!.anime.title}_$timestamp.png';
+        // 将图像保存为文件
+        final file = File(filePath);
+        await file.writeAsBytes(screenData!);
+        saveAddress =
+            '$folderPath/${WatcherState.currentState!.anime.title}_$timestamp.png';
+        showScreenshotPopup(
+          context,
+          saveAddress,
+          '${WatcherState.currentState!.anime.title}_$timestamp.png',
+        );
+        showCenter(
+          seconds: 1,
+          icon: Gif(
+            image: AssetImage('assets/img/check.gif'),
+            height: 80,
+            fps: 120,
+            color: Theme.of(context).colorScheme.primary,
+            autostart: Autostart.once,
+          ),
+          message: '截图成功',
+          context: App.rootContext,
+        );
+      } catch (e) {
+        Log.addLog(LogLevel.error, '截图失败', '$e');
+      }
+    }
+  }
+
+  // 单独提取菜单项构建方法
+  List<MenuItemButton> buildShaderMenuItems(BuildContext context) {
+    return List.generate(3, (index) {
+      final type = index + 1;
+      final isSelected = superResolutionType == type;
+
+      return MenuItemButton(
+        onPressed: () => setShader(type),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Text(
+            getShaderTypeName(type),
+            style: TextStyle(
+              color: isSelected ? Theme.of(context).colorScheme.primary : null,
+            ),
+          ),
+        ),
+      );
+    });
   }
 }
 

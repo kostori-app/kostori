@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
@@ -435,7 +436,7 @@ class SelectImagesPage extends StatefulWidget {
 
   const SelectImagesPage({
     super.key,
-    this.maxSelection = 9,
+    this.maxSelection = 16,
     required this.onSelected,
     this.initialDirectory,
     this.filter,

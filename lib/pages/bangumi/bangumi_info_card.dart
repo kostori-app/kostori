@@ -227,6 +227,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                 bangumiPage: true,
                 keywords: bangumiItem.alias,
               ),
+              iosFullScreenGesture: false,
             );
           },
           style: FilledButton.styleFrom(
@@ -707,8 +708,8 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                       (bangumiItem.collection != null && !widget.isLoading)
                           ? Align(
                               child: BangumiWidget.buildStatsRow(
-                                context,
-                                infoController.bangumiItem,
+                                context: context,
+                                bangumiItem: infoController.bangumiItem,
                               ),
                             )
                           : Padding(

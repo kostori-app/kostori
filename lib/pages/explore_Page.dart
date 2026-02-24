@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -29,7 +31,6 @@ class _ExplorePageState extends State<ExplorePage>
   late final ExploreController exploreController;
 
   bool get showFB => exploreController.showFB;
-
   double location = 0;
 
   late List<String> pages;
@@ -75,6 +76,7 @@ class _ExplorePageState extends State<ExplorePage>
     controller = TabController(length: pages.length, vsync: this);
     appdata.settings.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
+    exploreController.initController(this);
     super.initState();
   }
 
@@ -89,6 +91,7 @@ class _ExplorePageState extends State<ExplorePage>
     controller.dispose();
     appdata.settings.removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
+    exploreController.dispose();
     super.dispose();
   }
 
@@ -154,34 +157,33 @@ class _ExplorePageState extends State<ExplorePage>
       ),
     ).paddingTop(context.padding.top);
 
-    return Observer(
-      builder: (context) {
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: Column(
-                children: [
-                  tabBar,
-                  Expanded(
-                    child: MediaQuery.removePadding(
-                      context: context,
-                      removeTop: true,
-                      child: TabBarView(
-                        controller: controller,
-                        children: pages.map((e) => buildBody(e)).toList(),
-                      ),
-                    ),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Column(
+            children: [
+              tabBar,
+              Expanded(
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  child: TabBarView(
+                    controller: controller,
+                    children: pages.map((e) => buildBody(e)).toList(),
                   ),
-                ],
+                ),
               ),
-            ),
-            Positioned(
-              bottom: 10,
-              right: 10,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                opacity: showFB ? 1 : 0,
+            ],
+          ),
+        ),
+        Observer(
+          builder: (_) => Positioned(
+            bottom: 30,
+            right: 10,
+            child: FadeTransition(
+              opacity: exploreController.fadeAnimation,
+              child: IgnorePointer(
+                ignoring: !showFB,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 20, right: 0),
                   child: GridSpeedDial(
@@ -221,14 +223,39 @@ class _ExplorePageState extends State<ExplorePage>
                               ).toTop(),
                         ),
                       ],
+                      [
+                        SpeedDialChild(
+                          child:
+                              appdata.settings['animeListDisplayMode'] ==
+                                  'paging'
+                              ? Icon(Icons.view_cozy_outlined)
+                              : Icon(Icons.menu),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: () {
+                            appdata.settings['animeListDisplayMode'] =
+                                appdata.settings['animeListDisplayMode'] ==
+                                    'paging'
+                                ? 'continuous'
+                                : 'paging';
+                            appdata.saveData();
+                            refresh;
+                            setState(() {});
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 
@@ -276,17 +303,13 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   }
 
   void onScroll() {
-    if (scrollController.offset > 200) {
-      if (!showFB) {
-        setState(() {
-          exploreController.showFB = true;
-        });
+    if (scrollController.offset > 50) {
+      if (!exploreController.showFB) {
+        exploreController.show();
       }
     } else {
-      if (showFB) {
-        setState(() {
-          exploreController.showFB = false;
-        });
+      if (exploreController.showFB) {
+        exploreController.hide();
       }
     }
   }
@@ -420,7 +443,6 @@ class _MixedExplorePageState
 
   Iterable<Widget> buildSlivers(BuildContext context, List<Object> data) sync* {
     List<Anime> cache = [];
-    bool isGrid = false;
     for (var part in data) {
       if (part is ExplorePagePart) {
         if (cache.isNotEmpty) {
@@ -432,13 +454,12 @@ class _MixedExplorePageState
         yield const SliverToBoxAdapter(child: Divider());
       } else if (part is ExploreGridPart) {
         cache.addAll(part.animes);
-        isGrid = true;
       } else {
         cache.addAll(part as List<Anime>);
       }
     }
     if (cache.isNotEmpty) {
-      yield SliverGridAnimes(animes: (cache), isGrid: isGrid);
+      yield SliverGridAnimes(animes: (cache));
     }
   }
 
@@ -601,7 +622,7 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
   Widget build(BuildContext context) {
     if (loading) {
       load();
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: KostoriRefreshIndicator());
     } else if (message != null) {
       return NetworkError(
         message: message!,

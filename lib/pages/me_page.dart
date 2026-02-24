@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
@@ -27,24 +28,18 @@ class MePage extends StatefulWidget {
 class _MePageState extends State<MePage> {
   final ScrollController scrollController = ScrollController();
 
-  bool showFB = false;
-
-  void onScroll() {
-    if (scrollController.offset > 50) {
-      if (!showFB) {
-        setState(() {
-          showFB = true;
-        });
-      }
-    } else {
-      if (showFB) {
-        setState(() {
-          showFB = false;
-        });
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
   }
 
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  // 滚动到顶部
   void scrollToTop() {
     if (scrollController.hasClients) {
       scrollController.animateTo(
@@ -56,20 +51,8 @@ class _MePageState extends State<MePage> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    scrollController.addListener(onScroll);
-  }
-
-  @override
-  void dispose() {
-    scrollController.removeListener(onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // 主列表
     Widget widget = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
@@ -84,64 +67,35 @@ class _MePageState extends State<MePage> {
       ],
     );
 
+    // Stack + Floating Button
     widget = Stack(
       children: [
         Positioned.fill(child: widget),
         Positioned(
           bottom: 10,
           right: 10,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20, right: 0),
-              child: GridSpeedDial(
-                icon: Icons.menu,
-                activeIcon: Icons.close,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                spacing: 6,
-                spaceBetweenChildren: 4,
-                direction: SpeedDialDirection.up,
-                childPadding: const EdgeInsets.all(6),
-                childrens: [
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.refresh),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () {
-                        setState(() {
-                          showFB = false;
-                        });
-                      },
-                    ),
-                  ],
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.vertical_align_top),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () => scrollToTop(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          child: FloatingMenu(
+            controller: scrollController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () => scrollToTop(),
+                ),
+              ],
+            ],
           ),
         ),
       ],
     );
 
+    // 滚动条封装
     widget = AppScrollBar(
       topPadding: 56,
       controller: scrollController,
@@ -151,6 +105,7 @@ class _MePageState extends State<MePage> {
       ),
     );
 
+    // 横向间距适配
     return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
   }
 }

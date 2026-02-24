@@ -187,11 +187,21 @@ class RHttpAdapter implements HttpClientAdapter {
   Future<rhttp.ClientSettings> settings(Uri uri) async {
     final proxy = await getProxy();
 
-    final noProxyOverrides = appdata.settings['noProxyOverrides'] ?? [];
+    final noProxyOverrides =
+        appdata.settings['noProxyOverrides'] as List? ?? [];
+
     final enableNoProxyOverrides =
-        appdata.settings['enableNoProxyOverrides'] ?? false;
+        appdata.settings['enableNoProxyOverrides'] as bool? ?? false;
+
     final isNoProxy = enableNoProxyOverrides
-        ? noProxyOverrides.any((prefix) => uri.host.startsWith(prefix))
+        ? noProxyOverrides.any((entry) {
+            if (entry is Map) {
+              final domain = entry['domain']?.toString() ?? '';
+              final enabled = entry['enabled'] as bool? ?? true;
+              return enabled && uri.host.startsWith(domain);
+            }
+            return false;
+          })
         : false;
 
     return rhttp.ClientSettings(
@@ -216,18 +226,27 @@ class RHttpAdapter implements HttpClientAdapter {
   }
 
   static Map<String, List<String>> _getOverrides() {
-    if (!appdata.settings['enableDnsOverrides'] == true) {
+    if (appdata.settings['enableDnsOverrides'] != true) {
       return {};
     }
-    var config = appdata.settings["dnsOverrides"];
-    var result = <String, List<String>>{};
+
+    final config = appdata.settings["dnsOverrides"];
+    final result = <String, List<String>>{};
+
     if (config is Map) {
       for (var entry in config.entries) {
-        if (entry.key is String && entry.value is String) {
-          result[entry.key] = [entry.value];
+        if (entry.key is String && entry.value is Map) {
+          final valueMap = entry.value as Map;
+          final ip = valueMap['ip']?.toString();
+          final enabled = valueMap['enabled'] as bool? ?? true;
+
+          if (enabled && ip != null && ip.isNotEmpty) {
+            result[entry.key] = [ip];
+          }
         }
       }
     }
+
     return result;
   }
 

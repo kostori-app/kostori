@@ -170,7 +170,13 @@ abstract class _InfoController with Store {
     await Bangumi.getCharatersByID(id).then((value) {
       characterList.addAll(value.characterList);
     });
-    Map<String, int> relationValue = {'主角': 1, '配角': 2, '客串': 3, '未知': 4};
+    Map<String, int> relationValue = {
+      '主角': 1,
+      '配角': 2,
+      '客串': 3,
+      '闲角': 4,
+      '未知': 5,
+    };
     try {
       characterList.sort(
         (a, b) =>
@@ -198,7 +204,7 @@ abstract class _InfoController with Store {
     }
 
     episodeInfo = await Bangumi.getBangumiEpisodeByID(id, episode);
-    await Bangumi.getBangumiCommentsByEpisodeID(episodeInfo.id).then((value) {
+    await Bangumi.getEpisodeCommentsByEpisodeID(episodeInfo.id).then((value) {
       episodeCommentsList.addAll(value.commentList);
     });
   }
@@ -210,7 +216,7 @@ abstract class _InfoController with Store {
     if (offset == 0) {
       episodeCommentsList.clear();
     }
-    await Bangumi.getBangumiCommentsByEpisodeID(id).then((value) {
+    await Bangumi.getEpisodeCommentsByEpisodeID(id).then((value) {
       episodeCommentsList.addAll(value.commentList);
     });
   }

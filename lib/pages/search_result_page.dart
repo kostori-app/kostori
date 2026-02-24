@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
@@ -40,7 +42,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
       setState(() {
         this.text = text!;
       });
-      appdata.addSearchHistory(text);
+      SearchHistoryManager().addSearch(text);
       controller.currentText = text;
     }
   }
@@ -65,8 +67,9 @@ class _SearchResultPageState extends State<SearchResultPage> {
     controller = SearchBarController(currentText: text, onSearch: search);
     options = widget.options ?? const [];
     validateOptions();
-    appdata.addSearchHistory(text);
-    appdata.saveData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SearchHistoryManager().addSearch(text);
+    });
     super.initState();
   }
 
@@ -169,45 +172,53 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
     });
     return ContentDialog(
       title: "Settings".tl,
-      content: Column(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-            title: Text("Search in".tl),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: 320),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                title: Text("Search in".tl),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: sources.map((e) {
+                  return OptionChip(
+                    text: e.name.tl,
+                    isSelected: searchTarget == e.key,
+                    onTap: () {
+                      setState(() {
+                        searchTarget = e.key;
+                        options.clear();
+                        final searchOptions =
+                            AnimeSource.find(
+                              searchTarget,
+                            )!.searchPageData!.searchOptions ??
+                            <SearchOptions>[];
+                        options = searchOptions
+                            .map((e) => e.defaultValue)
+                            .toList();
+                        onChanged();
+                      });
+                    },
+                  );
+                }).toList(),
+              ).fixWidth(double.infinity).paddingHorizontal(16),
+              buildSearchOptions(),
+            ],
           ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: sources.map((e) {
-              return OptionChip(
-                text: e.name.tl,
-                isSelected: searchTarget == e.key,
-                onTap: () {
-                  setState(() {
-                    searchTarget = e.key;
-                    options.clear();
-                    final searchOptions =
-                        AnimeSource.find(
-                          searchTarget,
-                        )!.searchPageData!.searchOptions ??
-                        <SearchOptions>[];
-                    options = searchOptions.map((e) => e.defaultValue).toList();
-                    onChanged();
-                  });
-                },
-              );
-            }).toList(),
-          ).fixWidth(double.infinity).paddingHorizontal(16),
-          buildSearchOptions(),
-          const SizedBox(height: 24),
-          FilledButton(
-            child: Text("Confirm".tl),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-        ],
+        ),
       ).fixWidth(double.infinity),
+      actions: [
+        FilledButton(
+          child: Text("Confirm".tl),
+          onPressed: () {
+            context.pop();
+          },
+        ),
+      ],
     );
   }
 

@@ -27,7 +27,7 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                       "detailed": "Detailed".tl,
                       "brief": "Brief".tl,
                     },
-                  ), // 注意转换成 Widget
+                  ),
                   _SliderSetting(
                     title: "Size of anime tile".tl,
                     settingsIndex: "animeTileScale",
@@ -46,6 +46,11 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                   _SwitchSetting(
                     title: "Show history on anime tile".tl,
                     settingKey: "showHistoryStatusOnTile",
+                  ),
+                  _SwitchSetting(
+                    title: "番剧卡片使用模糊背景".tl,
+                    settingKey: "animeCardUseBlur",
+                    dataSource: SwitchDataSource.implicit,
                   ),
                   SelectSetting(
                     title: "Default Search Target".tl,

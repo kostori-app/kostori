@@ -205,12 +205,10 @@ class LocalFavoritesManager with ChangeNotifier {
 
   late Map<String, int> counts;
 
+  var _hashedIds = <int, int>{};
+
   int get totalAnimes {
-    int total = 0;
-    for (var t in counts.values) {
-      total += t;
-    }
-    return total;
+    return _hashedIds.length;
   }
 
   int folderAnimes(String folder) {
@@ -255,6 +253,50 @@ class LocalFavoritesManager with ChangeNotifier {
     for (var folder in folderNames) {
       counts[folder] = count(folder);
     }
+    _initHashedIds(folderNames, _db.handle).then((value) {
+      _hashedIds = value;
+      notifyListeners();
+    });
+  }
+
+  void refreshHashedIds() {
+    _initHashedIds(folderNames, _db.handle).then((value) {
+      _hashedIds = value;
+      notifyListeners();
+    });
+  }
+
+  void reduceHashedId(String id, int type) {
+    var hash = id.hashCode ^ type;
+    if (_hashedIds.containsKey(hash)) {
+      if (_hashedIds[hash]! > 1) {
+        _hashedIds[hash] = _hashedIds[hash]! - 1;
+      } else {
+        _hashedIds.remove(hash);
+      }
+    }
+  }
+
+  static Future<Map<int, int>> _initHashedIds(
+    List<String> folders,
+    Pointer<void> p,
+  ) {
+    return Isolate.run(() {
+      var db = sqlite3.fromPointer(p);
+      var hashedIds = <int, int>{};
+      for (var folder in folders) {
+        var rows = db.select("""
+          select id, type from "$folder";
+        """);
+        for (var row in rows) {
+          var id = row["id"] as String;
+          var type = row["type"] as int;
+          var hash = id.hashCode ^ type;
+          hashedIds[hash] = (hashedIds[hash] ?? 0) + 1;
+        }
+      }
+      return hashedIds;
+    });
   }
 
   List<String> find(String id, AnimeType type) {
@@ -484,6 +526,7 @@ class LocalFavoritesManager with ChangeNotifier {
       );
     """);
     notifyListeners();
+    counts[name] = 0;
     return name;
   }
 
@@ -523,7 +566,6 @@ class LocalFavoritesManager with ChangeNotifier {
   ///
   /// This method will download cover to local, to avoid problems like changing url
   bool addAnime(String folder, FavoriteItem anime, [int? order]) {
-    _modifiedAfterLastCache = true;
     if (!existsFolder(folder)) {
       throw Exception("Folder does not exists");
     }
@@ -588,57 +630,88 @@ class LocalFavoritesManager with ChangeNotifier {
     return true;
   }
 
-  void moveFavorite(
+  void _copyFavoriteIfNotExist(
     String sourceFolder,
     String targetFolder,
     String id,
     AnimeType type,
   ) {
-    _modifiedAfterLastCache = true;
+    if (sourceFolder == targetFolder) return;
+    if (!existsFolder(sourceFolder) || !existsFolder(targetFolder)) return;
 
-    if (!existsFolder(sourceFolder)) {
-      throw Exception("Source folder does not exist");
-    }
-    if (!existsFolder(targetFolder)) {
-      throw Exception("Target folder does not exist");
-    }
-
-    var res = _db.select(
-      """
-    select * from "$targetFolder"
-    where id == ? and type == ?;
-  """,
+    final src = _db.select(
+      'select * from "$sourceFolder" where id == ? and type == ?;',
       [id, type.value],
     );
+    if (src.isEmpty) return;
 
-    if (res.isNotEmpty) {
-      initCounts();
-      return;
-    }
+    final dst = _db.select(
+      'select * from "$targetFolder" where id == ? and type == ?;',
+      [id, type.value],
+    );
+    if (dst.isNotEmpty) return;
 
     _db.execute(
-      """
-      insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order, recently_watched, viewMore)
-      select id, name, author, type, tags, cover_path, time, ?, recently_watched, viewMore
-      from "$sourceFolder"
-      where id == ? and type == ?;
-    """,
+      '''
+    insert into "$targetFolder" (id, name, author, type, tags, cover_path, time, display_order, recently_watched, viewMore)
+    select id, name, author, type, tags, cover_path, time, ?, recently_watched, viewMore
+    from "$sourceFolder"
+    where id == ? and type == ?;
+    ''',
       [minValue(targetFolder) - 1, id, type.value],
     );
+  }
 
-    // 从源表删除该数据
+  void removeFavoriteFromFolder(String folder, String id, AnimeType type) {
+    if (!existsFolder(folder)) return;
     _db.execute(
-      """
-    delete from "$sourceFolder"
+      '''
+    delete from "$folder"
     where id == ? and type == ?;
-  """,
+    ''',
       [id, type.value],
     );
+  }
 
+  void moveFavorite(
+    List<String> sources,
+    List<String> targets,
+    String id,
+    AnimeType type,
+  ) {
+    if (sources.isEmpty || targets.isEmpty) return;
+
+    _db.execute('BEGIN TRANSACTION;');
+
+    try {
+      for (final source in sources) {
+        if (!existsFolder(source)) continue;
+        final has = _db.select(
+          'select 1 from "$source" where id == ? and type == ? limit 1;',
+          [id, type.value],
+        );
+        if (has.isEmpty) continue;
+
+        for (final target in targets) {
+          if (target == source) continue;
+          _copyFavoriteIfNotExist(source, target, id, type);
+        }
+      }
+
+      for (final source in sources) {
+        removeFavoriteFromFolder(source, id, type);
+      }
+
+      _db.execute('COMMIT;');
+    } catch (e) {
+      _db.execute('ROLLBACK;');
+      rethrow;
+    }
+    final uniqueTargets = targets.where((t) => !sources.contains(t)).toList();
     StatsManager().addFavoriteRecord(
       id: id,
       type: type.value,
-      folder: '$sourceFolder,$targetFolder',
+      folder: '${sources.join("|")},${uniqueTargets.join("|")}',
       action: FavoriteAction.move,
     );
 
@@ -651,8 +724,6 @@ class LocalFavoritesManager with ChangeNotifier {
     String targetFolder,
     List<FavoriteItem> items,
   ) {
-    _modifiedAfterLastCache = true;
-
     if (!existsFolder(sourceFolder)) {
       throw Exception("Source folder does not exist");
     }
@@ -664,15 +735,17 @@ class LocalFavoritesManager with ChangeNotifier {
     var displayOrder = maxValue(targetFolder) + 1;
     try {
       for (var item in items) {
-        _db.execute(
-          """
+        if (targetFolder != sourceFolder) {
+          _db.execute(
+            """
           insert or ignore into "$targetFolder" (id, name, author, type, tags, cover_path, time, recently_watched, display_order, viewMore)
           select id, name, author, type, tags, cover_path, time, recently_watched, ?, viewMore
           from "$sourceFolder"
           where id == ? and type == ?;
         """,
-          [displayOrder, item.id, item.type.value],
-        );
+            [displayOrder, item.id, item.type.value],
+          );
+        }
 
         if (targetFolder == sourceFolder) {
           _db.execute(
@@ -695,27 +768,19 @@ class LocalFavoritesManager with ChangeNotifier {
     _db.execute("COMMIT");
 
     // Update counts
-    if (targetFolder != sourceFolder) {
-      if (counts[targetFolder] == null) {
-        counts[targetFolder] = count(targetFolder);
-      } else {
-        counts[targetFolder] = counts[targetFolder]! + items.length;
-      }
-    } else {
-      if (counts[sourceFolder] != null) {
-        counts[sourceFolder] = counts[sourceFolder]! - items.length;
-      } else {
-        counts[sourceFolder] = count(sourceFolder);
-      }
-    }
+    counts[targetFolder] = count(targetFolder);
+    counts[sourceFolder] = count(sourceFolder);
+    refreshHashedIds();
 
     for (var i in items) {
-      StatsManager().addFavoriteRecord(
-        id: i.id,
-        type: i.type.value,
-        folder: '$sourceFolder,$targetFolder',
-        action: FavoriteAction.move,
-      );
+      if (sourceFolder != targetFolder) {
+        StatsManager().addFavoriteRecord(
+          id: i.id,
+          type: i.type.value,
+          folder: '$sourceFolder,$targetFolder',
+          action: FavoriteAction.move,
+        );
+      }
     }
 
     // notifyListeners();
@@ -726,8 +791,6 @@ class LocalFavoritesManager with ChangeNotifier {
     String targetFolder,
     List<FavoriteItem> items,
   ) {
-    _modifiedAfterLastCache = true;
-
     if (!existsFolder(sourceFolder)) {
       throw Exception("Source folder does not exist");
     }
@@ -761,11 +824,8 @@ class LocalFavoritesManager with ChangeNotifier {
     _db.execute("COMMIT");
 
     // Update counts
-    if (counts[targetFolder] == null) {
-      counts[targetFolder] = count(targetFolder);
-    } else {
-      counts[targetFolder] = counts[targetFolder]! + items.length;
-    }
+    counts[targetFolder] = count(targetFolder);
+    refreshHashedIds();
 
     for (var i in items) {
       StatsManager().addFavoriteRecord(
@@ -780,7 +840,6 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void batchDeleteAnimes(String folder, List<FavoriteItem> animes) {
-    _modifiedAfterLastCache = true;
     _db.execute("BEGIN TRANSACTION");
     try {
       for (var anime in animes) {
@@ -804,6 +863,9 @@ class LocalFavoritesManager with ChangeNotifier {
       return;
     }
     _db.execute("COMMIT");
+    for (var anime in animes) {
+      reduceHashedId(anime.id, anime.type.value);
+    }
     for (var i in animes) {
       StatsManager().addFavoriteRecord(
         id: i.id,
@@ -816,7 +878,6 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void batchDeleteAnimesInAllFolders(List<AnimeID> animes) {
-    _modifiedAfterLastCache = true;
     _db.execute("BEGIN TRANSACTION");
     var folderNames = _getFolderNamesWithDB();
     try {
@@ -839,13 +900,16 @@ class LocalFavoritesManager with ChangeNotifier {
     }
     initCounts();
     _db.execute("COMMIT");
+    for (var anime in animes) {
+      var hash = anime.id.hashCode ^ anime.type.value;
+      _hashedIds.remove(hash);
+    }
     notifyListeners();
   }
 
   /// delete a folder
   void deleteFolder(String name) {
     if (name == "default") return;
-    _modifiedAfterLastCache = true;
     _db.execute("""
       drop table "$name";
     """);
@@ -857,11 +921,11 @@ class LocalFavoritesManager with ChangeNotifier {
       [name],
     );
     counts.remove(name);
+    refreshHashedIds();
     notifyListeners();
   }
 
   void deleteAnimeWithId(String folder, String id, AnimeType type) {
-    _modifiedAfterLastCache = true;
     LocalFavoriteImageProvider.delete(id, type.value);
     _db.execute(
       """
@@ -876,7 +940,12 @@ class LocalFavoritesManager with ChangeNotifier {
       folder: folder,
       action: FavoriteAction.remove,
     );
-    initCounts();
+    if (counts[folder] != null) {
+      counts[folder] = counts[folder]! - 1;
+    } else {
+      counts[folder] = count(folder);
+    }
+    reduceHashedId(id, type.value);
     notifyListeners();
   }
 
@@ -1024,28 +1093,9 @@ class LocalFavoritesManager with ChangeNotifier {
     notifyListeners();
   }
 
-  final _cachedFavoritedIds = <String, bool>{};
-
   bool isExist(String id, AnimeType type) {
-    if (_modifiedAfterLastCache) {
-      _cacheFavoritedIds();
-    }
-    return _cachedFavoritedIds.containsKey("$id@${type.value}");
-  }
-
-  bool _modifiedAfterLastCache = true;
-
-  void _cacheFavoritedIds() {
-    _modifiedAfterLastCache = false;
-    _cachedFavoritedIds.clear();
-    for (var folder in folderNames) {
-      var rows = _db.select("""
-        select id, type from "$folder";
-      """);
-      for (var row in rows) {
-        _cachedFavoritedIds["${row["id"]}@${row["type"]}"] = true;
-      }
-    }
+    var hash = id.hashCode ^ type.value;
+    return _hashedIds.containsKey(hash);
   }
 
   void updateInfo(String folder, FavoriteItem anime) {

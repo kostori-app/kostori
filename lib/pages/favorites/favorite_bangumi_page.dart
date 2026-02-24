@@ -48,16 +48,13 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
     return SliverGrid(
       delegate: SliverChildBuilderDelegate((context, index) {
         var bangumi = useBriefMode
-            ? BangumiWidget.buildBriefMode(
-                context,
-                bangumiItems[index],
-                'favorite_bind',
-                showPlaceholder: false,
+            ? BangumiBriefCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'favorite_bind',
               )
-            : BangumiWidget.buildDetailedMode(
-                context,
-                bangumiItems[index],
-                'favorite_bind',
+            : BangumiDetailedCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'favorite_bind',
               );
         return bangumi;
       }, childCount: bangumiItems.length),

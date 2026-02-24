@@ -1072,6 +1072,8 @@ class AnimeSource {
 
     url = ""
 
+    httpHeaders = {}
+
     /**
      * load data with its key
      * @param {string} dataKey

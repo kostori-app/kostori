@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   battery_plus
+  connectivity_plus
   desktop_webview_window
   dynamic_color
   file_selector_windows
@@ -19,7 +20,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   share_plus
   sqlite3_flutter_libs
   url_launcher_windows
-  volume_controller
   window_manager
   windows_taskbar
 )

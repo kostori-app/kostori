@@ -32,7 +32,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
 
   bool searchMode = false;
   bool searchAllMode = false;
-  bool showFB = false;
+  bool searchHasUpper = false;
   bool multiSelectMode = false;
   bool isLoading = false;
 
@@ -134,45 +134,46 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
     });
   }
 
+  bool checkKeyWordMatch(String keyword, String compare, bool needEqual) {
+    String temp = compare;
+
+    if (!searchHasUpper) {
+      temp = temp.toLowerCase();
+    }
+    if (needEqual) {
+      return keyword == temp;
+    }
+    return temp.contains(keyword);
+  }
+
   bool matchKeyword(String keyword, FavoriteItem anime) {
     var list = keyword.split(" ");
     for (var k in list) {
       if (k.isEmpty) continue;
-      if (anime.title.contains(k)) {
+      if (keyword == anime.type.sourceKey) {
+        return true;
+      }
+      if (checkKeyWordMatch(k, anime.title, false)) {
         continue;
-      } else if (anime.subtitle != null && anime.subtitle!.contains(k)) {
+      } else if (anime.subtitle != null &&
+          checkKeyWordMatch(k, anime.subtitle!, false)) {
         continue;
       } else if (anime.tags.any((tag) {
-        if (tag == k) {
+        if (checkKeyWordMatch(k, tag, true)) {
           return true;
-        } else if (tag.contains(':') && tag.split(':')[1] == k) {
+        } else if (tag.contains(':') &&
+            checkKeyWordMatch(k, tag.split(':')[1], true)) {
           return true;
         }
         return false;
       })) {
         continue;
-      } else if (anime.author == k) {
+      } else if (checkKeyWordMatch(k, anime.author, true)) {
         continue;
       }
       return false;
     }
     return true;
-  }
-
-  void onScroll() {
-    if (scrollController.offset > 50) {
-      if (!showFB) {
-        setState(() {
-          showFB = true;
-        });
-      }
-    } else {
-      if (showFB) {
-        setState(() {
-          showFB = false;
-        });
-      }
-    }
   }
 
   void scrollToTop() {
@@ -230,7 +231,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
       });
     });
     updateAnimes();
-    scrollController.addListener(onScroll);
     manager.addListener(updateAnimes);
     super.initState();
   }
@@ -238,7 +238,6 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
   @override
   void dispose() {
     favoritesController.tabController.dispose();
-    scrollController.removeListener(onScroll);
     manager.removeListener(updateAnimes);
     scrollController.dispose();
     super.dispose();
@@ -472,7 +471,11 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               onTap: context.width < _kTwoPanelChangeWidth
                   ? favPage.showFolderSelector
                   : null,
-              child: Text(favPage.folder != null ? '' : "Unselected".tl),
+              child: Text(
+                favPage.folder != null
+                    ? LocalFavoritesManager().totalAnimes.toString()
+                    : "Unselected".tl,
+              ),
             ),
             actions: [
               Tooltip(
@@ -617,22 +620,30 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                     text: "Favorite actions".tl,
                     onClick: () async {
                       favoritesController.isRefreshEnabled = true;
-                      await _FavoriteDialog.show(
+                      final bool? changed = await _FavoriteDialog.show(
                         context: context,
                         selectedAnimes: selectedAnimes,
                         favPage: favPage,
                         cancel: () => _cancel(),
                         favoritesController: favoritesController,
-                      ).then((_) {
+                      );
+
+                      if (changed == true) {
                         manager.initCounts();
-                        Future.delayed(const Duration(seconds: 1), () async {
-                          if (!mounted) return;
-                          favoritesController.isRefreshEnabled = true;
-                          await updateAnimes();
-                          favoritesController.tabs = getTabs();
+
+                        favoritesController.isRefreshEnabled = true;
+
+                        await updateAnimes();
+
+                        multiSelectMode = false;
+                        selectedAnimes.clear();
+
+                        favoritesController.tabs = getTabs();
+
+                        if (mounted) {
                           setState(() {});
-                        });
-                      });
+                        }
+                      }
                     },
                   ),
                   MenuEntry(
@@ -695,13 +706,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               ),
             ),
             title: TextField(
-              autofocus: true,
               decoration: InputDecoration(
-                hintText: "Search All".tl,
+                hintText: keyword.isNotEmpty ? keyword : "Search All".tl,
                 border: UnderlineInputBorder(),
               ),
               onChanged: (v) {
                 keyword = v;
+                searchHasUpper = keyword.contains(RegExp(r'[A-Z]'));
                 updateSearchAllResult();
               },
             ).paddingBottom(4).paddingRight(8),
@@ -713,29 +724,24 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
               child: SizedBox(
                 height: 200,
                 width: 200,
-                child: MiscComponents.placeholder(
-                  context,
-                  200,
-                  200,
-                  Colors.transparent,
-                ),
+                child: KostoriRefreshIndicator(),
               ),
             )
           : TabBarView(
-              key: PageStorageKey("${favoritesController.folders}"),
-              controller: favoritesController.tabController,
-              children: favoritesController.folders.map((name) {
+              key: PageStorageKey("${widget.favoritesController.folders}"),
+              controller: widget.favoritesController.tabController,
+              children: widget.favoritesController.folders.map((name) {
                 return Observer(
                   builder: (context) => SliverGridAnimes(
                     key: PageStorageKey("local_$name"),
                     asSliver: false,
                     animes: searchAllMode
                         ? (searchResults[name] ?? [])
-                        : (favoritesController.animes[name] ?? []),
+                        : (widget.favoritesController.animes[name] ?? []),
                     selections: selectedAnimes,
                     enableFavorite: false,
                     onTap: multiSelectMode
-                        ? (a) {
+                        ? (a, heroID) {
                             setState(() {
                               if (selectedAnimes.containsKey(
                                 a as FavoriteItem,
@@ -753,7 +759,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                   -1;
                             });
                           }
-                        : (a) {
+                        : (a, heroID) {
                             if (a.viewMore != null &&
                                 a.viewMore?.attributes != null) {
                               var context =
@@ -761,8 +767,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                               a.viewMore!.jump(context);
                             } else {
                               App.mainNavigatorKey?.currentContext?.to(
-                                () =>
-                                    AnimePage(id: a.id, sourceKey: a.sourceKey),
+                                () => AnimePage(
+                                  id: a.id,
+                                  sourceKey: a.sourceKey,
+                                  cover: a.cover,
+                                  title: a.title,
+                                  heroID: heroID,
+                                ),
                               );
                               final stats = StatsManager();
                               if (!stats.isExist(
@@ -786,13 +797,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                   );
                                 }
                               }
-                              manager.updateRecentlyWatched(
-                                a.id,
-                                AnimeType(a.sourceKey.hashCode),
-                              );
                             }
+                            manager.updateRecentlyWatched(
+                              a.id,
+                              AnimeType(a.sourceKey.hashCode),
+                            );
                           },
-                    onLongPressed: (a) {
+                    onLongPressed: (a, heroID) {
                       setState(() {
                         if (!multiSelectMode) {
                           multiSelectMode = true;
@@ -858,51 +869,36 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
         Positioned(
           bottom: 10,
           right: 10,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            opacity: showFB ? 1 : 0,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 20, right: 0),
-              child: GridSpeedDial(
-                icon: Icons.menu,
-                activeIcon: Icons.close,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                spacing: 6,
-                spaceBetweenChildren: 4,
-                direction: SpeedDialDirection.up,
-                childPadding: const EdgeInsets.all(6),
-                childrens: [
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.refresh),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () async {
-                        await updateAnimes();
-                      },
-                    ),
-                  ],
-                  [
-                    SpeedDialChild(
-                      child: const Icon(Icons.vertical_align_top),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                      onTap: () => scrollToTop(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          child: FloatingMenu(
+            controller: scrollController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () async {
+                    await updateAnimes();
+                  },
+                ),
+              ],
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () => scrollToTop(),
+                ),
+              ],
+            ],
           ),
         ),
       ],
@@ -927,26 +923,12 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
             multiSelectMode = false;
             selectedAnimes.clear();
           });
-          if (App.isAndroid) {
-            Log.addLog(
-              LogLevel.info,
-              'multiSelectMode',
-              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
-            );
-          }
         } else if (searchAllMode) {
           setState(() {
             searchAllMode = false;
-            keyword = "";
+            favoritesController.isRefreshEnabled = true;
             updateAnimes();
           });
-          if (App.isAndroid) {
-            Log.addLog(
-              LogLevel.info,
-              'searchAllMode',
-              'multiSelectMode: $multiSelectMode \n searchAllMode: $searchAllMode',
-            );
-          }
         }
       },
       child: body,

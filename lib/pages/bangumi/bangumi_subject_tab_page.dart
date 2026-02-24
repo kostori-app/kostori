@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/error_widget.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+//bangumiPage页的
 class BangumiSubjectTabPage extends StatefulWidget {
   const BangumiSubjectTabPage({super.key});
 
@@ -189,14 +190,7 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],
@@ -294,14 +288,7 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],

@@ -188,6 +188,12 @@ class Settings with ChangeNotifier {
     'FavoriteTypeCollect': 'none',
     'FavoriteTypeOnHold': 'none',
     'FavoriteTypeDropped': 'none',
+    'animeListDisplayMode': 'paging',
+    'androidVideoRenderer': 'auto',
+    'hAenable': true,
+    'hardwareDecoder': 'auto-safe',
+    'audioOutType': true,
+    'videoSynchronizationMode': 'audio',
   };
 
   dynamic operator [](String key) {

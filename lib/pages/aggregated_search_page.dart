@@ -3,6 +3,7 @@ import "package:kostori/components/components.dart";
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:kostori/foundation/app.dart";
 import "package:kostori/foundation/appdata.dart";
+import "package:kostori/foundation/search_history.dart";
 import "package:kostori/pages/search_result_page.dart";
 import "package:kostori/utils/translations.dart";
 import "package:shimmer_animation/shimmer_animation.dart";
@@ -52,8 +53,9 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
     showOnlyNonEmpty = appdata.implicitData['showOnlyNonEmpty'] ?? false;
 
     _keyword = widget.keyword;
-    appdata.addSearchHistory(_keyword);
-    appdata.saveData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SearchHistoryManager().addSearch(_keyword);
+    });
 
     controller = SearchBarController(
       currentText: widget.keyword,
@@ -287,6 +289,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
             text: widget.keyword,
             sourceKey: widget.source.key,
           ),
+          iosFullScreenGesture: false,
         );
       },
       child: Column(

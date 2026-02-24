@@ -6,12 +6,14 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class SearchPage extends StatefulWidget {
@@ -358,72 +360,86 @@ class SearchHistory extends StatefulWidget {
 class SearchHistoryState extends State<SearchHistory> {
   @override
   Widget build(BuildContext context) {
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        if (index == 0) {
-          return const SizedBox(height: 16);
-        }
-        if (index == 1) {
-          return ListTile(
-            leading: const Icon(Icons.history),
-            contentPadding: EdgeInsets.zero,
-            title: Text("Search History".tl),
-            trailing: Flyout(
-              flyoutBuilder: (context) {
-                return FlyoutContent(
-                  title: "Clear Search History".tl,
-                  actions: [
-                    FilledButton(
-                      child: Text("Clear".tl),
-                      onPressed: () {
-                        appdata.clearSearchHistory();
-                        context.pop();
-                        setState(() {});
-                      },
-                    ),
-                  ],
-                );
-              },
-              child: Builder(
-                builder: (context) {
-                  return Tooltip(
-                    message: "Clear".tl,
-                    child: IconButton(
-                      icon: const Icon(Icons.clear_all),
-                      onPressed: () {
-                        context.findAncestorStateOfType<FlyoutState>()!.show();
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          );
-        }
-        return buildItem(index - 2);
-      }, childCount: 2 + appdata.searchHistory.length),
-    ).sliverPaddingHorizontal(16);
+    final manager = SearchHistoryManager();
+
+    return AnimatedBuilder(
+      animation: manager,
+      builder: (context, _) {
+        final history = manager.getSearchAll();
+
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
+            if (index == 0) {
+              return const SizedBox(height: 16);
+            }
+
+            if (index == 1) {
+              return _buildHeader(context, manager);
+            }
+
+            return buildItem(context, history[index - 2], manager);
+          }, childCount: 2 + history.length),
+        ).sliverPaddingHorizontal(16);
+      },
+    );
   }
 
-  Widget buildItem(int index) {
+  Widget _buildHeader(BuildContext context, SearchHistoryManager manager) {
+    return ListTile(
+      leading: const Icon(Icons.history),
+      contentPadding: EdgeInsets.zero,
+      title: Text("Search History".tl),
+      trailing: Flyout(
+        flyoutBuilder: (context) {
+          return FlyoutContent(
+            title: "Clear Search History".tl,
+            actions: [
+              FilledButton(
+                child: Text("Clear".tl),
+                onPressed: () {
+                  manager.clearSearch();
+                  context.pop();
+                },
+              ),
+            ],
+          );
+        },
+        child: Builder(
+          builder: (context) {
+            return Tooltip(
+              message: "Clear".tl,
+              child: IconButton(
+                icon: const Icon(Icons.clear_all),
+                onPressed: () {
+                  context.findAncestorStateOfType<FlyoutState>()!.show();
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget buildItem(
+    BuildContext context,
+    SearchHistoryItem item,
+    SearchHistoryManager manager,
+  ) {
     void showMenu(Offset offset) {
       showMenuX(context, offset, [
         MenuEntry(
           icon: Icons.copy,
           text: 'Copy'.tl,
           onClick: () {
-            Clipboard.setData(
-              ClipboardData(text: appdata.searchHistory[index]),
-            );
+            Clipboard.setData(ClipboardData(text: item.keyword));
           },
         ),
         MenuEntry(
           icon: Icons.delete,
           text: 'Delete'.tl,
           onClick: () {
-            appdata.removeSearchHistory(appdata.searchHistory[index]);
-            appdata.saveData();
-            setState(() {});
+            manager.deleteSearch(item.keyword);
           },
         ),
       ]);
@@ -433,7 +449,7 @@ class SearchHistoryState extends State<SearchHistory> {
       builder: (context) {
         return InkWell(
           onTap: () {
-            widget.search(appdata.searchHistory[index]);
+            widget.search(item.keyword);
           },
           onLongPress: () {
             var renderBox = context.findRenderObject() as RenderBox;
@@ -450,7 +466,6 @@ class SearchHistoryState extends State<SearchHistory> {
           },
           child: Container(
             decoration: BoxDecoration(
-              // color: context.colorScheme.surfaceContainer,
               border: Border(
                 left: BorderSide(
                   color: context.colorScheme.outlineVariant,
@@ -458,8 +473,52 @@ class SearchHistoryState extends State<SearchHistory> {
                 ),
               ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Text(appdata.searchHistory[index], style: ts.s14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 第一行：关键词
+                Text(
+                  item.keyword,
+                  style: ts.s14.copyWith(fontWeight: FontWeight.w500),
+                ),
+
+                const SizedBox(height: 4),
+
+                // 第二行：次数 + 时间
+                Row(
+                  children: [
+                    Icon(
+                      Icons.repeat,
+                      size: 14,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${item.useCount} 次',
+                      style: ts.s12.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    Icon(
+                      Icons.schedule,
+                      size: 14,
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      Utils.formatTime(item.lastUsedAt),
+                      style: ts.s12.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ).paddingBottom(8).paddingHorizontal(4);
       },

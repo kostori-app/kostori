@@ -10,6 +10,7 @@ import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+//讨论页
 class BangumiTopicsPage extends StatefulWidget {
   const BangumiTopicsPage({super.key, required this.id});
 
@@ -75,14 +76,13 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                 firstChild: Container(), // 隐藏状态
                 secondChild: Row(
                   children: [
-                    if (topicsInfoItem != null)
+                    if (topicsInfoItem != null) ...[
                       CircleAvatar(
                         backgroundImage: NetworkImage(
                           topicsInfoItem!.creator.avatar.large,
                         ),
                       ),
-                    const SizedBox(width: 8),
-                    if (topicsInfoItem != null)
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -117,6 +117,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                           ],
                         ),
                       ),
+                    ],
                   ],
                 ),
                 crossFadeState: isHide
@@ -156,11 +157,10 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                   Material(
                                     child: Padding(
                                       padding: EdgeInsets.symmetric(
-                                        horizontal: 8,
                                         vertical: 4,
                                       ),
                                       child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(6),
                                         onTap: () {
                                           context.to(
                                             () => BangumiInfoPage(
@@ -189,26 +189,33 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                         },
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
+                                            horizontal: 4,
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(
-                                              8,
+                                              6,
+                                            ),
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .toOpacity(0.4),
+                                              width: 1,
                                             ),
                                           ),
                                           child: Row(
                                             children: [
                                               ClipRRect(
                                                 borderRadius:
-                                                    BorderRadius.circular(8),
+                                                    BorderRadius.circular(4),
                                                 child: Image.network(
                                                   topicsInfoItem!
                                                       .subject
                                                       .images
                                                       .large,
-                                                  width: 40,
-                                                  height: 40,
+                                                  width: 22,
+                                                  height: 22,
                                                   fit: BoxFit.cover,
                                                 ),
                                               ),
@@ -231,6 +238,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(width: 4),
                                   Text(
                                     Utils.dateFormat(topicsInfoItem!.createdAt),
                                     style: Theme.of(
@@ -239,14 +247,49 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                   ),
                                 ],
                               ),
+
+                              if (topicsInfoItem != null) ...[
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundImage: NetworkImage(
+                                        topicsInfoItem!.creator.avatar.large,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                topicsInfoItem!
+                                                    .creator
+                                                    .nickname,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Text(
+                                            '@${topicsInfoItem!.creator.username}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                child: BBCodeWidget(
-                                  bbcode: topicsInfoItem!.replies[0].content,
-                                ),
+                              BBCodeWidget(
+                                bbcode: topicsInfoItem!.replies[0].content,
                               ),
                               const SizedBox(height: 16),
                               Center(
@@ -292,58 +335,101 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                               ),
                             ],
                           )
-                        : Column(
-                            children: [
-                              Skeletonizer.zone(
-                                enabled: true,
-                                child: const Bone.multiText(lines: 12),
-                              ),
-                              const SizedBox(height: 16),
-                              // 替换 Expanded + Column 为 ListView
-                              SizedBox(
-                                height:
-                                    400, // ❗给个固定高度，或者用 Expanded 包这个 SizedBox
-                                child: ListView.builder(
-                                  itemCount: 6,
-                                  itemBuilder: (_, index) => Skeletonizer.zone(
-                                    enabled: true,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// 顶部标题区域骨架
+                                Skeletonizer.zone(
+                                  enabled: true,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: const [
+                                      Bone.multiText(lines: 1),
+                                      SizedBox(height: 12),
+                                      Bone.text(width: 100),
+                                      SizedBox(height: 16),
+                                      Row(
                                         children: [
-                                          Row(
-                                            children: const [
-                                              Bone.circle(size: 36),
-                                              SizedBox(width: 8),
-                                              Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Bone.text(width: 80),
-                                                  SizedBox(height: 8),
-                                                  Bone.text(width: 60),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          const Bone.multiText(lines: 2),
-                                          const Divider(
-                                            thickness: 0.5,
-                                            indent: 10,
-                                            endIndent: 10,
+                                          Bone.circle(size: 40),
+                                          SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Bone.text(width: 140),
+                                                SizedBox(height: 8),
+                                                Bone.text(width: 90),
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
+                                      SizedBox(height: 16),
+                                      Bone.multiText(lines: 10),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 24),
+
+                                /// 列表骨架
+                                SizedBox(
+                                  height: 420,
+                                  child: ListView.separated(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: 6,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 20),
+                                    itemBuilder: (_, index) {
+                                      return Skeletonizer.zone(
+                                        enabled: true,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: const [
+                                                  Bone.circle(size: 40),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Bone.text(width: 140),
+                                                        SizedBox(height: 8),
+                                                        Bone.text(width: 90),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              const SizedBox(height: 14),
+
+                                              /// 内容骨架
+                                              const Bone.multiText(lines: 2),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                   ),
                 ),

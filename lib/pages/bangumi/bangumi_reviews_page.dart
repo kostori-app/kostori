@@ -13,6 +13,7 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
+// 日志页
 class BangumiReviewsPage extends StatefulWidget {
   const BangumiReviewsPage({super.key, required this.reviewsItem});
 
@@ -77,7 +78,7 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
             SliverAppbar(
               style: AppbarStyle.blur,
               title: AnimatedCrossFade(
-                firstChild: Container(), // 隐藏状态
+                firstChild: Container(),
                 secondChild: Row(
                   children: [
                     CircleAvatar(
@@ -145,14 +146,40 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
                                 Utils.dateFormat(reviewsItem.entry.createdAt),
                               ),
                               const SizedBox(height: 16),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-                                child: BBCodeWidget(
-                                  bbcode: reviewsInfoItem!.content,
-                                ),
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                      reviewsItem.user.avatar.large,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              reviewsItem.user.nickname,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          '@${reviewsItem.user.username}',
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 16),
+                              BBCodeWidget(bbcode: reviewsInfoItem!.content),
                               const SizedBox(height: 16),
                               Center(
                                 child: Container(
@@ -175,7 +202,7 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
                                 ),
                                 const SizedBox(height: 8),
                                 SizedBox(
-                                  height: 240, // 控制网格卡片的高度
+                                  height: 240,
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     itemCount: bangumiReviewsSubjects.length,
@@ -188,12 +215,12 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
                                           horizontal: 8,
                                         ),
                                         child: SizedBox(
-                                          width: 160, // 给定一个确定的宽度（你可以根据需要调整）
-                                          height: 240, // 确保和外层一致，避免 Stack 报错
-                                          child: BangumiWidget.buildBriefMode(
-                                            context,
-                                            bangumiReviewsSubjects[index],
-                                            'Reviews$index',
+                                          width: 160,
+                                          height: 240,
+                                          child: BangumiBriefCard(
+                                            bangumiItem:
+                                                bangumiReviewsSubjects[index],
+                                            heroTag: 'Reviews$index',
                                           ),
                                         ),
                                       );
@@ -246,63 +273,108 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
                                 ),
                             ],
                           )
-                        : Column(
-                            children: [
-                              Skeletonizer.zone(
-                                enabled: true,
-                                child: const Bone.multiText(lines: 12),
-                              ),
-                              const SizedBox(height: 16),
-                              // 替换 Expanded + Column 为 ListView
-                              SizedBox(
-                                height:
-                                    400, // ❗给个固定高度，或者用 Expanded 包这个 SizedBox
-                                child: ListView.builder(
-                                  itemCount: 6,
-                                  itemBuilder: (_, index) => Skeletonizer.zone(
-                                    enabled: true,
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// 顶部标题区域骨架
+                                Skeletonizer.zone(
+                                  enabled: true,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: const [
+                                      Bone.multiText(lines: 1),
+                                      SizedBox(height: 12),
+                                      Bone.text(width: 100),
+                                      SizedBox(height: 16),
+                                      Row(
                                         children: [
-                                          Row(
-                                            children: const [
-                                              Bone.circle(size: 36),
-                                              SizedBox(width: 8),
-                                              Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Bone.text(width: 80),
-                                                  SizedBox(height: 8),
-                                                  Bone.text(width: 60),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          const Bone.multiText(lines: 2),
-                                          const Divider(
-                                            thickness: 0.5,
-                                            indent: 10,
-                                            endIndent: 10,
+                                          Bone.circle(size: 40),
+                                          SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Bone.text(width: 140),
+                                                SizedBox(height: 8),
+                                                Bone.text(width: 90),
+                                              ],
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    ),
+                                      SizedBox(height: 16),
+                                      Bone.multiText(lines: 10),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 24),
+
+                                /// 列表骨架
+                                SizedBox(
+                                  height: 420,
+                                  child: ListView.separated(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: 6,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(height: 20),
+                                    itemBuilder: (_, index) {
+                                      return Skeletonizer.zone(
+                                        enabled: true,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: const [
+                                                  Bone.circle(size: 40),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Bone.text(width: 140),
+                                                        SizedBox(height: 8),
+                                                        Bone.text(width: 90),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              const SizedBox(height: 14),
+
+                                              /// 内容骨架
+                                              const Bone.multiText(lines: 2),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                   ),
                 ),
               ),
             ),
+
+            // 评论区
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               sliver: SliverList.separated(

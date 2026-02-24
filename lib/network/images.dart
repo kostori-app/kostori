@@ -100,7 +100,7 @@ abstract class ImageDownloader {
     _loadingImages.clear();
   }
 
-  /// Load a comic image from the network or cache.
+  /// Load a anime image from the network or cache.
   /// The function will prevent multiple requests for the same image.
   static Stream<ImageDownloadProgress> loadAnimeImage(
     String imageKey,

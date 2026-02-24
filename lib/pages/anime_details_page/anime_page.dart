@@ -10,10 +10,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
@@ -199,7 +200,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     isBangumi = animeSource.isBangumi;
     if (history?.bangumiId == null) {
-      debugPrint('isBangumi是: $isBangumi');
+      debugPrint('isBangumi: $isBangumi');
       if (isBangumi) {
         updateBangumiId();
       }
@@ -217,6 +218,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       bangumiId: history!.bangumiId,
     );
     watcherController.anime = data!;
+    await initializeProgress();
   }
 
   @override
@@ -446,7 +448,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                             (history?.bangumiId == null || bangumiItem == null)
                                 ? BangumiWidget.showImagePreview(
                                     context,
-                                    anime.cover,
+                                    widget.cover ?? anime.cover,
                                     anime.title,
                                     "cover${widget.heroID}",
                                   )
@@ -503,6 +505,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     () => AggregatedSearchPage(
                                       keyword: anime.title,
                                     ),
+                                    iosFullScreenGesture: false,
                                   );
                                 },
                                 onLongPress: () {
@@ -1160,12 +1163,7 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
             children: [
               Align(
                 alignment: Alignment.center,
-                child: MiscComponents.placeholder(
-                  context,
-                  50,
-                  50,
-                  Colors.transparent,
-                ),
+                child: KostoriRefreshIndicator(),
               ),
               Positioned(
                 top: 8,

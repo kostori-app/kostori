@@ -6,6 +6,7 @@ import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/pages/bangumi/bangumi_topics_page.dart';
 import 'package:kostori/utils/utils.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 class TopicsCard extends StatelessWidget {
   const TopicsCard({
@@ -13,23 +14,33 @@ class TopicsCard extends StatelessWidget {
     this.topicsItem,
     this.isBottom = false,
     this.topicsInfoItem,
+    this.isBone = false,
   });
 
+  final bool isBone;
   final bool isBottom;
   final TopicsItem? topicsItem;
   final TopicsInfoItem? topicsInfoItem;
 
   get topics => topicsItem ?? topicsInfoItem;
 
+  const TopicsCard.bone({super.key})
+    : isBone = true,
+      topicsItem = null,
+      topicsInfoItem = null,
+      isBottom = false;
+
   @override
   Widget build(BuildContext context) {
+    if (isBone) {
+      return _buildBone(context);
+    }
     final isDesktop = MediaQuery.sizeOf(context).width > 600;
     final contentMaxWidth = isDesktop ? 600.0 : double.infinity;
 
     final avatarUrl = topics.creator.avatar.large.isEmpty
         ? 'https://bangumi.tv/img/info_only.png'
         : topics.creator.avatar.large;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: ConstrainedBox(
@@ -95,11 +106,65 @@ class TopicsCard extends StatelessWidget {
     );
   }
 
+  Widget _buildBone(BuildContext context) {
+    final isDesktop = MediaQuery.sizeOf(context).width > 600;
+    final contentMaxWidth = isDesktop ? 600.0 : double.infinity;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    return SizedBox(
+      width: screenWidth > contentMaxWidth ? contentMaxWidth : screenWidth - 32,
+      child: Skeletonizer.zone(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2.0),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 头像骨架
+                  Bone.circle(size: 48),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 标题骨架
+                        Bone.text(width: 180),
+                        const SizedBox(height: 6),
+                        // 昵称 + 时间 + 回复数骨架
+                        Row(
+                          children: [
+                            Bone.text(width: 80),
+                            const SizedBox(width: 4),
+                            const Text(' / '),
+                            Bone.text(width: 60),
+                            const SizedBox(width: 4),
+                            const Text(' / '),
+                            Bone.text(width: 30),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _handleTap(BuildContext context) {
     final page = BangumiTopicsPage(id: topics.id);
 
     if (!isBottom) {
-      context.to(() => page);
+      context.to(() => page, iosFullScreenGesture: false);
     } else {
       showModalBottomSheet(
         isScrollControlled: true,

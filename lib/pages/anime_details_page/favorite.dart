@@ -106,7 +106,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     children: [
                       TextButton(
                         onPressed: () {
-                          Navigator.of(context).pop(); // 取消关闭对话框
+                          Navigator.of(context).pop();
                         },
                         child: Text("Cancel".tl),
                       ),
@@ -115,28 +115,46 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                         onPressed: selectedLocalFolders.isEmpty
                             ? null
                             : () async {
-                                // 执行添加操作
-                                for (final folder in selectedLocalFolders.where(
-                                  (f) => !added.contains(f),
-                                )) {
-                                  LocalFavoritesManager().addAnime(
-                                    folder,
-                                    widget.favoriteItem,
-                                  );
-                                }
-
-                                // 执行删除操作
-                                for (final folder in selectedLocalFolders.where(
+                                final containsAny = selectedLocalFolders.any(
                                   (f) => added.contains(f),
-                                )) {
-                                  LocalFavoritesManager().deleteAnimeWithId(
-                                    folder,
+                                );
+                                final notContainsAny = selectedLocalFolders.any(
+                                  (f) => !added.contains(f),
+                                );
+
+                                if (containsAny && notContainsAny) {
+                                  final targets = [
+                                    ...selectedLocalFolders.where(
+                                      (f) => !added.contains(f),
+                                    ),
+                                    ...selectedLocalFolders.where(
+                                      (f) => added.contains(f),
+                                    ),
+                                  ];
+                                  final sources = added.toList();
+                                  LocalFavoritesManager().moveFavorite(
+                                    sources,
+                                    targets,
                                     widget.cid,
                                     widget.type,
                                   );
+                                } else if (notContainsAny) {
+                                  for (final folder in selectedLocalFolders) {
+                                    LocalFavoritesManager().addAnime(
+                                      folder,
+                                      widget.favoriteItem,
+                                    );
+                                  }
+                                } else if (containsAny) {
+                                  for (final folder in selectedLocalFolders) {
+                                    LocalFavoritesManager().deleteAnimeWithId(
+                                      folder,
+                                      widget.cid,
+                                      widget.type,
+                                    );
+                                  }
                                 }
 
-                                // 更新状态
                                 if (mounted) {
                                   setState(() {
                                     added = LocalFavoritesManager().find(
@@ -145,8 +163,23 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                     );
                                     selectedLocalFolders.clear();
                                   });
-                                  widget.onFavorite(foldersToAdd > 0);
+
+                                  widget.onFavorite(added.isNotEmpty);
                                   Navigator.of(context).pop();
+                                  showCenter(
+                                    seconds: 1,
+                                    icon: Gif(
+                                      image: AssetImage('assets/img/check.gif'),
+                                      height: 80,
+                                      fps: 120,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      autostart: Autostart.once,
+                                    ),
+                                    message: '操作成功',
+                                    context: context,
+                                  );
                                 }
                               },
                         child: Text('OK'.tl),

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart'
     show InAppWebViewController;
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -216,6 +217,7 @@ class _BodyState extends State<_Body> {
         await AnimeSourceManager().reload();
         setState(() {});
       }),
+      iosFullScreenGesture: false,
     );
   }
 
@@ -352,7 +354,10 @@ class _BodyState extends State<_Body> {
     try {
       var res = await AppDio().get<String>(
         url,
-        options: Options(responseType: ResponseType.plain),
+        options: Options(
+          responseType: ResponseType.plain,
+          headers: {"cache-time": "no"},
+        ),
       );
       if (cancel) return;
       controller.close();
@@ -394,6 +399,12 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         json = null;
       });
     }
+    if (controller.text.isEmpty) {
+      setState(() {
+        json = [];
+      });
+      return;
+    }
     var dio = AppDio();
     try {
       dynamic res;
@@ -407,10 +418,12 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         context.showMessage(message: "Network error".tl);
         return;
       }
-      setState(() {
-        json = jsonDecode(res.data!);
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          json = jsonDecode(res.data!);
+          loading = false;
+        });
+      }
     } catch (e) {
       context.showMessage(message: "Network error".tl);
       if (mounted) {
@@ -531,7 +544,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         }
 
         if (index == 1 && json == null) {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: KostoriRefreshIndicator());
         }
 
         index--;
@@ -1094,6 +1107,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
         onTap: () async {
           await context.to(
             () => _LoginPage(config: source.account!, source: source),
+            iosFullScreenGesture: false,
           );
           source.saveData();
           setState(() {});
@@ -1335,6 +1349,15 @@ class _LoginPageState extends State<_LoginPage> {
       if (widget.config.checkLoginStatus != null &&
           widget.config.checkLoginStatus!(url, title)) {
         var cookies = (await c.getCookies(url)) ?? [];
+        var localStorageItems = await c.webStorage.localStorage.getItems();
+        var mappedLocalStorage = <String, dynamic>{};
+        for (var item in localStorageItems) {
+          if (item.key != null) {
+            mappedLocalStorage[item.key!] = item.value;
+          }
+        }
+        widget.source.data['_localStorage'] = mappedLocalStorage;
+        await widget.source.saveData();
         SingleInstanceCookieJar.instance?.saveFromResponse(
           Uri.parse(url),
           cookies,
@@ -1396,6 +1419,20 @@ class _LoginPageState extends State<_LoginPage> {
           Uri.parse(url),
           cookies,
         );
+        var localStorageJson = await webview.evaluateJavascript(
+          "JSON.stringify(window.localStorage);",
+        );
+        var localStorage = <String, dynamic>{};
+        try {
+          var decoded = jsonDecode(localStorageJson ?? '');
+          if (decoded is Map<String, dynamic>) {
+            localStorage = decoded;
+          }
+        } catch (e) {
+          Log.error("AnimeSourcePage", "Failed to parse localStorage JSON\n$e");
+        }
+        widget.source.data['_localStorage'] = localStorage;
+        await widget.source.saveData();
         success = true;
         widget.config.onLoginWithWebviewSuccess?.call();
         webview.close();

@@ -3,15 +3,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/components/misc_components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/translations.dart';
@@ -468,11 +469,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             ? false
             : selectedBangumiItems[bangumiItems[index]] ?? false;
         var bangumi = useBriefMode
-            ? BangumiWidget.buildBriefMode(
-                context,
-                bangumiItems[index],
-                'search',
-                showPlaceholder: false,
+            ? BangumiBriefCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'search',
                 onTap: multiSelectMode
                     ? (a) {
                         onTap(a);
@@ -482,10 +481,9 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   onLongPressed(a);
                 },
               )
-            : BangumiWidget.buildDetailedMode(
-                context,
-                bangumiItems[index],
-                'search',
+            : BangumiDetailedCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'search',
                 onTap: multiSelectMode
                     ? (a) {
                         onTap(a);
@@ -557,9 +555,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
             return ContentDialog(
               title: "Select Date".tl,
               content: SizedBox(
-                width: 350,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     ListTile(
                       title: Text("Start Date".tl),
@@ -585,11 +581,6 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     });
                   },
                   child: Text("Clear Date".tl),
-                ),
-                // const Spacer(),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text("Cancel".tl),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -810,8 +801,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
       keyword = value;
 
       // 保存历史，去重
-      appdata.addSearchHistory(value);
-      appdata.saveData();
+      SearchHistoryManager().addSearch(keyword);
 
       setState(() {
         _isLoading = true;
@@ -830,23 +820,61 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   Widget _searchHistorySliver() {
+    final history = SearchHistoryManager().getSearchAll();
+
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        final item = appdata.searchHistory[index];
+        final item = history[index].keyword;
         return ListTile(
           leading: const Icon(Icons.history),
-          title: Text(item),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item, style: ts.s14.copyWith(fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.repeat,
+                    size: 14,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${history[index].useCount} 次',
+                    style: ts.s12.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Icon(
+                    Icons.schedule,
+                    size: 14,
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    Utils.formatTime(history[index].lastUsedAt),
+                    style: ts.s12.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
           onTap: () => _performSearch(item),
           trailing: IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
-              appdata.removeSearchHistory(item);
-              appdata.saveData();
+              SearchHistoryManager().deleteSearch(item);
               setState(() {});
             },
           ),
         );
-      }, childCount: appdata.searchHistory.length),
+      }, childCount: history.length),
     );
   }
 
@@ -908,7 +936,6 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   builder: (context, setState) {
                     return ShareWidget(
                       selectedBangumiItems: selectedBangumiItems,
-                      useBriefMode: useBriefMode,
                       tag: tags,
                       sort: sortTypeToOption[sort],
                       airDate: airDate,
@@ -1145,14 +1172,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: MiscComponents.placeholder(
-                        context,
-                        40,
-                        40,
-                        Colors.transparent,
-                      ),
-                    ),
+                    child: Center(child: PolygonRefreshIndicator(size: 40)),
                   ),
                 ),
             ],

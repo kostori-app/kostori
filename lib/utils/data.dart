@@ -7,6 +7,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
+import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/utils/io.dart';
@@ -26,12 +27,14 @@ Future<File> exportAppData() async {
     var localFavoriteFile = FilePath.join(dataPath, "local_favorite.db");
     var bangumiFile = FilePath.join(dataPath, "bangumi.db");
     var statsFile = FilePath.join(dataPath, "stats.db");
+    var searchHistoryFile = FilePath.join(dataPath, "search_history.db");
     var appdata = FilePath.join(dataPath, "appdata.json");
     var cookies = FilePath.join(dataPath, "cookie.db");
     zipFile.addFile("history.db", historyFile);
     zipFile.addFile("local_favorite.db", localFavoriteFile);
     zipFile.addFile("bangumi.db", bangumiFile);
     zipFile.addFile("stats.db", statsFile);
+    zipFile.addFile("search_history.db", searchHistoryFile);
     zipFile.addFile("appdata.json", appdata);
     zipFile.addFile("cookie.db", cookies);
     for (var file in Directory(
@@ -61,6 +64,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     var localFavoriteFile = cacheDir.joinFile("local_favorite.db");
     var bangumiFile = cacheDir.joinFile("bangumi.db");
     var statsFile = cacheDir.joinFile("stats.db");
+    var searchHistoryFile = cacheDir.joinFile("search_history.db");
     var appdataFile = cacheDir.joinFile("appdata.json");
     var cookieFile = cacheDir.joinFile("cookie.db");
     if (checkVersion && appdataFile.existsSync()) {
@@ -97,6 +101,16 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       File(FilePath.join(App.dataPath, "stats.db")).deleteIfExistsSync();
       statsFile.renameSync(FilePath.join(App.dataPath, "stats.db"));
       StatsManager().init();
+    }
+    if (await searchHistoryFile.exists()) {
+      SearchHistoryManager().close();
+      File(
+        FilePath.join(App.dataPath, "search_history.db"),
+      ).deleteIfExistsSync();
+      searchHistoryFile.renameSync(
+        FilePath.join(App.dataPath, "search_history.db"),
+      );
+      SearchHistoryManager().init();
     }
     if (await appdataFile.exists()) {
       var content = await appdataFile.readAsString();

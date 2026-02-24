@@ -25,6 +25,8 @@ class _VideoPageState extends State<VideoPage>
   late AnimationController animation;
   late Animation<Offset> _rightOffsetAnimation;
   late Animation<Offset> _bottomOffsetAnimation;
+  late Animation<double> panelFade;
+  late Animation<double> backgroundFade;
 
   late GridObserverController observerController;
   final GlobalKey<OverlayState> _overlayKey = GlobalKey<OverlayState>();
@@ -45,17 +47,13 @@ class _VideoPageState extends State<VideoPage>
   }
 
   void openTabBodyAnimated() {
-    if (playerController.showTabBody) {
-      animation.forward();
-      menuJumpToCurrentEpisode();
-    }
+    playerController.showTabBody = true;
+    setState(() {});
+    animation.forward();
   }
 
   void closeTabBodyAnimated() {
     animation.reverse();
-    Future.delayed(const Duration(milliseconds: 300), () {
-      playerController.showTabBody = false;
-    });
   }
 
   @override
@@ -70,15 +68,41 @@ class _VideoPageState extends State<VideoPage>
       vsync: this,
     );
 
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    panelFade = Tween<double>(begin: 0, end: 1).animate(curved);
+
+    backgroundFade = TweenSequence<double>([
+      TweenSequenceItem(tween: ConstantTween(0), weight: 20),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
+        weight: 80,
+      ),
+    ]).animate(animation);
+
     _rightOffsetAnimation = Tween<Offset>(
       begin: const Offset(1.0, 0.0),
       end: const Offset(0.0, 0.0),
-    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+    ).animate(curved);
 
     _bottomOffsetAnimation = Tween<Offset>(
       begin: const Offset(0.0, 1.0),
       end: const Offset(0.0, 0.0),
-    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut));
+    ).animate(curved);
+
+    animation.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed) {
+        playerController.showTabBody = false;
+        setState(() {});
+      }
+    });
 
     playerController.showTabBody = false;
     playerController.currentRoad = 0;
@@ -148,71 +172,12 @@ class _VideoPageState extends State<VideoPage>
 
               // 显示播放列表
               IgnorePointer(
-                ignoring: !playerController.showTabBody,
-                child: AnimatedOpacity(
-                  opacity: playerController.showTabBody ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  child: Stack(
-                    alignment: playerController.isPortraitFullscreen
-                        ? Alignment.bottomCenter
-                        : Alignment.topRight,
-                    children: [
-                      AnimatedPositioned(
-                        duration: Duration(seconds: 1),
-                        top: playerController.isPortraitFullscreen ? null : 0,
-                        bottom: playerController.isPortraitFullscreen
-                            ? 0
-                            : null,
-                        right: 0,
-                        left: playerController.isPortraitFullscreen ? 0 : null,
-                        child: Visibility(
-                          child: SlideTransition(
-                            position: playerController.isPortraitFullscreen
-                                ? _bottomOffsetAnimation
-                                : _rightOffsetAnimation,
-                            child: Container(
-                              height: playerController.isPortraitFullscreen
-                                  ? MediaQuery.of(context).size.height * 1 / 3 +
-                                        80
-                                  : MediaQuery.of(context).size.height,
-                              width: playerController.isPortraitFullscreen
-                                  ? MediaQuery.of(context).size.width
-                                  : MediaQuery.of(context).size.width * 1 / 3 >
-                                        420
-                                  ? 420 + 80
-                                  : MediaQuery.of(context).size.width * 1 / 3 +
-                                        80,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: playerController.isPortraitFullscreen
-                                      ? Alignment.topCenter
-                                      : Alignment.centerLeft,
-                                  end: playerController.isPortraitFullscreen
-                                      ? Alignment.bottomCenter
-                                      : Alignment.centerRight,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.toOpacity(0.3),
-                                    Colors.black.toOpacity(0.6),
-                                    Colors.black.toOpacity(0.8),
-                                  ],
-                                  stops: [0.0, 0.3, 0.7, 1.0],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.toOpacity(0.2),
-                                    blurRadius: 20.0,
-                                    spreadRadius: 5.0,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      // 毛玻璃背景
-                      GestureDetector(
+                ignoring: animation.status == AnimationStatus.dismissed,
+                child: Stack(
+                  children: [
+                    FadeTransition(
+                      opacity: backgroundFade,
+                      child: GestureDetector(
                         onTap: closeTabBodyAnimated,
                         child: SizedBox(
                           width: double.infinity,
@@ -225,37 +190,74 @@ class _VideoPageState extends State<VideoPage>
                           ),
                         ),
                       ),
+                    ),
 
-                      // 底部或右侧面板
-                      SlideTransition(
+                    FadeTransition(
+                      opacity: panelFade,
+                      child: SlideTransition(
                         position: playerController.isPortraitFullscreen
                             ? _bottomOffsetAnimation
                             : _rightOffsetAnimation,
-                        child: SizedBox(
-                          height: playerController.isPortraitFullscreen
-                              ? MediaQuery.of(context).size.height / 3 + 80
-                              : MediaQuery.of(context).size.height,
-                          width: playerController.isPortraitFullscreen
-                              ? MediaQuery.of(context).size.width
-                              : MediaQuery.of(context).size.width / 3 > 420
-                              ? 420 + 160
-                              : MediaQuery.of(context).size.width / 3 + 160,
-                          child: Container(
-                            color: Colors.black.toOpacity(0.42),
-                            child: GridViewObserver(
-                              controller: observerController,
-                              child: Column(children: [tabBar, tabBody]),
-                            ),
-                          ),
+                        child: Align(
+                          alignment: playerController.isPortraitFullscreen
+                              ? Alignment.bottomCenter
+                              : Alignment.topRight,
+                          child: _buildPanel(context),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
               Overlay(key: _overlayKey),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPanel(BuildContext context) {
+    final isPortrait = playerController.isPortraitFullscreen;
+
+    final height = isPortrait
+        ? MediaQuery.of(context).size.height / 3 + 80
+        : MediaQuery.of(context).size.height;
+
+    final width = isPortrait
+        ? MediaQuery.of(context).size.width
+        : MediaQuery.of(context).size.width / 3 > 420
+        ? 420 + 160
+        : MediaQuery.of(context).size.width / 3 + 160;
+
+    return Container(
+      height: height.toDouble(),
+      width: width.toDouble(),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: isPortrait ? Alignment.topCenter : Alignment.centerLeft,
+          end: isPortrait ? Alignment.bottomCenter : Alignment.centerRight,
+          colors: [
+            Colors.transparent,
+            Colors.black.toOpacity(0.3),
+            Colors.black.toOpacity(0.6),
+            Colors.black.toOpacity(0.8),
+          ],
+          stops: const [0.0, 0.3, 0.7, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.toOpacity(0.2),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Container(
+        color: Colors.black.toOpacity(0.42),
+        child: GridViewObserver(
+          controller: observerController,
+          child: Column(children: [tabBar, tabBody]),
         ),
       ),
     );

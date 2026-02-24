@@ -220,7 +220,9 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                     onTap: () async => await WatcherState.currentState!
                         .loadInfo(i + 1, playList)
                         .then((_) {
-                          setState(() {});
+                          if (mounted) {
+                            setState(() {});
+                          }
                         }),
                     onLongPress: () {
                       showEp(ep: i, road: playList);

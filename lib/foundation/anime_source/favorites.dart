@@ -1,7 +1,12 @@
 part of 'anime_source.dart';
 
-typedef AddOrDelFavFunc = Future<Res<bool>> Function(
-    String animeId, String folderId, bool isAdding, String? favId);
+typedef AddOrDelFavFunc =
+    Future<Res<bool>> Function(
+      String animeId,
+      String folderId,
+      bool isAdding,
+      String? favId,
+    );
 
 class FavoriteData {
   final String key;
@@ -15,16 +20,16 @@ class FavoriteData {
   final bool? isOldToNewSort;
 
   final Future<Res<List<Anime>>> Function(int page, [String? folder])?
-      loadAnime;
+  loadAnime;
 
   final Future<Res<List<Anime>>> Function(String? next, [String? folder])?
-      loadNext;
+  loadNext;
 
   /// key-id, value-name
   ///
-  /// if comicId is not null, Res.subData is the folders that the comic is in
+  /// if animeId is not null, Res.subData is the folders that the anime is in
   final Future<Res<Map<String, String>>> Function([String? animeId])?
-      loadFolders;
+  loadFolders;
 
   /// A value of null disables this feature
   final Future<Res<bool>> Function(String key)? deleteFolder;

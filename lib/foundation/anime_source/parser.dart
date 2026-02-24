@@ -164,6 +164,7 @@ class AnimeSourceParser {
       _getValue("anime.enableTagsTranslate") ?? false,
       _parseStarRatingFunc(),
       isBangumi,
+      _parseHttpHeaders(),
     );
 
     await source.loadData();
@@ -385,23 +386,15 @@ class AnimeSourceParser {
               if (data is List) {
                 list.add(data.map((e) => Anime.fromJson(e, _key!)).toList());
               } else if (data is Map) {
-                final kind = data['kind'];
-                List<Anime> parseAnimes(dynamic v) => (v as List)
-                    .map<Anime>((e) => Anime.fromJson(e, _key!))
-                    .toList();
-                if (kind == 'grid') {
-                  list.add(ExploreGridPart(parseAnimes(data['animes'])));
-                } else {
-                  list.add(
-                    ExplorePagePart(
-                      data['title'],
-                      (data['animes'] as List).map((e) {
-                        return Anime.fromJson(e, _key!);
-                      }).toList(),
-                      data['viewMore'],
-                    ),
-                  );
-                }
+                list.add(
+                  ExplorePagePart(
+                    data['title'],
+                    (data['animes'] as List).map((e) {
+                      return Anime.fromJson(e, _key!);
+                    }).toList(),
+                    data['viewMore'],
+                  ),
+                );
               }
             }
             return Res(list, subData: res['maxPage']);
@@ -1159,6 +1152,21 @@ class AnimeSourceParser {
       res[e.key] = Map<String, String>.from(e.value);
     }
     return res;
+  }
+
+  Map<String, String>? _parseHttpHeaders() {
+    if (!_checkExists("httpHeaders")) {
+      return null; // 如果 "httpHeaders" 键不存在，返回 null
+    }
+
+    var data = _getValue("httpHeaders"); // 获取 "httpHeaders" 对应的数据
+    if (data is Map<String, dynamic>) {
+      // 确保数据是 Map<String, dynamic> 类型
+      return Map<String, String>.from(data); // 转换为 Map<String, String>
+    } else {
+      // 如果 data 不是 Map<String, dynamic> 类型，返回 null 或者其他处理方式
+      return null;
+    }
   }
 
   HandleClickTagEvent? _parseClickTagEvent() {

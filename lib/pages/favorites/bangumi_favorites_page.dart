@@ -212,16 +212,13 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
     return SliverGrid(
       delegate: SliverChildBuilderDelegate((context, index) {
         var bangumi = useBriefMode
-            ? BangumiWidget.buildBriefMode(
-                context,
-                bangumiItems[index],
-                'favorite',
-                showPlaceholder: false,
+            ? BangumiBriefCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'favorite',
               )
-            : BangumiWidget.buildDetailedMode(
-                context,
-                bangumiItems[index],
-                'favorite',
+            : BangumiDetailedCard(
+                bangumiItem: bangumiItems[index],
+                heroTag: 'favorite',
               );
         return bangumi;
       }, childCount: bangumiItems.length),
@@ -260,14 +257,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -310,14 +300,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -360,14 +343,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -410,14 +386,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],
@@ -460,14 +429,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Center(
-                          child: MiscComponents.placeholder(
-                            context,
-                            40,
-                            40,
-                            Colors.transparent,
-                          ),
-                        ),
+                        child: Center(child: PolygonRefreshIndicator(size: 40)),
                       ),
                     ),
                 ],

@@ -109,7 +109,7 @@ class _AnimatedImageState extends State<AnimatedImage>
     _updateInvertColors();
     _resolveImage();
 
-    if (TickerMode.of(context)) {
+    if (TickerMode.valuesOf(context).enabled) {
       _listenToStream();
     } else {
       _stopListeningToStream(keepStreamAlive: true);
@@ -309,70 +309,9 @@ class _AnimatedImageState extends State<AnimatedImage>
           child: result,
         );
       }
-    } else if (_loadingProgress != null) {
-      final expected = _loadingProgress!.expectedTotalBytes;
-      final loaded = _loadingProgress!.cumulativeBytesLoaded;
-      double progress = 0.0;
-      if (expected != null && expected > 0) {
-        progress = loaded / expected;
-      }
-
-      result = Stack(
-        alignment: Alignment.center,
-        children: [
-          if (true) // 你控制是否显示占位图
-            MiscComponents.placeholder(
-              context,
-              widget.width ?? 100,
-              widget.height ?? 100,
-              Colors.transparent,
-            ),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.black.toOpacity(0.4),
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          SizedBox(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: 1,
-                  valueColor: AlwaysStoppedAnimation(Colors.white24),
-                  strokeWidth: 4,
-                ),
-                CircularProgressIndicator(
-                  value: progress,
-                  valueColor: AlwaysStoppedAnimation(Colors.lightBlueAccent),
-                  strokeWidth: 4,
-                ),
-                Text(
-                  '${(progress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(
-                    // color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 0),
-                        blurRadius: 3,
-                        color: Colors.black54,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
     } else {
-      // 默认加载状态（无进度信息）
-      result = MiscComponents.placeholder(
-        context,
-        widget.width ?? 100,
-        widget.height ?? 100,
-        Colors.transparent,
+      result = Skeletonizer.zone(
+        child: Bone(height: widget.height, width: widget.width ?? 100),
       );
     }
 

@@ -1,9 +1,9 @@
 import "package:flutter/material.dart";
-
+import "package:kostori/components/anime_list.dart";
+import 'package:kostori/components/components.dart';
 import "package:kostori/foundation/anime_source/anime_source.dart";
 import "package:kostori/foundation/app.dart";
 import "package:kostori/utils/translations.dart";
-import 'package:kostori/components/components.dart';
 
 class RankingPage extends StatefulWidget {
   const RankingPage({required this.categoryKey, super.key});
@@ -42,14 +42,13 @@ class _RankingPageState extends State<RankingPage> {
     var topPadding = context.padding.top + 56;
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: Appbar(
-        title: Text("Ranking".tl),
-      ),
+      appBar: Appbar(title: Text("Ranking".tl)),
       body: AnimeList(
         key: Key(optionValue),
         errorLeading: SizedBox(height: topPadding),
-        leadingSliver:
-            buildOptions().sliverPadding(EdgeInsets.only(top: topPadding)),
+        leadingSliver: buildOptions().sliverPadding(
+          EdgeInsets.only(top: topPadding),
+        ),
         loadPage: data.rankingData!.load == null
             ? null
             : (i) => data.rankingData!.load!(optionValue, i),
@@ -75,14 +74,16 @@ class _RankingPageState extends State<RankingPage> {
 
   Widget buildOptions() {
     List<Widget> children = [];
-    children.add(Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (var option in options.entries)
-          buildOptionItem(option.value.tl, option.key, context)
-      ],
-    ));
+    children.add(
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (var option in options.entries)
+            buildOptionItem(option.value.tl, option.key, context),
+        ],
+      ),
+    );
     return SliverToBoxAdapter(
       child: Column(
         mainAxisSize: MainAxisSize.min,
