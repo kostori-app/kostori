@@ -1420,7 +1420,7 @@ class _BangumiCardState extends State<BangumiCard> {
         ),
         SizedBox(width: 5),
         Container(
-          padding: EdgeInsets.fromLTRB(8, 5, 8, 5),
+          padding: EdgeInsets.fromLTRB(6, 5, 6, 5),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
@@ -1430,7 +1430,7 @@ class _BangumiCardState extends State<BangumiCard> {
           ),
           child: Text(
             Utils.getRatingLabel(bangumiItem.score),
-            style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 10.0, fontWeight: FontWeight.bold),
           ),
         ),
         SizedBox(width: 4),
