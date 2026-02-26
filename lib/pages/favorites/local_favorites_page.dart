@@ -634,6 +634,9 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                         favoritesController.isRefreshEnabled = true;
 
                         await updateAnimes();
+                        if (searchAllMode) {
+                          updateSearchAllResult();
+                        }
 
                         multiSelectMode = false;
                         selectedAnimes.clear();
