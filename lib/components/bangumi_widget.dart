@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:gif/gif.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -18,7 +17,6 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
-import 'package:kostori/utils/extension.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
@@ -710,14 +708,7 @@ class BangumiWidget {
         : 'bangumi_${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 
-  // 全局记录加载失败的图片 URL
-  static final Set<String> _failedImageUrls = {};
-
-  // 添加全部重置方法（可选）
-  static void resetAllFailedImages() {
-    _failedImageUrls.clear();
-  }
-
+  ///sourcekey写死了bangumi所以可想而知是用在哪的
   static Widget kostoriImage(
     BuildContext context,
     String imageUrl, {
@@ -725,31 +716,6 @@ class BangumiWidget {
     double height = 100,
     bool enableDefaultSize = true,
   }) {
-    if (_failedImageUrls.contains(imageUrl)) {
-      return Center(child: PolygonRefreshIndicator(size: 50));
-    }
-
-    //   //// We need this to shink memory usage
-    int? memCacheWidth, memCacheHeight;
-    double aspectRatio = (width / height).toDouble();
-
-    void setMemCacheSizes() {
-      if (aspectRatio > 1) {
-        memCacheHeight = height.cacheSize(context);
-      } else if (aspectRatio < 1) {
-        memCacheWidth = width.cacheSize(context);
-      } else {
-        memCacheWidth = width.cacheSize(context);
-        memCacheHeight = height.cacheSize(context);
-      }
-    }
-
-    setMemCacheSizes();
-
-    if (memCacheWidth == null && memCacheHeight == null) {
-      memCacheWidth = width.toInt();
-    }
-
     ImageProvider? findImageProvider() {
       ImageProvider image;
       image = CachedImageProvider(imageUrl, sourceKey: 'bangumi');
@@ -769,8 +735,6 @@ class BangumiWidget {
         height: height,
         fit: BoxFit.cover,
         filterQuality: FilterQuality.high,
-        cacheWidth: memCacheWidth,
-        cacheHeight: memCacheHeight,
       );
     }
     return AnimatedImage(
@@ -1516,5 +1480,27 @@ class BangumiDetailedCard extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// 状态保存
+class KeepAliveWrapper extends StatefulWidget {
+  const KeepAliveWrapper({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<KeepAliveWrapper> createState() => KeepAliveWrapperState();
+}
+
+class KeepAliveWrapperState extends State<KeepAliveWrapper>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
