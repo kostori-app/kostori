@@ -9,6 +9,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -111,12 +112,13 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
         if (controller.isLoading) {
           return const Center(
             heightFactor: 10,
-            child: CircularProgressIndicator(),
+            child: KostoriRefreshIndicator(),
           );
         }
         final groupedEntries = _groupEntriesByBangumiId(
           controller.entriesForSelectedDay,
         );
+        final limitedEntries = groupedEntries.take(9).toList();
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
@@ -500,13 +502,15 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    '${groupedEntries.length}',
+                                    groupedEntries.length <= 9
+                                        ? '${groupedEntries.length}'
+                                        : '${groupedEntries.length} ( 9 )',
                                     style: ts.s12,
                                   ),
                                 ),
                                 const Spacer(),
                                 IconButton(
-                                  tooltip: '天统计',
+                                  tooltip: '天统计'.tl,
                                   icon: const Icon(Icons.today),
                                   onPressed: () async {
                                     showStats(
@@ -518,6 +522,24 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                                     );
                                   },
                                 ),
+                                if (groupedEntries.length > 9)
+                                  IconButton(
+                                    tooltip: '查看全部',
+                                    icon: const Icon(
+                                      Icons.format_list_bulleted,
+                                    ),
+                                    onPressed: () {
+                                      context.to(
+                                        () => FullStatsPage(
+                                          statsDataList: groupedEntries,
+                                          selectedDay:
+                                              controller.selectedDay ??
+                                              controller.focusedDay,
+                                        ),
+                                        iosFullScreenGesture: false,
+                                      );
+                                    },
+                                  ),
                               ],
                             ),
                           ).paddingHorizontal(16),
@@ -527,10 +549,10 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                               vertical: 5,
                             ),
                             child: Column(
-                              children: List.generate(groupedEntries.length, (
+                              children: List.generate(limitedEntries.length, (
                                 index,
                               ) {
-                                final statGroup = groupedEntries[index];
+                                final statGroup = limitedEntries[index];
                                 return Padding(
                                   key: ValueKey(statGroup.first.id),
                                   padding: const EdgeInsets.symmetric(
@@ -576,6 +598,70 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
         );
       },
     );
+  }
+}
+
+class FullStatsPage extends StatelessWidget {
+  FullStatsPage({
+    super.key,
+    required this.statsDataList,
+    required this.selectedDay,
+  });
+
+  final List<List<StatsDataImpl>> statsDataList;
+
+  final DateTime selectedDay;
+
+  final ScrollController scrollController = ScrollController();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget widget = Scaffold(
+      appBar: Appbar(title: Text('当天的记录')),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: ListView.builder(
+          controller: scrollController,
+          itemCount: statsDataList.length,
+          itemBuilder: (context, index) {
+            final statGroup = statsDataList[index];
+            return Padding(
+              key: ValueKey(statGroup.first.id),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Material(
+                  color: context.brightness == Brightness.light
+                      ? Colors.white.toOpacity(0.72)
+                      : const Color(0xFF1E1E1E).toOpacity(0.72),
+                  elevation: 4,
+                  shadowColor: Theme.of(context).colorScheme.shadow,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: InkWell(
+                    onTap: () {},
+                    child: StatItemWidget(
+                      statsGroup: statGroup,
+                      selectedDay: selectedDay,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    widget = AppScrollBar(
+      topPadding: 82,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
+    return widget;
   }
 }
 
