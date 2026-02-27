@@ -253,11 +253,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       useMaterial3: true,
       fontFamily: font,
       fontFamilyFallback: fallback,
-      // progressIndicatorTheme: ProgressIndicatorThemeData(year2023: false),
-      // sliderTheme: SliderThemeData(
-      //   year2023: false,
-      //   showValueIndicator: ShowValueIndicator.onDrag,
-      // ),
       pageTransitionsTheme: PageTransitionsTheme(
         builders: {
           TargetPlatform.android: CupertinoPageTransitionsBuilder(),
@@ -329,10 +324,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             Locale('zh', 'TW'),
           ],
           builder: (context, widget) {
-            final isPaddingCheckError =
-                MediaQuery.of(context).padding.top <= 0 ||
-                MediaQuery.of(context).padding.top > 80;
-
             ErrorWidget.builder = (details) {
               Log.error(
                 "Unhandled Exception",
@@ -343,15 +334,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               );
             };
             if (widget != null) {
-              if (isPaddingCheckError && App.isAndroid) {
-                widget = MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    viewPadding: const EdgeInsets.only(top: 15, bottom: 15),
-                    padding: const EdgeInsets.only(top: 15, bottom: 15),
-                  ),
-                  child: widget,
-                );
-              }
               widget = OverlayWidget(widget);
               if (App.isDesktop) {
                 widget = Shortcuts(
