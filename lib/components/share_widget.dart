@@ -14,6 +14,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
@@ -65,11 +66,14 @@ class ShareWidget extends StatefulWidget {
     this.sort,
     this.endDate,
     this.characterFullItem,
+    this.selectedCharacterItems,
   });
 
   final int? id;
 
   final Map<BangumiItem, bool>? selectedBangumiItems;
+
+  final Map<CharacterActor, bool>? selectedCharacterItems;
 
   final AnimeDetails? anime;
 
@@ -100,6 +104,7 @@ class _ShareWidgetState extends State<ShareWidget> {
   late int id;
   late AnimeDetails anime;
   late Map<BangumiItem, bool> selectedBangumiItems;
+  late Map<CharacterActor, bool> selectedCharacterItems;
   late CharacterFullItem characterFullItem;
 
   int? latestRating;
@@ -119,6 +124,9 @@ class _ShareWidgetState extends State<ShareWidget> {
       isLoding = false;
     } else if (widget.characterFullItem != null) {
       characterFullItem = widget.characterFullItem!;
+      isLoding = false;
+    } else if (widget.selectedCharacterItems != null) {
+      selectedCharacterItems = widget.selectedCharacterItems!;
       isLoding = false;
     }
     super.initState();
@@ -924,7 +932,7 @@ class _ShareWidgetState extends State<ShareWidget> {
     );
   }
 
-  Widget _searchPage() {
+  Widget _searchSubjectPage() {
     final keyList = selectedBangumiItems.keys.toList();
 
     return RepaintBoundary(
@@ -1065,6 +1073,93 @@ class _ShareWidgetState extends State<ShareWidget> {
                           children: keyList.map((item) {
                             return BangumiGridCard(
                               bangumiItem: item,
+                              width: itemWidth,
+                              height: itemHeight,
+                            );
+                          }).toList(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _searchCharacterPage() {
+    final keyList = selectedCharacterItems.keys.toList();
+
+    return RepaintBoundary(
+      key: repaintKey,
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: context.padding.bottom + 16,
+          top: context.padding.top,
+          right: 20,
+          left: 20,
+        ),
+        child: Container(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          child: Material(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.72)
+                : const Color(0xFF1E1E1E).toOpacity(0.72),
+            elevation: 4,
+            shadowColor: Theme.of(context).colorScheme.shadow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                SizedBox(height: 32.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text('${keyList.length}', style: ts.s12),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final crossAxisCount = 3;
+                      final spacing = 8.0;
+                      final totalSpacing = (crossAxisCount - 1) * spacing;
+                      final itemWidth =
+                          (constraints.maxWidth - totalSpacing) /
+                          crossAxisCount;
+                      final itemHeight = itemWidth * 1.4;
+
+                      return Center(
+                        child: Wrap(
+                          spacing: spacing,
+                          runSpacing: 16,
+                          children: keyList.map((item) {
+                            return _BangumiCharacterCard(
+                              character: item,
                               width: itemWidth,
                               height: itemHeight,
                             );
@@ -1225,9 +1320,11 @@ class _ShareWidgetState extends State<ShareWidget> {
     } else if (widget.id != null) {
       return _bangumiInfoPage();
     } else if (widget.selectedBangumiItems != null) {
-      return _searchPage();
+      return _searchSubjectPage();
     } else if (widget.characterFullItem != null) {
       return _characterPage();
+    } else if (widget.selectedCharacterItems != null) {
+      return _searchCharacterPage();
     } else {
       return Container();
     }
@@ -1494,6 +1591,112 @@ class BangumiHorizontalCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _BangumiCharacterCard extends StatelessWidget {
+  const _BangumiCharacterCard({
+    required this.character,
+    required this.width,
+    required this.height,
+  });
+
+  final CharacterActor character;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = character.nameCN.isNotEmpty
+        ? character.nameCN
+        : character.name;
+    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+
+    Widget info() {
+      return Text(character.info, style: const TextStyle(fontSize: 12.0));
+    }
+
+    Widget containerBackground(Widget child) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.6)
+                : Colors.black.toOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: child,
+        ),
+      );
+    }
+
+    Widget backdropFilter(Widget child) {
+      return BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          color: context.brightness == Brightness.light
+              ? Colors.white.toOpacity(0.3)
+              : Colors.black.toOpacity(0.3),
+          child: child,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: width,
+          height: height,
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: character.images.large.isEmpty
+                    ? SizedBox(width: width, height: height)
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BangumiWidget.kostoriImage(
+                          context,
+                          character.images.large,
+                          width: width,
+                          height: height,
+                        ),
+                      ),
+              ),
+              if (character.info.isNotEmpty)
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: animeCardUseBlur
+                          ? backdropFilter(info())
+                          : containerBackground(info()),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: width,
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
   }
 }

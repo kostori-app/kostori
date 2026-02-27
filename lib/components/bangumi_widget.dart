@@ -11,12 +11,15 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+import 'package:kostori/pages/bangumi/character_page.dart';
+import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
@@ -27,6 +30,23 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class BangumiWidget {
+  static void showBottomPage(BuildContext context, Widget page) {
+    showModalBottomSheet(
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+        maxWidth: MediaQuery.of(context).size.width < 600
+            ? MediaQuery.of(context).size.width
+            : App.isDesktop
+            ? MediaQuery.of(context).size.width * 9 / 16
+            : MediaQuery.of(context).size.width,
+      ),
+      clipBehavior: Clip.antiAlias,
+      context: context,
+      builder: (context) => page,
+    );
+  }
+
   static Widget bangumiSkeletonSliverBrief() {
     return SliverGrid(
       delegate: SliverChildBuilderDelegate((context, index) {
@@ -1045,7 +1065,6 @@ class _ExpandableTagsState extends State<ExpandableTags>
 class BangumiBriefCard extends StatelessWidget {
   final BangumiItem bangumiItem;
   final String heroTag;
-  final bool showPlaceholder;
   final void Function(BangumiItem)? onTap;
   final void Function(BangumiItem)? onLongPressed;
 
@@ -1053,7 +1072,6 @@ class BangumiBriefCard extends StatelessWidget {
     super.key,
     required this.bangumiItem,
     required this.heroTag,
-    this.showPlaceholder = true,
     this.onTap,
     this.onLongPressed,
   });
@@ -1479,6 +1497,210 @@ class BangumiDetailedCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class BangumiCharacterCard extends StatelessWidget {
+  const BangumiCharacterCard({
+    super.key,
+    required this.character,
+    required this.heroTag,
+    this.onTap,
+    this.onLongPressed,
+    required this.isCharacter,
+    this.useMarquee = true,
+  });
+
+  final CharacterActor character;
+  final String heroTag;
+  final bool isCharacter;
+  final bool useMarquee;
+  final void Function(CharacterActor)? onTap;
+  final void Function(CharacterActor)? onLongPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = character.nameCN.isNotEmpty
+        ? character.nameCN
+        : character.name;
+    final style = const TextStyle(fontWeight: FontWeight.w500);
+    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+
+    Widget info() {
+      return Text(character.info, style: const TextStyle(fontSize: 12.0));
+    }
+
+    Widget containerBackground(Widget child) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.6)
+                : Colors.black.toOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: child,
+        ),
+      );
+    }
+
+    Widget backdropFilter(Widget child) {
+      return BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          color: context.brightness == Brightness.light
+              ? Colors.white.toOpacity(0.3)
+              : Colors.black.toOpacity(0.3),
+          child: child,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final height = constraints.maxHeight - 36;
+
+          Widget image = Container(
+            decoration: BoxDecoration(
+              color: context.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.toOpacity(0.2),
+                  blurRadius: 2,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Hero(
+              tag: '$heroTag-${character.id}',
+              child: BangumiWidget.kostoriImage(
+                context,
+                character.images.large,
+                width: constraints.maxWidth,
+                height: height,
+              ),
+            ),
+          );
+
+          Widget titleWidget() {
+            if (useMarquee) {
+              final textPainter = TextPainter(
+                text: TextSpan(text: title, style: style),
+                maxLines: 1,
+                textDirection: TextDirection.ltr,
+              )..layout(maxWidth: constraints.maxWidth);
+
+              final shouldScroll =
+                  textPainter.width >= constraints.maxWidth - 30;
+
+              return SizedBox(
+                height: 20,
+                child: ClipRect(
+                  child: shouldScroll
+                      ? Marquee(
+                          text: title,
+                          style: style,
+                          scrollAxis: Axis.horizontal,
+                          blankSpace: 10.0,
+                          velocity: 40.0,
+                          pauseAfterRound: Duration.zero,
+                          accelerationDuration: Duration.zero,
+                          decelerationDuration: Duration.zero,
+                        )
+                      : Text(
+                          title,
+                          style: style,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                ),
+              );
+            } else {
+              return SizedBox(
+                width: constraints.maxWidth,
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }
+          }
+
+          return InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () {
+              if (onTap != null) {
+                onTap?.call(character);
+              } else {
+                BangumiWidget.showBottomPage(
+                  context,
+                  isCharacter
+                      ? CharacterPage(characterID: character.id)
+                      : PersonPage(personID: character.id),
+                );
+              }
+            },
+            onLongPress: onLongPressed != null
+                ? () => onLongPressed?.call(character)
+                : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: constraints.maxWidth,
+                  height: height,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: character.images.large.isEmpty
+                            ? SizedBox(
+                                width: constraints.maxWidth,
+                                height: height,
+                              )
+                            : image,
+                      ),
+                      if (character.info.isNotEmpty)
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: animeCardUseBlur
+                                  ? backdropFilter(info())
+                                  : containerBackground(info()),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+                  child: titleWidget(),
+                ),
+              ],
+            ).paddingHorizontal(2).paddingVertical(2),
+          );
+        },
+      ),
     );
   }
 }

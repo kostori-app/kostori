@@ -218,7 +218,6 @@
     "Select in range": "区间选择",
     "Select": "选择",
     "Selected @a animes": "已选择 @a 部番剧",
-    "Selected @c animes": "已选择 @c 部番剧",
     "Set Cache Limit": "设置缓存限制",
     "Set New Storage Path": "设置新的存储路径",
     "Set source list url": "设置源列表地址",
@@ -617,7 +616,10 @@
     "Chinese Dub": "中配",
     "Japanese Dub": "日配",
     "English Dub": "英配",
-    "Korean Dub": "韩配"
+    "Korean Dub": "韩配",
+    "Selected @a character": "已选择 @a 位角色",
+    "Search Options": "搜索选项",
+    "Search Sources": "搜索源"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

@@ -575,9 +575,12 @@ class _CharacterPageState extends State<CharacterPage>
                                                             8,
                                                           ),
                                                       onTap: () =>
-                                                          _showPersonPage(
+                                                          BangumiWidget.showBottomPage(
                                                             context,
-                                                            actor.id,
+                                                            PersonPage(
+                                                              personID:
+                                                                  actor.id,
+                                                            ),
                                                           ),
                                                       child: Container(
                                                         padding:
@@ -766,25 +769,6 @@ class _CharacterPageState extends State<CharacterPage>
           ),
         ),
       ),
-    );
-  }
-
-  void _showPersonPage(BuildContext context, int id) {
-    showModalBottomSheet(
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
-        maxWidth: MediaQuery.of(context).size.width < 600
-            ? MediaQuery.of(context).size.width
-            : App.isDesktop
-            ? MediaQuery.of(context).size.width * 9 / 16
-            : MediaQuery.of(context).size.width,
-      ),
-      clipBehavior: Clip.antiAlias,
-      context: context,
-      builder: (context) {
-        return PersonPage(personID: id);
-      },
     );
   }
 }

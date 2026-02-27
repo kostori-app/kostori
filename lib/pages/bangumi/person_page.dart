@@ -506,7 +506,8 @@ class _PersonPageState extends State<PersonPage>
 
                     if (metrics.maxScrollExtent > 0 &&
                         metrics.pixels >= metrics.maxScrollExtent - 20 &&
-                        !loadingPersonCasts) {
+                        !loadingPersonCasts &&
+                        characterPersonCastsList.length >= 20) {
                       loadPersonCasts(offset: characterPersonCastsList.length);
                     }
                   }
@@ -515,9 +516,7 @@ class _PersonPageState extends State<PersonPage>
                 },
                 child: CustomScrollView(
                   scrollBehavior: const ScrollBehavior().copyWith(
-                    // Scrollbars' movement is not linear so hide it.
                     scrollbars: false,
-                    // Enable mouse drag to refresh
                     dragDevices: {
                       PointerDeviceKind.mouse,
                       PointerDeviceKind.touch,

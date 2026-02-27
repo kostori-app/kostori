@@ -38,6 +38,10 @@ class Api {
   static const String episodeCommentsByIDNext =
       'https://next.bgm.tv/p1/episodes/{0}/comments';
 
+  // 搜索角色
+  static const String charactersByStringNext =
+      'https://next.bgm.tv/p1/search/characters';
+
   // 获取角色
   static const String characterInfoByCharacterIDNext =
       'https://next.bgm.tv/p1/characters/{0}';
@@ -49,6 +53,10 @@ class Api {
   // 获取人物
   static const String personByPersonIDNext =
       'https://next.bgm.tv/p1/persons/{0}';
+
+  // 搜索人物
+  static const String personsByStringNext =
+      'https://next.bgm.tv/p1/search/persons';
 
   // 人物出演角色
   static const String castsByPersonIDNext =

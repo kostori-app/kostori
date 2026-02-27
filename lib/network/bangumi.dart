@@ -202,6 +202,94 @@ class Bangumi {
     }
   }
 
+  static Future<List<CharacterActor>> postCharactersSearchByStringNext({
+    required String keyword,
+    int offset = 0,
+    bool nsfw = true,
+  }) async {
+    List<CharacterActor> characterList = [];
+    final data = <String, dynamic>{
+      'keyword': keyword,
+      "filter": {"nsfw": nsfw},
+    };
+    final params = <String, dynamic>{'offset': offset, 'limit': 20};
+    try {
+      final res = await AppDio().request(
+        Api.charactersByStringNext,
+        data: data,
+        queryParameters: params,
+        options: Options(
+          method: 'POST',
+          headers: bangumiHTTPHeader,
+          contentType: 'application/json',
+        ),
+      );
+      final jsonData = res.data;
+      final jsonList = jsonData['data'];
+      for (dynamic jsonItem in jsonList) {
+        if (jsonItem is Map<String, dynamic>) {
+          try {
+            CharacterActor characterItem = CharacterActor.fromJson(jsonItem);
+            characterList.add(characterItem);
+          } catch (e, s) {
+            Log.addLog(
+              LogLevel.error,
+              'postCharactersSearchByStringNext',
+              '$e\n$s',
+            );
+          }
+        }
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'postCharactersSearchByStringNext', '$e\n$s');
+    }
+    return characterList;
+  }
+
+  static Future<List<CharacterActor>> postPersonsSearchByStringNext({
+    required String keyword,
+    int offset = 0,
+    List<String> career = const [],
+  }) async {
+    List<CharacterActor> personList = [];
+    final data = <String, dynamic>{
+      'keyword': keyword,
+      "filter": {"career": []},
+    };
+    final params = <String, dynamic>{'offset': offset, 'limit': 20};
+    try {
+      final res = await AppDio().request(
+        Api.personsByStringNext,
+        data: data,
+        queryParameters: params,
+        options: Options(
+          method: 'POST',
+          headers: bangumiHTTPHeader,
+          contentType: 'application/json',
+        ),
+      );
+      final jsonData = res.data;
+      final jsonList = jsonData['data'];
+      for (dynamic jsonItem in jsonList) {
+        if (jsonItem is Map<String, dynamic>) {
+          try {
+            CharacterActor personItem = CharacterActor.fromJson(jsonItem);
+            personList.add(personItem);
+          } catch (e, s) {
+            Log.addLog(
+              LogLevel.error,
+              'postPersonsSearchByStringNext',
+              '$e\n$s',
+            );
+          }
+        }
+      }
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'postPersonsSearchByStringNext', '$e\n$s');
+    }
+    return personList;
+  }
+
   static Future<BangumiItem?> getBangumiInfoByID(int id) async {
     try {
       final res = await AppDio().request(
