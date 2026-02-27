@@ -217,10 +217,13 @@ abstract class _StatsController with Store {
         .expand((e) => e.value)
         .toList();
 
+    final timeCache = <StatsDataImpl, DateTime>{};
+    for (final entry in entries) {
+      timeCache[entry] = _getLatestActivityTime(entry, selected);
+    }
+
     return entries..sort((a, b) {
-      final aTime = _getLatestActivityTime(a, selected);
-      final bTime = _getLatestActivityTime(b, selected);
-      return bTime.compareTo(aTime);
+      return timeCache[b]!.compareTo(timeCache[a]!);
     });
   }
 
