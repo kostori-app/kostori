@@ -27,7 +27,7 @@ class _SearchPageState extends State<SearchPage> {
   late final SearchBarController controller;
 
   late List<String> searchSources;
-
+  final scrollController = ScrollController();
   String searchTarget = "";
 
   SearchPageData get currentSearchPageData =>
@@ -155,9 +155,21 @@ class _SearchPageState extends State<SearchPage> {
     if (searchSources.isEmpty) {
       return buildEmpty();
     }
-    return Scaffold(
-      body: SmoothCustomScrollView(slivers: buildSlivers().toList()),
+    Widget widget = Scaffold(
+      body: SmoothCustomScrollView(
+        controller: scrollController,
+        slivers: buildSlivers().toList(),
+      ),
     );
+    widget = AppScrollBar(
+      topPadding: 52 + MediaQuery.of(context).padding.top,
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
+    return widget;
   }
 
   Iterable<Widget> buildSlivers() sync* {
@@ -190,6 +202,7 @@ class _SearchPageState extends State<SearchPage> {
               trailing: IconButton(
                 icon: const Icon(Icons.settings),
                 onPressed: manageSearchSources,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             Wrap(
@@ -237,39 +250,71 @@ class _SearchPageState extends State<SearchPage> {
       return const SliverToBoxAdapter(child: SizedBox());
     }
 
-    var children = <Widget>[];
-
     final searchOptions = currentSearchPageData.searchOptions ?? [];
-    if (searchOptions.length != options.length) {
-      useDefaultOptions();
-    }
     if (searchOptions.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox());
     }
-    for (int i = 0; i < searchOptions.length; i++) {
-      final option = searchOptions[i];
-      children.add(
-        SearchOptionWidget(
-          option: option,
-          value: options[i],
-          onChanged: (value) {
-            options[i] = value;
-            update();
-          },
-          sourceKey: searchTarget,
-        ),
-      );
-    }
 
     return SliverToBoxAdapter(
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            icon: const Icon(Icons.tune),
+            label: Text('Search Options'.tl),
+            onPressed: () => _showSearchOptionsDialog(searchOptions),
+          ),
         ),
       ),
+    );
+  }
+
+  void _showSearchOptionsDialog(List searchOptions) {
+    if (searchOptions.length != options.length) {
+      useDefaultOptions();
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStates) {
+            return ContentDialog(
+              title: 'Search Options'.tl,
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+                ),
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(scrollbars: false),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (int i = 0; i < searchOptions.length; i++)
+                          SearchOptionWidget(
+                            option: searchOptions[i],
+                            value: options[i],
+                            onChanged: (value) {
+                              options[i] = value;
+                              setStates(() {});
+                              update();
+                            },
+                            sourceKey: searchTarget,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -413,6 +458,7 @@ class SearchHistoryState extends State<SearchHistory> {
                 onPressed: () {
                   context.findAncestorStateOfType<FlyoutState>()!.show();
                 },
+                color: Theme.of(context).colorScheme.primary,
               ),
             );
           },
