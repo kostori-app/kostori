@@ -7,6 +7,7 @@ import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
 import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
@@ -119,14 +120,12 @@ class _InfoTabViewState extends State<InfoTabView>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text(
-                'Introduction'.tl,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: ExpandableText(text: widget.bangumiItem.summary),
+              TranslationWidget(
+                data: widget.bangumiItem.summary,
+                title: Text(
+                  'Introduction'.tl,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 8),
               Center(

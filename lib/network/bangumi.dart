@@ -35,7 +35,7 @@ class Bangumi {
   }) async {
     List<BangumiItem> bangumiList = [];
 
-    var params = <String, dynamic>{
+    var data = <String, dynamic>{
       'keyword': keyword,
       'sort': sort,
       "filter": {
@@ -53,7 +53,7 @@ class Bangumi {
     try {
       final res = await AppDio().request(
         Api.formatUrl(Api.bangumiRankSearch, [20, offset]),
-        data: params,
+        data: data,
         options: Options(
           method: 'POST',
           headers: bangumiHTTPHeader,

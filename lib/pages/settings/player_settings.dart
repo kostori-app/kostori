@@ -35,7 +35,6 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   actionTitle: 'Set'.tl,
                   callback: () async {
                     showSelection(
-                      context: context,
                       title: "Hardware decoder".tl,
                       options: hardwareDecodersList,
                       currentValue: appdata.settings['hardwareDecoder'],
@@ -51,7 +50,6 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   actionTitle: 'Set'.tl,
                   callback: () async {
                     showSelection(
-                      context: context,
                       title: "Video renderer".tl,
                       options: androidVideoRenderersList,
                       currentValue: appdata.settings['androidVideoRenderer'],
@@ -67,7 +65,6 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   actionTitle: 'Set'.tl,
                   callback: () async {
                     showSelection(
-                      context: context,
                       title: "Video synchronization mode".tl,
                       options: videoSynchronizationModeList,
                       currentValue:
@@ -90,7 +87,6 @@ class _PlayerSettingsState extends State<PlayerSettings> {
 }
 
 Future<void> showSelection({
-  required BuildContext context,
   required String title,
   required Map<String, String> options,
   required String currentValue,
@@ -125,9 +121,9 @@ Future<void> showSelection({
                 shrinkWrap: true,
                 children: entries.map((entry) {
                   return ListTile(
-                    leading: Radio<String>(value: entry.key),
-                    title: Text(entry.value),
-                    subtitle: Text(entry.key),
+                    title: Text(entry.key),
+                    subtitle: Text(entry.value),
+                    trailing: Radio<String>(value: entry.key),
                     onTap: () {
                       setState(() {
                         selectedValue = entry.key;

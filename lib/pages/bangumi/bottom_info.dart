@@ -17,6 +17,7 @@ import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart'
     show BangumiSearchPage;
@@ -46,6 +47,7 @@ class BottomInfoState extends State<BottomInfo>
   static BottomInfoState? currentState;
   late TabController infoTabController;
   late InfoController infoController;
+  late final TranslationController _translationController;
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   bool commentsIsLoading = false;
@@ -75,6 +77,7 @@ class BottomInfoState extends State<BottomInfo>
   void initState() {
     super.initState();
     currentState = this;
+    _translationController = TranslationController();
     infoController = widget.infoController;
     infoController.bangumiId = widget.bangumiId!;
     infoController.allEpisodes = [];
@@ -121,11 +124,16 @@ class BottomInfoState extends State<BottomInfo>
     infoController.staffList.clear();
     infoController.episodeCommentsList.clear();
     infoTabController.dispose();
+    _translationController.dispose();
     super.dispose();
   }
 
   void updata() {
     setState(() {});
+  }
+
+  Future<void> _handleTranslation(String text) async {
+    await _translationController.translate(text);
   }
 
   Future<void> queryBangumiInfoByID(int id) async {
@@ -491,14 +499,63 @@ class BottomInfoState extends State<BottomInfo>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Introduction'.tl,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: ExpandableText(text: bangumiItem.summary),
+                  ListenableBuilder(
+                    listenable: _translationController,
+                    builder: (context, _) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: <Widget>[
+                              Text(
+                                'Introduction'.tl,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Spacer(),
+                              IconButton(
+                                onPressed: _translationController.isTranslating
+                                    ? null
+                                    : () => _handleTranslation(
+                                        bangumiItem.summary,
+                                      ),
+                                icon: _translationController.isTranslating
+                                    ? SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                              ),
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.translate,
+                                        size: 24,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: ExpandableText(
+                              text: bangumiItem.summary,
+                              translationController: _translationController,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),

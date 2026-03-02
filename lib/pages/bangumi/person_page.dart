@@ -7,6 +7,7 @@ import 'package:kostori/components/bean/card/character_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
@@ -38,6 +39,35 @@ class _PersonPageState extends State<PersonPage>
   bool characterPersonCastsQueryTimeout = false;
 
   int currentType = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    loadPerson();
+    _tabController.addListener(() {
+      final index = _tabController.index;
+      if (index == 1 &&
+          commentsList.isEmpty &&
+          !loadingComments &&
+          !commentsQueryTimeout) {
+        loadComments();
+      }
+
+      if (index == 2 &&
+          characterPersonCastsList.isEmpty &&
+          !loadingPersonCasts &&
+          !characterPersonCastsQueryTimeout) {
+        loadPersonCasts();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> loadPerson() async {
     setState(() {
@@ -112,35 +142,6 @@ class _PersonPageState extends State<PersonPage>
   }
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    loadPerson();
-    _tabController.addListener(() {
-      final index = _tabController.index;
-      if (index == 1 &&
-          commentsList.isEmpty &&
-          !loadingComments &&
-          !commentsQueryTimeout) {
-        loadComments();
-      }
-
-      if (index == 2 &&
-          characterPersonCastsList.isEmpty &&
-          !loadingPersonCasts &&
-          !characterPersonCastsQueryTimeout) {
-        loadPersonCasts();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
@@ -205,145 +206,148 @@ class _PersonPageState extends State<PersonPage>
                                     ).copyWith(scrollbars: false),
                                     child: SingleChildScrollView(
                                       child: SizedBox(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                SizedBox(
-                                                  width: 210 * 0.72,
-                                                  height: 210,
-                                                  child: GestureDetector(
-                                                    onTap: () {
-                                                      BangumiWidget.showImagePreview(
-                                                        context,
-                                                        characterFullItem.image,
-                                                        characterFullItem
-                                                            .nameCN,
-                                                        characterFullItem.image,
-                                                      );
-                                                    },
-                                                    child: Hero(
-                                                      tag: characterFullItem
-                                                          .image,
-                                                      child:
-                                                          BangumiWidget.kostoriImage(
-                                                            context,
-                                                            characterFullItem
-                                                                .image,
-                                                            enableDefaultSize:
-                                                                false,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 16),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        characterFullItem.name,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .headlineSmall
-                                                            ?.copyWith(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color:
-                                                                  Theme.of(
-                                                                        context,
-                                                                      )
-                                                                      .colorScheme
-                                                                      .tertiary,
-                                                            ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        maxLines: 2,
-                                                      ),
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets.only(
-                                                              top: 4.0,
-                                                            ),
-                                                        child: Text(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 50,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  SizedBox(
+                                                    width: 210 * 0.72,
+                                                    height: 210,
+                                                    child: GestureDetector(
+                                                      onTap: () {
+                                                        BangumiWidget.showImagePreview(
+                                                          context,
+                                                          characterFullItem
+                                                              .image,
                                                           characterFullItem
                                                               .nameCN,
+                                                          characterFullItem
+                                                              .image,
+                                                        );
+                                                      },
+                                                      child: Hero(
+                                                        tag: characterFullItem
+                                                            .image,
+                                                        child:
+                                                            BangumiWidget.kostoriImage(
+                                                              context,
+                                                              characterFullItem
+                                                                  .image,
+                                                              enableDefaultSize:
+                                                                  false,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 16),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          characterFullItem
+                                                              .name,
                                                           style: Theme.of(context)
                                                               .textTheme
-                                                              .titleMedium
+                                                              .headlineSmall
                                                               ?.copyWith(
-                                                                color: Colors
-                                                                    .grey[700],
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color: Theme.of(
+                                                                  context,
+                                                                ).colorScheme.tertiary,
                                                               ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          maxLines: 2,
                                                         ),
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                top: 4.0,
+                                                              ),
+                                                          child: Text(
+                                                            characterFullItem
+                                                                .nameCN,
+                                                            style: Theme.of(context)
+                                                                .textTheme
+                                                                .titleMedium
+                                                                ?.copyWith(
+                                                                  color: Colors
+                                                                      .grey[700],
+                                                                ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 12),
+                                              const Divider(),
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8.0,
+                                                    ),
+                                                child: Text(
+                                                  'Profile Information'.tl,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleLarge
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
-                                                    ],
+                                                ),
+                                              ),
+                                              SelectableText(
+                                                characterFullItem.infobox
+                                                    .map(
+                                                      (item) =>
+                                                          '${item.key}: ${item.values.map((v) => v.value).join(", ")}',
+                                                    )
+                                                    .join("\n"),
+                                                style: Theme.of(
+                                                  context,
+                                                ).textTheme.bodyMedium,
+                                                textAlign: TextAlign.justify,
+                                                scrollPhysics:
+                                                    const NeverScrollableScrollPhysics(),
+                                              ),
+                                              const SizedBox(height: 16.0),
+                                              TranslationWidget(
+                                                data: characterFullItem.summary,
+                                                title: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 8.0,
+                                                      ),
+                                                  child: Text(
+                                                    'Character Introduction'.tl,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
                                                   ),
                                                 ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 12),
-                                            const Divider(),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 8.0,
-                                                  ),
-                                              child: Text(
-                                                'Profile Information'.tl,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleLarge
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
                                               ),
-                                            ),
-                                            SelectableText(
-                                              characterFullItem.infobox
-                                                  .map(
-                                                    (item) =>
-                                                        '${item.key}: ${item.values.map((v) => v.value).join(", ")}',
-                                                  )
-                                                  .join("\n"),
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium,
-                                              textAlign: TextAlign.justify,
-                                            ),
-                                            const SizedBox(height: 16.0),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 8.0,
-                                                  ),
-                                              child: Text(
-                                                'Character Introduction'.tl,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleLarge
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                              ),
-                                            ),
-                                            SelectableText(
-                                              characterFullItem.summary,
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium,
-                                              textAlign: TextAlign.justify,
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -909,7 +913,6 @@ class _PersonPageState extends State<PersonPage>
                         uniRadius: 12,
                       ),
                     ),
-                    // 3. 角色信息：利用 Bone.text 和 Bone.multiText
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

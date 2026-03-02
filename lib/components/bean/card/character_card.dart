@@ -42,10 +42,12 @@ class CharacterCard extends StatelessWidget {
               context,
               CharacterPage(characterID: characterItem!.id),
             ),
-            onLongPress: () => BangumiWidget.showBottomPage(
-              context,
-              PersonPage(personID: characterItem!.actorList.first.id),
-            ),
+            onLongPress: () => characterItem!.actorList.isNotEmpty
+                ? BangumiWidget.showBottomPage(
+                    context,
+                    PersonPage(personID: characterItem!.actorList.first.id),
+                  )
+                : null,
             child: Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(

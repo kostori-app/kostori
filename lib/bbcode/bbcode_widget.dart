@@ -270,6 +270,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
               }
             }).toList(),
           ),
+          scrollPhysics: const NeverScrollableScrollPhysics(),
           selectionHeightStyle: ui.BoxHeightStyle.max,
         ),
       ],

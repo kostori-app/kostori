@@ -23,6 +23,7 @@ import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/translation/translation_source.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -61,6 +62,8 @@ part 'player_settings.dart';
 
 part 'setting_components.dart';
 
+part 'translation_settings.dart';
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});
 
@@ -81,6 +84,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     "Explore",
     "Fanyuan",
     "Player",
+    "Translation",
     "Appearance",
     "Local Favorites",
     "APP",
@@ -92,6 +96,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Icons.explore,
     Icons.source,
     Icons.display_settings_rounded,
+    Icons.translate_rounded,
     Icons.color_lens,
     Icons.collections_bookmark_rounded,
     Icons.apps,
@@ -191,10 +196,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              themeColor.toOpacity(0.0), // 顶部透明
-              themeColor.toOpacity(0.4), // 中间
-            ],
+            colors: [themeColor.toOpacity(0.0), themeColor.toOpacity(0.4)],
             stops: const [0.2, 1.0],
           ),
         ),
@@ -473,11 +475,12 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       0 => const ExploreSettings(),
       1 => const AnimeSourceSettings(),
       2 => const PlayerSettings(),
-      3 => const AppearanceSettings(),
-      4 => const LocalFavoritesSettings(),
-      5 => const AppSettings(),
-      6 => const NetworkSettings(),
-      7 => const AboutSettings(),
+      3 => const TranslationSettings(),
+      4 => const AppearanceSettings(),
+      5 => const LocalFavoritesSettings(),
+      6 => const AppSettings(),
+      7 => const NetworkSettings(),
+      8 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }

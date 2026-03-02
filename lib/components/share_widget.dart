@@ -290,7 +290,12 @@ class _ShareWidgetState extends State<ShareWidget> {
                               //标题
                               Text(anime.title, style: ts.s20),
                               if (anime.subTitle != null)
-                                SelectableText(anime.subTitle!, style: ts.s14),
+                                SelectableText(
+                                  anime.subTitle!,
+                                  style: ts.s14,
+                                  scrollPhysics:
+                                      const NeverScrollableScrollPhysics(),
+                                ),
                               //源名称
                               Text(
                                 (AnimeSource.find(anime.sourceKey)?.name) ?? '',

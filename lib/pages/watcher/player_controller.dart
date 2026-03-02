@@ -979,6 +979,7 @@ class ParamCard extends StatelessWidget {
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                scrollPhysics: const NeverScrollableScrollPhysics(),
               ),
               const SizedBox(height: 8),
               ...params.entries
@@ -1255,11 +1256,13 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                           'Source'.tl,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
+                          scrollPhysics: const NeverScrollableScrollPhysics(),
                         ),
                         const SizedBox(height: 8),
                         SelectableText(
                           'URI: ${widget.playerController.videoUrl}',
                           style: Theme.of(context).textTheme.bodyMedium,
+                          scrollPhysics: const NeverScrollableScrollPhysics(),
                         ),
                       ],
                     ),

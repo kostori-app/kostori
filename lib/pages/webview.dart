@@ -111,12 +111,15 @@ class _AppWebviewState extends State<AppWebview> {
     }
     if (!App.isWindows) {
       return true;
+    } else {
+      AppWebview.webViewEnvironment = await WebViewEnvironment.create(
+        settings: WebViewEnvironmentSettings(
+          userDataFolder: "${App.dataPath}\\webview",
+          additionalBrowserArguments:
+              "--disable-features=msSmartScreenProtection --no-sandbox",
+        ),
+      );
     }
-    AppWebview.webViewEnvironment = await WebViewEnvironment.create(
-      settings: WebViewEnvironmentSettings(
-        userDataFolder: "${App.dataPath}\\webview",
-      ),
-    );
     return true;
   }
 
@@ -188,7 +191,11 @@ class _AppWebviewState extends State<AppWebview> {
   Widget createWebviewWithEnvironment(WebViewEnvironment? e) {
     return InAppWebView(
       webViewEnvironment: e,
-      initialSettings: InAppWebViewSettings(isInspectable: true),
+      initialSettings: InAppWebViewSettings(
+        isInspectable: true,
+        // 忽略 SSL 错误，自动继续
+        allowingReadAccessTo: null,
+      ),
       initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
       onTitleChanged: (c, t) {
         if (mounted) {
@@ -207,6 +214,11 @@ class _AppWebviewState extends State<AppWebview> {
         } else {
           return NavigationActionPolicy.ALLOW;
         }
+      },
+      onReceivedServerTrustAuthRequest: (controller, challenge) async {
+        return ServerTrustAuthResponse(
+          action: ServerTrustAuthResponseAction.PROCEED,
+        );
       },
       onWebViewCreated: (c) {
         controller = c;

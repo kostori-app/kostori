@@ -446,11 +446,13 @@ class ContentDialog extends StatelessWidget {
     this.actions = const [],
     this.cancel,
     this.displayButton = true,
+    this.titleActions = const [],
   });
 
   final String? title;
   final Widget content;
   final List<Widget> actions;
+  final List<Widget> titleActions;
   final bool isDismissible;
   final VoidCallback? cancel;
   final bool displayButton;
@@ -464,13 +466,26 @@ class ContentDialog extends StatelessWidget {
         children: [
           if (title != null)
             Padding(
-              padding: const EdgeInsets.only(left: 24.0, top: 24, bottom: 12),
-              child: Text(
-                title!,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              padding: const EdgeInsets.only(
+                left: 24,
+                top: 24,
+                bottom: 12,
+                right: 24,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title!,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  ...titleActions,
+                ],
               ),
             ),
           Padding(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
@@ -239,4 +240,42 @@ const Map<String, String> videoSynchronizationModeList = {
   'display-adrop': '显示丢音频帧',
   'display-desync': '显示去同步',
   'desync': '去同步',
+};
+
+const List<Sort> translationSorts = [
+  // 中文
+  Sort(id: SortId.zhCN, label: '简体中文', extData: 'zh-CN', deeplCode: 'ZH'),
+  Sort(id: SortId.zhTW, label: '繁體中文', extData: 'zh-TW', deeplCode: 'ZH-HANT'),
+
+  // 英语
+  Sort(id: SortId.enUS, label: 'English', extData: 'en-US', deeplCode: 'EN-US'),
+
+  // 东亚语言
+  Sort(id: SortId.ja, label: '日本語', extData: 'ja', deeplCode: 'JA'),
+  Sort(id: SortId.ko, label: '한국어', extData: 'ko', deeplCode: 'KO'),
+  // 欧洲语言
+  Sort(id: SortId.fr, label: 'Français', extData: 'fr', deeplCode: 'FR'),
+  Sort(id: SortId.de, label: 'Deutsch', extData: 'de', deeplCode: 'DE'),
+  Sort(id: SortId.es, label: 'Español', extData: 'es', deeplCode: 'ES'),
+  Sort(id: SortId.it, label: 'Italiano', extData: 'it', deeplCode: 'IT'),
+  Sort(id: SortId.pt, label: 'Português', extData: 'pt', deeplCode: 'PT-PT'),
+  Sort(id: SortId.ru, label: 'Русский', extData: 'ru', deeplCode: 'RU'),
+];
+
+const Map<String, String> translationSourceList = {
+  'Bing': '传统翻译',
+  'Google': '传统翻译',
+  'Deepl': '传统翻译',
+  'SiliconFlow': 'AI大模型',
+  'Doubao': 'AI大模型',
+  'Gemini': 'AI大模型',
+};
+
+const Map<String, String> translationSourceDisplayMap = {
+  'Bing': 'bing',
+  'Google': 'google',
+  'Deepl': 'deepl',
+  'SiliconFlow': 'siliconFlow',
+  'Doubao': 'doubao',
+  'Gemini': 'gemini',
 };

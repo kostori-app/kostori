@@ -6,6 +6,7 @@ import 'package:kostori/components/bean/card/character_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
@@ -36,6 +37,35 @@ class _CharacterPageState extends State<CharacterPage>
   List<CharacterCastsItem> characterCastsList = [];
   bool commentsQueryTimeout = false;
   bool characterCastsQueryTimeout = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    loadCharacter();
+    _tabController.addListener(() {
+      final index = _tabController.index;
+      if (index == 1 &&
+          commentsList.isEmpty &&
+          !loadingComments &&
+          !commentsQueryTimeout) {
+        loadComments();
+      }
+
+      if (index == 2 &&
+          characterCastsList.isEmpty &&
+          !loadingCharacterCasts &&
+          !characterCastsQueryTimeout) {
+        loadCharacterCasts();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> loadCharacter() async {
     setState(() {
@@ -93,35 +123,6 @@ class _CharacterPageState extends State<CharacterPage>
         loadingCharacterCasts = false;
       });
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    loadCharacter();
-    _tabController.addListener(() {
-      final index = _tabController.index;
-      if (index == 1 &&
-          commentsList.isEmpty &&
-          !loadingComments &&
-          !commentsQueryTimeout) {
-        loadComments();
-      }
-
-      if (index == 2 &&
-          characterCastsList.isEmpty &&
-          !loadingCharacterCasts &&
-          !characterCastsQueryTimeout) {
-        loadCharacterCasts();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   @override
@@ -302,30 +303,28 @@ class _CharacterPageState extends State<CharacterPage>
                                                 context,
                                               ).textTheme.bodyMedium,
                                               textAlign: TextAlign.justify,
+                                              scrollPhysics:
+                                                  const NeverScrollableScrollPhysics(),
                                             ),
                                             const SizedBox(height: 16.0),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 8.0,
-                                                  ),
-                                              child: Text(
-                                                'Character Introduction'.tl,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleLarge
-                                                    ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.bold,
+                                            TranslationWidget(
+                                              data: characterFullItem.summary,
+                                              title: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8.0,
                                                     ),
+                                                child: Text(
+                                                  'Character Introduction'.tl,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleLarge
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                ),
                                               ),
-                                            ),
-                                            SelectableText(
-                                              characterFullItem.summary,
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodyMedium,
-                                              textAlign: TextAlign.justify,
                                             ),
                                           ],
                                         ),

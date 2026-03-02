@@ -14,6 +14,7 @@ import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
@@ -528,6 +529,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   anime.subTitle!,
                                   style: ts.s14,
                                   maxLines: 2,
+                                  scrollPhysics:
+                                      const NeverScrollableScrollPhysics(),
                                 ).paddingVertical(4),
                               Text(
                                 AnimeSource.find(anime.sourceKey)?.name ?? '',
@@ -784,6 +787,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SelectableText(
               commentRecord!.comment!,
+              scrollPhysics: const NeverScrollableScrollPhysics(),
             ).fixWidth(double.infinity),
           ),
         ],
@@ -810,10 +814,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             ),
           ),
           const SizedBox(height: 16),
-          ListTile(title: Text("Description".tl)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SelectableText(anime.description!),
+          TranslationWidget(
+            data: anime.description!,
+            title: ListTile(title: Text("Description".tl)),
           ),
           const SizedBox(height: 16),
           Center(
@@ -832,11 +835,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     );
   }
 
+  bool isTagsEmpty() {
+    if (anime.tags.isEmpty) return true;
+    return anime.tags.values.every((list) => list.isEmpty);
+  }
+
   Widget buildInfo() {
-    if (anime.tags.isEmpty &&
-        anime.uploader == null &&
-        anime.uploadTime == null &&
-        anime.uploadTime == null) {
+    if (isTagsEmpty()) {
       return const SliverPadding(padding: EdgeInsets.zero);
     }
 

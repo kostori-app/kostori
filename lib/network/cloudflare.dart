@@ -8,7 +8,6 @@ import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/webview.dart';
-import 'package:kostori/utils/ext.dart';
 
 class CloudflareException implements DioException {
   final String url;
@@ -102,61 +101,56 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
   var url = e.url;
   var uri = Uri.parse(url);
 
-  void saveCookies(Map<String, String> cookies) {
-    var domain = uri.host;
-    var splits = domain.split('.');
-    if (splits.length > 1) {
-      domain = ".${splits[splits.length - 2]}.${splits[splits.length - 1]}";
+  SingleInstanceCookieJar.instance?.deleteCookieByName('cf_clearance');
+  Log.info("Cloudflare", "Cleared old cf_clearance");
+
+  if (!App.isLinux) {
+    try {
+      final cookieManager = CookieManager.instance(
+        webViewEnvironment: AppWebview.webViewEnvironment,
+      );
+      await cookieManager.deleteCookies(
+        url: WebUri(
+          Uri(scheme: uri.scheme, host: uri.host, path: '/').toString(),
+        ),
+      );
+      Log.addLog(
+        LogLevel.info,
+        "Cloudflare",
+        "Cleared old cf_clearance from WebView",
+      );
+    } catch (e) {
+      Log.addLog(
+        LogLevel.warning,
+        "Cloudflare",
+        "Failed to clear WebView cf_clearance: $e",
+      );
     }
-    SingleInstanceCookieJar.instance!.saveFromResponse(
-      uri,
-      List<io.Cookie>.generate(cookies.length, (index) {
-        var cookie = io.Cookie(
-          cookies.keys.elementAt(index),
-          cookies.values.elementAt(index),
-        );
-        cookie.domain = domain;
-        return cookie;
-      }),
-    );
   }
 
-  // windows version of package `flutter_inappwebview` cannot get some cookies
-  // Using DesktopWebview instead
   if (App.isLinux) {
     var webview = DesktopWebview(
       initialUrl: url,
       onTitleChange: (title, controller) async {
-        var head =
-            await controller.evaluateJavascript("document.head.innerHTML") ??
-            "";
-        var body =
-            await controller.evaluateJavascript("document.body.innerHTML") ??
-            "";
-        if (appdata.settings['debugInfo']) {
-          Log.info("Cloudflare", "Checking head: $head");
+        if (await _isChallenging(controller, url)) {
+          Log.addLog(LogLevel.info, "Cloudflare", "Still challenging...");
+          return;
         }
-        var isChallenging =
-            head.contains('#challenge-success-text') ||
-            head.contains("#challenge-error-text") ||
-            head.contains("#challenge-form") ||
-            body.contains("challenge-platform") ||
-            body.contains("window._cf_chl_opt");
-        if (!isChallenging) {
-          Log.info(
-            "Cloudflare",
-            "Cloudflare is passed due to there is no challenge css",
-          );
-          var ua = controller.userAgent;
-          if (ua != null) {
-            appdata.implicitData['ua'] = ua;
-            appdata.writeImplicitData();
-          }
-          var cookiesMap = await controller.getCookies(url);
-          if (cookiesMap['cf_clearance'] == null) {
-            return;
-          }
-          saveCookies(cookiesMap);
+
+        Log.addLog(
+          LogLevel.info,
+          "Cloudflare",
+          "Challenge passed, extracting cookies...",
+        );
+
+        final ua = controller.userAgent;
+        if (ua != null) {
+          appdata.implicitData['ua'] = ua;
+          appdata.writeImplicitData();
+        }
+
+        final success = await _trySaveCookies(controller, url, uri);
+        if (success) {
           controller.close();
           onFinished();
         }
@@ -165,45 +159,40 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
     );
     webview.open();
   } else {
-    bool success = false;
-    void check(InAppWebViewController controller) async {
-      var head =
-          await controller.evaluateJavascript(source: "document.head.innerHTML")
-              as String;
-      var body =
-          await controller.evaluateJavascript(source: "document.body.innerHTML")
-              as String;
-      if (appdata.settings['debugInfo']) {
-        Log.info("Cloudflare", "Checking head: $head");
-      }
-      var isChallenging =
-          head.contains('#challenge-success-text') ||
-          head.contains("#challenge-error-text") ||
-          head.contains("#challenge-form") ||
-          body.contains("challenge-platform") ||
-          body.contains("window._cf_chl_opt");
-      if (!isChallenging) {
-        Log.info(
-          "Cloudflare",
-          "Cloudflare is passed due to there is no challenge css",
-        );
-        var ua = await controller.getUA();
+    bool finished = false;
+    bool isChecking = false;
+
+    Future<void> check(InAppWebViewController controller) async {
+      if (finished || isChecking) return;
+      isChecking = true;
+
+      try {
+        final currentUrl = (await controller.getUrl())?.toString() ?? '';
+
+        if (currentUrl.contains("/cdn-cgi/")) {
+          Log.addLog(LogLevel.info, "Cloudflare", "Still redirecting...");
+          return;
+        }
+
+        final success = await _trySaveCookies(controller, url, uri);
+
+        if (!success) {
+          Log.addLog(LogLevel.info, "Cloudflare", "cf_clearance not ready");
+          return;
+        }
+        Log.addLog(LogLevel.info, "Cloudflare", "Challenge passed");
+        final ua = await controller.getUA();
         if (ua != null) {
           appdata.implicitData['ua'] = ua;
           appdata.writeImplicitData();
         }
-        var cookies = await controller.getCookies(url) ?? [];
-        if (cookies.firstWhereOrNull(
-              (element) => element.name == 'cf_clearance',
-            ) ==
-            null) {
-          return;
-        }
-        SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
-        if (!success) {
-          App.rootPop();
-          success = true;
-        }
+        finished = true;
+        await Future.delayed(const Duration(seconds: 2));
+
+        App.rootPop();
+        onFinished();
+      } finally {
+        isChecking = false;
       }
     }
 
@@ -211,23 +200,153 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       () => AppWebview(
         initialUrl: url,
         singlePage: true,
-        onTitleChange: (title, controller) async {
-          check(controller);
-        },
-        onLoadStop: (controller) async {
-          check(controller);
-        },
         onStarted: (controller) async {
-          var ua = await controller.getUA();
+          final ua = await controller.getUA();
           if (ua != null) {
             appdata.implicitData['ua'] = ua;
             appdata.writeImplicitData();
           }
-          var cookies = await controller.getCookies(url) ?? [];
-          SingleInstanceCookieJar.instance?.saveFromResponse(uri, cookies);
+        },
+        onTitleChange: (title, controller) async {
+          await check(controller);
+        },
+        onLoadStop: (controller) async {
+          await check(controller);
         },
       ),
     );
-    onFinished();
+
+    if (!finished) onFinished();
   }
+}
+
+Future<bool> _isChallenging(dynamic controller, String url) async {
+  String head = '';
+  String body = '';
+
+  try {
+    if (App.isLinux) {
+      head =
+          await (controller as DesktopWebview).evaluateJavascript(
+            "document.head ? document.head.innerHTML : ''",
+          ) ??
+          '';
+      body =
+          await (controller).evaluateJavascript(
+            "document.body ? document.body.innerHTML : ''",
+          ) ??
+          '';
+    } else {
+      head =
+          await (controller as InAppWebViewController).evaluateJavascript(
+                source: "document.head ? document.head.innerHTML : ''",
+              )
+              as String? ??
+          '';
+      body =
+          await (controller).evaluateJavascript(
+                source: "document.body ? document.body.innerHTML : ''",
+              )
+              as String? ??
+          '';
+    }
+  } catch (e) {
+    Log.addLog(LogLevel.info, "Cloudflare", "evaluateJavascript error: $e");
+    return true;
+  }
+
+  // 检测安全警告页面（SmartScreen / 举报页面）
+  var isSecurityBlock =
+      head.contains('interstitial') ||
+      body.contains('reported-unsafe') ||
+      body.contains('ERR_BLOCKED') ||
+      body.isEmpty; // 页面内容为空也视为未就绪
+
+  if (isSecurityBlock) {
+    Log.addLog(
+      LogLevel.info,
+      "Cloudflare",
+      "Security block page detected, treating as challenging",
+    );
+    return true;
+  }
+
+  return head.contains('#challenge-success-text') ||
+      head.contains('#challenge-error-text') ||
+      head.contains('#challenge-form') ||
+      body.contains('challenge-platform') ||
+      body.contains('window._cf_chl_opt');
+}
+
+Future<bool> _trySaveCookies(dynamic controller, String url, Uri uri) async {
+  for (int i = 0; i < 3; i++) {
+    if (i > 0) await Future.delayed(const Duration(milliseconds: 500));
+
+    Map<String, String> cookiesMap = {};
+    try {
+      if (App.isLinux) {
+        cookiesMap = await (controller as DesktopWebview).getCookies(url);
+      } else {
+        final cookies =
+            await (controller as InAppWebViewController).getCookies(url) ?? [];
+        cookiesMap = {for (var c in cookies) c.name: c.value.toString()};
+      }
+    } catch (e) {
+      Log.addLog(LogLevel.info, "Cloudflare", "getCookies error: $e");
+      continue;
+    }
+
+    Log.addLog(LogLevel.info, "Cloudflare", "Attempt $i cookies: $cookiesMap");
+
+    if (cookiesMap.containsKey('cf_clearance')) {
+      _saveCookies(uri, cookiesMap);
+      Log.addLog(
+        LogLevel.info,
+        "Cloudflare",
+        "cf_clearance saved successfully!",
+      );
+      return true;
+    }
+  }
+
+  Log.addLog(
+    LogLevel.warning,
+    "Cloudflare",
+    "Failed to get cf_clearance after 3 attempts",
+  );
+  return false;
+}
+
+void _saveCookies(Uri uri, Map<String, String> cookies) {
+  var host = uri.host;
+  var splits = host.split('.');
+  String domain = splits.length >= 3
+      ? ".${splits.sublist(splits.length - 2).join('.')}"
+      : ".$host";
+
+  Log.addLog(
+    LogLevel.info,
+    "Cloudflare",
+    "Saving cookies with domain: $domain",
+  );
+
+  final rootUri = Uri(scheme: uri.scheme, host: uri.host, path: '/');
+
+  SingleInstanceCookieJar.instance!.delete(
+    Uri.parse("https://$host/"),
+    'cf_clearance',
+  );
+
+  SingleInstanceCookieJar.instance!.saveFromResponse(
+    rootUri,
+    List<io.Cookie>.generate(cookies.length, (index) {
+      var cookie = io.Cookie(
+        cookies.keys.elementAt(index),
+        cookies.values.elementAt(index),
+      );
+      cookie.domain = domain;
+      cookie.path = '/';
+      return cookie;
+    }),
+  );
 }

@@ -619,7 +619,16 @@
     "Korean Dub": "韩配",
     "Selected @a character": "已选择 @a 位角色",
     "Search Options": "搜索选项",
-    "Search Sources": "搜索源"
+    "Search Sources": "搜索源",
+    "Translation": "翻译",
+    "API key cannot be empty": "API密钥不能为空",
+    "Please enter translation prompt, use @a as the placeholder for the target language": "请输入翻译提示，使用@a作为目标语言的占位符",
+    "The prompt must contain @a as the placeholder for the target language": "提示符必须包含@a作为目标语言的占位符",
+    "This field cannot be empty": "此字段不能为空",
+    "The prompt must contain @a placeholder": "提示符必须包含@a占位符",
+    "Translation Prompt": "翻译提示",
+    "Model Name": "模型名称",
+    "Api Configuration": "Api配置"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

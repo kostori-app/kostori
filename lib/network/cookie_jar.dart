@@ -34,19 +34,21 @@ class CookieJarSql {
   void saveFromResponse(Uri uri, List<Cookie> cookies) {
     var current = loadForRequest(uri);
     for (var cookie in cookies) {
-      var currentCookie = current.firstWhereOrNull(
-        (element) =>
-            element.name == cookie.name &&
-            (cookie.path == null || cookie.path!.startsWith(element.path!)),
-      );
-      if (currentCookie != null) {
-        cookie.domain = currentCookie.domain;
+      if (cookie.name != 'cf_clearance') {
+        var currentCookie = current.firstWhereOrNull(
+          (element) =>
+              element.name == cookie.name &&
+              (cookie.path == null || cookie.path!.startsWith(element.path!)),
+        );
+        if (currentCookie != null) {
+          cookie.domain = currentCookie.domain;
+        }
       }
       _db.execute(
         '''
-        INSERT OR REPLACE INTO cookies (name, value, domain, path, expires, secure, httpOnly)
-        VALUES (?, ?, ?, ?, ?, ?, ?);
-      ''',
+      INSERT OR REPLACE INTO cookies (name, value, domain, path, expires, secure, httpOnly)
+      VALUES (?, ?, ?, ?, ?, ?, ?);
+    ''',
         [
           cookie.name,
           cookie.value,
@@ -189,6 +191,10 @@ class CookieJarSql {
         [name, domain, uri.path],
       );
     }
+  }
+
+  void deleteCookieByName(String name) {
+    _db.execute("DELETE FROM cookies WHERE name = ?;", [name]);
   }
 
   void deleteUri(Uri uri) {

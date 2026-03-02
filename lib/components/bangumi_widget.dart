@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -15,6 +16,7 @@ import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
@@ -776,8 +778,14 @@ class StatItem {
 class ExpandableText extends StatefulWidget {
   final String text;
   final int maxLines;
+  final TranslationController? translationController;
 
-  const ExpandableText({super.key, required this.text, this.maxLines = 7});
+  const ExpandableText({
+    super.key,
+    required this.text,
+    this.maxLines = 7,
+    this.translationController,
+  });
 
   @override
   State<ExpandableText> createState() => _ExpandableTextState();
@@ -815,10 +823,24 @@ class _ExpandableTextState extends State<ExpandableText> {
         final numLines = _computeNumLines(widget.text, maxWidth);
         fullHeight ??= _computeHeight(widget.text, maxWidth);
         if (numLines <= widget.maxLines) {
-          return SelectableText(
-            widget.text,
-            scrollPhysics: const NeverScrollableScrollPhysics(),
-            selectionHeightStyle: ui.BoxHeightStyle.max,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                widget.text,
+                scrollPhysics: const NeverScrollableScrollPhysics(),
+                selectionHeightStyle: ui.BoxHeightStyle.max,
+              ),
+              if (widget.translationController!.isTranslating ||
+                  (widget.translationController!.isTranslationComplete &&
+                      widget.translationController != null)) ...[
+                const SizedBox(height: 16),
+                TranslatedContent(
+                  data: widget.text,
+                  translationController: widget.translationController!,
+                ),
+              ],
+            ],
           );
         }
         collapsedHeight ??= _computeHeight(
@@ -848,9 +870,26 @@ class _ExpandableTextState extends State<ExpandableText> {
                       ),
                     );
                   },
-                  child: SelectableText(
-                    widget.text,
-                    scrollPhysics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SelectableText(
+                        widget.text,
+                        scrollPhysics: const NeverScrollableScrollPhysics(),
+                        selectionHeightStyle: ui.BoxHeightStyle.max,
+                      ),
+                      if (widget.translationController!.isTranslating ||
+                          (widget
+                                  .translationController!
+                                  .isTranslationComplete &&
+                              widget.translationController != null)) ...[
+                        const SizedBox(height: 16),
+                        TranslatedContent(
+                          data: widget.text,
+                          translationController: widget.translationController!,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],

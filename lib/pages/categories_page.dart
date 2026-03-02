@@ -140,9 +140,11 @@ class _CategoriesPageState extends State<CategoriesPage>
 typedef ClickTagCallback = void Function(String, String?);
 
 class _CategoryPage extends StatelessWidget {
-  const _CategoryPage(this.category);
+  _CategoryPage(this.category);
 
   final String category;
+
+  final scrollController = ScrollController();
 
   CategoryData get data => getCategoryDataWithKey(category);
 
@@ -158,6 +160,7 @@ class _CategoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var children = <Widget>[];
+
     if (data.enableRankingPage || data.buttons.isNotEmpty) {
       children.add(buildTitle(data.title));
       children.add(
@@ -178,32 +181,24 @@ class _CategoryPage extends StatelessWidget {
     }
 
     for (var part in data.categories) {
-      if (part.enableRandom) {
-        children.add(
-          StatefulBuilder(
-            builder: (context, updater) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  buildTitleWithRefresh(part.title, () => updater(() {})),
-                  buildTags(part.categories),
-                ],
-              );
-            },
-          ),
-        );
-      } else {
-        children.add(buildTitle(part.title));
-        children.add(buildTags(part.categories));
-      }
+      children.add(CollapsibleCategory(part: part));
     }
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+
+    Widget widget = AppScrollBar(
+      controller: scrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: SingleChildScrollView(
+          controller: scrollController,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: children,
+          ),
+        ),
       ),
     );
+
+    return widget;
   }
 
   Widget buildTitle(String title) {
@@ -274,4 +269,105 @@ class _CategoryPage extends StatelessWidget {
   }
 
   bool get enableTranslation => App.locale.languageCode == 'zh';
+}
+
+class CollapsibleCategory extends StatefulWidget {
+  final BaseCategoryPart part;
+
+  const CollapsibleCategory({super.key, required this.part});
+
+  @override
+  State<CollapsibleCategory> createState() => _CollapsibleCategoryState();
+}
+
+class _CollapsibleCategoryState extends State<CollapsibleCategory> {
+  bool expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.part.enableRandom)
+          buildTitleWithRefresh(widget.part.title, () => setState(() {})),
+        buildTitleWithCollapse(widget.part.title),
+        if (expanded) buildTags(widget.part.categories),
+      ],
+    );
+  }
+
+  Widget buildTitleWithCollapse(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 5, 10),
+      child: TextButton.icon(
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.all(8),
+          minimumSize: const Size(0, 0),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          alignment: Alignment.centerLeft,
+        ),
+        onPressed: () => setState(() => expanded = !expanded),
+        icon: Icon(
+          expanded ? Icons.expand_less : Icons.expand_more,
+          size: 20,
+          color: context.colorScheme.onSurface,
+        ),
+        label: Text(
+          title.tl,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+
+  Widget buildTitleWithRefresh(String title, VoidCallback onRefresh) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 5, 10),
+      child: Row(
+        children: [
+          Text(
+            title.tl,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+          ),
+          const Spacer(),
+          IconButton(onPressed: onRefresh, icon: const Icon(Icons.refresh)),
+        ],
+      ),
+    );
+  }
+
+  Widget buildTags(List<CategoryItem> categories) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 16),
+      child: Wrap(
+        children: List<Widget>.generate(
+          categories.length,
+          (index) => buildCategory(categories[index]),
+        ),
+      ),
+    );
+  }
+
+  Widget buildCategory(CategoryItem c) {
+    return RepaintBoundary(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+        child: Material(
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+          color: context.colorScheme.secondaryContainer.toOpacity(0.36),
+          child: InkWell(
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            onTap: () {
+              var context = App.mainNavigatorKey!.currentContext!;
+              c.target.jump(context);
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: Text(c.label),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
