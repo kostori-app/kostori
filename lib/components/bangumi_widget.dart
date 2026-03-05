@@ -1356,6 +1356,267 @@ class BangumiCharacterCard extends StatelessWidget {
   }
 }
 
+class BangumiCard extends StatefulWidget {
+  const BangumiCard({
+    super.key,
+    required this.bangumiItem,
+    this.onTap,
+    this.heroTag,
+    this.width = 216,
+    this.height = 300,
+  });
+
+  final BangumiItem bangumiItem;
+  final void Function()? onTap;
+  final String? heroTag;
+  final double width;
+  final double height;
+
+  @override
+  State<BangumiCard> createState() => _BangumiCardState();
+}
+
+class _BangumiCardState extends State<BangumiCard> {
+  BangumiItem get bangumiItem => widget.bangumiItem;
+
+  Widget _score() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '${bangumiItem.score}',
+          style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold),
+        ),
+        SizedBox(width: 5),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '#${bangumiItem.rank}',
+              style: TextStyle(
+                fontSize: App.isAndroid ? 7 : 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            RatingBarIndicator(
+              itemCount: 5,
+              rating: bangumiItem.score / 2,
+              itemBuilder: (context, index) => const Icon(Icons.star_rounded),
+              itemSize: App.isAndroid ? 12 : 14,
+            ),
+            Text(
+              '@t reviews'.tlParams({'t': bangumiItem.total}),
+              style: TextStyle(
+                fontSize: App.isAndroid ? 7 : 9,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String? image = widget.bangumiItem.images['large'];
+    final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+    Widget containerBackground(Widget child) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: context.brightness == Brightness.light
+                ? Colors.white.toOpacity(0.6)
+                : Colors.black.toOpacity(0.6),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: child,
+        ),
+      );
+    }
+
+    Widget backdropFilter(Widget child) {
+      return BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          color: context.brightness == Brightness.light
+              ? Colors.white.toOpacity(0.3)
+              : Colors.black.toOpacity(0.3),
+          child: child,
+        ),
+      );
+    }
+
+    return AnimatedTapRegion(
+      borderRadius: 8,
+      onTap: widget.onTap ?? () {},
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+        clipBehavior: Clip.antiAlias,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            Widget backgroundImage = BangumiWidget.kostoriImage(
+              context,
+              image!,
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+            );
+
+            backgroundImage = Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Theme.of(context).colorScheme.secondaryContainer,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: backgroundImage,
+            );
+            Widget foregroundImage = Hero(
+              tag: '${widget.heroTag}-${widget.bangumiItem.id}',
+              child: BangumiWidget.kostoriImage(
+                context,
+                image,
+                width: constraints.maxWidth,
+                height: constraints.maxHeight * 0.85,
+              ),
+            );
+
+            foregroundImage = Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Theme.of(context).colorScheme.secondaryContainer,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: foregroundImage,
+            );
+            final title = bangumiItem.nameCn == ''
+                ? bangumiItem.name
+                : bangumiItem.nameCn;
+            final style = TextStyle(fontWeight: FontWeight.w500, fontSize: 12);
+            final textPainter = TextPainter(
+              text: TextSpan(text: title, style: style),
+              maxLines: 1,
+              textDirection: TextDirection.ltr,
+            )..layout(maxWidth: constraints.maxWidth);
+
+            final shouldScroll = textPainter.width >= constraints.maxWidth - 30;
+
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: Opacity(opacity: 0.2, child: backgroundImage),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 8,
+                    right: 8,
+                    top: 8,
+                    bottom: 4,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        height: constraints.maxHeight * 0.85,
+                        width: constraints.maxWidth,
+                        child: Stack(
+                          children: [
+                            Positioned.fill(child: foregroundImage),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    if (bangumiItem.airTime != null)
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: animeCardUseBlur
+                                            ? backdropFilter(
+                                                Text(
+                                                  bangumiItem.airDate,
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              )
+                                            : containerBackground(
+                                                Text(
+                                                  bangumiItem.airDate,
+                                                  style: const TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                      ),
+                                    const SizedBox(height: 4),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: animeCardUseBlur
+                                          ? backdropFilter(_score())
+                                          : containerBackground(_score()),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            top: 8.0,
+                            left: 4,
+                            right: 4,
+                            bottom: 4,
+                          ),
+                          child: shouldScroll
+                              ? Marquee(
+                                  text: title,
+                                  style: style,
+                                  scrollAxis: Axis.horizontal,
+                                  blankSpace: 10.0,
+                                  velocity: 40.0,
+                                  pauseAfterRound: Duration.zero,
+                                  accelerationDuration: Duration.zero,
+                                  decelerationDuration: Duration.zero,
+                                )
+                              : Text(
+                                  title,
+                                  style: style,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
 /// 状态保存
 class KeepAliveWrapper extends StatefulWidget {
   const KeepAliveWrapper({super.key, required this.child});
