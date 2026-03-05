@@ -5,8 +5,23 @@ class PopUpWidget<T> extends PopupRoute<T> {
 
   final Widget widget;
 
+  late final CurvedAnimation _curvedAnimation;
+
   @override
-  Color? get barrierColor => Colors.black54;
+  void install() {
+    super.install();
+    _curvedAnimation = CurvedAnimation(
+      parent: animation!,
+      curve: Curves.ease,
+      reverseCurve: Curves.ease,
+    );
+  }
+
+  @override
+  void dispose() {
+    _curvedAnimation.dispose();
+    super.dispose();
+  }
 
   @override
   bool get barrierDismissible => true;
@@ -15,27 +30,35 @@ class PopUpWidget<T> extends PopupRoute<T> {
   String? get barrierLabel => "exit";
 
   @override
+  Color? get barrierColor => Colors.transparent;
+
+  @override
   Widget buildPage(
     BuildContext context,
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
-    var height = MediaQuery.of(context).size.height * 0.9;
-    bool showPopUp = MediaQuery.of(context).size.width > 500;
+    final height = MediaQuery.of(context).size.height * 0.9;
+    final showPopUp = MediaQuery.of(context).size.width > 500;
+
     Widget body = PopupIndicatorWidget(
       child: Container(
         decoration: showPopUp
             ? BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-                boxShadow: context.brightness == ui.Brightness.dark
-                    ? [
-                        BoxShadow(
-                          color: Colors.white.withAlpha(50),
-                          blurRadius: 10,
-                          offset: Offset(0, 2),
-                        ),
-                      ]
-                    : null,
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(80),
+                    blurRadius: 24,
+                    spreadRadius: 4,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withAlpha(40),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               )
             : null,
         clipBehavior: showPopUp ? Clip.antiAlias : Clip.none,
@@ -49,6 +72,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
         ),
       ),
     );
+
     if (App.isIOS) {
       body = IOSBackGestureDetector(
         enabledCallback: () => true,
@@ -58,6 +82,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
         child: body,
       );
     }
+
     if (showPopUp) {
       return MediaQuery.removePadding(
         removeTop: true,
@@ -65,6 +90,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
         child: Center(child: body),
       );
     }
+
     return body;
   }
 
@@ -78,11 +104,28 @@ class PopUpWidget<T> extends PopupRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return FadeTransition(
-      opacity: animation.drive(
-        Tween(begin: 0.0, end: 1.0).chain(CurveTween(curve: Curves.ease)),
-      ),
-      child: child,
+    return AnimatedBuilder(
+      animation: _curvedAnimation,
+      builder: (context, _) {
+        return GestureDetector(
+          onTap: () => navigator?.pop(), // ← 点击背景关闭
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(
+              sigmaX: 0.001 + 6.0 * _curvedAnimation.value,
+              sigmaY: 0.001 + 6.0 * _curvedAnimation.value,
+            ),
+            child: ColoredBox(
+              color: Colors.black.withAlpha(
+                (80 * _curvedAnimation.value).toInt(),
+              ),
+              child: GestureDetector(
+                onTap: () {}, // ← 阻止点击内容区穿透到背景
+                child: FadeTransition(opacity: _curvedAnimation, child: child),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -126,17 +169,34 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardOffset = (keyboardHeight - 0.05 * screenHeight).clamp(
+      0.0,
+      double.infinity,
+    );
+
     return Material(
+      color: colorScheme.surface,
       child: Column(
         children: [
-          Container(
+          // 顶部栏
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             height: 56 + context.padding.top,
             padding: EdgeInsets.only(top: context.padding.top),
             width: double.infinity,
             decoration: BoxDecoration(
-              color: top
+              color: colorScheme.surface,
+              border: top
                   ? null
-                  : Theme.of(context).colorScheme.surfaceTint.withAlpha(20),
+                  : Border(
+                      bottom: BorderSide(
+                        color: colorScheme.outlineVariant,
+                        width: 0.6,
+                      ),
+                    ),
             ),
             child: Row(
               children: [
@@ -163,23 +223,18 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
               ],
             ),
           ),
+
+          // 内容区
           NotificationListener<ScrollNotification>(
-            onNotification: (notifications) {
-              if (notifications.metrics.axisDirection != AxisDirection.down) {
+            onNotification: (notification) {
+              if (notification.metrics.axisDirection != AxisDirection.down) {
                 return false;
               }
-              if (notifications.metrics.pixels ==
-                      notifications.metrics.minScrollExtent &&
-                  !top) {
-                setState(() {
-                  top = true;
-                });
-              } else if (notifications.metrics.pixels !=
-                      notifications.metrics.minScrollExtent &&
-                  top) {
-                setState(() {
-                  top = false;
-                });
+              final atTop =
+                  notification.metrics.pixels ==
+                  notification.metrics.minScrollExtent;
+              if (atTop != top) {
+                setState(() => top = atTop);
               }
               return false;
             },
@@ -189,15 +244,8 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
               child: Expanded(child: widget.body),
             ),
           ),
-          SizedBox(
-            height:
-                MediaQuery.of(context).viewInsets.bottom -
-                        0.05 * MediaQuery.of(context).size.height >
-                    0
-                ? MediaQuery.of(context).viewInsets.bottom -
-                      0.05 * MediaQuery.of(context).size.height
-                : 0,
-          ),
+          // 键盘偏移
+          SizedBox(height: keyboardOffset),
         ],
       ),
     );
