@@ -149,6 +149,6 @@ class SearchHistoryManager with ChangeNotifier {
   }
 
   void close() {
-    _db.dispose();
+    _db.close();
   }
 }

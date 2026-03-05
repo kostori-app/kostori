@@ -11,6 +11,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/stats.dart';
+import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
 String _getTimeString(DateTime time) {
@@ -217,7 +218,8 @@ class LocalFavoritesManager with ChangeNotifier {
 
   Future<void> init() async {
     counts = {};
-    _db = sqlite3.open("${App.dataPath}/local_favorite.db");
+    final dbPath = path.join(App.dataPath, 'local_favorite.db');
+    _db = sqlite3.open(dbPath);
     _db.execute("""
       create table if not exists folder_order (
         folder_name text primary key,
@@ -282,7 +284,7 @@ class LocalFavoritesManager with ChangeNotifier {
     Pointer<void> p,
   ) {
     return Isolate.run(() {
-      var db = sqlite3.fromPointer(p);
+      var db = sqlite3.fromPointer(p, borrowed: true);
       var hashedIds = <int, int>{};
       for (var folder in folders) {
         var rows = db.select("""
@@ -334,11 +336,15 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   List<String> _getTablesWithDB() {
-    final tables = _db
-        .select("SELECT name FROM sqlite_master WHERE type='table';")
-        .map((element) => element["name"] as String)
-        .toList();
-    return tables;
+    try {
+      final tables = _db
+          .select("SELECT name FROM sqlite_master WHERE type='table';")
+          .map((element) => element["name"] as String)
+          .toList();
+      return tables;
+    } catch (e) {
+      throw Exception(e);
+    }
   }
 
   List<String> _getFolderNamesWithDB() {
@@ -419,7 +425,7 @@ class LocalFavoritesManager with ChangeNotifier {
     FavoriteSortType sortType,
   ) {
     return Isolate.run(() {
-      var db = sqlite3.fromPointer(p);
+      var db = sqlite3.fromPointer(p, borrowed: true);
       var rows = db.select("""
         select * from "$folder"
         ORDER BY ${sortType.orderBy};
@@ -965,7 +971,7 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   Future<void> clearAll() async {
-    _db.dispose();
+    _db.close();
     File("${App.dataPath}/local_favorite.db").deleteSync();
     await init();
   }
@@ -1210,7 +1216,7 @@ class LocalFavoritesManager with ChangeNotifier {
   }
 
   void close() {
-    _db.dispose();
+    _db.close();
   }
 }
 

@@ -10,6 +10,7 @@ import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
 typedef HistoryType = AnimeType;
@@ -382,7 +383,8 @@ class HistoryManager with ChangeNotifier {
     if (isInitialized) {
       return;
     }
-    _db = sqlite3.open("${App.dataPath}/history.db");
+    final dbPath = path.join(App.dataPath, 'history.db');
+    _db = sqlite3.open(dbPath);
 
     _db.execute("""
         create table if not exists history  (
@@ -459,6 +461,7 @@ class HistoryManager with ChangeNotifier {
     }
 
     notifyListeners();
+    isInitialized = true;
   }
 
   static const _insertHistorySql = """
@@ -468,7 +471,10 @@ class HistoryManager with ChangeNotifier {
 
   static Future<void> _addHistoryAsync(int dbAddr, History newItem) {
     return Isolate.run(() {
-      var db = sqlite3.fromPointer(ffi.Pointer.fromAddress(dbAddr));
+      var db = sqlite3.fromPointer(
+        ffi.Pointer.fromAddress(dbAddr),
+        borrowed: true,
+      );
       db.execute(_insertHistorySql, [
         newItem.id,
         newItem.title,
@@ -689,7 +695,7 @@ class HistoryManager with ChangeNotifier {
 
   void close() {
     isInitialized = false;
-    _db.dispose();
+    _db.close();
   }
 
   void batchDeleteHistories(List<AnimeID> histories) {
