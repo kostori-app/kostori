@@ -4,11 +4,9 @@ import 'dart:math';
 
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gif/gif.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -22,17 +20,14 @@ import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
-import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:word_cloud/word_cloud_data.dart';
 import 'package:word_cloud/word_cloud_exporter.dart';
@@ -380,42 +375,19 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                       markerBuilder: (context, day, events) {
                         if (events.isEmpty) return const SizedBox();
 
-                        // 限制最多显示 4 个标记
-                        final displayCount = events.length > 4
-                            ? 4
-                            : events.length;
-
-                        List<Color> colors = List.generate(displayCount, (
-                          index,
-                        ) {
-                          if (events.length <= 4) {
-                            return Theme.of(context).colorScheme.primary;
-                          } else {
-                            // 根据事件总数决定前几个颜色
-                            switch (index) {
-                              case 0:
-                                return events.length > 4
-                                    ? Colors.red
-                                    : Theme.of(context).colorScheme.primary;
-                              case 1:
-                                return events.length > 8
-                                    ? Colors.orange
-                                    : Theme.of(context).colorScheme.primary;
-                              case 2:
-                                return events.length > 16
-                                    ? Colors.deepPurple
-                                    : Theme.of(context).colorScheme.primary;
-                              default:
-                                return Theme.of(context).colorScheme.primary;
-                            }
-                          }
-                        });
+                        final colors = standardColorMap.keys.toList();
+                        final count = events.length;
+                        final displayCount = count.clamp(1, 7);
 
                         return Positioned(
                           bottom: 0,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(displayCount, (i) {
+                              final color = count <= 7
+                                  ? colors[i % colors.length]
+                                  : colors[(i + (count ~/ 7)) % colors.length];
+
                               return Container(
                                 margin: const EdgeInsets.only(
                                   top: 10,
@@ -424,7 +396,7 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                                 width: 6,
                                 height: 6,
                                 decoration: BoxDecoration(
-                                  color: colors[i],
+                                  color: color,
                                   shape: BoxShape.circle,
                                 ),
                               );
