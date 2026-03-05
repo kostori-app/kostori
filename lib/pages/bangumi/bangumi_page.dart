@@ -568,9 +568,7 @@ class _TimetableState extends State<_Timetable> {
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () async {
-            App.mainNavigatorKey?.currentContext?.to(
-              () => BangumiCalendarPage(),
-            );
+            context.to(() => BangumiCalendarPage());
           },
           child: Column(
             mainAxisSize: MainAxisSize.min,

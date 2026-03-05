@@ -369,7 +369,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                   onTap: () => App.mainNavigatorKey?.currentContext?.to(
                     () => BangumiInfoPage(
                       bangumiItem: bangumiList[adjustedIndex],
-                      heroTag: 'calendar',
+                      heroTag: 'Timetable',
                     ),
                   ),
                   child: _BangumiCalendarCard(
@@ -635,7 +635,7 @@ class _BangumiCalendarCard extends StatelessWidget {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(24),
                         child: Hero(
-                          tag: 'calendar-${bangumiItem.id}',
+                          tag: 'Timetable-${bangumiItem.id}',
                           child: BangumiWidget.kostoriImage(
                             context,
                             bangumiItem.images['large']!,

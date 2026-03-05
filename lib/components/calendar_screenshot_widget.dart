@@ -57,15 +57,19 @@ class CalendarScreenshotWidget extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (appdata.settings['bangumiDataVer'] != null)
-                Text(
-                  'bangumi-data: ${appdata.settings['bangumiDataVer']}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              const SizedBox(width: 12),
-              Text(
-                DateFormat('yyyy-MM-dd HH:mm').format(captureTime),
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              Column(
+                children: [
+                  if (appdata.settings['bangumiDataVer'] != null)
+                    Text(
+                      'bangumi-data: ${appdata.settings['bangumiDataVer']}',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    ),
+                  const SizedBox(width: 12),
+                  Text(
+                    DateFormat('yyyy-MM-dd HH:mm').format(captureTime),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
               ),
             ],
           ),
