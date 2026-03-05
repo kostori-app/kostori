@@ -471,17 +471,18 @@ class _InfoTabViewState extends State<InfoTabView>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      // 封面图改成 Ink.image
-                                      Ink.image(
-                                        image: CachedImageProvider(
-                                          item.images['large']!,
-                                          sourceKey: 'bangumi',
+                                      Hero(
+                                        tag: item.id.toString(),
+                                        child: Ink.image(
+                                          image: CachedImageProvider(
+                                            item.images['large']!,
+                                            sourceKey: 'bangumi',
+                                          ),
+                                          width: 140,
+                                          height: 180,
+                                          fit: BoxFit.cover,
                                         ),
-                                        width: 140,
-                                        height: 180,
-                                        fit: BoxFit.cover,
                                       ),
-
                                       // 标题
                                       Padding(
                                         padding: const EdgeInsets.all(4.0),

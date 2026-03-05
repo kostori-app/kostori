@@ -204,11 +204,14 @@ class _CharacterPageState extends State<CharacterPage>
                                                   child: GestureDetector(
                                                     onTap: () {
                                                       BangumiWidget.showImagePreview(
-                                                        context,
-                                                        characterFullItem.image,
-                                                        characterFullItem
+                                                        context: context,
+                                                        url: characterFullItem
+                                                            .image,
+                                                        title: characterFullItem
                                                             .nameCN,
-                                                        characterFullItem.image,
+                                                        heroTag:
+                                                            characterFullItem
+                                                                .image,
                                                       );
                                                     },
                                                     child: Hero(

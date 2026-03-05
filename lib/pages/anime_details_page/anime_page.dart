@@ -448,16 +448,16 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                           onTap: () {
                             (history?.bangumiId == null || bangumiItem == null)
                                 ? BangumiWidget.showImagePreview(
-                                    context,
-                                    widget.cover ?? anime.cover,
-                                    anime.title,
-                                    "cover${widget.heroID}",
+                                    context: context,
+                                    url: widget.cover ?? anime.cover,
+                                    title: anime.title,
+                                    heroTag: "cover${widget.heroID}",
                                   )
                                 : BangumiWidget.showImagePreview(
-                                    context,
-                                    bangumiItem!.images['large']!,
-                                    bangumiItem!.nameCn,
-                                    "cover${widget.heroID}",
+                                    context: context,
+                                    url: bangumiItem!.images['large']!,
+                                    title: bangumiItem!.nameCn,
+                                    heroTag: "cover${widget.heroID}",
                                   );
                           },
                           child: Hero(
@@ -506,7 +506,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     () => AggregatedSearchPage(
                                       keyword: anime.title,
                                     ),
-                                    iosFullScreenGesture: false,
                                   );
                                 },
                                 onLongPress: () {

@@ -147,10 +147,14 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
       final images = ref.read(imagesProvider);
       final file = images[index];
       BangumiWidget.showImagePreview(
-        context,
-        file.path,
-        App.isAndroid ? file.path.split('/').last : file.path.split('\\').last,
-        App.isAndroid ? file.path.split('/').last : file.path.split('\\').last,
+        context: context,
+        url: file.path,
+        title: App.isAndroid
+            ? file.path.split('/').last
+            : file.path.split('\\').last,
+        heroTag: App.isAndroid
+            ? file.path.split('/').last
+            : file.path.split('\\').last,
         allUrls: images,
         initialIndex: index,
       );

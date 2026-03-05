@@ -6,8 +6,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/custom_markdown_widget.dart';
+import 'package:kostori/components/image_preview_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -27,8 +30,6 @@ import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class BangumiWidget {
