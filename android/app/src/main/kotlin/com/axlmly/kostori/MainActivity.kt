@@ -258,6 +258,23 @@ class MainActivity : AudioServiceFragmentActivity() {
         }
     }
 
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (listening) {
+            when (keyCode) {
+                KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                    volumeListen.down()
+                    return true
+                }
+
+                KeyEvent.KEYCODE_VOLUME_UP -> {
+                    volumeListen.up()
+                    return true
+                }
+            }
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
     /// Ensure that the directory is accessible by dart:io
     private fun onPickedDirectory(uri: Uri, result: MethodChannel.Result) {
         if (hasStoragePermission()) {
@@ -437,5 +454,17 @@ class MainActivity : AudioServiceFragmentActivity() {
                 }
             }.start()
         }
+    }
+}
+
+class VolumeListen {
+    var onUp = fun() {}
+    var onDown = fun() {}
+    fun up() {
+        onUp()
+    }
+
+    fun down() {
+        onDown()
     }
 }

@@ -12,6 +12,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/volume.dart';
 import 'package:marquee/marquee.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -47,22 +48,14 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
   late final FocusNode _focusNode;
   Timer? _singleTapTimer;
   DateTime? _lastTapTime;
-  final _volumeChannel = EventChannel('kostori/volume');
   StreamSubscription? _volumeSubscription;
+  VolumeListener? volumeListener;
 
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
-    if (App.isAndroid) {
-      _volumeChannel.receiveBroadcastStream().listen((event) {
-        if (event == 1) {
-          _goPrev();
-        } else if (event == 2) {
-          _goNext();
-        }
-      });
-    }
+    handleVolumeEvent();
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
@@ -74,6 +67,7 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
     _singleTapTimer?.cancel();
     _volumeSubscription?.cancel();
     _focusNode.dispose();
+    stopVolumeEvent();
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     for (final c in _photoViewControllers.values) {
       c.dispose();
@@ -82,6 +76,24 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  void handleVolumeEvent() {
+    if (!App.isAndroid) {
+      // Currently only support Android
+      return;
+    }
+    if (volumeListener != null) {
+      volumeListener?.cancel();
+    }
+    volumeListener = VolumeListener(onDown: _goNext, onUp: _goPrev)..listen();
+  }
+
+  void stopVolumeEvent() {
+    if (volumeListener != null) {
+      volumeListener?.cancel();
+      volumeListener = null;
+    }
   }
 
   bool _handleKeyEvent(KeyEvent event) {
