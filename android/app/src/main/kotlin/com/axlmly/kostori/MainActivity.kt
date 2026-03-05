@@ -40,7 +40,7 @@ import com.ryanheise.audioservice.AudioServiceFragmentActivity
 
 class MainActivity : AudioServiceFragmentActivity() {
     var listening = false
-
+    var volumeListen = VolumeListen()
     private val CHANNEL = "kostori/network_speed"
     private val ABI_CHANNEL = "kostori/abi"
     private val APK_CHANNEL = "kostori/install_apk"
@@ -164,6 +164,24 @@ class MainActivity : AudioServiceFragmentActivity() {
                 else -> res.notImplemented()
             }
         }
+
+        val volumeChannel = EventChannel(flutterEngine.dartExecutor.binaryMessenger, "kostori/volume")
+        volumeChannel.setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink) {
+                    listening = true
+                    volumeListen.onUp = {
+                        events.success(1)
+                    }
+                    volumeListen.onDown = {
+                        events.success(2)
+                    }
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    listening = false
+                }
+            })
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ABI_CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "getAbi") {

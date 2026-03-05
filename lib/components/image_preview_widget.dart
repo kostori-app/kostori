@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/foundation/context.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:marquee/marquee.dart';
@@ -47,11 +47,23 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
   late final FocusNode _focusNode;
   Timer? _singleTapTimer;
   DateTime? _lastTapTime;
+  final _volumeChannel = EventChannel('kostori/volume');
+  StreamSubscription? _volumeSubscription;
 
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
+    if (App.isAndroid) {
+      _volumeChannel.receiveBroadcastStream().listen((event) {
+        if (event == 1) {
+          _goPrev();
+        } else if (event == 2) {
+          _goNext();
+        }
+      });
+    }
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -60,7 +72,9 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
   @override
   void dispose() {
     _singleTapTimer?.cancel();
+    _volumeSubscription?.cancel();
     _focusNode.dispose();
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     for (final c in _photoViewControllers.values) {
       c.dispose();
     }
@@ -68,6 +82,28 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (event.logicalKey == LogicalKeyboardKey.audioVolumeUp) {
+      _goPrev();
+      return true;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.audioVolumeDown) {
+      _goNext();
+      return true;
+    }
+    // 桌面端左右方向键翻页
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      _goPrev();
+      return true;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      _goNext();
+      return true;
+    }
+    return false;
   }
 
   PhotoViewController _controllerForIndex(int index) {
@@ -173,37 +209,55 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: _focusNode,
-      onKeyEvent: (event) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.audioVolumeUp) {
-            _goPrev();
-          } else if (event.logicalKey == LogicalKeyboardKey.audioVolumeDown) {
-            _goNext();
-          }
+    return Listener(
+      onPointerSignal: (event) {
+        if (event is PointerScrollEvent) {
+          final controller = _controllerForIndex(
+            ref.read(currentIndexProvider),
+          );
+          // 当前偏移加上滚轮delta
+          final currentPosition = controller.position;
+          controller.animatePosition?.call(
+            currentPosition,
+            Offset(
+              currentPosition.dx,
+              currentPosition.dy - event.scrollDelta.dy * 1.5,
+            ),
+          );
         }
       },
-      child: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
-        child: Material(
-          type: MaterialType.transparency,
-          child: Stack(
-            children: [
-              Center(child: _buildImageArea()),
-              Positioned(
-                top: context.padding.top,
-                left: 16,
-                right: 16,
-                child: _TopBar(
-                  url: widget.url,
-                  heroTag: widget.heroTag,
-                  isLocal: widget.isLocal,
-                  pageController: widget.pageController,
-                  title: widget.title,
+      child: KeyboardListener(
+        focusNode: _focusNode,
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent) {
+            if (event.logicalKey == LogicalKeyboardKey.audioVolumeUp) {
+              _goPrev();
+            } else if (event.logicalKey == LogicalKeyboardKey.audioVolumeDown) {
+              _goNext();
+            }
+          }
+        },
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle.light,
+          child: Material(
+            type: MaterialType.transparency,
+            child: Stack(
+              children: [
+                Center(child: _buildImageArea()),
+                Positioned(
+                  top: context.padding.top,
+                  left: 16,
+                  right: 16,
+                  child: _TopBar(
+                    url: widget.url,
+                    heroTag: widget.heroTag,
+                    isLocal: widget.isLocal,
+                    pageController: widget.pageController,
+                    title: widget.title,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
