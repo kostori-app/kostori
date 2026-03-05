@@ -265,6 +265,8 @@ class AnimeSource {
 
   final Map<String, String>? httpHeaders;
 
+  final String? host;
+
   Future<void> loadData() async {
     var file = File("${App.dataPath}/anime_source/$key.data");
     if (await file.exists()) {
@@ -306,39 +308,40 @@ class AnimeSource {
     return !res.error;
   }
 
-  AnimeSource(
-    this.name,
-    this.key,
-    this.account,
-    this.categoryData,
-    this.categoryAnimesData,
-    this.favoriteData,
-    this.explorePages,
-    this.searchPageData,
-    this.settings,
-    this.loadAnimeInfo,
-    this.loadAnimeThumbnail,
-    this.loadAnimePages,
-    this.getImageLoadingConfig,
-    this.getThumbnailLoadingConfig,
-    this.filePath,
-    this.url,
-    this.version,
-    this.commentsLoader,
-    this.sendCommentFunc,
-    this.likeOrUnlikeAnime,
-    this.voteCommentFunc,
-    this.likeCommentFunc,
-    this.idMatcher,
-    this.translations,
-    this.handleClickTagEvent,
-    this.linkHandler,
-    this.enableTagsSuggestions,
-    this.enableTagsTranslate,
-    this.starRatingFunc,
-    this.isBangumi,
-    this.httpHeaders,
-  );
+  AnimeSource({
+    required this.name,
+    required this.key,
+    required this.account,
+    required this.categoryData,
+    required this.categoryAnimesData,
+    required this.favoriteData,
+    required this.explorePages,
+    required this.searchPageData,
+    required this.settings,
+    required this.loadAnimeInfo,
+    required this.loadAnimeThumbnail,
+    required this.loadAnimePages,
+    required this.getImageLoadingConfig,
+    required this.getThumbnailLoadingConfig,
+    required this.filePath,
+    required this.url,
+    required this.version,
+    required this.commentsLoader,
+    required this.sendCommentFunc,
+    required this.likeOrUnlikeAnime,
+    required this.voteCommentFunc,
+    required this.likeCommentFunc,
+    required this.idMatcher,
+    required this.translations,
+    required this.handleClickTagEvent,
+    required this.linkHandler,
+    required this.enableTagsSuggestions,
+    required this.enableTagsTranslate,
+    required this.starRatingFunc,
+    required this.isBangumi,
+    required this.host,
+    required this.httpHeaders,
+  });
 }
 
 class AccountConfig {

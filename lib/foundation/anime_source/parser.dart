@@ -110,6 +110,7 @@ class AnimeSourceParser {
         JsEngine().runCode("this['temp'].version") ??
         (throw AnimeSourceParseException('version is required'));
     var isBangumi = JsEngine().runCode("this['temp'].isBangumi") ?? false;
+    var host = JsEngine().runCode("this['temp'].host") ?? '';
     var minAppVersion = JsEngine().runCode("this['temp'].minAppVersion");
     var url = JsEngine().runCode("this['temp'].url");
     if (minAppVersion != null) {
@@ -134,37 +135,38 @@ class AnimeSourceParser {
     """);
 
     var source = AnimeSource(
-      _name!,
-      key,
-      _loadAccountConfig(),
-      _loadCategoryData(),
-      _loadCategoryAnimesData(),
-      _loadFavoriteData(),
-      _loadExploreData(),
-      _loadSearchData(),
-      _parseSettings(),
-      _parseLoadAnimeFunc(),
-      _parseThumbnailLoader(),
-      _parseLoadAnimePagesFunc(),
-      _parseImageLoadingConfigFunc(),
-      _parseThumbnailLoadingConfigFunc(),
-      filePath,
-      url ?? "",
-      version ?? "1.0.0",
-      _parseCommentsLoader(),
-      _parseSendCommentFunc(),
-      _parseLikeFunc(),
-      _parseVoteCommentFunc(),
-      _parseLikeCommentFunc(),
-      _parseIdMatch(),
-      _parseTranslation(),
-      _parseClickTagEvent(),
-      _parseLinkHandler(),
-      _getValue("search.enableTagsSuggestions") ?? false,
-      _getValue("anime.enableTagsTranslate") ?? false,
-      _parseStarRatingFunc(),
-      isBangumi,
-      _parseHttpHeaders(),
+      name: _name!,
+      key: key,
+      account: _loadAccountConfig(),
+      categoryData: _loadCategoryData(),
+      categoryAnimesData: _loadCategoryAnimesData(),
+      favoriteData: _loadFavoriteData(),
+      explorePages: _loadExploreData(),
+      searchPageData: _loadSearchData(),
+      settings: _parseSettings(),
+      loadAnimeInfo: _parseLoadAnimeFunc(),
+      loadAnimeThumbnail: _parseThumbnailLoader(),
+      loadAnimePages: _parseLoadAnimePagesFunc(),
+      getImageLoadingConfig: _parseImageLoadingConfigFunc(),
+      getThumbnailLoadingConfig: _parseThumbnailLoadingConfigFunc(),
+      filePath: filePath,
+      url: url ?? "",
+      version: version ?? "1.0.0",
+      commentsLoader: _parseCommentsLoader(),
+      sendCommentFunc: _parseSendCommentFunc(),
+      likeOrUnlikeAnime: _parseLikeFunc(),
+      voteCommentFunc: _parseVoteCommentFunc(),
+      likeCommentFunc: _parseLikeCommentFunc(),
+      idMatcher: _parseIdMatch(),
+      translations: _parseTranslation(),
+      handleClickTagEvent: _parseClickTagEvent(),
+      linkHandler: _parseLinkHandler(),
+      enableTagsSuggestions: _getValue("search.enableTagsSuggestions") ?? false,
+      enableTagsTranslate: _getValue("anime.enableTagsTranslate") ?? false,
+      starRatingFunc: _parseStarRatingFunc(),
+      isBangumi: isBangumi,
+      host: host,
+      httpHeaders: _parseHttpHeaders(),
     );
 
     await source.loadData();

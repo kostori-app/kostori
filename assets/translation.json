@@ -633,7 +633,12 @@
     "Stats Calendar": "统计日历",
     "Kostori Changelog": "Kostori更新日志",
     "Copy Path": "复制链接",
-    "Properties": "图片属性"
+    "Properties": "图片属性",
+    "No endpoint": "未配置地址",
+    "Test All": "测试全部",
+    "Custom Endpoint": "自定义地址",
+    "Ping Test": "Ping测试",
+    "Continuous Ping": "持续Ping"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

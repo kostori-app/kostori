@@ -1072,6 +1072,8 @@ class AnimeSource {
 
     url = ""
 
+    host = ""
+
     httpHeaders = {}
 
     /**

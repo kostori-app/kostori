@@ -1,5 +1,6 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' as io;
 
@@ -277,6 +278,15 @@ class _BodyState extends State<_Body> {
                         App.rootContext,
                         _AnimeSourceList(handleAddSource),
                       );
+                    },
+                  ),
+                ),
+                ListTile(
+                  title: Text("检测番剧源host延迟".tl),
+                  trailing: buildButton(
+                    child: Text("View".tl),
+                    onPressed: () {
+                      showPopUpWidget(App.rootContext, _PingTestPage());
                     },
                   ),
                 ),
@@ -741,9 +751,8 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
 
   void showUpdateDialog() async {
     var text = AnimeSourceManager().availableUpdates.entries
-        .map((e) {
-          return "${AnimeSource.find(e.key)!.name}: ${e.value}";
-        })
+        .where((e) => AnimeSource.find(e.key) != null)
+        .map((e) => "${AnimeSource.find(e.key)!.name}: ${e.value}")
         .join("\n");
     bool doUpdate = false;
     await showDialog(
@@ -775,13 +784,23 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
       try {
         var shouldUpdate = AnimeSourceManager().availableUpdates.keys.toList();
         for (var key in shouldUpdate) {
-          var source = AnimeSource.find(key)!;
-          await AnimeSourceSettings.update(source, false);
+          final source = AnimeSource.find(key);
+          if (source == null) {
+            current++;
+            loadingController.setProgress(current / total);
+            continue;
+          }
+          try {
+            await AnimeSourceSettings.update(source, false);
+          } catch (e, s) {
+            Log.addLog(LogLevel.error, 'Update ${source.name}', '$e\n$s');
+          }
           current++;
           loadingController.setProgress(current / total);
         }
-      } catch (e) {
+      } catch (e, s) {
         context.showMessage(message: e.toString());
+        Log.addLog(LogLevel.error, 'Updates', '$e\n$s');
       }
       loadingController.close();
     }
@@ -1452,5 +1471,472 @@ class _LoginPageState extends State<_LoginPage> {
     );
 
     webview.open();
+  }
+}
+
+class _PingTestPage extends StatefulWidget {
+  const _PingTestPage();
+
+  @override
+  State<_PingTestPage> createState() => _PingTestPageState();
+}
+
+class _PingTestPageState extends State<_PingTestPage> {
+  List<TextEditingController> customControllers = [];
+  bool changed = false;
+  bool testing = false;
+  bool continuousPing = false;
+  Timer? _continuousTimer;
+  List<_PingResult> results = [];
+  final int _timeoutSeconds = 5;
+  final Set<String> _enabledEndpoints = {};
+
+  final _inputController = TextEditingController();
+
+  void _addCustomEndpoint() {
+    final text = _inputController.text.trim();
+    if (text.isEmpty) return;
+    if (customControllers.any((c) => c.text == text)) {
+      context.showMessage(message: '地址已存在');
+      return;
+    }
+    setState(() {
+      customControllers.add(TextEditingController(text: text));
+      _inputController.clear();
+      changed = true;
+    });
+  }
+
+  static List<Map<String, String?>> get _defaultEndpoints => [
+    ...AnimeSource.all().map(
+      (source) => {'name': source.name, 'endpoint': source.host},
+    ),
+  ];
+
+  List<Map<String, String?>> get _customEndpoints => customControllers
+      .where((c) => c.text.isNotEmpty)
+      .map((c) => {'name': c.text, 'endpoint': c.text})
+      .toList();
+
+  List<Map<String, String?>> get _activeEndpoints => [
+    ..._customEndpoints.where((e) => _enabledEndpoints.contains(e['endpoint'])),
+    ..._defaultEndpoints.where(
+      (e) => _enabledEndpoints.contains(e['endpoint']),
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = appdata.settings['pingCustomEndpoints'];
+    if (saved is List && saved.isNotEmpty) {
+      customControllers = saved
+          .map((e) => TextEditingController(text: e.toString()))
+          .toList();
+    } else {
+      customControllers = [TextEditingController()];
+    }
+  }
+
+  @override
+  void dispose() {
+    _continuousTimer?.cancel();
+    _inputController.dispose();
+    if (changed) {
+      appdata.settings['pingCustomEndpoints'] = customControllers
+          .map((c) => c.text)
+          .where((t) => t.isNotEmpty)
+          .toList();
+      appdata.saveData();
+    }
+    for (final c in customControllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<int?> _ping(String endpoint) async {
+    if (endpoint.isEmpty) return null;
+    try {
+      final url = endpoint.startsWith('http') ? endpoint : 'https://$endpoint';
+      final stopwatch = Stopwatch()..start();
+      await AppDio().get(
+        url,
+        options: Options(
+          sendTimeout: Duration(seconds: _timeoutSeconds),
+          receiveTimeout: Duration(seconds: _timeoutSeconds),
+          validateStatus: (_) => true,
+        ),
+      );
+      stopwatch.stop();
+      return stopwatch.elapsedMilliseconds;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _runTest(String name, String? endpoint) async {
+    if (endpoint == null || endpoint.isEmpty) return;
+
+    if (!continuousPing) {
+      if (mounted) {
+        setState(() {
+          results.removeWhere((r) => r.endpoint == endpoint);
+          results.add(
+            _PingResult(
+              name: name,
+              endpoint: endpoint,
+              status: _PingStatus.testing,
+            ),
+          );
+        });
+      }
+    }
+
+    final latency = await _ping(endpoint);
+
+    if (mounted) {
+      setState(() {
+        final index = results.indexWhere((r) => r.endpoint == endpoint);
+        if (index != -1) {
+          results[index] = _PingResult(
+            name: name,
+            endpoint: endpoint,
+            status: latency != null ? _PingStatus.success : _PingStatus.failed,
+            latency: latency,
+          );
+        } else {
+          results.add(
+            _PingResult(
+              name: name,
+              endpoint: endpoint,
+              status: latency != null
+                  ? _PingStatus.success
+                  : _PingStatus.failed,
+              latency: latency,
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _runAllTests() async {
+    if (_activeEndpoints.isEmpty) {
+      context.showMessage(message: '请先开启至少一个地址');
+      return;
+    }
+    setState(() => testing = true);
+    await Future.wait(
+      _activeEndpoints.map((e) => _runTest(e['name']!, e['endpoint'])),
+    );
+    setState(() => testing = false);
+  }
+
+  void _startContinuousPing() {
+    if (_activeEndpoints.isEmpty) {
+      context.showMessage(message: '请先开启至少一个地址');
+      return;
+    }
+    setState(() => continuousPing = true);
+    _continuousTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      for (final e in _activeEndpoints) {
+        _runTest(e['name']!, e['endpoint']);
+      }
+    });
+  }
+
+  void _stopContinuousPing() {
+    _continuousTimer?.cancel();
+    _continuousTimer = null;
+    setState(() => continuousPing = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: 'Ping Test'.tl,
+      body: ListView(
+        children: [
+          // 自定义输入区域
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+                width: 0.6,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.network_ping),
+                  title: Text('Custom Endpoint'.tl),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
+                  child: TextField(
+                    controller: _inputController,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. example.com',
+                      border: const UnderlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.add),
+                        tooltip: '添加地址',
+                        onPressed: _addCustomEndpoint,
+                      ),
+                    ),
+                    onSubmitted: (_) => _addCustomEndpoint(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        continuousPing ? Icons.stop : Icons.repeat,
+                        color: continuousPing
+                            ? Theme.of(context).colorScheme.error
+                            : null,
+                      ),
+                      tooltip: continuousPing
+                          ? 'Stop'.tl
+                          : 'Continuous Ping'.tl,
+                      onPressed: testing
+                          ? null
+                          : continuousPing
+                          ? _stopContinuousPing
+                          : _startContinuousPing,
+                    ),
+                    FilledButton.tonal(
+                      onPressed: (testing || continuousPing)
+                          ? null
+                          : _runAllTests,
+                      child: Text('Test All'.tl),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+
+          // 自定义地址列表
+          if (customControllers.any((c) => c.text.isNotEmpty)) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                'Custom'.tl,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+            ),
+            ...customControllers
+                .asMap()
+                .entries
+                .where((e) => e.value.text.isNotEmpty)
+                .map((e) {
+                  final endpoint = e.value.text;
+                  final result = results.firstWhereOrNull(
+                    (r) => r.endpoint == endpoint,
+                  );
+                  final enabled = _enabledEndpoints.contains(endpoint);
+                  return _PingListTile(
+                    name: endpoint,
+                    endpoint: endpoint,
+                    result: result,
+                    enabled: enabled,
+                    onToggle: () {
+                      setState(() {
+                        if (enabled) {
+                          _enabledEndpoints.remove(endpoint);
+                        } else {
+                          _enabledEndpoints.add(endpoint);
+                        }
+                      });
+                    },
+                    onTap: enabled ? () => _runTest(endpoint, endpoint) : null,
+                    onDelete: () {
+                      setState(() {
+                        e.value.dispose();
+                        customControllers.removeAt(e.key);
+                        results.removeWhere((r) => r.endpoint == endpoint);
+                        _enabledEndpoints.remove(endpoint);
+                        changed = true;
+                      });
+                    },
+                  );
+                }),
+            const Divider(indent: 16, endIndent: 16),
+          ],
+
+          // 预设 endpoints
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text(
+              'Sources'.tl,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+            ),
+          ),
+          ..._defaultEndpoints.map((e) {
+            final endpoint = e['endpoint'];
+            final result = results.firstWhereOrNull(
+              (r) => r.endpoint == endpoint,
+            );
+            final enabled = _enabledEndpoints.contains(endpoint);
+            return _PingListTile(
+              name: e['name']!,
+              endpoint: endpoint,
+              result: result,
+              enabled: enabled,
+              onToggle: () {
+                setState(() {
+                  if (enabled) {
+                    _enabledEndpoints.remove(endpoint);
+                  } else {
+                    if (endpoint != null) _enabledEndpoints.add(endpoint);
+                  }
+                });
+              },
+              onTap: enabled && endpoint != null
+                  ? () => _runTest(e['name']!, endpoint)
+                  : null,
+              onDelete: null,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+enum _PingStatus { testing, success, failed }
+
+class _PingResult {
+  final String name;
+  final String endpoint;
+  final _PingStatus status;
+  final int? latency;
+
+  const _PingResult({
+    required this.name,
+    required this.endpoint,
+    required this.status,
+    this.latency,
+  });
+}
+
+class _PingListTile extends StatelessWidget {
+  const _PingListTile({
+    required this.name,
+    required this.endpoint,
+    required this.result,
+    required this.enabled,
+    required this.onToggle,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  final String name;
+  final String? endpoint;
+  final _PingResult? result;
+  final bool enabled;
+  final VoidCallback onToggle;
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget statusWidget;
+
+    if (!enabled || endpoint == null || endpoint!.isEmpty) {
+      statusWidget = const SizedBox.shrink();
+    } else {
+      switch (result?.status) {
+        case _PingStatus.testing:
+          statusWidget = const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          );
+          break;
+        case _PingStatus.success:
+          final ms = result!.latency!;
+          final color = ms < 100
+              ? Colors.green
+              : ms < 300
+              ? Colors.orange
+              : Colors.red;
+          statusWidget = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.toOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${ms}ms',
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            ),
+          );
+          break;
+        case _PingStatus.failed:
+          statusWidget = Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.red.toOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'Timeout',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          );
+          break;
+        default:
+          statusWidget = IconButton(
+            icon: const Icon(Icons.play_arrow, size: 20),
+            onPressed: onTap,
+            tooltip: 'Test',
+          );
+      }
+    }
+
+    return ListTile(
+      leading: CustomSwitch(value: enabled, onChanged: (_) => onToggle()),
+      title: Text(name),
+      subtitle: endpoint != null && endpoint!.isNotEmpty
+          ? Text(endpoint!)
+          : Text('暂无地址', style: TextStyle(color: Colors.grey[500])),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          statusWidget,
+          if (onDelete != null) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              tooltip: '删除',
+              onPressed: onDelete,
+            ),
+          ],
+        ],
+      ),
+      onTap: enabled && onTap != null ? onTap : null,
+    );
   }
 }
