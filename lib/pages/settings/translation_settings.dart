@@ -46,6 +46,7 @@ class _TranslationSettingsState extends State<TranslationSettings> {
                   },
                   child: ListView(
                     shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     children: translationSourceList.entries.toList().map((
                       entry,
                     ) {
@@ -329,10 +330,13 @@ class _TranslationSourceConfigPageState
             if (isSiliconFlow ||
                 TranslationSource.siliconFlow != translationSource)
               Positioned(
-                left: 16,
                 right: 16,
                 bottom: 16,
-                child: FilledButton(onPressed: _save, child: Text('Apply'.tl)),
+                child: FloatingActionButton.extended(
+                  onPressed: _save,
+                  label: Text('Apply'.tl),
+                  icon: const Icon(Icons.check),
+                ),
               ),
           ],
         ),
