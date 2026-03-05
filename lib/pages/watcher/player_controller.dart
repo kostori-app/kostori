@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
+import 'package:intl/intl.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
@@ -210,7 +212,7 @@ abstract class _PlayerController with Store {
   String get playerAudioBitrate => player.state.audioBitrate.toString();
 
   /// 播放器内部日志
-  List<PlayerLog> playerLog = [];
+  List<PlayerLogEntry> playerLog = [];
 
   /// 播放器日志订阅
   StreamSubscription<PlayerLog>? playerLogSubscription;
@@ -345,7 +347,7 @@ abstract class _PlayerController with Store {
     playerLog.clear();
     await playerLogSubscription?.cancel();
     playerLogSubscription = player.stream.log.listen((event) {
-      playerLog.add(event);
+      playerLog.add(PlayerLogEntry(event));
     });
 
     var pp = player.platform as NativePlayer;
@@ -1127,20 +1129,31 @@ class VideoInfoSheet extends StatefulWidget {
 }
 
 class _VideoInfoSheetState extends State<VideoInfoSheet>
-    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with TickerProviderStateMixin {
   late TabController _tabControllerZero;
   late TabController _tabControllerOne;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _tabControllerZero = TabController(length: 2, vsync: this);
     _tabControllerOne = TabController(length: 3, vsync: this);
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _tabControllerZero.dispose();
+    _tabControllerOne.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     return SizedBox(
       child: Column(
         children: [
@@ -1156,7 +1169,10 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
             child: ExtendedTabBarView(
               shouldIgnorePointerWhenScrolling: false,
               controller: _tabControllerZero,
-              children: [_buildVideoInfoTab(), _buildVideoLogTab()],
+              children: [
+                KeepAliveWrapper(child: _buildVideoInfoTab()),
+                KeepAliveWrapper(child: _buildVideoLogTab()),
+              ],
             ),
           ),
         ],
@@ -1172,12 +1188,10 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 单独显示 Media
               if (widget.playerController.playerPlaylist.medias.isNotEmpty)
                 MediaWidget(
                   media: widget.playerController.playerPlaylist.medias.first,
                 ),
-
               Material(
                 child: InkWell(
                   onLongPress: () {
@@ -1209,9 +1223,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                   ),
                 ),
               ),
-
               const SizedBox(height: 12),
-
               MediaInfoWidget(
                 videoParams: widget.playerController.playerVideoParams,
                 audioParams: widget.playerController.playerAudioParams,
@@ -1230,16 +1242,17 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
     final logs = widget.playerController.playerLog;
 
     // 按等级分类
-    final Map<String, List<PlayerLog>> logsByLevel = {
+    final Map<String, List<PlayerLogEntry>> logsByLevel = {
       'info': [],
       'warn': [],
       'error': [],
     };
-    for (var log in logs) {
-      if (logsByLevel.containsKey(log.level)) {
-        logsByLevel[log.level]!.add(log);
+    for (var entry in logs) {
+      final level = entry.log.level;
+      if (logsByLevel.containsKey(level)) {
+        logsByLevel[level]!.add(entry);
       } else {
-        logsByLevel['info']!.add(log);
+        logsByLevel['info']!.add(entry);
       }
     }
 
@@ -1260,9 +1273,12 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
             padding: const EdgeInsets.all(12.0),
             child: ListView.separated(
               itemCount: levelLogs.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
-                final log = levelLogs[index];
+                final entry = levelLogs[index];
+                final log = entry.log;
+                final timeStr = DateFormat('HH:mm:ss').format(entry.time);
+
                 return Material(
                   elevation: 2,
                   color: Theme.of(context).brightness == Brightness.light
@@ -1323,6 +1339,14 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                                 ),
                               ),
                             ),
+                            const Spacer(),
+                            Text(
+                              timeStr,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[500],
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -1353,15 +1377,23 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.copy),
         onPressed: () {
-          Clipboard.setData(
-            ClipboardData(text: widget.playerController.playerLog.join('\n')),
-          );
+          final allText = widget.playerController.playerLog
+              .map(
+                (e) =>
+                    '[${DateFormat('HH:mm:ss').format(e.time)}] ${e.log.level} ${e.log.prefix}: ${e.log.text}',
+              )
+              .join('\n');
+          Clipboard.setData(ClipboardData(text: allText));
           App.rootContext.showMessage(message: '复制成功');
         },
       ),
     );
   }
+}
 
-  @override
-  bool get wantKeepAlive => true;
+class PlayerLogEntry {
+  final PlayerLog log;
+  final DateTime time;
+
+  PlayerLogEntry(this.log) : time = DateTime.now();
 }

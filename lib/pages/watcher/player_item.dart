@@ -173,13 +173,11 @@ class _PlayerItemState extends State<PlayerItem>
     showModalBottomSheet(
       isScrollControlled: true,
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 3 / 4, // 设置最大高度
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
         maxWidth: MediaQuery.of(context).size.width <= 600
             ? MediaQuery.of(context).size.width
             : (App.isDesktop)
-            ? MediaQuery.of(context).size.width *
-                  9 /
-                  16 // 设置最大宽度
+            ? MediaQuery.of(context).size.width * 9 / 16
             : MediaQuery.of(context).size.width,
       ),
       clipBehavior: Clip.antiAlias,
