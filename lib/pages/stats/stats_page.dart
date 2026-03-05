@@ -4,12 +4,17 @@ import 'dart:math';
 
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gif/gif.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/components/word_cloud_widget.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -17,14 +22,20 @@ import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/stats.dart';
+import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:word_cloud/word_cloud_data.dart';
-import 'package:word_cloud/word_cloud_shape.dart';
+import 'package:word_cloud/word_cloud_exporter.dart';
 import 'package:word_cloud/word_cloud_view.dart';
 
 part 'stat_item_card.dart';
@@ -134,6 +145,7 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
               SizedBox(
                 height: 56,
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Center(child: Text('统计日历'.tl, style: ts.s18)),
                     Container(
@@ -485,6 +497,7 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                           SizedBox(
                             height: 56,
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Center(child: Text('当天的记录'.tl, style: ts.s18)),
                                 Container(
@@ -524,7 +537,7 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                                 ),
                                 if (groupedEntries.length > 9)
                                   IconButton(
-                                    tooltip: '查看全部',
+                                    tooltip: '查看全部'.tl,
                                     icon: const Icon(
                                       Icons.format_list_bulleted,
                                     ),
@@ -536,7 +549,6 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
                                               controller.selectedDay ??
                                               controller.focusedDay,
                                         ),
-                                        iosFullScreenGesture: false,
                                       );
                                     },
                                   ),
@@ -692,34 +704,6 @@ class DayCell extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class ResponsiveWordCloud extends StatefulWidget {
-  final List<Map<String, dynamic>> wordCloudData;
-
-  const ResponsiveWordCloud({super.key, required this.wordCloudData});
-
-  @override
-  State<ResponsiveWordCloud> createState() => _ResponsiveWordCloudState();
-}
-
-class _ResponsiveWordCloudState extends State<ResponsiveWordCloud> {
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return WordCloudView(
-          data: WordCloudData(data: widget.wordCloudData),
-          mapwidth: constraints.maxWidth,
-          mapheight: 300,
-          mintextsize: 5,
-          maxtextsize: 32,
-          colorlist: standardColorMap.keys.toList(),
-          shape: WordCloudCircle(radius: constraints.maxWidth - 100),
-        );
-      },
     );
   }
 }

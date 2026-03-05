@@ -747,8 +747,11 @@ class StatsOverview extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16),
-                  child: Center(
-                    child: ResponsiveWordCloud(wordCloudData: dataList),
+                  child: SizedBox(
+                    height: 300,
+                    child: Center(
+                      child: WordCloudWidget(wordCloudData: dataList),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),

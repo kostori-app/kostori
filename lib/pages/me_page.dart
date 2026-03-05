@@ -8,14 +8,10 @@ import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
-import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/data_sync.dart';
-import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class MePage extends StatefulWidget {
@@ -29,17 +25,11 @@ class _MePageState extends State<MePage> {
   final ScrollController scrollController = ScrollController();
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
     scrollController.dispose();
     super.dispose();
   }
 
-  // 滚动到顶部
   void scrollToTop() {
     if (scrollController.hasClients) {
       scrollController.animateTo(
@@ -52,22 +42,19 @@ class _MePageState extends State<MePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 主列表
     Widget widget = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
         const _ImageManipulation(),
-        _StatsViewPage(),
-        _StatsCalendarPage(),
+        const _StatsViewPage(),
         SliverPadding(
           padding: EdgeInsets.only(top: context.padding.bottom + 56),
         ),
       ],
     );
 
-    // Stack + Floating Button
     widget = Stack(
       children: [
         Positioned.fill(child: widget),
@@ -259,47 +246,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() async {
-      final files = await loadKostoriImages();
-      if (!mounted) return;
-      ref.read(imagesProvider.notifier).setImages(files);
-    });
-  }
-
-  Future<List<File>> loadKostoriImages() async {
-    Directory directory;
-
-    if (App.isAndroid) {
-      directory = (await KostoriFolder.checkPermissionAndPrepareFolder())!;
-    } else {
-      final folderDirectory = await getApplicationDocumentsDirectory();
-      final folderPath = '${folderDirectory.path}/Kostori';
-      final folder = Directory(folderPath);
-      if (!await folder.exists()) {
-        await folder.create(recursive: true);
-        Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
-      }
-      directory = folder;
-    }
-
-    if (!await directory.exists()) {
-      return [];
-    }
-
-    final files = directory.listSync(recursive: false).whereType<File>().where((
-      file,
-    ) {
-      final ext = file.path.toLowerCase();
-      return ext.endsWith('.jpg') ||
-          ext.endsWith('.jpeg') ||
-          ext.endsWith('.png') ||
-          ext.endsWith('.webp') ||
-          ext.endsWith('.gif');
-    }).toList();
-
-    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-
-    return files;
+    Future.microtask(() => ref.read(imagesProvider.notifier).loadImages());
   }
 
   @override
@@ -348,7 +295,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                 ),
               ).paddingHorizontal(16),
               SizedBox(
-                height: 384,
+                height: 220,
                 child: ScrollConfiguration(
                   behavior: ScrollConfiguration.of(context).copyWith(
                     scrollbars: true,
@@ -378,12 +325,12 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                           child: InkWell(
                             onTap: () {
                               BangumiWidget.showImagePreview(
-                                context,
-                                file.path,
-                                App.isAndroid
+                                context: context,
+                                url: file.path,
+                                title: App.isAndroid
                                     ? file.path.split('/').last
                                     : file.path.split('\\').last,
-                                App.isAndroid
+                                heroTag: App.isAndroid
                                     ? file.path.split('/').last
                                     : file.path.split('\\').last,
                                 allUrls: images,
@@ -391,8 +338,8 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                               );
                             },
                             child: SizedBox(
-                              width: 300 * 1.8,
-                              height: 300,
+                              width: 200 * (4 / 3),
+                              height: 200,
                               child: Hero(
                                 tag: App.isAndroid
                                     ? file.path.split('/').last
@@ -412,17 +359,6 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
         ),
       ),
     );
-  }
-}
-
-class _StatsCalendarPage extends StatelessWidget {
-  _StatsCalendarPage();
-
-  final StatsController controller = StatsController();
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverToBoxAdapter(child: StatsCalendarPage(controller: controller));
   }
 }
 

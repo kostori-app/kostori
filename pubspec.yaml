@@ -130,6 +130,11 @@ dependencies:
   extended_tabs: ^5.0.0
   ensemble_table_calendar: ^3.1.2
   word_cloud: ^1.0.3
+  word_cloud:
+    git:
+      url: https://github.com/axlmly/word_cloud
+      ref: 675a2e5ac2868769d128d961401d244e1441a00f
+      path: word_cloud
   connectivity_plus: ^7.0.0
   network_info_plus: ^7.0.0
 
