@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:intl/intl.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/context.dart';
 import 'package:kostori/foundation/log.dart';
@@ -154,12 +156,16 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
       _singleTapTimer = Timer(const Duration(milliseconds: 200), () {
         final x = details.localPosition.dx;
         final width = MediaQuery.of(context).size.width;
-        if (x < width * 0.25) {
-          _goPrev();
-        } else if (x > width * 0.75) {
-          _goNext();
-        } else {
+        if (!widget.isLocal) {
           context.pop();
+        } else {
+          if (x < width * 0.25) {
+            _goPrev();
+          } else if (x > width * 0.75) {
+            _goNext();
+          } else {
+            context.pop();
+          }
         }
       });
     }
@@ -273,7 +279,7 @@ class _TopBar extends ConsumerWidget {
           const SizedBox(width: 8),
           isLocal
               ? _buildLocalActions(context, ref)
-              : _buildDownloadAction(context),
+              : _buildDownloadMenuItems(context),
         ],
       ),
     );
@@ -287,46 +293,64 @@ class _TopBar extends ConsumerWidget {
     return _textBackground(isLocal ? filename : title);
   }
 
-  Widget _buildLocalActions(BuildContext context, WidgetRef ref) {
+  MenuButton _buildMenuItems(BuildContext context, WidgetRef ref) {
     final index = ref.watch(currentIndexProvider);
     final urls = ref.watch(imageListProvider);
     final currentFile = urls.isNotEmpty ? urls[index] : File(url);
     final localExists = currentFile.existsSync();
 
+    return MenuButton(
+      message: "More".tl,
+      entries: [
+        MenuEntry(
+          text: 'Properties'.tl,
+          icon: Icons.info_outline,
+          onClick: () => _showImageProperties(context, currentFile),
+        ),
+        MenuEntry(
+          text: 'Copy Path'.tl,
+          icon: Icons.copy,
+          onClick: () => _copyPath(context, currentFile.path),
+        ),
+        MenuEntry(
+          text: 'Share'.tl,
+          icon: Icons.share,
+          onClick: () => _shareFile(currentFile),
+        ),
+        if (localExists)
+          MenuEntry(
+            text: 'Delete'.tl,
+            icon: Icons.delete,
+            onClick: () => _confirmDelete(context, ref, currentFile, index),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildLocalActions(BuildContext context, WidgetRef ref) {
+    final index = ref.watch(currentIndexProvider);
+    final urls = ref.watch(imageListProvider);
+
     return Row(
       children: [
-        _iconBackground(
-          icon: Icons.copy,
-          onPressed: () => _copyPath(context, currentFile.path),
-        ),
-        const SizedBox(width: 8),
-        _iconBackground(
-          icon: Icons.share,
-          onPressed: () => _shareFile(currentFile),
-        ),
-        if (localExists) ...[
+        _buildMenuItems(context, ref),
+        if (urls.length > 1) ...[
           const SizedBox(width: 8),
-          _iconBackground(
-            icon: Icons.delete,
-            onPressed: () => _confirmDelete(context, ref, currentFile, index),
-          ),
-          if (urls.length > 1) const SizedBox(width: 8),
-          if (urls.length > 1)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black.toOpacity(0.3),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${index + 1} / ${urls.length}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black.toOpacity(0.3),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${index + 1} / ${urls.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
+          ),
         ],
       ],
     );
@@ -371,7 +395,7 @@ class _TopBar extends ConsumerWidget {
             final textPainter = TextPainter(
               text: TextSpan(text: title, style: style),
               maxLines: 1,
-              textDirection: TextDirection.ltr,
+              textDirection: ui.TextDirection.ltr,
             )..layout(maxWidth: constraints.maxWidth);
 
             final shouldScroll =
@@ -398,17 +422,19 @@ class _TopBar extends ConsumerWidget {
     );
   }
 
-  Widget _buildDownloadAction(BuildContext context) {
-    return Row(
-      children: [
-        _iconBackground(
+  MenuButton _buildDownloadMenuItems(BuildContext context) {
+    return MenuButton(
+      message: "More".tl,
+      entries: [
+        MenuEntry(
+          text: 'Copy Path'.tl,
           icon: Icons.copy,
-          onPressed: () => _copyPath(context, url), // ← 复制网络链接
+          onClick: () => _copyPath(context, url),
         ),
-        const SizedBox(width: 8),
-        _iconBackground(
+        MenuEntry(
+          text: 'Download'.tl,
           icon: Icons.download,
-          onPressed: () => ImageSaver.saveImageToGallery(url),
+          onClick: () => ImageSaver.saveImageToGallery(url),
         ),
       ],
     );
@@ -457,8 +483,8 @@ class _TopBar extends ConsumerWidget {
       }
 
       final newIndex = index >= newList.length ? newList.length - 1 : index;
-      ref.read(currentIndexProvider.notifier).state = newIndex; // ← 替换 .value =
-      ref.read(imageListProvider.notifier).state = newList; // ← 替换 .value =
+      ref.read(currentIndexProvider.notifier).state = newIndex;
+      ref.read(imageListProvider.notifier).state = newList;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (pageController.hasClients) {
@@ -469,5 +495,69 @@ class _TopBar extends ConsumerWidget {
       Log.addLog(LogLevel.error, '删除失败', e.toString());
       context.showMessage(message: '删除失败: $e');
     }
+  }
+
+  Future<void> _showImageProperties(BuildContext context, File file) async {
+    final bytes = await file.readAsBytes();
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    final image = frame.image;
+
+    final stat = await file.stat();
+    final ext = file.path.split('.').last.toUpperCase();
+    final size = _formatFileSize(stat.size);
+    final width = image.width;
+    final height = image.height;
+    final modified = DateFormat('yyyy-MM-dd HH:mm').format(stat.modified);
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: '图片属性'.tl,
+        displayButton: false,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _propertyRow(
+              '文件名'.tl,
+              file.path.split(Platform.pathSeparator).last,
+            ),
+            _propertyRow('格式'.tl, ext),
+            _propertyRow('分辨率'.tl, '$width × $height'),
+            _propertyRow('文件大小'.tl, size),
+            _propertyRow('修改时间'.tl, modified),
+            _propertyRow('路径'.tl, file.path),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _propertyRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: SelectableText(value)),
+        ],
+      ),
+    );
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }

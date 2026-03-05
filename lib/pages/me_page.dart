@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -311,6 +312,9 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                     itemCount: images.length > 10 ? 10 : images.length,
                     itemBuilder: (context, index) {
                       final file = images[index];
+                      final filename = file.path
+                          .split(Platform.pathSeparator)
+                          .last;
                       return Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 4,
@@ -327,12 +331,8 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                               BangumiWidget.showImagePreview(
                                 context: context,
                                 url: file.path,
-                                title: App.isAndroid
-                                    ? file.path.split('/').last
-                                    : file.path.split('\\').last,
-                                heroTag: App.isAndroid
-                                    ? file.path.split('/').last
-                                    : file.path.split('\\').last,
+                                title: filename,
+                                heroTag: filename,
                                 allUrls: images,
                                 initialIndex: index,
                               );
@@ -341,9 +341,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                               width: 200 * (4 / 3),
                               height: 200,
                               child: Hero(
-                                tag: App.isAndroid
-                                    ? file.path.split('/').last
-                                    : file.path.split('\\').last,
+                                tag: filename,
                                 child: Image.file(file, fit: BoxFit.cover),
                               ),
                             ),
