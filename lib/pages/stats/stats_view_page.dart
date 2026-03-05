@@ -465,13 +465,31 @@ class _RatingDetailPageState extends State<_RatingDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 10, vsync: this);
-    for (int i = 9; i >= 0; i--) {
-      if (widget.ratingBangumiMap[i + 1]?.isNotEmpty == true) {
-        _tabController.index = i;
-        break;
+
+    int initialIndex =
+        appdata.implicitData['ratingDetailPageInitialIndex'] ?? 9;
+    if (appdata.implicitData['ratingDetailPageInitialIndex'] == null) {
+      for (int i = 9; i >= 0; i--) {
+        if (widget.ratingBangumiMap[i + 1]?.isNotEmpty == true) {
+          initialIndex = i;
+          break;
+        }
       }
     }
+
+    _tabController = TabController(
+      length: 10,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
+
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        appdata.implicitData['ratingDetailPageInitialIndex'] =
+            _tabController.index;
+        appdata.writeImplicitData();
+      }
+    });
   }
 
   @override
@@ -483,7 +501,7 @@ class _RatingDetailPageState extends State<_RatingDetailPage>
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: '评分详情',
+      title: '评分详情'.tl,
       body: Column(
         children: [
           TabBar(
