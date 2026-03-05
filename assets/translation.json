@@ -628,7 +628,10 @@
     "The prompt must contain @a placeholder": "提示符必须包含@a占位符",
     "Translation Prompt": "翻译提示",
     "Model Name": "模型名称",
-    "Api Configuration": "Api配置"
+    "Api Configuration": "Api配置",
+    "Word Cloud": "词云",
+    "Stats Calendar": "统计日历",
+    "Kostori Changelog": "Kostori更新日志"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

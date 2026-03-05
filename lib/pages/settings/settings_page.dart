@@ -13,6 +13,7 @@ import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.da
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -35,10 +36,6 @@ import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:markdown_widget/config/configs.dart';
-import 'package:markdown_widget/widget/blocks/leaf/paragraph.dart';
-import 'package:markdown_widget/widget/inlines/code.dart';
-import 'package:markdown_widget/widget/markdown_block.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
