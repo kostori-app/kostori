@@ -226,8 +226,12 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                 return WidgetSpan(
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
-                    onTap: () =>
-                        BangumiWidget.showImagePreview(context, url, '', url),
+                    onTap: () => BangumiWidget.showImagePreview(
+                      context: context,
+                      url: url,
+                      title: '',
+                      heroTag: url,
+                    ),
                     child: Image.network(
                       url,
                       fit: BoxFit.contain,
@@ -251,10 +255,10 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                   alignment: PlaceholderAlignment.middle,
                   child: GestureDetector(
                     onTap: () => BangumiWidget.showImagePreview(
-                      context,
-                      'https://bangumi.tv/img/smiles/${e.id}.gif',
-                      '',
-                      'https://bangumi.tv/img/smiles/${e.id}.gif',
+                      context: context,
+                      url: 'https://bangumi.tv/img/smiles/${e.id}.gif',
+                      title: '',
+                      heroTag: 'https://bangumi.tv/img/smiles/${e.id}.gif',
                     ),
                     child: Image.network(
                       'https://bangumi.tv/img/smiles/${e.id}.gif',
