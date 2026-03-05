@@ -26,31 +26,30 @@ import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:path_provider/path_provider.dart';
 
 final GlobalKey repaintKey = GlobalKey();
 
-Future<void> captureAndSave() async {
+Future<void> captureAndSave(BuildContext context) async {
   try {
-    RenderRepaintBoundary boundary =
+    final boundary =
         repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
+    final image = await boundary.toImage(pixelRatio: 3.0);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    final bytes = byteData!.buffer.asUint8List();
 
-    ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-    ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    Uint8List uint8List = byteData!.buffer.asUint8List();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final filename = 'popup_$timestamp.png';
 
-    final directory = await getTemporaryDirectory();
-    final file = File('${directory.path}/popup_image.png');
-    await file.writeAsBytes(uint8List);
+    final file = await ImageSaver.writeFile(bytes: bytes, filename: filename);
+    if (file == null) return;
 
-    Uint8List data = await file.readAsBytes();
-    await Share.shareFile(
-      data: data,
-      filename: 'popup_image.png',
-      mime: 'image/png',
-    );
+    ImageSaver.showResult(success: true, message: '截图成功');
     Log.addLog(LogLevel.info, '截图保存', file.path);
+
+    final data = await file.readAsBytes();
+    await Share.shareFile(data: data, filename: filename, mime: 'image/png');
   } catch (e) {
+    ImageSaver.showResult(success: false, message: '截图失败: $e');
     Log.addLog(LogLevel.error, '截图失败', '$e');
   }
 }
