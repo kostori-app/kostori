@@ -87,29 +87,7 @@ class WatcherState extends State<Watcher>
     updateStats(int: true);
     playerController.player.stream.completed.listen((completed) {
       if (completed) {
-        if (progressFind != null) {
-          try {
-            if (!progressFind!.isCompleted) {
-              HistoryManager().updateProgress(
-                historyId: anime.id,
-                type: anime.animeType,
-                episode: epIndex - 1,
-                road: playerController.currentRoad,
-                isCompleted: true,
-                endTime: DateTime.now(),
-              );
-              Log.addLog(
-                LogLevel.info,
-                "updateProgress",
-                "update progress successful",
-              );
-            }
-          } catch (e) {
-            Log.addLog(LogLevel.error, "updateProgress", e.toString());
-          }
-        }
-
-        playNextEpisode(checkRemainingTime: false);
+        playNextEpisode();
       }
     });
     Future.microtask(() async {
@@ -152,7 +130,7 @@ class WatcherState extends State<Watcher>
               .length)) {
         try {
           epIndex++;
-          loadNextlVideo(epIndex, checkRemainingTime: checkRemainingTime);
+          loadNextlVideo(epIndex);
           showCenter(
             seconds: 1,
             icon: Gif(
@@ -200,30 +178,23 @@ class WatcherState extends State<Watcher>
     await _loadEpisode(episodeIndex: episodeIndex, road: road);
   }
 
-  Future<void> loadNextlVideo(
-    int episodeIndex, {
-    bool checkRemainingTime = true,
-  }) async {
+  Future<void> loadNextlVideo(int episodeIndex) async {
     await _loadEpisode(
       episodeIndex: episodeIndex,
       road: playerController.currentRoad,
-      checkRemainingTime: checkRemainingTime,
     );
   }
 
   Future<void> _loadEpisode({
     required int episodeIndex,
     required int road,
-    bool checkRemainingTime = false,
   }) async {
     if (anime.episode == null || road >= anime.episode!.length) {
       App.rootContext.showMessage(message: '线路不存在');
       return;
     }
 
-    if (!checkRemainingTime &&
-        episodeIndex == loaded &&
-        road == playerController.currentRoad) {
+    if (episodeIndex == loaded && road == playerController.currentRoad) {
       App.rootContext.showMessage(message: '加载重复集数');
       return;
     }
@@ -257,22 +228,6 @@ class WatcherState extends State<Watcher>
         );
       }
 
-      if (checkRemainingTime) {
-        final remainingMillis =
-            playerController.player.state.duration.inMilliseconds -
-            playerController.player.state.position.inMilliseconds;
-        if (remainingMillis < 3 * 60 * 1000 && !progressFind.isCompleted) {
-          HistoryManager().updateProgress(
-            historyId: anime.id,
-            type: anime.animeType,
-            episode: epIndex - 1,
-            road: playerController.currentRoad,
-            isCompleted: true,
-            endTime: DateTime.now(),
-          );
-        }
-      }
-
       time = progressFind.progressInMilli;
 
       var res = await type.animeSource!.loadAnimePages!(
@@ -301,7 +256,6 @@ class WatcherState extends State<Watcher>
       updateHistory();
     } catch (e, s) {
       Log.addLog(LogLevel.error, "_loadEpisode", "$e\n$s");
-      if (checkRemainingTime) rethrow;
     }
   }
 
@@ -363,6 +317,28 @@ class WatcherState extends State<Watcher>
               playerController.player.state.position.inMilliseconds,
         );
         updateTotalWatchDurations();
+
+        // 只在未完成时检查
+        if (progressFind != null && !progressFind!.isCompleted) {
+          final duration =
+              playerController.player.state.duration.inMilliseconds;
+          final position =
+              playerController.player.state.position.inMilliseconds;
+          final remainingMillis = duration - position;
+
+          // 剩余不足3分钟时标记完成
+          if (duration > 0 && remainingMillis < 3 * 60 * 1000) {
+            progressFind!.isCompleted = true;
+            HistoryManager().updateProgress(
+              historyId: anime.id,
+              type: anime.animeType,
+              episode: epIndex - 1,
+              road: playerController.currentRoad,
+              isCompleted: true,
+              endTime: DateTime.now(),
+            );
+          }
+        }
       }
     });
   }
