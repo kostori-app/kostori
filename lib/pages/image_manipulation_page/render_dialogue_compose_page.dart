@@ -333,7 +333,12 @@ class _RenderDialogueComposePageState
       if (byteData == null) throw Exception("生成图片数据失败");
 
       final bytes = byteData.buffer.asUint8List();
-      await Utils.saveLongImage(context, bytes);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      await ImageSaver.saveImage(
+        bytes: bytes,
+        filename: '拼图_$timestamp.png',
+        ref: ref,
+      );
 
       // 刷新图片列表（使用 Riverpod）
       final notifier = ref.read(imagesProvider.notifier);

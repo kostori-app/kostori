@@ -4,10 +4,8 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/image_preview_widget.dart';
@@ -20,7 +18,6 @@ import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/translation_service.dart';
-import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/bangumi/character_page.dart';
@@ -29,7 +26,6 @@ import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class BangumiWidget {
@@ -350,92 +346,6 @@ class BangumiWidget {
     if (allUrls == null || allUrls.isEmpty) return 0;
     return initialIndex ??
         allUrls.indexWhere((f) => f.path == url).clamp(0, allUrls.length - 1);
-  }
-
-  static Future<void> saveImageToGallery(
-    BuildContext context,
-    String imageUrl,
-  ) async {
-    try {
-      context.showMessage(message: '正在保存图片...');
-
-      final response = await AppDio().request<Uint8List>(
-        imageUrl,
-        options: Options(method: 'GET', responseType: ResponseType.bytes),
-      );
-
-      final savedPath = await _saveImageToLocalFolder(imageUrl, response.data!);
-
-      if (savedPath != null) {
-        _showResult(context, success: true);
-        Log.addLog(LogLevel.info, 'saveImageToGallery', savedPath);
-      } else {
-        _showResult(context, success: false, message: '保存失败：权限或目录异常');
-        Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
-      }
-    } catch (e, s) {
-      _showResult(context, success: false, message: '保存失败: $e');
-      Log.addLog(LogLevel.error, 'saveImageToGallery', '$e\n$s');
-    }
-  }
-
-  static Future<String?> _saveImageToLocalFolder(
-    String imageUrl,
-    Uint8List data,
-  ) async {
-    if (App.isAndroid) {
-      final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
-      if (folder == null) return null;
-
-      final file = File('${folder.path}/${_generateFilename(imageUrl)}.png');
-      await file.writeAsBytes(data);
-
-      const platform = MethodChannel('kostori/media');
-      await platform.invokeMethod('scanFolder', {'path': folder.path});
-      return file.path;
-    } else {
-      final directory = await getApplicationDocumentsDirectory();
-      final folderPath = '${directory.path}/Kostori';
-      final folder = Directory(folderPath);
-
-      if (!await folder.exists()) {
-        await folder.create(recursive: true);
-        Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
-      }
-
-      final filePath = '$folderPath/${_generateFilename(imageUrl)}';
-      await File(filePath).writeAsBytes(data);
-      return filePath;
-    }
-  }
-
-  static void _showResult(
-    BuildContext context, {
-    required bool success,
-    String? message,
-  }) {
-    showCenter(
-      seconds: success ? 1 : 3,
-      icon: Gif(
-        image: AssetImage(
-          success ? 'assets/img/check.gif' : 'assets/img/warning.gif',
-        ),
-        height: success ? 80 : 64,
-        fps: 120,
-        color: Theme.of(context).colorScheme.primary,
-        autostart: Autostart.once,
-      ),
-      message: message ?? (success ? '保存成功' : '保存失败'),
-      context: context,
-    );
-  }
-
-  static String _generateFilename(String url) {
-    final uri = Uri.parse(url);
-    final filename = uri.pathSegments.last;
-    return filename.isNotEmpty
-        ? 'bangumi_$filename'
-        : 'bangumi_${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 
   ///sourcekey写死了bangumi所以可想而知是用在哪的
@@ -803,7 +713,7 @@ class _ExpandableTagsState extends State<ExpandableTags>
 
 class BangumiBriefCard extends StatelessWidget {
   final BangumiItem bangumiItem;
-  final String heroTag;
+  final Object? heroTag;
   final void Function(BangumiItem)? onTap;
   final void Function(BangumiItem)? onLongPressed;
 
@@ -920,7 +830,9 @@ class BangumiBriefCard extends StatelessWidget {
             ),
             clipBehavior: Clip.antiAlias,
             child: Hero(
-              tag: '$heroTag-${bangumiItem.id}',
+              tag: heroTag != null
+                  ? '$heroTag-${bangumiItem.id}'
+                  : bangumiItem.id.toString(),
               child: BangumiWidget.kostoriImage(
                 context,
                 bangumiItem.images['large']!,

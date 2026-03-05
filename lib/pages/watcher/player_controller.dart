@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
-import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
@@ -31,7 +30,6 @@ import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mobx/mobx.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
@@ -751,10 +749,10 @@ abstract class _PlayerController with Store {
   void showPlaybackSpeedDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('选择播放速度'),
+      builder: (context) => ContentDialog(
+        title: '选择播放速度',
+        displayButton: false,
         content: SingleChildScrollView(
-          // 添加 SingleChildScrollView
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -770,8 +768,6 @@ abstract class _PlayerController with Store {
                 6.0,
                 7.0,
                 8.0,
-                10.0,
-                20.0,
               ])
                 ListTile(
                   title: Text('${speed}x'),
@@ -789,88 +785,38 @@ abstract class _PlayerController with Store {
 
   Future<void> captureAndSaveScreenshot({required BuildContext context}) async {
     saveAddress = '';
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
     App.rootContext.showMessage(message: '正在截图中...'.tl);
-    if (App.isAndroid) {
-      Uint8List? screenData = await playerController.player.screenshot();
-      try {
-        final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
-        if (folder != null) {
-          final file = File(
-            '${folder.path}/${WatcherState.currentState!.anime.title}_$timestamp.png',
-          );
-          await file.writeAsBytes(screenData!);
-          saveAddress =
-              '${folder.path}/${WatcherState.currentState!.anime.title}_$timestamp.png';
-          showScreenshotPopup(
-            context,
-            saveAddress,
-            '${WatcherState.currentState!.anime.title}_$timestamp.png',
-          );
-          showCenter(
-            seconds: 1,
-            icon: Gif(
-              image: AssetImage('assets/img/check.gif'),
-              height: 80,
-              fps: 120,
-              color: Theme.of(context).colorScheme.primary,
-              autostart: Autostart.once,
-            ),
-            message: '截图成功',
-            context: App.rootContext,
-          );
-          const platform = MethodChannel('kostori/media');
-          await platform.invokeMethod('scanFolder', {'path': folder.path});
-          Log.addLog(LogLevel.info, '保存文件成功', '');
-        } else {
-          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
-        }
-      } catch (e) {
-        Log.addLog(LogLevel.error, '截图失败', '$e');
-      }
-    } else {
-      try {
-        Uint8List? screenData = await playerController.player.screenshot();
-        // 获取桌面平台的文档目录
-        final directory = await getApplicationDocumentsDirectory();
-        // 目标文件夹路径
-        final folderPath = '${directory.path}/Kostori';
-        // 检查文件夹是否存在，如果不存在则创建它
-        final folder = Directory(folderPath);
-        if (!await folder.exists()) {
-          await folder.create(recursive: true);
-          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
-        } else {
-          Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
-        }
 
-        final filePath =
-            '$folderPath/${WatcherState.currentState!.anime.title}_$timestamp.png';
-        // 将图像保存为文件
-        final file = File(filePath);
-        await file.writeAsBytes(screenData!);
-        saveAddress =
-            '$folderPath/${WatcherState.currentState!.anime.title}_$timestamp.png';
-        showScreenshotPopup(
-          context,
-          saveAddress,
-          '${WatcherState.currentState!.anime.title}_$timestamp.png',
-        );
-        showCenter(
-          seconds: 1,
-          icon: Gif(
-            image: AssetImage('assets/img/check.gif'),
-            height: 80,
-            fps: 120,
-            color: Theme.of(context).colorScheme.primary,
-            autostart: Autostart.once,
-          ),
-          message: '截图成功',
-          context: App.rootContext,
-        );
-      } catch (e) {
-        Log.addLog(LogLevel.error, '截图失败', '$e');
+    try {
+      final Uint8List? screenData = await playerController.player.screenshot();
+      if (screenData == null) {
+        Log.addLog(LogLevel.error, '截图失败', '截图数据为空');
+        return;
       }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final title = WatcherState.currentState!.anime.title;
+      final filename = '${title}_$timestamp.png';
+
+      final file = await ImageSaver.writeFile(
+        bytes: screenData,
+        filename: filename,
+      );
+
+      if (file == null) return;
+
+      saveAddress = file.path;
+      showScreenshotPopup(context, saveAddress, filename);
+      ImageSaver.showResult(success: true, message: '截图成功');
+      Log.addLog(LogLevel.info, '保存文件成功', file.path);
+
+      if (App.isAndroid) {
+        const platform = MethodChannel('kostori/media');
+        await platform.invokeMethod('scanFolder', {'path': file.parent.path});
+      }
+    } catch (e) {
+      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      Log.addLog(LogLevel.error, '截图失败', '$e');
     }
   }
 
@@ -942,7 +888,6 @@ class ParamCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 拼接所有文本用于长按复制
     final String allText = [
       title,
       ...params.entries

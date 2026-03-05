@@ -145,7 +145,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     // 最后一集（type0中最后一集）
     final finalEpisode = type0Episodes.last;
 
-    final currentWeekEp = Utils.findCurrentWeekEpisode(
+    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
       episodes,
       bangumiItem,
       true,

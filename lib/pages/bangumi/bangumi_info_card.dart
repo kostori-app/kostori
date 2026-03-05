@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -32,7 +31,7 @@ class BangumiInfoCardV extends StatefulWidget {
   final BangumiItem bangumiItem;
   final List<EpisodeInfo> allEpisodes;
   final bool isLoading;
-  final String? heroTag;
+  final Object? heroTag;
   final InfoController infoController;
 
   @override
@@ -288,7 +287,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                         : 260;
                     double width = height * 0.72;
                     // 获取当前周的剧集
-                    final currentWeekEp = Utils.findCurrentWeekEpisode(
+                    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
                       allEpisodes,
                       bangumiItem,
                     );

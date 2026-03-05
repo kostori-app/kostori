@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/context.dart';
 import 'package:kostori/foundation/log.dart';
@@ -409,7 +408,7 @@ class _TopBar extends ConsumerWidget {
         const SizedBox(width: 8),
         _iconBackground(
           icon: Icons.download,
-          onPressed: () => BangumiWidget.saveImageToGallery(context, url),
+          onPressed: () => ImageSaver.saveImageToGallery(url),
         ),
       ],
     );

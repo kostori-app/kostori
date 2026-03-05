@@ -453,7 +453,10 @@ class _TimetableState extends State<_Timetable> {
     final finalEpisode = type0Episodes.last;
 
     // 找本周对应的集数
-    final currentWeekEp = Utils.findCurrentWeekEpisode(episodes, bangumiItem);
+    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
+      episodes,
+      bangumiItem,
+    );
 
     // 判断当前集数是否为最后一集
     final isFinalEpisode =

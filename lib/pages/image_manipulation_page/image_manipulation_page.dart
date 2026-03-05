@@ -14,7 +14,6 @@ import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:kostori/utils/utils.dart';
 import 'package:path_provider/path_provider.dart';
 
 part 'render_dialogue_compose_page.dart';

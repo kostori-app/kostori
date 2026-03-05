@@ -2,13 +2,10 @@
 
 import 'dart:math';
 
+import 'package:collection/collection.dart';
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:gif/gif.dart';
 import 'package:intl/intl.dart';
-import 'package:kostori/components/components.dart';
-import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
@@ -69,93 +66,6 @@ class Utils {
   static Future<String> getPlayerTempPath() async {
     final directory = await getTemporaryDirectory();
     return directory.path;
-  }
-
-  static Map<bool, EpisodeInfo?> findCurrentWeekEpisode(
-    List<EpisodeInfo> allEpisodes,
-    BangumiItem bangumiItem, [
-    bool calendar = false,
-  ]) {
-    if (allEpisodes.isEmpty) return {false: null};
-
-    final now = DateTime.now();
-    final currentWeek = getISOWeekNumber(now);
-    final targetEpisodes = allEpisodes.where((e) => e.type == 0).toList();
-
-    if (targetEpisodes.isEmpty) return {false: null};
-
-    // 获取番剧的标准播出时间
-    String? bangumiDataAirTime = BangumiManager().findbangumiDataByID(
-      bangumiItem.id,
-    );
-    final bangumiAirTime = bangumiDataAirTime != null
-        ? DateTime.tryParse(bangumiDataAirTime)?.toLocal()
-        : null;
-
-    // 判断是否需要调整周数（周一5点前属于上周）
-    final shouldAdjustWeek =
-        bangumiAirTime != null &&
-        bangumiAirTime.weekday == DateTime.monday &&
-        (bangumiAirTime.hour < 5);
-
-    EpisodeInfo? currentWeekEpisode;
-    EpisodeInfo? lastPastEpisode; // 现在会记录所有年份中最近的过去剧集
-
-    try {
-      for (final ep in targetEpisodes) {
-        try {
-          final airDate = DateTime.parse(ep.airDate).toLocal();
-          final (airYear, airWeekNum) = getISOWeekNumber(airDate);
-          final (currentYear, currentWeekNum) = currentWeek;
-
-          // 应用周数调整
-          final adjustedWeekNum = shouldAdjustWeek
-              ? (airWeekNum == 1 ? 52 : airWeekNum + 1)
-              : airWeekNum;
-
-          // 判断是否当前周但未播出
-          if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
-            if (calendar) {
-              if (airDate.isAfter(now)) {
-                currentWeekEpisode ??= ep;
-              }
-            } else {
-              if (!airDate.isAfter(now)) {
-                currentWeekEpisode ??= ep;
-              }
-            }
-          }
-
-          // 记录所有年份中最接近当前日期的过去剧集
-          if (airDate.isBefore(now)) {
-            if (lastPastEpisode == null) {
-              lastPastEpisode = ep;
-            } else {
-              final lastAirDate = DateTime.parse(lastPastEpisode.airDate);
-              if (airDate.isAfter(lastAirDate)) {
-                lastPastEpisode = ep;
-              } else if (airDate.isAtSameMomentAs(lastAirDate)) {
-                // 如果时间一样，优先取后面的项（即覆盖）
-                lastPastEpisode = ep;
-              }
-            }
-          }
-        } catch (e) {
-          // Log.addLog(LogLevel.warning, 'dateParse', '解析日期失败: ${ep.airDate}');
-        }
-      }
-
-      // 优先级逻辑：
-      // 1. 当前周已播出的剧集
-      // 2. 如果当前周有剧集但未播出，返回最近的过去剧集（不限年份）
-      // 3. 没有则返回null
-      return (currentWeekEpisode != null)
-          ? {shouldAdjustWeek: currentWeekEpisode}
-          : {shouldAdjustWeek: lastPastEpisode};
-    } catch (e, s) {
-      Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');
-      return {false: null};
-    }
   }
 
   ///检查字符串相似度
@@ -532,7 +442,6 @@ class Utils {
               timeFormat.format(dateTime),
               style: TextStyle(
                 fontSize: sizes! * 2 / 14,
-                // color: Colors.grey[700],
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -598,68 +507,140 @@ class Utils {
         return '';
     }
   }
+}
 
-  static Future<void> saveLongImage(
-    BuildContext context,
-    Uint8List imageData,
-  ) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
+class BangumiUtils {
+  BangumiUtils._();
+
+  static Map<bool, EpisodeInfo?> findCurrentWeekEpisode(
+    List<EpisodeInfo> allEpisodes,
+    BangumiItem bangumiItem, [
+    bool calendar = false,
+  ]) {
+    if (allEpisodes.isEmpty) return {false: null};
+
+    final now = DateTime.now();
+    final currentWeek = Utils.getISOWeekNumber(now);
+    final targetEpisodes = allEpisodes.where((e) => e.type == 0).toList();
+
+    if (targetEpisodes.isEmpty) return {false: null};
+
+    // 获取番剧的标准播出时间
+    String? bangumiDataAirTime = BangumiManager().findbangumiDataByID(
+      bangumiItem.id,
+    );
+    final bangumiAirTime = bangumiDataAirTime != null
+        ? DateTime.tryParse(bangumiDataAirTime)?.toLocal()
+        : null;
+
+    // 判断是否需要调整周数（周一5点前属于上周）
+    final shouldAdjustWeek =
+        bangumiAirTime != null &&
+        bangumiAirTime.weekday == DateTime.monday &&
+        (bangumiAirTime.hour < 5);
+
+    EpisodeInfo? currentWeekEpisode;
+    EpisodeInfo? lastPastEpisode; // 现在会记录所有年份中最近的过去剧集
+
     try {
-      if (App.isAndroid) {
-        final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
-        if (folder != null) {
-          final file = File('${folder.path}/拼图_$timestamp.png');
-          await file.writeAsBytes(imageData);
+      for (final ep in targetEpisodes) {
+        try {
+          final airDate = DateTime.parse(ep.airDate).toLocal();
+          final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
+          final (currentYear, currentWeekNum) = currentWeek;
 
-          // 调用弹窗/提示等
-          showCenter(
-            seconds: 1,
-            icon: Gif(
-              image: const AssetImage('assets/img/check.gif'),
-              height: 80,
-              fps: 120,
-              color: Theme.of(context).colorScheme.primary,
-              autostart: Autostart.once,
-            ),
-            message: '保存成功',
-            context: context,
-          );
-          const platform = MethodChannel('kostori/media');
-          await platform.invokeMethod('scanFolder', {'path': folder.path});
-          Log.addLog(LogLevel.info, '保存长图成功', file.path);
-        } else {
-          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+          // 应用周数调整
+          final adjustedWeekNum = shouldAdjustWeek
+              ? (airWeekNum == 1 ? 52 : airWeekNum + 1)
+              : airWeekNum;
+
+          // 判断是否当前周但未播出
+          if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
+            if (calendar) {
+              if (airDate.isAfter(now)) {
+                currentWeekEpisode ??= ep;
+              }
+            } else {
+              if (!airDate.isAfter(now)) {
+                currentWeekEpisode ??= ep;
+              }
+            }
+          }
+
+          // 记录所有年份中最接近当前日期的过去剧集
+          if (airDate.isBefore(now)) {
+            if (lastPastEpisode == null) {
+              lastPastEpisode = ep;
+            } else {
+              final lastAirDate = DateTime.parse(lastPastEpisode.airDate);
+              if (airDate.isAfter(lastAirDate)) {
+                lastPastEpisode = ep;
+              } else if (airDate.isAtSameMomentAs(lastAirDate)) {
+                // 如果时间一样，优先取后面的项（即覆盖）
+                lastPastEpisode = ep;
+              }
+            }
+          }
+        } catch (e) {
+          // Log.addLog(LogLevel.warning, 'dateParse', '解析日期失败: ${ep.airDate}');
         }
-      } else {
-        final directory = await getApplicationDocumentsDirectory();
-        final folderPath = '${directory.path}/Kostori';
-        final folder = Directory(folderPath);
-        if (!await folder.exists()) {
-          await folder.create(recursive: true);
-          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
-        }
-
-        final filePath = '$folderPath/拼图_$timestamp.png';
-        final file = File(filePath);
-        await file.writeAsBytes(imageData);
-
-        showCenter(
-          seconds: 1,
-          icon: Gif(
-            image: const AssetImage('assets/img/check.gif'),
-            height: 80,
-            fps: 120,
-            color: Theme.of(context).colorScheme.primary,
-            autostart: Autostart.once,
-          ),
-          message: '保存成功',
-          context: context,
-        );
-
-        Log.addLog(LogLevel.info, '保存长图成功', filePath);
       }
-    } catch (e) {
-      Log.addLog(LogLevel.error, '保存长图失败', '$e');
+
+      // 优先级逻辑：
+      // 1. 当前周已播出的剧集
+      // 2. 如果当前周有剧集但未播出，返回最近的过去剧集（不限年份）
+      // 3. 没有则返回null
+      return (currentWeekEpisode != null)
+          ? {shouldAdjustWeek: currentWeekEpisode}
+          : {shouldAdjustWeek: lastPastEpisode};
+    } catch (e, s) {
+      Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');
+      return {false: null};
     }
+  }
+
+  static List<MapEntry<String, int>> sortedTagCounts(
+    List<BangumiItem> items, {
+    int minTagCount = 0,
+    int minItemCount = 0,
+  }) {
+    final Map<String, int> countMap = {};
+
+    for (final item in items) {
+      for (final tag in item.tags) {
+        if (tag.count < minTagCount) continue;
+        countMap.update(tag.name, (v) => v + 1, ifAbsent: () => 1);
+      }
+    }
+
+    return countMap.entries.where((e) => e.value >= minItemCount).toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+  }
+
+  static List<Map<String, dynamic>> sortedTagItemMap(
+    List<BangumiItem> items, {
+    int minTagCount = 0,
+    int minItemCount = 0,
+  }) {
+    final Map<String, List<BangumiItem>> tagMap = {};
+
+    for (final item in items) {
+      for (final tag in item.tags) {
+        if (tag.count < minTagCount) continue;
+        tagMap.putIfAbsent(tag.name, () => []).add(item);
+      }
+    }
+
+    return tagMap.entries
+        .where((e) => e.value.length >= minItemCount)
+        .sorted((a, b) => b.value.length.compareTo(a.value.length))
+        .map(
+          (e) => {
+            'word': e.key,
+            'value': e.value.length.toDouble(),
+            'items': e.value,
+          },
+        )
+        .toList();
   }
 }

@@ -9,6 +9,7 @@ import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
 import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -67,7 +68,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
             ),
             TextButton(
               onPressed: () {
-                BangumiWidget.saveImageToGallery(context, imageUrl);
+                ImageSaver.saveImageToGallery(imageUrl);
               },
               child: Text('Save to Album'.tl),
             ),

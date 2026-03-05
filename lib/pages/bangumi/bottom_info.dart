@@ -316,7 +316,7 @@ class BottomInfoState extends State<BottomInfo>
     );
 
     // 获取当前周的剧集
-    final currentWeekEp = Utils.findCurrentWeekEpisode(
+    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
       allEpisodes,
       bangumiItem,
     );

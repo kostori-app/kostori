@@ -200,7 +200,12 @@ class _RenderHorizontalPicPageState
 
       if (byteData != null) {
         final bytes = byteData.buffer.asUint8List();
-        await Utils.saveLongImage(context, bytes);
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        await ImageSaver.saveImage(
+          bytes: bytes,
+          filename: '拼图_$timestamp.png',
+          ref: ref,
+        );
         final notifier = ref.read(imagesProvider.notifier);
         await notifier.loadImages();
         App.rootContext.showMessage(message: 'Save Successful'.tl);

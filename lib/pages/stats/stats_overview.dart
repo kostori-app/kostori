@@ -42,7 +42,7 @@ class StatsOverviewScreen extends StatelessWidget {
             right: 10,
             child: FilledButton(
               onPressed: () {
-                captureAndSave();
+                captureAndSave(context);
                 App.rootContext.pop();
               },
               child: Text('Share'.tl),
@@ -134,34 +134,23 @@ class StatsOverview extends StatelessWidget {
     return items;
   }
 
-  Map<String, int> get _tagNameCounts {
-    final Map<String, int> countMap = {};
-
-    for (final bangumiItem in _bangumiItems) {
-      final tags = bangumiItem.tags;
-
-      for (final tag in tags) {
-        final String name = tag.name;
-        countMap.update(name, (value) => value + 1, ifAbsent: () => 1);
-      }
-    }
-
-    return countMap;
-  }
-
-  List<MapEntry<String, int>> get _sortedTagCounts {
-    final counts = _tagNameCounts;
-    final sortedEntries = counts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return sortedEntries;
-  }
+  List<MapEntry<String, int>> get _sortedTagCounts =>
+      BangumiUtils.sortedTagCounts(_bangumiItems);
 
   List<String> get _topFiveTagNames {
     final sortedCounts = _sortedTagCounts;
     final topFive = sortedCounts.take(5).toList();
     return topFive.map((entry) => entry.key).toList();
   }
+
+  List<Map<String, Object>> get dataList => _sortedTagCounts
+      .map(
+        (entry) => {
+          'word': entry.key,
+          'value': entry.value > 0 ? entry.value.toDouble() : 1.0,
+        },
+      )
+      .toList();
 
   // 计算活跃度总分
   double _calculateWeightedActivityScore(StatsDataImpl stat) {
@@ -391,15 +380,6 @@ class StatsOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dataList = _sortedTagCounts
-        .map(
-          (entry) => {
-            'word': entry.key,
-            'value': entry.value > 0 ? entry.value.toDouble() : 1.0,
-          },
-        )
-        .toList();
-
     int totalClicks = 0;
     int totalWatchSeconds = 0;
     int totalComments = 0;

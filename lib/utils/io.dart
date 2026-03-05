@@ -4,15 +4,22 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
+import 'package:gif/gif.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/file_type.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart' as s;
 
@@ -517,5 +524,142 @@ class KostoriFolder {
     }
 
     return folder;
+  }
+}
+
+class ImageSaver {
+  static Future<void> saveImage({
+    required Uint8List bytes,
+    required String filename,
+    WidgetRef? ref,
+  }) async {
+    try {
+      final file = await writeFile(bytes: bytes, filename: filename);
+      if (file == null) return;
+
+      showResult(success: true, message: '保存成功');
+
+      if (App.isAndroid) {
+        const platform = MethodChannel('kostori/media');
+        await platform.invokeMethod('scanFolder', {'path': file.parent.path});
+      }
+
+      Log.addLog(LogLevel.info, '保存文件成功', file.path);
+    } catch (e) {
+      showResult(success: false, message: '保存失败: $e');
+      Log.addLog(LogLevel.error, '保存失败', '$e');
+    } finally {
+      await ref?.read(imagesProvider.notifier).loadImages();
+    }
+  }
+
+  static Future<void> saveImageToGallery(String imageUrl) async {
+    try {
+      App.rootContext.showMessage(message: '正在保存图片...');
+
+      final response = await AppDio().request<Uint8List>(
+        imageUrl,
+        options: Options(method: 'GET', responseType: ResponseType.bytes),
+      );
+
+      final savedPath = await saveImageToLocalFolder(imageUrl, response.data!);
+
+      if (savedPath != null) {
+        showResult(success: true);
+        Log.addLog(LogLevel.info, 'saveImageToGallery', savedPath);
+      } else {
+        showResult(success: false, message: '保存失败：权限或目录异常');
+        Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+      }
+    } catch (e, s) {
+      showResult(success: false, message: '保存失败: $e');
+      Log.addLog(LogLevel.error, 'saveImageToGallery', '$e\n$s');
+    }
+  }
+
+  static Future<File?> writeFile({
+    required Uint8List bytes,
+    required String filename,
+  }) async {
+    try {
+      final folderPath = await resolveFolderPath();
+      if (folderPath == null) return null;
+      final file = File('$folderPath/$filename');
+      await file.writeAsBytes(bytes);
+      return file;
+    } catch (e) {
+      Log.addLog(LogLevel.error, '_writeFile', '$e');
+      return null;
+    }
+  }
+
+  static Future<String?> saveImageToLocalFolder(
+    String imageUrl,
+    Uint8List data,
+  ) async {
+    try {
+      final folderPath = await resolveFolderPath();
+      if (folderPath == null) return null;
+
+      final filename = generateFilename(imageUrl);
+      final file = File('$folderPath/$filename');
+      await file.writeAsBytes(data);
+
+      if (App.isAndroid) {
+        const platform = MethodChannel('kostori/media');
+        await platform.invokeMethod('scanFolder', {'path': folderPath});
+      }
+
+      return file.path;
+    } catch (e) {
+      Log.addLog(LogLevel.error, '_saveImageToLocalFolder', '$e');
+      return null;
+    }
+  }
+
+  /// 统一获取保存目录，Android 检查权限，其他平台用 Documents/Kostori
+  static Future<String?> resolveFolderPath() async {
+    if (App.isAndroid) {
+      final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
+      if (folder == null) {
+        Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+        return null;
+      }
+      return folder.path;
+    } else {
+      final directory = await getApplicationDocumentsDirectory();
+      final folderPath = '${directory.path}/Kostori';
+      final folder = Directory(folderPath);
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+      return folderPath;
+    }
+  }
+
+  static void showResult({required bool success, String? message}) {
+    final safeContext = App.rootContext;
+    showCenter(
+      seconds: success ? 1 : 3,
+      icon: Gif(
+        image: AssetImage(
+          success ? 'assets/img/check.gif' : 'assets/img/warning.gif',
+        ),
+        height: success ? 80 : 64,
+        fps: 120,
+        color: Theme.of(safeContext).colorScheme.primary,
+        autostart: Autostart.once,
+      ),
+      message: message ?? (success ? '保存成功' : '保存失败'),
+      context: safeContext,
+    );
+  }
+
+  static String generateFilename(String url) {
+    final uri = Uri.parse(url);
+    final filename = uri.pathSegments.last;
+    return filename.isNotEmpty
+        ? 'bangumi_$filename'
+        : 'bangumi_${DateTime.now().millisecondsSinceEpoch}.jpg';
   }
 }
