@@ -217,7 +217,6 @@ class _BodyState extends State<_Body> {
         await AnimeSourceManager().reload();
         setState(() {});
       }),
-      iosFullScreenGesture: false,
     );
   }
 
@@ -1107,7 +1106,6 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
         onTap: () async {
           await context.to(
             () => _LoginPage(config: source.account!, source: source),
-            iosFullScreenGesture: false,
           );
           source.saveData();
           setState(() {});

@@ -220,7 +220,6 @@ class _InfoTabViewState extends State<InfoTabView>
                             allEpisodes: widget.allEpisodes,
                             infoController: widget.infoController,
                           ),
-                          iosFullScreenGesture: false,
                         );
                       },
                       child: Text('more'.tl),

@@ -18,7 +18,6 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/pages/main_page.dart';
-import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
@@ -78,13 +77,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     App.registerForceRebuild(forceRebuild);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        systemNavigationBarColor: Colors.transparent,
-        systemNavigationBarDividerColor: Colors.transparent,
-        statusBarColor: Colors.transparent,
-      ),
-    );
     WidgetsBinding.instance.addObserver(this);
     checkUpdates();
     super.initState();
@@ -96,21 +88,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      debugPrint("应用进入后台");
-      Future.microtask(() {
-        DataSync().onDataChanged();
-      });
-    } else if (state == AppLifecycleState.resumed) {
-      debugPrint("应用回到前台");
-    } else if (state == AppLifecycleState.inactive) {
-      debugPrint("应用处于非活动状态");
-      if (App.isDesktop) {
-        Future.microtask(() {
-          DataSync().onDataChanged();
-        });
-      }
-    }
     if (!App.isMobile || !appdata.settings['authorizationRequired']) {
       return;
     }
@@ -253,15 +230,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       useMaterial3: true,
       fontFamily: font,
       fontFamilyFallback: fallback,
-      pageTransitionsTheme: PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.linux: FadeUpwardsPageTransitionsBuilder(),
-          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-          TargetPlatform.windows: FadeUpwardsPageTransitionsBuilder(),
-        },
-      ),
     );
   }
 
@@ -290,6 +258,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           tertiary = light.harmonized().tertiary;
         }
         return MaterialApp(
+          title: "kostori",
           home: home,
           debugShowCheckedModeBanner: false,
           scrollBehavior: MyCustomScrollBehavior(),

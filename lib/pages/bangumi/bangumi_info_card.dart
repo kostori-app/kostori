@@ -228,7 +228,6 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                 bangumiPage: true,
                 keywords: bangumiItem.alias,
               ),
-              iosFullScreenGesture: false,
             );
           },
           style: FilledButton.styleFrom(
@@ -275,7 +274,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
   @override
   Widget build(BuildContext context) {
     final bool showRightButton = MediaQuery.of(context).size.width >= 626;
-    final bool showBottomButton = !showRightButton; // 确保互斥
+    final bool showBottomButton = !showRightButton;
     double standardDeviation = Utils.getDeviation(
       widget.bangumiItem.total,
       (widget.bangumiItem.count != null)

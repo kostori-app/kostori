@@ -21,7 +21,6 @@ class AppPageRoute<T> extends PageRoute<T> with _AppRouteTransitionMixin {
     super.allowSnapshotting = true,
     super.barrierDismissible = false,
     this.enableIOSGesture = true,
-    this.iosFullScreenPopGesture = true,
     this.preventRebuild = true,
   }) {
     assert(opaque);
@@ -52,9 +51,6 @@ class AppPageRoute<T> extends PageRoute<T> with _AppRouteTransitionMixin {
   final bool enableIOSGesture;
 
   @override
-  final bool iosFullScreenPopGesture;
-
-  @override
   final bool preventRebuild;
 }
 
@@ -79,8 +75,6 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
   }
 
   bool get enableIOSGesture;
-
-  bool get iosFullScreenPopGesture;
 
   bool get preventRebuild;
 
@@ -146,7 +140,6 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
               gestureWidth: _kBackGestureWidth,
               enabledCallback: () => _isPopGestureEnabled<T>(this),
               onStartPopGesture: () => _startPopGesture(this),
-              fullScreen: iosFullScreenPopGesture,
               child: child,
             )
           : child,
@@ -230,19 +223,13 @@ class IOSBackGestureDetector extends StatefulWidget {
     required this.child,
     required this.gestureWidth,
     required this.onStartPopGesture,
-    this.fullScreen = false,
     super.key,
   });
 
   final double gestureWidth;
-
   final bool Function() enabledCallback;
-
   final IOSBackGestureController Function() onStartPopGesture;
-
   final Widget child;
-
-  final bool fullScreen;
 
   @override
   State<IOSBackGestureDetector> createState() => _IOSBackGestureDetectorState();
@@ -250,8 +237,21 @@ class IOSBackGestureDetector extends StatefulWidget {
 
 class _IOSBackGestureDetectorState extends State<IOSBackGestureDetector> {
   IOSBackGestureController? _backGestureController;
+  late _BackSwipeRecognizer _recognizer;
 
-  late HorizontalDragGestureRecognizer _recognizer;
+  @override
+  void initState() {
+    super.initState();
+    _recognizer = _BackSwipeRecognizer(
+      debugOwner: this,
+      gestureWidth: widget.gestureWidth,
+      isPointerInHorizontal: _isPointerInHorizontalScrollable,
+      onStart: _handleDragStart,
+      onUpdate: _handleDragUpdate,
+      onEnd: _handleDragEnd,
+      onCancel: _handleDragCancel,
+    );
+  }
 
   @override
   void dispose() {
@@ -260,58 +260,91 @@ class _IOSBackGestureDetectorState extends State<IOSBackGestureDetector> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _recognizer = HorizontalDragGestureRecognizer(debugOwner: this)
-      ..onStart = _handleDragStart
-      ..onUpdate = _handleDragUpdate
-      ..onEnd = _handleDragEnd
-      ..onCancel = _handleDragCancel;
-  }
-
-  @override
   Widget build(BuildContext context) {
-    var dragAreaWidth = Directionality.of(context) == TextDirection.ltr
-        ? MediaQuery.of(context).padding.left
-        : MediaQuery.of(context).padding.right;
-    dragAreaWidth = max(dragAreaWidth, widget.gestureWidth);
-    final Widget gestureListener = widget.fullScreen
-        ? Positioned.fill(
-            child: Listener(
-              onPointerDown: _handlePointerDown,
-              behavior: HitTestBehavior.translucent,
+    return RawGestureDetector(
+      behavior: HitTestBehavior.translucent,
+      gestures: {
+        _BackSwipeRecognizer:
+            GestureRecognizerFactoryWithHandlers<_BackSwipeRecognizer>(
+              () => _recognizer,
+              (instance) {
+                instance.gestureWidth = widget.gestureWidth;
+              },
             ),
-          )
-        : Positioned(
-            width: dragAreaWidth,
-            top: 0.0,
-            bottom: 0.0,
-            left: Directionality.of(context) == TextDirection.ltr ? 0.0 : null,
-            right: Directionality.of(context) == TextDirection.rtl ? 0.0 : null,
-            child: Listener(
-              onPointerDown: _handlePointerDown,
-              behavior: HitTestBehavior.translucent,
-            ),
-          );
-
-    return Stack(
-      fit: StackFit.passthrough,
-      children: <Widget>[widget.child, gestureListener],
+      },
+      child: widget.child,
     );
   }
 
-  void _handlePointerDown(PointerDownEvent event) {
-    if (!widget.enabledCallback()) return;
-    if (widget.fullScreen && _isPointerOverHorizontalScrollable(event)) {
-      return;
+  bool _isPointerInHorizontalScrollable(Offset globalPosition) {
+    final HitTestResult result = HitTestResult();
+    final binding = WidgetsBinding.instance;
+    binding.hitTestInView(
+      result,
+      globalPosition,
+      binding.platformDispatcher.implicitView!.viewId,
+    );
+
+    for (final entry in result.path) {
+      final target = entry.target;
+      if (target is RenderViewport) {
+        if (target.axisDirection == AxisDirection.left ||
+            target.axisDirection == AxisDirection.right) {
+          return true;
+        }
+      } else if (target is RenderSliver) {
+        if (target.constraints.axisDirection == AxisDirection.left ||
+            target.constraints.axisDirection == AxisDirection.right) {
+          return true;
+        }
+      } else if (target.runtimeType.toString() ==
+          '_RenderSingleChildViewport') {
+        try {
+          final dynamic renderObject = target;
+          if (renderObject.axis == Axis.horizontal) {
+            return true;
+          }
+        } catch (e) {
+          // protected
+        }
+      } else if (target is RenderEditable) {
+        return true;
+      }
     }
-    _recognizer.addPointer(event);
+    return false;
+  }
+
+  void _handleDragStart(DragStartDetails details) {
+    if (!widget.enabledCallback()) return;
+    if (mounted && _backGestureController == null) {
+      _backGestureController = widget.onStartPopGesture();
+    }
+  }
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    if (mounted && _backGestureController != null) {
+      _backGestureController!.dragUpdate(
+        _convertToLogical(details.primaryDelta! / context.size!.width),
+      );
+    }
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    if (mounted && _backGestureController != null) {
+      _backGestureController!.dragEnd(
+        _convertToLogical(
+          details.velocity.pixelsPerSecond.dx / context.size!.width,
+        ),
+      );
+      _backGestureController = null;
+    }
   }
 
   void _handleDragCancel() {
-    assert(mounted);
-    _backGestureController?.dragEnd(0.0);
-    _backGestureController = null;
+    if (mounted && _backGestureController != null) {
+      _backGestureController?.dragEnd(0.0);
+      _backGestureController = null;
+    }
   }
 
   double _convertToLogical(double value) {
@@ -322,54 +355,129 @@ class _IOSBackGestureDetectorState extends State<IOSBackGestureDetector> {
         return value;
     }
   }
+}
 
-  void _handleDragEnd(DragEndDetails details) {
-    assert(mounted);
-    assert(_backGestureController != null);
-    _backGestureController!.dragEnd(
-      _convertToLogical(
-        details.velocity.pixelsPerSecond.dx / context.size!.width,
-      ),
-    );
-    _backGestureController = null;
+class _BackSwipeRecognizer extends OneSequenceGestureRecognizer {
+  _BackSwipeRecognizer({
+    required this.isPointerInHorizontal,
+    required this.gestureWidth,
+    required this.onStart,
+    required this.onUpdate,
+    required this.onEnd,
+    required this.onCancel,
+    super.debugOwner,
+  });
+
+  final bool Function(Offset globalPosition) isPointerInHorizontal;
+  double gestureWidth;
+  final ValueSetter<DragStartDetails> onStart;
+  final ValueSetter<DragUpdateDetails> onUpdate;
+  final ValueSetter<DragEndDetails> onEnd;
+  final VoidCallback onCancel;
+
+  Offset? _startGlobal;
+  bool _accepted = false;
+  bool _startedInHorizontal = false;
+  bool _startedNearLeftEdge = false;
+
+  VelocityTracker? _velocityTracker;
+
+  static const double _minDistance = 5.0;
+
+  @override
+  void addPointer(PointerDownEvent event) {
+    startTrackingPointer(event.pointer);
+    _startGlobal = event.position;
+    _accepted = false;
+
+    _startedInHorizontal = isPointerInHorizontal(event.position);
+    _startedNearLeftEdge = event.position.dx <= gestureWidth;
+
+    _velocityTracker = VelocityTracker.withKind(event.kind);
+    _velocityTracker?.addPosition(event.timeStamp, event.position);
   }
 
-  void _handleDragStart(DragStartDetails details) {
-    assert(mounted);
-    assert(_backGestureController == null);
-    _backGestureController = widget.onStartPopGesture();
-  }
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event is PointerMoveEvent || event is PointerUpEvent) {
+      _velocityTracker?.addPosition(event.timeStamp, event.position);
+    }
 
-  void _handleDragUpdate(DragUpdateDetails details) {
-    assert(mounted);
-    assert(_backGestureController != null);
-    _backGestureController!.dragUpdate(
-      _convertToLogical(details.primaryDelta! / context.size!.width),
-    );
-  }
+    if (event is PointerMoveEvent) {
+      if (_startGlobal == null) return;
+      final delta = event.position - _startGlobal!;
+      final dx = delta.dx;
+      final dy = delta.dy.abs();
 
-  bool _isPointerOverHorizontalScrollable(PointerDownEvent event) {
-    final HitTestResult result = HitTestResult();
-    final view = WidgetsBinding.instance.platformDispatcher.views.first;
-    WidgetsBinding.instance.hitTestInView(result, event.position, view.viewId);
-    for (final entry in result.path) {
-      final target = entry.target;
-      if (target is RenderViewport) {
-        if (_isAxisHorizontal(target.axisDirection)) {
-          return true;
-        }
-      } else if (target is RenderSliver) {
-        if (_isAxisHorizontal(target.constraints.axisDirection)) {
-          return true;
+      if (!_accepted) {
+        if (delta.distance < _minDistance) return;
+
+        final isRight = dx > 0;
+        final isHorizontal = dx.abs() > dy * 1.5;
+        final bool eligible = _startedNearLeftEdge || (!_startedInHorizontal);
+
+        if (isRight && isHorizontal && eligible) {
+          _accepted = true;
+          resolve(GestureDisposition.accepted);
+          onStart(
+            DragStartDetails(
+              globalPosition: _startGlobal!,
+              localPosition: event.localPosition,
+            ),
+          );
+        } else {
+          resolve(GestureDisposition.rejected);
+          stopTrackingPointer(event.pointer);
+          _startGlobal = null;
+          _velocityTracker = null;
         }
       }
+
+      if (_accepted) {
+        onUpdate(
+          DragUpdateDetails(
+            globalPosition: event.position,
+            localPosition: event.localPosition,
+            primaryDelta: event.delta.dx,
+            delta: event.delta,
+          ),
+        );
+      }
+    } else if (event is PointerUpEvent) {
+      if (_accepted) {
+        final Velocity velocity =
+            _velocityTracker?.getVelocity() ?? Velocity.zero;
+
+        onEnd(
+          DragEndDetails(
+            velocity: velocity,
+            primaryVelocity: velocity.pixelsPerSecond.dx,
+          ),
+        );
+      }
+      _reset();
+    } else if (event is PointerCancelEvent) {
+      if (_accepted) {
+        onCancel();
+      }
+      _reset();
     }
-    return false;
   }
 
-  bool _isAxisHorizontal(AxisDirection direction) {
-    return direction == AxisDirection.left || direction == AxisDirection.right;
+  void _reset() {
+    stopTrackingPointer(0);
+    _accepted = false;
+    _startGlobal = null;
+    _startedInHorizontal = false;
+    _startedNearLeftEdge = false;
+    _velocityTracker = null;
   }
+
+  @override
+  String get debugDescription => 'IOSBackSwipe';
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {}
 }
 
 class SlidePageTransitionBuilder extends PageTransitionsBuilder {

@@ -577,8 +577,6 @@ abstract class _PlayerController with Store {
 
         App.rootContext.to(
           () => FullscreenVideoPage(playerController: this as PlayerController),
-          enableIOSGesture: false,
-          iosFullScreenGesture: false,
         );
       }
     }

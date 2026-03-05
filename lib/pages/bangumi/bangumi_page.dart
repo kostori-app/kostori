@@ -314,10 +314,7 @@ class _SearchBar extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(32),
             onTap: () {
-              context.to(
-                () => const BangumiSearchPage(),
-                iosFullScreenGesture: false,
-              );
+              context.to(() => const BangumiSearchPage());
             },
             child: Row(
               children: [
