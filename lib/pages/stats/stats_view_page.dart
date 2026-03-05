@@ -14,6 +14,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
   double stdDev = 0;
   int totalCount = 0;
   bool loading = true;
+  Map<int, List<BangumiItem>> ratingBangumiMap = {};
 
   @override
   void initState() {
@@ -22,14 +23,19 @@ class _StatsViewPageState extends State<StatsViewPage> {
   }
 
   Future<void> _loadData() async {
-    final map = await Future(() => StatsManager().getLatestRatingsCountMap());
-    ratingList = List.generate(10, (index) {
-      return map[(index + 1).toString()] ?? 0;
+    final map = await Future(() => StatsManager().getRatingsWithBangumiIds());
+
+    ratingBangumiMap = map.map((rating, ids) {
+      final items = ids
+          .map((id) => BangumiManager().getBangumiItem(id))
+          .whereType<BangumiItem>()
+          .toList();
+      return MapEntry(rating, items);
     });
+
+    ratingList = List.generate(10, (i) => ratingBangumiMap[i + 1]?.length ?? 0);
     _calculateStats();
-    setState(() {
-      loading = false;
-    });
+    setState(() => loading = false);
   }
 
   void _calculateStats() {
@@ -48,6 +54,27 @@ class _StatsViewPageState extends State<StatsViewPage> {
       }
       stdDev = sqrt(varianceSum / totalCount);
     }
+  }
+
+  void _showRatingDetail(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+        maxWidth: MediaQuery.of(context).size.width <= 600
+            ? MediaQuery.of(context).size.width
+            : (App.isDesktop)
+            ? MediaQuery.of(context).size.width * 9 / 16
+            : MediaQuery.of(context).size.width,
+      ),
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => _RatingDetailPage(ratingBangumiMap: ratingBangumiMap),
+    );
   }
 
   @override
@@ -161,7 +188,11 @@ class _StatsViewPageState extends State<StatsViewPage> {
           content = Text('标准差: ${stdDev.toStringAsFixed(2)}');
           break;
         case 5:
-          content = Text('评分数: $totalCount');
+          content = InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => _showRatingDetail(context),
+            child: Center(child: Text('评分数: $totalCount')),
+          );
           break;
         default:
           content = const Text('默认');
@@ -244,47 +275,19 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
   Future<void> _loadWordCloudData() async {
     final allStats = await Future(() => StatsManager().getStatsAll());
 
-    // 按 bangumiId 分组，只保留 liked 的
-    final Map<int, List<StatsDataImpl>> likedGroups = {};
-    for (final stat in allStats) {
-      if (stat.bangumiId != null && stat.liked) {
-        likedGroups.putIfAbsent(stat.bangumiId!, () => []).add(stat);
-      }
-    }
-
-    // 统计 tag -> {count, bangumiItems}
-    final Map<String, ({int count, List<BangumiItem> items})> tagMap = {};
-
-    for (final bangumiId in likedGroups.keys) {
-      final bangumiItem = BangumiManager().getBangumiItem(bangumiId);
-      if (bangumiItem == null) continue;
-
-      for (final tag in bangumiItem.tags) {
-        final existing = tagMap[tag.name];
-        if (existing == null) {
-          tagMap[tag.name] = (count: 1, items: [bangumiItem]);
-        } else {
-          tagMap[tag.name] = (
-            count: existing.count + 1,
-            items: existing.items..add(bangumiItem),
-          );
-        }
-      }
-    }
-
-    final sortedTags = tagMap.entries.toList()
-      ..sort((a, b) => b.value.count.compareTo(a.value.count));
+    final likedItems = allStats
+        .where((s) => s.bangumiId != null && s.liked)
+        .map((s) => BangumiManager().getBangumiItem(s.bangumiId!))
+        .whereType<BangumiItem>()
+        .toSet()
+        .toList();
 
     setState(() {
-      wordCloudData = sortedTags
-          .map(
-            (entry) => {
-              'word': entry.key,
-              'value': entry.value.count.toDouble(),
-              'items': entry.value.items, // List<BangumiItem>
-            },
-          )
-          .toList();
+      wordCloudData = BangumiUtils.sortedTagItemMap(
+        likedItems,
+        minTagCount: 20,
+        minItemCount: 2,
+      );
     });
   }
 
@@ -309,7 +312,6 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
           ),
           child: Column(
             children: [
-              // 顶部拖动条
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Container(
@@ -321,7 +323,6 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
                   ),
                 ),
               ),
-              // 标题
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Row(
@@ -338,7 +339,6 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
                 ),
               ),
               const Divider(height: 1),
-              // 列表
               Expanded(
                 child: SmoothCustomScrollView(
                   slivers: [
@@ -375,70 +375,13 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
       colorlist: standardColorMap.keys.toList(),
       ratio: 3,
     );
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    if (App.isAndroid) {
-      Uint8List screenData = bytes;
-      try {
-        final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
-        if (folder != null) {
-          final file = File('${folder.path}/word_cloud_$timestamp.png');
-          await file.writeAsBytes(screenData);
-          showCenter(
-            seconds: 1,
-            icon: Gif(
-              image: AssetImage('assets/img/check.gif'),
-              height: 80,
-              fps: 120,
-              color: Theme.of(context).colorScheme.primary,
-              autostart: Autostart.once,
-            ),
-            message: '截图成功',
-            context: App.rootContext,
-          );
-          const platform = MethodChannel('kostori/media');
-          await platform.invokeMethod('scanFolder', {'path': folder.path});
-          Log.addLog(LogLevel.info, '保存文件成功', '');
-        } else {
-          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
-        }
-      } catch (e) {
-        Log.addLog(LogLevel.error, '截图失败', '$e');
-      }
-    } else {
-      try {
-        Uint8List? screenData = bytes;
-        final directory = await getApplicationDocumentsDirectory();
-        final folderPath = '${directory.path}/Kostori';
-        final folder = Directory(folderPath);
-        if (!await folder.exists()) {
-          await folder.create(recursive: true);
-          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
-        } else {
-          Log.addLog(LogLevel.info, '文件夹已存在', folderPath);
-        }
 
-        final filePath = '$folderPath/word_cloud_$timestamp.png';
-        // 将图像保存为文件
-        final file = File(filePath);
-        await file.writeAsBytes(screenData);
-        showCenter(
-          seconds: 1,
-          icon: Gif(
-            image: AssetImage('assets/img/check.gif'),
-            height: 80,
-            fps: 120,
-            color: Theme.of(context).colorScheme.primary,
-            autostart: Autostart.once,
-          ),
-          message: '截图成功',
-          context: App.rootContext,
-        );
-      } catch (e) {
-        Log.addLog(LogLevel.error, '截图失败', '$e');
-      }
-    }
-    final notifier = ref.read(imagesProvider.notifier);
-    await notifier.loadImages();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    await ImageSaver.saveImage(
+      bytes: bytes,
+      filename: 'word_cloud_$timestamp.png',
+      ref: ref,
+    );
   }
 
   @override
@@ -475,7 +418,7 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
                         : constraints.maxHeight;
 
                     final minSize = (w * 0.01).clamp(5.0, 12.0);
-                    final maxSize = (w * 0.08).clamp(20.0, 80.0);
+                    final maxSize = (w * 0.08).clamp(20.0, 120.0);
 
                     return WordCloudView(
                       key: ValueKey('$w-$h'),
@@ -502,6 +445,78 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RatingDetailPage extends StatefulWidget {
+  final Map<int, List<BangumiItem>> ratingBangumiMap;
+
+  const _RatingDetailPage({required this.ratingBangumiMap});
+
+  @override
+  State<_RatingDetailPage> createState() => _RatingDetailPageState();
+}
+
+class _RatingDetailPageState extends State<_RatingDetailPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 10, vsync: this);
+    for (int i = 9; i >= 0; i--) {
+      if (widget.ratingBangumiMap[i + 1]?.isNotEmpty == true) {
+        _tabController.index = i;
+        break;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: '评分详情',
+      body: Column(
+        children: [
+          TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.center,
+            tabs: List.generate(10, (i) {
+              final count = widget.ratingBangumiMap[i + 1]?.length ?? 0;
+              return Tab(text: '${i + 1}分 ($count)');
+            }),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: List.generate(10, (i) {
+                final items = widget.ratingBangumiMap[i + 1] ?? [];
+                if (items.isEmpty) {
+                  return Center(child: Text('暂无 ${i + 1} 分的作品'));
+                }
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithBangumiItems(true),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) => BangumiBriefCard(
+                    bangumiItem: items[index],
+                    heroTag: null,
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

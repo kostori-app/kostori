@@ -8,6 +8,7 @@ import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/utils/ext.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 enum AppPlatform {
@@ -848,8 +849,8 @@ class StatsManager with ChangeNotifier {
     return latestComment;
   }
 
-  /// 返回一个长度为 10 的 Map，键为 '1'..'10'，值为该评分出现的次数
-  Map<String, int> getLatestRatingsCountMap() {
+  // 返回 Map<int, List<int>> rating -> bangumiIds
+  Map<int, List<int>> getRatingsWithBangumiIds() {
     final allStats = getStatsAll();
     final int bangumiKey = 'bangumi'.hashCode;
 
@@ -858,38 +859,29 @@ class StatsManager with ChangeNotifier {
       groups.putIfAbsent(s.bangumiId, () => []).add(s);
     }
 
-    final List<int> selectedRatings = [];
+    final Map<int, List<int>> result = {for (var i = 1; i <= 10; i++) i: []};
 
     for (final entry in groups.entries) {
       final bangumiId = entry.key;
       final statsList = entry.value;
+      if (bangumiId == null) continue;
 
-      if (bangumiId != null) {
-        StatsDataImpl? bangumiStat;
+      int? rating;
+
+      final bangumiStat = statsList.firstWhereOrNull(
+        (s) => s.type == bangumiKey,
+      );
+      if (bangumiStat != null) {
+        rating = _getLatestRatingFromStats(bangumiStat);
+      } else {
         for (final s in statsList) {
-          if (s.type == bangumiKey) {
-            bangumiStat = s;
-            break;
-          }
-        }
-        if (bangumiStat != null) {
-          final r = _getLatestRatingFromStats(bangumiStat);
-          if (r != null) selectedRatings.add(r);
-          continue;
+          rating = _getLatestRatingFromStats(s);
+          if (rating != null) break;
         }
       }
 
-      for (final s in statsList) {
-        final r = _getLatestRatingFromStats(s);
-        if (r != null) selectedRatings.add(r);
-      }
-    }
-
-    final Map<String, int> result = {for (var i = 1; i <= 10; i++) '$i': 0};
-
-    for (final r in selectedRatings) {
-      if (r >= 1 && r <= 10) {
-        result['$r'] = (result['$r'] ?? 0) + 1;
+      if (rating != null && rating >= 1 && rating <= 10) {
+        result[rating]!.add(bangumiId);
       }
     }
 
