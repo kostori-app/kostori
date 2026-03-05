@@ -49,6 +49,8 @@ part 'app.dart';
 
 part 'appearance.dart';
 
+part 'bangumi_settings.dart';
+
 part 'explore_settings.dart';
 
 part 'local_favorites.dart';
@@ -79,6 +81,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
 
   final categories = <String>[
     "Explore",
+    "Bangumi",
     "Fanyuan",
     "Player",
     "Translation",
@@ -91,6 +94,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
 
   final icons = <IconData>[
     Icons.explore,
+    Icons.account_balance,
     Icons.source,
     Icons.display_settings_rounded,
     Icons.translate_rounded,
@@ -470,14 +474,15 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
               )
             : SizedBox(),
       0 => const ExploreSettings(),
-      1 => const AnimeSourceSettings(),
-      2 => const PlayerSettings(),
-      3 => const TranslationSettings(),
-      4 => const AppearanceSettings(),
-      5 => const LocalFavoritesSettings(),
-      6 => const AppSettings(),
-      7 => const NetworkSettings(),
-      8 => const AboutSettings(),
+      1 => const BangumiSettings(),
+      2 => const AnimeSourceSettings(),
+      3 => const PlayerSettings(),
+      4 => const TranslationSettings(),
+      5 => const AppearanceSettings(),
+      6 => const LocalFavoritesSettings(),
+      7 => const AppSettings(),
+      8 => const NetworkSettings(),
+      9 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }
