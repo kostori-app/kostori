@@ -303,328 +303,52 @@ class BangumiWidget {
           );
   }
 
-  static Future<void> showImagePreview(
-    BuildContext context,
-    String url,
-    String title,
-    String heroTag, {
+  static Future<void> showImagePreview({
+    required BuildContext context,
+    required String url,
+    required String title,
+    required String heroTag,
     List<File>? allUrls,
     int? initialIndex,
   }) async {
     try {
       final isLocal = File(url).existsSync();
-
-      // 计算初始索引
-      int initIndex = 0;
-      if (allUrls != null && allUrls.isNotEmpty) {
-        initIndex =
-            initialIndex ??
-            allUrls
-                .indexWhere((f) => f.path == url)
-                .clamp(0, allUrls.length - 1);
-      }
-
+      final initIndex = _resolveInitIndex(url, allUrls, initialIndex);
       final pageController = PageController(initialPage: initIndex);
-      final urls = ValueNotifier<List<File>>(allUrls ?? []);
-      final currentIndex = ValueNotifier<int>(initIndex);
-
-      final ImageProvider img = isLocal
-          ? FileImage(File(url))
+      final img = isLocal
+          ? FileImage(File(url)) as ImageProvider
           : NetworkImage(url);
 
-      await showGeneralDialog(
-        context: context,
-        barrierDismissible: true,
-        barrierLabel: MaterialLocalizations.of(
-          context,
-        ).modalBarrierDismissLabel,
-        barrierColor: Colors.transparent,
-        transitionDuration: const Duration(milliseconds: 200),
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light,
-            child: Material(
-              type: MaterialType.transparency,
-              child: Stack(
-                children: [
-                  SizedBox.expand(
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-                      child: Container(color: Colors.transparent),
-                    ),
-                  ),
-                  Center(
-                    child: ValueListenableBuilder<List<File>>(
-                      valueListenable: urls,
-                      builder: (context, imageList, _) {
-                        if (imageList.length > 1) {
-                          return PhotoViewGallery.builder(
-                            itemCount: imageList.length,
-                            pageController: pageController,
-                            backgroundDecoration: const BoxDecoration(
-                              color: Colors.transparent,
-                            ),
-                            onPageChanged: (i) => currentIndex.value = i,
-                            builder: (context, i) {
-                              final file = imageList[i];
-                              return PhotoViewGalleryPageOptions(
-                                imageProvider: FileImage(file),
-                                heroAttributes: PhotoViewHeroAttributes(
-                                  tag: file.path,
-                                ),
-                                initialScale: PhotoViewComputedScale.contained,
-                                minScale: PhotoViewComputedScale.contained / 3,
-                                maxScale: PhotoViewComputedScale.covered * 100,
-                              );
-                            },
-                          );
-                        } else {
-                          return PhotoView.customChild(
-                            initialScale: PhotoViewComputedScale.contained,
-                            minScale: PhotoViewComputedScale.contained / 3,
-                            maxScale: PhotoViewComputedScale.covered * 100,
-                            heroAttributes: PhotoViewHeroAttributes(
-                              tag: heroTag,
-                            ),
-                            backgroundDecoration: const BoxDecoration(
-                              color: Colors.transparent,
-                            ),
-                            child: AnimatedImage(
-                              image: img,
-                              fit: BoxFit.contain,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      behavior: HitTestBehavior.translucent,
-                    ),
-                  ),
-                  // 顶部操作栏
-                  Positioned(
-                    top: context.padding.top,
-                    left: 16,
-                    right: 16,
-                    child: Container(
-                      height: 56,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Row(
-                        children: [
-                          _iconBackground(
-                            icon: Icons.close,
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ValueListenableBuilder<int>(
-                              valueListenable: currentIndex,
-                              builder: (context, index, _) {
-                                final file = urls.value.isNotEmpty
-                                    ? urls.value[index]
-                                    : File(url);
-                                final filename = file.path
-                                    .split(Platform.pathSeparator)
-                                    .last;
-                                return _textBackground(filename);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          isLocal
-                              ? ValueListenableBuilder<int>(
-                                  valueListenable: currentIndex,
-                                  builder: (context, index, _) {
-                                    if (urls.value.isEmpty && !isLocal) {
-                                      return const SizedBox();
-                                    }
-
-                                    final currentFile = urls.value.isNotEmpty
-                                        ? urls.value[index]
-                                        : File(url);
-
-                                    final localExists = currentFile
-                                        .existsSync();
-
-                                    return Row(
-                                      children: [
-                                        _iconBackground(
-                                          icon: Icons.share,
-                                          onPressed: () async {
-                                            final filename = currentFile.path
-                                                .split(Platform.pathSeparator)
-                                                .last;
-                                            Uint8List data = await currentFile
-                                                .readAsBytes();
-                                            await Share.shareFile(
-                                              data: data,
-                                              filename: filename,
-                                              mime: 'image/png',
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(width: 8),
-                                        if (localExists)
-                                          _iconBackground(
-                                            icon: Icons.delete,
-                                            onPressed: () async {
-                                              showConfirmDialog(
-                                                context: context,
-                                                title: "确认删除该图片?".tl,
-                                                content: '删除后将无法恢复',
-                                                btnColor: Theme.of(
-                                                  context,
-                                                ).colorScheme.error,
-                                                onConfirm: () async {
-                                                  try {
-                                                    await currentFile.delete();
-
-                                                    if (urls.value.isNotEmpty) {
-                                                      urls.value.removeAt(
-                                                        index,
-                                                      );
-
-                                                      if (urls.value.isEmpty) {
-                                                        Navigator.pop(context);
-                                                        return;
-                                                      }
-
-                                                      final newIndex =
-                                                          index >=
-                                                              urls.value.length
-                                                          ? urls.value.length -
-                                                                1
-                                                          : index;
-
-                                                      currentIndex.value =
-                                                          newIndex;
-                                                      urls.value = [
-                                                        ...urls.value,
-                                                      ];
-
-                                                      WidgetsBinding.instance
-                                                          .addPostFrameCallback(
-                                                            (_) {
-                                                              if (pageController
-                                                                  .hasClients) {
-                                                                pageController
-                                                                    .jumpToPage(
-                                                                      newIndex,
-                                                                    );
-                                                              }
-                                                            },
-                                                          );
-                                                    } else {
-                                                      Navigator.pop(context);
-                                                    }
-                                                  } catch (e) {
-                                                    Log.addLog(
-                                                      LogLevel.error,
-                                                      '删除失败',
-                                                      e.toString(),
-                                                    );
-                                                    context.showMessage(
-                                                      message: '删除失败: $e',
-                                                    );
-                                                  }
-                                                },
-                                              );
-                                            },
-                                          ),
-                                      ],
-                                    );
-                                  },
-                                )
-                              : _iconBackground(
-                                  icon: Icons.download,
-                                  onPressed: () {
-                                    saveImageToGallery(context, url);
-                                  },
-                                ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+      await App.rootContext.toBlurFade(
+        () => ProviderScope(
+          overrides: [
+            imageListProvider.overrideWith((ref) => allUrls ?? []),
+            currentIndexProvider.overrideWith((ref) => initIndex),
+          ],
+          child: ImagePreviewWidget(
+            url: url,
+            heroTag: heroTag,
+            isLocal: isLocal,
+            img: img,
+            pageController: pageController,
+            title: title,
+          ),
+        ),
       );
     } catch (e, s) {
       Log.addLog(LogLevel.error, 'showImagePreviewOverlay', '$e\n$s');
     }
   }
 
-  static Widget _iconBackground({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black.toOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
-  static Widget _textBackground(String title) {
-    const style = TextStyle(
-      fontSize: 20,
-      fontWeight: FontWeight.w600,
-      color: Colors.white,
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.toOpacity(0.3),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 32),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final textPainter = TextPainter(
-              text: TextSpan(text: title, style: style),
-              maxLines: 1,
-              textDirection: TextDirection.ltr,
-            )..layout(maxWidth: constraints.maxWidth);
-
-            final shouldScroll =
-                textPainter.width >= constraints.maxWidth * 0.7;
-
-            return ClipRect(
-              child: shouldScroll
-                  ? Marquee(
-                      text: title,
-                      style: style,
-                      scrollAxis: Axis.horizontal,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      blankSpace: 10.0,
-                      velocity: 40.0,
-                      pauseAfterRound: Duration.zero,
-                      accelerationDuration: Duration.zero,
-                      decelerationDuration: Duration.zero,
-                    )
-                  : Text(
-                      title,
-                      style: style,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-            );
-          },
-        ),
-      ),
-    );
+  /// 计算初始页码
+  static int _resolveInitIndex(
+    String url,
+    List<File>? allUrls,
+    int? initialIndex,
+  ) {
+    if (allUrls == null || allUrls.isEmpty) return 0;
+    return initialIndex ??
+        allUrls.indexWhere((f) => f.path == url).clamp(0, allUrls.length - 1);
   }
 
   static Future<void> saveImageToGallery(
@@ -633,93 +357,76 @@ class BangumiWidget {
   ) async {
     try {
       context.showMessage(message: '正在保存图片...');
+
       final response = await AppDio().request<Uint8List>(
         imageUrl,
         options: Options(method: 'GET', responseType: ResponseType.bytes),
       );
 
-      if (App.isAndroid) {
-        final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
-        if (folder != null) {
-          final file = File(
-            '${folder.path}/${_generateFilename(imageUrl)}.png',
-          );
-          await file.writeAsBytes(response.data!);
+      final savedPath = await _saveImageToLocalFolder(imageUrl, response.data!);
 
-          // 调用弹窗/提示等
-          showCenter(
-            seconds: 1,
-            icon: Gif(
-              image: const AssetImage('assets/img/check.gif'),
-              height: 80,
-              fps: 120,
-              color: Theme.of(context).colorScheme.primary,
-              autostart: Autostart.once,
-            ),
-            message: '保存成功',
-            context: context,
-          );
-          const platform = MethodChannel('kostori/media');
-          await platform.invokeMethod('scanFolder', {'path': folder.path});
-          Log.addLog(LogLevel.info, '保存长图成功', file.path);
-        } else {
-          showCenter(
-            seconds: 3,
-            icon: Gif(
-              image: AssetImage('assets/img/warning.gif'),
-              height: 64,
-              fps: 120,
-              color: Theme.of(context).colorScheme.primary,
-              autostart: Autostart.once,
-            ),
-            message: '保存失败',
-            context: context,
-          );
-          Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
-        }
+      if (savedPath != null) {
+        _showResult(context, success: true);
+        Log.addLog(LogLevel.info, 'saveImageToGallery', savedPath);
       } else {
-        final directory = await getApplicationDocumentsDirectory();
-        final folderPath = '${directory.path}/Kostori';
-        final folder = Directory(folderPath);
-
-        if (!await folder.exists()) {
-          await folder.create(recursive: true);
-          Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
-        }
-
-        final filePath = '$folderPath/${_generateFilename(imageUrl)}';
-        await File(filePath).writeAsBytes(response.data!);
-
-        showCenter(
-          seconds: 1,
-          icon: Gif(
-            image: const AssetImage('assets/img/check.gif'),
-            height: 80,
-            fps: 120,
-            color: Theme.of(context).colorScheme.primary,
-            autostart: Autostart.once,
-          ),
-          message: '保存成功',
-          context: context,
-        );
-
-        Log.addLog(LogLevel.info, 'saveImageToGallery', filePath);
+        _showResult(context, success: false, message: '保存失败：权限或目录异常');
+        Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
       }
     } catch (e, s) {
-      showCenter(
-        seconds: 3,
-        icon: Gif(
-          image: AssetImage('assets/img/warning.gif'),
-          height: 64,
-          fps: 120,
-          color: Theme.of(context).colorScheme.primary,
-          autostart: Autostart.once,
-        ),
-        message: '保存失败: ${e.toString()}',
-        context: context,
-      );
+      _showResult(context, success: false, message: '保存失败: $e');
       Log.addLog(LogLevel.error, 'saveImageToGallery', '$e\n$s');
     }
+  }
+
+  static Future<String?> _saveImageToLocalFolder(
+    String imageUrl,
+    Uint8List data,
+  ) async {
+    if (App.isAndroid) {
+      final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
+      if (folder == null) return null;
+
+      final file = File('${folder.path}/${_generateFilename(imageUrl)}.png');
+      await file.writeAsBytes(data);
+
+      const platform = MethodChannel('kostori/media');
+      await platform.invokeMethod('scanFolder', {'path': folder.path});
+      return file.path;
+    } else {
+      final directory = await getApplicationDocumentsDirectory();
+      final folderPath = '${directory.path}/Kostori';
+      final folder = Directory(folderPath);
+
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+        Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+      }
+
+      final filePath = '$folderPath/${_generateFilename(imageUrl)}';
+      await File(filePath).writeAsBytes(data);
+      return filePath;
+    }
+  }
+
+  static void _showResult(
+    BuildContext context, {
+    required bool success,
+    String? message,
+  }) {
+    showCenter(
+      seconds: success ? 1 : 3,
+      icon: Gif(
+        image: AssetImage(
+          success ? 'assets/img/check.gif' : 'assets/img/warning.gif',
+        ),
+        height: success ? 80 : 64,
+        fps: 120,
+        color: Theme.of(context).colorScheme.primary,
+        autostart: Autostart.once,
+      ),
+      message: message ?? (success ? '保存成功' : '保存失败'),
+      context: context,
+    );
   }
 
   static String _generateFilename(String url) {
@@ -826,11 +533,7 @@ class _ExpandableTextState extends State<ExpandableText> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(
-                widget.text,
-                scrollPhysics: const NeverScrollableScrollPhysics(),
-                selectionHeightStyle: ui.BoxHeightStyle.max,
-              ),
+              CustomMarkdownWidget(data: widget.text),
               if (widget.translationController!.isTranslating ||
                   (widget.translationController!.isTranslationComplete &&
                       widget.translationController != null)) ...[
@@ -873,11 +576,7 @@ class _ExpandableTextState extends State<ExpandableText> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SelectableText(
-                        widget.text,
-                        scrollPhysics: const NeverScrollableScrollPhysics(),
-                        selectionHeightStyle: ui.BoxHeightStyle.max,
-                      ),
+                      CustomMarkdownWidget(data: widget.text),
                       if (widget.translationController!.isTranslating ||
                           (widget
                                   .translationController!

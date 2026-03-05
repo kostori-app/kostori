@@ -519,8 +519,8 @@ class _DraggableBlurSheetState extends State<_DraggableBlurSheet> {
                                   ),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: const Text(
-                                  'Kostori Changelog',
+                                child: Text(
+                                  'Kostori Changelog'.tl,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -667,26 +667,6 @@ Future<bool> checkStoragePermission() async {
   return (await Permission.storage.request()).isGranted;
 }
 
-Widget buildMarkdown(BuildContext context, String data) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-
-  final config = MarkdownConfig(
-    configs: [
-      PConfig(
-        textStyle: TextStyle(color: isDark ? Colors.white : Colors.black),
-      ),
-      CodeConfig(
-        style: TextStyle(
-          color: isDark ? Colors.white : Colors.black,
-          backgroundColor: isDark ? Colors.black26 : Colors.grey[200],
-        ),
-      ),
-    ],
-  );
-
-  return MarkdownBlock(data: data, config: config);
-}
-
 class ReleaseCard extends StatelessWidget {
   final Map<String, dynamic> release;
 
@@ -712,18 +692,6 @@ class ReleaseCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 第一行：日期
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text(
-                  _formatDate(createdAt),
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
             // 第二行：版本名 (居中)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -752,9 +720,13 @@ class ReleaseCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-
-            // 第三部分：Markdown body
-            buildMarkdown(context, body),
+            TranslationWidget(
+              data: body,
+              title: Text(
+                _formatDate(createdAt),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
         ),
       ),
@@ -937,10 +909,19 @@ class _UpdateDialogState extends State<UpdateDialog> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 300),
+                      constraints: const BoxConstraints(maxHeight: 600),
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.all(8),
-                        child: buildMarkdown(context, markdown),
+                        child: TranslationWidget(
+                          data: markdown,
+                          title: Text(
+                            'Kostori Changelog'.tl,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),

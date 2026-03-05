@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -123,8 +124,8 @@ class _TranslatedContentState extends State<TranslatedContent> {
                 return Skeletonizer.zone(child: Bone.multiText(lines: 3));
               }
               if (translationController.hasTranslation) {
-                return SelectionArea(
-                  child: Text(translationController.translatedText!),
+                return CustomMarkdownWidget(
+                  data: translationController.translatedText!,
                 );
               }
               return SizedBox.shrink();
