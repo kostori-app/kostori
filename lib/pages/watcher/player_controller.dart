@@ -1273,7 +1273,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
             padding: const EdgeInsets.all(12.0),
             child: ListView.separated(
               itemCount: levelLogs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final entry = levelLogs[index];
                 final log = entry.log;

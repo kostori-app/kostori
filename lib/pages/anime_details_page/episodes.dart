@@ -239,10 +239,27 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                               i ==
                                   state.playerController.currentEpisoded -
                                       1) ...[
-                            Image.asset(
-                              'assets/img/playing.gif',
-                              color: Theme.of(context).colorScheme.primary,
-                              height: 16,
+                            StreamBuilder(
+                              stream:
+                                  state.playerController.player.stream.playing,
+                              builder: (context, snapshot) {
+                                final isPlaying = snapshot.data ?? false;
+                                return isPlaying
+                                    ? Image.asset(
+                                        'assets/img/playing.gif',
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        height: 16,
+                                      )
+                                    : Icon(
+                                        Icons.pause,
+                                        size: 16,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      );
+                              },
                             ),
                             const SizedBox(width: 6),
                           ],
@@ -250,7 +267,6 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                             child: Text(
                               value,
                               maxLines: 3,
-                              // textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: visited
