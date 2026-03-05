@@ -2,25 +2,6 @@
 
 part of "components.dart";
 
-// void showToast({
-//   required String message,
-//   required BuildContext context,
-//   Widget? icon,
-//   Widget? trailing,
-//   int? seconds,
-// }) {
-//   var newEntry = OverlayEntry(
-//     builder: (context) =>
-//         _ToastOverlay(message: message, icon: icon, trailing: trailing),
-//   );
-//
-//   var state = context.findAncestorStateOfType<OverlayWidgetState>();
-//
-//   state?.addOverlay(newEntry);
-//
-//   Timer(Duration(seconds: seconds ?? 2), () => state?.remove(newEntry));
-// }
-
 void showCenter({
   required String message,
   required BuildContext context,
@@ -801,5 +782,37 @@ class ToastManager {
       final newPosition = baseOffset + i * spacing;
       entry.updatePosition(newPosition);
     }
+  }
+}
+
+class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(color: Colors.black.toOpacity(0.2), blurRadius: 16),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const PolygonRefreshIndicator(size: 50),
+              const SizedBox(height: 16),
+              Text(message),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
