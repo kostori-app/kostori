@@ -172,6 +172,13 @@ class NaviPaneState extends State<NaviPane>
   @override
   Widget build(BuildContext context) {
     onRebuild(context);
+    final mq = MediaQuery.of(context);
+    final sideInsets = (App.isMobile && mq.orientation == Orientation.landscape)
+        ? EdgeInsets.only(
+            left: math.max(mq.viewPadding.left, mq.systemGestureInsets.left),
+            right: math.max(mq.viewPadding.right, mq.systemGestureInsets.right),
+          )
+        : EdgeInsets.zero;
     return _NaviPopScope(
       action: () {
         if (App.mainNavigatorKey!.currentState!.canPop()) {
@@ -185,7 +192,7 @@ class NaviPaneState extends State<NaviPane>
         animation: controller,
         builder: (context, child) {
           final value = controller.value;
-          return Stack(
+          Widget content = Stack(
             children: [
               Positioned(
                 left: _kFoldedSideBarWidth * ((value - 2.0).clamp(-1.0, 0.0)),
@@ -202,6 +209,10 @@ class NaviPaneState extends State<NaviPane>
               ),
             ],
           );
+          if (sideInsets != EdgeInsets.zero) {
+            content = Padding(padding: sideInsets, child: content);
+          }
+          return content;
         },
       ),
     );
@@ -664,8 +675,7 @@ class _NaviMainViewState extends State<_NaviMainView> {
             ),
           ),
         ),
-        if (shouldShowAppBar)
-          state.buildBottom().paddingBottom(context.padding.bottom),
+        if (shouldShowAppBar) state.buildBottom(),
       ],
     );
   }

@@ -577,8 +577,6 @@ abstract class _PlayerController with Store {
 
         App.rootContext.to(
           () => FullscreenVideoPage(playerController: this as PlayerController),
-          enableIOSGesture: false,
-          iosFullScreenGesture: false,
         );
       }
     }
@@ -698,10 +696,7 @@ abstract class _PlayerController with Store {
                 InkWell(
                   onTap: () async {
                     await pause();
-                    context.to(
-                      () => ImageManipulationPage(),
-                      iosFullScreenGesture: false,
-                    );
+                    context.to(() => ImageManipulationPage());
                   },
                   child: Center(
                     child: SizedBox(height: 20, child: Text('编辑'.tl)),

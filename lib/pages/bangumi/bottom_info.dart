@@ -617,7 +617,6 @@ class BottomInfoState extends State<BottomInfo>
                         () => BangumiSearchPage(
                           tag: bangumiItem.tags[index].name,
                         ),
-                        iosFullScreenGesture: false,
                       );
                     },
                   ),

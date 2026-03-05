@@ -220,7 +220,6 @@ class _InfoTabViewState extends State<InfoTabView>
                             allEpisodes: widget.allEpisodes,
                             infoController: widget.infoController,
                           ),
-                          iosFullScreenGesture: false,
                         );
                       },
                       child: Text('more'.tl),
@@ -262,7 +261,6 @@ class _InfoTabViewState extends State<InfoTabView>
                                         episode: episode,
                                         infoController: widget.infoController,
                                       ),
-                                      iosFullScreenGesture: false,
                                     );
                                   },
                                   onLongPress: () {
@@ -442,7 +440,7 @@ class _InfoTabViewState extends State<InfoTabView>
                           clipBehavior: Clip.antiAlias,
                           child: InkWell(
                             onTap: () {
-                              App.mainNavigatorKey?.currentContext?.to(
+                              context.to(
                                 () => BangumiInfoPage(
                                   bangumiItem: BangumiItem(
                                     id: item.id,

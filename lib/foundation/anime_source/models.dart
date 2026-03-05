@@ -327,7 +327,6 @@ class PageJumpTarget {
           sourceKey: sourceKey,
           options: List.from(attributes?["options"] ?? []),
         ),
-        iosFullScreenGesture: false,
       );
     } else if (page == "category") {
       var key = AnimeSource.find(sourceKey)!.categoryData!.key;
@@ -340,7 +339,6 @@ class PageJumpTarget {
           options: List.from(attributes?["options"] ?? []),
           param: attributes?["param"],
         ),
-        iosFullScreenGesture: false,
       );
     } else {
       Log.error("Page Jump", "Unknown page: $page");
