@@ -344,7 +344,7 @@ class _ShareWidgetState extends State<ShareWidget> {
     );
 
     // 获取当前周的剧集
-    final currentWeekEp = Utils.findCurrentWeekEpisode(
+    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
       allEpisodes,
       bangumiItem,
     );
@@ -376,6 +376,7 @@ class _ShareWidgetState extends State<ShareWidget> {
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(height: 32.0),
                 Padding(
@@ -673,6 +674,8 @@ class _ShareWidgetState extends State<ShareWidget> {
                         return Wrap(
                           spacing: spacing,
                           runSpacing: 16,
+                          alignment: WrapAlignment.start,
+                          crossAxisAlignment: WrapCrossAlignment.start,
                           children: bangumiSRI.map((item) {
                             return BangumiHorizontalCard(
                               bangumiItem: item,
@@ -1353,7 +1356,7 @@ class _ShareWidgetState extends State<ShareWidget> {
             right: 10,
             child: FilledButton(
               onPressed: () {
-                captureAndSave();
+                captureAndSave(context);
                 App.rootContext.pop();
               },
               child: Text('Share'.tl),
