@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -346,6 +344,9 @@ class _TimetableState extends State<_Timetable> {
 
   late int weekday;
 
+  final itemHeight = 270.0;
+  final verticalPadding = 16.0 * 2;
+
   @override
   void initState() {
     weekday = DateTime.now().weekday;
@@ -575,7 +576,7 @@ class _TimetableState extends State<_Timetable> {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                height: 56,
+                height: 46,
                 child: Row(
                   children: [
                     Center(
@@ -601,36 +602,28 @@ class _TimetableState extends State<_Timetable> {
                 ),
               ).paddingHorizontal(16),
               SizedBox(
-                height: 384,
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(
-                    scrollbars: true,
-                    dragDevices: {
-                      PointerDeviceKind.touch,
-                      PointerDeviceKind.mouse,
-                      PointerDeviceKind.stylus,
-                      PointerDeviceKind.trackpad,
-                    },
-                  ),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: bangumiCalendar.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return BangumiCard(
-                        bangumiItem: bangumiCalendar[index],
-                        onTap: () async {
-                          App.mainNavigatorKey?.currentContext?.to(
-                            () => BangumiInfoPage(
-                              bangumiItem: bangumiCalendar[index],
-                              heroTag: 'Timetable',
-                            ),
-                          );
-                        },
-                        heroTag: 'Timetable',
-                      ).paddingHorizontal(8).paddingVertical(2);
-                    },
-                  ).paddingHorizontal(8).paddingVertical(16),
-                ),
+                height: itemHeight + verticalPadding,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: bangumiCalendar.length,
+                  itemBuilder: (context, index) {
+                    final itemWidth = itemHeight * 0.72;
+                    return BangumiCard(
+                      bangumiItem: bangumiCalendar[index],
+                      width: itemWidth,
+                      height: itemHeight,
+                      onTap: () async {
+                        App.mainNavigatorKey?.currentContext?.to(
+                          () => BangumiInfoPage(
+                            bangumiItem: bangumiCalendar[index],
+                            heroTag: 'Timetable',
+                          ),
+                        );
+                      },
+                      heroTag: 'Timetable',
+                    ).paddingHorizontal(8).paddingVertical(2);
+                  },
+                ).paddingHorizontal(8).paddingVertical(16),
               ),
             ],
           ),
