@@ -377,16 +377,16 @@ class _StatsCalendarPageState extends State<StatsCalendarPage> {
 
                         final colors = standardColorMap.keys.toList();
                         final count = events.length;
-                        final displayCount = count.clamp(1, 7);
+                        final displayCount = count.clamp(1, 6);
 
                         return Positioned(
                           bottom: 0,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(displayCount, (i) {
-                              final color = count <= 7
+                              final color = count <= 6
                                   ? colors[i % colors.length]
-                                  : colors[(i + (count ~/ 7)) % colors.length];
+                                  : colors[(i + (count ~/ 6)) % colors.length];
 
                               return Container(
                                 margin: const EdgeInsets.only(
