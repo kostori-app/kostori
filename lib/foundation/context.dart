@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app_page_route.dart';
+import 'package:kostori/foundation/blur_fade_route.dart';
 
 extension Navigation on BuildContext {
   void pop<T>([T? result]) {
@@ -13,32 +14,22 @@ extension Navigation on BuildContext {
     return Navigator.of(this).canPop();
   }
 
-  Future<T?> to<T>(
-    Widget Function() builder, {
-    bool enableIOSGesture = true,
-    bool iosFullScreenGesture = true,
-  }) {
-    return Navigator.of(this).push<T>(
-      AppPageRoute(
-        builder: (context) => builder(),
-        enableIOSGesture: enableIOSGesture,
-        iosFullScreenPopGesture: iosFullScreenGesture,
-      ),
-    );
+  Future<T?> to<T>(Widget Function() builder) {
+    return Navigator.of(
+      this,
+    ).push<T>(AppPageRoute(builder: (context) => builder()));
   }
 
-  Future<void> toReplacement<T>(
-    Widget Function() builder, {
-    bool enableIOSGesture = true,
-    bool iosFullScreenGesture = true,
-  }) {
-    return Navigator.of(this).pushReplacement(
-      AppPageRoute(
-        builder: (context) => builder(),
-        enableIOSGesture: enableIOSGesture,
-        iosFullScreenPopGesture: iosFullScreenGesture,
-      ),
-    );
+  Future<void> toReplacement<T>(Widget Function() builder) {
+    return Navigator.of(
+      this,
+    ).pushReplacement(AppPageRoute(builder: (context) => builder()));
+  }
+
+  Future<T?> toBlurFade<T>(Widget Function() builder) {
+    return Navigator.of(
+      this,
+    ).push<T>(BlurFadeRoute(builder: (context) => builder()));
   }
 
   double get width => MediaQuery.of(this).size.width;

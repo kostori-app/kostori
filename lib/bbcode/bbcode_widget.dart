@@ -165,31 +165,46 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                           onTap: () {
                             Log.addLog(LogLevel.info, 'imageUrl', img);
                             BangumiWidget.showImagePreview(
-                              context,
-                              img,
-                              '',
-                              img,
+                              context: context,
+                              url: img,
+                              title: '',
+                              heroTag: img,
                             );
                           },
                           onLongPress: () => _showSaveDialog(img),
-                          child: Image.network(
-                            img,
-                            fit: BoxFit.contain, // 保持原比例
-                            loadingBuilder: (context, child, progress) {
-                              if (progress == null) return child;
-                              return const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: SizedBox(
-                                  width: 40,
-                                  height: 40,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                          child: Hero(
+                            tag: img,
+                            flightShuttleBuilder:
+                                (
+                                  flightContext,
+                                  animation,
+                                  direction,
+                                  fromContext,
+                                  toContext,
+                                ) {
+                                  return direction == HeroFlightDirection.pop
+                                      ? (fromContext.widget as Hero).child
+                                      : (toContext.widget as Hero).child;
+                                },
+                            child: Image.network(
+                              img,
+                              fit: BoxFit.contain,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: SizedBox(
+                                    width: 40,
+                                    height: 40,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (_, _, _) =>
-                                const Icon(Icons.broken_image),
+                                );
+                              },
+                              errorBuilder: (_, _, _) =>
+                                  const Icon(Icons.broken_image),
+                            ),
                           ),
                         ),
                       ),

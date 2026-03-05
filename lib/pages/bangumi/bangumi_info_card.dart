@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -330,10 +331,12 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                           InkWell(
                             onTap: () {
                               BangumiWidget.showImagePreview(
-                                context,
-                                widget.bangumiItem.images['large']!,
-                                widget.bangumiItem.nameCn,
-                                '${widget.heroTag}-${widget.bangumiItem.id}',
+                                context: context,
+                                url: widget.bangumiItem.images['large']!,
+                                title: widget.bangumiItem.nameCn,
+                                heroTag: (widget.heroTag == null)
+                                    ? '${widget.bangumiItem.id}'
+                                    : '${widget.heroTag}-${widget.bangumiItem.id}',
                               );
                             },
                             borderRadius: BorderRadius.circular(12),
@@ -341,8 +344,21 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                               borderRadius: BorderRadius.circular(12),
                               child: Hero(
                                 tag: (widget.heroTag == null)
-                                    ? widget.bangumiItem.id
+                                    ? '${widget.bangumiItem.id}'
                                     : '${widget.heroTag}-${widget.bangumiItem.id}',
+                                flightShuttleBuilder:
+                                    (
+                                      flightContext,
+                                      animation,
+                                      direction,
+                                      fromContext,
+                                      toContext,
+                                    ) {
+                                      return direction ==
+                                              HeroFlightDirection.pop
+                                          ? (fromContext.widget as Hero).child
+                                          : (toContext.widget as Hero).child;
+                                    },
                                 child: SizedBox(
                                   width: width,
                                   height: height,

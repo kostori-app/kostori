@@ -224,13 +224,15 @@ class _PersonPageState extends State<PersonPage>
                                                     child: GestureDetector(
                                                       onTap: () {
                                                         BangumiWidget.showImagePreview(
-                                                          context,
-                                                          characterFullItem
+                                                          context: context,
+                                                          url: characterFullItem
                                                               .image,
-                                                          characterFullItem
-                                                              .nameCN,
-                                                          characterFullItem
-                                                              .image,
+                                                          title:
+                                                              characterFullItem
+                                                                  .nameCN,
+                                                          heroTag:
+                                                              characterFullItem
+                                                                  .image,
                                                         );
                                                       },
                                                       child: Hero(
@@ -577,11 +579,12 @@ class _PersonPageState extends State<PersonPage>
                                                               .large;
                                                       if (imageUrl.isNotEmpty) {
                                                         BangumiWidget.showImagePreview(
-                                                          context,
-                                                          imageUrl,
-                                                          characterFullItem
-                                                              .nameCN,
-                                                          imageUrl,
+                                                          context: context,
+                                                          url: imageUrl,
+                                                          title:
+                                                              characterFullItem
+                                                                  .nameCN,
+                                                          heroTag: imageUrl,
                                                         );
                                                       }
                                                     },
