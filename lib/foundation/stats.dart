@@ -859,7 +859,7 @@ class StatsManager with ChangeNotifier {
       groups.putIfAbsent(s.bangumiId, () => []).add(s);
     }
 
-    final Map<int, List<int>> result = {for (var i = 1; i <= 10; i++) i: []};
+    final Map<int, Set<int>> resultSet = {for (var i = 1; i <= 10; i++) i: {}};
 
     for (final entry in groups.entries) {
       final bangumiId = entry.key;
@@ -881,11 +881,11 @@ class StatsManager with ChangeNotifier {
       }
 
       if (rating != null && rating >= 1 && rating <= 10) {
-        result[rating]!.add(bangumiId);
+        resultSet[rating]!.add(bangumiId);
       }
     }
 
-    return result;
+    return resultSet.map((k, v) => MapEntry(k, v.toList()));
   }
 
   int? _getLatestRatingFromStats(StatsDataImpl stats) {
