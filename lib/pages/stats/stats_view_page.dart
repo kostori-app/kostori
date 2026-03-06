@@ -275,11 +275,13 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
   Future<void> _loadWordCloudData() async {
     final allStats = await Future(() => StatsManager().getStatsAll());
 
+    final seenIds = <int>{};
     final likedItems = allStats
-        .where((s) => s.bangumiId != null && s.liked)
+        .where(
+          (s) => s.bangumiId != null && s.liked && seenIds.add(s.bangumiId!),
+        )
         .map((s) => BangumiManager().getBangumiItem(s.bangumiId!))
         .whereType<BangumiItem>()
-        .toSet()
         .toList();
 
     setState(() {
@@ -404,42 +406,39 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
           ],
         ),
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 30),
-            child: Center(
-              child: InteractiveViewer(
-                minScale: 0.8,
-                maxScale: 5.0,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final w = constraints.maxWidth;
-                    final h = constraints.maxHeight.isInfinite
-                        ? 400.0
-                        : constraints.maxHeight;
+          child: Center(
+            child: InteractiveViewer(
+              minScale: 0.8,
+              maxScale: 5.0,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final w = constraints.maxWidth;
+                  final h = constraints.maxHeight.isInfinite
+                      ? 400.0
+                      : constraints.maxHeight;
 
-                    final minSize = (w * 0.01).clamp(5.0, 12.0);
-                    final maxSize = (w * 0.08).clamp(20.0, 120.0);
+                  final minSize = (w * 0.01).clamp(5.0, 12.0);
+                  final maxSize = (w * 0.08).clamp(20.0, 120.0);
 
-                    return WordCloudView(
-                      key: ValueKey('$w-$h'),
-                      data: WordCloudData(data: wordCloudData),
-                      mapwidth: w,
-                      mapheight: h,
-                      mintextsize: minSize,
-                      maxtextsize: maxSize,
-                      colorlist: standardColorMap.keys.toList(),
-                      onWordTap: (word) {
-                        final entry = wordCloudData.firstWhere(
-                          (e) => e['word'] == word,
-                          orElse: () => <String, Object>{},
-                        );
-                        if (entry.isEmpty) return;
-                        final items = entry['items'] as List<dynamic>;
-                        _showTagBottomSheet(word, items);
-                      },
-                    );
-                  },
-                ),
+                  return WordCloudView(
+                    key: ValueKey('$w-$h'),
+                    data: WordCloudData(data: wordCloudData),
+                    mapwidth: w,
+                    mapheight: h,
+                    mintextsize: minSize,
+                    maxtextsize: maxSize,
+                    colorlist: standardColorMap.keys.toList(),
+                    onWordTap: (word) {
+                      final entry = wordCloudData.firstWhere(
+                        (e) => e['word'] == word,
+                        orElse: () => <String, Object>{},
+                      );
+                      if (entry.isEmpty) return;
+                      final items = entry['items'] as List<dynamic>;
+                      _showTagBottomSheet(word, items);
+                    },
+                  );
+                },
               ),
             ),
           ),
