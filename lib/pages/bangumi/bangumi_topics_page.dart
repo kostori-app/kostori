@@ -10,7 +10,6 @@ import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-//讨论页
 class BangumiTopicsPage extends StatefulWidget {
   const BangumiTopicsPage({super.key, required this.id});
 
@@ -22,16 +21,46 @@ class BangumiTopicsPage extends StatefulWidget {
 
 class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
   final ScrollController scrollController = ScrollController();
+  final Map<int, GlobalKey> _replyKeys = {};
 
   int get id => widget.id;
   TopicsInfoItem? topicsInfoItem;
   bool isLoading = true;
   bool isHide = false;
 
+  void _buildReplyKeys() {
+    if (topicsInfoItem == null) return;
+    _replyKeys.clear();
+    final replies = topicsInfoItem!.replies;
+    for (int i = 1; i < replies.length; i++) {
+      _replyKeys[replies[i].id] = GlobalKey();
+    }
+  }
+
+  void _scrollToAuthor(String authorName) {
+    if (topicsInfoItem == null) return;
+    final replies = topicsInfoItem!.replies;
+    for (int i = 1; i < replies.length; i++) {
+      if (replies[i].creator.nickname == authorName) {
+        final key = _replyKeys[replies[i].id];
+        if (key?.currentContext != null) {
+          Scrollable.ensureVisible(
+            key!.currentContext!,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            alignment: 0.1,
+          );
+        }
+        return;
+      }
+    }
+  }
+
   Future<void> queryBangumiTopicsInfoByID(int id) async {
     topicsInfoItem = await Bangumi.getTopicsInfoByID(id);
     if (topicsInfoItem != null) {
       isLoading = false;
+      _buildReplyKeys();
     }
     if (mounted) setState(() {});
   }
@@ -51,13 +80,9 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
 
   void scrollListener() {
     if (scrollController.position.pixels >= 60) {
-      setState(() {
-        isHide = true;
-      });
+      setState(() => isHide = true);
     } else {
-      setState(() {
-        isHide = false;
-      });
+      setState(() => isHide = false);
     }
   }
 
@@ -73,7 +98,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
             SliverAppbar(
               style: AppbarStyle.blur,
               title: AnimatedCrossFade(
-                firstChild: Container(), // 隐藏状态
+                firstChild: Container(),
                 secondChild: Row(
                   children: [
                     if (topicsInfoItem != null) ...[
@@ -127,7 +152,6 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
               ),
             ),
 
-            // 正文内容区域
             SliverToBoxAdapter(
               child: Center(
                 child: ConstrainedBox(
@@ -156,7 +180,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                 children: [
                                   Material(
                                     child: Padding(
-                                      padding: EdgeInsets.symmetric(
+                                      padding: const EdgeInsets.symmetric(
                                         vertical: 4,
                                       ),
                                       child: InkWell(
@@ -247,7 +271,6 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                   ),
                                 ],
                               ),
-
                               if (topicsInfoItem != null) ...[
                                 const SizedBox(height: 16),
                                 Row(
@@ -263,17 +286,11 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                topicsInfoItem!
-                                                    .creator
-                                                    .nickname,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
+                                          Text(
+                                            topicsInfoItem!.creator.nickname,
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                            ),
                                           ),
                                           Text(
                                             '@${topicsInfoItem!.creator.username}',
@@ -290,6 +307,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                               const SizedBox(height: 16),
                               BBCodeWidget(
                                 bbcode: topicsInfoItem!.replies[0].content,
+                                onQuoteTap: _scrollToAuthor,
                               ),
                               const SizedBox(height: 16),
                               Center(
@@ -340,7 +358,6 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                /// 顶部标题区域骨架
                                 Skeletonizer.zone(
                                   enabled: true,
                                   child: Column(
@@ -374,8 +391,6 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-
-                                /// 列表骨架
                                 SizedBox(
                                   height: 420,
                                   child: ListView.separated(
@@ -416,10 +431,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                                                   ),
                                                 ],
                                               ),
-
                                               const SizedBox(height: 14),
-
-                                              /// 内容骨架
                                               const Bone.multiText(lines: 2),
                                             ],
                                           ),
@@ -436,7 +448,6 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
               ),
             ),
 
-            // 评论列表（跳过第一条作为正文）
             if (isDataReady && topicsInfoItem!.replies.length > 1)
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -465,6 +476,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
   }
 
   Widget _buildReplyCard(BuildContext context, int replyIndex) {
+    final reply = topicsInfoItem!.replies[replyIndex];
     return SafeArea(
       top: false,
       bottom: false,
@@ -476,8 +488,10 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
                 ? 900
                 : MediaQuery.sizeOf(context).width - 32,
             child: TopicsInfoCommentsCard(
+              key: _replyKeys[reply.id],
               topicsInfoItem: topicsInfoItem!,
               replyIndex: replyIndex,
+              onQuoteTap: _scrollToAuthor,
             ),
           ),
         ),

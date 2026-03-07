@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/animated.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/error_widget.dart';
+import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/utils/translations.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
-//bangumiPage页的
 class BangumiSubjectTabPage extends StatefulWidget {
   const BangumiSubjectTabPage({super.key});
 
@@ -16,6 +19,13 @@ class BangumiSubjectTabPage extends StatefulWidget {
 
 class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
     with TickerProviderStateMixin {
+  final ScrollController scrollControllerLatest = ScrollController();
+  final ScrollController scrollControllerTrending = ScrollController();
+
+  ScrollController get activeScrollController => infoTabController.index == 0
+      ? scrollControllerLatest
+      : scrollControllerTrending;
+
   final InfoController infoController = InfoController();
   late TabController infoTabController;
 
@@ -26,6 +36,8 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
 
   double _previousPixels = 0;
 
+  static const double maxWidth = 950;
+
   Future<void> loadMoreTopicsLatest({int offset = 0}) async {
     if (topicsLatestIsLoading) return;
     setState(() {
@@ -33,17 +45,13 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
       topicsLatestQueryTimeout = false;
     });
     infoController.queryBangumiTopicsLatestByID(offset: offset).then((_) {
-      if (infoController.topicsLatestList.isEmpty && mounted) {
-        setState(() {
-          topicsLatestIsLoading = false;
+      if (!mounted) return;
+      setState(() {
+        topicsLatestIsLoading = false;
+        if (infoController.topicsLatestList.isEmpty) {
           topicsLatestQueryTimeout = true;
-        });
-      }
-      if (infoController.topicsLatestList.isNotEmpty && mounted) {
-        setState(() {
-          topicsLatestIsLoading = false;
-        });
-      }
+        }
+      });
     });
   }
 
@@ -54,18 +62,36 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
       topicsTrendingQueryTimeout = false;
     });
     infoController.queryBangumiTopicsTrendingByID(offset: offset).then((_) {
-      if (infoController.topicsTrendingList.isEmpty && mounted) {
-        setState(() {
-          topicsTrendingIsLoading = false;
+      if (!mounted) return;
+      setState(() {
+        topicsTrendingIsLoading = false;
+        if (infoController.topicsTrendingList.isEmpty) {
           topicsTrendingQueryTimeout = true;
-        });
-      }
-      if (infoController.topicsTrendingList.isNotEmpty && mounted) {
-        setState(() {
-          topicsTrendingIsLoading = false;
-        });
-      }
+        }
+      });
     });
+  }
+
+  Future<void> resetBangumiTrend() async {
+    if (infoTabController.index == 0) {
+      infoController.topicsLatestList.clear();
+      setState(() => topicsLatestQueryTimeout = false);
+      await loadMoreTopicsLatest();
+    } else {
+      infoController.topicsTrendingList.clear();
+      setState(() => topicsTrendingQueryTimeout = false);
+      await loadMoreTopicsTrending();
+    }
+  }
+
+  void scrollToTop() {
+    if (activeScrollController.hasClients) {
+      activeScrollController.animateTo(
+        0.0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   @override
@@ -75,7 +101,8 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
     infoController.topicsTrendingList.clear();
     infoTabController = TabController(length: 2, vsync: this);
     infoTabController.addListener(() {
-      int index = infoTabController.index;
+      setState(() {});
+      final index = infoTabController.index;
       if (index == 0 &&
           infoController.topicsLatestList.isEmpty &&
           !topicsLatestIsLoading) {
@@ -87,9 +114,7 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
         loadMoreTopicsTrending();
       }
     });
-    if (infoTabController.index == 0 &&
-        infoController.topicsLatestList.isEmpty &&
-        !topicsLatestIsLoading) {
+    if (infoController.topicsLatestList.isEmpty && !topicsLatestIsLoading) {
       loadMoreTopicsLatest();
     }
   }
@@ -99,10 +124,20 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
     infoController.topicsLatestList.clear();
     infoController.topicsTrendingList.clear();
     infoTabController.dispose();
+    scrollControllerLatest.dispose();
+    scrollControllerTrending.dispose();
     super.dispose();
   }
 
-  Widget get topicsLatestListBody {
+  Widget _buildTopicsBody({
+    required List topicsList,
+    required ScrollController scrollController,
+    required bool isLoading,
+    required bool queryTimeout,
+    required VoidCallback onReload,
+    required Future<void> Function({int offset}) loadMore,
+    required String storageKey,
+  }) {
     return Builder(
       builder: (BuildContext context) {
         return NotificationListener<ScrollEndNotification>(
@@ -110,25 +145,21 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
             final metrics = scrollEnd.metrics;
             final isScrollingDown = metrics.pixels > _previousPixels;
             _previousPixels = metrics.pixels;
-
             if (isScrollingDown &&
                 metrics.pixels >= metrics.maxScrollExtent - 200) {
-              loadMoreTopicsLatest(
-                offset: infoController.topicsLatestList.length,
-              );
+              loadMore(offset: topicsList.length);
             }
             return true;
           },
           child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('最新讨论'),
+            controller: scrollController,
+            key: PageStorageKey<String>(storageKey),
             slivers: <Widget>[
               SliverLayoutBuilder(
                 builder: (context, _) {
-                  if (infoController.topicsLatestList.isNotEmpty) {
+                  if (topicsList.isNotEmpty) {
                     return SliverList.builder(
-                      itemCount: infoController.topicsLatestList.length,
+                      itemCount: topicsList.length,
                       itemBuilder: (context, index) {
                         return Center(
                           child: Padding(
@@ -136,12 +167,11 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                               horizontal: 16.0,
                             ),
                             child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > 950
-                                  ? 950
+                              width: MediaQuery.sizeOf(context).width > maxWidth
+                                  ? maxWidth
                                   : MediaQuery.sizeOf(context).width - 32,
                               child: TopicsCard(
-                                topicsInfoItem:
-                                    infoController.topicsLatestList[index],
+                                topicsInfoItem: topicsList[index],
                               ),
                             ),
                           ),
@@ -149,15 +179,13 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                       },
                     );
                   }
-                  if (topicsLatestQueryTimeout) {
+                  if (queryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
                         errMsg: "Nobody's posted anything yet...".tl,
                         actions: [
                           GeneralErrorButton(
-                            onPressed: () {
-                              loadMoreTopicsLatest();
-                            },
+                            onPressed: onReload,
                             text: 'Reload'.tl,
                           ),
                         ],
@@ -170,121 +198,17 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
                       return Align(
                         alignment: Alignment.topCenter,
                         child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > 950
-                              ? 950
+                          width: MediaQuery.sizeOf(context).width > maxWidth
+                              ? maxWidth
                               : MediaQuery.sizeOf(context).width - 32,
-                          child: Skeletonizer.zone(
-                            child: ListTile(
-                              leading: Bone.circle(size: 36),
-                              title: Bone.text(width: 100),
-                              subtitle: Bone.text(width: 80),
-                            ),
-                          ),
+                          child: TopicsCard.bone(),
                         ),
                       );
                     },
                   );
                 },
               ),
-              if (topicsLatestIsLoading)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(child: PolygonRefreshIndicator(size: 40)),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget get topicsTrendingListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return NotificationListener<ScrollEndNotification>(
-          onNotification: (scrollEnd) {
-            final metrics = scrollEnd.metrics;
-            final isScrollingDown = metrics.pixels > _previousPixels;
-            _previousPixels = metrics.pixels;
-
-            if (isScrollingDown &&
-                metrics.pixels >= metrics.maxScrollExtent - 200) {
-              loadMoreTopicsTrending(
-                offset: infoController.topicsTrendingList.length,
-              );
-            }
-            return true;
-          },
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('热门讨论'),
-            slivers: <Widget>[
-              SliverLayoutBuilder(
-                builder: (context, _) {
-                  if (infoController.topicsTrendingList.isNotEmpty) {
-                    return SliverList.builder(
-                      itemCount: infoController.topicsTrendingList.length,
-                      itemBuilder: (context, index) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
-                            child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > 950
-                                  ? 950
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: TopicsCard(
-                                topicsInfoItem:
-                                    infoController.topicsTrendingList[index],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-                  if (topicsTrendingQueryTimeout) {
-                    return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: () {
-                              loadMoreTopicsLatest();
-                            },
-                            text: 'Reload'.tl,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return SliverList.builder(
-                    itemCount: 4,
-                    itemBuilder: (context, _) {
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > 950
-                              ? 950
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: Skeletonizer.zone(
-                            child: ListTile(
-                              leading: Bone.circle(size: 36),
-                              title: Bone.text(width: 100),
-                              subtitle: Bone.text(width: 80),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              if (topicsTrendingIsLoading)
+              if (isLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -300,64 +224,108 @@ class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
+    Widget widget = DefaultTabController(
       length: 2,
       child: Scaffold(
-        appBar: AppBar(
+        appBar: Appbar(
           title: Text('hotspot'.tl),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            onPressed: () => Navigator.of(context).pop(),
+          bottom: TabBar(
+            controller: infoTabController,
+            isScrollable: true,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            tabAlignment: TabAlignment.center,
+            tabs: [
+              Tab(text: 'TopicsLatest'.tl),
+              Tab(text: 'TopicsTrending'.tl),
+            ],
           ),
         ),
-        body: Column(
+        body: TabBarView(
+          controller: infoTabController,
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            TabBar(
-              controller: infoTabController,
-              isScrollable: true,
-              indicatorColor: Theme.of(context).colorScheme.primary,
-              tabAlignment: TabAlignment.center,
-              tabs: [
-                Tab(text: 'TopicsLatest'.tl),
-                Tab(text: 'TopicsTrending'.tl),
-              ],
+            KeepAliveWrapper(
+              child: _buildTopicsBody(
+                topicsList: infoController.topicsLatestList,
+                scrollController: scrollControllerLatest,
+                isLoading: topicsLatestIsLoading,
+                queryTimeout: topicsLatestQueryTimeout,
+                onReload: () => loadMoreTopicsLatest(),
+                loadMore: loadMoreTopicsLatest,
+                storageKey: '最新讨论',
+              ),
             ),
-            Expanded(
-              child: TabBarView(
-                controller: infoTabController,
-                children: [
-                  RefreshIndicator(
-                    onRefresh: () async {
-                      await loadMoreTopicsLatest();
-                    },
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverFillRemaining(
-                          hasScrollBody: true,
-                          child: topicsLatestListBody,
-                        ),
-                      ],
-                    ),
-                  ),
-                  RefreshIndicator(
-                    onRefresh: () async {
-                      await loadMoreTopicsTrending();
-                    },
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverFillRemaining(
-                          hasScrollBody: true,
-                          child: topicsTrendingListBody,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            KeepAliveWrapper(
+              child: _buildTopicsBody(
+                topicsList: infoController.topicsTrendingList,
+                scrollController: scrollControllerTrending,
+                isLoading: topicsTrendingIsLoading,
+                queryTimeout: topicsTrendingQueryTimeout,
+                onReload: () => loadMoreTopicsTrending(),
+                loadMore: loadMoreTopicsTrending,
+                storageKey: '热门讨论',
               ),
             ),
           ],
         ),
       ),
     );
+
+    widget = Stack(
+      children: [
+        Positioned.fill(child: widget),
+        Positioned(
+          bottom: 15,
+          right: 10,
+          child: AnimatedBuilder(
+            animation: infoTabController,
+            builder: (context, _) {
+              return FloatingMenu(
+                key: ValueKey(infoTabController.index),
+                controller: activeScrollController,
+                child: [
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.refresh),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () async => await resetBangumiTrend(),
+                    ),
+                  ],
+                  [
+                    SpeedDialChild(
+                      child: const Icon(Icons.vertical_align_top),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
+                      onTap: () => scrollToTop(),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+
+    widget = AppScrollBar(
+      key: ValueKey(infoTabController.index),
+      topPadding: 82 + context.padding.top,
+      controller: activeScrollController,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: widget,
+      ),
+    );
+
+    return widget;
   }
 }

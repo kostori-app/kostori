@@ -25,6 +25,7 @@ class BangumiReviewsPage extends StatefulWidget {
 
 class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
   final ScrollController scrollController = ScrollController();
+  final Map<int, GlobalKey> _replyKeys = {};
 
   ReviewsItem get reviewsItem => widget.reviewsItem;
   ReviewsInfoItem? reviewsInfoItem;
@@ -38,7 +39,29 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
     reviewsCommentsItem = await Bangumi.getReviewsCommentsByID(id);
     bangumiReviewsSubjects = await Bangumi.getReviewsSubjectsByID(id);
     isLoading = false;
+    // ← 加这段
+    _replyKeys.clear();
+    for (final item in reviewsCommentsItem) {
+      _replyKeys[item.id] = GlobalKey();
+    }
     if (mounted) setState(() {});
+  }
+
+  void _scrollToAuthor(String authorName) {
+    for (final item in reviewsCommentsItem) {
+      if (item.user.nickname == authorName) {
+        final key = _replyKeys[item.id];
+        if (key?.currentContext != null) {
+          Scrollable.ensureVisible(
+            key!.currentContext!,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            alignment: 0.1,
+          );
+        }
+        return;
+      }
+    }
   }
 
   @override
@@ -407,7 +430,7 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
   Widget _buildReplyCard(
     BuildContext context,
     int replyIndex,
-    ReviewsCommentsItem reviewsCommentsItem,
+    ReviewsCommentsItem item,
   ) {
     return SafeArea(
       top: false,
@@ -420,9 +443,11 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
                 ? 900
                 : MediaQuery.sizeOf(context).width - 32,
             child: ReviewsCommentsCard(
+              key: _replyKeys[item.id],
               replyIndex: replyIndex,
-              reviewsCommentsItem: reviewsCommentsItem,
+              reviewsCommentsItem: item,
               reviewsInfoItem: reviewsInfoItem!,
+              onQuoteTap: _scrollToAuthor,
             ),
           ),
         ),
