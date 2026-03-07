@@ -18,6 +18,61 @@ import 'package:path_provider/path_provider.dart';
 class Utils {
   Utils._();
 
+  static String normalizeData(String raw) {
+    final lines = raw.split('\n').map((line) => line.trimLeft()).toList();
+
+    final buffer = StringBuffer();
+    bool inCodeBlock = false;
+
+    for (int i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final isBlank = line.trim().isEmpty;
+      final isCodeFence = line.startsWith('```');
+
+      // 追踪代码块状态
+      if (isCodeFence) {
+        inCodeBlock = !inCodeBlock;
+        buffer.writeln(line);
+        continue;
+      }
+
+      // 代码块内部原样输出，不处理
+      if (inCodeBlock) {
+        buffer.writeln(line);
+        continue;
+      }
+
+      final isHeading = line.startsWith('#');
+      final isList =
+          line.startsWith('- ') ||
+          line.startsWith('* ') ||
+          RegExp(r'^\d+\.\s').hasMatch(line);
+      final isBlockquote = line.startsWith('>');
+      final isHr = RegExp(r'^[-*_]{3,}$').hasMatch(line.trim());
+
+      if (isBlank || isHeading || isList || isBlockquote || isHr) {
+        buffer.writeln(line);
+      } else {
+        // 零宽空格 + 两个全角空格，确保首行缩进在 markdown_widget 中生效
+        buffer.writeln('\u200b\u3000\u3000$line');
+      }
+    }
+
+    // 每个非空行后插入空行
+    final withSpacing = buffer
+        .toString()
+        .split('\n')
+        .fold<List<String>>([], (acc, line) {
+          acc.add(line);
+          if (line.trim().isNotEmpty && line.trim() != '\u200b') acc.add('');
+          return acc;
+        })
+        .join('\n');
+
+    // 合并多余空行
+    return withSpacing.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
+
   static String colorToHex(Color color) {
     int a = (color.a * 255).round();
     int r = (color.r * 255).round();
