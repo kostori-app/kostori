@@ -17,7 +17,7 @@ class VolumeListener {
     stream = channel.receiveBroadcastStream().listen(onEvent);
   }
 
-  void onEvent(event) {
+  void onEvent(dynamic event) {
     if (event == 1) {
       onUp!();
     } else if (event == 2) {
