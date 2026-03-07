@@ -235,34 +235,40 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                       ),
                       child: Row(
                         children: [
-                          if (playList == state.playerController.currentRoad &&
-                              i ==
-                                  state.playerController.currentEpisoded -
-                                      1) ...[
-                            StreamBuilder(
-                              stream:
-                                  state.playerController.player.stream.playing,
-                              builder: (context, snapshot) {
-                                final isPlaying = snapshot.data ?? false;
-                                return isPlaying
-                                    ? Image.asset(
-                                        'assets/img/playing.gif',
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        height: 16,
-                                      )
-                                    : Icon(
-                                        Icons.pause,
-                                        size: 16,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                      );
-                              },
-                            ),
-                            const SizedBox(width: 6),
-                          ],
+                          Observer(
+                            builder: (context) {
+                              final isCurrent =
+                                  playList ==
+                                      state.playerController.currentRoad &&
+                                  i ==
+                                      state.playerController.currentEpisoded -
+                                          1;
+
+                              if (!isCurrent) return const SizedBox.shrink();
+
+                              return Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  state.playerController.playing
+                                      ? Image.asset(
+                                          'assets/img/playing.gif',
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                          height: 16,
+                                        )
+                                      : Icon(
+                                          Icons.pause,
+                                          size: 16,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary,
+                                        ),
+                                  const SizedBox(width: 6),
+                                ],
+                              );
+                            },
+                          ),
                           Expanded(
                             child: Text(
                               value,
