@@ -11,6 +11,7 @@ import 'package:kostori/foundation/audio_service/smtc_manager_windows.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/services/services.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
@@ -44,6 +45,7 @@ Future<void> init() async {
     AnimeSourceManager().init().wait(),
   ];
   await Future.wait(futures);
+  ApiKeyManager().init();
   CacheManager().setLimitSize(appdata.settings['cacheSize']);
   _checkOldConfigs();
   if (App.isAndroid) {

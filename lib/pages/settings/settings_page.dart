@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:intl/intl.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
@@ -24,14 +25,17 @@ import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/services/services.dart';
 import 'package:kostori/foundation/translation/translation_source.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/network/download.dart';
+import 'package:kostori/pages/hub_chat_dialog.dart';
 import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
@@ -63,6 +67,8 @@ part 'setting_components.dart';
 
 part 'translation_settings.dart';
 
+part 'service_settings.dart';
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});
 
@@ -89,6 +95,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     "Local Favorites",
     "APP",
     "Network",
+    "Service",
     "About",
   ];
 
@@ -102,6 +109,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Icons.collections_bookmark_rounded,
     Icons.apps,
     Icons.public,
+    Icons.miscellaneous_services_rounded,
     Icons.info,
   ];
 
@@ -482,7 +490,8 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       6 => const LocalFavoritesSettings(),
       7 => const AppSettings(),
       8 => const NetworkSettings(),
-      9 => const AboutSettings(),
+      9 => const ServiceSettings(),
+      10 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }

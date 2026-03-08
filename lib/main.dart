@@ -15,6 +15,7 @@ import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/headless.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/pages/main_page.dart';
@@ -24,6 +25,10 @@ import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main(List<String> args) {
+  if (args.contains('--headless')) {
+    runHeadlessMode(args);
+    return;
+  }
   if (runWebViewTitleBarWidget(args)) return;
   overrideIO(() {
     runZonedGuarded(
