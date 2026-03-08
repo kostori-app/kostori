@@ -429,6 +429,7 @@ class _TranslationSourceConfigPageState
           const SizedBox(height: 8),
           TextFormField(
             controller: _apiKeyController,
+            obscureText: !visibility,
             decoration: InputDecoration(
               hintText: 'apiKey',
               border: OutlineInputBorder(
