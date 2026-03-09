@@ -20,6 +20,57 @@ class _TranslationSettingsState extends State<TranslationSettings> {
     }
   }
 
+  // 提取：选中翻译源
+  void _selectSource(String source) {
+    setState(() {
+      selectedValue = source;
+      appdata.settings['translationSource'] = source;
+      appdata.saveData();
+    });
+  }
+
+  // 提取：检查非传统源配置是否有效
+  bool _isSourceConfigValid(String source, Map<dynamic, dynamic> config) {
+    if (source == 'deepl') {
+      return config['apiKey']?.isNotEmpty == true;
+    }
+    return config['model']?.isNotEmpty == true &&
+        config['aiTranslatePrompt']?.isNotEmpty == true &&
+        config['apiKey']?.isNotEmpty == true;
+  }
+
+  // 提取：处理非传统源的点击逻辑（tap/longPress 共用）
+  Future<void> _handleNonTraditionalSource(
+    String source, {
+    bool forceConfig = false,
+  }) async {
+    if (forceConfig) {
+      await showTranslationSourceConfig(title: source, source: source);
+      return;
+    }
+
+    final configs =
+        appdata.settings['translationConfig'] as List<dynamic>? ?? [];
+    final sourceConfig = configs.firstWhere(
+      (e) => e['source'] == source,
+      orElse: () => null,
+    );
+
+    if (sourceConfig == null) {
+      await showTranslationSourceConfig(title: source, source: source);
+      return;
+    }
+
+    final isValid = _isSourceConfigValid(source, sourceConfig);
+    final isSiliconFlow = appdata.implicitData['isSiliconFlow'] ?? true;
+
+    if (isValid || (!isSiliconFlow && source == 'siliconFlow')) {
+      _selectSource(source);
+    } else {
+      await showTranslationSourceConfig(title: source, source: source);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -89,7 +140,7 @@ class _TranslationSettingsState extends State<TranslationSettings> {
                                       as String,
                             ),
                             const SizedBox(width: 8),
-                            Icon(Icons.arrow_forward_ios_rounded),
+                            Icon(Icons.arrow_right),
                           ],
                         ),
                         onLongPress: () async {
@@ -100,73 +151,29 @@ class _TranslationSettingsState extends State<TranslationSettings> {
                             'google',
                           ].contains(source);
                           if (!isTraditional) {
-                            await showTranslationSourceConfig(
-                              title: source,
-                              source: source,
+                            await _handleNonTraditionalSource(
+                              source,
+                              forceConfig: true,
                             );
                           }
                         },
                         onTap: () async {
                           final source =
                               translationSourceDisplayMap[entry.key]!;
-
                           final isTraditional = [
                             'bing',
                             'google',
                           ].contains(source);
                           if (isTraditional) {
-                            setState(() {
-                              selectedValue = source;
-                              appdata.settings['translationSource'] = source;
-                              appdata.saveData();
-                            });
+                            _selectSource(source);
                           } else {
-                            final configs =
-                                appdata.settings['translationConfig']
-                                    as List<dynamic>? ??
-                                [];
-                            final sourceConfig = configs.firstWhere(
-                              (e) => e['source'] == source,
-                              orElse: () => null,
-                            );
-                            if (sourceConfig == null) {
-                              await showTranslationSourceConfig(
-                                title: source,
-                                source: source,
-                              );
-                            } else {
-                              final isValid = source == 'deepl'
-                                  ? sourceConfig['apiKey']?.isNotEmpty == true
-                                  : sourceConfig['model']?.isNotEmpty == true &&
-                                        sourceConfig['aiTranslatePrompt']
-                                                ?.isNotEmpty ==
-                                            true &&
-                                        sourceConfig['apiKey']?.isNotEmpty ==
-                                            true;
-                              final isSiliconFlow =
-                                  appdata.implicitData['isSiliconFlow'] ?? true;
-                              if (isValid ||
-                                  (!isSiliconFlow && source == 'siliconFlow')) {
-                                setState(() {
-                                  selectedValue = source;
-                                  appdata.settings['translationSource'] =
-                                      source;
-                                  appdata.saveData();
-                                });
-                              } else {
-                                await showTranslationSourceConfig(
-                                  title: source,
-                                  source: source,
-                                );
-                              }
-                            }
+                            await _handleNonTraditionalSource(source);
                           }
                         },
                       );
                     }).toList(),
                   ),
                 ),
-                const SizedBox(height: 8),
               ],
             ),
           ),

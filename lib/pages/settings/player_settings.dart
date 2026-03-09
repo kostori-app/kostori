@@ -76,7 +76,6 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                     );
                   },
                 ),
-                const SizedBox(height: 8),
               ],
             ),
           ),

@@ -102,8 +102,6 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                         e: e,
                   },
                 ),
-
-                const SizedBox(height: 8),
               ],
             ),
           ),

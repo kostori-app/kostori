@@ -328,9 +328,9 @@ class _HubChatDialogState extends State<HubChatDialog> {
                                       ),
                                       decoration: BoxDecoration(
                                         color: isMe
-                                            ? Theme.of(context)
-                                                  .colorScheme
-                                                  .primaryContainer // ← 改这里
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.primaryContainer
                                             : Theme.of(context)
                                                   .colorScheme
                                                   .surfaceContainerHighest,
@@ -346,19 +346,69 @@ class _HubChatDialogState extends State<HubChatDialog> {
                                         ),
                                       ),
                                       child: SelectableText(
-                                        // ← 改这里
                                         text,
                                         style: TextStyle(
                                           fontSize: 13,
-                                          // 自己的消息
                                           color: isMe
-                                              ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimaryContainer // ← 改这里
+                                              ? Theme.of(
+                                                  context,
+                                                ).colorScheme.onPrimaryContainer
                                               : Theme.of(
                                                   context,
                                                 ).colorScheme.onSurface,
                                         ),
+                                        contextMenuBuilder: (context, editableTextState) {
+                                          return AdaptiveTextSelectionToolbar.buttonItems(
+                                            anchors: editableTextState
+                                                .contextMenuAnchors,
+                                            buttonItems: [
+                                              ...editableTextState
+                                                  .contextMenuButtonItems,
+                                              ContextMenuButtonItem(
+                                                label: "Reply".tl,
+                                                onPressed: () {
+                                                  ContextMenuController.removeAny();
+                                                  setState(
+                                                    () => _replyToId =
+                                                        msg['id'] as String?,
+                                                  );
+                                                  _inputFocusNode
+                                                      .requestFocus();
+                                                },
+                                              ),
+                                              ContextMenuButtonItem(
+                                                label: "React".tl,
+                                                onPressed: () {
+                                                  ContextMenuController.removeAny();
+                                                  _showReactionPicker(
+                                                    context,
+                                                    msg['id'] as String? ?? '',
+                                                  );
+                                                },
+                                              ),
+                                              if (isMe)
+                                                ContextMenuButtonItem(
+                                                  label: "Recall".tl,
+                                                  onPressed: () {
+                                                    ContextMenuController.removeAny();
+                                                    final msgId =
+                                                        msg['id'] as String?;
+                                                    if (msgId != null) {
+                                                      _client.recall(msgId);
+                                                      setState(
+                                                        () => _messages
+                                                            .removeWhere(
+                                                              (m) =>
+                                                                  m['id'] ==
+                                                                  msgId,
+                                                            ),
+                                                      );
+                                                    }
+                                                  },
+                                                ),
+                                            ],
+                                          );
+                                        },
                                       ),
                                     ),
                                     // 时间戳 + 表情反应
@@ -535,50 +585,6 @@ class _HubChatDialogState extends State<HubChatDialog> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showMessageMenu(
-    BuildContext context,
-    Map<String, dynamic> msg,
-    bool isMe,
-  ) {
-    final msgId = msg['id'] as String?;
-    if (msgId == null) return;
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.reply),
-            title: Text("Reply".tl),
-            onTap: () {
-              Navigator.pop(context);
-              setState(() => _replyToId = msgId);
-              _inputFocusNode.requestFocus();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.emoji_emotions_outlined),
-            title: Text("React".tl),
-            onTap: () {
-              Navigator.pop(context);
-              _showReactionPicker(context, msgId);
-            },
-          ),
-          if (isMe)
-            ListTile(
-              leading: const Icon(Icons.undo),
-              title: Text("Recall".tl),
-              onTap: () {
-                Navigator.pop(context);
-                _client.recall(msgId);
-                setState(() => _messages.removeWhere((m) => m['id'] == msgId));
-              },
-            ),
-        ],
       ),
     );
   }

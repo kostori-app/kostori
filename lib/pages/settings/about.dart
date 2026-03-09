@@ -201,7 +201,6 @@ class _AboutSettingsState extends State<AboutSettings> {
                     },
                   ).fixHeight(32),
                 ),
-                const SizedBox(height: 8),
               ],
             ),
           ),

@@ -107,7 +107,6 @@ class _AppSettingsState extends State<AppSettings> {
                     showPopUpWidget(context, const _WebdavSetting());
                   },
                 ),
-                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -124,7 +123,6 @@ class _AppSettingsState extends State<AppSettings> {
                   callback: () => context.to(() => const LogsPage()),
                 ),
                 _SwitchSetting(title: "Debug Info".tl, settingKey: "debugInfo"),
-                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -172,7 +170,6 @@ class _AppSettingsState extends State<AppSettings> {
                       }
                     },
                   ),
-                const SizedBox(height: 8),
               ],
             ),
           ),

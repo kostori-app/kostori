@@ -4,7 +4,6 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/pages/ranking_page.dart';
-import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';

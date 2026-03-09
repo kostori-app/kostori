@@ -1,27 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
-
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io' as io;
-
-import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart'
-    show InAppWebViewController;
-import 'package:kostori/components/components.dart';
-import 'package:kostori/components/ui_components.dart';
-import 'package:kostori/foundation/anime_source/anime_source.dart';
-import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/log.dart';
-import 'package:kostori/network/api.dart';
-import 'package:kostori/network/app_dio.dart';
-import 'package:kostori/network/cookie_jar.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
-import 'package:kostori/pages/webview.dart';
-import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
-import 'package:url_launcher/url_launcher_string.dart';
+part of 'settings_page.dart';
 
 class AnimeSourceSettings extends StatelessWidget {
   const AnimeSourceSettings({super.key});
@@ -233,98 +211,78 @@ class _BodyState extends State<_Body> {
       return Button.normal(onPressed: onPressed, child: child).fixHeight(32);
     }
 
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Material(
-          color: context.brightness == Brightness.light
-              ? Colors.white.toOpacity(0.72)
-              : const Color(0xFF1E1E1E).toOpacity(0.72),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    return _BuildSectionPadding(
+      _SettingCard(
+        children: [
+          _SettingPartTitle(
+            title: "Add anime source".tl,
+            icon: Icons.dashboard_customize,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  title: Text("Add anime source".tl),
-                  leading: const Icon(Icons.dashboard_customize),
-                ),
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: "URL",
-                    border: const UnderlineInputBorder(),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                    suffix: IconButton(
-                      onPressed: () => handleAddSource(url),
-                      icon: const Icon(Icons.check),
-                    ),
-                  ),
-                  onChanged: (value) {
-                    url = value;
-                  },
-                  onSubmitted: handleAddSource,
-                ).paddingHorizontal(16).paddingBottom(8),
-                ListTile(
-                  title: Text("Anime Source list".tl),
-                  trailing: buildButton(
-                    child: Text("View".tl),
-                    onPressed: () {
-                      showPopUpWidget(
-                        App.rootContext,
-                        _AnimeSourceList(handleAddSource),
-                      );
-                    },
-                  ),
-                ),
-                ListTile(
-                  title: Text("检测番剧源host延迟".tl),
-                  trailing: buildButton(
-                    child: Text("View".tl),
-                    onPressed: () {
-                      showPopUpWidget(App.rootContext, _PingTestPage());
-                    },
-                  ),
-                ),
-                ListTile(
-                  title: Text("Use a config file".tl),
-                  trailing: buildButton(
-                    onPressed: _selectFile,
-                    child: Text("Select".tl),
-                  ),
-                ),
-                ListTile(
-                  title: Text("Help".tl),
-                  trailing: buildButton(
-                    onPressed: help,
-                    child: Text("Open".tl),
-                  ),
-                ),
-                ListTile(
-                  title: Text("Check updates".tl),
-                  trailing: _CheckUpdatesButton(),
-                ),
-                ListTile(
-                  title: Text("Git Mirror".tl),
-                  trailing: CustomSwitch(
-                    value: appdata.settings["gitMirror"],
-                    onChanged: (value) {
-                      setState(() {
-                        appdata.settings["gitMirror"] = value;
-                      });
-                      appdata.saveData();
-                    },
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
+          TextField(
+            decoration: InputDecoration(
+              hintText: "URL",
+              border: const UnderlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+              suffix: IconButton(
+                onPressed: () => handleAddSource(url),
+                icon: const Icon(Icons.check),
+              ),
+            ),
+            onChanged: (value) {
+              url = value;
+            },
+            onSubmitted: handleAddSource,
+          ).paddingHorizontal(16).paddingBottom(8),
+          ListTile(
+            title: Text("Anime Source list".tl),
+            trailing: buildButton(
+              child: Text("View".tl),
+              onPressed: () {
+                showPopUpWidget(
+                  App.rootContext,
+                  _AnimeSourceList(handleAddSource),
+                );
+              },
             ),
           ),
-        ),
+          ListTile(
+            title: Text("检测番剧源host延迟".tl),
+            trailing: buildButton(
+              child: Text("View".tl),
+              onPressed: () {
+                showPopUpWidget(App.rootContext, _PingTestPage());
+              },
+            ),
+          ),
+          ListTile(
+            title: Text("Use a config file".tl),
+            trailing: buildButton(
+              onPressed: _selectFile,
+              child: Text("Select".tl),
+            ),
+          ),
+          ListTile(
+            title: Text("Help".tl),
+            trailing: buildButton(onPressed: help, child: Text("Open".tl)),
+          ),
+          ListTile(
+            title: Text("Check updates".tl),
+            trailing: _CheckUpdatesButton(),
+          ),
+          ListTile(
+            title: Text("Git Mirror".tl),
+            trailing: CustomSwitch(
+              value: appdata.settings["gitMirror"],
+              onChanged: (value) {
+                setState(() {
+                  appdata.settings["gitMirror"] = value;
+                });
+                appdata.saveData();
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -816,56 +774,6 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
   }
 }
 
-class _CallbackSetting extends StatefulWidget {
-  const _CallbackSetting({required this.setting, required this.sourceKey});
-
-  final MapEntry<String, Map<String, dynamic>> setting;
-
-  final String sourceKey;
-
-  @override
-  State<_CallbackSetting> createState() => _CallbackSettingState();
-}
-
-class _CallbackSettingState extends State<_CallbackSetting> {
-  String get key => widget.setting.key;
-
-  String get buttonText => widget.setting.value['buttonText'] ?? "Click";
-
-  String get title => widget.setting.value['title'] ?? key;
-
-  bool isLoading = false;
-
-  Future<void> onClick() async {
-    var func = widget.setting.value['callback'];
-    var result = func([]);
-    if (result is Future) {
-      setState(() {
-        isLoading = true;
-      });
-      try {
-        await result;
-      } finally {
-        setState(() {
-          isLoading = false;
-        });
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(title.ts(widget.sourceKey)),
-      trailing: Button.normal(
-        onPressed: onClick,
-        isLoading: isLoading,
-        child: Text(buttonText.ts(widget.sourceKey)),
-      ).fixHeight(32),
-    );
-  }
-}
-
 class _SliverAnimeSource extends StatefulWidget {
   const _SliverAnimeSource({
     super.key,
@@ -894,126 +802,104 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
     bool hasUpdate =
         newVersion != null && compareSemVer(newVersion, source.version);
 
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverPadding(padding: const EdgeInsets.only(top: 16)),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Material(
-              color: context.brightness == Brightness.light
-                  ? Colors.white.toOpacity(0.72)
-                  : const Color(0xFF1E1E1E).toOpacity(0.72),
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              shadowColor: Theme.of(context).colorScheme.shadow,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    title: Row(
-                      children: [
-                        Text(source.name, style: ts.s18),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: context.colorScheme.surfaceContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            source.version,
-                            style: const TextStyle(fontSize: 13),
-                          ),
-                        ),
-                        if (hasUpdate)
-                          Tooltip(
-                            message: newVersion,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                "New Version".tl,
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ),
-                          ).paddingLeft(4),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Tooltip(
-                          message: "Edit".tl,
-                          child: IconButton(
-                            onPressed: () => widget.edit(source),
-                            icon: const Icon(Icons.edit_note),
-                          ),
-                        ),
-                        Tooltip(
-                          message: "Update".tl,
-                          child: IconButton(
-                            onPressed: () => widget.update(source),
-                            icon: const Icon(Icons.update),
-                          ),
-                        ),
-                        Tooltip(
-                          message: "Delete".tl,
-                          child: IconButton(
-                            onPressed: () => widget.delete(source),
-                            icon: const Icon(Icons.delete),
-                          ),
-                        ),
-                      ],
-                    ),
+    return _BuildSectionPadding(
+      _SettingCard(
+        children: [
+          ListTile(
+            title: Row(
+              children: [
+                Text(source.name, style: ts.s18),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
                   ),
-
-                  // 分割线
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: context.colorScheme.outlineVariant,
-                          width: 0.6,
-                        ),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    source.version,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                if (hasUpdate)
+                  Tooltip(
+                    message: newVersion,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        "New Version".tl,
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ),
+                  ).paddingLeft(4),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Tooltip(
+                  message: "Edit".tl,
+                  child: IconButton(
+                    onPressed: () => widget.edit(source),
+                    icon: const Icon(Icons.edit_note),
                   ),
-                  Column(children: buildSourceSettings().toList()),
-                  ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
-                    ),
-                    child: Column(
-                      children: _buildAccount()
-                          .map(
-                            (tile) => Material(
-                              color: Colors.transparent,
-                              child: tile,
-                            ),
-                          )
-                          .toList(),
-                    ),
+                ),
+                Tooltip(
+                  message: "Update".tl,
+                  child: IconButton(
+                    onPressed: () => widget.update(source),
+                    icon: const Icon(Icons.update),
                   ),
-                ],
+                ),
+                Tooltip(
+                  message: "Delete".tl,
+                  child: IconButton(
+                    onPressed: () => widget.delete(source),
+                    icon: const Icon(Icons.delete),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 分割线
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: context.colorScheme.outlineVariant,
+                  width: 0.6,
+                ),
               ),
             ),
           ),
-        ),
-      ],
+          Column(children: buildSourceSettings().toList()),
+          ClipRRect(
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+            ),
+            child: Column(
+              children: _buildAccount()
+                  .map(
+                    (tile) => Material(color: Colors.transparent, child: tile),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1105,7 +991,10 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
             ),
           );
         } else if (type == "callback") {
-          yield _CallbackSetting(setting: item, sourceKey: source.key);
+          yield _AnimeSourceCallbackSetting(
+            setting: item,
+            sourceKey: source.key,
+          );
         }
       } catch (e, s) {
         Log.error("animeSourcePage", "Failed to build a setting\n$e\n$s");

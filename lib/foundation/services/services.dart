@@ -8,10 +8,12 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/services.dart';
+import 'package:kostori/components/components.dart' show ToastStyle;
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:pointycastle/api.dart';
 import 'package:pointycastle/block/aes.dart';
 import 'package:pointycastle/block/modes/cbc.dart';
@@ -34,9 +36,17 @@ part 'base/server_binder.dart';
 
 part 'headless_service.dart';
 
-part 'hub_client.dart';
+part 'hub_client/hub_client.dart';
 
-part 'hub_service.dart';
+part 'hub_client/hub_client_handler.dart';
+
+part 'hub_service/hub_models.dart';
+
+part 'hub_service/hub_service.dart';
+
+part 'hub_service/hub_service_handler.dart';
+
+part 'hub_service/hub_service_routes.dart';
 
 class HubCrypto {
   static Uint8List? _key;

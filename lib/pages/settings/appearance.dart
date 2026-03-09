@@ -89,7 +89,6 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
                 ),
                 if (!appdata.settings['dynamicColor'])
                   ThemePreviewScroller(seedColorMap: standardColorMap),
-                const SizedBox(height: 8),
               ],
             ),
           ),

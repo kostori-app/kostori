@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' as io;
 import 'dart:ui' as ui;
 import 'dart:ui';
 
@@ -10,6 +11,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/animated.dart';
@@ -30,9 +32,10 @@ import 'package:kostori/foundation/translation/translation_source.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/network/download.dart';
 import 'package:kostori/pages/hub_chat_dialog.dart';
-import 'package:kostori/pages/settings/anime_source_settings.dart';
+import 'package:kostori/pages/webview.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/ext.dart';
@@ -68,6 +71,10 @@ part 'setting_components.dart';
 part 'translation_settings.dart';
 
 part 'service_settings.dart';
+
+part 'anime_source_settings.dart';
+
+part 'hub_setting_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});

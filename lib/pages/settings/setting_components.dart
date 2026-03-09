@@ -659,6 +659,61 @@ class _CallbackSetting extends StatelessWidget {
   }
 }
 
+class _AnimeSourceCallbackSetting extends StatefulWidget {
+  const _AnimeSourceCallbackSetting({
+    required this.setting,
+    required this.sourceKey,
+  });
+
+  final MapEntry<String, Map<String, dynamic>> setting;
+
+  final String sourceKey;
+
+  @override
+  State<_AnimeSourceCallbackSetting> createState() =>
+      __AnimeSourceCallbackSettingState();
+}
+
+class __AnimeSourceCallbackSettingState
+    extends State<_AnimeSourceCallbackSetting> {
+  String get key => widget.setting.key;
+
+  String get buttonText => widget.setting.value['buttonText'] ?? "Click";
+
+  String get title => widget.setting.value['title'] ?? key;
+
+  bool isLoading = false;
+
+  Future<void> onClick() async {
+    var func = widget.setting.value['callback'];
+    var result = func([]);
+    if (result is Future) {
+      setState(() {
+        isLoading = true;
+      });
+      try {
+        await result;
+      } finally {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(title.ts(widget.sourceKey)),
+      trailing: Button.normal(
+        onPressed: onClick,
+        isLoading: isLoading,
+        child: Text(buttonText.ts(widget.sourceKey)),
+      ).fixHeight(32),
+    );
+  }
+}
+
 class _SettingPartTitle extends StatelessWidget {
   const _SettingPartTitle({required this.title, required this.icon});
 
@@ -709,7 +764,140 @@ class _SettingCard extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: children,
+        children: [...children, const SizedBox(height: 8)],
+      ),
+    );
+  }
+}
+
+class _BuildSectionPadding extends StatelessWidget {
+  const _BuildSectionPadding(this.child, {super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      sliver: SliverToBoxAdapter(child: child),
+    );
+  }
+}
+
+class _BindModeSelector extends StatelessWidget {
+  final BindMode value;
+  final bool enabled;
+  final ValueChanged<BindMode> onChanged;
+
+  const _BindModeSelector({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.toOpacity(0.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: BindMode.values.map((mode) {
+          final label = switch (mode) {
+            BindMode.ipv4 => 'IPv4',
+            BindMode.ipv6 => 'IPv6',
+            BindMode.both => 'Both',
+          };
+          final selected = value == mode;
+          return GestureDetector(
+            onTap: enabled ? () => onChanged(mode) : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: selected ? colorScheme.surface : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.toOpacity(0.08),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurface.toOpacity(enabled ? 0.45 : 0.25),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _SettingRow extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final Widget? content; // ← 新增，占满整行的内容区
+
+  const _SettingRow({
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.content,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 14)),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.toOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+          if (content != null) ...[const SizedBox(height: 8), content!],
+        ],
       ),
     );
   }

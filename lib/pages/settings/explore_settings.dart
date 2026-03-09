@@ -73,7 +73,6 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                       '4': "Explore".tl,
                     },
                   ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),

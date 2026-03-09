@@ -15,6 +15,58 @@ abstract class BaseHttpService implements BaseService {
 
   final _startTime = DateTime.now();
 
+  static const _portKey = 'service_port';
+  static const _bindModeKey = 'service_bind_mode';
+
+  static const _hubPortKey = 'hub_port';
+  static const _hubBindModeKey = 'hub_bind_mode';
+
+  int get savedPort {
+    return appdata.implicitData[_portKey] as int? ?? 9000;
+  }
+
+  int get savedHubPort {
+    return appdata.implicitData[_hubPortKey] as int? ?? 9100;
+  }
+
+  BindMode get savedBindMode {
+    final val = appdata.implicitData[_bindModeKey] as String?;
+    return switch (val) {
+      'ipv6' => BindMode.ipv6,
+      'both' => BindMode.both,
+      _ => BindMode.ipv4,
+    };
+  }
+
+  BindMode get savedHubBindMode {
+    final val = appdata.implicitData[_hubBindModeKey] as String?;
+    return switch (val) {
+      'ipv6' => BindMode.ipv6,
+      'both' => BindMode.both,
+      _ => BindMode.ipv4,
+    };
+  }
+
+  void savePort(int port) {
+    appdata.implicitData[_portKey] = port;
+    appdata.writeImplicitData();
+  }
+
+  void saveHubPort(int port) {
+    appdata.implicitData[_hubPortKey] = port;
+    appdata.writeImplicitData();
+  }
+
+  void saveServiceBindMode(BindMode mode) {
+    appdata.implicitData[_bindModeKey] = mode.name;
+    appdata.writeImplicitData();
+  }
+
+  void saveHubBindMode(BindMode mode) {
+    appdata.implicitData[_hubBindModeKey] = mode.name;
+    appdata.writeImplicitData();
+  }
+
   // ── 鉴权中间件快捷方式 ────────────────────────
   MiddlewareHandler get authMiddleware =>
       Middleware.localBypass(Middleware.apiKey());

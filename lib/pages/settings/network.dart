@@ -41,7 +41,6 @@ class _NetworkSettingsState extends State<NetworkSettings> {
                   min: 1,
                   max: 16,
                 ),
-                const SizedBox(height: 8),
               ],
             ),
           ),
