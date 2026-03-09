@@ -186,6 +186,14 @@ class AnimeSource {
 
   static bool get isEmpty => AnimeSourceManager().isEmpty;
 
+  static void addSource(AnimeSource source) {
+    AnimeSourceManager()._sources.add(source);
+  }
+
+  static void removeSource(String key) {
+    AnimeSourceManager()._sources.removeWhere((e) => e.key == key);
+  }
+
   /// Name of this source.
   final String name;
 
