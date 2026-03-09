@@ -9,7 +9,6 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
-import 'package:kostori/pages/settings/anime_source_settings.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';

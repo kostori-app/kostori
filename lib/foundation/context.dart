@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app_page_route.dart';
 import 'package:kostori/foundation/blur_fade_route.dart';
+import 'package:kostori/foundation/log.dart';
 
 extension Navigation on BuildContext {
   void pop<T>([T? result]) {
@@ -46,8 +47,23 @@ extension Navigation on BuildContext {
 
   bool get isDarkMode => brightness == Brightness.dark;
 
-  void showMessage({required String message}) {
-    ToastManager.show(message: message, context: this);
+  void showMessage({
+    required String message,
+    Widget? icon,
+    Widget? trailing,
+    int? seconds,
+    LogLevel level = LogLevel.info,
+    ToastStyle style = ToastStyle.bottom,
+  }) {
+    ToastManager.show(
+      message: message,
+      context: this,
+      icon: icon,
+      trailing: trailing,
+      seconds: seconds,
+      level: level,
+      style: style,
+    );
   }
 
   Color useBackgroundColor(MaterialColor color) {
