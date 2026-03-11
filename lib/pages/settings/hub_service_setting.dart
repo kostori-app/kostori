@@ -94,34 +94,6 @@ class _DraggableSheetState extends State<_DraggableSheet> {
   }
 }
 
-Future<T?> _showFormDialog<T>({
-  required String title,
-  required List<Widget> fields,
-  required String confirmLabel,
-  required Future<T?> Function() onConfirm,
-  String? cancelLabel,
-}) {
-  return ContentDialog.show<T>(
-    context: App.rootContext,
-    title: title,
-    isDismissible: true,
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: fields.expand((f) => [f, const SizedBox(height: 8)]).toList()
-        ..removeLast(),
-    ),
-    actions: [
-      Button.text(
-        onPressed: () async {
-          final result = await onConfirm();
-          Navigator.of(App.rootContext).pop(result);
-        },
-        child: Text(confirmLabel),
-      ),
-    ],
-  );
-}
-
 /// 成员头像 + 名称 Tile
 class _ClientTile extends StatelessWidget {
   const _ClientTile({
@@ -306,46 +278,15 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   }
 
   Future<void> _showCreateRoomDialog(BuildContext context) async {
-    final nameCtrl = TextEditingController();
-    final passwordCtrl = TextEditingController();
-    final announcementCtrl = TextEditingController();
-
-    await _showFormDialog(
-      title: "Create Room".tl,
-      confirmLabel: "Create".tl,
-      fields: [
-        TextField(
-          controller: nameCtrl,
-          decoration: InputDecoration(labelText: "Room Name".tl),
-        ),
-        TextField(
-          controller: passwordCtrl,
-          decoration: InputDecoration(
-            labelText: "Password".tl,
-            hintText: "Leave empty for public".tl,
-          ),
-        ),
-        TextField(
-          controller: announcementCtrl,
-          decoration: InputDecoration(labelText: "Announcement".tl),
-        ),
-      ],
-      onConfirm: () async {
-        final name = nameCtrl.text.trim();
-        if (name.isEmpty) return null;
-        await _hub.createRoom(
-          name,
-          password: passwordCtrl.text.trim().isEmpty
-              ? null
-              : passwordCtrl.text.trim(),
-          announcement: announcementCtrl.text.trim().isEmpty
-              ? null
-              : announcementCtrl.text.trim(),
-        );
-        setState(() {});
-        return null;
-      },
+    final result = await showCreateRoomDialog();
+    if (result == null) return;
+    await _hub.createRoom(
+      result.name,
+      password: result.password,
+      announcement: result.announcement,
+      maxParticipants: result.maxParticipants,
     );
+    setState(() {});
   }
 
   void _showRoomAdminSheet(
@@ -831,12 +772,16 @@ class _MuteSheetState extends State<_MuteSheet> {
 class _NumberInput extends StatelessWidget {
   final TextEditingController controller;
   final bool enabled;
+  final int min;
+  final int max;
   final ValueChanged<int> onChanged;
 
   const _NumberInput({
     required this.controller,
     required this.enabled,
     required this.onChanged,
+    this.min = 1024,
+    this.max = 65535,
   });
 
   @override
@@ -890,9 +835,9 @@ class _NumberInput extends StatelessWidget {
           ),
         ),
         onChanged: (v) {
-          final port = int.tryParse(v);
-          if (port != null && port >= 1024 && port <= 65535) {
-            onChanged(port);
+          final val = int.tryParse(v);
+          if (val != null && val >= min && val <= max) {
+            onChanged(val);
           }
         },
       ),

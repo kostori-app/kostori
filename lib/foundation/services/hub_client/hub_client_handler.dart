@@ -208,14 +208,6 @@ extension HubClientHandler on HubClient {
         }
         _setState((s) => s.copyWith(roomList: [...s.roomList]));
 
-      case HubSystemAnnouncementUpdated():
-        if (event.announcement.isNotEmpty) {
-          App.rootContext.showMessage(
-            message: '📢 ${event.announcement}',
-            style: ToastStyle.topRight,
-          );
-        }
-
       case HubSystemRoomCreated():
         _upsertRoom(event.room);
         App.rootContext.showMessage(
@@ -332,7 +324,7 @@ extension HubClientHandler on HubClient {
         );
 
       case HubSystemUnknown():
-        Log.warning('HubClient', '未知系统事件：${event.event}');
+        Log.warning('HubClient', '未知系统事件：${event.event}\n $data');
     }
     onMessage?.call(data);
   }

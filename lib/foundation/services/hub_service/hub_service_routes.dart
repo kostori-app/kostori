@@ -126,10 +126,6 @@ extension HubServiceRoutes on HubService {
               exclude: clientId,
             );
 
-            _broadcastSystem('client_joined', {
-              'client': client.toJson(),
-            }, exclude: clientId);
-
             continue;
           }
 
@@ -161,7 +157,7 @@ extension HubServiceRoutes on HubService {
             segments: [
               TextSegment(
                 jsonEncode({
-                  'event': 'client_left',
+                  'event': 'client_left_room',
                   'clientId': clientId,
                   'clientName': clientName,
                 }),
@@ -169,6 +165,8 @@ extension HubServiceRoutes on HubService {
             ],
           ),
         );
+
+        // 全服广播下线（在线列表用）
         _broadcastSystem('client_left', {
           'clientId': clientId,
           'clientName': clientName,

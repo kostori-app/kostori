@@ -5,6 +5,7 @@ part of 'settings_page.dart';
 class _UploadConfigSetting extends StatefulWidget {
   final HubService hub;
   final bool serverRunning;
+
   const _UploadConfigSetting({required this.hub, required this.serverRunning});
 
   @override
@@ -263,6 +264,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
 
 class _ClientUploadConfigSetting extends StatefulWidget {
   final HubClient client;
+
   const _ClientUploadConfigSetting({required this.client});
 
   @override
@@ -413,7 +415,7 @@ class _ClientUploadConfigSettingState
         _SettingRow(
           title: 'Enable Client OSS'.tl,
           subtitle: 'Upload images directly from client to OSS'.tl,
-          trailing: Switch(value: _enabled, onChanged: _setEnabled),
+          trailing: CustomSwitch(value: _enabled, onChanged: _setEnabled),
         ),
 
         // ── 开关打开后展开配置 ─────────────────────────────────────────────

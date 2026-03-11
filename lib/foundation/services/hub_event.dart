@@ -12,11 +12,33 @@ sealed class HubEvent {
       'welcome' => HubEventWelcome.fromJson(json),
       'room_joined' => HubEventRoomJoined.fromJson(json),
       'message' => HubEventMessage.fromJson(json, isUnicast: false),
+      'chat' => HubEventMessage.fromJson(json, isUnicast: true),
       'unicast' => HubEventMessage.fromJson(json, isUnicast: true),
-      'system' => HubEventSystem.fromEvent(
-        json['payload']?['event'] as String?,
-        (json['payload'] as Map<String, dynamic>?) ?? {},
-      ),
+      'system' => () {
+        if (json['payload'] != null) {
+          final payload = json['payload'] as Map<String, dynamic>;
+          return HubEventSystem.fromEvent(payload['event'] as String?, payload);
+        }
+        final segments = json['segments'] as List?;
+        if (segments != null) {
+          for (final seg in segments) {
+            final segMap = seg as Map<String, dynamic>;
+            if (segMap['type'] == 'text') {
+              final text = (segMap['data'] as Map?)?['text'] as String?;
+              if (text != null) {
+                try {
+                  final payload = jsonDecode(text) as Map<String, dynamic>;
+                  return HubEventSystem.fromEvent(
+                    payload['event'] as String?,
+                    payload,
+                  );
+                } catch (_) {}
+              }
+            }
+          }
+        }
+        return const HubSystemUnknown('');
+      }(),
       'kicked' => HubEventKicked.fromJson(json),
       'pong' => const HubEventPong(),
       'error' => HubEventError.fromJson(json),
@@ -159,7 +181,6 @@ sealed class HubEventSystem extends HubEvent {
     ),
     'kicked_from_room' => const HubSystemKickedFromRoom(),
     'message_recalled' => HubSystemMessageRecalled.fromJson(payload),
-    'announcement_updated' => HubSystemAnnouncementUpdated.fromJson(payload),
     'room_created' => HubSystemRoomCreated.fromJson(payload),
     'room_deleted' => HubSystemRoomDeleted.fromJson(payload),
     'room_updated' => HubSystemRoomUpdated.fromJson(payload),
@@ -319,15 +340,6 @@ class HubSystemMessageRecalled extends HubEventSystem {
 
   factory HubSystemMessageRecalled.fromJson(Map<String, dynamic> j) =>
       HubSystemMessageRecalled(j['messageId'] as String);
-}
-
-class HubSystemAnnouncementUpdated extends HubEventSystem {
-  final String announcement;
-
-  const HubSystemAnnouncementUpdated(this.announcement);
-
-  factory HubSystemAnnouncementUpdated.fromJson(Map<String, dynamic> j) =>
-      HubSystemAnnouncementUpdated(j['announcement'] as String? ?? '');
 }
 
 class HubSystemRoomCreated extends HubEventSystem {
@@ -493,7 +505,9 @@ sealed class HubSystemPayload {
 
 class ClientJoined extends HubSystemPayload {
   final String displayName;
+
   const ClientJoined({required this.displayName});
+
   factory ClientJoined.fromJson(Map<String, dynamic> j) => ClientJoined(
     displayName: (j['client'] as Map?)?['displayName'] as String? ?? '',
   );
@@ -501,14 +515,18 @@ class ClientJoined extends HubSystemPayload {
 
 class ClientLeft extends HubSystemPayload {
   final String clientName;
+
   const ClientLeft({required this.clientName});
+
   factory ClientLeft.fromJson(Map<String, dynamic> j) =>
       ClientLeft(clientName: j['clientName'] as String? ?? '');
 }
 
 class ClientJoinedRoom extends HubSystemPayload {
   final String displayName;
+
   const ClientJoinedRoom({required this.displayName});
+
   factory ClientJoinedRoom.fromJson(Map<String, dynamic> j) => ClientJoinedRoom(
     displayName: (j['client'] as Map?)?['displayName'] as String? ?? '',
   );
@@ -516,14 +534,18 @@ class ClientJoinedRoom extends HubSystemPayload {
 
 class ClientLeftRoom extends HubSystemPayload {
   final String clientName;
+
   const ClientLeftRoom({required this.clientName});
+
   factory ClientLeftRoom.fromJson(Map<String, dynamic> j) =>
       ClientLeftRoom(clientName: j['clientName'] as String? ?? '');
 }
 
 class RoomWelcome extends HubSystemPayload {
   final String message;
+
   const RoomWelcome({required this.message});
+
   factory RoomWelcome.fromJson(Map<String, dynamic> j) =>
       RoomWelcome(message: j['message'] as String? ?? '');
 }

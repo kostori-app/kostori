@@ -732,17 +732,6 @@ extension HubServiceActions on HubService {
         'setByName': setByName,
       }),
     );
-
-    // ── 广播 announcement_updated（通知有人修改了公告）───────────
-    _broadcastToRoom(
-      roomId,
-      _makeSystemMessage({
-        'event': 'announcement_updated',
-        'by': fromId,
-        'byName': setByName,
-        'count': room.announcements.length,
-      }),
-    );
   }
 
   void _handleSetRoomPassword(

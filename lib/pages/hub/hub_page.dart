@@ -5,6 +5,7 @@ import 'package:kostori/foundation/services/services.dart';
 import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
+import 'package:kostori/pages/hub/hub_create_room_dialog.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 
@@ -429,52 +430,17 @@ class _RoomsTab extends ConsumerWidget {
     );
   }
 
-  void _showCreateRoomDialog(BuildContext context, HubClient client) {
-    final nameCtrl = TextEditingController();
-    final pwCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Create Room'.tl),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: InputDecoration(labelText: 'Room Name'.tl),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: pwCtrl,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password'.tl,
-                hintText: 'Leave empty for public'.tl,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'.tl),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = nameCtrl.text.trim();
-              if (name.isEmpty) return;
-              client.createRoom(
-                name,
-                password: pwCtrl.text.trim().isEmpty
-                    ? null
-                    : pwCtrl.text.trim(),
-              );
-              Navigator.pop(context);
-            },
-            child: Text('Create'.tl),
-          ),
-        ],
-      ),
+  Future<void> _showCreateRoomDialog(
+    BuildContext context,
+    HubClient client,
+  ) async {
+    final result = await showCreateRoomDialog();
+    if (result == null) return;
+    client.createRoom(
+      result.name,
+      password: result.password,
+      announcement: result.announcement,
+      maxParticipants: result.maxParticipants,
     );
   }
 

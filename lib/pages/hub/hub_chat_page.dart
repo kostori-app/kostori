@@ -234,15 +234,24 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         break;
 
       case HubSystemRoomAnnouncement():
+        // 更新公告栏
         final roomId = ref.read(hubProvider).currentRoomId;
-        if (roomId == null) break;
-        final current = ref.read(hubProvider);
-        ref.read(hubProvider.notifier).state = current.copyWith(
-          roomList: current.roomList.map((r) {
-            if (r.roomId != roomId) return r;
-            return r.copyWith(announcements: event.announcements);
-          }).toList(),
-        );
+        if (roomId != null) {
+          final current = ref.read(hubProvider);
+          ref.read(hubProvider.notifier).state = current.copyWith(
+            roomList: current.roomList.map((r) {
+              if (r.roomId != roomId) return r;
+              return r.copyWith(announcements: event.announcements);
+            }).toList(),
+          );
+        }
+        // toast 提示
+        if (event.setByName.isNotEmpty) {
+          App.rootContext.showMessage(
+            message: '📢 ${event.setByName} ${"updated the announcement".tl}',
+            style: ToastStyle.topRight,
+          );
+        }
 
       case HubSystemRoomWelcome():
         App.rootContext.showMessage(

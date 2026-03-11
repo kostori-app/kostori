@@ -159,10 +159,24 @@ class HubService extends BaseHttpService {
     }
     _rooms[roomId]?.addMessage(msg);
     onMessageReceived?.call();
-    target.send(msg.toJson());
+
+    Map<String, dynamic> buildJson() {
+      final json = {'type': 'unicast', ...msg.toJson()};
+      if (HubCrypto.isInitialized && json['segments'] != null) {
+        final segmentsStr = jsonEncode(json['segments']);
+        json['segments'] = HubCrypto.encrypt(segmentsStr);
+        json['encrypted'] = true;
+      }
+      return json;
+    }
+
+    final json = buildJson();
+    target.send(json);
+    _clients[msg.sender.userId]?.send(json);
+
     Log.info(
       'HubService',
-      '📩 单播  from:${msg.sender.userId}  to:$targetUserId', // from → sender.userId
+      '📩 单播  from:${msg.sender.userId}  to:$targetUserId',
     );
   }
 
@@ -176,7 +190,7 @@ class HubService extends BaseHttpService {
       'payload': {'event': event, ...data},
     };
     for (final client in _clients.values) {
-      if (client.userId != exclude) client.send(payload); // id → userId
+      if (client.userId != exclude) client.send(payload);
     }
   }
 
@@ -327,12 +341,14 @@ class HubService extends BaseHttpService {
     String? password,
     String? announcement,
     String? creatorId,
+    int? maxParticipants,
   }) async {
     final room = HubRoom(
       roomName: name,
       ownerUserId: creatorId ?? 'server',
       password: password,
       announcements: announcement != null ? [announcement] : const [],
+      maxParticipants: maxParticipants,
     );
     _rooms[room.roomId] = room;
     onRoomsChanged?.call();

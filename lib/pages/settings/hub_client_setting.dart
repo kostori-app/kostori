@@ -66,31 +66,31 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     final bioCtrl = TextEditingController(text: _hubClient.savedBio);
     final avatarCtrl = TextEditingController(text: _hubClient.savedAvatar);
 
-    await _showFormDialog(
-      title: "Edit Profile".tl,
-      confirmLabel: "Save".tl,
+    await showHubFormDialog(
+      title: 'Edit Profile'.tl,
+      confirmLabel: 'Save'.tl,
       fields: [
-        TextField(
+        InputField(
           controller: nameCtrl,
-          decoration: InputDecoration(labelText: "Name".tl),
+          hint: 'Enter display name'.tl,
+          icon: Icons.person_outline,
         ),
-        TextField(
+        InputField(
           controller: avatarCtrl,
-          decoration: InputDecoration(
-            labelText: "Avatar URL".tl,
-            hintText: 'https://...',
-          ),
+          hint: 'https://...',
+          icon: Icons.image_outlined,
         ),
-        TextField(
+        InputField(
           controller: bioCtrl,
-          decoration: InputDecoration(labelText: "Bio".tl),
-          maxLines: 2,
+          hint: 'Enter bio'.tl,
+          icon: Icons.info_outline,
         ),
       ],
       onConfirm: () async {
         final name = nameCtrl.text.trim();
         final bio = bioCtrl.text.trim();
         final avatar = avatarCtrl.text.trim();
+
         if (name.isNotEmpty) _hubClient.saveName(name);
         if (bio.isNotEmpty) _hubClient.saveBio(bio);
         if (avatar.isNotEmpty) {
@@ -102,10 +102,11 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                       .tl,
               level: LogLevel.warning,
             );
-            return;
+            return null;
           }
           _hubClient.saveAvatar(avatar);
         }
+
         if (_hubClient.isConnected) {
           _hubClient.updateProfile(
             displayName: name.isNotEmpty ? name : null,
@@ -116,6 +117,10 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
         return null;
       },
     );
+
+    nameCtrl.dispose();
+    bioCtrl.dispose();
+    avatarCtrl.dispose();
   }
 
   // ── 房间列表 ──────────────────────────────────────────────────────────────
@@ -243,35 +248,13 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
   }
 
   Future<void> _showClientCreateRoomDialog(BuildContext context) async {
-    final nameCtrl = TextEditingController();
-    final passwordCtrl = TextEditingController();
-    await _showFormDialog(
-      title: "Create Room".tl,
-      confirmLabel: "Create".tl,
-      fields: [
-        TextField(
-          controller: nameCtrl,
-          decoration: InputDecoration(labelText: "Room Name".tl),
-        ),
-        TextField(
-          controller: passwordCtrl,
-          decoration: InputDecoration(
-            labelText: "Password".tl,
-            hintText: "Leave empty for public".tl,
-          ),
-        ),
-      ],
-      onConfirm: () async {
-        final name = nameCtrl.text.trim();
-        if (name.isEmpty) return null;
-        _hubClient.createRoom(
-          name,
-          password: passwordCtrl.text.trim().isEmpty
-              ? null
-              : passwordCtrl.text.trim(),
-        );
-        return null;
-      },
+    final result = await showCreateRoomDialog();
+    if (result == null) return;
+    _hubClient.createRoom(
+      result.name,
+      password: result.password,
+      announcement: result.announcement,
+      maxParticipants: result.maxParticipants,
     );
   }
 
@@ -898,9 +881,8 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                         (client) => _OnlineClientTile(
                           client: client,
                           myId: hubState.myId,
-                          isBlocked: _hubClient.isBlocked(
-                            client.userId,
-                          ), // ← _hubClient 不是 _hub
+                          isBlocked: _hubClient.isBlocked(client.userId),
+                          // ← _hubClient 不是 _hub
                           canManage:
                               hubState.isGlobalAdmin ||
                               _hubClient.isRoomAdminOf(hubState.currentRoomId),

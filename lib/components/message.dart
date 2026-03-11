@@ -382,6 +382,7 @@ class ContentDialog extends StatelessWidget {
                 ),
                 const Spacer(),
                 ...actions,
+                const SizedBox(width: 24),
               ],
             ).paddingRight(12),
           if (displayButton) const SizedBox(height: 24),

@@ -14,7 +14,14 @@ ImageProvider? _findImageProvider(Anime anime) {
   return image;
 }
 
-class AnimeTile extends StatelessWidget {
+// ── Providers ────────────────────────────────────────────────────────────────
+
+final favoritesVersion = StateProvider<int>((ref) => 0);
+final historyVersion = StateProvider<int>((ref) => 0);
+
+// ── AnimeTile ─────────────────────────────────────────────────────────────────
+
+class AnimeTile extends ConsumerWidget {
   const AnimeTile({
     super.key,
     required this.anime,
@@ -30,26 +37,19 @@ class AnimeTile extends StatelessWidget {
   });
 
   final Anime anime;
-
   final bool enableLongPressed;
-
   final bool enableFavorite;
-
   final bool enableHistory;
-
   final bool isRecommend;
-
   final String? badge;
-
   final List<MenuEntry>? menuOptions;
-
   final VoidCallback? onTap;
-
   final VoidCallback? onLongPressed;
-
   final int? heroID;
 
-  void _onTap() {
+  AnimeType get _animeType => AnimeType(anime.sourceKey.hashCode);
+
+  void _onTap(WidgetRef ref) {
     if (onTap != null) {
       onTap!();
       return;
@@ -80,7 +80,7 @@ class AnimeTile extends StatelessWidget {
     }
 
     final stats = StatsManager();
-    if (!stats.isExist(anime.id, AnimeType(anime.sourceKey.hashCode))) {
+    if (!stats.isExist(anime.id, _animeType)) {
       try {
         stats.addStats(
           stats.createStatsData(
@@ -95,28 +95,23 @@ class AnimeTile extends StatelessWidget {
       }
     }
 
-    LocalFavoritesManager().updateRecentlyWatched(
-      anime.id,
-      AnimeType(anime.sourceKey.hashCode),
-    );
+    LocalFavoritesManager().updateRecentlyWatched(anime.id, _animeType);
   }
 
   // ignore: strict_top_level_inference
-  void _onLongPressed(context) {
+  void _onLongPressed(BuildContext context, WidgetRef ref) {
     if (onLongPressed != null) {
       onLongPressed!();
       return;
     }
-    onLongPress(context);
+    _onLongPress(context, ref);
   }
 
-  void onLongPress(BuildContext context) {
+  void _onLongPress(BuildContext context, WidgetRef ref) {
     if (!enableHistory) {
-      if (!LocalFavoritesManager().isExist(
-        anime.id,
-        AnimeType(anime.sourceKey.hashCode),
-      )) {
+      if (!LocalFavoritesManager().isExist(anime.id, _animeType)) {
         defaultFavorite(anime);
+        ref.read(favoritesVersion.notifier).state++;
         App.rootContext.showMessage(message: '收藏成功');
       } else {
         var renderBox = context.findRenderObject() as RenderBox;
@@ -124,7 +119,7 @@ class AnimeTile extends StatelessWidget {
         var location = renderBox.localToGlobal(
           Offset((size.width - 242) / 2, size.height / 2),
         );
-        showMenu(location, context);
+        _showMenu(location, context, ref);
       }
     } else {
       var renderBox = context.findRenderObject() as RenderBox;
@@ -132,15 +127,19 @@ class AnimeTile extends StatelessWidget {
       var location = renderBox.localToGlobal(
         Offset((size.width - 242) / 2, size.height / 2),
       );
-      showMenu(location, context);
+      _showMenu(location, context, ref);
     }
   }
 
-  void onSecondaryTap(TapDownDetails details, BuildContext context) {
-    showMenu(details.globalPosition, context);
+  void _onSecondaryTap(
+    TapDownDetails details,
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    _showMenu(details.globalPosition, context, ref);
   }
 
-  void showMenu(Offset location, BuildContext context) {
+  void _showMenu(Offset location, BuildContext context, WidgetRef ref) {
     showMenuX(App.rootContext, location, [
       MenuEntry(
         icon: Icons.copy,
@@ -155,41 +154,43 @@ class AnimeTile extends StatelessWidget {
         text: 'Add to favorites'.tl,
         onClick: () {
           addFavorite(anime);
+          ref.read(favoritesVersion.notifier).state++;
         },
       ),
-      // MenuEntry(
-      //   icon: Icons.block,
-      //   text: 'Block'.tl,
-      //   onClick: () => block(context),
-      // ),
       ...?menuOptions,
     ]);
   }
 
   @override
-  Widget build(BuildContext context) {
-    var type = appdata.settings['animeDisplayMode'];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final type = appdata.settings['animeDisplayMode'];
 
-    Widget child = type == 'detailed'
-        ? _buildDetailedMode(context)
-        : _buildBriefMode(context);
-
-    var isFavorite = appdata.settings['showFavoriteStatusOnTile']
-        ? LocalFavoritesManager().isExist(
-            anime.id,
-            AnimeType(anime.sourceKey.hashCode),
+    final isFavorite = appdata.settings['showFavoriteStatusOnTile']
+        ? ref.watch(
+            favoritesVersion.select(
+              (_) => LocalFavoritesManager().isExist(anime.id, _animeType),
+            ),
           )
         : false;
-    var history = appdata.settings['showHistoryStatusOnTile']
-        ? HistoryManager().find(anime.id, AnimeType(anime.sourceKey.hashCode))
+
+    final history = appdata.settings['showHistoryStatusOnTile']
+        ? ref.watch(
+            historyVersion.select(
+              (_) => HistoryManager().find(anime.id, _animeType),
+            ),
+          )
         : null;
-    // if (history?.lastWatchTime == 0) {
-    //   history!.lastWatchTime = 1;
-    // }
+
+    Widget child = type == 'detailed'
+        ? _buildDetailedMode(context, ref)
+        : _buildBriefMode(context, ref);
 
     if (!isFavorite && history == null) {
       return child;
     }
+
+    ref.watch(favoritesVersion);
+    ref.watch(historyVersion);
 
     return Stack(
       children: [
@@ -226,7 +227,7 @@ class AnimeTile extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Text(
                         '${history.lastWatchEpisode} / ${history.allEpisode}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.w500,
                           color: Colors.white,
                         ),
@@ -259,7 +260,7 @@ class AnimeTile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
                           '${history.lastWatchEpisode} / ${history.allEpisode}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontWeight: FontWeight.w500,
                             color: Colors.white,
                           ),
@@ -276,9 +277,7 @@ class AnimeTile extends StatelessWidget {
 
   Widget buildImage(BuildContext context) {
     var image = _findImageProvider(anime);
-    if (image == null) {
-      return const SizedBox();
-    }
+    if (image == null) return const SizedBox();
     return AnimatedImage(
       image: image,
       fit: BoxFit.cover,
@@ -287,7 +286,7 @@ class AnimeTile extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailedMode(BuildContext context) {
+  Widget _buildDetailedMode(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constrains) {
         final height = constrains.maxHeight - 16;
@@ -316,9 +315,11 @@ class AnimeTile extends StatelessWidget {
 
         return InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: _onTap,
-          onLongPress: enableLongPressed ? () => _onLongPressed(context) : null,
-          onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
+          onTap: () => _onTap(ref),
+          onLongPress: enableLongPressed
+              ? () => _onLongPressed(context, ref)
+              : null,
+          onSecondaryTapDown: (detail) => _onSecondaryTap(detail, context, ref),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 24, 8),
             child: Row(
@@ -349,7 +350,7 @@ class AnimeTile extends StatelessWidget {
     );
   }
 
-  Widget _buildBriefMode(BuildContext context) {
+  Widget _buildBriefMode(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
       child: LayoutBuilder(
@@ -380,11 +381,12 @@ class AnimeTile extends StatelessWidget {
 
           return InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: _onTap,
+            onTap: () => _onTap(ref),
             onLongPress: enableLongPressed
-                ? () => _onLongPressed(context)
+                ? () => _onLongPressed(context, ref)
                 : null,
-            onSecondaryTapDown: (detail) => onSecondaryTap(detail, context),
+            onSecondaryTapDown: (detail) =>
+                _onSecondaryTap(detail, context, ref),
             child: Column(
               children: [
                 Expanded(
@@ -408,9 +410,7 @@ class AnimeTile extends StatelessWidget {
                               ? 10.0
                               : 12.0;
 
-                          if (text == null) {
-                            return const SizedBox();
-                          }
+                          if (text == null) return const SizedBox();
 
                           var children = <Widget>[];
                           for (var line in text.split('\n')) {
@@ -465,7 +465,6 @@ class AnimeTile extends StatelessWidget {
                               scrollAxis: Axis.horizontal,
                               blankSpace: 10.0,
                               velocity: 40.0,
-                              // startPadding: 10.0,
                               pauseAfterRound: Duration.zero,
                               accelerationDuration: Duration.zero,
                               decelerationDuration: Duration.zero,
@@ -489,7 +488,6 @@ class AnimeTile extends StatelessWidget {
   }
 
   List<String> _splitText(String text) {
-    // split text by comma, brackets
     var words = <String>[];
     var buffer = StringBuffer();
     var inBracket = false;
@@ -536,7 +534,7 @@ class AnimeTile extends StatelessWidget {
     return words;
   }
 
-  void block(BuildContext animeTileContext) {
+  void block(BuildContext animeTileContext, WidgetRef ref) {
     showDialog(
       context: App.rootContext,
       builder: (context) {

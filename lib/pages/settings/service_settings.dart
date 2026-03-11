@@ -305,6 +305,8 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                   trailing: _NumberInput(
                     controller: _pingIntervalController,
                     enabled: !_hubEnabled,
+                    min: 60000,
+                    max: 86400000,
                     onChanged: (v) {
                       if (v >= 1000) _hub.setPingInterval(v);
                     },
@@ -335,6 +337,15 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                   trailing: CustomSwitch(
                     value: hubClientEnabled,
                     onChanged: _toggleHubClient,
+                  ),
+                ),
+                _SettingRow(
+                  title: 'Auto Reconnect'.tl,
+                  trailing: CustomSwitch(
+                    value: _hubClient.autoReconnect,
+                    onChanged: (v) {
+                      setState(() => _hubClient.autoReconnect = v);
+                    },
                   ),
                 ),
                 _PopupWindowSetting(

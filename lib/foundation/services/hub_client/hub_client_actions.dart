@@ -43,13 +43,18 @@ extension HubClientActions on HubClient {
 
   void leaveRoom() => _send({'messageType': 'leave_room'});
 
-  void createRoom(String roomName, {String? password, String? announcement}) =>
-      _send({
-        'messageType': 'create_room',
-        'roomName': roomName,
-        if (password != null) 'password': password,
-        if (announcement != null) 'announcement': announcement,
-      });
+  void createRoom(
+    String roomName, {
+    String? password,
+    String? announcement,
+    int? maxParticipants,
+  }) => _send({
+    'messageType': 'create_room',
+    'roomName': roomName,
+    if (password != null) 'password': password,
+    if (announcement != null) 'announcement': announcement,
+    if (maxParticipants != null) 'maxParticipants': maxParticipants,
+  });
 
   void deleteRoom(String roomId) =>
       _send({'messageType': 'delete_room', 'roomId': roomId});

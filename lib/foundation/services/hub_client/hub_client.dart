@@ -59,6 +59,14 @@ class HubClient {
     currentRoomId: '',
   );
 
+  bool get autoReconnect =>
+      appdata.settings['hubAutoReconnect'] as bool? ?? false;
+
+  set autoReconnect(bool v) {
+    appdata.settings['hubAutoReconnect'] = v;
+    appdata.saveData();
+  }
+
   // ── 回调 ──────────────────────────────────────────────────────────────────
 
   Function(Map<String, dynamic>)? onMessage;
@@ -171,7 +179,7 @@ class HubClient {
         _socket = null;
         _setState((s) => s.copyWith(isConnected: false, myId: null));
         onDisconnected?.call();
-        if (_shouldReconnect) _scheduleReconnect(); // ← 加判断
+        if (_shouldReconnect && autoReconnect) _scheduleReconnect();
       },
       onError: (e) {
         Log.error('HubClient', '❌ 错误：$e');
@@ -179,7 +187,7 @@ class HubClient {
         _socket = null;
         _setState((s) => s.copyWith(isConnected: false, myId: null));
         onDisconnected?.call();
-        if (_shouldReconnect) _scheduleReconnect(); // ← 加判断
+        if (_shouldReconnect && autoReconnect) _scheduleReconnect();
       },
     );
     _startHeartbeat();
