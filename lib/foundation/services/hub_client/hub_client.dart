@@ -1,50 +1,97 @@
 part of 'package:kostori/foundation/services/services.dart';
 
 class HubClient {
-  HubClient._internal();
+  HubClient(this._ref);
 
-  static final HubClient _instance = HubClient._internal();
+  final Ref _ref;
 
-  factory HubClient() => _instance;
+  final Map<String, String> uploadCache = {};
+
+  // ── WebSocket ────────────────────────────────────────────────────────────
 
   WebSocket? _socket;
-  String? myId;
-  bool isGlobalAdmin = false;
   String? _currentToken;
+  bool _shouldReconnect = true;
+  int _reconnectAttempts = 0;
+  Timer? _reconnectTimer;
+  Timer? _pongTimeoutTimer;
+  Timer? _heartbeatTimer;
+  Duration _heartbeatInterval = const Duration(milliseconds: 30000);
 
-  // ── 回调 ──────────────────────────────────────
+  // ── 状态读写 ──────────────────────────────────────────────────────────────
+
+  HubState get _s => _ref.read(hubProvider);
+
+  void _setState(HubState Function(HubState s) updater) =>
+      _ref.read(hubProvider.notifier).state = updater(_s);
+
+  // ── 状态代理 getters ──────────────────────────────────────────────────────
+
+  String? get myId => _s.myId;
+
+  bool get isGlobalAdmin => _s.isGlobalAdmin;
+
+  List<HubClientDto> get onlineClients => _s.onlineClients;
+
+  List<HubRoomDto> get roomList => _s.roomList;
+
+  String? get currentRoomId => _s.currentRoomId;
+
+  String? get currentRoomName => _s.currentRoomName;
+
+  String? get lobbyRoomId => _s.lobbyRoomId;
+
+  List<String> get serverBannedIds => _s.serverBannedIds;
+
+  List<HubMessage> get messageHistory => _s.messageHistory;
+
+  List<HubClientDto> get currentRoomClients =>
+      _s.currentRoomClients(lobbyRoomId);
+
+  String? get myDisplayName =>
+      onlineClients.firstWhereOrNull((c) => c.userId == myId)?.displayName ??
+      savedName;
+
+  HubClientDto get serverDto => HubClientDto(
+    userId: 'server',
+    displayName: 'Server',
+    connectedAt: DateTime.now(),
+    currentRoomId: '',
+  );
+
+  // ── 回调 ──────────────────────────────────────────────────────────────────
+
   Function(Map<String, dynamic>)? onMessage;
   VoidCallback? onDisconnected;
   VoidCallback? onConnected;
-  VoidCallback? onRoomListChanged; // 房间列表变化
-  VoidCallback? onClientsChanged; // 在线客户端变化
+  VoidCallback? onRoomListChanged;
+  VoidCallback? onClientsChanged;
 
-  // ── 状态 ──────────────────────────────────────
-  final List<Map<String, dynamic>> messageHistory = [];
-  List<Map<String, dynamic>> onlineClients = [];
-  List<Map<String, dynamic>> roomList = [];
-  String? currentRoomId;
-  String? currentRoomName;
-  String? lobbyRoomId;
+  // ── 黑名单 ────────────────────────────────────────────────────────────
 
   final Set<String> _localBlacklist = {};
 
-  // ── Getters ───────────────────────────────────
+  List<String> get blockedUsers => _localBlacklist.toList();
+
+  void blockUser(String id) => _localBlacklist.add(id);
+
+  void unblockUser(String id) => _localBlacklist.remove(id);
+
+  bool isBlocked(String id) => _localBlacklist.contains(id);
+
+  // ── 管理员工具 ────────────────────────────────────────────────────────────
 
   bool get isConnected =>
       _socket != null && _socket!.readyState == WebSocket.open;
 
-  List<Map<String, dynamic>> get currentRoomClients {
-    if (currentRoomId == lobbyRoomId) return onlineClients;
-    final room = roomList.firstWhereOrNull((r) => r['id'] == currentRoomId);
-    if (room == null) return onlineClients;
-    final members = room['members'] as List?;
-    if (members == null) return onlineClients;
-    final memberIds = members.map((m) => m['id']).toSet();
-    return onlineClients.where((c) => memberIds.contains(c['id'])).toList();
+  bool isRoomAdminOf(String? roomId) {
+    if (roomId == null) return false;
+    final room = roomList.firstWhereOrNull((r) => r.roomId == roomId);
+    if (room == null) return false;
+    return room.moderatorIds.contains(myId) || room.ownerUserId == myId;
   }
 
-  // ── 持久化 ────────────────────────────────────
+  // ── 持久化 ────────────────────────────────────────────────────────────────
 
   static const _addressKey = 'hub_client_address';
   static const _nameKey = 'hub_client_name';
@@ -62,50 +109,34 @@ class HubClient {
 
   String? get savedBio => appdata.implicitData[_bioKey] as String?;
 
-  void saveAddress(String address) {
-    appdata.implicitData[_addressKey] = address;
+  bool get shouldReconnect => _shouldReconnect;
+
+  void saveAddress(String v) {
+    appdata.implicitData[_addressKey] = v;
     appdata.writeImplicitData();
   }
 
-  void saveName(String name) {
-    appdata.implicitData[_nameKey] = name;
+  void saveName(String v) {
+    appdata.implicitData[_nameKey] = v;
     appdata.writeImplicitData();
   }
 
-  void saveToken(String token) {
-    appdata.implicitData[_tokenKey] = token;
+  void saveToken(String v) {
+    appdata.implicitData[_tokenKey] = v;
     appdata.writeImplicitData();
   }
 
-  void saveAvatar(String avatar) {
-    appdata.implicitData[_avatarKey] = avatar;
+  void saveAvatar(String v) {
+    appdata.implicitData[_avatarKey] = v;
     appdata.writeImplicitData();
   }
 
-  void saveBio(String bio) {
-    appdata.implicitData[_bioKey] = bio;
+  void saveBio(String v) {
+    appdata.implicitData[_bioKey] = v;
     appdata.writeImplicitData();
   }
 
-  // ── 黑名单 ────────────────────────────────────
-
-  void blockUser(String clientId) => _localBlacklist.add(clientId);
-
-  void unblockUser(String clientId) => _localBlacklist.remove(clientId);
-
-  bool isBlocked(String clientId) => _localBlacklist.contains(clientId);
-
-  // ── 管理员工具 ────────────────────────────────
-
-  bool isRoomAdminOf(String? roomId) {
-    if (roomId == null) return false;
-    final room = roomList.firstWhereOrNull((r) => r['id'] == roomId);
-    if (room == null) return false;
-    final adminIds = room['adminIds'] as List?;
-    return adminIds?.contains(myId) == true || room['ownerId'] == myId;
-  }
-
-  // ── 连接 ──────────────────────────────────────
+  // ── 连接 ──────────────────────────────────────────────────────────────────
 
   Future<void> connect(String address, String token, {String? name}) async {
     _currentToken = token;
@@ -114,7 +145,10 @@ class HubClient {
         : 'ws://$address';
     final url = '$base/hub';
 
-    Log.info('HubClient', '连接到 $url');
+    final deviceId = await getDeviceId();
+    final displayName = name ?? savedName ?? await getDefaultDisplayName();
+
+    Log.info('HubClient', '连接到 $url  deviceId=$deviceId');
     _socket = await WebSocket.connect(url);
     Log.info('HubClient', '✅ 已连接，发送鉴权...');
 
@@ -122,10 +156,10 @@ class HubClient {
       jsonEncode({
         'type': 'auth',
         'token': token,
-        'name': name ?? '',
-        'id': await _getDeviceId(),
-        'bio': savedBio ?? '',
-        'avatar': savedAvatar ?? '',
+        'displayName': displayName,
+        'userId': deviceId,
+        'biography': savedBio ?? '',
+        'avatarUrl': savedAvatar ?? '',
       }),
     );
 
@@ -133,57 +167,67 @@ class HubClient {
       _handleRaw,
       onDone: () {
         Log.info('HubClient', '🔴 连接断开');
+        _stopHeartbeat();
         _socket = null;
-        myId = null;
+        _setState((s) => s.copyWith(isConnected: false, myId: null));
         onDisconnected?.call();
+        if (_shouldReconnect) _scheduleReconnect(); // ← 加判断
       },
       onError: (e) {
         Log.error('HubClient', '❌ 错误：$e');
+        _stopHeartbeat();
         _socket = null;
-        myId = null;
+        _setState((s) => s.copyWith(isConnected: false, myId: null));
         onDisconnected?.call();
+        if (_shouldReconnect) _scheduleReconnect(); // ← 加判断
       },
     );
+    _startHeartbeat();
   }
 
   void _handleRaw(dynamic raw) {
-    final rawData = jsonDecode(raw as String) as Map<String, dynamic>;
-    final data = _decryptPayload(rawData);
+    final data = _decryptPayload(
+      jsonDecode(raw as String) as Map<String, dynamic>,
+    );
     _handleMessage(data);
   }
 
-  // ── 断开 ──────────────────────────────────────
+  // ── 断开 ──────────────────────────────────────────────────────────────────
 
   Future<void> disconnect() async {
+    _shouldReconnect = false;
+    _reconnectTimer?.cancel();
+    _pongTimeoutTimer?.cancel();
+    _stopHeartbeat();
     await _socket?.close();
     _socket = null;
-    myId = null;
-    isGlobalAdmin = false;
-    currentRoomId = null;
-    currentRoomName = null;
-    lobbyRoomId = null;
-    messageHistory.clear();
-    roomList.clear();
-    onlineClients.clear();
     HubCrypto.clear();
+    _ref.read(hubProvider.notifier).state = const HubState();
     onRoomListChanged = null;
     onClientsChanged = null;
+    _setState(
+      (s) => s.copyWith(
+        // ← 加这几行
+        isConnected: false,
+        myId: null,
+      ),
+    );
   }
 
-  // ── 解密 ──────────────────────────────────────
+  // ── 解密 ──────────────────────────────────────────────────────────────────
 
   Map<String, dynamic> _decryptPayload(Map<String, dynamic> data) {
     if (!HubCrypto.isInitialized) return data;
-    if (data['encrypted'] != true || data['payload'] is! String) return data;
+    if (data['encrypted'] != true || data['segments'] is! String) return data;
     try {
-      final decrypted = HubCrypto.decrypt(data['payload'] as String);
+      final decrypted = HubCrypto.decrypt(data['segments'] as String);
       final result = Map<String, dynamic>.from(data);
       dynamic decoded = decrypted;
       try {
         decoded = jsonDecode(decrypted);
         if (decoded is String) decoded = jsonDecode(decoded);
       } catch (_) {}
-      result['payload'] = decoded;
+      result['segments'] = decoded;
       result.remove('encrypted');
       return result;
     } catch (e) {
@@ -192,156 +236,50 @@ class HubClient {
     }
   }
 
-  // ── 设备ID ────────────────────────────────────
+  // ── 心跳 ──────────────────────────────────────────────────────────────────
 
-  Future<String> _getDeviceId() async {
-    var id = appdata.implicitData['hub_device_id'] as String?;
-    if (id == null) {
-      id =
-          DateTime.now().millisecondsSinceEpoch.toRadixString(36) +
-          Random().nextInt(9999).toString();
-      appdata.implicitData['hub_device_id'] = id;
-      appdata.writeImplicitData();
-    }
-    return id;
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+      if (_socket != null) {
+        ping();
+        _pongTimeoutTimer?.cancel();
+        _pongTimeoutTimer = Timer(const Duration(seconds: 10), () {
+          Log.warning('HubClient', '💀 pong 超时，断线重连');
+          _socket?.close();
+        });
+      } else {
+        _heartbeatTimer?.cancel();
+      }
+    });
   }
 
-  // ── 发送指令 ──────────────────────────────────
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
 
-  void broadcast(dynamic payload) {
-    final s = jsonEncode(payload);
-    _socket?.add(
-      jsonEncode({
-        'type': 'broadcast',
-        'payload': HubCrypto.isInitialized ? HubCrypto.encrypt(s) : s,
-        'encrypted': HubCrypto.isInitialized,
-      }),
+  void _scheduleReconnect() {
+    if (!_shouldReconnect) return;
+    final address = savedAddress;
+    final token = savedToken;
+    if (address == null || token == null) return;
+    final delay = Duration(seconds: min(30, 1 << _reconnectAttempts));
+    Log.info(
+      'HubClient',
+      '🔄 ${delay.inSeconds}s 后重连（第${_reconnectAttempts + 1}次）',
     );
+    _reconnectTimer = Timer(delay, () async {
+      _reconnectAttempts++;
+      await connect(address, token, name: savedName);
+    });
   }
-
-  void sendTo(String targetId, dynamic payload) {
-    final s = jsonEncode(payload);
-    _socket?.add(
-      jsonEncode({
-        'type': 'unicast',
-        'to': targetId,
-        'payload': HubCrypto.isInitialized ? HubCrypto.encrypt(s) : s,
-        'encrypted': HubCrypto.isInitialized,
-      }),
-    );
-  }
-
-  void reply(String replyToId, dynamic payload) {
-    final s = jsonEncode(payload);
-    _socket?.add(
-      jsonEncode({
-        'type': 'broadcast',
-        'replyTo': replyToId,
-        'payload': HubCrypto.isInitialized ? HubCrypto.encrypt(s) : s,
-        'encrypted': HubCrypto.isInitialized,
-      }),
-    );
-  }
-
-  void ping() => _socket?.add(jsonEncode({'type': 'ping'}));
-
-  void recall(String msgId) =>
-      _socket?.add(jsonEncode({'type': 'recall', 'msgId': msgId}));
-
-  void leaveRoom() => _socket?.add(jsonEncode({'type': 'leave_room'}));
-
-  void deleteRoom(String roomId) =>
-      _socket?.add(jsonEncode({'type': 'delete_room', 'roomId': roomId}));
-
-  void kickFromRoom(String id) =>
-      _socket?.add(jsonEncode({'type': 'kick', 'targetId': id}));
-
-  void roomBan(String id) =>
-      _socket?.add(jsonEncode({'type': 'room_ban', 'targetId': id}));
-
-  void roomUnban(String id) =>
-      _socket?.add(jsonEncode({'type': 'room_unban', 'targetId': id}));
-
-  void announce(String message) =>
-      _socket?.add(jsonEncode({'type': 'announce', 'message': message}));
-
-  void pin(String msgId) =>
-      _socket?.add(jsonEncode({'type': 'pin', 'msgId': msgId}));
-
-  void search(String keyword) =>
-      _socket?.add(jsonEncode({'type': 'search', 'keyword': keyword}));
-
-  void react(String msgId, String emoji) => _socket?.add(
-    jsonEncode({'type': 'reaction', 'msgId': msgId, 'emoji': emoji}),
-  );
-
-  void setStatus(UserStatus status) =>
-      _socket?.add(jsonEncode({'type': 'status', 'status': status.name}));
-
-  void updateProfile({String? name, String? avatar, String? bio}) {
-    _socket?.add(
-      jsonEncode({
-        'type': 'profile',
-        if (name != null) 'name': name,
-        if (avatar != null) 'avatar': avatar,
-        if (bio != null) 'bio': bio,
-      }),
-    );
-  }
-
-  void mute(String targetId, {int seconds = 300}) => _socket?.add(
-    jsonEncode({'type': 'mute', 'targetId': targetId, 'seconds': seconds}),
-  );
-
-  void unmute(String targetId) =>
-      _socket?.add(jsonEncode({'type': 'unmute', 'targetId': targetId}));
-
-  void setGlobalAdmin(String targetId, {bool value = true}) => _socket?.add(
-    jsonEncode({
-      'type': 'set_global_admin',
-      'targetId': targetId,
-      'value': value,
-    }),
-  );
-
-  void setRoomAdmin(String targetId, {bool value = true}) => _socket?.add(
-    jsonEncode({
-      'type': 'set_room_admin',
-      'targetId': targetId,
-      'value': value,
-    }),
-  );
-
-  void joinRoom(String roomId, {String? password}) => _socket?.add(
-    jsonEncode({
-      'type': 'join_room',
-      'roomId': roomId,
-      if (password != null) 'password': password,
-    }),
-  );
-
-  void setAnnouncement(String announcement) => _socket?.add(
-    jsonEncode({'type': 'set_announcement', 'announcement': announcement}),
-  );
-
-  void setRoomPassword(String? password) => _socket?.add(
-    jsonEncode({'type': 'set_room_password', 'password': password}),
-  );
-
-  void createRoom(String name, {String? password, String? announcement}) =>
-      _socket?.add(
-        jsonEncode({
-          'type': 'create_room',
-          'name': name,
-          if (password != null) 'password': password,
-          if (announcement != null) 'announcement': announcement,
-        }),
-      );
-
-  // 服务端黑名单（全局管理员）
-  void serverBan(String targetId) =>
-      _socket?.add(jsonEncode({'type': 'server_ban', 'targetId': targetId}));
-
-  void serverUnban(String targetId) =>
-      _socket?.add(jsonEncode({'type': 'server_unban', 'targetId': targetId}));
 }
+
+// ── Provider ──────────────────────────────────────────────────────────────────
+
+final hubClientProvider = Provider<HubClient>((ref) {
+  final client = HubClient(ref);
+  ref.onDispose(client.disconnect);
+  return client;
+});

@@ -1,21 +1,18 @@
 part of 'settings_page.dart';
 
-class ServiceSettings extends StatefulWidget {
+class ServiceSettings extends ConsumerStatefulWidget {
   const ServiceSettings({super.key});
 
   @override
-  State<ServiceSettings> createState() => _ServiceSettingsState();
+  ConsumerState<ServiceSettings> createState() => _ServiceSettingsState();
 }
 
-class _ServiceSettingsState extends State<ServiceSettings> {
+class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
   final _service = AppService();
   final _keyManager = ApiKeyManager();
-  final _hub = HubService();
-  final _hubClient = HubClient();
 
   bool _serviceEnabled = false;
   bool _hubEnabled = false;
-  bool _hubClientEnabled = false;
   BindMode _bindMode = BindMode.both;
   BindMode _hubBindMode = BindMode.both;
 
@@ -24,18 +21,25 @@ class _ServiceSettingsState extends State<ServiceSettings> {
   final _fixedKeyController = TextEditingController();
   final _hubClientNameController = TextEditingController();
   final _hubTokenController = TextEditingController();
+  final _pingIntervalController = TextEditingController();
 
   bool _keyManagerReady = false;
+
+  late final HubClient _hubClient;
+  late final HubService _hub;
 
   @override
   void initState() {
     super.initState();
+    _hubClient = ref.read(hubClientProvider);
+    _hub = ref.read(hubServiceProvider);
     _bindMode = _service.savedBindMode;
     _hubBindMode = _hub.savedHubBindMode;
     _portController.text = _service.savedPort.toString();
     _hubPortController.text = _hub.savedHubPort.toString();
     _hubClientNameController.text = _hubClient.savedName ?? '';
     _hubTokenController.text = _hubClient.savedToken ?? '';
+    _pingIntervalController.text = _hub.pingInterval.inMilliseconds.toString();
     _initKeyManager();
   }
 
@@ -46,6 +50,7 @@ class _ServiceSettingsState extends State<ServiceSettings> {
     _fixedKeyController.dispose();
     _hubClientNameController.dispose();
     _hubTokenController.dispose();
+    _pingIntervalController.dispose();
     super.dispose();
   }
 
@@ -53,30 +58,21 @@ class _ServiceSettingsState extends State<ServiceSettings> {
     _fixedKeyController.text = _keyManager.fixedKey ?? '';
     _serviceEnabled = _service.isRunning;
     _hubEnabled = _hub.isRunning;
-    _hubClientEnabled = _hubClient.isConnected;
 
+    // 连接/断开回调只更新非 hub 状态，hub 连接状态由 hubProvider 驱动
     _hubClient.onConnected = () {
-      if (mounted) setState(() => _hubClientEnabled = true);
+      if (mounted) setState(() {});
     };
 
     _hubClient.onDisconnected = () {
-      if (mounted) {
-        setState(() => _hubClientEnabled = false);
-        // ← 只要断开就提示
-        if (_hubClientEnabled) {
-          App.rootContext.showMessage(message: '与服务端的连接已断开'.tl);
-        }
+      if (mounted) setState(() {});
+      if (_hubClient.shouldReconnect) {
+        App.rootContext.showMessage(message: '与服务端的连接已断开'.tl);
       }
     };
 
     _hub.onMessageReceived = () {
       if (mounted) setState(() {});
-    };
-
-    _hubClient.onMessage = (data) {
-      if (!mounted) return;
-      // toast 已由 handler 统一处理，这里只刷新 UI
-      setState(() {});
     };
 
     if (mounted) setState(() => _keyManagerReady = true);
@@ -117,18 +113,22 @@ class _ServiceSettingsState extends State<ServiceSettings> {
         );
       } catch (e) {
         if (mounted) {
-          App.rootContext.showMessage(message: '连接失败：$e');
+          App.rootContext.showMessage(
+            message: '连接失败：$e',
+            level: LogLevel.warning,
+          );
         }
-        return;
       }
     } else {
       await _hubClient.disconnect();
     }
-    if (mounted) setState(() => _hubClientEnabled = _hubClient.isConnected);
   }
 
   @override
   Widget build(BuildContext context) {
+    final hubState = ref.watch(hubProvider);
+    final hubClientEnabled = hubState.isConnected;
+
     if (!_keyManagerReady) {
       return const Scaffold(body: Center(child: PolygonRefreshIndicator()));
     }
@@ -138,7 +138,7 @@ class _ServiceSettingsState extends State<ServiceSettings> {
       body: SmoothCustomScrollView(
         slivers: [
           SliverAppbar(title: Text("Service Settings".tl)),
-          // ── API Key ─────────────────────────────────────
+          // ── API Key ──────────────────────────────────────────────────────
           _BuildSectionPadding(
             _SettingCard(
               children: [
@@ -146,6 +146,8 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                   title: "API Key".tl,
                   icon: Icons.key_outlined,
                 ),
+
+                // ── 用户层 Key ──────────────────────
                 _ApiKeyTile(
                   keyManager: _keyManager,
                   onRegenerate: () {
@@ -153,18 +155,34 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                     setState(() {});
                   },
                 ),
+
+                // ── 管理层 Key ──────────────────────
+                _ApiKeyTile(
+                  keyManager: _keyManager,
+                  isAdmin: true,
+                  onRegenerate: () {
+                    _keyManager.regenerateAdminRandomKey();
+                    setState(() {});
+                  },
+                ),
+
+                // ── 统一固定 Key 开关 ───────────────
                 _SettingRow(
                   title: "Use Fixed Key".tl,
                   subtitle: _keyManager.isUsingFixed
-                      ? "Keep the same key after restart".tl
+                      ? "Keep the same keys after restart".tl
                       : "Regenerated on every startup".tl,
                   trailing: CustomSwitch(
                     value: _keyManager.isUsingFixed,
                     onChanged: (val) async {
                       if (val && !_keyManager.isUsingFixed) {
-                        final error = await _keyManager.setFixedKey(
+                        final error1 = await _keyManager.setFixedKey(
                           _keyManager.randomKey ?? '',
                         );
+                        final error2 = await _keyManager.setAdminFixedKey(
+                          _keyManager.adminRandomKey ?? '',
+                        );
+                        final error = error1 ?? error2;
                         if (error != null && mounted) {
                           App.rootContext.showMessage(message: error);
                           return;
@@ -178,7 +196,7 @@ class _ServiceSettingsState extends State<ServiceSettings> {
               ],
             ),
           ),
-          // ── AppService ──────────────────────────────────
+          // ── AppService ───────────────────────────────────────────────────
           _BuildSectionPadding(
             _SettingCard(
               children: [
@@ -213,7 +231,7 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                         },
                       ),
                       const SizedBox(width: 8),
-                      _PortInput(
+                      _NumberInput(
                         controller: _portController,
                         enabled: !_serviceEnabled,
                         onChanged: (port) => _service.savePort(port),
@@ -224,8 +242,7 @@ class _ServiceSettingsState extends State<ServiceSettings> {
               ],
             ),
           ),
-
-          // ── Hub 服务端 ───────────────────────────────────
+          // ── Hub 服务端 ───────────────────────────────────────────────────
           _BuildSectionPadding(
             _SettingCard(
               children: [
@@ -245,6 +262,19 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                   ),
                 ),
                 _SettingRow(
+                  title: "No Key Required".tl,
+                  subtitle: _hub.hubNoAuth
+                      ? "Anyone can connect without API key".tl
+                      : "Clients must provide a valid API key".tl,
+                  trailing: CustomSwitch(
+                    value: _hub.hubNoAuth,
+                    onChanged: (val) {
+                      _hub.setHubNoAuth(val);
+                      setState(() {});
+                    },
+                  ),
+                ),
+                _SettingRow(
                   title: "Port & Bind Mode".tl,
                   subtitle: "Default: @p".tlParams({
                     "p": "9100  (1024 - 65535)",
@@ -261,7 +291,7 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                         },
                       ),
                       const SizedBox(width: 8),
-                      _PortInput(
+                      _NumberInput(
                         controller: _hubPortController,
                         enabled: !_hubEnabled,
                         onChanged: (port) => _hub.saveHubPort(port),
@@ -269,17 +299,27 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                     ],
                   ),
                 ),
-                if (_hubEnabled) ...[
+                _SettingRow(
+                  title: "Ping Interval".tl,
+                  subtitle: "Default: @p".tlParams({"p": "30000ms"}),
+                  trailing: _NumberInput(
+                    controller: _pingIntervalController,
+                    enabled: !_hubEnabled,
+                    onChanged: (v) {
+                      if (v >= 1000) _hub.setPingInterval(v);
+                    },
+                  ),
+                ),
+                if (_hubEnabled)
                   _PopupWindowSetting(
                     title: "Hub Management".tl,
                     builder: () => _HubManagementPage(),
                   ),
-                ],
+                _UploadConfigSetting(hub: _hub, serverRunning: _hubEnabled),
               ],
             ),
           ),
-
-          // ── Hub 客户端入口卡片 ──────────────────────────────
+          // ── Hub 客户端 ───────────────────────────────────────────────────
           _BuildSectionPadding(
             _SettingCard(
               children: [
@@ -289,11 +329,11 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                 ),
                 _SettingRow(
                   title: "Connect to Hub".tl,
-                  subtitle: _hubClientEnabled
-                      ? "${"Connected".tl}  ID: ${_hubClient.myId ?? '-'}"
+                  subtitle: hubClientEnabled
+                      ? "${"Connected".tl}  ID: ${hubState.myId ?? '-'}"
                       : "Not connected".tl,
                   trailing: CustomSwitch(
-                    value: _hubClientEnabled,
+                    value: hubClientEnabled,
                     onChanged: _toggleHubClient,
                   ),
                 ),
@@ -301,13 +341,14 @@ class _ServiceSettingsState extends State<ServiceSettings> {
                   title: "Hub Details".tl,
                   builder: () => const _HubClientDetailPage(),
                 ),
-                if (_hubClientEnabled)
+                if (hubClientEnabled)
                   _SettingRow(
                     title: "Chat Room".tl,
                     subtitle: "Open chat dialog".tl,
                     trailing: IconButton(
                       icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                      onPressed: () => HubChatDialog.show(context),
+                      onPressed: () =>
+                          showPopUpWidget(context, const HubPage()),
                     ),
                   ),
               ],

@@ -7,11 +7,15 @@ abstract class BaseHttpService implements BaseService {
   final _binder = ServerBinder();
   final _router = RouteRegistry();
 
+  bool _hubNoAuth = false;
+
   int get port => _binder.port;
 
   bool get isRunning => _binder.isRunning;
 
   List<String> get boundAddresses => _binder.boundAddresses;
+
+  bool get hubNoAuth => _hubNoAuth;
 
   final _startTime = DateTime.now();
 
@@ -20,6 +24,20 @@ abstract class BaseHttpService implements BaseService {
 
   static const _hubPortKey = 'hub_port';
   static const _hubBindModeKey = 'hub_bind_mode';
+
+  static const _pingIntervalKey = 'hub_service_ping_interval';
+
+  static const _hubNoAuthKey = 'hub_no_auth';
+
+  Duration get pingInterval => Duration(
+    milliseconds:
+        appdata.settings['hub_service_ping_interval'] as int? ?? 30000,
+  );
+
+  void setPingInterval(int milliseconds) {
+    appdata.settings[_pingIntervalKey] = milliseconds;
+    appdata.saveData();
+  }
 
   int get savedPort {
     return appdata.implicitData[_portKey] as int? ?? 9000;
@@ -67,9 +85,27 @@ abstract class BaseHttpService implements BaseService {
     appdata.writeImplicitData();
   }
 
+  void setHubNoAuth(bool val) {
+    _hubNoAuth = val;
+    appdata.implicitData[_hubNoAuthKey] = _hubNoAuth;
+    appdata.writeImplicitData();
+  }
+
   // ── 鉴权中间件快捷方式 ────────────────────────
+  /// 用户层鉴权（本地免验）
   MiddlewareHandler get authMiddleware =>
-      Middleware.localBypass(Middleware.apiKey());
+      Middleware.localBypass(Middleware.auth());
+
+  /// Hub 专用：根据开关决定是否需要鉴权
+  List<MiddlewareHandler> get _hubAuthMiddleware =>
+      _hubNoAuth ? [] : [authMiddleware];
+
+  /// 管理层鉴权（不免验，任何来源都必须提供管理 Key）
+  MiddlewareHandler get adminAuthMiddleware => Middleware.auth(admin: true);
+
+  /// 管理层鉴权（本地免验版本）
+  MiddlewareHandler get adminAuthLocalBypass =>
+      Middleware.localBypass(Middleware.auth(admin: true));
 
   // ── WebSocket ─────────────────────────────────
   final Map<String, WsHandler> _wsRoutes = {};
@@ -185,6 +221,16 @@ abstract class BaseHttpService implements BaseService {
   // ── 子类实现 ──────────────────────────────────
   void registerRoutes();
 
+  // ── WebSocket 鉴权工具 ────────────────────────
+  /// 从 WebSocket 请求中提取 token 并校验
+  bool _validateWsToken(HttpRequest req, {bool admin = false}) {
+    final token = req.uri.queryParameters['token'];
+    if (token == null) return false;
+    return admin
+        ? ApiKeyManager().validateAdmin(token)
+        : ApiKeyManager().validate(token);
+  }
+
   // ── 公共路由 ──────────────────────────────────
   void _registerCommonRoutes() {
     addGet(
@@ -240,22 +286,25 @@ abstract class BaseHttpService implements BaseService {
         'running': isRunning,
         'port': port,
         'mode': runtimeType.toString(),
+        'authMode': ApiKeyManager().isUsingFixed ? 'fixed' : 'random',
+        'adminAuthMode': ApiKeyManager().isUsingAdminFixed ? 'fixed' : 'random',
         'timestamp': DateTime.now().toIso8601String(),
       }),
       middlewares: [authMiddleware],
       doc: RouteDoc(
         summary: '服务状态',
-        description: '返回当前服务运行状态',
+        description: '返回当前服务运行状态（需要用户层鉴权）',
         requiresAuth: true,
         params: [
           DocParam(
-            name: 'token',
-            type: 'query',
-            description: 'API Key',
+            name: 'Authorization',
+            type: 'header',
+            description: 'Bearer <user-key>',
             required: true,
           ),
         ],
-        response: 'JSON: running, port, mode, timestamp',
+        response:
+            'JSON: running, port, mode, authMode, adminAuthMode, timestamp',
       ),
     );
 
@@ -267,13 +316,13 @@ abstract class BaseHttpService implements BaseService {
       middlewares: [authMiddleware],
       doc: RouteDoc(
         summary: '路由列表',
-        description: '返回所有已注册的路由',
+        description: '返回所有已注册的路由（需要用户层鉴权）',
         requiresAuth: true,
         params: [
           DocParam(
-            name: 'token',
-            type: 'query',
-            description: 'API Key',
+            name: 'Authorization',
+            type: 'header',
+            description: 'Bearer <user-key>',
             required: true,
           ),
         ],
@@ -305,12 +354,13 @@ abstract class BaseHttpService implements BaseService {
       ),
     );
 
+    // ── WebSocket：日志推送（管理层鉴权） ──────
     addWs('/logs/ws', (socket, req) async {
-      final token = req.uri.queryParameters['token'];
-      if (token == null || !ApiKeyManager().validate(token)) {
+      if (!_validateWsToken(req, admin: true)) {
         await socket.close(WebSocketStatus.policyViolation, 'Unauthorized');
         return;
       }
+
       _addWsClient('/logs/ws', socket);
 
       for (final entry in Log.logs) {
@@ -358,15 +408,17 @@ abstract class BaseHttpService implements BaseService {
       final method = (route['method'] as String).toLowerCase();
       final doc = route['doc'] as Map<String, dynamic>?;
 
+      final requiresAuth = doc?['requiresAuth'] == true;
+      final security = <Map<String, dynamic>>[];
+      if (requiresAuth) {
+        security.add({'BearerAuth': []});
+      }
+
       paths.putIfAbsent(path, () => {})[method] = {
         'summary': doc?['summary'] ?? path,
         'description': doc?['description'] ?? '',
         'parameters': doc?['params'] ?? [],
-        'security': doc?['requiresAuth'] == true
-            ? [
-                {'ApiKeyAuth': []},
-              ]
-            : [],
+        'security': security,
         'responses': {
           '200': {'description': doc?['response'] ?? 'Success'},
           '401': {'description': 'Unauthorized'},
@@ -375,17 +427,15 @@ abstract class BaseHttpService implements BaseService {
       };
     }
 
-    // 加上 WebSocket 路由
     for (final wsPath in _wsRoutes.keys) {
-      final path = wsPath;
-      paths.putIfAbsent(path, () => {})['get'] = {
+      paths.putIfAbsent(wsPath, () => {})['get'] = {
         'summary': 'WebSocket: $wsPath',
-        'description': 'WebSocket connection endpoint',
+        'description': 'WebSocket endpoint（通过 ?token= 传递 Key）',
         'parameters': [
           {
             'name': 'token',
             'in': 'query',
-            'description': 'API Key',
+            'description': 'API Key（用户层或管理层）',
             'required': true,
           },
         ],
@@ -401,14 +451,25 @@ abstract class BaseHttpService implements BaseService {
       'info': {
         'title': 'Kostori API',
         'version': App.version,
-        'description': 'Kostori 本地服务 API.',
+        'description':
+            'Kostori 本地服务 API\n\n'
+            '鉴权方式：\n'
+            '- HTTP 接口：`Authorization: Bearer <key>`\n'
+            '- WebSocket：`?token=<key>`\n\n'
+            '权限分层：\n'
+            '- 用户层 Key：访问一般接口\n'
+            '- 管理层 Key：访问管理接口（日志、配置等）',
       },
       'servers': [
         {'url': 'http://localhost:$port'},
       ],
       'components': {
         'securitySchemes': {
-          'ApiKeyAuth': {'type': 'apiKey', 'in': 'query', 'name': 'token'},
+          'BearerAuth': {
+            'type': 'http',
+            'scheme': 'bearer',
+            'description': '用户层或管理层 API Key',
+          },
         },
       },
       'paths': paths,
@@ -430,7 +491,7 @@ abstract class BaseHttpService implements BaseService {
 <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
 <script>
   SwaggerUIBundle({
-    url: '/openapi.json',
+    url: window.location.origin + '/openapi.json',
     dom_id: '#swagger-ui',
     presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
     layout: 'BaseLayout',
@@ -451,7 +512,8 @@ abstract class BaseHttpService implements BaseService {
     registerRoutes();
     await _binder.bind(preferredPort, mode, _handleRequest);
     Log.info('$runtimeType', '✅ 启动完成：${boundAddresses.join(' | ')}');
-    Log.info('$runtimeType', '🔑 API Key：${ApiKeyManager().activeKey}');
+    Log.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
+    Log.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
   }
 
   Future<void> startServerSecure({
@@ -473,19 +535,18 @@ abstract class BaseHttpService implements BaseService {
       password: password,
     );
     Log.info('$runtimeType', '🔒 HTTPS 启动完成：${boundAddresses.join(' | ')}');
+    Log.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
+    Log.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
   }
 
   Future<void> stopServer() async {
-    // 断开所有对外连接
     for (final socket in _wsConnections.values) {
       await socket.close();
     }
     _wsConnections.clear();
 
-    // 关闭所有接入连接
     for (final clients in _wsClients.values) {
       for (final client in clients.toList()) {
-        // ← 加 .toList()
         await client.close();
       }
     }
@@ -527,9 +588,7 @@ abstract class BaseHttpService implements BaseService {
   // ── 请求处理 ──────────────────────────────────
   void _handleRequest(HttpRequest request) async {
     try {
-      // CORS
       if (!await Middleware.cors()(request)) return;
-      // 请求体大小限制
       if (!await Middleware.bodySizeLimit()(request)) return;
 
       final method = request.method;

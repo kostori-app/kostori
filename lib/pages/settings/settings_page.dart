@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
@@ -34,7 +35,7 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/network/download.dart';
-import 'package:kostori/pages/hub_chat_dialog.dart';
+import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/webview.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
@@ -74,7 +75,11 @@ part 'service_settings.dart';
 
 part 'anime_source_settings.dart';
 
-part 'hub_setting_page.dart';
+part 'hub_service_setting.dart';
+
+part 'hub_client_setting.dart';
+
+part 'hub_upload_settings.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});

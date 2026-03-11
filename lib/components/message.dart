@@ -2,7 +2,7 @@
 
 part of "components.dart";
 
-enum ToastStyle { bottom, topRight }
+enum ToastStyle { bottom, topRight, topLeft, top }
 
 void showCenter({
   required String message,
@@ -305,6 +305,31 @@ class ContentDialog extends StatelessWidget {
   final VoidCallback? cancel;
   final bool displayButton;
 
+  static Future<T?> show<T>({
+    required BuildContext context,
+    String? title,
+    required Widget content,
+    bool isDismissible = false,
+    List<Widget> actions = const [],
+    List<Widget> titleActions = const [],
+    VoidCallback? cancel,
+    bool displayButton = true,
+  }) {
+    return showDialog<T>(
+      context: App.rootContext,
+      barrierDismissible: isDismissible,
+      builder: (context) => ContentDialog(
+        title: title,
+        content: content,
+        isDismissible: isDismissible,
+        actions: actions,
+        titleActions: titleActions,
+        cancel: cancel,
+        displayButton: displayButton,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var dialogContent = SingleChildScrollView(
@@ -593,6 +618,21 @@ class _ToastOverlayState extends State<_ToastOverlay> {
     if (mounted) setState(() => _isVisible = false);
   }
 
+  bool get _isTop =>
+      widget.style == ToastStyle.topRight ||
+      widget.style == ToastStyle.topLeft ||
+      widget.style == ToastStyle.top;
+
+  Offset get _slideOffset {
+    if (_isVisible) return Offset.zero;
+    return switch (widget.style) {
+      ToastStyle.topRight => const Offset(1.2, 0),
+      ToastStyle.topLeft => const Offset(-1.2, 0),
+      ToastStyle.top => const Offset(0, -0.5),
+      ToastStyle.bottom => const Offset(0, 0.5),
+    };
+  }
+
   Color _accentColor(BuildContext context) => switch (widget.level) {
     LogLevel.error => const Color(0xFFFF5449),
     LogLevel.warning => const Color(0xFFFFB800),
@@ -611,20 +651,13 @@ class _ToastOverlayState extends State<_ToastOverlay> {
     const curve = Curves.easeInOutCubic;
     final cs = Theme.of(context).colorScheme;
     final accent = _accentColor(context);
-    final isTopRight = widget.style == ToastStyle.topRight;
 
-    final child = isTopRight
-        ? _buildBanner(cs, accent)
-        : _buildToast(cs, accent);
+    final child = _isTop ? _buildBanner(cs, accent) : _buildToast(cs, accent);
 
     final animated = AnimatedSlide(
       duration: dur,
       curve: curve,
-      offset: _isVisible
-          ? Offset.zero
-          : isTopRight
-          ? const Offset(1.2, 0)
-          : const Offset(0, 0.5),
+      offset: _slideOffset,
       child: AnimatedOpacity(
         duration: dur,
         curve: curve,
@@ -633,27 +666,39 @@ class _ToastOverlayState extends State<_ToastOverlay> {
       ),
     );
 
-    if (isTopRight) {
-      return Positioned(
-        top:
-            widget.position +
-            MediaQuery.of(context).viewPadding.top +
-            kToolbarHeight +
-            8,
+    final topOffset =
+        widget.position +
+        MediaQuery.of(context).viewPadding.top +
+        kToolbarHeight +
+        8;
+
+    return switch (widget.style) {
+      ToastStyle.topRight => Positioned(
+        top: topOffset,
         right: 0,
         child: animated,
-      );
-    } else {
-      return Positioned(
+      ),
+      ToastStyle.topLeft => Positioned(
+        top: topOffset,
+        left: 0,
+        child: animated,
+      ),
+      ToastStyle.top => Positioned(
+        top: topOffset,
+        left: 0,
+        right: 0,
+        child: Align(alignment: Alignment.topCenter, child: animated),
+      ),
+      ToastStyle.bottom => Positioned(
         bottom: widget.position + MediaQuery.of(context).viewInsets.bottom + 24,
         left: 0,
         right: 0,
         child: Align(alignment: Alignment.bottomCenter, child: animated),
-      );
-    }
+      ),
+    };
   }
 
-  // bottom toast 样式
+  // ── bottom toast 样式 ──────────────────────────────────────────────────────
   Widget _buildToast(ColorScheme cs, Color accent) {
     return BlurEffect(
       borderRadius: BorderRadius.circular(14),
@@ -730,28 +775,38 @@ class _ToastOverlayState extends State<_ToastOverlay> {
     );
   }
 
-  // topRight banner 样式
+  // ── top banner 样式（topRight / topLeft / top）──────────────────────
   Widget _buildBanner(ColorScheme cs, Color accent) {
-    return BlurEffect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(12),
-        bottomLeft: Radius.circular(12),
-        topRight: Radius.circular(4),
-        bottomRight: Radius.circular(4),
-      ),
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width - 32,
-        ),
-        margin: const EdgeInsets.only(right: 12),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainer.toOpacity(0.62),
-          borderRadius: const BorderRadius.only(
+    final isLeft = widget.style == ToastStyle.topLeft;
+    final isCenter = widget.style == ToastStyle.top;
+
+    final borderRadius = isCenter
+        ? BorderRadius.circular(12)
+        : isLeft
+        ? const BorderRadius.only(
+            topRight: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+            topLeft: Radius.circular(4),
+            bottomLeft: Radius.circular(4),
+          )
+        : const BorderRadius.only(
+            // topRight
             topLeft: Radius.circular(12),
             bottomLeft: Radius.circular(12),
             topRight: Radius.circular(4),
             bottomRight: Radius.circular(4),
-          ),
+          );
+
+    return BlurEffect(
+      borderRadius: borderRadius,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width - 32,
+        ),
+        margin: EdgeInsets.only(left: isLeft ? 12 : 0, right: isLeft ? 0 : 12),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainer.toOpacity(0.62),
+          borderRadius: borderRadius,
           border: Border.all(color: accent.toOpacity(0.4), width: 1),
           boxShadow: [
             BoxShadow(

@@ -3,26 +3,36 @@ part of 'package:kostori/foundation/services/services.dart';
 typedef MiddlewareHandler = Future<bool> Function(HttpRequest request);
 
 class Middleware {
-  /// 从 ApiKeyManager 取当前生效的 Key 来校验
-  static MiddlewareHandler apiKey() {
+  // ─────────────────────────────────────────
+  // 鉴权：支持 Bearer token
+  // ─────────────────────────────────────────
+
+  /// 从 Authorization header 或 query 参数取 Key 校验
+  static MiddlewareHandler auth({bool admin = false}) {
     return (HttpRequest request) async {
-      // 同时支持 Header 和 Query 参数两种方式
-      final headerKey = request.headers.value('X-API-Key');
-      final queryKey = request.uri.queryParameters['token'];
-      final key = headerKey ?? queryKey;
+      final header = request.headers.value('Authorization');
+      final bearerToken = header != null && header.startsWith('Bearer ')
+          ? header.substring(7)
+          : null;
+      final queryToken = request.uri.queryParameters['token'];
+      final token = bearerToken ?? queryToken;
 
-      final passed = key != null && ApiKeyManager().validate(key);
+      final valid =
+          token != null &&
+          (admin
+              ? ApiKeyManager().validateAdmin(token)
+              : ApiKeyManager().validate(token));
 
-      if (!passed) {
+      if (!valid) {
         request.response
           ..statusCode = HttpStatus.unauthorized
           ..headers.contentType = ContentType.json
           ..write(
             jsonEncode({
               'error': 'Unauthorized',
-              'message': key == null
-                  ? 'Missing API Key (X-API-Key header or ?token=)'
-                  : 'Invalid API Key',
+              'message': token == null
+                  ? 'Missing token (Authorization: Bearer <key> or ?token=)'
+                  : 'Invalid token',
             }),
           );
         await request.response.close();
@@ -33,7 +43,10 @@ class Middleware {
     };
   }
 
-  /// 本地访问免鉴权
+  // ─────────────────────────────────────────
+  // 本地免鉴权
+  // ─────────────────────────────────────────
+
   static MiddlewareHandler localBypass(MiddlewareHandler next) {
     return (HttpRequest request) async {
       final ip = request.connectionInfo?.remoteAddress.address ?? '';
@@ -43,6 +56,10 @@ class Middleware {
       return next(request);
     };
   }
+
+  // ─────────────────────────────────────────
+  // 错误处理
+  // ─────────────────────────────────────────
 
   static MiddlewareHandler errorHandler() {
     return (HttpRequest request) async {
@@ -65,9 +82,13 @@ class Middleware {
     };
   }
 
+  // ─────────────────────────────────────────
+  // 限流
+  // ─────────────────────────────────────────
+
   static MiddlewareHandler rateLimit({
-    int maxRequests = 60, // 最多请求次数
-    Duration window = const Duration(minutes: 1), // 时间窗口
+    int maxRequests = 60,
+    Duration window = const Duration(minutes: 1),
   }) {
     final counts = <String, List<DateTime>>{};
 
@@ -76,15 +97,13 @@ class Middleware {
       final now = DateTime.now();
       final windowStart = now.subtract(window);
 
-      // 清理过期记录
       counts[ip] = (counts[ip] ?? [])
           .where((t) => t.isAfter(windowStart))
           .toList();
 
       if (counts[ip]!.length >= maxRequests) {
         request.response
-          ..statusCode =
-              429 // Too Many Requests
+          ..statusCode = 429
           ..headers.contentType = ContentType.json
           ..headers.set('Retry-After', '60')
           ..write(
@@ -103,10 +122,14 @@ class Middleware {
     };
   }
 
+  // ─────────────────────────────────────────
+  // CORS
+  // ─────────────────────────────────────────
+
   static MiddlewareHandler cors({
     String allowOrigin = '*',
     String allowMethods = 'GET, POST, PUT, DELETE, OPTIONS',
-    String allowHeaders = 'Content-Type, X-API-Key',
+    String allowHeaders = 'Content-Type, Authorization',
   }) {
     return (HttpRequest request) async {
       request.response.headers
@@ -114,19 +137,20 @@ class Middleware {
         ..set('Access-Control-Allow-Methods', allowMethods)
         ..set('Access-Control-Allow-Headers', allowHeaders);
 
-      // OPTIONS 预检请求直接返回
       if (request.method == 'OPTIONS') {
         request.response.statusCode = HttpStatus.noContent;
         await request.response.close();
         return false;
       }
-
       return true;
     };
   }
 
+  // ─────────────────────────────────────────
+  // Body 大小限制
+  // ─────────────────────────────────────────
+
   static MiddlewareHandler bodySizeLimit({int maxBytes = 1024 * 1024}) {
-    // 默认1MB
     return (HttpRequest request) async {
       final contentLength = request.contentLength;
 
@@ -148,6 +172,10 @@ class Middleware {
       return true;
     };
   }
+
+  // ─────────────────────────────────────────
+  // IP 白名单
+  // ─────────────────────────────────────────
 
   static MiddlewareHandler ipWhitelist(List<String> allowedIps) {
     return (HttpRequest request) async {

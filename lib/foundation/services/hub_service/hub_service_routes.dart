@@ -2,10 +2,16 @@ part of 'package:kostori/foundation/services/services.dart';
 
 extension HubServiceRoutes on HubService {
   void registerHubRoutes() {
-    _rooms[_lobbyId] = HubRoom(id: _lobbyId, name: 'Lobby', ownerId: 'server');
+    _rooms[_lobbyId] = HubRoom(
+      roomId: _lobbyId,
+      roomName: 'Lobby',
+      ownerUserId: 'server',
+    );
 
     // ── WebSocket ─────────────────────────────────
     addWs('/hub', (socket, req) async {
+      socket.pingInterval = pingInterval;
+
       bool authed = false;
       String? clientId;
       String? clientName;
@@ -19,48 +25,69 @@ extension HubServiceRoutes on HubService {
             Log.info('HubService', '收到鉴权  token=$token');
             Log.info('HubService', 'activeKey=${ApiKeyManager().activeKey}');
 
-            if (token == null || !ApiKeyManager().validate(token)) {
-              Log.warning('HubService', '❌ 鉴权失败');
-              await socket.close(
-                WebSocketStatus.policyViolation,
-                'Unauthorized',
-              );
-              return;
+            // ★ 免密模式关闭时，必须验证 token
+            if (!_hubNoAuth) {
+              if (token == null || !ApiKeyManager().validate(token)) {
+                Log.warning('HubService', '❌ 鉴权失败');
+                await socket.close(
+                  WebSocketStatus.policyViolation,
+                  'Unauthorized',
+                );
+                return;
+              }
+            } else {
+              Log.info('HubService', '🔓 免密模式，跳过鉴权');
             }
 
             authed = true;
-            clientId = data['id'] as String? ?? _generateId();
-            clientName = _resolveClientName(data['name'] as String? ?? 'User');
+            clientId = data['userId'] as String? ?? _generateId();
+            clientName = _resolveClientName(
+              data['displayName'] as String? ?? 'User',
+            );
 
             if (_blacklist.contains(clientId)) {
               Log.warning('HubService', '🚫 黑名单用户尝试连接：$clientName ($clientId)');
+              _logEvent('🚫 Blocked blacklisted user: $clientName');
               await socket.close(WebSocketStatus.policyViolation, 'Banned');
               return;
             }
 
             if (_clients.containsKey(clientId)) {
-              await _clients[clientId]?.socket.close(
+              await _clients[clientId]?.connection.close(
                 WebSocketStatus.policyViolation,
                 'Replaced by new connection',
               );
             }
 
+            // ★ 判断管理员身份：
+            //   1. 始终检查 _adminIds
+            //   2. 免密模式关闭时，额外检查 token 是否为 admin key
+            final bool isAdmin =
+                _adminIds.contains(clientId) ||
+                (!_hubNoAuth &&
+                    token != null &&
+                    ApiKeyManager().validateAdmin(token));
+
             final client = HubClientInfo(
-              id: clientId,
-              name: clientName,
-              socket: socket,
-              avatar: data['avatar'] as String?,
-              bio: data['bio'] as String?,
-              isGlobalAdmin: _adminIds.contains(clientId),
+              userId: clientId,
+              displayName: clientName,
+              connection: socket,
+              avatarUrl: data['avatarUrl'] as String?,
+              biography: data['biography'] as String?,
+              isGlobalAdmin: isAdmin,
             );
+
             if (client.isGlobalAdmin) {
               Log.info('HubService', '👑 管理员上线：$clientName');
             }
             _clients[clientId] = client;
 
-            _rooms[_lobbyId]!.members[clientId] = client;
+            _rooms[_lobbyId]!.participants[clientId] = client;
             client.currentRoomId = _lobbyId;
             onClientsChanged?.call();
+            _logEvent(
+              '🟢 $clientName${client.isGlobalAdmin ? " 👑" : ""} joined (${_clients.length} online)',
+            );
 
             Log.info(
               'HubService',
@@ -72,21 +99,36 @@ extension HubServiceRoutes on HubService {
               'yourId': clientId,
               'clients': _clients.values.map((c) => c.toJson()).toList(),
               'room': _rooms[_lobbyId]!.toJson(),
-              'history': _rooms[_lobbyId]!.messages
+              'history': _rooms[_lobbyId]!.messageHistory
                   .map((m) => m.toJson())
                   .toList(),
               'rooms': _rooms.values.map((r) => r.toJson()).toList(),
+              if (isAdmin) 'blacklist': _blacklist.toList(),
+              'heartbeatInterval': pingInterval.inMilliseconds,
+              'uploadEnabled': uploadConfig.mode != HubUploadMode.clientOss,
             });
 
             _broadcastToRoom(
               _lobbyId,
               HubMessage(
-                type: HubMessageType.system,
-                from: 'server',
-                payload: {'event': 'client_joined', 'client': client.toJson()},
+                messageType: HubMessageType.system,
+                sender: client.toDto(),
+                targetRoomIds: [_lobbyId],
+                segments: [
+                  TextSegment(
+                    jsonEncode({
+                      'event': 'client_joined',
+                      'client': client.toJson(),
+                    }),
+                  ),
+                ],
               ),
               exclude: clientId,
             );
+
+            _broadcastSystem('client_joined', {
+              'client': client.toJson(),
+            }, exclude: clientId);
 
             continue;
           }
@@ -100,9 +142,10 @@ extension HubServiceRoutes on HubService {
       if (clientId != null) {
         final client = _clients[clientId];
         final roomId = client?.currentRoomId ?? _lobbyId;
-        _rooms[roomId]?.members.remove(clientId);
+        _rooms[roomId]?.participants.remove(clientId);
         _clients.remove(clientId);
         onClientsChanged?.call();
+        _logEvent('🔴 $clientName left (${_clients.length} online)');
 
         Log.info(
           'HubService',
@@ -112,100 +155,258 @@ extension HubServiceRoutes on HubService {
         _broadcastToRoom(
           roomId,
           HubMessage(
-            type: HubMessageType.system,
-            from: 'server',
-            payload: {
-              'event': 'client_left',
-              'clientId': clientId,
-              'clientName': clientName,
-            },
+            messageType: HubMessageType.system,
+            sender: _serverDto,
+            targetRoomIds: [roomId],
+            segments: [
+              TextSegment(
+                jsonEncode({
+                  'event': 'client_left',
+                  'clientId': clientId,
+                  'clientName': clientName,
+                }),
+              ),
+            ],
           ),
         );
+        _broadcastSystem('client_left', {
+          'clientId': clientId,
+          'clientName': clientName,
+        });
       }
     });
 
     // ── HTTP ──────────────────────────────────────
-    addGet('/hub/clients', (req) async {
-      await sendJson(req, {
-        'count': _clients.length,
-        'clients': _clients.values.map((c) => c.toJson()).toList(),
-      });
-    }, middlewares: [authMiddleware]);
-
-    addGet('/hub/rooms', (req) async {
-      await sendJson(req, {
-        'count': _rooms.length,
-        'rooms': _rooms.values.map((r) => r.toJson()).toList(),
-      });
-    }, middlewares: [authMiddleware]);
-
-    addGet('/hub/history', (req) async {
-      final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
-      final room = _rooms[roomId];
-      if (room == null) {
+    addGet(
+      '/hub/clients',
+      (req) async {
         await sendJson(req, {
-          'error': 'Room not found',
-        }, status: HttpStatus.notFound);
-        return;
-      }
-      await sendJson(req, {
-        'count': room.messages.length,
-        'messages': room.messages.map((m) => m.toJson()).toList(),
-      });
-    }, middlewares: [authMiddleware]);
+          'count': _clients.length,
+          'clients': _clients.values.map((c) => c.toJson()).toList(),
+        });
+      },
+      middlewares: _hubAuthMiddleware,
+      doc: RouteDoc(
+        summary: '在线客户端列表',
+        description: '返回当前所有在线客户端信息',
+        requiresAuth: true,
+        params: [
+          DocParam(
+            name: 'token',
+            type: 'query',
+            description: 'API Key',
+            required: true,
+          ),
+        ],
+        response: 'JSON: count, clients[]',
+      ),
+    );
 
-    addPost('/hub/broadcast', (req) async {
-      final body = await readJson(req);
-      if (body == null) return;
-      final roomId = body['room'] as String? ?? _lobbyId;
-      final payload = body['payload'] ?? body;
-      _broadcastToRoom(
-        roomId,
-        HubMessage(
-          type: HubMessageType.broadcast,
-          from: 'server',
-          payload: payload,
-        ),
-      );
-      await sendJson(req, {
-        'sent': true,
-        'to': _rooms[roomId]?.members.length ?? 0,
-      });
-    }, middlewares: [authMiddleware]);
-
-    addGet('/hub/pinned', (req) async {
-      final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
-      final pinned =
-          _rooms[roomId]?.messages.where((m) => m.isPinned).toList() ?? [];
-      await sendJson(req, {
-        'count': pinned.length,
-        'messages': pinned.map((m) => m.toJson()).toList(),
-      });
-    }, middlewares: [authMiddleware]);
-
-    addGet('/hub/search', (req) async {
-      final keyword = req.uri.queryParameters['q'] ?? '';
-      final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
-      if (keyword.isEmpty) {
+    addGet(
+      '/hub/rooms',
+      (req) async {
         await sendJson(req, {
-          'error': 'keyword required',
-        }, status: HttpStatus.badRequest);
-        return;
-      }
-      final results =
-          _rooms[roomId]?.messages
-              .where(
-                (m) => m.payload.toString().toLowerCase().contains(
-                  keyword.toLowerCase(),
-                ),
-              )
-              .toList() ??
-          [];
-      await sendJson(req, {
-        'keyword': keyword,
-        'count': results.length,
-        'results': results.map((m) => m.toJson()).toList(),
-      });
-    }, middlewares: [authMiddleware]);
+          'count': _rooms.length,
+          'rooms': _rooms.values.map((r) => r.toJson()).toList(),
+        });
+      },
+      middlewares: _hubAuthMiddleware,
+      doc: RouteDoc(
+        summary: '房间列表',
+        description: '返回当前所有房间信息',
+        requiresAuth: true,
+        params: [
+          DocParam(
+            name: 'token',
+            type: 'query',
+            description: 'API Key',
+            required: true,
+          ),
+        ],
+        response: 'JSON: count, rooms[]',
+      ),
+    );
+
+    addGet(
+      '/hub/history',
+      (req) async {
+        final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
+        final room = _rooms[roomId];
+        if (room == null) {
+          await sendJson(req, {
+            'error': 'Room not found',
+          }, status: HttpStatus.notFound);
+          return;
+        }
+        await sendJson(req, {
+          'count': room.messageHistory.length,
+          'messages': room.messageHistory.map((m) => m.toJson()).toList(),
+        });
+      },
+      middlewares: _hubAuthMiddleware,
+      doc: RouteDoc(
+        summary: '消息历史',
+        description: '返回指定房间的消息历史，默认为大厅',
+        requiresAuth: true,
+        params: [
+          DocParam(
+            name: 'token',
+            type: 'query',
+            description: 'API Key',
+            required: true,
+          ),
+          DocParam(
+            name: 'room',
+            type: 'query',
+            description: '房间ID，默认为大厅',
+            required: false,
+          ),
+        ],
+        response: 'JSON: count, messages[]',
+      ),
+    );
+
+    addPost(
+      '/hub/broadcast',
+      (req) async {
+        final body = await readJson(req);
+        if (body == null) return;
+        final roomId = body['room'] as String? ?? _lobbyId;
+        final payload = body['payload'] ?? body;
+        _broadcastToRoom(
+          roomId,
+          HubMessage(
+            messageType: HubMessageType.system,
+            sender: _serverDto,
+            targetRoomIds: [roomId],
+            segments: [TextSegment(jsonEncode(payload))],
+          ),
+        );
+        await sendJson(req, {
+          'sent': true,
+          'to':
+              _rooms[roomId]?.participants.length ??
+              0, // members → participants
+        });
+      },
+      middlewares: _hubAuthMiddleware,
+      doc: RouteDoc(
+        summary: '广播消息',
+        description: '向指定房间广播消息，默认为大厅',
+        requiresAuth: true,
+        params: [
+          DocParam(
+            name: 'token',
+            type: 'query',
+            description: 'API Key',
+            required: true,
+          ),
+          DocParam(
+            name: 'room',
+            type: 'body',
+            description: '房间ID，默认为大厅',
+            required: false,
+          ),
+          DocParam(
+            name: 'payload',
+            type: 'body',
+            description: '消息内容',
+            required: true,
+          ),
+        ],
+        response: 'JSON: sent, to',
+      ),
+    );
+
+    addGet(
+      '/hub/pinned',
+      (req) async {
+        final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
+        final pinned =
+            _rooms[roomId]?.messageHistory
+                .where((m) => m.messageType == HubMessageType.pin)
+                .toList() ??
+            [];
+        await sendJson(req, {
+          'count': pinned.length,
+          'messages': pinned.map((m) => m.toJson()).toList(),
+        });
+      },
+      middlewares: _hubAuthMiddleware,
+      doc: RouteDoc(
+        summary: '置顶消息',
+        description: '返回指定房间的所有置顶消息',
+        requiresAuth: true,
+        params: [
+          DocParam(
+            name: 'token',
+            type: 'query',
+            description: 'API Key',
+            required: true,
+          ),
+          DocParam(
+            name: 'room',
+            type: 'query',
+            description: '房间ID，默认为大厅',
+            required: false,
+          ),
+        ],
+        response: 'JSON: count, messages[]',
+      ),
+    );
+
+    addGet(
+      '/hub/search',
+      (req) async {
+        final keyword = req.uri.queryParameters['q'] ?? '';
+        final roomId = req.uri.queryParameters['room'] ?? _lobbyId;
+        if (keyword.isEmpty) {
+          await sendJson(req, {
+            'error': 'keyword required',
+          }, status: HttpStatus.badRequest);
+          return;
+        }
+        final results =
+            _rooms[roomId]?.messageHistory
+                .where(
+                  (m) =>
+                      m.plainText.toLowerCase().contains(keyword.toLowerCase()),
+                )
+                .toList() ??
+            [];
+        await sendJson(req, {
+          'keyword': keyword,
+          'count': results.length,
+          'results': results.map((m) => m.toJson()).toList(),
+        });
+      },
+      middlewares: _hubAuthMiddleware,
+      doc: RouteDoc(
+        summary: '搜索消息',
+        description: '在指定房间内按关键词搜索消息',
+        requiresAuth: true,
+        params: [
+          DocParam(
+            name: 'token',
+            type: 'query',
+            description: 'API Key',
+            required: true,
+          ),
+          DocParam(
+            name: 'q',
+            type: 'query',
+            description: '搜索关键词',
+            required: true,
+          ),
+          DocParam(
+            name: 'room',
+            type: 'query',
+            description: '房间ID，默认为大厅',
+            required: false,
+          ),
+        ],
+        response: 'JSON: keyword, count, results[]',
+      ),
+    );
   }
 }
