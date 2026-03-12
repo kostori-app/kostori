@@ -22,8 +22,17 @@ class HubClient {
 
   HubState get _s => _ref.read(hubProvider);
 
-  void _setState(HubState Function(HubState s) updater) =>
-      _ref.read(hubProvider.notifier).state = updater(_s);
+  void _setState(HubState Function(HubState s) updater) {
+    void apply() => _ref.read(hubProvider.notifier).state = updater(_s);
+
+    if (WidgetsBinding.instance.schedulerPhase == SchedulerPhase.idle ||
+        WidgetsBinding.instance.schedulerPhase ==
+            SchedulerPhase.postFrameCallbacks) {
+      apply();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => apply());
+    }
+  }
 
   // ── 状态代理 getters ──────────────────────────────────────────────────────
 
@@ -67,13 +76,36 @@ class HubClient {
     appdata.saveData();
   }
 
-  // ── 回调 ──────────────────────────────────────────────────────────────────
+  void addMessageListener(void Function(Map<String, dynamic>) fn) {
+    _messageListeners.add(fn);
+  }
 
-  Function(Map<String, dynamic>)? onMessage;
+  void removeMessageListener(void Function(Map<String, dynamic>) fn) {
+    _messageListeners.remove(fn);
+  }
+
+  String? activeDmUserId;
+  final Map<String, int> dmUnread = {};
+
+  void clearDmUnread(String userId) {
+    dmUnread.remove(userId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      onClientsChanged?.call();
+    });
+  }
+
+  void _incrementDmUnread(String userId) {
+    dmUnread[userId] = (dmUnread[userId] ?? 0) + 1;
+    onClientsChanged?.call();
+  }
+
+  // ── 回调 ──────────────────────────────────────────────────────────────────
+  final List<void Function(Map<String, dynamic>)> _messageListeners = [];
   VoidCallback? onDisconnected;
   VoidCallback? onConnected;
   VoidCallback? onRoomListChanged;
   VoidCallback? onClientsChanged;
+  Function(HubMessage message)? onBotMessage;
 
   // ── 黑名单 ────────────────────────────────────────────────────────────
 

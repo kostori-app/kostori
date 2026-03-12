@@ -10,6 +10,7 @@ import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -85,9 +86,7 @@ class HubCrypto {
   static Uint8List? _iv;
 
   static void init(String token) {
-    // 用 SHA-256 派生 32 字节密钥
     final keyBytes = sha256.convert(utf8.encode(token)).bytes;
-    // 用 MD5 派生 16 字节 IV
     final ivBytes = md5.convert(utf8.encode(token)).bytes;
     _key = Uint8List.fromList(keyBytes);
     _iv = Uint8List.fromList(ivBytes);
@@ -109,7 +108,6 @@ class HubCrypto {
           null,
         ),
       );
-      // ← 不手动 pad，直接传原始数据
       final input = Uint8List.fromList(utf8.encode(plainText));
       final output = cipher.process(input);
       return base64Encode(output);
@@ -148,9 +146,9 @@ class HubCrypto {
   }
 }
 
-// ── 枚举 ──────────────────────────────────────────
-
-enum HubMessageType { chat, system, pin, reaction, recall }
+/// 聊天消息的子类型，用于 [HubMessage.messageType]。
+/// system 仅客户端渲染用，不通过 HubMessage 在网络上传输。
+enum HubMessageType { chat, pin, reaction, recall }
 
 enum UserStatus { online, away, busy, offline }
 

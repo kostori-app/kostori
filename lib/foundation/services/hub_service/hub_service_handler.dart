@@ -23,7 +23,7 @@ extension HubServiceHandler on HubService {
       case 'broadcast':
         if (client?.isMuted == true) {
           client?.send({
-            'messageType': 'error',
+            'type': 'error',
             'message': '你已被禁言，解除时间：${client.mutedUntil!.toIso8601String()}',
           });
           return;
@@ -40,10 +40,7 @@ extension HubServiceHandler on HubService {
 
       case 'unicast':
         if (targetUserId == null) {
-          client?.send({
-            'messageType': 'error',
-            'message': '单播需要指定 targetUserId 字段',
-          });
+          client?.send({'type': 'error', 'message': '单播需要指定 targetUserId 字段'});
           return;
         }
         _unicast(
@@ -60,7 +57,7 @@ extension HubServiceHandler on HubService {
       case 'ping':
         client?.lastHeartbeat = DateTime.now();
         client?.send({
-          'messageType': 'pong',
+          'type': 'pong',
           'time': DateTime.now().toIso8601String(),
         });
 
@@ -98,6 +95,8 @@ extension HubServiceHandler on HubService {
         _handleRoomUnban(fromId, roomId, data, client);
       case 'set_announcement':
         _handleSetAnnouncement(fromId, roomId, data, client);
+      case 'remove_announcement':
+        _handleRemoveAnnouncement(fromId, roomId, data, client);
       case 'set_welcome_message':
         _handleSetWelcomeMessage(fromId, roomId, data, client);
       case 'set_room_password':
@@ -109,24 +108,24 @@ extension HubServiceHandler on HubService {
 
       case 'server_ban':
         if (client?.isGlobalAdmin != true) {
-          client?.send({'messageType': 'error', 'message': '无权限'});
+          client?.send({'type': 'error', 'message': '无权限'});
           return;
         }
         final banId = data['targetUserId'] as String?;
         if (banId == null) {
-          client?.send({'messageType': 'error', 'message': '需要 targetUserId'});
+          client?.send({'type': 'error', 'message': '需要 targetUserId'});
           return;
         }
         addToBlacklist(banId);
 
       case 'server_unban':
         if (client?.isGlobalAdmin != true) {
-          client?.send({'messageType': 'error', 'message': '无权限'});
+          client?.send({'type': 'error', 'message': '无权限'});
           return;
         }
         final unbanId = data['targetUserId'] as String?;
         if (unbanId == null) {
-          client?.send({'messageType': 'error', 'message': '需要 targetUserId'});
+          client?.send({'type': 'error', 'message': '需要 targetUserId'});
           return;
         }
         removeFromBlacklist(unbanId);
@@ -136,23 +135,15 @@ extension HubServiceHandler on HubService {
         if (targetId == null) return;
         final target = _clients[targetId];
         if (target == null) return;
-        target.send(
-          _makeSystemMessage({
-            'event': 'poked',
-            'fromId': fromId,
-            'fromName': client?.displayName ?? fromId,
-          }).toJson(),
-        );
+        _sendSystemTo(target, HubSystemEvent.poked, {
+          'fromId': fromId,
+          'fromName': client?.displayName ?? fromId,
+        });
 
       default:
-        client?.send({
-          'messageType': 'error',
-          'message': '未知消息类型：$messageType',
-        });
+        client?.send({'type': 'error', 'message': '未知消息类型：$messageType'});
     }
   }
-
-  // ── 工具 ──────────────────────────────────────────────────────────────────
 
   List<MessageSegment> _parseSegments(dynamic raw) {
     if (raw is List) {
@@ -174,14 +165,13 @@ extension HubServiceHandler on HubService {
   String _name(String? id) =>
       id == null ? 'server' : (_clients[id]?.displayName ?? id);
 
-  /// 将客户端移入大厅并通知
   void _moveToLobby(HubClientInfo target) {
     final fromRoomId = target.currentRoomId;
     _rooms[fromRoomId]?.participants.remove(target.userId);
     _rooms[_lobbyId]!.participants[target.userId] = target;
     target.currentRoomId = _lobbyId;
     target.send({
-      'messageType': 'room_joined',
+      'type': 'room_joined',
       'room': _rooms[_lobbyId]!.toJson(),
       'history': _rooms[_lobbyId]!.messageHistory
           .map((m) => m.toJson())
@@ -189,73 +179,33 @@ extension HubServiceHandler on HubService {
     });
   }
 
-  /// 广播「某人离开房间」system 消息
   void _broadcastLeft(String fromId, String roomId, HubClientInfo client) {
-    _broadcastToRoom(
-      roomId,
-      HubMessage(
-        messageType: HubMessageType.system,
-        sender: client.toDto(),
-        targetRoomIds: [roomId],
-        segments: [
-          TextSegment(
-            jsonEncode({
-              'event': 'client_left_room',
-              'clientId': fromId,
-              'clientName': client.displayName,
-              'roomId': roomId,
-            }),
-          ),
-        ],
-      ),
-    );
+    _broadcastSystemToRoom(roomId, HubSystemEvent.clientLeftRoom, {
+      'clientId': fromId,
+      'clientName': client.displayName,
+      'client': client.toJson(),
+      'roomId': roomId,
+    });
   }
 
-  /// 广播「某人加入房间」system 消息
   void _broadcastJoined(String fromId, String roomId, HubClientInfo client) {
-    _broadcastToRoom(
-      roomId,
-      HubMessage(
-        messageType: HubMessageType.system,
-        sender: client.toDto(),
-        targetRoomIds: [roomId],
-        segments: [
-          TextSegment(
-            jsonEncode({
-              'event': 'client_joined_room',
-              'client': client.toJson(),
-              'roomId': roomId,
-            }),
-          ),
-        ],
-      ),
-      exclude: fromId,
-    );
+    _broadcastSystemToRoom(roomId, HubSystemEvent.clientJoinedRoom, {
+      'client': client.toJson(),
+      'roomId': roomId,
+    }, exclude: fromId);
   }
 
   void _onClientJoinedRoom(HubClientInfo client, HubRoom room) {
-    // ── 公告（发给所有人，更新公告栏）─────────────────────────────
     if (room.announcements.isNotEmpty) {
-      _broadcastToRoom(
-        room.roomId,
-        _makeSystemMessage({
-          'event': 'room_announcement',
-          'announcements': room.announcements,
-          'setByUserId': room.ownerUserId,
-          'setByName': _clients[room.ownerUserId]?.displayName ?? '',
-        }),
-      );
+      _broadcastSystemToRoom(room.roomId, HubSystemEvent.roomAnnouncement, {
+        'announcements': room.announcements,
+        'setByUserId': room.ownerUserId,
+        'setByName': _clients[room.ownerUserId]?.displayName ?? '',
+      });
     }
-
-    // ── 欢迎语（只发给刚加入的人）────────────────────────────────
     final welcome = room.welcomeMessage;
     if (welcome != null && welcome.isNotEmpty) {
-      client.send(
-        _makeSystemMessage({
-          'event': 'room_welcome',
-          'message': welcome,
-        }).toJson(),
-      );
+      _sendSystemTo(client, HubSystemEvent.roomWelcome, {'message': welcome});
     }
   }
 
@@ -268,15 +218,12 @@ extension HubServiceHandler on HubService {
       if (seg is! MentionSegment) continue;
       final target = _clients[seg.userId];
       if (target == null || seg.userId == fromId) continue;
-      target.send(
-        _makeSystemMessage({
-          'event': 'mentioned',
-          'fromId': fromId,
-          'fromName': sender?.displayName ?? fromId,
-          'messageId': message.messageId,
-          'previewText': message.plainText,
-        }).toJson(),
-      );
+      _sendSystemTo(target, HubSystemEvent.mentioned, {
+        'fromId': fromId,
+        'fromName': sender?.displayName ?? fromId,
+        'messageId': message.messageId,
+        'previewText': message.plainText,
+      });
     }
   }
 
@@ -289,18 +236,10 @@ extension HubServiceHandler on HubService {
     final room = _rooms[roomId];
     if (room == null) return;
     if (!_isRoomAdmin(fromId, roomId)) {
-      client?.send({'messageType': 'error', 'message': '无权限'});
+      client?.send({'type': 'error', 'message': '无权限'});
       return;
     }
     room.welcomeMessage = data['welcomeMessage'] as String?;
-    // 通知房间内所有人房间信息已更新
-    _broadcastToRoom(
-      roomId,
-      _makeSystemMessage({
-        'event': 'room_updated',
-        'roomId': roomId,
-        'changes': {'welcomeMessage': room.welcomeMessage},
-      }),
-    );
+    _broadcastSystem(HubSystemEvent.roomUpdated, {'room': room.toJson()});
   }
 }

@@ -11,6 +11,9 @@ class HubState {
   final String? currentRoomName;
   final String? lobbyRoomId;
   final List<String> serverBannedIds;
+  final Map<String, List<HubMessage>> dmHistory;
+  final Map<String, int> dmUnread;
+  final String? activeDmUserId;
 
   const HubState({
     this.myId,
@@ -23,6 +26,9 @@ class HubState {
     this.lobbyRoomId,
     this.serverBannedIds = const [],
     this.serverUploadEnabled = false,
+    this.dmHistory = const {},
+    this.dmUnread = const {},
+    this.activeDmUserId,
   });
 
   HubState copyWith({
@@ -36,6 +42,10 @@ class HubState {
     String? lobbyRoomId,
     List<String>? serverBannedIds,
     bool? serverUploadEnabled,
+    Map<String, List<HubMessage>>? dmHistory,
+    Map<String, int>? dmUnread,
+    String? activeDmUserId,
+    bool clearActiveDmUserId = false,
   }) => HubState(
     myId: myId ?? this.myId,
     isConnected: isConnected ?? this.isConnected,
@@ -47,6 +57,11 @@ class HubState {
     lobbyRoomId: lobbyRoomId ?? this.lobbyRoomId,
     serverBannedIds: serverBannedIds ?? this.serverBannedIds,
     serverUploadEnabled: serverUploadEnabled ?? this.serverUploadEnabled,
+    dmHistory: dmHistory ?? this.dmHistory,
+    dmUnread: dmUnread ?? this.dmUnread,
+    activeDmUserId: clearActiveDmUserId
+        ? null
+        : (activeDmUserId ?? this.activeDmUserId),
   );
 
   List<HubMessage> get messageHistory {
@@ -69,6 +84,8 @@ class HubState {
 
   HubRoomDto? get currentRoom =>
       roomList.firstWhereOrNull((r) => r.roomId == currentRoomId);
+
+  int totalDmUnread() => dmUnread.values.fold(0, (a, b) => a + b);
 }
 
 final hubProvider = StateProvider<HubState>((ref) => const HubState());

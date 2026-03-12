@@ -129,13 +129,13 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSS) {
           _hubClient.onRoomListChanged = () {
             if (context.mounted) setSS(() {});
           };
 
-          // 从 hubProvider 读取最新状态
           final hubState = ref.read(hubProvider);
           final rooms = hubState.roomList;
           final myId = hubState.myId;
@@ -143,13 +143,13 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _hubClient.isGlobalAdmin ||
               !rooms.any((r) => r.ownerUserId == myId);
 
-          return _DraggableSheet(
-            title: "Rooms".tl,
+          return HubSheet(
+            title: 'Rooms'.tl,
             icon: Icons.meeting_room_outlined,
             headerTrailing: canCreate
                 ? TextButton.icon(
                     icon: const Icon(Icons.add, size: 16),
-                    label: Text("Create".tl),
+                    label: Text('Create'.tl),
                     onPressed: () async {
                       await _showClientCreateRoomDialog(context);
                       setSS(() {});
@@ -163,7 +163,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                     padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
                     child: TextButton.icon(
                       icon: const Icon(Icons.logout, size: 16),
-                      label: Text("Leave Room".tl),
+                      label: Text('Leave Room'.tl),
                       onPressed: () {
                         _hubClient.leaveRoom();
                         Navigator.pop(context);
@@ -172,7 +172,9 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                   )
                 : null,
             builder: (context, sc) {
-              if (rooms.isEmpty) return Center(child: Text("No rooms".tl));
+              if (rooms.isEmpty) {
+                return Center(child: HubEmptyHint('No rooms'.tl));
+              }
               return ListView.builder(
                 controller: sc,
                 itemCount: rooms.length,
@@ -191,38 +193,29 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                           ? Icons.lock_outlined
                           : Icons.meeting_room_outlined,
                     ),
-                    title: Text(isLobby ? "Lobby".tl : room.roomName),
-                    subtitle: Text('${room.participantCount} ${"members".tl}'),
+                    title: Text(isLobby ? 'Lobby'.tl : room.roomName),
+                    subtitle: Text('${room.participantCount} ${'members'.tl}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (canManage)
                           IconButton(
                             icon: const Icon(Icons.settings_outlined, size: 18),
-                            tooltip: "Room Settings".tl,
+                            tooltip: 'Room Settings'.tl,
                             onPressed: () =>
-                                _showClientRoomSettingsSheet(context, room),
+                                showHubRoomSettingsSheet(context, room, ref),
                           ),
                         if (isCurrent)
                           Text(
-                            "Current".tl,
+                            'Current'.tl,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
                               fontSize: 12,
                             ),
                           )
                         else ...[
-                          if (!isLobby && room.ownerUserId == myId)
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18),
-                              tooltip: "Delete Room".tl,
-                              onPressed: () {
-                                _hubClient.deleteRoom(room.roomId);
-                                setSS(() {});
-                              },
-                            ),
                           TextButton(
-                            child: Text("Join".tl),
+                            child: Text('Join'.tl),
                             onPressed: () async {
                               if (room.isLocked) {
                                 final pwd = await _showPasswordDialog(context);
@@ -263,21 +256,21 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Room Password".tl),
+        title: Text('Room Password'.tl),
         content: TextField(
           controller: ctrl,
           obscureText: true,
           autofocus: true,
-          decoration: InputDecoration(labelText: "Password".tl),
+          decoration: InputDecoration(labelText: 'Password'.tl),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancel".tl),
+            child: Text('Cancel'.tl),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, ctrl.text),
-            child: Text("OK".tl),
+            child: Text('OK'.tl),
           ),
         ],
       ),
@@ -290,15 +283,16 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSS) {
           final blocked = _hubClient.blockedUsers;
-          return _DraggableSheet(
-            title: "Blocked Users".tl,
+          return HubSheet(
+            title: 'Blocked Users'.tl,
             icon: Icons.block_outlined,
             builder: (context, sc) {
               if (blocked.isEmpty) {
-                return Center(child: _EmptyHint("No blocked users".tl));
+                return Center(child: HubEmptyHint('No blocked users'.tl));
               }
               return ListView.builder(
                 controller: sc,
@@ -309,12 +303,13 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                       .read(hubProvider)
                       .onlineClients
                       .firstWhereOrNull((c) => c.userId == id);
-                  return _ClientTile(
+                  return HubClientTile(
                     name: client?.displayName ?? id,
                     avatarUrl: client?.avatarUrl,
+                    userId: id,
                     trailing: IconButton(
                       icon: const Icon(Icons.lock_open_outlined, size: 18),
-                      tooltip: "Unblock".tl,
+                      tooltip: 'Unblock'.tl,
                       onPressed: () {
                         _hubClient.unblockUser(id);
                         setSS(() {});
@@ -331,284 +326,16 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     );
   }
 
-  // ── 服务端黑名单 ──────────────────────────────────────────────────────────
-
-  void _showServerBlacklistSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSS) {
-          final banned = ref.read(hubProvider).serverBannedIds;
-          return _DraggableSheet(
-            title: "Server Blacklist".tl,
-            icon: Icons.block_outlined,
-            builder: (context, sc) {
-              if (banned.isEmpty) {
-                return Center(child: _EmptyHint("No banned users".tl));
-              }
-              return ListView.builder(
-                controller: sc,
-                itemCount: banned.length,
-                itemBuilder: (context, i) {
-                  final id = banned[i];
-                  return _ClientTile(
-                    name: id,
-                    trailing: IconButton(
-                      icon: const Icon(Icons.lock_open_outlined, size: 18),
-                      tooltip: "Remove from Blacklist".tl,
-                      onPressed: () {
-                        _hubClient.serverUnban(id);
-                        setSS(() {});
-                        setState(() {});
-                      },
-                    ),
-                  );
-                },
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  // ── 房间设置 ──────────────────────────────────────────────────────────────
-
-  void _showClientRoomSettingsSheet(BuildContext context, HubRoomDto room) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSS) {
-          final isGlobalAdmin = _hubClient.isGlobalAdmin;
-          final isRoomAdmin = _hubClient.isRoomAdminOf(room.roomId);
-
-          return _DraggableSheet(
-            title: room.roomName,
-            icon: Icons.settings_outlined,
-            builder: (context, sc) => ListView(
-              controller: sc,
-              children: [
-                // ── 公告 ──
-                _SettingPartTitle(
-                  title: "Announcements".tl,
-                  icon: Icons.campaign_outlined,
-                ),
-                if (room.announcements.isEmpty)
-                  ListTile(
-                    title: Text(
-                      "No announcements".tl,
-                      style: TextStyle(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.toOpacity(0.4),
-                      ),
-                    ),
-                  )
-                else
-                  ...room.announcements.asMap().entries.map(
-                    (entry) => ListTile(
-                      title: Text(entry.value),
-                      trailing: isRoomAdmin || isGlobalAdmin
-                          ? IconButton(
-                              icon: const Icon(Icons.delete_outline, size: 18),
-                              onPressed: () => setSS(
-                                () => room.announcements.removeAt(entry.key),
-                              ),
-                            )
-                          : null,
-                    ),
-                  ),
-                if (isRoomAdmin || isGlobalAdmin)
-                  ListTile(
-                    leading: const Icon(Icons.add, size: 18),
-                    title: Text("Add Announcement".tl),
-                    onTap: () async {
-                      final ctrl = TextEditingController();
-                      final result = await showDialog<String>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text("Add Announcement".tl),
-                          content: TextField(
-                            controller: ctrl,
-                            maxLines: 3,
-                            autofocus: true,
-                            decoration: InputDecoration(
-                              hintText: "Enter announcement...".tl,
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text("Cancel".tl),
-                            ),
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.pop(context, ctrl.text),
-                              child: Text("Save".tl),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (result != null && result.isNotEmpty) {
-                        _hubClient.setAnnouncement(result);
-                        setSS(() => room.announcements.add(result));
-                      }
-                    },
-                  ),
-
-                // ── 房间管理员 ──
-                if (isGlobalAdmin) ...[
-                  _SettingPartTitle(
-                    title: "Room Admins".tl,
-                    icon: Icons.manage_accounts_outlined,
-                  ),
-                  ..._hubClient.currentRoomClients
-                      .where((c) => room.moderatorIds.contains(c.userId))
-                      .map(
-                        (c) => _ClientTile(
-                          name: c.displayName,
-                          avatarUrl: c.avatarUrl,
-                          trailing: IconButton(
-                            icon: const Icon(
-                              Icons.remove_circle_outline,
-                              size: 18,
-                            ),
-                            tooltip: "Remove Admin".tl,
-                            onPressed: () {
-                              _hubClient.setRoomAdmin(c.userId, value: false);
-                              setSS(() => room.moderatorIds.remove(c.userId));
-                              setState(() {});
-                            },
-                          ),
-                        ),
-                      ),
-                  ListTile(
-                    leading: const Icon(Icons.add, size: 18),
-                    title: Text("Add Room Admin".tl),
-                    onTap: () => _showPickMemberDialog(
-                      context,
-                      room,
-                      setSS,
-                      isAdminPicker: true,
-                    ),
-                  ),
-                ],
-
-                // ── 房间封禁 ──
-                if (isGlobalAdmin || isRoomAdmin) ...[
-                  _SettingPartTitle(
-                    title: "Room Bans".tl,
-                    icon: Icons.block_outlined,
-                  ),
-                  if (room.bannedUserIds.isEmpty)
-                    _EmptyHint("No banned users".tl),
-                  ...room.bannedUserIds.map((id) {
-                    final banned = ref
-                        .read(hubProvider)
-                        .onlineClients
-                        .firstWhereOrNull((c) => c.userId == id);
-                    return _ClientTile(
-                      name: banned?.displayName ?? id,
-                      avatarUrl: banned?.avatarUrl,
-                      trailing: IconButton(
-                        icon: const Icon(Icons.lock_open_outlined, size: 18),
-                        tooltip: "Unban".tl,
-                        onPressed: () {
-                          _hubClient.roomUnban(id);
-                          setSS(() => room.bannedUserIds.remove(id));
-                          setState(() {});
-                        },
-                      ),
-                    );
-                  }),
-                  ListTile(
-                    leading: const Icon(Icons.person_off_outlined, size: 18),
-                    title: Text("Ban Member".tl),
-                    onTap: () => _showPickMemberDialog(
-                      context,
-                      room,
-                      setSS,
-                      isAdminPicker: false,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showPickMemberDialog(
-    BuildContext context,
-    HubRoomDto room,
-    StateSetter setSS, {
-    required bool isAdminPicker,
-  }) {
-    final myId = ref.read(hubProvider).myId;
-    final members = room.participants;
-    final available = members
-        .where(
-          (c) =>
-              c.userId != myId &&
-              c.userId != room.ownerUserId &&
-              (isAdminPicker ? !room.moderatorIds.contains(c.userId) : true),
-        )
-        .toList();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isAdminPicker ? "Add Room Admin".tl : "Ban Member".tl),
-        content: SizedBox(
-          width: 300,
-          child: ListView(
-            shrinkWrap: true,
-            children: available
-                .map(
-                  (c) => _ClientTile(
-                    name: c.displayName,
-                    avatarUrl: c.avatarUrl,
-                    onTap: () {
-                      Navigator.pop(context);
-                      if (isAdminPicker) {
-                        _hubClient.setRoomAdmin(c.userId, value: true);
-                        setSS(() => room.moderatorIds.add(c.userId));
-                      } else {
-                        _hubClient.roomBan(c.userId);
-                        setSS(() => room.bannedUserIds.add(c.userId));
-                      }
-                      setState(() {});
-                    },
-                  ),
-                )
-                .toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel".tl),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    // 核心状态来自 provider，自动 rebuild
     final hubState = ref.watch(hubProvider);
     final isConnected = _hubClient.isConnected;
     final cs = Theme.of(context).colorScheme;
 
     return PopUpWidgetScaffold(
-      title: "Hub Details".tl,
+      title: 'Hub Details'.tl,
       body: CustomScrollView(
         slivers: [
           // ── 服务器地址 ──
@@ -616,7 +343,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Server Address".tl,
+                  title: 'Server Address'.tl,
                   icon: Icons.dns_outlined,
                 ),
                 Padding(
@@ -651,7 +378,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                         children: [
                           Expanded(
                             child: _LabeledField(
-                              label: "Host".tl,
+                              label: 'Host'.tl,
                               child: _HostInput(
                                 controller: _hostController,
                                 enabled: !isConnected,
@@ -667,7 +394,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                           SizedBox(
                             width: 80,
                             child: _LabeledField(
-                              label: "Port".tl,
+                              label: 'Port'.tl,
                               child: _NumberInput(
                                 controller: _portController,
                                 enabled: !isConnected,
@@ -692,12 +419,12 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Authentication".tl,
+                  title: 'Authentication'.tl,
                   icon: Icons.key_outlined,
                 ),
                 _SettingRow(
-                  title: "Hub Token".tl,
-                  subtitle: "Token from the hub server".tl,
+                  title: 'Hub Token'.tl,
+                  subtitle: 'Token from the hub server'.tl,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -708,26 +435,26 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                               : Icons.visibility,
                           size: 18,
                         ),
-                        tooltip: _tokenObscured ? "Show".tl : "Hide".tl,
+                        tooltip: _tokenObscured ? 'Show'.tl : 'Hide'.tl,
                         onPressed: () =>
                             setState(() => _tokenObscured = !_tokenObscured),
                       ),
                       if (_tokenController.text.isNotEmpty)
                         IconButton(
                           icon: const Icon(Icons.copy, size: 18),
-                          tooltip: "Copy".tl,
+                          tooltip: 'Copy'.tl,
                           onPressed: () {
                             Clipboard.setData(
                               ClipboardData(text: _tokenController.text),
                             );
-                            App.rootContext.showMessage(message: "Copied".tl);
+                            App.rootContext.showMessage(message: 'Copied'.tl);
                           },
                         ),
                       if (!isConnected)
                         _tokenController.text.isEmpty
                             ? IconButton(
                                 icon: const Icon(Icons.content_paste, size: 18),
-                                tooltip: "Paste".tl,
+                                tooltip: 'Paste'.tl,
                                 onPressed: () async {
                                   final data = await Clipboard.getData(
                                     Clipboard.kTextPlain,
@@ -742,7 +469,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                               )
                             : IconButton(
                                 icon: const Icon(Icons.clear, size: 18),
-                                tooltip: "Clear".tl,
+                                tooltip: 'Clear'.tl,
                                 onPressed: () {
                                   _tokenController.clear();
                                   _hubClient.saveToken('');
@@ -798,23 +525,23 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: "Profile & Room".tl,
+                    title: 'Profile & Room'.tl,
                     icon: Icons.person_outline,
                   ),
                   _SettingRow(
-                    title: "Profile".tl,
-                    subtitle: _hubClient.savedName ?? "Not set".tl,
+                    title: 'Profile'.tl,
+                    subtitle: _hubClient.savedName ?? 'Not set'.tl,
                     trailing: IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 18),
                       onPressed: () => _showEditProfileDialog(context),
                     ),
                   ),
                   _SettingRow(
-                    title: "Current Room".tl,
+                    title: 'Current Room'.tl,
                     subtitle: () {
                       final name = hubState.currentRoomName;
                       return (name == null || name.toLowerCase() == 'lobby')
-                          ? "Lobby".tl
+                          ? 'Lobby'.tl
                           : name;
                     }(),
                     trailing: IconButton(
@@ -832,34 +559,14 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: "Blocked Users".tl,
+                    title: 'Blocked Users'.tl,
                     icon: Icons.volume_off_outlined,
                   ),
                   _SettingRow(
-                    title: '${_hubClient.blockedUsers.length} ${"blocked".tl}',
+                    title: '${_hubClient.blockedUsers.length} ${'blocked'.tl}',
                     trailing: IconButton(
                       icon: const Icon(Icons.open_in_new, size: 18),
                       onPressed: () => _showClientBlacklistSheet(context),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // ── 服务端黑名单 ──
-          if (isConnected && hubState.isGlobalAdmin)
-            _BuildSectionPadding(
-              _SettingCard(
-                children: [
-                  _SettingPartTitle(
-                    title: "Server Blacklist".tl,
-                    icon: Icons.block_outlined,
-                  ),
-                  _SettingRow(
-                    title: '${hubState.serverBannedIds.length} ${"banned".tl}',
-                    trailing: IconButton(
-                      icon: const Icon(Icons.open_in_new, size: 18),
-                      onPressed: () => _showServerBlacklistSheet(context),
                     ),
                   ),
                 ],
@@ -872,53 +579,48 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: "Online Clients".tl,
+                    title: 'Online Clients'.tl,
                     icon: Icons.people_outline,
                   ),
-                  ...hubState
-                      .currentRoomClients(hubState.lobbyRoomId)
-                      .map(
-                        (client) => _OnlineClientTile(
-                          client: client,
-                          myId: hubState.myId,
-                          isBlocked: _hubClient.isBlocked(client.userId),
-                          // ← _hubClient 不是 _hub
-                          canManage:
-                              hubState.isGlobalAdmin ||
-                              _hubClient.isRoomAdminOf(hubState.currentRoomId),
-                          isBlacklisted: hubState.serverBannedIds.contains(
-                            client.userId,
-                          ),
-                          onBlock: () {
-                            _hubClient.isBlocked(client.userId)
-                                ? _hubClient.unblockUser(client.userId)
-                                : _hubClient.blockUser(client.userId);
-                            setState(() {});
-                          },
-                          onMute: (seconds) {
-                            if (seconds == 0 || client.isMuted) {
-                              _hubClient.unmute(client.userId);
-                            } else {
-                              _hubClient.mute(client.userId, seconds: seconds);
-                            }
-                            setState(() {});
-                          },
-                          onKick: () {
-                            _hubClient.kickFromRoom(client.userId);
-                            setState(() {});
-                          },
-                          onBlacklist: hubState.isGlobalAdmin
-                              ? () {
-                                  hubState.serverBannedIds.contains(
-                                        client.userId,
-                                      )
-                                      ? _hubClient.serverUnban(client.userId)
-                                      : _hubClient.serverBan(client.userId);
-                                  setState(() {});
-                                }
-                              : null,
-                        ),
+                  ...hubState.onlineClients.map(
+                    (client) => _OnlineClientTile(
+                      client: client,
+                      myId: hubState.myId,
+                      isBlocked: _hubClient.isBlocked(client.userId),
+                      canManage:
+                          hubState.isGlobalAdmin ||
+                          _hubClient.isRoomAdminOf(hubState.currentRoomId),
+                      isBlacklisted: hubState.serverBannedIds.contains(
+                        client.userId,
                       ),
+                      onBlock: () {
+                        _hubClient.isBlocked(client.userId)
+                            ? _hubClient.unblockUser(client.userId)
+                            : _hubClient.blockUser(client.userId);
+                        setState(() {});
+                      },
+                      onMute: (seconds) {
+                        if (seconds == 0 || client.isMuted) {
+                          _hubClient.unmute(client.userId);
+                        } else {
+                          _hubClient.mute(client.userId, seconds: seconds);
+                        }
+                        setState(() {});
+                      },
+                      onKick: () {
+                        _hubClient.kickFromRoom(client.userId);
+                        setState(() {});
+                      },
+                      onBlacklist: hubState.isGlobalAdmin
+                          ? () {
+                              hubState.serverBannedIds.contains(client.userId)
+                                  ? _hubClient.serverUnban(client.userId)
+                                  : _hubClient.serverBan(client.userId);
+                              setState(() {});
+                            }
+                          : null,
+                    ),
+                  ),
                 ],
               ),
             ),

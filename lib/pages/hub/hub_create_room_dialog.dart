@@ -53,25 +53,14 @@ Future<T?> showHubFormDialog<T>({
 // ── 创建房间对话框 ──────────────────────────────────────────────────────────────
 
 Future<HubCreateRoomResult?> showCreateRoomDialog() async {
-  final nameCtrl = TextEditingController();
-  final passwordCtrl = TextEditingController();
-  final announcementCtrl = TextEditingController();
   final notifier = _CreateRoomNotifier();
 
   final result = await showDialog<HubCreateRoomResult>(
     context: App.rootContext,
     barrierDismissible: true,
-    builder: (ctx) => _CreateRoomDialog(
-      nameCtrl: nameCtrl,
-      passwordCtrl: passwordCtrl,
-      announcementCtrl: announcementCtrl,
-      notifier: notifier,
-    ),
+    builder: (ctx) => _CreateRoomDialog(notifier: notifier),
   );
 
-  nameCtrl.dispose();
-  passwordCtrl.dispose();
-  announcementCtrl.dispose();
   return result;
 }
 
@@ -113,17 +102,9 @@ class _CreateRoomNotifier extends ChangeNotifier {
 // ── 对话框 widget ─────────────────────────────────────────────────────────────
 
 class _CreateRoomDialog extends StatefulWidget {
-  final TextEditingController nameCtrl;
-  final TextEditingController passwordCtrl;
-  final TextEditingController announcementCtrl;
   final _CreateRoomNotifier notifier;
 
-  const _CreateRoomDialog({
-    required this.nameCtrl,
-    required this.passwordCtrl,
-    required this.announcementCtrl,
-    required this.notifier,
-  });
+  const _CreateRoomDialog({required this.notifier});
 
   @override
   State<_CreateRoomDialog> createState() => _CreateRoomDialogState();
@@ -131,12 +112,18 @@ class _CreateRoomDialog extends StatefulWidget {
 
 class _CreateRoomDialogState extends State<_CreateRoomDialog> {
   late final _CreateRoomNotifier _n;
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _passwordCtrl;
+  late final TextEditingController _announcementCtrl;
   bool _obscurePassword = true;
 
   @override
   void initState() {
     super.initState();
     _n = widget.notifier;
+    _nameCtrl = TextEditingController();
+    _passwordCtrl = TextEditingController();
+    _announcementCtrl = TextEditingController();
     _n.addListener(() {
       if (mounted) setState(() {});
     });
@@ -144,23 +131,25 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
+    _passwordCtrl.dispose();
+    _announcementCtrl.dispose();
     _n.dispose();
     super.dispose();
   }
 
   void _confirm() {
-    final name = widget.nameCtrl.text.trim();
+    final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
-    final pwd = widget.passwordCtrl.text.trim();
-    final announcement = widget.announcementCtrl.text.trim();
-    Navigator.of(context).pop(
-      HubCreateRoomResult(
-        name: name,
-        password: pwd.isEmpty ? null : pwd,
-        announcement: announcement.isEmpty ? null : announcement,
-        maxParticipants: _n.hasLimit ? _n.maxParticipants.round() : null,
-      ),
+    final pwd = _passwordCtrl.text.trim();
+    final announcement = _announcementCtrl.text.trim();
+    final result = HubCreateRoomResult(
+      name: name,
+      password: pwd.isEmpty ? null : pwd,
+      announcement: announcement.isEmpty ? null : announcement,
+      maxParticipants: _n.hasLimit ? _n.maxParticipants.round() : null,
     );
+    Navigator.of(context).pop(result);
   }
 
   @override
@@ -177,7 +166,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
           _FieldLabel('Room Name'.tl),
           const SizedBox(height: 6),
           InputField(
-            controller: widget.nameCtrl,
+            controller: _nameCtrl,
             hint: 'Enter room name'.tl,
             icon: Icons.meeting_room_outlined,
             onSubmit: (_) => _confirm(),
@@ -188,7 +177,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
           _FieldLabel('Announcement'.tl, optional: true),
           const SizedBox(height: 6),
           InputField(
-            controller: widget.announcementCtrl,
+            controller: _announcementCtrl,
             hint: 'Room announcement'.tl,
             icon: Icons.campaign_outlined,
             onSubmit: (_) => _confirm(),
@@ -199,7 +188,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
           _FieldLabel('Password'.tl, optional: true),
           const SizedBox(height: 6),
           InputField(
-            controller: widget.passwordCtrl,
+            controller: _passwordCtrl,
             hint: 'Leave empty for public room'.tl,
             icon: Icons.lock_outline,
             obscure: _obscurePassword,

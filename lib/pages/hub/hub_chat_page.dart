@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
@@ -85,12 +86,17 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
   void initState() {
     super.initState();
     _client = ref.read(hubClientProvider);
-
-    if (!widget.isDm) {
+    if (widget.isDm) {
+      final dmId = widget.dmUserId;
+      if (dmId == null) return;
+      _client.activeDmUserId = dmId;
+      _client.clearDmUnread(dmId);
+      _entries.addAll(ref.read(hubProvider).dmHistory[dmId] ?? []);
+    } else {
       _entries.addAll(ref.read(hubProvider).messageHistory);
     }
 
-    _client.onMessage = _onMessage;
+    _client.addMessageListener(_onMessage);
 
     _scroll.addListener(() {
       if (!_scroll.hasClients) return;
@@ -119,10 +125,13 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
   @override
   void dispose() {
-    _client.onMessage = null;
+    _client.removeMessageListener(_onMessage);
     _scroll.dispose();
     _inputCtrl.dispose();
     _inputFocus.dispose();
+    if (widget.isDm) {
+      _client.activeDmUserId = null;
+    }
     super.dispose();
   }
 
@@ -146,21 +155,28 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
     if (_client.isBlocked(msg.sender.userId)) return;
 
     if (widget.isDm) {
+      // 私聊：只接收 unicast，且必须是和 dmUserId 之间的消息
+      if (!event.isUnicast) return;
       final fromMe = msg.sender.userId == ref.read(hubProvider).myId;
       final fromTarget = msg.sender.userId == widget.dmUserId;
       if (!fromMe && !fromTarget) return;
-      if (event.isUnicast == false) return;
+    } else {
+      // 房间：只接收广播，过滤掉所有私聊
+      if (event.isUnicast) return;
     }
 
     switch (msg.messageType) {
+      // ── reaction ────────────────────────────────────────────────────────────
       case HubMessageType.reaction:
+        // replyToMessageId = 被反应的消息 ID，plainText = emojiId
         final targetId = msg.replyToMessageId;
-        if (targetId == null) return;
+        final emojiId = msg.plainText;
+        if (targetId == null || emojiId.isEmpty) return;
         final idx = _entries.indexWhere((e) => e.messageId == targetId);
         if (idx < 0) return;
         setState(() {
           _entries[idx].toggleReaction(
-            msg.plainText,
+            emojiId,
             HubReactionUser(
               userId: msg.sender.userId,
               username: msg.sender.displayName,
@@ -168,14 +184,15 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           );
         });
 
+      // ── recall ──────────────────────────────────────────────────────────────
       case HubMessageType.recall:
+        // replyToMessageId = 被撤回的消息 ID
         final targetId = msg.replyToMessageId;
-        if (targetId != null) {
-          setState(() => _entries.removeWhere((e) => e.messageId == targetId));
-        }
+        if (targetId == null) return;
+        setState(() => _entries.removeWhere((e) => e.messageId == targetId));
 
+      // ── chat / pin / 默认 ───────────────────────────────────────────────────
       default:
-        if (msg.messageType == HubMessageType.system) return;
         _autoScroll = true;
         setState(() => _entries.add(msg));
         _scrollToBottom();
@@ -184,68 +201,51 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
   void _handleSystem(HubEventSystem event) {
     switch (event) {
+      // ── 撤回（服务端推送）──────────────────────────────────────────────────
       case HubSystemMessageRecalled():
         setState(
           () => _entries.removeWhere((e) => e.messageId == event.messageId),
         );
 
+      // ── 用户进出大厅 ────────────────────────────────────────────────────────
       case HubSystemClientJoined():
         if (widget.isDm) return;
-        App.rootContext.showMessage(
-          message: '${event.client.displayName} ${"joined the room".tl}',
-          level: LogLevel.info,
-          style: ToastStyle.topLeft,
-        );
-        setState(
-          () => _entries.add(
-            _makeSystemMsg('client_joined', {'client': event.client.toJson()}),
-          ),
-        );
+        _addSystemMsg(HubSystemEvent.clientJoined, {
+          'client': event.client.toJson(),
+        });
         if (_autoScroll) _scrollToBottom();
 
       case HubSystemClientLeft():
         if (widget.isDm) return;
-        setState(
-          () => _entries.add(
-            _makeSystemMsg('client_left', {
-              'clientName': event.clientName ?? '',
-            }),
-          ),
-        );
+        _addSystemMsg(HubSystemEvent.clientLeft, {
+          'clientName': event.clientName ?? '',
+        });
         if (_autoScroll) _scrollToBottom();
 
+      // ── 用户进出当前房间 ────────────────────────────────────────────────────
       case HubSystemClientRoomChanged():
         if (widget.isDm) return;
         if (event.client.userId == ref.read(hubProvider).myId) return;
-        setState(
-          () => _entries.add(
-            _makeSystemMsg(
-              event.joined ? 'client_joined_room' : 'client_left_room',
-              {
-                'clientName': event.client.displayName,
-                'clientId': event.client.userId,
-              },
-            ),
-          ),
+        _addSystemMsg(
+          event.joined
+              ? HubSystemEvent.clientJoinedRoom
+              : HubSystemEvent.clientLeftRoom,
+          {
+            'client': event.client.toJson(),
+            'clientName': event.client.displayName,
+          },
         );
         if (_autoScroll) _scrollToBottom();
 
-      case HubSystemProfileUpdated():
-        break;
-
+      // ── 公告更新 ────────────────────────────────────────────────────────────
       case HubSystemRoomAnnouncement():
-        // 更新公告栏
-        final roomId = ref.read(hubProvider).currentRoomId;
-        if (roomId != null) {
-          final current = ref.read(hubProvider);
-          ref.read(hubProvider.notifier).state = current.copyWith(
-            roomList: current.roomList.map((r) {
-              if (r.roomId != roomId) return r;
-              return r.copyWith(announcements: event.announcements);
-            }).toList(),
-          );
-        }
-        // toast 提示
+        final current = ref.read(hubProvider);
+        ref.read(hubProvider.notifier).state = current.copyWith(
+          roomList: current.roomList.map((r) {
+            if (r.roomId != event.roomId) return r;
+            return r.copyWith(announcements: event.announcements);
+          }).toList(),
+        );
         if (event.setByName.isNotEmpty) {
           App.rootContext.showMessage(
             message: '📢 ${event.setByName} ${"updated the announcement".tl}',
@@ -253,44 +253,33 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           );
         }
 
-      case HubSystemRoomWelcome():
-        App.rootContext.showMessage(
-          message: event.message,
-          level: LogLevel.info,
-          style: ToastStyle.topLeft,
-          icon: const Icon(Icons.waving_hand_outlined, size: 16),
-        );
-
-      case HubSystemPoked():
-        App.rootContext.showMessage(
-          message: '${event.fromName} ${"poked you".tl} 👉',
-          level: LogLevel.info,
-          style: ToastStyle.topRight,
-          icon: const Icon(Icons.touch_app_outlined, size: 16),
-        );
-
-      case HubSystemMentioned():
-        App.rootContext.showMessage(
-          message: '@${event.fromName}: ${event.previewText}',
-          level: LogLevel.info,
-          style: ToastStyle.topRight,
-          icon: const Icon(Icons.alternate_email, size: 16),
-        );
-
       default:
         break;
     }
   }
 
-  HubMessage _makeSystemMsg(String event, Map<String, dynamic> extra) =>
-      HubMessage(
-        messageType: HubMessageType.system,
-        sender: _client.serverDto,
-        targetRoomIds: [],
-        segments: [
-          TextSegment(jsonEncode({'event': event, ...extra})),
-        ],
-      );
+  void _addSystemMsg(HubSystemEvent event, Map<String, dynamic> extra) {
+    final msg = HubMessage(
+      messageType: HubMessageType.chat,
+      sender: _client.serverDto,
+      targetRoomIds: [],
+      segments: [
+        TextSegment(jsonEncode({'event': event.value, ...extra})),
+      ],
+    );
+    final roomId = ref.read(hubProvider).currentRoomId;
+    if (roomId == null) return;
+    ref.read(hubProvider.notifier).state = ref
+        .read(hubProvider)
+        .copyWith(
+          roomList: ref.read(hubProvider).roomList.map((r) {
+            if (r.roomId != roomId) return r;
+            return r.copyWith(messageHistory: [...r.messageHistory, msg]);
+          }).toList(),
+        );
+    setState(() => _entries.add(msg));
+    if (_autoScroll) _scrollToBottom();
+  }
 
   // ── 滚动 ───────────────────────────────────────────────────────────────────
 
@@ -438,7 +427,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
       _initialScrollDone = true;
       _scrollToBottom();
     }
-
+    final room = ref.watch(hubProvider).currentRoom;
     return PopUpWidgetScaffold(
       title: _title,
       tailing: widget.isDm ? _buildDmActions(context, hubState) : [],
@@ -466,6 +455,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                   pendingImages: _pendingImages,
                   onRemovePending: (i) =>
                       setState(() => _pendingImages.removeAt(i)),
+                  room: room,
                 ),
               ],
             ),
@@ -557,10 +547,13 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
   Widget _buildAnnouncementBar(ColorScheme cs, HubState hubState) {
     final announcements = hubState.currentRoom?.announcements ?? [];
-    if (announcements.isEmpty) return const SizedBox.shrink();
+    final pinnedMessages = hubState.currentRoom?.pinnedMessages ?? [];
+    if (announcements.isEmpty && pinnedMessages.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      height: 42,
       decoration: BoxDecoration(
         color: cs.tertiaryContainer.toOpacity(0.35),
         border: Border(
@@ -572,26 +565,124 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.campaign_outlined,
-            size: 14,
-            color: cs.tertiary.toOpacity(0.8),
-          ),
-          const SizedBox(width: 6),
           Expanded(
-            child: announcements.length == 1
-                ? Text(
-                    announcements.first,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: cs.onSurface.toOpacity(0.7),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
+            child: announcements.isEmpty
+                ? const SizedBox.shrink()
                 : _AnnouncementCarousel(announcements: announcements),
           ),
+          if (pinnedMessages.isNotEmpty)
+            InkWell(
+              onTap: () => _openPinnedMessages(pinnedMessages),
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Icon(
+                  Icons.push_pin_outlined,
+                  size: 15,
+                  color: cs.tertiary.toOpacity(0.8),
+                ),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  void _openPinnedMessages(List<HubMessage> pinned) {
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
+              child: Row(
+                children: [
+                  Icon(Icons.push_pin_outlined, size: 16, color: cs.tertiary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Pinned Messages'.tl,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Divider(height: 1, color: cs.outlineVariant.toOpacity(0.3)),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.5,
+              ),
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: pinned.length,
+                separatorBuilder: (_, _) => Divider(
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                  color: cs.outlineVariant.toOpacity(0.2),
+                ),
+                itemBuilder: (_, i) {
+                  final msg = pinned[i];
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    leading: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: hubAvatarColor(msg.sender.userId),
+                      child: Text(
+                        hubInitials(msg.sender.displayName),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    title: Text(
+                      msg.sender.displayName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      msg.plainText,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: cs.onSurface.toOpacity(0.75),
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _scrollToEntry(msg.messageId);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -679,9 +770,9 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                 itemBuilder: (ctx, i) {
                   final entry = _entries[i];
                   final prev = i > 0 ? _entries[i - 1] : null;
-                  final isSystem = entry.messageType == HubMessageType.system;
+                  final isSystem = entry.sender.userId == 'server';
                   final prevIsSystem =
-                      prev == null || prev.messageType == HubMessageType.system;
+                      prev == null || prev.sender.userId == 'server';
 
                   final isContinuation =
                       !prevIsSystem &&
@@ -859,7 +950,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
   }
 }
 
-// ── 公告轮播 ────────────────────────────────────────────────────────────────────
+// ── 公告轮播 ─────────────────────────────────────────────────────────────────
 
 class _AnnouncementCarousel extends StatefulWidget {
   final List<String> announcements;
@@ -871,37 +962,132 @@ class _AnnouncementCarousel extends StatefulWidget {
 }
 
 class _AnnouncementCarouselState extends State<_AnnouncementCarousel> {
+  late final PageController _pageCtrl;
+  late final ScrollController _indicatorCtrl;
   int _index = 0;
-  Timer? _timer;
+
+  static const _itemExtent = 8.0;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (mounted) {
-        setState(() => _index = (_index + 1) % widget.announcements.length);
-      }
-    });
+    _pageCtrl = PageController();
+    _indicatorCtrl = ScrollController();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _pageCtrl.dispose();
+    _indicatorCtrl.dispose();
     super.dispose();
+  }
+
+  void _scrollIndicatorTo(int i) {
+    if (!_indicatorCtrl.hasClients) return;
+    final target = (i * _itemExtent) - _itemExtent;
+    _indicatorCtrl.animateTo(
+      target.clamp(0.0, _indicatorCtrl.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      child: Text(
-        widget.announcements[_index],
-        key: ValueKey(_index),
-        style: TextStyle(fontSize: 12, color: cs.onSurface.toOpacity(0.7)),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+    final count = widget.announcements.length;
+
+    return Row(
+      children: [
+        if (count > 1)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: SizedBox(
+              width: 4,
+              child: ScrollConfiguration(
+                behavior: const ScrollBehavior().copyWith(scrollbars: false),
+                child: ListView.builder(
+                  controller: _indicatorCtrl,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: count,
+                  itemExtent: _itemExtent,
+                  itemBuilder: (_, i) {
+                    final active = i == _index;
+                    return Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        width: active ? 4 : 3,
+                        height: active ? 14 : 4,
+                        decoration: BoxDecoration(
+                          color: active
+                              ? cs.tertiary
+                              : cs.tertiary.toOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Icon(
+              Icons.campaign_outlined,
+              size: 14,
+              color: cs.tertiary.toOpacity(0.8),
+            ),
+          ),
+        Expanded(
+          child: PageView.builder(
+            controller: _pageCtrl,
+            itemCount: count,
+            onPageChanged: (i) {
+              setState(() => _index = i);
+              _scrollIndicatorTo(i);
+            },
+            itemBuilder: (ctx, i) => InkWell(
+              onTap: () => showDialog(
+                context: ctx,
+                builder: (_) => ContentDialog(
+                  isDismissible: true,
+                  displayButton: false,
+                  title: 'Announcement'.tl,
+                  content: Container(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 2 / 3,
+                    ),
+                    child: ScrollConfiguration(
+                      behavior: const ScrollBehavior().copyWith(
+                        scrollbars: false,
+                      ),
+                      child: SingleChildScrollView(
+                        child: CustomMarkdownWidget(
+                          data: widget.announcements[i],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.announcements[i],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: cs.onSurface.toOpacity(0.7),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

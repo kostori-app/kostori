@@ -6,12 +6,17 @@ import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/hub/hub_create_room_dialog.dart';
+import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 
 void showHubDialog(BuildContext context) {
   showPopUpWidget(context, const HubPage());
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HubPage
+// ─────────────────────────────────────────────────────────────────────────────
 
 class HubPage extends ConsumerStatefulWidget {
   const HubPage({super.key});
@@ -23,7 +28,6 @@ class HubPage extends ConsumerStatefulWidget {
 class _HubPageState extends ConsumerState<HubPage>
     with SingleTickerProviderStateMixin {
   late final TabController _tab = TabController(length: 2, vsync: this);
-
   late final HubClient _client;
 
   @override
@@ -48,18 +52,11 @@ class _HubPageState extends ConsumerState<HubPage>
 
   @override
   Widget build(BuildContext context) {
-    final hubState = ref.watch(hubProvider);
+    final client = ref.read(hubClientProvider);
+    final totalUnread = client.dmUnread.values.fold(0, (a, b) => a + b);
 
     return PopUpWidgetScaffold(
       title: 'Hub',
-      tailing: [
-        if (hubState.isGlobalAdmin)
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings_outlined, size: 20),
-            tooltip: 'Admin'.tl,
-            onPressed: () => _showAdminSheet(context, hubState),
-          ),
-      ],
       body: Column(
         children: [
           TabBar(
@@ -70,196 +67,59 @@ class _HubPageState extends ConsumerState<HubPage>
                 text: 'Rooms'.tl,
               ),
               Tab(
-                icon: const Icon(Icons.people_outline, size: 18),
-                text: 'People'.tl,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Members'.tl),
+                    if (totalUnread > 0) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.error,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$totalUnread',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
           ),
           Expanded(
             child: TabBarView(
               controller: _tab,
-              children: [
-                _RoomsTab(hubState: hubState),
-                _PeopleTab(hubState: hubState),
-              ],
+              children: [_RoomsTab(), _PeopleTab()],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  // ── 全局管理面板 ──────────────────────────────────────────────────────────
-
-  void _showAdminSheet(BuildContext context, HubState hubState) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, sc) => Column(
-            children: [
-              _SheetHeader(
-                title: 'Admin Panel'.tl,
-                icon: Icons.admin_panel_settings_outlined,
-              ),
-              Expanded(
-                child: ListView(
-                  controller: sc,
-                  children: [
-                    // ── 公告 ──
-                    ListTile(
-                      leading: const Icon(Icons.campaign_outlined),
-                      title: Text('Set Announcement'.tl),
-                      onTap: () => _showAnnouncementDialog(context),
-                    ),
-                    // ── 房间密码 ──
-                    ListTile(
-                      leading: const Icon(Icons.lock_outline),
-                      title: Text('Set Room Password'.tl),
-                      onTap: () => _showSetPasswordDialog(context),
-                    ),
-                    // ── 服务端黑名单 ──
-                    ListTile(
-                      leading: const Icon(Icons.block_outlined),
-                      title: Text('Server Blacklist'.tl),
-                      subtitle: Text(
-                        '${hubState.serverBannedIds.length} ${"banned".tl}',
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _showServerBlacklistSheet(context, hubState),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showAnnouncementDialog(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Set Announcement'.tl),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 3,
-          autofocus: true,
-          decoration: InputDecoration(hintText: 'Enter announcement...'.tl),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'.tl),
-          ),
-          TextButton(
-            onPressed: () {
-              if (ctrl.text.trim().isNotEmpty) {
-                _client.setAnnouncement(ctrl.text.trim());
-              }
-              Navigator.pop(context);
-            },
-            child: Text('Send'.tl),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSetPasswordDialog(BuildContext context) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Set Room Password'.tl),
-        content: TextField(
-          controller: ctrl,
-          obscureText: true,
-          autofocus: true,
-          decoration: InputDecoration(hintText: 'Leave empty to remove'.tl),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'.tl),
-          ),
-          TextButton(
-            onPressed: () {
-              _client.setRoomPassword(
-                ctrl.text.trim().isEmpty ? null : ctrl.text.trim(),
-              );
-              Navigator.pop(context);
-            },
-            child: Text('OK'.tl),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showServerBlacklistSheet(BuildContext context, HubState hubState) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SheetHeader(
-              title: 'Server Blacklist'.tl,
-              icon: Icons.block_outlined,
-            ),
-            if (hubState.serverBannedIds.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  'No banned users'.tl,
-                  style: TextStyle(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.toOpacity(0.4),
-                  ),
-                ),
-              )
-            else
-              ...hubState.serverBannedIds.map(
-                (id) => ListTile(
-                  leading: const Icon(Icons.person_off_outlined),
-                  title: Text(id),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.lock_open_outlined, size: 18),
-                    onPressed: () {
-                      _client.serverUnban(id);
-                      setSS(() {});
-                      setState(() {});
-                    },
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
       ),
     );
   }
 }
 
-// ── Rooms Tab ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Rooms Tab
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _RoomsTab extends ConsumerWidget {
-  final HubState hubState;
-
-  const _RoomsTab({required this.hubState});
+  const _RoomsTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final client = ref.read(hubClientProvider);
+    final hubState = ref.watch(hubProvider);
     final cs = Theme.of(context).colorScheme;
     final canCreate =
         hubState.isGlobalAdmin ||
@@ -358,7 +218,7 @@ class _RoomsTab extends ConsumerWidget {
               if (canManage)
                 IconButton(
                   icon: const Icon(Icons.settings_outlined, size: 18),
-                  onPressed: () => _showRoomSettingsSheet(context, ref, room),
+                  onPressed: () => showHubRoomSettingsSheet(context, room, ref),
                 ),
               if (!isCurrent)
                 TextButton(
@@ -408,8 +268,8 @@ class _RoomsTab extends ConsumerWidget {
     final ctrl = TextEditingController();
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Room Password'.tl),
+      builder: (ctx) => ContentDialog(
+        title: 'Room Password'.tl,
         content: TextField(
           controller: ctrl,
           obscureText: true,
@@ -418,11 +278,7 @@ class _RoomsTab extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'.tl),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, ctrl.text),
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
             child: Text('OK'.tl),
           ),
         ],
@@ -443,248 +299,20 @@ class _RoomsTab extends ConsumerWidget {
       maxParticipants: result.maxParticipants,
     );
   }
-
-  void _showRoomSettingsSheet(
-    BuildContext context,
-    WidgetRef ref,
-    HubRoomDto room,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => _RoomSettingsSheet(room: room),
-    );
-  }
 }
 
-// ── 房间设置 Sheet ────────────────────────────────────────────────────────────
-
-class _RoomSettingsSheet extends ConsumerWidget {
-  final HubRoomDto room;
-
-  const _RoomSettingsSheet({required this.room});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final client = ref.read(hubClientProvider);
-    final hubState = ref.read(hubProvider);
-    final isGlobal = hubState.isGlobalAdmin;
-    final isRoomAdmin = client.isRoomAdminOf(room.roomId);
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.55,
-      maxChildSize: 0.9,
-      expand: false,
-      builder: (context, sc) => Column(
-        children: [
-          _SheetHeader(title: room.roomName, icon: Icons.settings_outlined),
-          Expanded(
-            child: ListView(
-              controller: sc,
-              children: [
-                if (isRoomAdmin || isGlobal) ...[
-                  ListTile(
-                    leading: const Icon(Icons.campaign_outlined),
-                    title: Text('Set Announcement'.tl),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showAnnouncementDialog(context, client);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.lock_outline),
-                    title: Text('Set Password'.tl),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showPasswordDialog(context, client);
-                    },
-                  ),
-                ],
-                if (isGlobal) ...[
-                  ListTile(
-                    leading: const Icon(Icons.manage_accounts_outlined),
-                    title: Text('Room Admins'.tl),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _showAdminsSheet(context, ref),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.block_outlined),
-                    title: Text('Room Bans'.tl),
-                    subtitle: Text(
-                      '${room.bannedUserIds.length} ${"banned".tl}',
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _showBansSheet(context, ref),
-                  ),
-                ],
-                if (!isGlobal && room.ownerUserId == hubState.myId)
-                  ListTile(
-                    leading: Icon(
-                      Icons.delete_outline,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    title: Text(
-                      'Delete Room'.tl,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                    onTap: () {
-                      client.deleteRoom(room.roomId);
-                      Navigator.pop(context);
-                    },
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAnnouncementDialog(BuildContext context, HubClient client) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Set Announcement'.tl),
-        content: TextField(controller: ctrl, maxLines: 3, autofocus: true),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'.tl),
-          ),
-          TextButton(
-            onPressed: () {
-              if (ctrl.text.trim().isNotEmpty) {
-                client.setAnnouncement(ctrl.text.trim());
-              }
-              Navigator.pop(context);
-            },
-            child: Text('Send'.tl),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showPasswordDialog(BuildContext context, HubClient client) {
-    final ctrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Set Room Password'.tl),
-        content: TextField(
-          controller: ctrl,
-          obscureText: true,
-          autofocus: true,
-          decoration: InputDecoration(hintText: 'Leave empty to remove'.tl),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'.tl),
-          ),
-          TextButton(
-            onPressed: () {
-              client.setRoomPassword(
-                ctrl.text.trim().isEmpty ? null : ctrl.text.trim(),
-              );
-              Navigator.pop(context);
-            },
-            child: Text('OK'.tl),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showAdminsSheet(BuildContext context, WidgetRef ref) {
-    final client = ref.read(hubClientProvider);
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SheetHeader(
-              title: 'Room Admins'.tl,
-              icon: Icons.manage_accounts_outlined,
-            ),
-            ...ref.read(hubProvider).onlineClients.map((c) {
-              final isAdmin = room.moderatorIds.contains(c.userId);
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: hubAvatarColor(c.userId),
-                  child: Text(
-                    hubInitials(c.displayName),
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                ),
-                title: Text(c.displayName),
-                trailing: Switch(
-                  value: isAdmin,
-                  onChanged: (val) {
-                    client.setRoomAdmin(c.userId, value: val);
-                    setSS(() {});
-                  },
-                ),
-              );
-            }),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showBansSheet(BuildContext context, WidgetRef ref) {
-    final client = ref.read(hubClientProvider);
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SheetHeader(title: 'Room Bans'.tl, icon: Icons.block_outlined),
-            if (room.bannedUserIds.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text('No banned users'.tl),
-              )
-            else
-              ...room.bannedUserIds.map(
-                (id) => ListTile(
-                  title: Text(id),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.lock_open_outlined, size: 18),
-                    onPressed: () {
-                      client.roomUnban(id);
-                      setSS(() {});
-                    },
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── People Tab ────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// People Tab
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _PeopleTab extends ConsumerWidget {
-  final HubState hubState;
-
-  const _PeopleTab({required this.hubState});
+  const _PeopleTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final hubState = ref.watch(hubProvider);
     final people = hubState.onlineClients;
-
     if (people.isEmpty) {
       return Center(
         child: Text(
@@ -701,7 +329,6 @@ class _PeopleTab extends ConsumerWidget {
         final c = people[i];
         final isMe = c.userId == hubState.myId;
 
-        // 当前房间名
         final room = hubState.roomList.firstWhereOrNull(
           (r) => r.participants.any((p) => p.userId == c.userId),
         );
@@ -710,7 +337,8 @@ class _PeopleTab extends ConsumerWidget {
             : (room.roomId == hubState.lobbyRoomId
                   ? 'Lobby'.tl
                   : room.roomName);
-
+        final client = ref.read(hubClientProvider);
+        final unread = client.dmUnread[c.userId] ?? 0;
         return ListTile(
           leading: Stack(
             clipBehavior: Clip.none,
@@ -740,6 +368,32 @@ class _PeopleTab extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (unread > 0)
+                Positioned(
+                  right: -4,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.error,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: cs.surface, width: 1.5),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 16),
+                    child: Text(
+                      unread > 99 ? '99+' : '$unread',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
             ],
           ),
           title: Row(
@@ -767,20 +421,30 @@ class _PeopleTab extends ConsumerWidget {
           trailing: isMe
               ? Text('Me'.tl, style: TextStyle(fontSize: 12, color: cs.primary))
               : _PeopleActions(client: c, hubState: hubState),
-          onTap: isMe ? null : () => _openDm(context, c),
+          onTap: isMe
+              ? null
+              : () {
+                  // 清空未读
+                  if (unread > 0) {
+                    ref.read(hubProvider.notifier).update((s) {
+                      final updated = Map<String, int>.from(s.dmUnread)
+                        ..remove(c.userId);
+                      return s.copyWith(dmUnread: updated);
+                    });
+                  }
+                  _openDm(context, c);
+                },
         );
       },
     );
   }
 
-  Color _statusColor(UserStatus status) {
-    return switch (status) {
-      UserStatus.online => Colors.greenAccent.shade400,
-      UserStatus.away => Colors.orangeAccent,
-      UserStatus.busy => Colors.redAccent,
-      UserStatus.offline => Colors.grey,
-    };
-  }
+  Color _statusColor(UserStatus status) => switch (status) {
+    UserStatus.online => Colors.greenAccent.shade400,
+    UserStatus.away => Colors.orangeAccent,
+    UserStatus.busy => Colors.redAccent,
+    UserStatus.offline => Colors.grey,
+  };
 
   void _openDm(BuildContext context, HubClientDto c) {
     showPopUpWidget(
@@ -790,7 +454,9 @@ class _PeopleTab extends ConsumerWidget {
   }
 }
 
-// ── 人员操作按钮 ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// People Actions
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _PeopleActions extends ConsumerWidget {
   final HubClientDto client;
@@ -809,7 +475,6 @@ class _PeopleActions extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // DM 按钮
         IconButton(
           icon: const Icon(Icons.chat_bubble_outline, size: 18),
           tooltip: 'Direct Message'.tl,
@@ -821,7 +486,6 @@ class _PeopleActions extends ConsumerWidget {
             ),
           ),
         ),
-        // 屏蔽
         IconButton(
           icon: Icon(
             isBlocked ? Icons.volume_off : Icons.volume_off_outlined,
@@ -835,7 +499,6 @@ class _PeopleActions extends ConsumerWidget {
                 : hub.blockUser(client.userId);
           },
         ),
-        // 管理菜单
         if (canManage)
           IconButton(
             icon: const Icon(Icons.more_vert, size: 18),
@@ -848,42 +511,23 @@ class _PeopleActions extends ConsumerWidget {
   void _showManageSheet(BuildContext context, HubClient hub, ColorScheme cs) {
     showModalBottomSheet(
       context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      backgroundColor: Colors.transparent,
+      builder: (_) => HubSheet(
+        title: client.displayName,
+        icon: Icons.manage_accounts_outlined,
+        initialSize: 0.45,
+        builder: (ctx, sc) => ListView(
+          controller: sc,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: hubAvatarColor(client.userId),
-                    child: Text(
-                      hubInitials(client.displayName),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    client.displayName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // 禁言
             ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: Icon(
                 client.isMuted ? Icons.mic : Icons.mic_off_outlined,
                 color: client.isMuted ? cs.error : null,
               ),
               title: Text(client.isMuted ? 'Unmute'.tl : 'Mute'.tl),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(ctx);
                 if (client.isMuted) {
                   hub.unmute(client.userId);
                 } else {
@@ -891,27 +535,28 @@ class _PeopleActions extends ConsumerWidget {
                 }
               },
             ),
-            // T出房间
             ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: const Icon(Icons.logout),
               title: Text('Kick'.tl),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(ctx);
                 hub.kickFromRoom(client.userId);
               },
             ),
-            // 封禁
             ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: Icon(Icons.block_outlined, color: cs.error),
-              title: Text('Room Ban'.tl, style: TextStyle(color: cs.error)),
+              title: Text('Room Bans'.tl, style: TextStyle(color: cs.error)),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(ctx);
                 hub.roomBan(client.userId);
               },
             ),
             if (hubState.isGlobalAdmin) ...[
-              const Divider(height: 1),
+              const HubSettingDivider(),
               ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Icon(
                   hubState.serverBannedIds.contains(client.userId)
                       ? Icons.lock_open_outlined
@@ -920,12 +565,12 @@ class _PeopleActions extends ConsumerWidget {
                 ),
                 title: Text(
                   hubState.serverBannedIds.contains(client.userId)
-                      ? 'Server Unban'.tl
-                      : 'Server Ban'.tl,
+                      ? 'Remove from Blacklist'.tl
+                      : 'Add to Blacklist'.tl,
                   style: TextStyle(color: cs.error),
                 ),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(ctx);
                   hubState.serverBannedIds.contains(client.userId)
                       ? hub.serverUnban(client.userId)
                       : hub.serverBan(client.userId);
@@ -948,75 +593,30 @@ class _PeopleActions extends ConsumerWidget {
     ];
     showModalBottomSheet(
       context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SheetHeader(
-              title: 'Mute Duration'.tl,
-              icon: Icons.mic_off_outlined,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: presets
-                    .map(
-                      (p) => ActionChip(
-                        label: Text(p.label),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          hub.mute(client.userId, seconds: p.seconds);
-                        },
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Sheet Header 复用 ─────────────────────────────────────────────────────────
-
-class _SheetHeader extends StatelessWidget {
-  final String title;
-  final IconData? icon;
-
-  const _SheetHeader({required this.title, this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 8, 10),
-          child: Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
+      backgroundColor: Colors.transparent,
+      builder: (_) => HubSheet(
+        title: 'Mute Duration'.tl,
+        icon: Icons.mic_off_outlined,
+        initialSize: 0.35,
+        builder: (ctx, sc) => Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: presets
+                .map(
+                  (p) => ActionChip(
+                    label: Text(p.label),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      hub.mute(client.userId, seconds: p.seconds);
+                    },
+                  ),
+                )
+                .toList(),
           ),
         ),
-        const Divider(height: 1),
-      ],
+      ),
     );
   }
 }

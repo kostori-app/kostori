@@ -2,6 +2,7 @@ part of 'package:kostori/foundation/services/services.dart';
 
 extension HubClientHandler on HubClient {
   void _handleMessage(Map<String, dynamic> data) {
+    Log.info('handle', jsonEncode(data));
     final event = HubEvent.fromJson(data);
 
     switch (event) {
@@ -10,7 +11,6 @@ extension HubClientHandler on HubClient {
         _reconnectAttempts = 0;
         _reconnectTimer?.cancel();
         _shouldReconnect = true;
-
         if (event.heartbeatInterval > 0) {
           _heartbeatInterval = Duration(milliseconds: event.heartbeatInterval);
           _startHeartbeat();
@@ -65,36 +65,45 @@ extension HubClientHandler on HubClient {
           ),
         );
         Log.info('HubClient', '🚪 加入房间：${event.room.roomName}（离开：$prevRoomId）');
-        onMessage?.call(data);
+        for (final fn in List.of(_messageListeners)) {
+          fn(data);
+        }
 
       case HubEventMessage():
         if (isBlocked(event.message.sender.userId)) return;
-        _addMessageToRoom(event.message);
-        Log.info(
-          'HubClient',
-          '${event.isUnicast ? "私信" : "广播"}  from:${event.message.sender.userId}',
-        );
-        onMessage?.call(data);
+        if (event.isUnicast) {
+          final otherId = event.message.sender.userId == myId
+              ? null
+              : event.message.sender.userId;
+          if (otherId != null) {
+            _addDmMessage(otherId, event.message);
+            // 不在这个对话里才提醒
+            if (_s.activeDmUserId != otherId) {
+              _incrementDmUnread(otherId);
+              App.rootContext.showMessage(
+                message:
+                    '${event.message.sender.displayName}: ${event.message.plainText}',
+                level: LogLevel.info,
+                style: ToastStyle.topRight,
+                icon: const Icon(Icons.message_outlined, size: 16),
+              );
+            }
+          }
+        } else {
+          _addMessageToRoom(event.message);
+        }
+        for (final fn in List.of(_messageListeners)) {
+          fn(data);
+        }
 
       case HubEventPong():
         _pongTimeoutTimer?.cancel();
         Log.info('HubClient', 'pong');
 
+      // HubEventKicked 已废弃：服务端改用 HubSystemEvent.kickedFromRoom，
+      // permanent=true 时服务端直接关闭连接，客户端无需再处理此帧。
       case HubEventKicked():
-        final toastMsg = switch (event.reason) {
-          'room_banned' => '${"Banned by".tl} ${event.operatorName}',
-          'server_banned' => '${"Server banned by".tl} ${event.operatorName}',
-          'timeout' => 'Connection timed out'.tl,
-          _ => '${"Kicked by".tl} ${event.operatorName}',
-        };
-        App.rootContext.showMessage(
-          message: toastMsg,
-          level: event.reason.endsWith('banned')
-              ? LogLevel.error
-              : LogLevel.warning,
-          style: ToastStyle.topRight,
-        );
-        onMessage?.call(data);
+        break;
 
       case HubEventError():
         App.rootContext.showMessage(
@@ -102,7 +111,9 @@ extension HubClientHandler on HubClient {
           level: LogLevel.error,
           style: ToastStyle.topRight,
         );
-        onMessage?.call(data);
+        for (final fn in List.of(_messageListeners)) {
+          fn(data);
+        }
 
       case HubEventSystem():
         _handleSystem(event, data);
@@ -116,7 +127,7 @@ extension HubClientHandler on HubClient {
     switch (event) {
       case HubSystemServerShutdown():
         _shouldReconnect = false;
-        _setState((s) => s.copyWith(isConnected: false, myId: null)); // ← 加这行
+        _setState((s) => s.copyWith(isConnected: false, myId: null));
         App.rootContext.showMessage(
           message: 'Server shutdown'.tl,
           level: LogLevel.warning,
@@ -183,7 +194,7 @@ extension HubClientHandler on HubClient {
         _patchClient(event.clientId, isMuted: event.isMuted);
         onClientsChanged?.call();
 
-      case HubSystemRoomBanned():
+      case HubSystemYouAreRoomBanned():
         App.rootContext.showMessage(
           message: event.isBanned
               ? '${"You are banned from room".tl}: ${event.roomName}'
@@ -192,13 +203,42 @@ extension HubClientHandler on HubClient {
           style: ToastStyle.topRight,
         );
 
+      case HubSystemRoomBanUpdated():
+        onClientsChanged?.call();
+
       case HubSystemKickedFromRoom():
-        _setState((s) => s.copyWith(isConnected: false, myId: null)); // ← 加这行
-        App.rootContext.showMessage(
-          message: 'You have been kicked from the room'.tl,
-          level: LogLevel.warning,
-          style: ToastStyle.topRight,
-        );
+        if (event.permanent) {
+          // 全局管理员踢出：服务端会关闭连接，客户端只需提示
+          App.rootContext.showMessage(
+            message: '${"Kicked from server by".tl} ${event.byName}',
+            level: LogLevel.error,
+            style: ToastStyle.topRight,
+          );
+        } else {
+          // 房间管理员踢出：移回大厅
+          App.rootContext.showMessage(
+            message: '${"Kicked from room by".tl} ${event.byName}',
+            level: LogLevel.warning,
+            style: ToastStyle.topRight,
+          );
+          for (final fn in List.of(_messageListeners)) {
+            fn(data);
+          }
+        }
+
+      case HubSystemClientKickedFromRoom():
+        final rIdx = _s.roomList.indexWhere((r) => r.roomId == currentRoomId);
+        if (rIdx != -1) {
+          final updated = _s.roomList[rIdx].copyWith(
+            participants: _s.roomList[rIdx].participants
+                .where((p) => p.userId != event.clientId)
+                .toList(),
+          );
+          final newRooms = [..._s.roomList];
+          newRooms[rIdx] = updated;
+          _setState((s) => s.copyWith(roomList: newRooms));
+        }
+        onClientsChanged?.call();
 
       case HubSystemMessageRecalled():
         for (final room in _s.roomList) {
@@ -248,9 +288,8 @@ extension HubClientHandler on HubClient {
             ],
           ),
         );
-        final name = event.client.displayName;
         App.rootContext.showMessage(
-          message: '$name ${"joined".tl}',
+          message: '${event.client.displayName} ${"joined".tl}',
           level: LogLevel.info,
           style: ToastStyle.topLeft,
         );
@@ -293,20 +332,20 @@ extension HubClientHandler on HubClient {
       case HubSystemRoomAnnouncement():
         _setState((s) {
           final updatedRooms = s.roomList.map((r) {
-            if (r.roomId != s.currentRoomId) return r;
+            if (r.roomId != event.roomId) return r;
             return r.copyWith(announcements: event.announcements);
           }).toList();
           return s.copyWith(roomList: updatedRooms);
         });
 
       case HubSystemRoomWelcome():
-        // 欢迎语弹 toast
         App.rootContext.showMessage(
           message: event.message,
           level: LogLevel.info,
           style: ToastStyle.topLeft,
           icon: const Icon(Icons.waving_hand_outlined, size: 16),
         );
+
       case HubSystemMentioned():
         App.rootContext.showMessage(
           message: '@${event.fromName}: ${event.previewText}',
@@ -323,9 +362,19 @@ extension HubClientHandler on HubClient {
           icon: const Icon(Icons.touch_app_outlined, size: 16),
         );
 
+      case HubSystemAnnouncement():
+        App.rootContext.showMessage(
+          message: event.text,
+          level: LogLevel.info,
+          style: ToastStyle.topRight,
+          icon: const Icon(Icons.campaign_outlined, size: 16),
+        );
+
       case HubSystemUnknown():
         Log.warning('HubClient', '未知系统事件：${event.event}\n $data');
     }
-    onMessage?.call(data);
+    for (final fn in List.of(_messageListeners)) {
+      fn(data);
+    }
   }
 }

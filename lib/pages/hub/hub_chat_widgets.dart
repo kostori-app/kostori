@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
@@ -10,6 +12,7 @@ import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/services/services.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
+import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 
@@ -117,11 +120,15 @@ class HubSystemRow extends StatelessWidget {
     if (payload == null) return const SizedBox.shrink();
 
     final text = switch (payload) {
-      ClientJoined() => '${payload.displayName} ${"joined".tl}',
-      ClientLeft() => '${payload.clientName} ${"left".tl}',
-      ClientJoinedRoom() => '${payload.displayName} ${"joined the room".tl}',
-      ClientLeftRoom() => '${payload.clientName} ${"left the room".tl}',
-      RoomWelcome() => payload.message,
+      HubPayloadClientJoined() => '${payload.displayName} ${"joined".tl}',
+      HubPayloadClientLeft() => '${payload.clientName} ${"left".tl}',
+      HubPayloadClientJoinedRoom() =>
+        '${payload.displayName} ${"joined the room".tl}',
+      HubPayloadClientLeftRoom() =>
+        '${payload.clientName} ${"left the room".tl}',
+      HubPayloadRoomWelcome() => payload.message,
+      HubPayloadClientKickedFromRoom() =>
+        '${payload.clientName} ${"was kicked by".tl} ${payload.operatorName}',
     };
 
     return Padding(
@@ -217,7 +224,7 @@ class HubBubbleRow extends StatelessWidget {
 
     final avatarWidget = !isContinuation
         ? GestureDetector(
-            onDoubleTap: () => onPoke?.call(entry.sender.userId), // ← 双击戳一戳
+            onDoubleTap: () => onPoke?.call(entry.sender.userId),
             onLongPress: () => onMention?.call(entry.sender),
             child: CircleAvatar(
               radius: avatarRadius,
@@ -366,7 +373,11 @@ class HubBubbleRow extends StatelessWidget {
               ...entry.segments.whereType<ImageSegment>().map(
                 (seg) => Padding(
                   padding: const EdgeInsets.only(bottom: 2),
-                  child: _BubbleImage(url: seg.url, borderRadius: bubbleBr),
+                  child: _BubbleImage(
+                    url: seg.url,
+                    borderRadius: bubbleBr,
+                    messageId: entry.messageId,
+                  ),
                 ),
               ),
               // 时间戳放图片外下方
@@ -388,7 +399,6 @@ class HubBubbleRow extends StatelessWidget {
     } else {
       // 文字 / 混合气泡
       final imageSegs = entry.segments.whereType<ImageSegment>().toList();
-      final textSegs = entry.segments.whereType<TextSegment>().toList();
 
       bubbleWidget = GestureDetector(
         onLongPress: () => _showActions(context, cs),
@@ -406,14 +416,32 @@ class HubBubbleRow extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // 文字段
-                  ...textSegs.map(
-                    (seg) => Text(
-                      seg.text,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: textColor,
-                        height: 1.4,
-                      ),
+                  Text.rich(
+                    TextSpan(
+                      children: entry.segments
+                          .where((s) => s is TextSegment || s is MentionSegment)
+                          .map((s) {
+                            if (s is MentionSegment) {
+                              return TextSpan(
+                                text: '@${s.displayName}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.4,
+                                  color: isMe ? cs.onPrimary : cs.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              );
+                            }
+                            return TextSpan(
+                              text: (s as TextSegment).text,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: textColor,
+                                height: 1.4,
+                              ),
+                            );
+                          })
+                          .toList(),
                     ),
                   ),
                   // 图片段（混合消息）
@@ -425,6 +453,7 @@ class HubBubbleRow extends StatelessWidget {
                         child: _BubbleImage(
                           url: seg.url,
                           borderRadius: BorderRadius.circular(8),
+                          messageId: entry.messageId,
                         ),
                       ),
                     ),
@@ -519,6 +548,16 @@ class HubBubbleRow extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (!isMe && entry.sender.isGlobalAdmin) ...[
+                  _AdminBadge(label: 'Admin', color: const Color(0xFFFFB300)),
+                  const SizedBox(width: 4),
+                ] else if (!isMe && isRoomAdmin) ...[
+                  _AdminBadge(label: 'Mod', color: const Color(0xFF81C784)),
+                  const SizedBox(width: 4),
+                ] else if (!isMe && entry.sender.isBot) ...[
+                  _AdminBadge(label: 'BOT', color: const Color(0xFF64B5F6)),
+                  const SizedBox(width: 4),
+                ],
                 Text(
                   entry.sender.displayName,
                   style: TextStyle(
@@ -527,15 +566,14 @@ class HubBubbleRow extends StatelessWidget {
                     color: cs.onSurface,
                   ),
                 ),
-                // ── 头衔 badge ───────────────────────────────────
-                if (entry.sender.isGlobalAdmin) ...[
+                if (isMe && entry.sender.isGlobalAdmin) ...[
                   const SizedBox(width: 4),
                   _AdminBadge(label: 'Admin', color: const Color(0xFFFFB300)),
-                ] else if (isRoomAdmin) ...[
+                ] else if (isMe && isRoomAdmin) ...[
                   const SizedBox(width: 4),
                   _AdminBadge(label: 'Mod', color: const Color(0xFF81C784)),
                 ],
-                if (entry.sender.isBot) ...[
+                if (isMe && entry.sender.isBot) ...[
                   const SizedBox(width: 4),
                   _AdminBadge(label: 'BOT', color: const Color(0xFF64B5F6)),
                 ],
@@ -686,8 +724,13 @@ class HubBubbleRow extends StatelessWidget {
 class _BubbleImage extends StatelessWidget {
   final String url;
   final BorderRadius borderRadius;
+  final String messageId;
 
-  const _BubbleImage({required this.url, required this.borderRadius});
+  const _BubbleImage({
+    required this.url,
+    required this.borderRadius,
+    required this.messageId,
+  });
 
   bool get _isBase64 => url.startsWith('data:');
 
@@ -710,7 +753,7 @@ class _BubbleImage extends StatelessWidget {
     try {
       final data = base64Decode(url.split(',').last);
       return Hero(
-        tag: 'hub_img_${url.hashCode}',
+        tag: messageId,
         child: Image.memory(
           data,
           fit: BoxFit.cover,
@@ -726,7 +769,7 @@ class _BubbleImage extends StatelessWidget {
 
   Widget _buildNetwork() {
     return Hero(
-      tag: 'hub_img_${url.hashCode}',
+      tag: messageId,
       child: AnimatedImage(
         image: CachedImageProvider(url, sourceKey: 'hub'),
         fit: BoxFit.cover,
@@ -751,7 +794,7 @@ class _BubbleImage extends StatelessWidget {
           context: context,
           url: tmp.path,
           title: '',
-          heroTag: 'hub_img_${url.hashCode}',
+          heroTag: messageId,
         );
       } catch (e) {
         Log.addLog(LogLevel.error, 'HubBubbleImage', '$e');
@@ -828,7 +871,7 @@ class _MoreEmojiBtn extends StatelessWidget {
 
 // ── 输入栏 ────────────────────────────────────────────────────────────────────
 
-class HubInputBar extends StatelessWidget {
+class HubInputBar extends ConsumerWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final VoidCallback onSend;
@@ -838,6 +881,7 @@ class HubInputBar extends StatelessWidget {
   final bool uploading;
   final List<PendingImage> pendingImages;
   final void Function(int index) onRemovePending;
+  final HubRoomDto? room;
 
   const HubInputBar({
     super.key,
@@ -850,20 +894,18 @@ class HubInputBar extends StatelessWidget {
     this.uploading = false,
     required this.pendingImages,
     required this.onRemovePending,
+    required this.room,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.only(
         left: 8,
         right: 8,
         top: 8,
-        bottom:
-            MediaQuery.of(context).viewInsets.bottom +
-            MediaQuery.of(context).padding.bottom +
-            4,
+        bottom: MediaQuery.of(context).padding.bottom + 4,
       ),
       decoration: BoxDecoration(
         color: cs.surface,
@@ -1067,6 +1109,22 @@ class HubInputBar extends StatelessWidget {
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
+                const Spacer(),
+                if (room != null)
+                  IconButton(
+                    onPressed: () =>
+                        showHubRoomSettingsSheet(context, room!, ref),
+                    icon: Icon(
+                      Icons.settings_outlined,
+                      size: 20,
+                      color: cs.onSurface.toOpacity(0.5),
+                    ),
+                    tooltip: 'Room Settings'.tl,
+                    style: IconButton.styleFrom(
+                      minimumSize: const Size(32, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
               ],
             ),
           ),

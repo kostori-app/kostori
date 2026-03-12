@@ -15,11 +15,28 @@ extension HubClientActions on HubClient {
   void reply(String replyToMessageId, List<MessageSegment> segments) =>
       broadcast(segments, replyToMessageId: replyToMessageId);
 
-  void sendTo(String targetUserId, List<MessageSegment> segments) => _send({
-    'messageType': 'unicast',
-    'targetUserId': targetUserId,
-    'segments': segments.map((s) => s.toJson()).toList(),
-  });
+  void sendTo(String targetUserId, List<MessageSegment> segments) {
+    _send({
+      'messageType': 'unicast',
+      'targetUserId': targetUserId,
+      'segments': segments.map((s) => s.toJson()).toList(),
+    });
+
+    // 本地存发出去的消息
+    final msg = HubMessage(
+      messageId: 'local_${DateTime.now().millisecondsSinceEpoch}',
+      sender: HubClientDto(
+        userId: myId ?? '',
+        displayName: myDisplayName ?? '',
+        connectedAt: DateTime.now(),
+      ),
+      segments: segments,
+      sentAt: DateTime.now(),
+      messageType: HubMessageType.chat,
+      targetRoomIds: [],
+    );
+    _addDmMessage(targetUserId, msg);
+  }
 
   void recall(String messageId) =>
       _send({'messageType': 'recall', 'messageId': messageId});
@@ -62,6 +79,11 @@ extension HubClientActions on HubClient {
   void setAnnouncement(String announcement) =>
       _send({'messageType': 'set_announcement', 'announcement': announcement});
 
+  /// 按索引删除公告（index 对应 [HubRoomDto.announcements] 的下标）。
+  /// 传 -1 表示清空全部公告。
+  void removeAnnouncement(int index) =>
+      _send({'messageType': 'remove_announcement', 'index': index});
+
   void setRoomPassword(String? password) =>
       _send({'messageType': 'set_room_password', 'password': password});
 
@@ -86,6 +108,14 @@ extension HubClientActions on HubClient {
 
   void poke(String targetUserId) {
     _send({'messageType': 'poke', 'targetId': targetUserId});
+  }
+
+  void _addDmMessage(String userId, HubMessage message) {
+    _setState((s) {
+      final updated = Map<String, List<HubMessage>>.from(s.dmHistory);
+      updated[userId] = [...(updated[userId] ?? []), message];
+      return s.copyWith(dmHistory: updated);
+    });
   }
 
   // ── 管理 ──────────────────────────────────────────────────────────────────

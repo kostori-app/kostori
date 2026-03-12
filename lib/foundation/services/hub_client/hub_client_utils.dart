@@ -32,6 +32,7 @@ extension HubClientUtils on HubClient {
       bannedUserIds: incoming.bannedUserIds,
       pinnedMessages: incoming.pinnedMessages,
       messageHistory: history,
+      welcomeMessage: incoming.welcomeMessage,
     );
     final newRooms = [..._s.roomList];
     if (idx != -1) {

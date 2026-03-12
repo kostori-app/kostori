@@ -48,6 +48,7 @@ class HubClientInfo {
 
   void send(Map<String, dynamic> data) {
     try {
+      Log.info('send', jsonEncode(data));
       connection.add(jsonEncode(data));
     } catch (_) {}
   }

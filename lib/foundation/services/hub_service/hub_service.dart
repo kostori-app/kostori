@@ -13,7 +13,6 @@ class HubService extends BaseHttpService {
   final List<String> eventLog = [];
   static const String _lobbyIdValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
-  // 服务端虚拟客户端 DTO，用于构建 HubMessage
   HubClientDto get _serverDto => HubClientDto(
     userId: 'server',
     displayName: 'Server',
@@ -28,29 +27,18 @@ class HubService extends BaseHttpService {
 
   Timer? _heartbeatTimer;
 
-  // ── Getters ───────────────────────────────────
-
   List<HubClientInfo> get clients => _clients.values.toList();
-
   int get clientCount => _clients.length;
-
   List<HubRoom> get rooms => _rooms.values.toList();
-
   List<HubMessage> get messageHistory =>
       List.unmodifiable(_rooms[_lobbyId]?.messageHistory ?? []);
-
   int get blacklistCount => _blacklist.length;
-
   List<String> get blacklist => _blacklist.toList();
-
   String get lobbyId => _lobbyId;
-
-  // ── 管理员持久化 ──────────────────────────────
 
   static const _adminKey = 'hub_admin_ids';
 
   void addAdmin(String clientId) => _adminIds.add(clientId);
-
   void removeAdmin(String clientId) => _adminIds.remove(clientId);
 
   void _loadAdmins() {
@@ -63,8 +51,6 @@ class HubService extends BaseHttpService {
     appdata.writeImplicitData();
   }
 
-  // ── 黑名单持久化 ──────────────────────────────
-
   static const _blacklistKey = 'hub_blacklist';
 
   void _loadBlacklist() {
@@ -76,8 +62,6 @@ class HubService extends BaseHttpService {
     appdata.implicitData[_blacklistKey] = _blacklist.toList();
     appdata.writeImplicitData();
   }
-
-  // ── 工具方法 ──────────────────────────────────
 
   bool _isRoomAdmin(String clientId, String roomId) =>
       _clients[clientId]?.isGlobalAdmin == true ||
@@ -111,42 +95,58 @@ class HubService extends BaseHttpService {
     return i == 0 ? name : '$name#$i';
   }
 
-  // ── 广播 ──────────────────────────────────────
-
   void _broadcastToRoom(String roomId, HubMessage msg, {String? exclude}) {
     final room = _rooms[roomId];
     if (room == null) return;
-
-    if (msg.messageType != HubMessageType.system) {
-      room.addMessage(msg);
-      onMessageReceived?.call();
-    }
-
+    room.addMessage(msg);
+    onMessageReceived?.call();
     for (final member in room.participants.values) {
       if (member.userId == exclude) continue;
-
       final json = msg.toJson();
-
-      if (msg.messageType != HubMessageType.system &&
-          HubCrypto.isInitialized &&
-          json['segments'] != null) {
-        final segmentsStr = jsonEncode(json['segments']);
-        json['segments'] = HubCrypto.encrypt(segmentsStr);
+      if (HubCrypto.isInitialized && json['segments'] != null) {
+        json['segments'] = HubCrypto.encrypt(jsonEncode(json['segments']));
         json['encrypted'] = true;
       }
-
-      json['type'] = msg.messageType == HubMessageType.system
-          ? 'system'
-          : 'message';
-
+      json['type'] = 'message';
       member.send(json);
     }
-
     Log.info(
       'HubService',
       '📢 广播[${room.roomName}] from:${msg.sender.userId} to:${room.participants.length}个',
     );
   }
+
+  void _broadcastSystemToRoom(
+    String roomId,
+    HubSystemEvent event,
+    Map<String, dynamic> data, {
+    String? exclude,
+  }) {
+    final room = _rooms[roomId];
+    if (room == null) return;
+    final payload = {'type': 'system', 'event': event.value, ...data};
+    for (final member in room.participants.values) {
+      if (member.userId == exclude) continue;
+      member.send(payload);
+    }
+  }
+
+  void _broadcastSystem(
+    HubSystemEvent event,
+    Map<String, dynamic> data, {
+    String? exclude,
+  }) {
+    final payload = {'type': 'system', 'event': event.value, ...data};
+    for (final client in _clients.values) {
+      if (client.userId != exclude) client.send(payload);
+    }
+  }
+
+  void _sendSystemTo(
+    HubClientInfo client,
+    HubSystemEvent event,
+    Map<String, dynamic> data,
+  ) => client.send({'type': 'system', 'event': event.value, ...data});
 
   void _unicast(HubMessage msg, String roomId, String targetUserId) {
     final target = _clients[targetUserId];
@@ -159,12 +159,10 @@ class HubService extends BaseHttpService {
     }
     _rooms[roomId]?.addMessage(msg);
     onMessageReceived?.call();
-
     Map<String, dynamic> buildJson() {
       final json = {'type': 'unicast', ...msg.toJson()};
       if (HubCrypto.isInitialized && json['segments'] != null) {
-        final segmentsStr = jsonEncode(json['segments']);
-        json['segments'] = HubCrypto.encrypt(segmentsStr);
+        json['segments'] = HubCrypto.encrypt(jsonEncode(json['segments']));
         json['encrypted'] = true;
       }
       return json;
@@ -173,47 +171,20 @@ class HubService extends BaseHttpService {
     final json = buildJson();
     target.send(json);
     _clients[msg.sender.userId]?.send(json);
-
     Log.info(
       'HubService',
       '📩 单播  from:${msg.sender.userId}  to:$targetUserId',
     );
   }
 
-  void _broadcastSystem(
-    String event,
-    Map<String, dynamic> data, {
-    String? exclude,
-  }) {
-    final payload = {
-      'type': 'system',
-      'payload': {'event': event, ...data},
-    };
-    for (final client in _clients.values) {
-      if (client.userId != exclude) client.send(payload);
-    }
-  }
-
-  void _broadcastAll(HubMessage message, {String? exclude}) {
-    for (final client in _clients.values) {
-      if (client.userId == exclude) continue;
-      client.send(message.toJson());
-    }
-  }
-
-  // ── 公共 API ──────────────────────────────────
-
   void broadcast(dynamic payload, {String? roomId}) {
     final id = roomId ?? _lobbyId;
-    _broadcastToRoom(
-      id,
-      HubMessage(
-        messageType: HubMessageType.system,
-        sender: _serverDto,
-        targetRoomIds: [id],
-        segments: [TextSegment(jsonEncode(payload))],
-      ),
-    );
+    final room = _rooms[id];
+    if (room == null) return;
+    final json = {'type': 'broadcast', 'payload': payload};
+    for (final member in room.participants.values) {
+      member.send(json);
+    }
   }
 
   Future<void> kickClient(
@@ -229,7 +200,6 @@ class HubService extends BaseHttpService {
       KickReason.serverBanned => 'server_banned',
       KickReason.timeout => 'timeout',
     };
-
     final defaultMessage = switch (reason) {
       KickReason.kicked => 'Kicked by ${operatorName ?? "server"}',
       KickReason.banned =>
@@ -238,7 +208,6 @@ class HubService extends BaseHttpService {
         'Banned from this server by ${operatorName ?? "server"}',
       KickReason.timeout => 'Connection timed out (no heartbeat)',
     };
-
     _clients[id]?.send({
       'type': 'kicked',
       'reason': reasonStr,
@@ -246,21 +215,17 @@ class HubService extends BaseHttpService {
       'operatorId': operatorId ?? 'server',
       'operatorName': operatorName ?? 'server',
     });
-
     await Future.delayed(const Duration(milliseconds: 100));
     await _clients[id]?.connection.close(
-      // socket → connection
       WebSocketStatus.policyViolation,
       reasonStr,
     );
-
     final target = _clients[id];
     final targetName = target?.displayName ?? id;
     final roomId = target?.currentRoomId ?? _lobbyId;
     _rooms[roomId]?.participants.remove(id);
     _clients.remove(id);
     onClientsChanged?.call();
-
     final op = operatorName ?? 'server';
     final reasonLabel = switch (reason) {
       KickReason.kicked => '⚡ kicked',
@@ -273,23 +238,20 @@ class HubService extends BaseHttpService {
 
   Future<void> muteClient(String id, {int seconds = 300}) async {
     _clients[id]?.mutedUntil = DateTime.now().add(Duration(seconds: seconds));
-    _clients[id]?.send({
-      'type': 'system',
-      'payload': {
-        'event': 'you_are_muted',
+    if (_clients[id] != null) {
+      _sendSystemTo(_clients[id]!, HubSystemEvent.youAreMuted, {
         'seconds': seconds,
         'until': _clients[id]!.mutedUntil!.toIso8601String(),
-      },
-    });
+      });
+    }
     onClientsChanged?.call();
   }
 
   Future<void> unmuteClient(String id) async {
     _clients[id]?.mutedUntil = null;
-    _clients[id]?.send({
-      'type': 'system',
-      'payload': {'event': 'you_are_unmuted'},
-    });
+    if (_clients[id] != null) {
+      _sendSystemTo(_clients[id]!, HubSystemEvent.youAreUnmuted, {});
+    }
     onClientsChanged?.call();
   }
 
@@ -297,13 +259,11 @@ class HubService extends BaseHttpService {
     _clients[id]?.isGlobalAdmin = value;
     if (value) {
       _adminIds.add(id);
-      _clients[id]?.send({
-        'type': 'system',
-        'payload': {
-          'event': 'blacklist_updated',
+      if (_clients[id] != null) {
+        _sendSystemTo(_clients[id]!, HubSystemEvent.blacklistUpdated, {
           'blacklist': _blacklist.toList(),
-        },
-      });
+        });
+      }
     } else {
       _adminIds.remove(id);
     }
@@ -312,8 +272,7 @@ class HubService extends BaseHttpService {
     _logEvent(
       '👑 server ${value ? "granted" : "revoked"} global admin for ${_clients[id]?.displayName ?? id}',
     );
-
-    _broadcastSystem('global_admin_changed', {
+    _broadcastSystem(HubSystemEvent.globalAdminChanged, {
       'clientId': id,
       'isGlobalAdmin': value,
       'by': 'server',
@@ -355,7 +314,7 @@ class HubService extends BaseHttpService {
     _logEvent(
       '🏠 Room created: "${room.roomName}" (${room.roomId}) by ${creatorId ?? "server"}',
     );
-    _broadcastSystem('room_created', {'room': room.toJson()});
+    _broadcastSystem(HubSystemEvent.roomCreated, {'room': room.toJson()});
   }
 
   Future<void> deleteRoom(String roomId) async {
@@ -375,7 +334,7 @@ class HubService extends BaseHttpService {
     }
     _rooms.remove(roomId);
     onRoomsChanged?.call();
-    _broadcastSystem('room_deleted', {'roomId': roomId});
+    _broadcastSystem(HubSystemEvent.roomDeleted, {'roomId': roomId});
   }
 
   void addToBlacklist(String clientId) {
@@ -399,12 +358,8 @@ class HubService extends BaseHttpService {
 
   void _broadcastBlacklistToAdmins() {
     for (final c in _clients.values.where((c) => c.isGlobalAdmin)) {
-      c.send({
-        'type': 'system',
-        'payload': {
-          'event': 'blacklist_updated',
-          'blacklist': _blacklist.toList(),
-        },
+      _sendSystemTo(c, HubSystemEvent.blacklistUpdated, {
+        'blacklist': _blacklist.toList(),
       });
     }
   }
@@ -412,10 +367,9 @@ class HubService extends BaseHttpService {
   void _startHeartbeatCheck() {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(pingInterval, (_) {
-      final timeout = pingInterval;
       final now = DateTime.now();
       final timedOut = _clients.values
-          .where((c) => now.difference(c.lastHeartbeat) > timeout)
+          .where((c) => now.difference(c.lastHeartbeat) > pingInterval)
           .map((c) => c.userId)
           .toList();
       for (final id in timedOut) {
@@ -436,8 +390,6 @@ class HubService extends BaseHttpService {
     );
     _logEvent('🏠 Lobby created: $_lobbyId');
   }
-
-  // ── 生命周期 ──────────────────────────────────
 
   @override
   void registerRoutes() {
@@ -462,10 +414,7 @@ class HubService extends BaseHttpService {
     _heartbeatTimer?.cancel();
     for (final client in _clients.values.toList()) {
       try {
-        client.send({
-          'type': 'system',
-          'payload': {'event': 'server_shutdown'},
-        });
+        _sendSystemTo(client, HubSystemEvent.serverShutdown, {});
       } catch (_) {}
     }
     await Future.delayed(const Duration(milliseconds: 300));

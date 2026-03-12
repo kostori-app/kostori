@@ -1,6 +1,70 @@
 part of 'package:kostori/foundation/services/services.dart';
 
-// ── 消息基类 ──────────────────────────────────────────────────────────────
+enum HubSystemEvent {
+  serverShutdown,
+  globalAdminChanged,
+  blacklistUpdated,
+  roomAdminChanged,
+  youAreMuted,
+  youAreUnmuted,
+  userMuted,
+  userUnmuted,
+  youAreRoomBanned,
+  youAreRoomUnbanned,
+  roomBanUpdated,
+  kickedFromRoom,
+  clientKickedFromRoom,
+  messageRecalled,
+  roomCreated,
+  roomDeleted,
+  roomUpdated,
+  clientJoined,
+  clientLeft,
+  clientJoinedRoom,
+  clientLeftRoom,
+  profileUpdated,
+  statusChanged,
+  roomAnnouncement,
+  roomWelcome,
+  poked,
+  mentioned,
+  announcement;
+
+  String get value => switch (this) {
+    serverShutdown => 'server_shutdown',
+    globalAdminChanged => 'global_admin_changed',
+    blacklistUpdated => 'blacklist_updated',
+    roomAdminChanged => 'room_admin_changed',
+    youAreMuted => 'you_are_muted',
+    youAreUnmuted => 'you_are_unmuted',
+    userMuted => 'user_muted',
+    userUnmuted => 'user_unmuted',
+    youAreRoomBanned => 'you_are_room_banned',
+    youAreRoomUnbanned => 'you_are_room_unbanned',
+    roomBanUpdated => 'room_ban_updated',
+    kickedFromRoom => 'kicked_from_room',
+    clientKickedFromRoom => 'client_kicked_from_room',
+    messageRecalled => 'message_recalled',
+    roomCreated => 'room_created',
+    roomDeleted => 'room_deleted',
+    roomUpdated => 'room_updated',
+    clientJoined => 'client_joined',
+    clientLeft => 'client_left',
+    clientJoinedRoom => 'client_joined_room',
+    clientLeftRoom => 'client_left_room',
+    profileUpdated => 'profile_updated',
+    statusChanged => 'status_changed',
+    roomAnnouncement => 'room_announcement',
+    roomWelcome => 'room_welcome',
+    poked => 'poked',
+    mentioned => 'mentioned',
+    announcement => 'announcement',
+  };
+
+  static HubSystemEvent? fromValue(String? v) => v == null
+      ? null
+      : HubSystemEvent.values.firstWhereOrNull((e) => e.value == v);
+}
 
 sealed class HubEvent {
   const HubEvent();
@@ -12,33 +76,12 @@ sealed class HubEvent {
       'welcome' => HubEventWelcome.fromJson(json),
       'room_joined' => HubEventRoomJoined.fromJson(json),
       'message' => HubEventMessage.fromJson(json, isUnicast: false),
-      'chat' => HubEventMessage.fromJson(json, isUnicast: true),
+      'chat' => HubEventMessage.fromJson(json, isUnicast: false),
       'unicast' => HubEventMessage.fromJson(json, isUnicast: true),
-      'system' => () {
-        if (json['payload'] != null) {
-          final payload = json['payload'] as Map<String, dynamic>;
-          return HubEventSystem.fromEvent(payload['event'] as String?, payload);
-        }
-        final segments = json['segments'] as List?;
-        if (segments != null) {
-          for (final seg in segments) {
-            final segMap = seg as Map<String, dynamic>;
-            if (segMap['type'] == 'text') {
-              final text = (segMap['data'] as Map?)?['text'] as String?;
-              if (text != null) {
-                try {
-                  final payload = jsonDecode(text) as Map<String, dynamic>;
-                  return HubEventSystem.fromEvent(
-                    payload['event'] as String?,
-                    payload,
-                  );
-                } catch (_) {}
-              }
-            }
-          }
-        }
-        return const HubSystemUnknown('');
-      }(),
+      'system' => HubEventSystem.fromEvent(
+        HubSystemEvent.fromValue(json['event'] as String?),
+        json,
+      ),
       'kicked' => HubEventKicked.fromJson(json),
       'pong' => const HubEventPong(),
       'error' => HubEventError.fromJson(json),
@@ -46,8 +89,6 @@ sealed class HubEvent {
     };
   }
 }
-
-// ── 具体事件类 ────────────────────────────────────────────────────────────
 
 class HubEventWelcome extends HubEvent {
   final String yourId;
@@ -83,7 +124,7 @@ class HubEventWelcome extends HubEvent {
         clients: (json['clients'] as List? ?? [])
             .map((c) => HubClientDto.fromJson(c as Map<String, dynamic>))
             .toList(),
-        blacklist: List<String>.from(json['blacklist'] ?? []),
+        blacklist: List<String>.from(json['blacklist'] as List? ?? []),
         heartbeatInterval: json['heartbeatInterval'] as int? ?? 30000,
         uploadEnabled: json['uploadEnabled'] as bool? ?? false,
       );
@@ -151,75 +192,60 @@ class HubEventError extends HubEvent {
 class HubEventUnknown extends HubEvent {
   final String? type;
 
-  const HubEventUnknown(this.type); // String? 而不是 String
+  const HubEventUnknown(this.type);
 }
-
-// ── System 事件细分 ───────────────────────────────────────────────────────
 
 sealed class HubEventSystem extends HubEvent {
   const HubEventSystem();
 
   factory HubEventSystem.fromEvent(
-    String? event,
-    Map<String, dynamic> payload,
+    HubSystemEvent? event,
+    Map<String, dynamic> p,
   ) => switch (event) {
-    'server_shutdown' => const HubSystemServerShutdown(),
-    'global_admin_changed' => HubSystemGlobalAdminChanged.fromJson(payload),
-    'blacklist_updated' => HubSystemBlacklistUpdated.fromJson(payload),
-    'room_admin_changed' => HubSystemRoomAdminChanged.fromJson(payload),
-    'you_are_muted' => HubSystemYouAreMuted.fromJson(payload),
-    'you_are_unmuted' => const HubSystemYouAreUnmuted(),
-    'user_muted' => HubSystemUserMuted.fromJson(payload, muted: true),
-    'user_unmuted' => HubSystemUserMuted.fromJson(payload, muted: false),
-    'you_are_room_banned' => HubSystemRoomBanned.fromJson(
-      payload,
+    HubSystemEvent.serverShutdown => const HubSystemServerShutdown(),
+    HubSystemEvent.globalAdminChanged => HubSystemGlobalAdminChanged.fromJson(
+      p,
+    ),
+    HubSystemEvent.blacklistUpdated => HubSystemBlacklistUpdated.fromJson(p),
+    HubSystemEvent.roomAdminChanged => HubSystemRoomAdminChanged.fromJson(p),
+    HubSystemEvent.youAreMuted => HubSystemYouAreMuted.fromJson(p),
+    HubSystemEvent.youAreUnmuted => const HubSystemYouAreUnmuted(),
+    HubSystemEvent.userMuted => HubSystemUserMuted.fromJson(p, muted: true),
+    HubSystemEvent.userUnmuted => HubSystemUserMuted.fromJson(p, muted: false),
+    HubSystemEvent.youAreRoomBanned => HubSystemYouAreRoomBanned.fromJson(
+      p,
       banned: true,
     ),
-    'you_are_room_unbanned' => HubSystemRoomBanned.fromJson(
-      payload,
+    HubSystemEvent.youAreRoomUnbanned => HubSystemYouAreRoomBanned.fromJson(
+      p,
       banned: false,
     ),
-    'kicked_from_room' => const HubSystemKickedFromRoom(),
-    'message_recalled' => HubSystemMessageRecalled.fromJson(payload),
-    'room_created' => HubSystemRoomCreated.fromJson(payload),
-    'room_deleted' => HubSystemRoomDeleted.fromJson(payload),
-    'room_updated' => HubSystemRoomUpdated.fromJson(payload),
-    'client_joined' => HubSystemClientJoined.fromJson(payload),
-    'client_left' => HubSystemClientLeft.fromJson(payload),
-    'client_joined_room' => HubSystemClientRoomChanged.fromJson(
-      payload,
+    HubSystemEvent.roomBanUpdated => HubSystemRoomBanUpdated.fromJson(p),
+    HubSystemEvent.kickedFromRoom => HubSystemKickedFromRoom.fromJson(p),
+    HubSystemEvent.clientKickedFromRoom =>
+      HubSystemClientKickedFromRoom.fromJson(p),
+    HubSystemEvent.messageRecalled => HubSystemMessageRecalled.fromJson(p),
+    HubSystemEvent.roomCreated => HubSystemRoomCreated.fromJson(p),
+    HubSystemEvent.roomDeleted => HubSystemRoomDeleted.fromJson(p),
+    HubSystemEvent.roomUpdated => HubSystemRoomUpdated.fromJson(p),
+    HubSystemEvent.clientJoined => HubSystemClientJoined.fromJson(p),
+    HubSystemEvent.clientLeft => HubSystemClientLeft.fromJson(p),
+    HubSystemEvent.clientJoinedRoom => HubSystemClientRoomChanged.fromJson(
+      p,
       joined: true,
     ),
-    'client_left_room' => HubSystemClientRoomChanged.fromJson(
-      payload,
+    HubSystemEvent.clientLeftRoom => HubSystemClientRoomChanged.fromJson(
+      p,
       joined: false,
     ),
-    'profile_updated' => HubSystemProfileUpdated.fromJson(payload),
-    'status_changed' => HubSystemStatusChanged.fromJson(payload),
-
-    'room_announcement' => HubSystemRoomAnnouncement(
-      announcements: List<String>.from(payload['announcements'] as List? ?? []),
-      setByUserId: payload['setByUserId'] as String? ?? '',
-      setByName: payload['setByName'] as String? ?? '',
-    ),
-
-    'room_welcome' => HubSystemRoomWelcome(
-      message: payload['message'] as String? ?? '',
-    ),
-
-    'poked' => HubSystemPoked(
-      fromId: payload['fromId'] as String? ?? '',
-      fromName: payload['fromName'] as String? ?? '',
-    ),
-
-    'mentioned' => HubSystemMentioned(
-      fromId: payload['fromId'] as String? ?? '',
-      fromName: payload['fromName'] as String? ?? '',
-      messageId: payload['messageId'] as String? ?? '',
-      previewText: payload['previewText'] as String? ?? '',
-    ),
-
-    _ => HubSystemUnknown(event ?? ''),
+    HubSystemEvent.profileUpdated => HubSystemProfileUpdated.fromJson(p),
+    HubSystemEvent.statusChanged => HubSystemStatusChanged.fromJson(p),
+    HubSystemEvent.roomAnnouncement => HubSystemRoomAnnouncement.fromJson(p),
+    HubSystemEvent.roomWelcome => HubSystemRoomWelcome.fromJson(p),
+    HubSystemEvent.poked => HubSystemPoked.fromJson(p),
+    HubSystemEvent.mentioned => HubSystemMentioned.fromJson(p),
+    HubSystemEvent.announcement => HubSystemAnnouncement.fromJson(p),
+    null => HubSystemUnknown(p['event'] as String? ?? ''),
   };
 }
 
@@ -232,7 +258,25 @@ class HubSystemYouAreUnmuted extends HubEventSystem {
 }
 
 class HubSystemKickedFromRoom extends HubEventSystem {
-  const HubSystemKickedFromRoom();
+  final String roomId;
+  final String by;
+  final String byName;
+  final bool permanent;
+
+  const HubSystemKickedFromRoom({
+    required this.roomId,
+    required this.by,
+    required this.byName,
+    required this.permanent,
+  });
+
+  factory HubSystemKickedFromRoom.fromJson(Map<String, dynamic> j) =>
+      HubSystemKickedFromRoom(
+        roomId: j['roomId'] as String? ?? '',
+        by: j['by'] as String? ?? '',
+        byName: j['byName'] as String? ?? '',
+        permanent: j['permanent'] as bool? ?? false,
+      );
 }
 
 class HubSystemUnknown extends HubEventSystem {
@@ -312,25 +356,60 @@ class HubSystemUserMuted extends HubEventSystem {
   }) => HubSystemUserMuted(clientId: j['clientId'] as String, isMuted: muted);
 }
 
-class HubSystemRoomBanned extends HubEventSystem {
+class HubSystemYouAreRoomBanned extends HubEventSystem {
   final String roomId;
   final String roomName;
   final bool isBanned;
 
-  const HubSystemRoomBanned({
+  const HubSystemYouAreRoomBanned({
     required this.roomId,
     required this.roomName,
     required this.isBanned,
   });
 
-  factory HubSystemRoomBanned.fromJson(
+  factory HubSystemYouAreRoomBanned.fromJson(
     Map<String, dynamic> j, {
     required bool banned,
-  }) => HubSystemRoomBanned(
+  }) => HubSystemYouAreRoomBanned(
     roomId: j['roomId'] as String,
     roomName: j['roomName'] as String,
     isBanned: banned,
   );
+}
+
+class HubSystemRoomBanUpdated extends HubEventSystem {
+  final String clientId;
+  final bool banned;
+  final String by;
+
+  const HubSystemRoomBanUpdated({
+    required this.clientId,
+    required this.banned,
+    required this.by,
+  });
+
+  factory HubSystemRoomBanUpdated.fromJson(Map<String, dynamic> j) =>
+      HubSystemRoomBanUpdated(
+        clientId: j['clientId'] as String,
+        banned: j['banned'] as bool? ?? true,
+        by: j['by'] as String? ?? '',
+      );
+}
+
+class HubSystemClientKickedFromRoom extends HubEventSystem {
+  final String clientId;
+  final String by;
+
+  const HubSystemClientKickedFromRoom({
+    required this.clientId,
+    required this.by,
+  });
+
+  factory HubSystemClientKickedFromRoom.fromJson(Map<String, dynamic> j) =>
+      HubSystemClientKickedFromRoom(
+        clientId: j['clientId'] as String,
+        by: j['by'] as String? ?? '',
+      );
 }
 
 class HubSystemMessageRecalled extends HubEventSystem {
@@ -409,11 +488,11 @@ class HubSystemClientRoomChanged extends HubEventSystem {
   });
 
   factory HubSystemClientRoomChanged.fromJson(
-    Map<String, dynamic> payload, {
+    Map<String, dynamic> p, {
     required bool joined,
   }) => HubSystemClientRoomChanged(
-    client: HubClientDto.fromJson(payload['client'] as Map<String, dynamic>),
-    roomId: payload['roomId'] as String? ?? '',
+    client: HubClientDto.fromJson(p['client'] as Map<String, dynamic>),
+    roomId: p['roomId'] as String? ?? '',
     joined: joined,
   );
 }
@@ -453,18 +532,31 @@ class HubSystemRoomAnnouncement extends HubEventSystem {
   final List<String> announcements;
   final String setByUserId;
   final String setByName;
+  final String roomId;
 
   const HubSystemRoomAnnouncement({
     required this.announcements,
     required this.setByUserId,
     required this.setByName,
+    required this.roomId,
   });
+
+  factory HubSystemRoomAnnouncement.fromJson(Map<String, dynamic> j) =>
+      HubSystemRoomAnnouncement(
+        announcements: List<String>.from(j['announcements'] as List? ?? []),
+        setByUserId: j['setByUserId'] as String? ?? '',
+        setByName: j['setByName'] as String? ?? '',
+        roomId: j['roomId'] as String? ?? '',
+      );
 }
 
 class HubSystemRoomWelcome extends HubEventSystem {
   final String message;
 
   const HubSystemRoomWelcome({required this.message});
+
+  factory HubSystemRoomWelcome.fromJson(Map<String, dynamic> j) =>
+      HubSystemRoomWelcome(message: j['message'] as String? ?? '');
 }
 
 class HubSystemPoked extends HubEventSystem {
@@ -472,6 +564,11 @@ class HubSystemPoked extends HubEventSystem {
   final String fromName;
 
   const HubSystemPoked({required this.fromId, required this.fromName});
+
+  factory HubSystemPoked.fromJson(Map<String, dynamic> j) => HubSystemPoked(
+    fromId: j['fromId'] as String? ?? '',
+    fromName: j['fromName'] as String? ?? '',
+  );
 }
 
 class HubSystemMentioned extends HubEventSystem {
@@ -486,66 +583,112 @@ class HubSystemMentioned extends HubEventSystem {
     required this.messageId,
     required this.previewText,
   });
+
+  factory HubSystemMentioned.fromJson(Map<String, dynamic> j) =>
+      HubSystemMentioned(
+        fromId: j['fromId'] as String? ?? '',
+        fromName: j['fromName'] as String? ?? '',
+        messageId: j['messageId'] as String? ?? '',
+        previewText: j['previewText'] as String? ?? '',
+      );
 }
+
+class HubSystemAnnouncement extends HubEventSystem {
+  final String text;
+  final String by;
+
+  const HubSystemAnnouncement({required this.text, required this.by});
+
+  factory HubSystemAnnouncement.fromJson(Map<String, dynamic> j) =>
+      HubSystemAnnouncement(
+        text: j['announcement'] as String? ?? '',
+        by: j['by'] as String? ?? '',
+      );
+}
+
+// ── HubSystemPayload（供 HubSystemRow 渲染用）─────────────────────────────────
 
 sealed class HubSystemPayload {
   const HubSystemPayload();
 
-  static HubSystemPayload? fromJson(Map<String, dynamic> json) {
-    return switch (json['event'] as String?) {
-      'client_joined' => ClientJoined.fromJson(json),
-      'client_left' => ClientLeft.fromJson(json),
-      'client_joined_room' => ClientJoinedRoom.fromJson(json),
-      'client_left_room' => ClientLeftRoom.fromJson(json),
-      'room_welcome' => RoomWelcome.fromJson(json),
-      _ => null,
-    };
-  }
+  static HubSystemPayload? fromJson(Map<String, dynamic> json) =>
+      switch (HubSystemEvent.fromValue(json['event'] as String?)) {
+        HubSystemEvent.clientJoined => HubPayloadClientJoined.fromJson(json),
+        HubSystemEvent.clientLeft => HubPayloadClientLeft.fromJson(json),
+        HubSystemEvent.clientJoinedRoom => HubPayloadClientJoinedRoom.fromJson(
+          json,
+        ),
+        HubSystemEvent.clientLeftRoom => HubPayloadClientLeftRoom.fromJson(
+          json,
+        ),
+        HubSystemEvent.roomWelcome => HubPayloadRoomWelcome.fromJson(json),
+        HubSystemEvent.clientKickedFromRoom =>
+          HubPayloadClientKickedFromRoom.fromJson(json),
+        _ => null,
+      };
 }
 
-class ClientJoined extends HubSystemPayload {
+class HubPayloadClientJoined extends HubSystemPayload {
   final String displayName;
 
-  const ClientJoined({required this.displayName});
+  const HubPayloadClientJoined({required this.displayName});
 
-  factory ClientJoined.fromJson(Map<String, dynamic> j) => ClientJoined(
-    displayName: (j['client'] as Map?)?['displayName'] as String? ?? '',
-  );
+  factory HubPayloadClientJoined.fromJson(Map<String, dynamic> j) =>
+      HubPayloadClientJoined(
+        displayName: (j['client'] as Map?)?['displayName'] as String? ?? '',
+      );
 }
 
-class ClientLeft extends HubSystemPayload {
+class HubPayloadClientLeft extends HubSystemPayload {
   final String clientName;
 
-  const ClientLeft({required this.clientName});
+  const HubPayloadClientLeft({required this.clientName});
 
-  factory ClientLeft.fromJson(Map<String, dynamic> j) =>
-      ClientLeft(clientName: j['clientName'] as String? ?? '');
+  factory HubPayloadClientLeft.fromJson(Map<String, dynamic> j) =>
+      HubPayloadClientLeft(clientName: j['clientName'] as String? ?? '');
 }
 
-class ClientJoinedRoom extends HubSystemPayload {
+class HubPayloadClientJoinedRoom extends HubSystemPayload {
   final String displayName;
 
-  const ClientJoinedRoom({required this.displayName});
+  const HubPayloadClientJoinedRoom({required this.displayName});
 
-  factory ClientJoinedRoom.fromJson(Map<String, dynamic> j) => ClientJoinedRoom(
-    displayName: (j['client'] as Map?)?['displayName'] as String? ?? '',
-  );
+  factory HubPayloadClientJoinedRoom.fromJson(Map<String, dynamic> j) =>
+      HubPayloadClientJoinedRoom(
+        displayName: (j['client'] as Map?)?['displayName'] as String? ?? '',
+      );
 }
 
-class ClientLeftRoom extends HubSystemPayload {
+class HubPayloadClientLeftRoom extends HubSystemPayload {
   final String clientName;
 
-  const ClientLeftRoom({required this.clientName});
+  const HubPayloadClientLeftRoom({required this.clientName});
 
-  factory ClientLeftRoom.fromJson(Map<String, dynamic> j) =>
-      ClientLeftRoom(clientName: j['clientName'] as String? ?? '');
+  factory HubPayloadClientLeftRoom.fromJson(Map<String, dynamic> j) =>
+      HubPayloadClientLeftRoom(clientName: j['clientName'] as String? ?? '');
 }
 
-class RoomWelcome extends HubSystemPayload {
+class HubPayloadRoomWelcome extends HubSystemPayload {
   final String message;
 
-  const RoomWelcome({required this.message});
+  const HubPayloadRoomWelcome({required this.message});
 
-  factory RoomWelcome.fromJson(Map<String, dynamic> j) =>
-      RoomWelcome(message: j['message'] as String? ?? '');
+  factory HubPayloadRoomWelcome.fromJson(Map<String, dynamic> j) =>
+      HubPayloadRoomWelcome(message: j['message'] as String? ?? '');
+}
+
+class HubPayloadClientKickedFromRoom extends HubSystemPayload {
+  final String clientName;
+  final String operatorName;
+
+  const HubPayloadClientKickedFromRoom({
+    required this.clientName,
+    required this.operatorName,
+  });
+
+  factory HubPayloadClientKickedFromRoom.fromJson(Map<String, dynamic> j) =>
+      HubPayloadClientKickedFromRoom(
+        clientName: j['clientName'] as String? ?? '',
+        operatorName: j['operatorName'] as String? ?? '',
+      );
 }

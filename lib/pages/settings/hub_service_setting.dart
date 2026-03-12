@@ -51,14 +51,12 @@ class _DraggableSheet extends StatefulWidget {
     this.icon,
     this.headerTrailing,
     required this.builder,
-    this.footer,
   });
 
   final String title;
   final IconData? icon;
   final Widget? headerTrailing;
   final Widget Function(BuildContext, ScrollController) builder;
-  final Widget? footer;
 
   @override
   State<_DraggableSheet> createState() => _DraggableSheetState();
@@ -87,7 +85,6 @@ class _DraggableSheetState extends State<_DraggableSheet> {
             trailing: widget.headerTrailing,
           ),
           Flexible(child: widget.builder(context, _scrollController)),
-          if (widget.footer != null) widget.footer!,
         ],
       ),
     );
@@ -96,25 +93,16 @@ class _DraggableSheetState extends State<_DraggableSheet> {
 
 /// 成员头像 + 名称 Tile
 class _ClientTile extends StatelessWidget {
-  const _ClientTile({
-    required this.name,
-    this.avatarUrl,
-
-    this.trailing,
-    this.onTap,
-  });
+  const _ClientTile({required this.name, this.avatarUrl, this.trailing});
 
   final String name;
   final String? avatarUrl;
-
   final Widget? trailing;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ListTile(
-      onTap: onTap,
       leading: avatarUrl != null && avatarUrl!.isNotEmpty
           ? CircleAvatar(backgroundImage: NetworkImage(avatarUrl!))
           : CircleAvatar(

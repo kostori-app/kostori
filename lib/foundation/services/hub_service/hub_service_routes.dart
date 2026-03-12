@@ -8,7 +8,6 @@ extension HubServiceRoutes on HubService {
       ownerUserId: 'server',
     );
 
-    // ── WebSocket ─────────────────────────────────
     addWs('/hub', (socket, req) async {
       socket.pingInterval = pingInterval;
 
@@ -25,7 +24,6 @@ extension HubServiceRoutes on HubService {
             Log.info('HubService', '收到鉴权  token=$token');
             Log.info('HubService', 'activeKey=${ApiKeyManager().activeKey}');
 
-            // ★ 免密模式关闭时，必须验证 token
             if (!_hubNoAuth) {
               if (token == null || !ApiKeyManager().validate(token)) {
                 Log.warning('HubService', '❌ 鉴权失败');
@@ -59,9 +57,6 @@ extension HubServiceRoutes on HubService {
               );
             }
 
-            // ★ 判断管理员身份：
-            //   1. 始终检查 _adminIds
-            //   2. 免密模式关闭时，额外检查 token 是否为 admin key
             final bool isAdmin =
                 _adminIds.contains(clientId) ||
                 (!_hubNoAuth &&
@@ -81,14 +76,12 @@ extension HubServiceRoutes on HubService {
               Log.info('HubService', '👑 管理员上线：$clientName');
             }
             _clients[clientId] = client;
-
             _rooms[_lobbyId]!.participants[clientId] = client;
             client.currentRoomId = _lobbyId;
             onClientsChanged?.call();
             _logEvent(
               '🟢 $clientName${client.isGlobalAdmin ? " 👑" : ""} joined (${_clients.length} online)',
             );
-
             Log.info(
               'HubService',
               '🟢 $clientName ($clientId)  共${_clients.length}个',
@@ -108,23 +101,9 @@ extension HubServiceRoutes on HubService {
               'uploadEnabled': uploadConfig.mode != HubUploadMode.clientOss,
             });
 
-            _broadcastToRoom(
-              _lobbyId,
-              HubMessage(
-                messageType: HubMessageType.system,
-                sender: client.toDto(),
-                targetRoomIds: [_lobbyId],
-                segments: [
-                  TextSegment(
-                    jsonEncode({
-                      'event': 'client_joined',
-                      'client': client.toJson(),
-                    }),
-                  ),
-                ],
-              ),
-              exclude: clientId,
-            );
+            _broadcastSystemToRoom(_lobbyId, HubSystemEvent.clientJoined, {
+              'client': client.toJson(),
+            }, exclude: clientId);
 
             continue;
           }
@@ -142,39 +121,25 @@ extension HubServiceRoutes on HubService {
         _clients.remove(clientId);
         onClientsChanged?.call();
         _logEvent('🔴 $clientName left (${_clients.length} online)');
-
         Log.info(
           'HubService',
           '🔴 $clientName ($clientId)  剩${_clients.length}个',
         );
 
-        _broadcastToRoom(
-          roomId,
-          HubMessage(
-            messageType: HubMessageType.system,
-            sender: _serverDto,
-            targetRoomIds: [roomId],
-            segments: [
-              TextSegment(
-                jsonEncode({
-                  'event': 'client_left_room',
-                  'clientId': clientId,
-                  'clientName': clientName,
-                }),
-              ),
-            ],
-          ),
-        );
+        _broadcastSystemToRoom(roomId, HubSystemEvent.clientLeftRoom, {
+          'clientId': clientId,
+          'clientName': clientName,
+          'client': {'userId': clientId, 'displayName': clientName ?? clientId},
+          'roomId': roomId,
+        });
 
-        // 全服广播下线（在线列表用）
-        _broadcastSystem('client_left', {
+        _broadcastSystem(HubSystemEvent.clientLeft, {
           'clientId': clientId,
           'clientName': clientName,
         });
       }
     });
 
-    // ── HTTP ──────────────────────────────────────
     addGet(
       '/hub/clients',
       (req) async {
@@ -271,20 +236,10 @@ extension HubServiceRoutes on HubService {
         if (body == null) return;
         final roomId = body['room'] as String? ?? _lobbyId;
         final payload = body['payload'] ?? body;
-        _broadcastToRoom(
-          roomId,
-          HubMessage(
-            messageType: HubMessageType.system,
-            sender: _serverDto,
-            targetRoomIds: [roomId],
-            segments: [TextSegment(jsonEncode(payload))],
-          ),
-        );
+        broadcast(payload, roomId: roomId);
         await sendJson(req, {
           'sent': true,
-          'to':
-              _rooms[roomId]?.participants.length ??
-              0, // members → participants
+          'to': _rooms[roomId]?.participants.length ?? 0,
         });
       },
       middlewares: _hubAuthMiddleware,
