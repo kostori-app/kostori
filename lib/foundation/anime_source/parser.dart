@@ -110,7 +110,6 @@ class AnimeSourceParser {
         JsEngine().runCode("this['temp'].version") ??
         (throw AnimeSourceParseException('version is required'));
     var isBangumi = JsEngine().runCode("this['temp'].isBangumi") ?? false;
-    var host = JsEngine().runCode("this['temp'].host") ?? '';
     var minAppVersion = JsEngine().runCode("this['temp'].minAppVersion");
     var url = JsEngine().runCode("this['temp'].url");
     if (minAppVersion != null) {
@@ -165,7 +164,7 @@ class AnimeSourceParser {
       enableTagsTranslate: _getValue("anime.enableTagsTranslate") ?? false,
       starRatingFunc: _parseStarRatingFunc(),
       isBangumi: isBangumi,
-      host: host,
+      host: _parseHostFunc(),
       httpHeaders: _parseHttpHeaders(),
     );
 
@@ -274,6 +273,28 @@ class AnimeSourceParser {
       ListOrNull.from(_getValue("account.loginWithCookies?.fields")),
       validateCookies,
     );
+  }
+
+  Future<String> Function()? _parseHostFunc() {
+    if (!_checkExists("baseUrl") && !_checkExists("host")) return null;
+    return () async {
+      try {
+        // 优先调用 baseUrl getter（动态求值），fallback 到 host 字段
+        final result = JsEngine().runCode("""
+        (() => {
+          try {
+            var s = AnimeSource.sources.$_key;
+            if (typeof s.baseUrl !== 'undefined') return s.baseUrl;
+            if (typeof s.host === 'string') return s.host;
+            return '';
+          } catch(e) { return ''; }
+        })()
+      """);
+        return result as String? ?? '';
+      } catch (e) {
+        return '';
+      }
+    };
   }
 
   List<ExplorePageData> _loadExploreData() {

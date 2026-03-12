@@ -1379,7 +1379,7 @@ class _PingTestPageState extends State<_PingTestPage> {
   List<_PingResult> results = [];
   final int _timeoutSeconds = 5;
   final Set<String> _enabledEndpoints = {};
-
+  List<Map<String, String?>> _defaultEndpointsCache = [];
   final _inputController = TextEditingController();
 
   void _addCustomEndpoint() {
@@ -1396,11 +1396,14 @@ class _PingTestPageState extends State<_PingTestPage> {
     });
   }
 
-  static List<Map<String, String?>> get _defaultEndpoints => [
-    ...AnimeSource.all().map(
-      (source) => {'name': source.name, 'endpoint': source.host},
-    ),
-  ];
+  Future<void> _loadDefaultEndpoints() async {
+    final result = <Map<String, String?>>[];
+    for (final source in AnimeSource.all()) {
+      final endpoint = source.host != null ? await source.host!() : null;
+      result.add({'name': source.name, 'endpoint': endpoint});
+    }
+    if (mounted) setState(() => _defaultEndpointsCache = result);
+  }
 
   List<Map<String, String?>> get _customEndpoints => customControllers
       .where((c) => c.text.isNotEmpty)
@@ -1409,7 +1412,7 @@ class _PingTestPageState extends State<_PingTestPage> {
 
   List<Map<String, String?>> get _activeEndpoints => [
     ..._customEndpoints.where((e) => _enabledEndpoints.contains(e['endpoint'])),
-    ..._defaultEndpoints.where(
+    ..._defaultEndpointsCache.where(
       (e) => _enabledEndpoints.contains(e['endpoint']),
     ),
   ];
@@ -1417,6 +1420,7 @@ class _PingTestPageState extends State<_PingTestPage> {
   @override
   void initState() {
     super.initState();
+    _loadDefaultEndpoints();
     final saved = appdata.settings['pingCustomEndpoints'];
     if (saved is List && saved.isNotEmpty) {
       customControllers = saved
@@ -1682,7 +1686,7 @@ class _PingTestPageState extends State<_PingTestPage> {
               ),
             ),
           ),
-          ..._defaultEndpoints.map((e) {
+          ..._defaultEndpointsCache.map((e) {
             final endpoint = e['endpoint'];
             final result = results.firstWhereOrNull(
               (r) => r.endpoint == endpoint,

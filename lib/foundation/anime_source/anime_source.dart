@@ -265,7 +265,7 @@ class AnimeSource {
 
   final Map<String, String>? httpHeaders;
 
-  final String? host;
+  final Future<String> Function()? host;
 
   Future<void> loadData() async {
     var file = File("${App.dataPath}/anime_source/$key.data");

@@ -171,10 +171,19 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
             return handleCookieCallback(Map.from(message));
           case "uuid":
             return const Uuid().v1();
-          case "load_setting":
+          case 'load_setting':
             String key = message["key"];
             String settingKey = message["setting_key"];
-            var source = AnimeSource.find(key)!;
+            var source = AnimeSource.find(key);
+            if (source == null) {
+              try {
+                return JsEngine().runCode(
+                  "this['temp']?.settings?.$settingKey?.default ?? null",
+                );
+              } catch (_) {
+                return null;
+              }
+            }
             return source.data["settings"]?[settingKey] ??
                 source.settings?[settingKey]!['default'] ??
                 (throw "Setting not found: $settingKey");
