@@ -95,11 +95,11 @@ class AnimeSourceParser {
     var className = line1.split("class")[1].split("extends AnimeSource").first;
     className = className.trim();
     JsEngine().runCode("""
-    (() => {
-      $js
-      this['temp'] = new $className()
-    }).call()
-  """, className);
+      (() => {
+        $js
+        this['temp'] = new $className()
+      }).call()
+    """, className);
     _name =
         JsEngine().runCode("this['temp'].name") ??
         (throw AnimeSourceParseException('name is required'));
@@ -110,9 +110,9 @@ class AnimeSourceParser {
         JsEngine().runCode("this['temp'].version") ??
         (throw AnimeSourceParseException('version is required'));
     var isBangumi = JsEngine().runCode("this['temp'].isBangumi") ?? false;
+    var host = JsEngine().runCode("this['temp'].host") ?? '';
     var minAppVersion = JsEngine().runCode("this['temp'].minAppVersion");
     var url = JsEngine().runCode("this['temp'].url");
-
     if (minAppVersion != null) {
       if (compareSemVer(minAppVersion, App.version.split('-').first)) {
         throw AnimeSourceParseException(
@@ -131,61 +131,8 @@ class AnimeSourceParser {
     _checkKeyValidation();
 
     JsEngine().runCode("""
-    AnimeSource.sources.$_key = this['temp']; 
-  """);
-
-    // 提前注册临时 source 并加载用户数据，让 load_setting 能读到真实配置
-    var tempSource = AnimeSource(
-      name: _name!,
-      key: key,
-      account: null,
-      categoryData: null,
-      categoryAnimesData: null,
-      favoriteData: null,
-      explorePages: const [],
-      searchPageData: null,
-      settings: _parseSettings(),
-      loadAnimeInfo: null,
-      loadAnimeThumbnail: null,
-      loadAnimePages: null,
-      getImageLoadingConfig: null,
-      getThumbnailLoadingConfig: null,
-      filePath: filePath,
-      url: url ?? "",
-      version: version ?? "1.0.0",
-      commentsLoader: null,
-      sendCommentFunc: null,
-      likeOrUnlikeAnime: null,
-      voteCommentFunc: null,
-      likeCommentFunc: null,
-      idMatcher: null,
-      translations: null,
-      handleClickTagEvent: null,
-      linkHandler: null,
-      enableTagsSuggestions: false,
-      enableTagsTranslate: false,
-      starRatingFunc: null,
-      isBangumi: isBangumi,
-      host: '',
-      httpHeaders: null,
-    );
-    await tempSource.loadData();
-    AnimeSource.addSource(tempSource);
-
-    var host =
-        JsEngine().runCode("""
-    (() => {
-      try {
-        const h = this['temp'].host;
-        return typeof h === 'function' ? h() : String(h ?? '');
-      } catch(e) {
-        return '';
-      }
-    })()
-  """) ??
-        '';
-
-    AnimeSource.removeSource(key);
+      AnimeSource.sources.$_key = this['temp']; 
+    """);
 
     var source = AnimeSource(
       name: _name!,

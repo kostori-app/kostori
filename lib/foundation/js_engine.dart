@@ -174,24 +174,10 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
           case "load_setting":
             String key = message["key"];
             String settingKey = message["setting_key"];
-            var source = AnimeSource.find(key);
-            if (source != null) {
-              return source.data["settings"]?[settingKey] ??
-                  source.settings?[settingKey]?['default'] ??
-                  (throw "Setting not found: $settingKey");
-            }
-            // parse 阶段：source 未注册，从 temp 的 settings 读 default
-            // 同时支持用户已有的 data（如果 temp 上挂了 _settingsData）
-            var tempVal = JsEngine().runCode("""
-    (() => {
-      const src = this['temp'];
-      if (!src) return null;
-      return src._settingsData?.[${jsonEncode(settingKey)}]
-          ?? src.settings?.[${jsonEncode(settingKey)}]?.default
-          ?? null;
-    })()
-  """);
-            return tempVal;
+            var source = AnimeSource.find(key)!;
+            return source.data["settings"]?[settingKey] ??
+                source.settings?[settingKey]!['default'] ??
+                (throw "Setting not found: $settingKey");
           case "isLogged":
             return AnimeSource.find(message["key"])!.isLogged;
           // temporary solution for [setTimeout] function
