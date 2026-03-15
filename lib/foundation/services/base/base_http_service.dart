@@ -333,7 +333,9 @@ abstract class BaseHttpService implements BaseService {
     addGet(
       '/openapi.json',
       (req) async {
-        await sendJson(req, _buildOpenApi());
+        final host = req.headers.value('host') ?? 'localhost:$port';
+        final scheme = req.headers.value('x-forwarded-proto') ?? 'http';
+        await sendJson(req, _buildOpenApi(baseUrl: '$scheme://$host'));
       },
       doc: RouteDoc(
         summary: 'OpenAPI 文档',
@@ -345,7 +347,13 @@ abstract class BaseHttpService implements BaseService {
     addGet(
       '/docs',
       (req) async {
-        await sendAuto(req, {}, htmlBody: _buildDocsHtml());
+        final bytes = utf8.encode(_buildDocsHtml());
+        req.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.html
+          ..headers.set('Content-Length', bytes.length.toString())
+          ..add(bytes);
+        await req.response.close();
       },
       doc: RouteDoc(
         summary: 'Swagger UI',
@@ -396,7 +404,7 @@ abstract class BaseHttpService implements BaseService {
     });
   }
 
-  Map<String, dynamic> _buildOpenApi() {
+  Map<String, dynamic> _buildOpenApi({String? baseUrl}) {
     final routes = _router.registeredRoutes();
     final paths = <String, dynamic>{};
 
@@ -461,7 +469,10 @@ abstract class BaseHttpService implements BaseService {
             '- 管理层 Key：访问管理接口（日志、配置等）',
       },
       'servers': [
-        {'url': 'http://localhost:$port'},
+        {
+          'url': baseUrl ?? 'http://localhost:$port',
+          'description': 'Kostori Local Service',
+        },
       ],
       'components': {
         'securitySchemes': {
@@ -474,32 +485,6 @@ abstract class BaseHttpService implements BaseService {
       },
       'paths': paths,
     };
-  }
-
-  String _buildDocsHtml() {
-    return '''<!DOCTYPE html>
-<html>
-<head>
-  <title>Kostori API</title>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="/icon" type="image/png">
-  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
-</head>
-<body>
-<div id="swagger-ui"></div>
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script>
-  SwaggerUIBundle({
-    url: window.location.origin + '/openapi.json',
-    dom_id: '#swagger-ui',
-    presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
-    layout: 'BaseLayout',
-    deepLinking: true,
-  });
-</script>
-</body>
-</html>''';
   }
 
   // ── 启动 / 停止 ───────────────────────────────
@@ -601,13 +586,15 @@ abstract class BaseHttpService implements BaseService {
         'isUpgrade=${WebSocketTransformer.isUpgradeRequest(request)}  path=$path',
       );
 
-      // WebSocket 升级
       if (WebSocketTransformer.isUpgradeRequest(request)) {
         final wsHandler = _wsRoutes[path];
         if (wsHandler == null) {
-          await sendJson(request, {
-            'error': 'WebSocket path not found',
-          }, status: HttpStatus.notFound);
+          await sendError(
+            request,
+            HttpStatus.notFound,
+            'WS_NOT_FOUND',
+            'WebSocket path $path not found',
+          );
           return;
         }
         Log.info('$runtimeType', '⚡ WS $path  (from $from)');
@@ -620,10 +607,12 @@ abstract class BaseHttpService implements BaseService {
       final match = _router.resolve(method, path);
 
       if (match == null) {
-        await sendJson(request, {
-          'error': 'Not Found',
-          'path': path,
-        }, status: HttpStatus.notFound);
+        await sendError(
+          request,
+          HttpStatus.notFound,
+          'NOT_FOUND',
+          'path $path not found',
+        );
         return;
       }
 
@@ -642,10 +631,12 @@ abstract class BaseHttpService implements BaseService {
     } catch (e, stack) {
       Log.error('$runtimeType', '❌ $e\n$stack');
       try {
-        await sendJson(request, {
-          'error': 'Internal Server Error',
-          'message': e.toString(),
-        }, status: HttpStatus.internalServerError);
+        await sendError(
+          request,
+          HttpStatus.internalServerError,
+          'SERVER_ERROR',
+          e.toString(),
+        );
       } catch (_) {}
     }
   }
@@ -719,15 +710,31 @@ abstract class BaseHttpService implements BaseService {
     }
   }
 
+  Future<void> sendError(
+    HttpRequest req,
+    int status,
+    String error,
+    String message,
+  ) => sendJson(req, {
+    'code': status,
+    'error': error,
+    'message': message,
+    'path': req.uri.path,
+    'timestamp': DateTime.now().toIso8601String(),
+  }, status: status);
+
   // ── 请求体解析 ────────────────────────────────
   Future<Map<String, dynamic>?> readJson(HttpRequest req) async {
     try {
       final body = await utf8.decoder.bind(req).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (_) {
-      await sendJson(req, {
-        'error': 'Invalid JSON body',
-      }, status: HttpStatus.badRequest);
+      await sendError(
+        req,
+        HttpStatus.badRequest,
+        'INVALID_JSON',
+        'Invalid JSON body',
+      );
       return null;
     }
   }
@@ -741,9 +748,12 @@ abstract class BaseHttpService implements BaseService {
       final file = File('$dirPath/$filename');
 
       if (!await file.exists()) {
-        await sendJson(req, {
-          'error': 'File not found',
-        }, status: HttpStatus.notFound);
+        await sendError(
+          req,
+          HttpStatus.notFound,
+          'NOT_FOUND',
+          'File not found',
+        );
         return;
       }
 

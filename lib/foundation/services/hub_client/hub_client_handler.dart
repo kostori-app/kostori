@@ -2,7 +2,7 @@ part of 'package:kostori/foundation/services/services.dart';
 
 extension HubClientHandler on HubClient {
   void _handleMessage(Map<String, dynamic> data) {
-    Log.info('handle', jsonEncode(data));
+    Log.info('handle', '客户端接收: ${jsonEncode(data)}');
     final event = HubEvent.fromJson(data);
 
     switch (event) {
@@ -77,7 +77,6 @@ extension HubClientHandler on HubClient {
               : event.message.sender.userId;
           if (otherId != null) {
             _addDmMessage(otherId, event.message);
-            // 不在这个对话里才提醒
             if (_s.activeDmUserId != otherId) {
               _incrementDmUnread(otherId);
               App.rootContext.showMessage(
@@ -99,11 +98,6 @@ extension HubClientHandler on HubClient {
       case HubEventPong():
         _pongTimeoutTimer?.cancel();
         Log.info('HubClient', 'pong');
-
-      // HubEventKicked 已废弃：服务端改用 HubSystemEvent.kickedFromRoom，
-      // permanent=true 时服务端直接关闭连接，客户端无需再处理此帧。
-      case HubEventKicked():
-        break;
 
       case HubEventError():
         App.rootContext.showMessage(
@@ -208,16 +202,14 @@ extension HubClientHandler on HubClient {
 
       case HubSystemKickedFromRoom():
         if (event.permanent) {
-          // 全局管理员踢出：服务端会关闭连接，客户端只需提示
           App.rootContext.showMessage(
-            message: '${"Kicked from server by".tl} ${event.byName}',
+            message: 'Kicked from server by @p'.tlParams({'p': event.byName}),
             level: LogLevel.error,
             style: ToastStyle.topRight,
           );
         } else {
-          // 房间管理员踢出：移回大厅
           App.rootContext.showMessage(
-            message: '${"Kicked from room by".tl} ${event.byName}',
+            message: 'Kicked from room by @p'.tlParams({'p': event.byName}),
             level: LogLevel.warning,
             style: ToastStyle.topRight,
           );
@@ -280,39 +272,123 @@ extension HubClientHandler on HubClient {
         onRoomListChanged?.call();
 
       case HubSystemClientJoined():
+        final newRooms = [..._s.roomList];
+        final lobbyIdx = newRooms.indexWhere((r) => r.roomId == _s.lobbyRoomId);
+        if (lobbyIdx != -1) {
+          final lobby = newRooms[lobbyIdx];
+          final already = lobby.participants.any(
+            (p) => p.userId == event.client.userId,
+          );
+          if (!already) {
+            newRooms[lobbyIdx] = lobby.copyWith(
+              participants: [...lobby.participants, event.client],
+            );
+          }
+        }
         _setState(
           (s) => s.copyWith(
             onlineClients: [
               ...s.onlineClients.where((c) => c.userId != event.client.userId),
               event.client,
             ],
+            roomList: newRooms,
           ),
         );
         App.rootContext.showMessage(
-          message: '${event.client.displayName} ${"joined".tl}',
+          message: '${event.client.displayName} ${"joined the server".tl}',
           level: LogLevel.info,
           style: ToastStyle.topLeft,
+          icon: const Icon(Icons.login_outlined, size: 16),
         );
         onClientsChanged?.call();
+        onRoomListChanged?.call();
 
       case HubSystemClientLeft():
+        final updatedClients = _s.onlineClients
+            .where((c) => c.userId != event.clientId)
+            .toList();
+
+        final updatedRooms = _s.roomList.map((room) {
+          final hadUser = room.participants.any(
+            (p) => p.userId == event.clientId,
+          );
+          if (hadUser) {
+            return room.copyWith(
+              participants: room.participants
+                  .where((p) => p.userId != event.clientId)
+                  .toList(),
+            );
+          }
+          return room;
+        }).toList();
+
         _setState(
-          (s) => s.copyWith(
-            onlineClients: s.onlineClients
-                .where((c) => c.userId != event.clientId)
-                .toList(),
-          ),
+          (s) =>
+              s.copyWith(onlineClients: updatedClients, roomList: updatedRooms),
         );
         App.rootContext.showMessage(
-          message: '${event.clientName ?? ''} ${"left".tl}',
+          message: '${event.clientName ?? ''} ${"left the server".tl}',
           level: LogLevel.info,
           style: ToastStyle.topLeft,
+          icon: const Icon(Icons.logout_outlined, size: 16),
         );
         onClientsChanged?.call();
+        onRoomListChanged?.call();
 
       case HubSystemClientRoomChanged():
-        final rIdx = _s.roomList.indexWhere((r) => r.roomId == event.roomId);
-        if (rIdx != -1) onRoomListChanged?.call();
+        final newRooms = [..._s.roomList];
+
+        if (event.joined) {
+          final rIdx = newRooms.indexWhere((r) => r.roomId == event.roomId);
+          if (rIdx != -1) {
+            final room = newRooms[rIdx];
+            final already = room.participants.any(
+              (p) => p.userId == event.client.userId,
+            );
+            if (!already) {
+              newRooms[rIdx] = room.copyWith(
+                participants: [...room.participants, event.client],
+              );
+            }
+          }
+        } else {
+          final rIdx = newRooms.indexWhere((r) => r.roomId == event.roomId);
+          if (rIdx != -1) {
+            final room = newRooms[rIdx];
+            newRooms[rIdx] = room.copyWith(
+              participants: room.participants
+                  .where((p) => p.userId != event.client.userId)
+                  .toList(),
+            );
+          }
+        }
+
+        final updatedClients = _s.onlineClients
+            .where((c) => c.userId != event.client.userId)
+            .toList();
+        updatedClients.add(event.client);
+
+        _setState(
+          (s) => s.copyWith(roomList: newRooms, onlineClients: updatedClients),
+        );
+        if (event.roomId == currentRoomId && event.client.userId != myId) {
+          if (event.joined) {
+            App.rootContext.showMessage(
+              message: '${event.client.displayName} ${"joined the room".tl}',
+              level: LogLevel.info,
+              style: ToastStyle.topLeft,
+              icon: const Icon(Icons.meeting_room_outlined, size: 16),
+            );
+          } else {
+            App.rootContext.showMessage(
+              message: '${event.client.displayName} ${"left the room".tl}',
+              level: LogLevel.info,
+              style: ToastStyle.topLeft,
+              icon: const Icon(Icons.exit_to_app_outlined, size: 16),
+            );
+          }
+        }
+        onRoomListChanged?.call();
         onClientsChanged?.call();
 
       case HubSystemProfileUpdated():
@@ -342,7 +418,7 @@ extension HubClientHandler on HubClient {
         App.rootContext.showMessage(
           message: event.message,
           level: LogLevel.info,
-          style: ToastStyle.topLeft,
+          style: ToastStyle.top,
           icon: const Icon(Icons.waving_hand_outlined, size: 16),
         );
 
@@ -364,10 +440,72 @@ extension HubClientHandler on HubClient {
 
       case HubSystemAnnouncement():
         App.rootContext.showMessage(
-          message: event.text,
+          message: event.text.tl,
           level: LogLevel.info,
           style: ToastStyle.topRight,
           icon: const Icon(Icons.campaign_outlined, size: 16),
+        );
+
+      case HubSystemUserReacted():
+        break;
+
+      case HubSystemRoomInvite():
+        showDialog(
+          context: App.rootContext,
+          barrierDismissible: false,
+          builder: (_) => ContentDialog(
+            title: 'Room Invite'.tl,
+            content: Text(
+              '${event.fromName} ${"invited you to".tl} ${event.roomName}',
+            ),
+            cancel: () {
+              Navigator.pop(App.rootContext);
+              respondToInvite(event.roomId, event.fromId, false);
+            },
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(App.rootContext);
+                  respondToInvite(
+                    event.roomId,
+                    event.fromId,
+                    false,
+                    block: true,
+                  );
+                  _setState(
+                    (s) => s.copyWith(
+                      blockedInviteUserIds: [
+                        ...s.blockedInviteUserIds,
+                        event.fromId,
+                      ],
+                    ),
+                  );
+                },
+                child: Text(
+                  'Decline & Block'.tl,
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(App.rootContext);
+                  respondToInvite(event.roomId, event.fromId, true);
+                },
+                child: Text('Accept'.tl),
+              ),
+            ],
+          ),
+        );
+
+      case HubSystemInviteResponse():
+        App.rootContext.showMessage(
+          message: event.accepted
+              ? '${event.userName} ${"accepted your invite".tl}'
+              : event.blocked
+              ? '${event.userName} ${"blocked your invites".tl}'
+              : '${event.userName} ${"declined your invite".tl}',
+          level: event.accepted ? LogLevel.info : LogLevel.warning,
+          style: ToastStyle.topRight,
         );
 
       case HubSystemUnknown():

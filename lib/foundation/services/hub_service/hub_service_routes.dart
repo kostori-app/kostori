@@ -15,9 +15,38 @@ extension HubServiceRoutes on HubService {
       String? clientId;
       String? clientName;
 
+      // ── 速率限制状态（每个连接独立）──────────────────────────────────────
+      int msgCount = 0;
+      DateTime windowStart = DateTime.now();
+
       await for (final raw in socket) {
         try {
-          final data = jsonDecode(raw as String) as Map<String, dynamic>;
+          // ── 消息大小限制：64KB ────────────────────────────────────────────
+          if ((raw as String).length > 64 * 1024) {
+            _clients[clientId]?.send({
+              'type': 'error',
+              'message': '消息过大，最大允许 64KB',
+            });
+            continue;
+          }
+
+          // ── 速率限制：每秒最多 20 条 ──────────────────────────────────────
+          final now = DateTime.now();
+          if (now.difference(windowStart).inSeconds >= 1) {
+            msgCount = 0;
+            windowStart = now;
+          }
+          msgCount++;
+          if (msgCount > 20) {
+            // 静默丢弃，不断开（防止误伤正常用户）
+            Log.warning(
+              'HubService',
+              '⚠️ 速率限制触发：${clientName ?? clientId ?? "unknown"}',
+            );
+            continue;
+          }
+
+          final data = jsonDecode(raw) as Map<String, dynamic>;
 
           if (!authed) {
             final token = data['token'] as String?;
@@ -38,7 +67,24 @@ extension HubServiceRoutes on HubService {
             }
 
             authed = true;
-            clientId = data['userId'] as String? ?? _generateId();
+            final deviceId = data['userId'] as String? ?? _generateId();
+
+            // ── 防止伪装已在线的管理员 ──────────────────────────────────────
+            final existingClient = _clients[deviceId];
+            if (existingClient != null && existingClient.isGlobalAdmin) {
+              // 已有管理员在线，新连接必须也持有 admin token 才能替换
+              if (!_hubNoAuth &&
+                  (token == null || !ApiKeyManager().validateAdmin(token))) {
+                Log.warning('HubService', '🚫 尝试伪装管理员账号：$deviceId');
+                await socket.close(
+                  WebSocketStatus.policyViolation,
+                  'Forbidden',
+                );
+                return;
+              }
+            }
+
+            clientId = deviceId;
             clientName = _resolveClientName(
               data['displayName'] as String? ?? 'User',
             );
@@ -101,7 +147,7 @@ extension HubServiceRoutes on HubService {
               'uploadEnabled': uploadConfig.mode != HubUploadMode.clientOss,
             });
 
-            _broadcastSystemToRoom(_lobbyId, HubSystemEvent.clientJoined, {
+            _broadcastSystem(HubSystemEvent.clientJoined, {
               'client': client.toJson(),
             }, exclude: clientId);
 
@@ -114,7 +160,7 @@ extension HubServiceRoutes on HubService {
         }
       }
 
-      if (clientId != null) {
+      if (clientId != null && _clients.containsKey(clientId)) {
         final client = _clients[clientId];
         final roomId = client?.currentRoomId ?? _lobbyId;
         _rooms[roomId]?.participants.remove(clientId);

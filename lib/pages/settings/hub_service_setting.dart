@@ -6,11 +6,10 @@ part of 'settings_page.dart';
 
 /// 底部 Sheet 统一标题栏
 class _SheetHeader extends StatelessWidget {
-  const _SheetHeader({required this.title, this.icon, this.trailing});
+  const _SheetHeader({required this.title, this.icon});
 
   final String title;
   final IconData? icon;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +30,6 @@ class _SheetHeader extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
-              if (trailing != null) trailing!,
               IconButton(
                 icon: const Icon(Icons.close, size: 18),
                 onPressed: () => Navigator.pop(context),
@@ -41,52 +39,6 @@ class _SheetHeader extends StatelessWidget {
         ),
         const Divider(height: 1),
       ],
-    );
-  }
-}
-
-class _DraggableSheet extends StatefulWidget {
-  const _DraggableSheet({
-    required this.title,
-    this.icon,
-    this.headerTrailing,
-    required this.builder,
-  });
-
-  final String title;
-  final IconData? icon;
-  final Widget? headerTrailing;
-  final Widget Function(BuildContext, ScrollController) builder;
-
-  @override
-  State<_DraggableSheet> createState() => _DraggableSheetState();
-}
-
-class _DraggableSheetState extends State<_DraggableSheet> {
-  final _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final maxH = MediaQuery.of(context).size.height * 2 / 3;
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxH),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _SheetHeader(
-            title: widget.title,
-            icon: widget.icon,
-            trailing: widget.headerTrailing,
-          ),
-          Flexible(child: widget.builder(context, _scrollController)),
-        ],
-      ),
     );
   }
 }
@@ -207,8 +159,9 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => _DraggableSheet(
+        builder: (context, setSS) => HubSheet(
           title: "Rooms".tl,
           icon: Icons.meeting_room_outlined,
           headerTrailing: TextButton.icon(
@@ -284,6 +237,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   ) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSS) => Column(
           mainAxisSize: MainAxisSize.min,
@@ -581,7 +535,7 @@ class _OnlineClientTile extends StatelessWidget {
                     tooltip: isBlocked ? "Unblock".tl : "Block".tl,
                     onPressed: onBlock,
                   ),
-                if (canManage) ...[
+                if (canManage && !client.isGlobalAdmin) ...[
                   IconButton(
                     icon: Icon(
                       isMuted ? Icons.mic : Icons.mic_off,
@@ -591,11 +545,12 @@ class _OnlineClientTile extends StatelessWidget {
                     tooltip: isMuted ? "Unmute".tl : "Mute".tl,
                     onPressed: () => _showMuteSheet(context),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.logout, size: 18),
-                    tooltip: "Kick".tl,
-                    onPressed: onKick,
-                  ),
+                  if (!client.isGlobalAdmin)
+                    IconButton(
+                      icon: const Icon(Icons.logout, size: 18),
+                      tooltip: "Kick".tl,
+                      onPressed: onKick,
+                    ),
                 ],
                 if (onSetAdmin != null)
                   IconButton(
@@ -609,7 +564,7 @@ class _OnlineClientTile extends StatelessWidget {
                         : "Set Global Admin".tl,
                     onPressed: onSetAdmin,
                   ),
-                if (onBlacklist != null)
+                if (onBlacklist != null && !client.isGlobalAdmin)
                   IconButton(
                     icon: Icon(
                       isBlacklisted == true

@@ -1,7 +1,10 @@
 part of 'package:kostori/foundation/services/services.dart';
 
 extension HubClientActions on HubClient {
-  void _send(Map<String, dynamic> data) => _socket?.add(jsonEncode(data));
+  void _send(Map<String, dynamic> data) {
+    Log.info('send', '客户端发送: ${jsonEncode(data)}');
+    _socket?.add(jsonEncode(data));
+  }
 
   // ── 消息 ──────────────────────────────────────────────────────────────────
 
@@ -90,6 +93,28 @@ extension HubClientActions on HubClient {
   void search(String keyword) =>
       _send({'messageType': 'search', 'keyword': keyword});
 
+  void inviteToRoom(String targetUserId, String roomId) => _send({
+    'messageType': 'invite_to_room',
+    'targetUserId': targetUserId,
+    'roomId': roomId,
+  });
+
+  void respondToInvite(
+    String roomId,
+    String inviterId,
+    bool accepted, {
+    bool block = false,
+  }) => _send({
+    'messageType': 'invite_response',
+    'roomId': roomId,
+    'inviterId': inviterId,
+    'accepted': accepted,
+    'block': block,
+  });
+
+  void setAllowMemberInvite(bool value) =>
+      _send({'messageType': 'set_allow_member_invite', 'value': value});
+
   // ── 用户 ──────────────────────────────────────────────────────────────────
 
   void updateProfile({
@@ -118,6 +143,9 @@ extension HubClientActions on HubClient {
     });
   }
 
+  void unblockInvite(String userId) =>
+      _send({'messageType': 'unblock_invite', 'targetUserId': userId});
+
   // ── 管理 ──────────────────────────────────────────────────────────────────
 
   void kickFromRoom(String userId) =>
@@ -137,12 +165,6 @@ extension HubClientActions on HubClient {
 
   void unmute(String targetUserId) =>
       _send({'messageType': 'unmute', 'targetUserId': targetUserId});
-
-  void setGlobalAdmin(String targetUserId, {bool value = true}) => _send({
-    'messageType': 'set_global_admin',
-    'targetUserId': targetUserId,
-    'value': value,
-  });
 
   void setWelcomeMessage(String? message) {
     _send({'messageType': 'set_welcome_message', 'welcomeMessage': message});

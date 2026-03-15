@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
@@ -12,16 +13,16 @@ import 'package:kostori/utils/translations.dart';
 // 公共入口（合并了原 showHubRoomSettingsSheet 和 AdminPanelSheet）
 // ─────────────────────────────────────────────────────────────────────────────
 
-void showHubRoomSettingsSheet(
-  BuildContext context,
-  HubRoomDto room,
-  WidgetRef ref,
-) {
+void showHubRoomSettingsSheet(BuildContext context, HubRoomDto room) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _RoomSettingsSheet(room: room, ref: ref),
+    useSafeArea: true,
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height * 3 / 4,
+    ),
+    builder: (_) => _RoomSettingsSheet(room: room),
   );
 }
 
@@ -29,30 +30,38 @@ void showHubRoomSettingsSheet(
 // 统一 Sheet（Tab 布局，权限决定 tab 数量和内容）
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _RoomSettingsSheet extends StatefulWidget {
+class _RoomSettingsSheet extends ConsumerStatefulWidget {
   final HubRoomDto room;
-  final WidgetRef ref;
 
-  const _RoomSettingsSheet({required this.room, required this.ref});
+  const _RoomSettingsSheet({required this.room});
 
   @override
-  State<_RoomSettingsSheet> createState() => _RoomSettingsSheetState();
+  ConsumerState<_RoomSettingsSheet> createState() => _RoomSettingsSheetState();
 }
 
-class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
+class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
     with SingleTickerProviderStateMixin {
-  late HubRoomDto _room;
+  HubRoomDto get _room => ref
+      .watch(hubProvider)
+      .roomList
+      .firstWhere(
+        (r) => r.roomId == widget.room.roomId,
+        orElse: () => widget.room,
+      );
   late TabController _tabCtrl;
 
-  HubClient get _client => widget.ref.read(hubClientProvider);
+  HubState get _hs => ref.watch(hubProvider);
 
-  HubState get _hs => widget.ref.read(hubProvider);
+  HubClient get _client => ref.read(hubClientProvider);
 
   bool get _isGlobal => _hs.isGlobalAdmin;
 
   bool get _isRoomAdmin => _client.isRoomAdminOf(_room.roomId);
 
-  bool get _canEdit => _isGlobal || _isRoomAdmin;
+  bool get _canEdit => (_isGlobal || _isRoomAdmin);
+
+  bool get _cantEditLobby =>
+      _canEdit && _room.roomId != '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
   bool get _isOwner => _room.ownerUserId == _hs.myId;
 
@@ -62,15 +71,27 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
   bool _editingPassword = false;
   late final TextEditingController _passwordCtrl;
 
-  int get _tabCount => _isGlobal ? 3 : (_canEdit ? 2 : 1);
-
   @override
   void initState() {
     super.initState();
-    _room = widget.room;
-    _welcomeCtrl = TextEditingController(text: _room.welcomeMessage ?? '');
+    final room = ref
+        .read(hubProvider)
+        .roomList
+        .firstWhere(
+          (r) => r.roomId == widget.room.roomId,
+          orElse: () => widget.room,
+        );
+    _welcomeCtrl = TextEditingController(text: room.welcomeMessage ?? '');
     _passwordCtrl = TextEditingController();
-    _tabCtrl = TabController(length: _tabCount, vsync: this);
+
+    final hs = ref.read(hubProvider);
+    final isGlobal = hs.isGlobalAdmin;
+    final client = ref.read(hubClientProvider);
+    final isRoomAdmin = client.isRoomAdminOf(room.roomId);
+    final canEdit = isGlobal || isRoomAdmin;
+    final tabCount = isGlobal ? 3 : (canEdit ? 2 : 1);
+
+    _tabCtrl = TabController(length: tabCount, vsync: this);
   }
 
   @override
@@ -82,9 +103,8 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
   }
 
   void _patchRoom(HubRoomDto updated) {
-    setState(() => _room = updated);
     final hs = _hs;
-    widget.ref.read(hubProvider.notifier).state = hs.copyWith(
+    ref.read(hubProvider.notifier).state = hs.copyWith(
       roomList: hs.roomList.map((r) {
         if (r.roomId != updated.roomId) return r;
         return updated;
@@ -100,12 +120,9 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       child: Container(
         color: cs.surface,
-        child: DraggableScrollableSheet(
-          initialChildSize: _isGlobal ? 0.75 : 0.65,
-          maxChildSize: 0.92,
-          minChildSize: 0.3,
-          expand: false,
-          builder: (context, _) => Column(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Column(
             children: [
               // handle
               Padding(
@@ -140,7 +157,7 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
                         ),
                       ),
                     ),
-                    if (_isOwner || _isGlobal)
+                    if (_cantEditLobby)
                       IconButton(
                         icon: Icon(
                           Icons.delete_outline,
@@ -202,17 +219,16 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
                       ],
                     ),
                   ),
-                  if (_canEdit)
-                    Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.people_outline, size: 15),
-                          const SizedBox(width: 6),
-                          Text('Members'.tl),
-                        ],
-                      ),
+                  Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.people_outline, size: 15),
+                        const SizedBox(width: 6),
+                        Text('Members'.tl),
+                      ],
                     ),
+                  ),
                   if (_isGlobal)
                     Tab(
                       child: Row(
@@ -232,7 +248,7 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
                   controller: _tabCtrl,
                   children: [
                     _buildRoomTab(context, cs),
-                    if (_canEdit) _buildMembersTab(context, cs),
+                    _buildMembersTab(context, cs),
                     if (_isGlobal) _buildServerTab(context, cs),
                   ],
                 ),
@@ -244,12 +260,41 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
     );
   }
 
-  // ── Tab 1: Room ────────────────────────────────────────────────────────────
-
   Widget _buildRoomTab(BuildContext context, ColorScheme cs) {
     return ListView(
       padding: const EdgeInsets.only(bottom: 32),
       children: [
+        HubSettingSection(icon: Icons.home_max_outlined, title: 'Room'.tl),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          leading: Icon(Icons.tag, size: 20, color: cs.primary),
+          title: Text('Room Name'.tl, style: const TextStyle(fontSize: 12)),
+          subtitle: Text(
+            _room.roomId == _hs.lobbyRoomId ? 'Lobby'.tl : _room.roomName,
+            style: TextStyle(fontSize: 14, color: cs.onSurface),
+          ),
+        ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          leading: Icon(Icons.numbers, size: 20, color: cs.primary),
+          title: Text('Room ID'.tl, style: const TextStyle(fontSize: 12)),
+          subtitle: Text(
+            _room.roomId,
+            style: TextStyle(
+              fontSize: 14,
+              color: cs.onSurface,
+              fontFamily: 'monospace',
+            ),
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.copy_outlined, size: 16),
+            tooltip: 'Copy'.tl,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: _room.roomId));
+              App.rootContext.showMessage(message: '复制成功');
+            },
+          ),
+        ),
         HubSettingSection(
           icon: Icons.campaign_outlined,
           title: 'Announcements'.tl,
@@ -277,8 +322,6 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
             label: 'Add Announcement'.tl,
             onTap: () => _showAddAnnouncementDialog(context),
           ),
-
-        const HubSettingDivider(),
 
         HubSettingSection(
           icon: Icons.waving_hand_outlined,
@@ -344,8 +387,7 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
             },
           ),
 
-        if (_canEdit) ...[
-          const HubSettingDivider(),
+        if (_cantEditLobby) ...[
           HubSettingSection(icon: Icons.lock_outline, title: 'Security'.tl),
           if (!_editingPassword)
             ListTile(
@@ -404,7 +446,6 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
         ],
 
         if (_isOwner && !_isGlobal) ...[
-          const HubSettingDivider(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: OutlinedButton.icon(
@@ -423,8 +464,6 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
       ],
     );
   }
-
-  // ── Tab 2: Members ─────────────────────────────────────────────────────────
 
   Widget _buildMembersTab(BuildContext context, ColorScheme cs) {
     return ListView(
@@ -464,38 +503,100 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
             label: 'Add Room Admin'.tl,
             onTap: () => _showPickMemberDialog(context, isAdminPicker: true),
           ),
-          const HubSettingDivider(),
         ],
 
-        HubSettingSection(icon: Icons.block_outlined, title: 'Room Bans'.tl),
-        if (_room.bannedUserIds.isEmpty)
-          HubEmptyHint('No banned members'.tl)
-        else
-          ..._room.bannedUserIds.map((id) {
-            final c = _hs.onlineClients.firstWhereOrNull((c) => c.userId == id);
-            return HubClientTile(
-              name: c?.displayName ?? id,
-              avatarUrl: c?.avatarUrl,
-              userId: id,
-              trailing: IconButton(
-                icon: const Icon(Icons.lock_open_outlined, size: 18),
-                tooltip: 'Unban'.tl,
-                onPressed: () {
-                  _client.roomUnban(id);
-                  _patchRoom(
-                    _room.copyWith(
-                      bannedUserIds: List.from(_room.bannedUserIds)..remove(id),
+        if (_cantEditLobby) ...[
+          HubSettingSection(icon: Icons.block_outlined, title: 'Room Bans'.tl),
+          if (_room.bannedUserIds.isEmpty)
+            HubEmptyHint('No banned members'.tl)
+          else
+            ..._room.bannedUserIds.map((id) {
+              final c = _hs.onlineClients.firstWhereOrNull(
+                (c) => c.userId == id,
+              );
+              return HubClientTile(
+                name: c?.displayName ?? id,
+                avatarUrl: c?.avatarUrl,
+                userId: id,
+                trailing: IconButton(
+                  icon: const Icon(Icons.lock_open_outlined, size: 18),
+                  tooltip: 'Unban'.tl,
+                  onPressed: () {
+                    _client.roomUnban(id);
+                    _patchRoom(
+                      _room.copyWith(
+                        bannedUserIds: List.from(_room.bannedUserIds)
+                          ..remove(id),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }),
+          _AddTile(
+            label: 'Ban Member'.tl,
+            icon: Icons.person_off_outlined,
+            onTap: () => _showPickMemberDialog(context, isAdminPicker: false),
+          ),
+        ],
+        if (_cantEditLobby) ...[
+          HubSettingSection(
+            icon: Icons.person_add_outlined,
+            title: 'Invite'.tl,
+          ),
+          SwitchListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+            title: Text(
+              'Allow Member Invites'.tl,
+              style: const TextStyle(fontSize: 13),
+            ),
+            subtitle: Text(
+              'Let all members invite others'.tl,
+              style: const TextStyle(fontSize: 11),
+            ),
+            value: _room.allowMemberInvite,
+            onChanged: _canEdit
+                ? (v) {
+                    _client.setAllowMemberInvite(v);
+                    _patchRoom(_room.copyWith(allowMemberInvite: v));
+                  }
+                : null,
+          ),
+        ],
+        if (_canEdit) ...[
+          HubSettingSection(
+            icon: Icons.person_add_outlined,
+            title: 'Invite to Room'.tl,
+          ),
+          ...() {
+            final inRoom = _room.participants.map((p) => p.userId).toSet();
+            final available = _hs.onlineClients
+                .where((c) => !inRoom.contains(c.userId))
+                .toList();
+            if (available.isEmpty) {
+              return [HubEmptyHint('No users available to invite'.tl)];
+            }
+            return available
+                .map(
+                  (c) => HubClientTile(
+                    name: c.displayName,
+                    avatarUrl: c.avatarUrl,
+                    userId: c.userId,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.person_add_outlined, size: 18),
+                      tooltip: 'Invite'.tl,
+                      onPressed: () {
+                        _client.inviteToRoom(c.userId, _room.roomId);
+                        App.rootContext.showMessage(
+                          message: '${c.displayName} ${"invited".tl}',
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            );
-          }),
-        _AddTile(
-          label: 'Ban Member'.tl,
-          icon: Icons.person_off_outlined,
-          onTap: () => _showPickMemberDialog(context, isAdminPicker: false),
-        ),
+                  ),
+                )
+                .toList();
+          }(),
+        ],
         HubSettingSection(
           icon: Icons.people_outline,
           title: '${'Online Users'.tl} (${_room.participants.length})',
@@ -509,13 +610,12 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
               hs: _hs,
               hubClient: _client,
               onChanged: () => setState(() {}),
+              canEdit: _canEdit,
             ),
           ),
       ],
     );
   }
-
-  // ── Tab 3: Server（仅全局管理员）─────────────────────────────────────────
 
   Widget _buildServerTab(BuildContext context, ColorScheme cs) {
     final hs = _hs;
@@ -577,8 +677,6 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
           ),
         ),
 
-        const HubSettingDivider(),
-
         HubSettingSection(
           icon: Icons.gpp_bad_outlined,
           title: 'Server Blacklist'.tl,
@@ -601,8 +699,6 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
             ),
           ),
 
-        const HubSettingDivider(),
-
         HubSettingSection(icon: Icons.people_outline, title: 'Online Users'.tl),
         if (hs.onlineClients.isEmpty)
           HubEmptyHint('No users online'.tl)
@@ -613,13 +709,12 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
               hs: hs,
               hubClient: _client,
               onChanged: () => setState(() {}),
+              canEdit: _canEdit,
             ),
           ),
       ],
     );
   }
-
-  // ── Dialogs ────────────────────────────────────────────────────────────────
 
   void _showAddAnnouncementDialog(BuildContext context) {
     showDialog(
@@ -701,10 +796,6 @@ class _RoomSettingsSheetState extends State<_RoomSettingsSheet>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 公告 tile
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _AnnouncementTile extends StatelessWidget {
   final String text;
   final bool canDelete;
@@ -737,10 +828,6 @@ class _AnnouncementTile extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 通用 "＋添加" tile
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _AddTile extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -763,10 +850,6 @@ class _AddTile extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 通用输入 dialog
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _HubInputDialog extends StatefulWidget {
   final String title;
@@ -836,13 +919,7 @@ class _HubInputDialogState extends State<_HubInputDialog> {
           fillColor: cs.surfaceContainerHighest.toOpacity(0.5),
         ),
       ),
-      actions: [
-        Button.outlined(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel'.tl),
-        ),
-        Button.filled(onPressed: _submit, child: Text(label)),
-      ],
+      actions: [Button.filled(onPressed: _submit, child: Text(label))],
     );
   }
 }
@@ -851,7 +928,6 @@ class _HubInputDialogState extends State<_HubInputDialog> {
 // 公共 UI 组件（供 hub_page.dart / hub_client_setting.dart 共用）
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// 可拖拽 bottom sheet 框架，统一 header 样式。
 class HubSheet extends StatelessWidget {
   final String title;
   final IconData? icon;
@@ -985,21 +1061,6 @@ class HubSettingSection extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// 分区之间的细分隔线。
-class HubSettingDivider extends StatelessWidget {
-  const HubSettingDivider({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Divider(
-      height: 16,
-      indent: 20,
-      endIndent: 20,
-      color: Theme.of(context).colorScheme.outlineVariant.toOpacity(0.3),
     );
   }
 }
@@ -1226,25 +1287,47 @@ class _InlineEditFieldState extends State<_InlineEditField> {
 // 管理员面板 - 在线用户行（含全局管理员切换 + 禁言 + 封禁）
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _AdminUserTile extends StatelessWidget {
+class _AdminUserTile extends StatefulWidget {
   final HubClientDto client;
   final HubState hs;
   final HubClient hubClient;
   final VoidCallback onChanged;
+  final bool canEdit;
 
   const _AdminUserTile({
     required this.client,
     required this.hs,
     required this.hubClient,
     required this.onChanged,
+    required this.canEdit,
   });
+
+  @override
+  State<_AdminUserTile> createState() => _AdminUserTileState();
+}
+
+class _AdminUserTileState extends State<_AdminUserTile> {
+  bool _pokeCooling = false;
+
+  void _poke() {
+    if (_pokeCooling) return;
+    widget.hubClient.poke(widget.client.userId);
+    setState(() => _pokeCooling = true);
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _pokeCooling = false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isMe = client.userId == hs.myId;
-    final isBanned = hs.serverBannedIds.contains(client.userId);
-    final avatarUrl = client.avatarUrl;
+    final isMe = widget.client.userId == widget.hs.myId;
+    final isBanned = widget.hs.serverBannedIds.contains(widget.client.userId);
+    final avatarUrl = widget.client.avatarUrl;
+    final client = widget.client;
+    final canEdit = widget.canEdit;
+    final hubClient = widget.hubClient;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),
       leading: CircleAvatar(
@@ -1300,58 +1383,61 @@ class _AdminUserTile extends StatelessWidget {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 禁言切换
+                // 戳一戳
                 IconButton(
                   icon: Icon(
-                    client.isMuted ? Icons.mic : Icons.mic_off_outlined,
+                    Icons.touch_app_outlined,
                     size: 18,
-                    color: client.isMuted ? cs.error : null,
+                    color: _pokeCooling ? cs.onSurface.toOpacity(0.3) : null,
                   ),
-                  tooltip: client.isMuted ? 'Unmute'.tl : 'Mute'.tl,
-                  onPressed: () {
-                    if (client.isMuted) {
-                      hubClient.unmute(client.userId);
-                    } else {
-                      hubClient.mute(client.userId, seconds: 300);
-                    }
-                    onChanged();
-                  },
+                  tooltip: 'Poke'.tl,
+                  onPressed: _pokeCooling ? null : _poke,
                 ),
-                // 服务器封禁切换
-                IconButton(
-                  icon: Icon(
-                    isBanned ? Icons.lock_open_outlined : Icons.block_outlined,
-                    size: 18,
-                    color: isBanned ? cs.primary : cs.error.toOpacity(0.7),
+                if (canEdit && !client.isGlobalAdmin)
+                  IconButton(
+                    icon: Icon(
+                      client.isMuted ? Icons.mic : Icons.mic_off_outlined,
+                      size: 18,
+                      color: client.isMuted ? cs.error : null,
+                    ),
+                    tooltip: client.isMuted ? 'Unmute'.tl : 'Mute'.tl,
+                    onPressed: () {
+                      if (client.isMuted) {
+                        hubClient.unmute(client.userId);
+                      } else {
+                        hubClient.mute(client.userId, seconds: 300);
+                      }
+                      widget.onChanged();
+                    },
                   ),
-                  tooltip: isBanned ? 'Unban'.tl : 'Server Ban'.tl,
-                  onPressed: () {
-                    isBanned
-                        ? hubClient.serverUnban(client.userId)
-                        : hubClient.serverBan(client.userId);
-                    onChanged();
-                  },
-                ),
-                // 全局管理员切换
-                IconButton(
-                  icon: Icon(
-                    client.isGlobalAdmin
-                        ? Icons.admin_panel_settings
-                        : Icons.admin_panel_settings_outlined,
-                    size: 18,
-                    color: client.isGlobalAdmin ? Colors.amber : null,
+                if (canEdit && !client.isGlobalAdmin)
+                  IconButton(
+                    icon: const Icon(Icons.logout, size: 18),
+                    tooltip: 'Kick'.tl,
+                    onPressed: () {
+                      hubClient.kickFromRoom(client.userId);
+                      widget.onChanged();
+                    },
                   ),
-                  tooltip: client.isGlobalAdmin
-                      ? 'Remove Admin'.tl
-                      : 'Make Admin'.tl,
-                  onPressed: () {
-                    hubClient.setGlobalAdmin(
-                      client.userId,
-                      value: !client.isGlobalAdmin,
-                    );
-                    onChanged();
-                  },
-                ),
+                if (canEdit && !client.isGlobalAdmin)
+                  IconButton(
+                    icon: Icon(
+                      isBanned
+                          ? Icons.lock_open_outlined
+                          : Icons.block_outlined,
+                      size: 18,
+                      color: isBanned ? cs.primary : cs.error.toOpacity(0.7),
+                    ),
+                    tooltip: isBanned
+                        ? 'Remove from Blacklist'.tl
+                        : 'Add to Blacklist'.tl,
+                    onPressed: () {
+                      isBanned
+                          ? hubClient.serverUnban(client.userId)
+                          : hubClient.serverBan(client.userId);
+                      widget.onChanged();
+                    },
+                  ),
               ],
             ),
     );

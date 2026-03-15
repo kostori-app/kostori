@@ -28,7 +28,11 @@ enum HubSystemEvent {
   roomWelcome,
   poked,
   mentioned,
-  announcement;
+  announcement,
+  userReacted,
+  roomInvite,
+  inviteAccepted,
+  inviteDeclined;
 
   String get value => switch (this) {
     serverShutdown => 'server_shutdown',
@@ -59,6 +63,10 @@ enum HubSystemEvent {
     poked => 'poked',
     mentioned => 'mentioned',
     announcement => 'announcement',
+    userReacted => 'user_reacted',
+    roomInvite => 'room_invite',
+    inviteAccepted => 'invite_accepted',
+    inviteDeclined => 'invite_declined',
   };
 
   static HubSystemEvent? fromValue(String? v) => v == null
@@ -82,7 +90,6 @@ sealed class HubEvent {
         HubSystemEvent.fromValue(json['event'] as String?),
         json,
       ),
-      'kicked' => HubEventKicked.fromJson(json),
       'pong' => const HubEventPong(),
       'error' => HubEventError.fromJson(json),
       _ => HubEventUnknown(type),
@@ -162,24 +169,6 @@ class HubEventPong extends HubEvent {
   const HubEventPong();
 }
 
-class HubEventKicked extends HubEvent {
-  final String reason;
-  final String operatorName;
-  final String? message;
-
-  const HubEventKicked({
-    required this.reason,
-    required this.operatorName,
-    this.message,
-  });
-
-  factory HubEventKicked.fromJson(Map<String, dynamic> json) => HubEventKicked(
-    reason: json['reason'] as String? ?? 'kicked',
-    operatorName: json['operatorName'] as String? ?? 'server',
-    message: json['message'] as String?,
-  );
-}
-
 class HubEventError extends HubEvent {
   final String message;
 
@@ -245,6 +234,16 @@ sealed class HubEventSystem extends HubEvent {
     HubSystemEvent.poked => HubSystemPoked.fromJson(p),
     HubSystemEvent.mentioned => HubSystemMentioned.fromJson(p),
     HubSystemEvent.announcement => HubSystemAnnouncement.fromJson(p),
+    HubSystemEvent.userReacted => HubSystemUserReacted.fromJson(p),
+    HubSystemEvent.roomInvite => HubSystemRoomInvite.fromJson(p),
+    HubSystemEvent.inviteAccepted => HubSystemInviteResponse.fromJson(
+      p,
+      accepted: true,
+    ),
+    HubSystemEvent.inviteDeclined => HubSystemInviteResponse.fromJson(
+      p,
+      accepted: false,
+    ),
     null => HubSystemUnknown(p['event'] as String? ?? ''),
   };
 }
@@ -414,11 +413,18 @@ class HubSystemClientKickedFromRoom extends HubEventSystem {
 
 class HubSystemMessageRecalled extends HubEventSystem {
   final String messageId;
+  final String recalledBy;
 
-  const HubSystemMessageRecalled(this.messageId);
+  const HubSystemMessageRecalled({
+    required this.messageId,
+    required this.recalledBy,
+  });
 
   factory HubSystemMessageRecalled.fromJson(Map<String, dynamic> j) =>
-      HubSystemMessageRecalled(j['messageId'] as String);
+      HubSystemMessageRecalled(
+        messageId: j['messageId'] as String? ?? '',
+        recalledBy: j['recalledBy'] as String? ?? '',
+      );
 }
 
 class HubSystemRoomCreated extends HubEventSystem {
@@ -606,26 +612,102 @@ class HubSystemAnnouncement extends HubEventSystem {
       );
 }
 
+class HubSystemUserReacted extends HubEventSystem {
+  final String fromId;
+  final String fromName;
+  final String messageId;
+  final String emojiId;
+  final bool added;
+
+  const HubSystemUserReacted({
+    required this.fromId,
+    required this.fromName,
+    required this.messageId,
+    required this.emojiId,
+    required this.added,
+  });
+
+  factory HubSystemUserReacted.fromJson(Map<String, dynamic> j) =>
+      HubSystemUserReacted(
+        fromId: j['fromId'] as String? ?? '',
+        fromName: j['fromName'] as String? ?? '',
+        messageId: j['messageId'] as String? ?? '',
+        emojiId: j['emojiId'] as String? ?? '',
+        added: j['added'] as bool? ?? true,
+      );
+}
+
+class HubSystemRoomInvite extends HubEventSystem {
+  final String fromId;
+  final String fromName;
+  final String roomId;
+  final String roomName;
+
+  const HubSystemRoomInvite({
+    required this.fromId,
+    required this.fromName,
+    required this.roomId,
+    required this.roomName,
+  });
+
+  factory HubSystemRoomInvite.fromJson(Map<String, dynamic> j) =>
+      HubSystemRoomInvite(
+        fromId: j['fromId'] as String? ?? '',
+        fromName: j['fromName'] as String? ?? '',
+        roomId: j['roomId'] as String? ?? '',
+        roomName: j['roomName'] as String? ?? '',
+      );
+}
+
+class HubSystemInviteResponse extends HubEventSystem {
+  final String userId;
+  final String userName;
+  final String roomId;
+  final bool accepted;
+  final bool blocked;
+
+  const HubSystemInviteResponse({
+    required this.userId,
+    required this.userName,
+    required this.roomId,
+    required this.accepted,
+    this.blocked = false,
+  });
+
+  factory HubSystemInviteResponse.fromJson(
+    Map<String, dynamic> j, {
+    required bool accepted,
+  }) => HubSystemInviteResponse(
+    userId: j['userId'] as String? ?? '',
+    userName: j['userName'] as String? ?? '',
+    roomId: j['roomId'] as String? ?? '',
+    accepted: accepted,
+    blocked: j['blocked'] as bool? ?? false,
+  );
+}
+
 // ── HubSystemPayload（供 HubSystemRow 渲染用）─────────────────────────────────
 
 sealed class HubSystemPayload {
   const HubSystemPayload();
 
-  static HubSystemPayload? fromJson(Map<String, dynamic> json) =>
-      switch (HubSystemEvent.fromValue(json['event'] as String?)) {
-        HubSystemEvent.clientJoined => HubPayloadClientJoined.fromJson(json),
-        HubSystemEvent.clientLeft => HubPayloadClientLeft.fromJson(json),
-        HubSystemEvent.clientJoinedRoom => HubPayloadClientJoinedRoom.fromJson(
-          json,
-        ),
-        HubSystemEvent.clientLeftRoom => HubPayloadClientLeftRoom.fromJson(
-          json,
-        ),
-        HubSystemEvent.roomWelcome => HubPayloadRoomWelcome.fromJson(json),
-        HubSystemEvent.clientKickedFromRoom =>
-          HubPayloadClientKickedFromRoom.fromJson(json),
-        _ => null,
-      };
+  static HubSystemPayload? fromJson(
+    Map<String, dynamic> json,
+  ) => switch (HubSystemEvent.fromValue(json['event'] as String?)) {
+    HubSystemEvent.clientJoined => HubPayloadClientJoined.fromJson(json),
+    HubSystemEvent.clientLeft => HubPayloadClientLeft.fromJson(json),
+    HubSystemEvent.clientJoinedRoom => HubPayloadClientJoinedRoom.fromJson(
+      json,
+    ),
+    HubSystemEvent.clientLeftRoom => HubPayloadClientLeftRoom.fromJson(json),
+    HubSystemEvent.roomWelcome => HubPayloadRoomWelcome.fromJson(json),
+    HubSystemEvent.clientKickedFromRoom =>
+      HubPayloadClientKickedFromRoom.fromJson(json),
+    HubSystemEvent.poked => HubPayloadPoked.fromJson(json),
+    HubSystemEvent.messageRecalled => HubPayloadMessageRecalled.fromJson(json),
+    HubSystemEvent.userReacted => HubPayloadReacted.fromJson(json),
+    _ => null,
+  };
 }
 
 class HubPayloadClientJoined extends HubSystemPayload {
@@ -690,5 +772,42 @@ class HubPayloadClientKickedFromRoom extends HubSystemPayload {
       HubPayloadClientKickedFromRoom(
         clientName: j['clientName'] as String? ?? '',
         operatorName: j['operatorName'] as String? ?? '',
+      );
+}
+
+class HubPayloadPoked extends HubSystemPayload {
+  final String fromName;
+
+  const HubPayloadPoked({required this.fromName});
+
+  factory HubPayloadPoked.fromJson(Map<String, dynamic> j) =>
+      HubPayloadPoked(fromName: j['fromName'] as String? ?? '');
+}
+
+class HubPayloadMessageRecalled extends HubSystemPayload {
+  final String recalledBy;
+
+  const HubPayloadMessageRecalled({required this.recalledBy});
+
+  factory HubPayloadMessageRecalled.fromJson(Map<String, dynamic> j) =>
+      HubPayloadMessageRecalled(recalledBy: j['recalledBy'] as String? ?? '');
+}
+
+class HubPayloadReacted extends HubSystemPayload {
+  final String fromName;
+  final String emojiId;
+  final bool added;
+
+  const HubPayloadReacted({
+    required this.fromName,
+    required this.emojiId,
+    required this.added,
+  });
+
+  factory HubPayloadReacted.fromJson(Map<String, dynamic> j) =>
+      HubPayloadReacted(
+        fromName: j['fromName'] as String? ?? '',
+        emojiId: j['emojiId'] as String? ?? '',
+        added: j['added'] as bool? ?? true,
       );
 }

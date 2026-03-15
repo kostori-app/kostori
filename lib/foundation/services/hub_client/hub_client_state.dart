@@ -14,6 +14,8 @@ class HubState {
   final Map<String, List<HubMessage>> dmHistory;
   final Map<String, int> dmUnread;
   final String? activeDmUserId;
+  final List<String> blockedInviteUserIds;
+  final Set<String> blockedUserIds;
 
   const HubState({
     this.myId,
@@ -29,6 +31,8 @@ class HubState {
     this.dmHistory = const {},
     this.dmUnread = const {},
     this.activeDmUserId,
+    this.blockedInviteUserIds = const [],
+    this.blockedUserIds = const {},
   });
 
   HubState copyWith({
@@ -46,6 +50,8 @@ class HubState {
     Map<String, int>? dmUnread,
     String? activeDmUserId,
     bool clearActiveDmUserId = false,
+    List<String>? blockedInviteUserIds,
+    Set<String>? blockedUserIds,
   }) => HubState(
     myId: myId ?? this.myId,
     isConnected: isConnected ?? this.isConnected,
@@ -62,6 +68,8 @@ class HubState {
     activeDmUserId: clearActiveDmUserId
         ? null
         : (activeDmUserId ?? this.activeDmUserId),
+    blockedInviteUserIds: blockedInviteUserIds ?? this.blockedInviteUserIds,
+    blockedUserIds: blockedUserIds ?? this.blockedUserIds,
   );
 
   List<HubMessage> get messageHistory {

@@ -162,9 +162,10 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     final client = (this as _HubChatPageState)._client;
     Uint8List toSend = bytes;
     String mimeType = _guessMime(fileName);
+    final bool isGif = mimeType == 'image/gif';
 
-    // 1. 压缩
-    if (bytes.length > _kBase64Limit) {
+    // 1. 压缩（GIF 跳过，避免变成静态 JPEG）
+    if (!isGif && bytes.length > _kBase64Limit) {
       final c1 = await hubCompressImage(bytes, maxDim: 1280, quality: 82);
       mimeType = 'image/jpeg';
       toSend = c1.length <= _kBase64Limit

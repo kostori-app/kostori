@@ -171,11 +171,10 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final keyboardOffset = (keyboardHeight - 0.05 * screenHeight).clamp(
-      0.0,
-      double.infinity,
-    );
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final keyboardOffset = keyboardHeight > 0
+        ? (keyboardHeight - bottomPadding).clamp(0.0, double.infinity)
+        : 0.0;
 
     return Material(
       color: colorScheme.surface,

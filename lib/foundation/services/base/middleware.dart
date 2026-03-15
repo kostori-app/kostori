@@ -150,7 +150,13 @@ class Middleware {
   // Body 大小限制
   // ─────────────────────────────────────────
 
-  static MiddlewareHandler bodySizeLimit({int maxBytes = 1024 * 1024}) {
+  static MiddlewareHandler bodySizeLimit() {
+    final raw = appdata.implicitData['hub_upload_config'];
+    final config = raw is Map<String, dynamic>
+        ? HubUploadConfig.fromJson(raw)
+        : const HubUploadConfig();
+    final maxBytes = config.maxSizeBytes;
+
     return (HttpRequest request) async {
       final contentLength = request.contentLength;
 
@@ -168,7 +174,6 @@ class Middleware {
         await request.response.close();
         return false;
       }
-
       return true;
     };
   }

@@ -34,6 +34,10 @@ extension HubServiceActions on HubService {
         segments: [TextSegment(messageId)],
       ),
     );
+    _broadcastSystemToRoom(roomId, HubSystemEvent.messageRecalled, {
+      'messageId': messageId,
+      'recalledBy': client?.displayName ?? fromId,
+    });
   }
 
   Future<void> _handleReaction(
@@ -55,9 +59,9 @@ extension HubServiceActions on HubService {
       client?.send({'type': 'error', 'message': '消息不存在'});
       return;
     }
-    msg.toggleReaction(
+    final added = msg.toggleReaction(
       emojiId,
-      HubReactionUser(userId: fromId, username: client?.userId ?? fromId),
+      HubReactionUser(userId: fromId, username: client?.displayName ?? fromId),
     );
     onMessageReceived?.call();
     _broadcastToRoom(
@@ -74,7 +78,15 @@ extension HubServiceActions on HubService {
           ),
         ],
       ),
+      exclude: fromId,
     );
+    _broadcastSystemToRoom(roomId, HubSystemEvent.userReacted, {
+      'messageId': messageId,
+      'emojiId': emojiId,
+      'fromId': fromId,
+      'fromName': client?.displayName ?? fromId,
+      'added': added,
+    });
   }
 
   Future<void> _handlePin(
@@ -202,6 +214,7 @@ extension HubServiceActions on HubService {
       client?.send({'type': 'error', 'message': '目标不存在'});
       return;
     }
+    if (!_canOperateOn(fromId, targetId)) return;
     if (client?.isGlobalAdmin != true) {
       if (!_rooms[roomId]!.participants.containsKey(targetId)) {
         client?.send({'type': 'error', 'message': '目标不在当前房间'});
@@ -250,6 +263,7 @@ extension HubServiceActions on HubService {
       client?.send({'type': 'error', 'message': '目标不存在'});
       return;
     }
+    if (!_canOperateOn(fromId, targetId)) return;
     if (client?.isGlobalAdmin != true) {
       if (!_rooms[roomId]!.participants.containsKey(targetId)) {
         client?.send({'type': 'error', 'message': '目标不在当前房间'});
@@ -270,45 +284,6 @@ extension HubServiceActions on HubService {
     _sendSystemTo(target, HubSystemEvent.youAreUnmuted, {});
     _broadcastSystemToRoom(roomId, HubSystemEvent.userUnmuted, {
       'clientId': targetId,
-      'by': fromId,
-    });
-  }
-
-  void _handleSetGlobalAdmin(
-    String fromId,
-    String roomId,
-    Map<String, dynamic> data,
-    HubClientInfo? client,
-  ) {
-    if (client?.isGlobalAdmin != true) {
-      client?.send({'type': 'error', 'message': '无权限'});
-      return;
-    }
-    final targetId = data['targetUserId'] as String?;
-    final value = data['value'] as bool? ?? true;
-    if (targetId == null) {
-      client?.send({'type': 'error', 'message': '需要 targetUserId'});
-      return;
-    }
-    _clients[targetId]?.isGlobalAdmin = value;
-    if (value) {
-      _adminIds.add(targetId);
-      if (_clients[targetId] != null) {
-        _sendSystemTo(_clients[targetId]!, HubSystemEvent.blacklistUpdated, {
-          'blacklist': _blacklist.toList(),
-        });
-      }
-    } else {
-      _adminIds.remove(targetId);
-    }
-    _saveAdmins();
-    onClientsChanged?.call();
-    _logEvent(
-      '👑 ${_name(fromId)} ${value ? "granted" : "revoked"} global admin for ${_name(targetId)}',
-    );
-    _broadcastSystem(HubSystemEvent.globalAdminChanged, {
-      'clientId': targetId,
-      'isGlobalAdmin': value,
       'by': fromId,
     });
   }
@@ -477,10 +452,6 @@ extension HubServiceActions on HubService {
       'history': targetRoom.messageHistory.map((m) => m.toJson()).toList(),
     });
     _broadcastJoined(fromId, targetRoomId, client);
-    _broadcastSystem(HubSystemEvent.roomUpdated, {'room': targetRoom.toJson()});
-    _broadcastSystem(HubSystemEvent.roomUpdated, {
-      'room': _rooms[currentRoomId]!.toJson(),
-    });
     _onClientJoinedRoom(client, _rooms[targetRoomId]!);
   }
 
@@ -494,9 +465,6 @@ extension HubServiceActions on HubService {
     _broadcastLeft(fromId, currentRoomId, client!);
     _moveToLobby(client);
     onClientsChanged?.call();
-    _broadcastSystem(HubSystemEvent.roomUpdated, {
-      'room': _rooms[currentRoomId]!.toJson(),
-    });
     _broadcastSystem(HubSystemEvent.roomUpdated, {
       'room': _rooms[_lobbyId]!.toJson(),
     });
@@ -524,6 +492,7 @@ extension HubServiceActions on HubService {
       client?.send({'type': 'error', 'message': '目标不存在'});
       return;
     }
+    if (!_canOperateOn(fromId, targetId)) return;
     if (client?.isGlobalAdmin != true) {
       if (target.isGlobalAdmin) {
         client?.send({'type': 'error', 'message': '无法封禁全局管理员'});
@@ -704,13 +673,13 @@ extension HubServiceActions on HubService {
       client?.send({'type': 'error', 'message': '需要 targetUserId'});
       return;
     }
+    if (!_canOperateOn(fromId, targetId)) return;
     final kickTarget = _clients[targetId];
     if (kickTarget == null) {
       client?.send({'type': 'error', 'message': '目标不存在'});
       return;
     }
 
-    // 房间管理员只能踢当前房间内的普通成员
     if (!isGlobalAdmin) {
       if (!_rooms[roomId]!.participants.containsKey(targetId)) {
         client?.send({'type': 'error', 'message': '目标不在当前房间'});
@@ -736,7 +705,7 @@ extension HubServiceActions on HubService {
       'byName': _name(fromId),
       'permanent': isGlobalAdmin,
     });
-
+    final targetDto = kickTarget.toDto();
     if (isGlobalAdmin) {
       // 全局管理员：给客户端一帧时间收到事件后关闭连接
       await Future.delayed(const Duration(milliseconds: 120));
@@ -747,7 +716,11 @@ extension HubServiceActions on HubService {
       _rooms[targetRoomId]?.participants.remove(targetId);
       _clients.remove(targetId);
       _logEvent('⚡ ${_name(fromId)} kicked $targetName from server');
-      _broadcastSystemToRoom(targetRoomId, HubSystemEvent.clientLeft, {
+      _broadcastSystem(HubSystemEvent.clientLeftRoom, {
+        'client': targetDto.toJson(),
+        'roomId': roomId,
+      });
+      _broadcastSystem(HubSystemEvent.clientLeft, {
         'clientId': targetId,
         'clientName': targetName,
       });
@@ -755,12 +728,21 @@ extension HubServiceActions on HubService {
       // 房间管理员：移回大厅
       _moveToLobby(kickTarget);
       _logEvent('👢 ${_name(fromId)} kicked ${_name(targetId)} from room');
-      _broadcastSystemToRoom(roomId, HubSystemEvent.clientKickedFromRoom, {
+      _broadcastSystem(HubSystemEvent.clientKickedFromRoom, {
         'clientId': targetId,
         'clientName': targetName,
         'by': fromId,
       });
     }
     onClientsChanged?.call();
+  }
+
+  bool _canOperateOn(String operatorId, String targetId) {
+    // 目标是全局管理员，任何人都不能操作
+    if (_clients[targetId]?.isGlobalAdmin == true) {
+      _clients[operatorId]?.send({'type': 'error', 'message': '无法对全局管理员执行此操作'});
+      return false;
+    }
+    return true;
   }
 }

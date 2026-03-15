@@ -203,7 +203,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                             icon: const Icon(Icons.settings_outlined, size: 18),
                             tooltip: 'Room Settings'.tl,
                             onPressed: () =>
-                                showHubRoomSettingsSheet(context, room, ref),
+                                showHubRoomSettingsSheet(context, room),
                           ),
                         if (isCurrent)
                           Text(
@@ -569,6 +569,46 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                       onPressed: () => _showClientBlacklistSheet(context),
                     ),
                   ),
+                ],
+              ),
+            ),
+
+          // ── 屏蔽邀请 ──
+          if (isConnected)
+            _BuildSectionPadding(
+              _SettingCard(
+                children: [
+                  _SettingPartTitle(
+                    title: 'Blocked Invites'.tl,
+                    icon: Icons.person_off_outlined,
+                  ),
+                  if (hubState.blockedInviteUserIds.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Text(
+                        'No blocked invites'.tl,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: cs.onSurface.toOpacity(0.4),
+                        ),
+                      ),
+                    )
+                  else
+                    ...hubState.blockedInviteUserIds.map((id) {
+                      final c = hubState.onlineClients.firstWhereOrNull(
+                        (c) => c.userId == id,
+                      );
+                      return _SettingRow(
+                        title: c?.displayName ?? id,
+                        trailing: TextButton(
+                          child: Text('Unblock'.tl),
+                          onPressed: () {
+                            _hubClient.unblockInvite(id);
+                            setState(() {});
+                          },
+                        ),
+                      );
+                    }),
                 ],
               ),
             ),

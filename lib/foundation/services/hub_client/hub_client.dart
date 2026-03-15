@@ -113,10 +113,17 @@ class HubClient {
 
   List<String> get blockedUsers => _localBlacklist.toList();
 
-  void blockUser(String id) => _localBlacklist.add(id);
+  void blockUser(String id) {
+    _localBlacklist.add(id);
+    _setState((s) => s.copyWith(blockedUserIds: {..._localBlacklist}));
+  }
 
-  void unblockUser(String id) => _localBlacklist.remove(id);
+  void unblockUser(String id) {
+    _localBlacklist.remove(id);
+    _setState((s) => s.copyWith(blockedUserIds: {..._localBlacklist}));
+  }
 
+  // isBlocked 保留不变，但 UI 侧不用它了
   bool isBlocked(String id) => _localBlacklist.contains(id);
 
   // ── 管理员工具 ────────────────────────────────────────────────────────────
@@ -245,13 +252,7 @@ class HubClient {
     _ref.read(hubProvider.notifier).state = const HubState();
     onRoomListChanged = null;
     onClientsChanged = null;
-    _setState(
-      (s) => s.copyWith(
-        // ← 加这几行
-        isConnected: false,
-        myId: null,
-      ),
-    );
+    _setState((s) => s.copyWith(isConnected: false, myId: null));
   }
 
   // ── 解密 ──────────────────────────────────────────────────────────────────

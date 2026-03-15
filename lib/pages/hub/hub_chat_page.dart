@@ -54,7 +54,6 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
   final List<HubMessage> _entries = [];
   final Map<String, GlobalKey> _entryKeys = {};
   final List<PendingImage> _pendingImages = [];
-
   String? _replyToId;
   String? _mentionQuery;
   bool _autoScroll = true;
@@ -168,17 +167,17 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
     switch (msg.messageType) {
       // ── reaction ────────────────────────────────────────────────────────────
       case HubMessageType.reaction:
-        // replyToMessageId = 被反应的消息 ID，plainText = emojiId
-        final targetId = msg.replyToMessageId;
-        final emojiId = msg.plainText;
-        if (targetId == null || emojiId.isEmpty) return;
-        final idx = _entries.indexWhere((e) => e.messageId == targetId);
+        final seg = msg.segments.whereType<ReactionSegment>().firstOrNull;
+        if (seg == null) return;
+        final idx = _entries.indexWhere(
+          (e) => e.messageId == seg.targetMessageId,
+        );
         if (idx < 0) return;
         setState(() {
           _entries[idx].toggleReaction(
-            emojiId,
+            seg.emojiId,
             HubReactionUser(
-              userId: msg.sender.userId,
+              userId: seg.reactorUserId,
               username: msg.sender.displayName,
             ),
           );
@@ -186,7 +185,6 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
       // ── recall ──────────────────────────────────────────────────────────────
       case HubMessageType.recall:
-        // replyToMessageId = 被撤回的消息 ID
         final targetId = msg.replyToMessageId;
         if (targetId == null) return;
         setState(() => _entries.removeWhere((e) => e.messageId == targetId));
@@ -206,6 +204,13 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         setState(
           () => _entries.removeWhere((e) => e.messageId == event.messageId),
         );
+        if (!widget.isDm) {
+          _addSystemMsg(HubSystemEvent.messageRecalled, {
+            'messageId': event.messageId,
+            'recalledBy': event.recalledBy,
+          });
+          if (_autoScroll) _scrollToBottom();
+        }
 
       // ── 用户进出大厅 ────────────────────────────────────────────────────────
       case HubSystemClientJoined():
@@ -225,6 +230,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
       // ── 用户进出当前房间 ────────────────────────────────────────────────────
       case HubSystemClientRoomChanged():
         if (widget.isDm) return;
+        if (event.roomId != ref.read(hubProvider).currentRoomId) return;
         if (event.client.userId == ref.read(hubProvider).myId) return;
         _addSystemMsg(
           event.joined
@@ -252,6 +258,25 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
             style: ToastStyle.topRight,
           );
         }
+
+      case HubSystemPoked():
+        if (widget.isDm) return;
+        _addSystemMsg(HubSystemEvent.poked, {
+          'fromId': event.fromId,
+          'fromName': event.fromName,
+        });
+        if (_autoScroll) _scrollToBottom();
+
+      case HubSystemUserReacted():
+        if (widget.isDm) return;
+        _addSystemMsg(HubSystemEvent.userReacted, {
+          'fromId': event.fromId,
+          'fromName': event.fromName,
+          'messageId': event.messageId,
+          'emojiId': event.emojiId,
+          'added': event.added,
+        });
+        if (_autoScroll) _scrollToBottom();
 
       default:
         break;
@@ -318,7 +343,6 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
     if (text.isEmpty && images.isEmpty) return;
 
     setState(() {
-      _replyToId = null;
       _mentionQuery = null;
       _pendingImages.clear();
       _inputCtrl.clear();
@@ -394,6 +418,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
     if (widget.isDm) {
       _client.sendTo(widget.dmUserId!, segments);
     } else if (replyId != null) {
+      _replyToId = null;
       _client.reply(replyId, segments);
     } else {
       _client.broadcast(segments);
@@ -428,61 +453,73 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
       _scrollToBottom();
     }
     final room = ref.watch(hubProvider).currentRoom;
-    return PopUpWidgetScaffold(
-      title: _title,
-      tailing: widget.isDm ? _buildDmActions(context, hubState) : [],
-      body: DropTarget(
-        onDragDone: (d) => _onDragDone(d),
-        onDragEntered: (_) => setState(() => _isDragging = true),
-        onDragExited: (_) => setState(() => _isDragging = false),
-        child: Stack(
-          children: [
-            Column(
+    return AppScrollBar(
+      topPadding: 52,
+      bottomPadding: 80,
+      controller: _scroll,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: PopUpWidgetScaffold(
+          title: _title,
+          tailing: widget.isDm ? _buildDmActions(context, hubState) : [],
+          body: DropTarget(
+            onDragDone: (d) => _onDragDone(d),
+            onDragEntered: (_) => setState(() => _isDragging = true),
+            onDragExited: (_) => setState(() => _isDragging = false),
+            child: Stack(
               children: [
-                if (!widget.isDm) _buildRoomSubtitle(cs, hubState),
-                if (!widget.isDm) _buildAnnouncementBar(cs, hubState),
-                Expanded(child: _buildList(cs, hubState)),
-                if (_replyToId != null) _buildReplyBanner(cs),
-                if (_mentionCandidates.isNotEmpty) _buildMentionPopup(cs),
-                HubInputBar(
-                  controller: _inputCtrl,
-                  focusNode: _inputFocus,
-                  onSend: _send,
-                  onPickImage: _pickAndSendImage,
-                  onOpenStickers: _openStickerSheet,
-                  isDesktop: App.isDesktop,
-                  uploading: _uploading,
-                  pendingImages: _pendingImages,
-                  onRemovePending: (i) =>
-                      setState(() => _pendingImages.removeAt(i)),
-                  room: room,
+                Column(
+                  children: [
+                    if (!widget.isDm) _buildRoomSubtitle(cs, hubState),
+                    if (!widget.isDm) _buildAnnouncementBar(cs, hubState),
+                    Expanded(child: _buildList(cs, hubState)),
+                    if (_replyToId != null) _buildReplyBanner(cs),
+                    if (_mentionCandidates.isNotEmpty) _buildMentionPopup(cs),
+                    HubInputBar(
+                      controller: _inputCtrl,
+                      focusNode: _inputFocus,
+                      onSend: _send,
+                      onPickImage: _pickAndSendImage,
+                      onOpenStickers: _openStickerSheet,
+                      isDesktop: App.isDesktop,
+                      uploading: _uploading,
+                      pendingImages: _pendingImages,
+                      onRemovePending: (i) =>
+                          setState(() => _pendingImages.removeAt(i)),
+                      room: room,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            if (_isDragging)
-              Positioned.fill(
-                child: Container(
-                  color: cs.primary.toOpacity(0.12),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.image_outlined, size: 48, color: cs.primary),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Drop to send image'.tl,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: cs.primary,
-                          ),
+                if (_isDragging)
+                  Positioned.fill(
+                    child: Container(
+                      color: cs.primary.toOpacity(0.12),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.image_outlined,
+                              size: 48,
+                              color: cs.primary,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Drop to send image'.tl,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: cs.primary,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -766,6 +803,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                   vertical: 12,
                   horizontal: 12,
                 ),
+                addAutomaticKeepAlives: true,
                 itemCount: _entries.length,
                 itemBuilder: (ctx, i) {
                   final entry = _entries[i];
@@ -789,7 +827,10 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                             hubNeedTimeDivider(prev?.sentAt, entry.sentAt))
                           HubTimeDivider(time: entry.sentAt),
                         if (isSystem)
-                          HubSystemRow(entry: entry)
+                          HubSystemRow(
+                            entry: entry,
+                            roomId: widget.roomId ?? '',
+                          )
                         else
                           HubBubbleRow(
                             entry: entry,

@@ -32,7 +32,7 @@ class HubMessage {
   String get plainText =>
       segments.whereType<TextSegment>().map((s) => s.text).join('');
 
-  void toggleReaction(String emojiId, HubReactionUser user) {
+  bool toggleReaction(String emojiId, HubReactionUser user) {
     final idx = reactions.indexWhere((r) => r.emojiId == emojiId);
     if (idx >= 0) {
       final updated = reactions[idx].toggle(user);
@@ -41,8 +41,10 @@ class HubMessage {
       } else {
         reactions[idx] = updated;
       }
+      return updated.users.any((u) => u.userId == user.userId);
     } else {
       reactions.add(HubReaction(emojiId: emojiId, users: [user]));
+      return true;
     }
   }
 
@@ -147,7 +149,6 @@ abstract class MessageSegment {
   }
 }
 
-// EmojiSegment → ReactionSegment
 class ReactionSegment extends MessageSegment {
   final String targetMessageId;
   final String emojiId;

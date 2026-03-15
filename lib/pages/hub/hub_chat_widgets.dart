@@ -106,29 +106,61 @@ class HubTimeDivider extends StatelessWidget {
 
 // ── 系统消息行 ────────────────────────────────────────────────────────────────
 
-class HubSystemRow extends StatelessWidget {
+class HubSystemRow extends ConsumerWidget {
   final HubMessage entry;
+  final String roomId;
 
-  const HubSystemRow({super.key, required this.entry});
+  const HubSystemRow({super.key, required this.entry, required this.roomId});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final currentRoomId = ref.watch(hubProvider).currentRoomId;
     final raw = entry.segments.whereType<TextSegment>().firstOrNull?.text;
     if (raw == null) return const SizedBox.shrink();
-    final payload = HubSystemPayload.fromJson(jsonDecode(raw));
+    Map<String, dynamic> json;
+    try {
+      json = jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return const SizedBox.shrink();
+    }
+    final payload = HubSystemPayload.fromJson(json);
     if (payload == null) return const SizedBox.shrink();
 
+    if (payload is HubPayloadClientJoinedRoom ||
+        payload is HubPayloadClientLeftRoom) {
+      if (roomId != currentRoomId) return const SizedBox.shrink();
+    }
+
+    if (payload is HubPayloadClientJoined || payload is HubPayloadClientLeft) {
+      return const SizedBox.shrink();
+    }
+
     final text = switch (payload) {
-      HubPayloadClientJoined() => '${payload.displayName} ${"joined".tl}',
-      HubPayloadClientLeft() => '${payload.clientName} ${"left".tl}',
+      HubPayloadClientJoined() => '',
+      HubPayloadClientLeft() => '',
       HubPayloadClientJoinedRoom() =>
         '${payload.displayName} ${"joined the room".tl}',
       HubPayloadClientLeftRoom() =>
         '${payload.clientName} ${"left the room".tl}',
       HubPayloadRoomWelcome() => payload.message,
-      HubPayloadClientKickedFromRoom() =>
-        '${payload.clientName} ${"was kicked by".tl} ${payload.operatorName}',
+      HubPayloadClientKickedFromRoom() => '@p was kicked by @o'.tlParams({
+        'p': payload.clientName,
+        'o': payload.operatorName,
+      }),
+      HubPayloadPoked() => '${payload.fromName} ${"poked you".tl} 👉',
+      HubPayloadMessageRecalled() =>
+        '${payload.recalledBy} ${"recalled a message".tl}',
+      HubPayloadReacted() =>
+        payload.added
+            ? '@p reacted with @o'.tlParams({
+                'p': payload.fromName,
+                'o': payload.emojiId,
+              })
+            : '@p removed reaction @o'.tlParams({
+                'p': payload.fromName,
+                'o': payload.emojiId,
+              }),
     };
 
     return Padding(
@@ -152,7 +184,7 @@ class HubSystemRow extends StatelessWidget {
 
 // ── 气泡行 ────────────────────────────────────────────────────────────────────
 
-class HubBubbleRow extends StatelessWidget {
+class HubBubbleRow extends StatefulWidget {
   final HubMessage entry;
   final bool isMe;
   final String? myId;
@@ -182,18 +214,217 @@ class HubBubbleRow extends StatelessWidget {
     this.onMention,
   });
 
-  /// 是否是纯图片消息（无文字段）
+  @override
+  State<HubBubbleRow> createState() => _HubBubbleRowState();
+}
+
+class _HubBubbleRowState extends State<HubBubbleRow> {
+  bool _pokeCooling = false;
+  OverlayEntry? _overlayEntry;
+  static OverlayEntry? _activeOverlay;
+
   bool get _isPureImage =>
-      entry.segments.isNotEmpty &&
-      entry.segments.every((s) => s is ImageSegment);
+      widget.entry.segments.isNotEmpty &&
+      widget.entry.segments.every((s) => s is ImageSegment);
+
+  void _poke(String userId) {
+    if (_pokeCooling) return;
+    widget.onPoke?.call(userId);
+    setState(() => _pokeCooling = true);
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _pokeCooling = false);
+    });
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    // 如果当前实例是全局活跃的，清除全局引用
+    if (_globalRemoveOverlay == _removeOverlay) {
+      _globalRemoveOverlay = null;
+    }
+  }
+
+  VoidCallback? _globalRemoveOverlay;
+
+  static void _dismissActiveOverlay() {
+    _activeOverlay?.remove();
+    _activeOverlay = null;
+  }
+
+  void _showActions(BuildContext context, ColorScheme cs) {
+    // 先关掉上一个（不管是哪个实例的）
+    _dismissActiveOverlay();
+    final hasImage = widget.entry.segments.whereType<ImageSegment>().isNotEmpty;
+    final isMe = widget.isMe;
+    final entry = OverlayEntry(
+      builder: (_) {
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: _dismissActiveOverlay,
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: MediaQuery.of(context).padding.bottom + 120,
+                child: Center(
+                  child: Material(
+                    elevation: 10,
+                    borderRadius: BorderRadius.circular(16),
+                    color: cs.surfaceContainer,
+                    child: SizedBox(
+                      width: 260,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 10, 8, 6),
+                              child: Wrap(
+                                alignment: WrapAlignment.spaceEvenly,
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  ...HubEmoji.quickBar.map(
+                                    (e) => _QuickEmojiBtn(
+                                      emoji: e,
+                                      onTap: () {
+                                        _dismissActiveOverlay();
+                                        widget.onReact(
+                                          widget.entry.messageId,
+                                          e.id,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  _MoreEmojiBtn(
+                                    onTap: () {
+                                      _dismissActiveOverlay();
+                                      final size = MediaQuery.of(context).size;
+                                      final centerOffset = Offset(
+                                        size.width / 2,
+                                        size.height * 0.8,
+                                      );
+                                      HubEmojiPicker.show(
+                                        context,
+                                        centerOffset,
+                                        onPick: (emojiId) => widget.onReact(
+                                          widget.entry.messageId,
+                                          emojiId,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Divider(
+                              height: 1,
+                              color: cs.outlineVariant.toOpacity(0.3),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 6,
+                              ),
+                              child: Row(
+                                children: [
+                                  if (!_isPureImage)
+                                    Expanded(
+                                      child: _TrayBtn(
+                                        icon: Icons.copy_outlined,
+                                        label: 'Copy'.tl,
+                                        onTap: () {
+                                          _dismissActiveOverlay();
+                                          Clipboard.setData(
+                                            ClipboardData(
+                                              text: widget.entry.plainText,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  if (hasImage)
+                                    Expanded(
+                                      child: _TrayBtn(
+                                        icon: Icons.mood_outlined,
+                                        label: 'Memes'.tl,
+                                        onTap: () {
+                                          _dismissActiveOverlay();
+                                          for (final seg
+                                              in widget.entry.segments
+                                                  .whereType<ImageSegment>()) {
+                                            HubStickerManager.add(
+                                              HubSticker(url: seg.url),
+                                            );
+                                          }
+                                          App.rootContext.showMessage(
+                                            message: 'Meme saved'.tl,
+                                            level: LogLevel.info,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: _TrayBtn(
+                                      icon: Icons.reply_outlined,
+                                      label: 'Reply'.tl,
+                                      onTap: () {
+                                        _dismissActiveOverlay();
+                                        widget.onReply(widget.entry.messageId);
+                                      },
+                                    ),
+                                  ),
+                                  if (isMe)
+                                    Expanded(
+                                      child: _TrayBtn(
+                                        icon: Icons.undo_outlined,
+                                        label: 'Recall'.tl,
+                                        color: cs.error,
+                                        onTap: () {
+                                          _dismissActiveOverlay();
+                                          widget.onRecall(
+                                            widget.entry.messageId,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    _activeOverlay = entry;
+    Overlay.of(context).insert(entry);
+  }
+
+  @override
+  void dispose() {
+    _removeOverlay();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isRoomAdmin = roomModeratorIds.contains(entry.sender.userId);
+    final isRoomAdmin = widget.roomModeratorIds.contains(
+      widget.entry.sender.userId,
+    );
     final cs = Theme.of(context).colorScheme;
-    final replyEntry = entry.replyToMessageId != null
-        ? allEntries.firstWhereOrNull(
-            (e) => e.messageId == entry.replyToMessageId,
+    final replyEntry = widget.entry.replyToMessageId != null
+        ? widget.allEntries.firstWhereOrNull(
+            (e) => e.messageId == widget.entry.replyToMessageId,
           )
         : null;
 
@@ -207,11 +438,11 @@ class HubBubbleRow extends StatelessWidget {
         avatarGap -
         (avatarDiam + avatarGap);
 
-    final bubbleColor = isMe ? cs.primary : cs.surfaceContainerHighest;
-    final textColor = isMe ? cs.onPrimary : cs.onSurface;
+    final bubbleColor = widget.isMe ? cs.primary : cs.surfaceContainerHighest;
+    final textColor = widget.isMe ? cs.onPrimary : cs.onSurface;
 
-    // ── 头像 ─────────────────────────────────────────────────────────────────
-    final avatarUrl = entry.sender.avatarUrl;
+    // ── 头像 ──────────────────────────────────────────────────────────────────
+    final avatarUrl = widget.entry.sender.avatarUrl;
 
     Widget buildInitials(HubMessage entry) => Text(
       hubInitials(entry.sender.displayName),
@@ -222,13 +453,13 @@ class HubBubbleRow extends StatelessWidget {
       ),
     );
 
-    final avatarWidget = !isContinuation
+    final avatarWidget = !widget.isContinuation
         ? GestureDetector(
-            onDoubleTap: () => onPoke?.call(entry.sender.userId),
-            onLongPress: () => onMention?.call(entry.sender),
+            onDoubleTap: () => _poke(widget.entry.sender.userId),
+            onLongPress: () => widget.onMention?.call(widget.entry.sender),
             child: CircleAvatar(
               radius: avatarRadius,
-              backgroundColor: hubAvatarColor(entry.sender.userId),
+              backgroundColor: hubAvatarColor(widget.entry.sender.userId),
               child: avatarUrl != null && avatarUrl.isNotEmpty
                   ? ClipOval(
                       child: AnimatedImage(
@@ -238,20 +469,19 @@ class HubBubbleRow extends StatelessWidget {
                         fit: BoxFit.cover,
                       ),
                     )
-                  : buildInitials(entry),
+                  : buildInitials(widget.entry),
             ),
           )
         : const SizedBox(width: avatarDiam);
 
-    // ── 引用块 ───────────────────────────────────────────────────────────────
+    // ── 引用块 ─────────────────────────────────────────────────────────────────
     Widget? replyWidget;
     if (replyEntry != null) {
-      final replyBg = isMe
+      final replyBg = widget.isMe
           ? cs.primaryContainer.toOpacity(0.45)
           : cs.surfaceContainer;
-      final replyAccent = isMe ? cs.onPrimaryContainer : cs.primary;
+      final replyAccent = widget.isMe ? cs.onPrimaryContainer : cs.primary;
 
-      // 引用内容预览：图片 or 文字
       final replyHasImage = replyEntry.segments
           .whereType<ImageSegment>()
           .isNotEmpty;
@@ -262,7 +492,7 @@ class HubBubbleRow extends StatelessWidget {
                 Icon(
                   Icons.image_outlined,
                   size: 12,
-                  color: isMe
+                  color: widget.isMe
                       ? cs.onPrimaryContainer.toOpacity(0.6)
                       : cs.onSurface.toOpacity(0.5),
                 ),
@@ -271,7 +501,7 @@ class HubBubbleRow extends StatelessWidget {
                   'Image'.tl,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isMe
+                    color: widget.isMe
                         ? cs.onPrimaryContainer.toOpacity(0.7)
                         : cs.onSurface.toOpacity(0.6),
                   ),
@@ -282,7 +512,7 @@ class HubBubbleRow extends StatelessWidget {
               replyEntry.plainText,
               style: TextStyle(
                 fontSize: 12,
-                color: isMe
+                color: widget.isMe
                     ? cs.onPrimaryContainer.toOpacity(0.7)
                     : cs.onSurface.toOpacity(0.6),
                 height: 1.35,
@@ -296,7 +526,7 @@ class HubBubbleRow extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: GestureDetector(
-            onTap: () => onScrollToEntry(replyEntry.messageId),
+            onTap: () => widget.onScrollToEntry(replyEntry.messageId),
             child: Container(
               constraints: BoxConstraints(maxWidth: maxW),
               decoration: BoxDecoration(
@@ -339,150 +569,141 @@ class HubBubbleRow extends StatelessWidget {
       );
     }
 
-    // ── 时间字符串 ────────────────────────────────────────────────────────────
-    final local = entry.sentAt.toLocal();
+    // ── 时间字符串 ─────────────────────────────────────────────────────────────
+    final local = widget.entry.sentAt.toLocal();
     final timeStr =
         '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
 
-    final bubbleBr = isContinuation
+    final bubbleBr = widget.isContinuation
         ? BorderRadius.circular(14)
         : BorderRadius.only(
-            topLeft: Radius.circular(isMe ? 14 : 3),
-            topRight: Radius.circular(isMe ? 3 : 14),
+            topLeft: Radius.circular(widget.isMe ? 14 : 3),
+            topRight: Radius.circular(widget.isMe ? 3 : 14),
             bottomLeft: const Radius.circular(14),
             bottomRight: const Radius.circular(14),
           );
 
-    // ── 气泡 ─────────────────────────────────────────────────────────────────
-    // 纯图片：无气泡背景，图片直接裸显示
-    // 文字 / 混合：有气泡背景
+    // ── 气泡 ───────────────────────────────────────────────────────────────────
     final Widget bubbleWidget;
 
     if (_isPureImage) {
-      // 纯图片气泡
-      bubbleWidget = GestureDetector(
-        onLongPress: () => _showActions(context, cs),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxW),
-          child: Column(
-            crossAxisAlignment: isMe
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...entry.segments.whereType<ImageSegment>().map(
-                (seg) => Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: _BubbleImage(
-                    url: seg.url,
-                    borderRadius: bubbleBr,
-                    messageId: entry.messageId,
-                  ),
+      bubbleWidget = ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxW),
+        child: Column(
+          crossAxisAlignment: widget.isMe
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...widget.entry.segments.whereType<ImageSegment>().map(
+              (seg) => Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: _BubbleImage(
+                  url: seg.url,
+                  borderRadius: bubbleBr,
+                  messageId: widget.entry.messageId,
                 ),
               ),
-              // 时间戳放图片外下方
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text(
-                  timeStr,
-                  style: TextStyle(
-                    fontSize: 10,
-                    height: 1,
-                    color: cs.onSurface.toOpacity(0.35),
-                  ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                timeStr,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1,
+                  color: cs.onSurface.toOpacity(0.35),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     } else {
-      // 文字 / 混合气泡
-      final imageSegs = entry.segments.whereType<ImageSegment>().toList();
+      final imageSegs = widget.entry.segments
+          .whereType<ImageSegment>()
+          .toList();
 
-      bubbleWidget = GestureDetector(
-        onLongPress: () => _showActions(context, cs),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxW),
-          child: IntrinsicWidth(
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 9, 12, 7),
-              decoration: BoxDecoration(
-                color: bubbleColor,
-                borderRadius: bubbleBr,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 文字段
-                  Text.rich(
-                    TextSpan(
-                      children: entry.segments
-                          .where((s) => s is TextSegment || s is MentionSegment)
-                          .map((s) {
-                            if (s is MentionSegment) {
-                              return TextSpan(
-                                text: '@${s.displayName}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.4,
-                                  color: isMe ? cs.onPrimary : cs.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              );
-                            }
+      bubbleWidget = ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxW),
+        child: IntrinsicWidth(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(12, 9, 12, 7),
+            decoration: BoxDecoration(
+              color: bubbleColor,
+              borderRadius: bubbleBr,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    children: widget.entry.segments
+                        .where((s) => s is TextSegment || s is MentionSegment)
+                        .map((s) {
+                          if (s is MentionSegment) {
                             return TextSpan(
-                              text: (s as TextSegment).text,
+                              text: '@${s.displayName}',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: textColor,
                                 height: 1.4,
+                                color: widget.isMe ? cs.onPrimary : cs.primary,
+                                fontWeight: FontWeight.w600,
                               ),
                             );
-                          })
-                          .toList(),
-                    ),
+                          }
+                          return TextSpan(
+                            text: (s as TextSegment).text,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: textColor,
+                              height: 1.4,
+                            ),
+                          );
+                        })
+                        .toList(),
                   ),
-                  // 图片段（混合消息）
-                  ...imageSegs.map(
-                    (seg) => Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: ClipRRect(
+                ),
+                ...imageSegs.map(
+                  (seg) => Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: _BubbleImage(
+                        url: seg.url,
                         borderRadius: BorderRadius.circular(8),
-                        child: _BubbleImage(
-                          url: seg.url,
-                          borderRadius: BorderRadius.circular(8),
-                          messageId: entry.messageId,
-                        ),
+                        messageId: widget.entry.messageId,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      timeStr,
-                      style: TextStyle(
-                        fontSize: 10,
-                        height: 1,
-                        color: isMe
-                            ? cs.onPrimary.toOpacity(0.5)
-                            : cs.onSurface.toOpacity(0.4),
-                      ),
+                ),
+                const SizedBox(height: 2),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    timeStr,
+                    style: TextStyle(
+                      fontSize: 10,
+                      height: 1,
+                      color: widget.isMe
+                          ? cs.onPrimary.toOpacity(0.5)
+                          : cs.onSurface.toOpacity(0.4),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       );
     }
 
-    // ── 表情反应 ──────────────────────────────────────────────────────────────
+    // ── 表情反应 ───────────────────────────────────────────────────────────────
     Widget? reactionsWidget;
-    final visible = entry.reactions.where((r) => r.users.isNotEmpty).toList();
+    final visible = widget.entry.reactions
+        .where((r) => r.users.isNotEmpty)
+        .toList();
     if (visible.isNotEmpty) {
       reactionsWidget = Padding(
         padding: const EdgeInsets.only(top: 4),
@@ -491,9 +712,11 @@ class HubBubbleRow extends StatelessWidget {
           runSpacing: 4,
           children: visible.map((r) {
             final count = r.users.length;
-            final iMine = myId != null && r.users.any((u) => u.userId == myId);
+            final iMine =
+                widget.myId != null &&
+                r.users.any((u) => u.userId == widget.myId);
             return GestureDetector(
-              onTap: () => onReact(entry.messageId, r.emojiId),
+              onTap: () => widget.onReact(widget.entry.messageId, r.emojiId),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                 decoration: BoxDecoration(
@@ -534,46 +757,46 @@ class HubBubbleRow extends StatelessWidget {
       );
     }
 
-    // ── 内容列 ────────────────────────────────────────────────────────────────
+    // ── 内容列 ─────────────────────────────────────────────────────────────────
     final contentCol = Column(
-      crossAxisAlignment: isMe
+      crossAxisAlignment: widget.isMe
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (!isContinuation)
+        if (!widget.isContinuation)
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (!isMe && entry.sender.isGlobalAdmin) ...[
+                if (!widget.isMe && widget.entry.sender.isGlobalAdmin) ...[
                   _AdminBadge(label: 'Admin', color: const Color(0xFFFFB300)),
                   const SizedBox(width: 4),
-                ] else if (!isMe && isRoomAdmin) ...[
+                ] else if (!widget.isMe && isRoomAdmin) ...[
                   _AdminBadge(label: 'Mod', color: const Color(0xFF81C784)),
                   const SizedBox(width: 4),
-                ] else if (!isMe && entry.sender.isBot) ...[
+                ] else if (!widget.isMe && widget.entry.sender.isBot) ...[
                   _AdminBadge(label: 'BOT', color: const Color(0xFF64B5F6)),
                   const SizedBox(width: 4),
                 ],
                 Text(
-                  entry.sender.displayName,
+                  widget.entry.sender.displayName,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: cs.onSurface,
                   ),
                 ),
-                if (isMe && entry.sender.isGlobalAdmin) ...[
+                if (widget.isMe && widget.entry.sender.isGlobalAdmin) ...[
                   const SizedBox(width: 4),
                   _AdminBadge(label: 'Admin', color: const Color(0xFFFFB300)),
-                ] else if (isMe && isRoomAdmin) ...[
+                ] else if (widget.isMe && isRoomAdmin) ...[
                   const SizedBox(width: 4),
                   _AdminBadge(label: 'Mod', color: const Color(0xFF81C784)),
                 ],
-                if (isMe && entry.sender.isBot) ...[
+                if (widget.isMe && widget.entry.sender.isBot) ...[
                   const SizedBox(width: 4),
                   _AdminBadge(label: 'BOT', color: const Color(0xFF64B5F6)),
                 ],
@@ -581,19 +804,24 @@ class HubBubbleRow extends StatelessWidget {
             ),
           ),
         if (replyWidget != null) replyWidget,
-        bubbleWidget,
+        GestureDetector(
+          onLongPress: () {
+            _showActions(context, cs);
+          },
+          child: bubbleWidget,
+        ),
         if (reactionsWidget != null) reactionsWidget,
       ],
     );
 
     return Padding(
-      padding: EdgeInsets.only(top: isContinuation ? 2 : 8, bottom: 2),
+      padding: EdgeInsets.only(top: widget.isContinuation ? 2 : 8, bottom: 2),
       child: Row(
-        mainAxisAlignment: isMe
+        mainAxisAlignment: widget.isMe
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: isMe
+        children: widget.isMe
             ? [
                 Flexible(
                   child: Align(
@@ -617,101 +845,37 @@ class HubBubbleRow extends StatelessWidget {
       ),
     );
   }
+}
 
-  // ── 长按操作面板 ──────────────────────────────────────────────────────────
+// ── 悬浮托盘按钮 ────────────────────────────────────────────────────────────────
+class _TrayBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
 
-  void _showActions(BuildContext context, ColorScheme cs) {
-    final hasImage = entry.segments.whereType<ImageSegment>().isNotEmpty;
+  const _TrayBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: cs.surfaceContainer,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final c = color ?? cs.onSurface;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── 快捷 emoji 行 ───────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 12, 8, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ...HubEmoji.quickBar.map(
-                    (e) => _QuickEmojiBtn(
-                      emoji: e,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        onReact(entry.messageId, e.id);
-                      },
-                    ),
-                  ),
-                  _MoreEmojiBtn(
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      final box = context.findRenderObject() as RenderBox?;
-                      final offset = box != null
-                          ? box.localToGlobal(
-                              Offset(box.size.width / 2, box.size.height / 2),
-                            )
-                          : const Offset(200, 400);
-                      HubEmojiPicker.show(
-                        context,
-                        offset,
-                        onPick: (emojiId) => onReact(entry.messageId, emojiId),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1, color: cs.outlineVariant.toOpacity(0.3)),
-            // ── 操作列表 ────────────────────────────────────────────────────
-            if (!_isPureImage)
-              ListTile(
-                leading: const Icon(Icons.copy_outlined),
-                title: Text('Copy'.tl),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: entry.plainText));
-                },
-              ),
-            // 有图片才显示保存表情包
-            if (hasImage)
-              ListTile(
-                leading: const Icon(Icons.emoji_emotions_outlined),
-                title: Text('Save as Sticker'.tl),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  // 多张图片全部保存
-                  for (final seg in entry.segments.whereType<ImageSegment>()) {
-                    HubStickerManager.add(HubSticker(url: seg.url));
-                  }
-                  App.rootContext.showMessage(
-                    message: 'Sticker saved'.tl,
-                    level: LogLevel.info,
-                  );
-                },
-              ),
-            ListTile(
-              leading: const Icon(Icons.reply_outlined),
-              title: Text('Reply'.tl),
-              onTap: () {
-                Navigator.pop(ctx);
-                onReply(entry.messageId);
-              },
-            ),
-            if (isMe)
-              ListTile(
-                leading: Icon(Icons.undo_outlined, color: cs.error),
-                title: Text('Recall'.tl, style: TextStyle(color: cs.error)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  onRecall(entry.messageId);
-                },
-              ),
+            Icon(icon, size: 20, color: c),
+            const SizedBox(height: 3),
+            Text(label, style: TextStyle(fontSize: 11, color: c)),
           ],
         ),
       ),
@@ -725,7 +889,8 @@ class _BubbleImage extends StatelessWidget {
   final String url;
   final BorderRadius borderRadius;
   final String messageId;
-
+  static const double _maxWidth = 220;
+  static const double _fixedHeight = 200; // 固定外框高度，避免抽搐
   const _BubbleImage({
     required this.url,
     required this.borderRadius,
@@ -740,11 +905,24 @@ class _BubbleImage extends StatelessWidget {
       onTap: () => _openFullscreen(context),
       child: ClipRRect(
         borderRadius: borderRadius,
-        child: SizedBox(
-          width: 200,
-          height: 220,
-          child: _isBase64 ? _buildBase64() : _buildNetwork(),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _maxWidth),
+          child: SizedBox(
+            height: _fixedHeight,
+            child: _isBase64 ? _buildBase64() : _buildNetwork(),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNetwork() {
+    return Hero(
+      tag: messageId,
+      child: AnimatedImage(
+        image: CachedImageProvider(url, sourceKey: 'hub'),
+        height: _fixedHeight,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -756,9 +934,8 @@ class _BubbleImage extends StatelessWidget {
         tag: messageId,
         child: Image.memory(
           data,
-          fit: BoxFit.cover,
-          width: 200,
-          height: 220,
+          height: _fixedHeight,
+          fit: BoxFit.contain,
           errorBuilder: (_, _, _) => _placeholder(),
         ),
       );
@@ -767,21 +944,8 @@ class _BubbleImage extends StatelessWidget {
     }
   }
 
-  Widget _buildNetwork() {
-    return Hero(
-      tag: messageId,
-      child: AnimatedImage(
-        image: CachedImageProvider(url, sourceKey: 'hub'),
-        fit: BoxFit.cover,
-        width: 200,
-        height: 160,
-      ),
-    );
-  }
-
   void _openFullscreen(BuildContext context) async {
     if (_isBase64) {
-      // base64 → 写临时文件 → 用本地路径预览
       try {
         final data = base64Decode(url.split(',').last);
         final tmp = File(
@@ -791,7 +955,7 @@ class _BubbleImage extends StatelessWidget {
           await tmp.writeAsBytes(data);
         }
         await BangumiWidget.showImagePreview(
-          context: context,
+          context: App.rootContext,
           url: tmp.path,
           title: '',
           heroTag: messageId,
@@ -800,12 +964,11 @@ class _BubbleImage extends StatelessWidget {
         Log.addLog(LogLevel.error, 'HubBubbleImage', '$e');
       }
     } else {
-      // 网络图片直接预览
       await BangumiWidget.showImagePreview(
-        context: context,
+        context: App.rootContext,
         url: url,
         title: '',
-        heroTag: 'hub_img_${url.hashCode}',
+        heroTag: messageId,
       );
     }
   }
@@ -901,12 +1064,7 @@ class HubInputBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: EdgeInsets.only(
-        left: 8,
-        right: 8,
-        top: 8,
-        bottom: MediaQuery.of(context).padding.bottom + 4,
-      ),
+      padding: EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 4),
       decoration: BoxDecoration(
         color: cs.surface,
         border: Border(
@@ -916,7 +1074,6 @@ class HubInputBar extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Column 的最顶部加
           if (pendingImages.isNotEmpty)
             SizedBox(
               height: 72,
@@ -1051,19 +1208,20 @@ class HubInputBar extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               // ── 发送按钮 ──────────────────────────────────────────────
-              GestureDetector(
-                onTap: onSend,
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: cs.primary,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.send_rounded,
-                    size: 17,
-                    color: cs.onPrimary,
+              Material(
+                color: cs.primary,
+                borderRadius: BorderRadius.circular(8),
+                child: InkWell(
+                  onTap: onSend,
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: 38,
+                    height: 38,
+                    child: Icon(
+                      Icons.send_rounded,
+                      size: 17,
+                      color: cs.onPrimary,
+                    ),
                   ),
                 ),
               ),
@@ -1103,7 +1261,7 @@ class HubInputBar extends ConsumerWidget {
                     color: cs.onSurface.toOpacity(0.5),
                   ),
                   onPressed: onOpenStickers,
-                  tooltip: 'Stickers'.tl,
+                  tooltip: 'Memes'.tl,
                   style: IconButton.styleFrom(
                     minimumSize: const Size(32, 32),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1112,8 +1270,7 @@ class HubInputBar extends ConsumerWidget {
                 const Spacer(),
                 if (room != null)
                   IconButton(
-                    onPressed: () =>
-                        showHubRoomSettingsSheet(context, room!, ref),
+                    onPressed: () => showHubRoomSettingsSheet(context, room!),
                     icon: Icon(
                       Icons.settings_outlined,
                       size: 20,
@@ -1319,8 +1476,6 @@ class _EmojiPickerOverlayState extends State<_EmojiPickerOverlay>
     curve: Curves.easeOutBack,
   );
 
-  bool _expanded = false;
-
   @override
   void initState() {
     super.initState();
@@ -1343,9 +1498,8 @@ class _EmojiPickerOverlayState extends State<_EmojiPickerOverlay>
     final cs = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
     const popW = 280.0;
-    const popH = 56.0;
     const fullH = 360.0;
-    final h = _expanded ? fullH : popH;
+    final h = fullH;
     double left = widget.globalOffset.dx - popW / 2;
     double top = widget.globalOffset.dy - h - 8;
     left = left.clamp(8.0, size.width - popW - 8);
@@ -1368,33 +1522,9 @@ class _EmojiPickerOverlayState extends State<_EmojiPickerOverlay>
                 borderRadius: BorderRadius.circular(16),
                 elevation: 8,
                 shadowColor: Colors.black26,
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  child: _expanded ? _fullGrid(cs) : _quickBar(cs),
-                ),
+                child: _fullGrid(cs),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 快捷栏（6个 + 展开按钮）──────────────────────────────────────────────
-  Widget _quickBar(ColorScheme cs) {
-    return SizedBox(
-      height: 56,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ...HubEmoji.quickBar.map(
-            (e) => _EmojiBtn(emoji: e, size: 28, onTap: () => _pick(e.id)),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add_reaction_outlined, size: 20),
-            tooltip: 'More',
-            onPressed: () => setState(() => _expanded = true),
           ),
         ],
       ),
@@ -1417,10 +1547,6 @@ class _EmojiPickerOverlayState extends State<_EmojiPickerOverlay>
                     'Emoji',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  onPressed: () => setState(() => _expanded = false),
                 ),
               ],
             ),

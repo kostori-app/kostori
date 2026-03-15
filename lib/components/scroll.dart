@@ -212,11 +212,13 @@ class AppScrollBar extends StatefulWidget {
     required this.child,
     this.topPadding = 0,
     this.isNested = false,
+    this.bottomPadding = 0,
   });
 
   final ScrollController controller;
   final Widget child;
   final double topPadding;
+  final double bottomPadding;
   final bool isNested;
 
   @override
@@ -338,7 +340,8 @@ class _AppScrollBarState extends State<AppScrollBar> {
       onNotification: _onScrollNotification,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          viewHeight = constraints.maxHeight - widget.topPadding;
+          viewHeight =
+              constraints.maxHeight - widget.topPadding - widget.bottomPadding;
 
           final scrollExtent = maxExtent - minExtent;
           final top = scrollExtent == 0

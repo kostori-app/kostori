@@ -670,8 +670,8 @@ class _ToastOverlayState extends State<_ToastOverlay> {
     final topOffset =
         widget.position +
         MediaQuery.of(context).viewPadding.top +
-        kToolbarHeight +
-        8;
+        // kToolbarHeight +
+        16;
 
     return switch (widget.style) {
       ToastStyle.topRight => Positioned(
@@ -791,7 +791,6 @@ class _ToastOverlayState extends State<_ToastOverlay> {
             bottomLeft: Radius.circular(4),
           )
         : const BorderRadius.only(
-            // topRight
             topLeft: Radius.circular(12),
             bottomLeft: Radius.circular(12),
             topRight: Radius.circular(4),
@@ -804,7 +803,9 @@ class _ToastOverlayState extends State<_ToastOverlay> {
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width - 32,
         ),
-        margin: EdgeInsets.only(left: isLeft ? 12 : 0, right: isLeft ? 0 : 12),
+        margin: isCenter
+            ? EdgeInsets.zero
+            : EdgeInsets.only(left: isLeft ? 12 : 0, right: isLeft ? 0 : 12),
         decoration: BoxDecoration(
           color: cs.surfaceContainer.toOpacity(0.62),
           borderRadius: borderRadius,

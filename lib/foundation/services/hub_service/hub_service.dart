@@ -28,17 +28,28 @@ class HubService extends BaseHttpService {
   Timer? _heartbeatTimer;
 
   List<HubClientInfo> get clients => _clients.values.toList();
+
   int get clientCount => _clients.length;
+
   List<HubRoom> get rooms => _rooms.values.toList();
+
   List<HubMessage> get messageHistory =>
       List.unmodifiable(_rooms[_lobbyId]?.messageHistory ?? []);
+
   int get blacklistCount => _blacklist.length;
+
   List<String> get blacklist => _blacklist.toList();
+
   String get lobbyId => _lobbyId;
 
   static const _adminKey = 'hub_admin_ids';
 
+  final Map<String, DateTime> _inviteCooldowns = {};
+
+  static const _inviteCooldown = Duration(minutes: 2);
+
   void addAdmin(String clientId) => _adminIds.add(clientId);
+
   void removeAdmin(String clientId) => _adminIds.remove(clientId);
 
   void _loadAdmins() {
@@ -194,6 +205,10 @@ class HubService extends BaseHttpService {
     String? operatorName,
     String? customMessage,
   }) async {
+    if (operatorId != null && _clients[id]?.isGlobalAdmin == true) {
+      _clients[operatorId]?.send({'type': 'error', 'message': '无法对全局管理员执行此操作'});
+      return;
+    }
     final reasonStr = switch (reason) {
       KickReason.kicked => 'kicked',
       KickReason.banned => 'room_banned',
@@ -223,9 +238,21 @@ class HubService extends BaseHttpService {
     final target = _clients[id];
     final targetName = target?.displayName ?? id;
     final roomId = target?.currentRoomId ?? _lobbyId;
+    final targetDto = target?.toDto();
     _rooms[roomId]?.participants.remove(id);
     _clients.remove(id);
     onClientsChanged?.call();
+
+    if (targetDto != null) {
+      _broadcastSystem(HubSystemEvent.clientLeftRoom, {
+        'client': targetDto.toJson(),
+        'roomId': roomId,
+      });
+    }
+    _broadcastSystem(HubSystemEvent.clientLeft, {
+      'clientId': id,
+      'clientName': targetName,
+    });
     final op = operatorName ?? 'server';
     final reasonLabel = switch (reason) {
       KickReason.kicked => '⚡ kicked',

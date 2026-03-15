@@ -14,7 +14,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:kostori/components/components.dart' show ToastStyle;
+import 'package:kostori/components/components.dart'
+    show ToastStyle, ContentDialog;
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
@@ -36,6 +37,8 @@ part 'base/api_key_manager.dart';
 part 'base/base_http_service.dart';
 
 part 'base/base_service.dart';
+
+part 'base/docs_html.dart';
 
 part 'base/middleware.dart';
 

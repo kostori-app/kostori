@@ -67,6 +67,7 @@ class _HubPageState extends ConsumerState<HubPage>
                 text: 'Rooms'.tl,
               ),
               Tab(
+                icon: const Icon(Icons.people, size: 18),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -79,7 +80,7 @@ class _HubPageState extends ConsumerState<HubPage>
                           vertical: 1,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.error,
+                          color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -218,7 +219,7 @@ class _RoomsTab extends ConsumerWidget {
               if (canManage)
                 IconButton(
                   icon: const Icon(Icons.settings_outlined, size: 18),
-                  onPressed: () => showHubRoomSettingsSheet(context, room, ref),
+                  onPressed: () => showHubRoomSettingsSheet(context, room),
                 ),
               if (!isCurrent)
                 TextButton(
@@ -378,7 +379,7 @@ class _PeopleTab extends ConsumerWidget {
                       vertical: 1,
                     ),
                     decoration: BoxDecoration(
-                      color: cs.error,
+                      color: cs.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: cs.surface, width: 1.5),
                     ),
@@ -467,10 +468,11 @@ class _PeopleActions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hub = ref.read(hubClientProvider);
+    final hubState = ref.watch(hubProvider);
     final cs = Theme.of(context).colorScheme;
     final canManage =
         hubState.isGlobalAdmin || hub.isRoomAdminOf(hubState.currentRoomId);
-    final isBlocked = hub.isBlocked(client.userId);
+    final isBlocked = hubState.blockedUserIds.contains(client.userId);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -499,7 +501,7 @@ class _PeopleActions extends ConsumerWidget {
                 : hub.blockUser(client.userId);
           },
         ),
-        if (canManage)
+        if (canManage && !client.isGlobalAdmin)
           IconButton(
             icon: const Icon(Icons.more_vert, size: 18),
             onPressed: () => _showManageSheet(context, hub, cs),
@@ -554,7 +556,6 @@ class _PeopleActions extends ConsumerWidget {
               },
             ),
             if (hubState.isGlobalAdmin) ...[
-              const HubSettingDivider(),
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                 leading: Icon(
