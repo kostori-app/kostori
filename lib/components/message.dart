@@ -713,14 +713,14 @@ class _ToastOverlayState extends State<_ToastOverlay> {
           border: Border.all(color: cs.outlineVariant.toOpacity(0.35)),
         ),
         child: IntrinsicWidth(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 44),
-                child: Container(
+          child: IntrinsicHeight(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
                   width: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 4),
                   decoration: BoxDecoration(
                     color: accent,
                     borderRadius: const BorderRadius.only(
@@ -729,47 +729,47 @@ class _ToastOverlayState extends State<_ToastOverlay> {
                     ),
                   ),
                 ),
-              ),
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 14,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.icon != null)
-                        IconTheme(
-                          data: IconThemeData(color: accent, size: 18),
-                          child: widget.icon!.paddingRight(10),
-                        )
-                      else
-                        Icon(
-                          _levelIcon,
-                          color: accent,
-                          size: 18,
-                        ).paddingRight(10),
-                      Flexible(
-                        child: Text(
-                          widget.message,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: cs.onSurface,
-                            height: 1.4,
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 14,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.icon != null)
+                          IconTheme(
+                            data: IconThemeData(color: accent, size: 18),
+                            child: widget.icon!.paddingRight(10),
+                          )
+                        else
+                          Icon(
+                            _levelIcon,
+                            color: accent,
+                            size: 18,
+                          ).paddingRight(10),
+                        Flexible(
+                          child: Text(
+                            widget.message,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: cs.onSurface,
+                              height: 1.4,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      if (widget.trailing != null)
-                        widget.trailing!.paddingLeft(10),
-                    ],
+                        if (widget.trailing != null)
+                          widget.trailing!.paddingLeft(10),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
