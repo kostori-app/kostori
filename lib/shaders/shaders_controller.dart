@@ -3,7 +3,6 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart' show rootBundle, AssetManifest;
-import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:mobx/mobx.dart';
 import 'package:path/path.dart' as path;
@@ -24,12 +23,10 @@ abstract class _ShadersController with Store {
 
     if (!await shadersDirectory.exists()) {
       await shadersDirectory.create(recursive: true);
-      if (appdata.settings['debugInfo']) {
-        PlayLog.info(
-          "shadersDirectory create",
-          'Create GLSL Shader: ${shadersDirectory.path}',
-        );
-      }
+      PlayLog.info(
+        "shadersDirectory create",
+        'Create GLSL Shader: ${shadersDirectory.path}',
+      );
     }
 
     final shaderFiles = assets.where(
@@ -43,12 +40,10 @@ abstract class _ShadersController with Store {
       final fileName = filePath.split('/').last;
       final targetFile = File(path.join(shadersDirectory.path, fileName));
       if (await targetFile.exists()) {
-        if (appdata.settings['debugInfo']) {
-          PlayLog.info(
-            "targetFile exists",
-            'GLSL Shader exists, skip: ${targetFile.path}',
-          );
-        }
+        PlayLog.info(
+          "targetFile exists",
+          'GLSL Shader exists, skip: ${targetFile.path}',
+        );
         continue;
       }
 
@@ -57,18 +52,16 @@ abstract class _ShadersController with Store {
         final List<int> bytes = data.buffer.asUint8List();
         await targetFile.writeAsBytes(bytes);
         copiedFilesCount++;
-        if (appdata.settings['debugInfo']) {
-          PlayLog.info("targetFile writeAsBytes", 'Copy: ${targetFile.path}');
-        }
+
+        PlayLog.info("targetFile writeAsBytes", 'Copy: ${targetFile.path}');
       } catch (e) {
         PlayLog.warning("targetFile writeAsBytes", 'Copy: ($filePath): $e');
       }
     }
-    if (appdata.settings['debugInfo']) {
-      PlayLog.info(
-        "copyShadersToExternalDirectory",
-        '$copiedFilesCount GLSL files copied to ${shadersDirectory.path}',
-      );
-    }
+
+    PlayLog.info(
+      "copyShadersToExternalDirectory",
+      '$copiedFilesCount GLSL files copied to ${shadersDirectory.path}',
+    );
   }
 }

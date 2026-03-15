@@ -526,16 +526,6 @@ class StatsManager with ChangeNotifier {
       );
     """);
 
-    //   var columns = _db.select("""
-    //       pragma table_info("stats");
-    //     """);
-    //   if (!columns.any((element) => element["name"] == "isBangumi")) {
-    //     _db.execute("""
-    //   alter table stats
-    //   add column isBangumi integer not null default 0;
-    // """);
-    //   }
-
     notifyListeners();
   }
 

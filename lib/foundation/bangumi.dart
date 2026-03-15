@@ -560,12 +560,12 @@ class BangumiManager with ChangeNotifier {
     final existenceMap = <String, String?>{};
     for (final row in result) {
       final sites = jsonDecode(row['sites'] as String) as List;
-      final beginTime = row['begin']?.toString(); // 获取 begin 列
+      final beginTime = row['begin']?.toString();
 
       for (final site in sites.cast<Map>()) {
         if (site['site'] == 'bangumi') {
           final id = site['id'].toString();
-          existenceMap[id] = beginTime; // 关联 ID 和 begin 时间
+          existenceMap[id] = beginTime;
         }
       }
     }

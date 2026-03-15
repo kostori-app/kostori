@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -152,13 +151,10 @@ class PlayerAudioHandler extends BaseAudioHandler {
         },
       ),
     );
-
-    if (appdata.settings['debugInfo']) {
-      Log.info(
-        "_broadcastState",
-        "更新状态中: \n playing: ${player.state.playing} \n updatePosition: ${player.state.position} \n bufferedPosition: ${player.state.buffer} \n updated: ${playbackState.value} \n duration: ${_controller!.duration} \n _getProcessingState: ${_getProcessingState(player.state)}",
-      );
-    }
+    DebugLog.info(
+      "_broadcastState",
+      "更新状态中: \n playing: ${player.state.playing} \n updatePosition: ${player.state.position} \n bufferedPosition: ${player.state.buffer} \n updated: ${playbackState.value} \n duration: ${_controller!.duration} \n _getProcessingState: ${_getProcessingState(player.state)}",
+    );
   }
 
   AudioProcessingState _getProcessingState(PlayerState playerState) {

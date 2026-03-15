@@ -871,7 +871,9 @@
     "Hub Info": "Hub信息",
     "Stats Info": "统计信息",
     "Source Info": "源信息",
-    "Player Info": "播放信息"
+    "Player Info": "播放信息",
+    "Hide": "隐藏",
+    "Show": "显示"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",
