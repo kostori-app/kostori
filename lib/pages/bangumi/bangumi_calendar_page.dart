@@ -21,6 +21,186 @@ import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
+Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
+  try {
+    final allItems = BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
+    final allIds = allItems.map((item) => item.id.toString()).toList();
+    final existenceMap = await BangumiManager().checkWhetherDataExistsBatch(
+      allIds,
+    );
+
+    final validItems = allItems
+        .where((item) => existenceMap.containsKey(item.id.toString()))
+        .toList();
+    final fetchEpisodes = appdata.settings['calendarFetchEpisodes'] ?? false;
+    final allEpisodesMap = fetchEpisodes
+        ? await _fetchEpisodesInBatches(validItems)
+        : <int, List<EpisodeInfo>>{};
+
+    final newCalendar = List.generate(7, (_) => <BangumiItem>[]);
+    final now = DateTime.now();
+    final currentWeekInfo = Utils.getISOWeekNumber(now);
+
+    for (final item in validItems) {
+      final airTimeStr = existenceMap[item.id.toString()] ?? item.airTime;
+      if (airTimeStr == null) continue;
+
+      try {
+        final airTime = DateTime.parse(airTimeStr).toLocal();
+        final weekday = airTime.weekday;
+        final episodes = allEpisodesMap[item.id];
+        final episodeResult = _processEpisodeInfo(
+          episodes: episodes,
+          now: now,
+          currentWeekInfo: currentWeekInfo,
+          bangumiItem: item,
+        );
+
+        if (episodeResult == null) continue;
+
+        if (episodeResult['isFinalEpisode'] == true &&
+            episodeResult['hasNextEpisodes'] == false &&
+            episodeResult['isCurrentWeek'] == false) {
+          continue;
+        }
+
+        newCalendar[weekday - 1].add(
+          item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
+        );
+      } catch (e, s) {
+        Log.error('处理番剧时间', 'ID:${item.id}, 时间:$airTimeStr\n$e\n$s');
+      }
+    }
+
+    _sortCalendarByTime(newCalendar);
+    return newCalendar;
+  } catch (e, s) {
+    Log.error('处理番剧日历', '$e\n$s');
+    return List.generate(7, (_) => <BangumiItem>[]);
+  }
+}
+
+Map<String, dynamic>? _processEpisodeInfo({
+  required List<EpisodeInfo>? episodes,
+  required DateTime now,
+  required (int, int) currentWeekInfo,
+  required BangumiItem bangumiItem,
+}) {
+  if (episodes == null || episodes.isEmpty) {
+    return appdata.settings['calendarFetchEpisodes'] ?? false ? null : {};
+  }
+
+  final (_, currentWeek) = currentWeekInfo;
+  final type0Episodes = episodes.where((ep) => ep.type == 0).toList();
+  if (type0Episodes.isEmpty) return null;
+
+  final finalEpisode = type0Episodes.last;
+  final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
+    episodes,
+    bangumiItem,
+    true,
+  );
+
+  final isFinalEpisode =
+      currentWeekEp.values.first != null &&
+      currentWeekEp.values.first?.sort == finalEpisode.sort;
+
+  final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
+  if (airTime == null) return null;
+
+  final airWeek = Utils.getISOWeekNumber(airTime).$2;
+  bool isCurrentWeek = currentWeek == airWeek;
+
+  if (currentWeekEp.keys.first == true && !isCurrentWeek) {
+    if (currentWeek == airWeek + 1) isCurrentWeek = true;
+  }
+
+  final maxSort = type0Episodes
+      .map((e) => e.sort)
+      .reduce((a, b) => a > b ? a : b);
+
+  return {
+    'episode_airdate': currentWeekEp.values.first?.airDate,
+    'episode_name': currentWeekEp.values.first?.name,
+    'episode_name_cn': currentWeekEp.values.first?.nameCn,
+    'episode_ep': currentWeekEp.values.first?.sort,
+    'isCurrentWeek': isCurrentWeek,
+    'isFinalEpisode': isFinalEpisode,
+    'hasNextEpisodes': finalEpisode.sort < maxSort,
+  };
+}
+
+void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
+  for (final dayList in calendar) {
+    dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
+  }
+}
+
+int _compareTimeStrings(String? a, String? b) {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+  return _parseTime(a).compareTo(_parseTime(b));
+}
+
+DateTime _parseTime(String timeStr) {
+  try {
+    final dt = DateTime.parse(timeStr).toLocal();
+    return DateTime(2000, 1, 1, dt.hour, dt.minute);
+  } catch (_) {
+    return DateTime(2000, 1, 1);
+  }
+}
+
+Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
+  List<BangumiItem> items,
+) async {
+  final result = <int, List<EpisodeInfo>>{};
+  const batchSize = 10;
+  final nowStr = Utils.formatDate(DateTime.now());
+  final needsUpdate = appdata.settings['getBangumiAllEpInfoTime'] != nowStr;
+
+  if (needsUpdate) {
+    for (var i = 0; i < items.length; i += batchSize) {
+      final batch = items.sublist(i, (i + batchSize).clamp(0, items.length));
+      try {
+        result.addAll(await _fetchBatchEpisodes(batch));
+      } catch (e, s) {
+        Log.error('获取剧集批次${i ~/ batchSize + 1}失败', '$e\n$s');
+      }
+    }
+    appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
+    appdata.saveData();
+  } else {
+    result.addAll(await _fetchBatchEpisodes(items));
+  }
+
+  return result;
+}
+
+Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
+  List<BangumiItem> batch,
+) async {
+  final result = <int, List<EpisodeInfo>>{};
+  final nowStr = Utils.formatDate(DateTime.now());
+  final needsUpdate = appdata.settings['getBangumiAllEpInfoTime'] != nowStr;
+
+  await Future.wait(
+    batch.map((item) async {
+      try {
+        final episodes = needsUpdate
+            ? await Bangumi.getBangumiEpisodeAllByID(item.id)
+            : await BangumiManager().allEpInfoFind(item.id);
+        if (episodes.isNotEmpty) result[item.id] = episodes;
+      } catch (e, s) {
+        Log.warning('批量获取剧集', '${item.id}: $e\n$s');
+      }
+    }),
+  );
+
+  return result;
+}
+
 class BangumiCalendarPage extends StatefulWidget {
   const BangumiCalendarPage({super.key});
 
@@ -56,190 +236,11 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
 
   Future<void> _initializeData() async {
     try {
-      await filterExistingBangumiItems();
+      final newCalendar = await loadBangumiCalendar();
+      if (mounted) setState(() => bangumiCalendar = newCalendar);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  Future<void> filterExistingBangumiItems() async {
-    try {
-      final allItems = BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
-      final allIds = allItems.map((item) => item.id.toString()).toList();
-      final existenceMap = await BangumiManager().checkWhetherDataExistsBatch(
-        allIds,
-      );
-
-      final validItems = allItems
-          .where((item) => existenceMap.containsKey(item.id.toString()))
-          .toList();
-      final fetchEpisodes = appdata.settings['calendarFetchEpisodes'] ?? false;
-      final allEpisodesMap = fetchEpisodes
-          ? await _fetchEpisodesInBatches(validItems)
-          : <int, List<EpisodeInfo>>{};
-
-      final newCalendar = List.generate(7, (_) => <BangumiItem>[]);
-      final now = DateTime.now();
-      final currentWeekInfo = Utils.getISOWeekNumber(now);
-
-      for (final item in validItems) {
-        final airTimeStr = existenceMap[item.id.toString()] ?? item.airTime;
-        if (airTimeStr == null) continue;
-
-        try {
-          final airTime = DateTime.parse(airTimeStr).toLocal();
-          final weekday = airTime.weekday;
-          final episodes = allEpisodesMap[item.id];
-          final episodeResult = _processEpisodeInfo(
-            episodes: episodes,
-            now: now,
-            currentWeekInfo: currentWeekInfo,
-            bangumiItem: item,
-          );
-
-          if (episodeResult == null) continue;
-
-          if (episodeResult['isFinalEpisode'] == true &&
-              episodeResult['hasNextEpisodes'] == false &&
-              episodeResult['isCurrentWeek'] == false) {
-            continue;
-          }
-
-          newCalendar[weekday - 1].add(
-            item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
-          );
-        } catch (e, s) {
-          Log.error('处理番剧时间', 'ID:${item.id}, 时间:$airTimeStr\n$e\n$s');
-        }
-      }
-
-      _sortCalendarByTime(newCalendar);
-      if (mounted) setState(() => bangumiCalendar = newCalendar);
-    } catch (e, s) {
-      Log.error('处理番剧日历', '$e\n$s');
-      if (mounted) setState(() => bangumiCalendar = []);
-    }
-  }
-
-  Map<String, dynamic>? _processEpisodeInfo({
-    required List<EpisodeInfo>? episodes,
-    required DateTime now,
-    required (int, int) currentWeekInfo,
-    required BangumiItem bangumiItem,
-  }) {
-    if (episodes == null || episodes.isEmpty) {
-      return appdata.settings['calendarFetchEpisodes'] ?? false ? null : {};
-    }
-
-    final (_, currentWeek) = currentWeekInfo;
-    final type0Episodes = episodes.where((ep) => ep.type == 0).toList();
-    if (type0Episodes.isEmpty) return null;
-
-    final finalEpisode = type0Episodes.last;
-    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
-      episodes,
-      bangumiItem,
-      true,
-    );
-
-    final isFinalEpisode =
-        currentWeekEp.values.first != null &&
-        currentWeekEp.values.first?.sort == finalEpisode.sort;
-
-    final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
-    if (airTime == null) return null;
-
-    final airWeek = Utils.getISOWeekNumber(airTime).$2;
-    bool isCurrentWeek = currentWeek == airWeek;
-
-    if (currentWeekEp.keys.first == true && !isCurrentWeek) {
-      if (currentWeek == airWeek + 1) isCurrentWeek = true;
-    }
-
-    final maxSort = type0Episodes
-        .map((e) => e.sort)
-        .reduce((a, b) => a > b ? a : b);
-
-    return {
-      'episode_airdate': currentWeekEp.values.first?.airDate,
-      'episode_name': currentWeekEp.values.first?.name,
-      'episode_name_cn': currentWeekEp.values.first?.nameCn,
-      'episode_ep': currentWeekEp.values.first?.sort,
-      'isCurrentWeek': isCurrentWeek,
-      'isFinalEpisode': isFinalEpisode,
-      'hasNextEpisodes': finalEpisode.sort < maxSort,
-    };
-  }
-
-  void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
-    for (final dayList in calendar) {
-      dayList.sort((a, b) => _compareTimeStrings(a.airTime, b.airTime));
-    }
-  }
-
-  int _compareTimeStrings(String? a, String? b) {
-    if (a == null && b == null) return 0;
-    if (a == null) return 1;
-    if (b == null) return -1;
-    return _parseTime(a).compareTo(_parseTime(b));
-  }
-
-  DateTime _parseTime(String timeStr) {
-    try {
-      final dt = DateTime.parse(timeStr).toLocal();
-      return DateTime(2000, 1, 1, dt.hour, dt.minute);
-    } catch (_) {
-      return DateTime(2000, 1, 1);
-    }
-  }
-
-  Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
-    List<BangumiItem> items,
-  ) async {
-    final result = <int, List<EpisodeInfo>>{};
-    const batchSize = 10;
-    final nowStr = Utils.formatDate(DateTime.now());
-    final needsUpdate = appdata.settings['getBangumiAllEpInfoTime'] != nowStr;
-
-    if (needsUpdate) {
-      for (var i = 0; i < items.length; i += batchSize) {
-        final batch = items.sublist(i, (i + batchSize).clamp(0, items.length));
-        try {
-          result.addAll(await _fetchBatchEpisodes(batch));
-        } catch (e, s) {
-          Log.error('获取剧集批次${i ~/ batchSize + 1}失败', '$e\n$s');
-        }
-      }
-      appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
-      appdata.saveData();
-    } else {
-      result.addAll(await _fetchBatchEpisodes(items));
-    }
-
-    return result;
-  }
-
-  Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
-    List<BangumiItem> batch,
-  ) async {
-    final result = <int, List<EpisodeInfo>>{};
-    final nowStr = Utils.formatDate(DateTime.now());
-    final needsUpdate = appdata.settings['getBangumiAllEpInfoTime'] != nowStr;
-
-    await Future.wait(
-      batch.map((item) async {
-        try {
-          final episodes = needsUpdate
-              ? await Bangumi.getBangumiEpisodeAllByID(item.id)
-              : await BangumiManager().allEpInfoFind(item.id);
-          if (episodes.isNotEmpty) result[item.id] = episodes;
-        } catch (e, s) {
-          Log.warning('批量获取剧集', '${item.id}: $e\n$s');
-        }
-      }),
-    );
-
-    return result;
   }
 
   List<Tab> getTabs() {
@@ -383,146 +384,6 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     });
   }
 
-  Future<void> _captureScreenshot() async {
-    final overlayState = context.findAncestorStateOfType<OverlayWidgetState>();
-    OverlayEntry? loadingEntry;
-
-    void showLoading(String message) {
-      loadingEntry?.remove();
-      loadingEntry = OverlayEntry(
-        builder: (_) => LoadingOverlay(message: message),
-      );
-      overlayState?.addOverlay(loadingEntry!);
-    }
-
-    void removeLoading() {
-      if (loadingEntry != null) {
-        overlayState?.remove(loadingEntry!);
-        loadingEntry = null;
-      }
-    }
-
-    try {
-      showLoading('正在加载图片...');
-
-      final imageUrls = bangumiCalendar
-          .expand((day) => day)
-          .map((item) => item.images['large'])
-          .whereType<String>()
-          .toSet()
-          .toList();
-
-      const batchSize = 8;
-      for (var i = 0; i < imageUrls.length; i += batchSize) {
-        final batch = imageUrls.sublist(
-          i,
-          (i + batchSize).clamp(0, imageUrls.length),
-        );
-        await Future.wait(
-          batch.map((url) async {
-            try {
-              await precacheImage(
-                CachedImageProvider(url, sourceKey: 'bangumi'),
-                context,
-              );
-            } catch (_) {}
-          }),
-        );
-      }
-
-      removeLoading();
-
-      if (!context.mounted) return;
-
-      final captureTime = DateTime.now();
-      final result = await showModalBottomSheet<String>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (context) => _ScreenshotPreviewSheet(
-          bangumiCalendar: bangumiCalendar,
-          captureTime: captureTime,
-        ),
-      );
-
-      if (result == null || !context.mounted) return;
-
-      final todayIndex = captureTime.weekday - 1;
-      final calendarToCapture = result == 'weekly'
-          ? bangumiCalendar
-          : List.generate(
-              7,
-              (i) => i == todayIndex ? bangumiCalendar[i] : <BangumiItem>[],
-            );
-
-      showLoading('正在生成截图...');
-
-      final repaintKey = GlobalKey();
-      final screenshotWidget = RepaintBoundary(
-        key: repaintKey,
-        child: MediaQuery(
-          data: MediaQuery.of(context),
-          child: Theme(
-            data: Theme.of(context),
-            child: CalendarScreenshotWidget(
-              bangumiCalendar: calendarToCapture,
-              captureTime: captureTime,
-            ),
-          ),
-        ),
-      );
-
-      final renderEntry = OverlayEntry(
-        builder: (_) => Positioned(
-          left: -10000,
-          child: SizedBox(width: 800, child: screenshotWidget),
-        ),
-      );
-      overlayState?.addOverlay(renderEntry);
-
-      await Future.delayed(const Duration(milliseconds: 1000));
-      await WidgetsBinding.instance.endOfFrame;
-      await WidgetsBinding.instance.endOfFrame;
-      await WidgetsBinding.instance.endOfFrame;
-
-      final boundary =
-          repaintKey.currentContext?.findRenderObject()
-              as RenderRepaintBoundary?;
-
-      if (boundary == null) {
-        overlayState?.remove(renderEntry);
-        removeLoading();
-        return;
-      }
-
-      final image = await boundary.toImage(pixelRatio: 2.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      final bytes = byteData!.buffer.asUint8List();
-
-      overlayState?.remove(renderEntry);
-      removeLoading();
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      if (context.mounted) {
-        await ImageSaver.saveImage(
-          bytes: bytes,
-          filename: result == 'weekly'
-              ? 'timetable_weekly_$timestamp.png'
-              : 'timetable_today_$timestamp.png',
-        );
-      }
-    } catch (e) {
-      removeLoading();
-      if (context.mounted) {
-        ImageSaver.showResult(success: false, message: '截图失败: $e');
-      }
-      Log.error('截图失败', '$e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return OrientationBuilder(
@@ -553,7 +414,10 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
                     tooltip: '刷新状态',
                   ),
                   IconButton(
-                    onPressed: _captureScreenshot,
+                    onPressed: () => captureBangumiCalendarScreenshot(
+                      context,
+                      bangumiCalendar,
+                    ),
                     icon: const Icon(Icons.share),
                     tooltip: '截图保存',
                   ),
@@ -866,5 +730,176 @@ class _ScreenshotPreviewSheetState extends State<_ScreenshotPreviewSheet> {
         ),
       ],
     );
+  }
+}
+
+Future<Uint8List?> generateBangumiCalendarPng({
+  required BuildContext context,
+  required List<List<BangumiItem>> bangumiCalendar,
+  required DateTime captureTime,
+  required bool showWeekly,
+}) async {
+  final overlayState = context.findAncestorStateOfType<OverlayWidgetState>();
+  if (overlayState == null) {
+    Log.error('截图失败', '未找到 OverlayWidgetState');
+    return null;
+  }
+
+  final todayIndex = captureTime.weekday - 1;
+  final calendarToCapture = showWeekly
+      ? bangumiCalendar
+      : List.generate(
+          7,
+          (i) => i == todayIndex ? bangumiCalendar[i] : <BangumiItem>[],
+        );
+
+  final repaintKey = GlobalKey();
+  final screenshotWidget = RepaintBoundary(
+    key: repaintKey,
+    child: MediaQuery(
+      data: MediaQuery.of(context),
+      child: Theme(
+        data: Theme.of(context),
+        child: CalendarScreenshotWidget(
+          bangumiCalendar: calendarToCapture,
+          captureTime: captureTime,
+        ),
+      ),
+    ),
+  );
+
+  final renderEntry = OverlayEntry(
+    builder: (_) => Positioned(
+      left: -10000,
+      child: SizedBox(width: 800, child: screenshotWidget),
+    ),
+  );
+  overlayState.addOverlay(renderEntry);
+
+  await Future.delayed(const Duration(milliseconds: 1000));
+  await WidgetsBinding.instance.endOfFrame;
+  await WidgetsBinding.instance.endOfFrame;
+  await WidgetsBinding.instance.endOfFrame;
+
+  final boundary =
+      repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+
+  if (boundary == null) {
+    overlayState.remove(renderEntry);
+    Log.error('截图失败', 'RenderRepaintBoundary 为空');
+    return null;
+  }
+
+  final image = await boundary.toImage(pixelRatio: 2.0);
+  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  final bytes = byteData!.buffer.asUint8List();
+
+  overlayState.remove(renderEntry);
+  return bytes;
+}
+
+Future<void> captureBangumiCalendarScreenshot(
+  BuildContext context,
+  List<List<BangumiItem>> bangumiCalendar,
+) async {
+  final overlayState = context.findAncestorStateOfType<OverlayWidgetState>();
+  OverlayEntry? loadingEntry;
+
+  void showLoading(String message) {
+    loadingEntry?.remove();
+    loadingEntry = OverlayEntry(
+      builder: (_) => LoadingOverlay(message: message),
+    );
+    overlayState?.addOverlay(loadingEntry!);
+  }
+
+  void removeLoading() {
+    if (loadingEntry != null) {
+      overlayState?.remove(loadingEntry!);
+      loadingEntry = null;
+    }
+  }
+
+  try {
+    showLoading('正在加载图片...');
+
+    final imageUrls = bangumiCalendar
+        .expand((day) => day)
+        .map((item) => item.images['large'])
+        .whereType<String>()
+        .toSet()
+        .toList();
+
+    const batchSize = 8;
+    for (var i = 0; i < imageUrls.length; i += batchSize) {
+      final batch = imageUrls.sublist(
+        i,
+        (i + batchSize).clamp(0, imageUrls.length),
+      );
+      await Future.wait(
+        batch.map((url) async {
+          try {
+            await precacheImage(
+              CachedImageProvider(url, sourceKey: 'bangumi'),
+              context,
+            );
+          } catch (_) {}
+        }),
+      );
+    }
+
+    removeLoading();
+
+    if (!context.mounted) return;
+
+    final captureTime = DateTime.now();
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => _ScreenshotPreviewSheet(
+        bangumiCalendar: bangumiCalendar,
+        captureTime: captureTime,
+      ),
+    );
+
+    if (result == null || !context.mounted) return;
+
+    showLoading('正在生成截图...');
+
+    final bytes = await generateBangumiCalendarPng(
+      context: context,
+      bangumiCalendar: bangumiCalendar,
+      captureTime: captureTime,
+      showWeekly: result == 'weekly',
+    );
+
+    removeLoading();
+
+    if (bytes == null) {
+      if (context.mounted) {
+        ImageSaver.showResult(success: false, message: '截图失败');
+      }
+      return;
+    }
+
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    if (context.mounted) {
+      await ImageSaver.saveImage(
+        bytes: bytes,
+        filename: result == 'weekly'
+            ? 'timetable_weekly_$timestamp.png'
+            : 'timetable_today_$timestamp.png',
+      );
+    }
+  } catch (e) {
+    removeLoading();
+    if (context.mounted) {
+      ImageSaver.showResult(success: false, message: '截图失败: $e');
+    }
+    Log.error('截图失败', '$e');
   }
 }

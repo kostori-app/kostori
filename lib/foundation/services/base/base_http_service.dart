@@ -261,6 +261,77 @@ abstract class BaseHttpService implements BaseService {
     );
 
     addGet(
+      '/bangumi/calendar/screenshot',
+      (req) async {
+        final mode = req.uri.queryParameters['mode'] ?? 'weekly';
+        final showWeekly = mode != 'today';
+
+        // 需要一个 BuildContext 来渲染截图，这里复用应用的 navigator 上下文
+        final context = App.mainNavigatorKey?.currentContext;
+        if (context == null) {
+          await sendError(
+            req,
+            HttpStatus.serviceUnavailable,
+            'NO_CONTEXT',
+            'Flutter context not available',
+          );
+          return;
+        }
+
+        try {
+          final calendar = await loadBangumiCalendar();
+          final bytes = await generateBangumiCalendarPng(
+            context: context,
+            bangumiCalendar: calendar,
+            captureTime: DateTime.now(),
+            showWeekly: showWeekly,
+          );
+
+          if (bytes == null) {
+            await sendError(
+              req,
+              HttpStatus.internalServerError,
+              'CAPTURE_FAILED',
+              'Failed to generate screenshot',
+            );
+            return;
+          }
+
+          await sendImage(req, bytes);
+        } catch (e, s) {
+          HubLog.error('$runtimeType', '生成番剧时间表截图失败: $e\n$s');
+          await sendError(
+            req,
+            HttpStatus.internalServerError,
+            'SERVER_ERROR',
+            e.toString(),
+          );
+        }
+      },
+      middlewares: [authMiddleware],
+      doc: RouteDoc(
+        summary: '番剧时间表截图',
+        description: '返回番剧时间表截图，默认本周，可通过 ?mode=today 仅返回今天',
+        requiresAuth: true,
+        params: [
+          DocParam(
+            name: 'Authorization',
+            type: 'header',
+            description: 'Bearer <user-key>',
+            required: true,
+          ),
+          DocParam(
+            name: 'mode',
+            type: 'query',
+            description: '截图模式：weekly（默认，整周）或 today（仅今天）',
+            required: false,
+          ),
+        ],
+        response: '图片 PNG',
+      ),
+    );
+
+    addGet(
       '/health',
       (req) async {
         final uptime = DateTime.now().difference(_startTime);

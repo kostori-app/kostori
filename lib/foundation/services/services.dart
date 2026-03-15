@@ -20,6 +20,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:path/path.dart' as p;
