@@ -14,11 +14,7 @@ class AudioServiceManager {
 
   PlayerAudioHandler get handler {
     if (!_isInitialized) {
-      Log.addLog(
-        LogLevel.error,
-        'handler',
-        "AudioHandler has not been initialized yet",
-      );
+      Log.error('handler', "AudioHandler has not been initialized yet");
       throw Exception('AudioHandler has not been initialized yet');
     }
     return _handler!;

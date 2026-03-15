@@ -38,7 +38,7 @@ class SMTCManagerWindows {
 
       _isEnabled = true;
     } catch (e, st) {
-      Log.addLog(LogLevel.error, 'Failed to initialize SMTCWindows', '$e\n$st');
+      Log.error('Failed to initialize SMTCWindows', '$e\n$st');
     }
   }
 
@@ -104,7 +104,7 @@ class SMTCManagerWindows {
             as StreamSubscription,
       );
     } catch (e) {
-      Log.addLog(LogLevel.error, 'SMTC setController error', '$e');
+      Log.error('SMTC setController error', '$e');
     }
   }
 

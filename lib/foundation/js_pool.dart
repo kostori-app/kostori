@@ -85,7 +85,7 @@ class IsolateJsEngine {
         }
       }
     } else if (message is Exception) {
-      Log.error("IsolateJsEngine", message.toString());
+      SourceLog.error("IsolateJsEngine", message.toString());
       for (var completer in _tasks.values) {
         completer.completeError(message);
       }

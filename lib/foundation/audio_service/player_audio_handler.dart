@@ -73,7 +73,7 @@ class PlayerAudioHandler extends BaseAudioHandler {
       _broadcastState();
       // Log.addLog(LogLevel.info, "setController", '初始化系统通知栏');
     } catch (e) {
-      Log.addLog(LogLevel.error, "setController", e.toString());
+      Log.error("setController", e.toString());
     }
   }
 
@@ -85,7 +85,7 @@ class PlayerAudioHandler extends BaseAudioHandler {
       try {
         await sub.cancel();
       } catch (e) {
-        Log.addLog(LogLevel.error, "_clearListeners", e.toString());
+        Log.error("_clearListeners", e.toString());
       }
     }
     _subscriptions.clear();
@@ -154,8 +154,7 @@ class PlayerAudioHandler extends BaseAudioHandler {
     );
 
     if (appdata.settings['debugInfo']) {
-      Log.addLog(
-        LogLevel.info,
+      Log.info(
         "_broadcastState",
         "更新状态中: \n playing: ${player.state.playing} \n updatePosition: ${player.state.position} \n bufferedPosition: ${player.state.buffer} \n updated: ${playbackState.value} \n duration: ${_controller!.duration} \n _getProcessingState: ${_getProcessingState(player.state)}",
       );
@@ -170,25 +169,21 @@ class PlayerAudioHandler extends BaseAudioHandler {
 
   @override
   Future<void> play() {
-    Log.addLog(LogLevel.info, "AudioService.play", "${_controller?.playing}");
+    Log.info("AudioService.play", "${_controller?.playing}");
     _willPlayWhenReady = true;
     return _controller?.play(isAudioHandler: false) ?? Future.value();
   }
 
   @override
   Future<void> pause() {
-    Log.addLog(LogLevel.info, "AudioService.pause", "${_controller?.playing}");
+    Log.info("AudioService.pause", "${_controller?.playing}");
     _willPlayWhenReady = false;
     return _controller?.pause() ?? Future.value();
   }
 
   @override
   Future<void> skipToNext() {
-    Log.addLog(
-      LogLevel.info,
-      "AudioService.skipToNext",
-      "${_controller?.playing}",
-    );
+    Log.info("AudioService.skipToNext", "${_controller?.playing}");
     return _controller?.playNextEpisode() ?? Future.value();
   }
 
@@ -212,9 +207,9 @@ class PlayerAudioHandler extends BaseAudioHandler {
         }
       });
 
-      Log.addLog(LogLevel.info, "stop", "updated: ${playbackState.value}");
+      Log.info("stop", "updated: ${playbackState.value}");
     } catch (e) {
-      Log.addLog(LogLevel.error, "stop", e.toString());
+      Log.error("stop", e.toString());
     }
   }
 

@@ -39,7 +39,7 @@ extension HubServiceRoutes on HubService {
           msgCount++;
           if (msgCount > 20) {
             // 静默丢弃，不断开（防止误伤正常用户）
-            Log.warning(
+            HubLog.warning(
               'HubService',
               '⚠️ 速率限制触发：${clientName ?? clientId ?? "unknown"}',
             );
@@ -50,12 +50,12 @@ extension HubServiceRoutes on HubService {
 
           if (!authed) {
             final token = data['token'] as String?;
-            Log.info('HubService', '收到鉴权  token=$token');
-            Log.info('HubService', 'activeKey=${ApiKeyManager().activeKey}');
+            HubLog.info('HubService', '收到鉴权  token=$token');
+            HubLog.info('HubService', 'activeKey=${ApiKeyManager().activeKey}');
 
             if (!_hubNoAuth) {
               if (token == null || !ApiKeyManager().validate(token)) {
-                Log.warning('HubService', '❌ 鉴权失败');
+                HubLog.warning('HubService', '❌ 鉴权失败');
                 await socket.close(
                   WebSocketStatus.policyViolation,
                   'Unauthorized',
@@ -63,7 +63,7 @@ extension HubServiceRoutes on HubService {
                 return;
               }
             } else {
-              Log.info('HubService', '🔓 免密模式，跳过鉴权');
+              HubLog.info('HubService', '🔓 免密模式，跳过鉴权');
             }
 
             authed = true;
@@ -75,7 +75,7 @@ extension HubServiceRoutes on HubService {
               // 已有管理员在线，新连接必须也持有 admin token 才能替换
               if (!_hubNoAuth &&
                   (token == null || !ApiKeyManager().validateAdmin(token))) {
-                Log.warning('HubService', '🚫 尝试伪装管理员账号：$deviceId');
+                HubLog.warning('HubService', '🚫 尝试伪装管理员账号：$deviceId');
                 await socket.close(
                   WebSocketStatus.policyViolation,
                   'Forbidden',
@@ -90,7 +90,10 @@ extension HubServiceRoutes on HubService {
             );
 
             if (_blacklist.contains(clientId)) {
-              Log.warning('HubService', '🚫 黑名单用户尝试连接：$clientName ($clientId)');
+              HubLog.warning(
+                'HubService',
+                '🚫 黑名单用户尝试连接：$clientName ($clientId)',
+              );
               _logEvent('🚫 Blocked blacklisted user: $clientName');
               await socket.close(WebSocketStatus.policyViolation, 'Banned');
               return;
@@ -119,7 +122,7 @@ extension HubServiceRoutes on HubService {
             );
 
             if (client.isGlobalAdmin) {
-              Log.info('HubService', '👑 管理员上线：$clientName');
+              HubLog.info('HubService', '👑 管理员上线：$clientName');
             }
             _clients[clientId] = client;
             _rooms[_lobbyId]!.participants[clientId] = client;
@@ -128,7 +131,7 @@ extension HubServiceRoutes on HubService {
             _logEvent(
               '🟢 $clientName${client.isGlobalAdmin ? " 👑" : ""} joined (${_clients.length} online)',
             );
-            Log.info(
+            HubLog.info(
               'HubService',
               '🟢 $clientName ($clientId)  共${_clients.length}个',
             );
@@ -167,7 +170,7 @@ extension HubServiceRoutes on HubService {
         _clients.remove(clientId);
         onClientsChanged?.call();
         _logEvent('🔴 $clientName left (${_clients.length} online)');
-        Log.info(
+        HubLog.info(
           'HubService',
           '🔴 $clientName ($clientId)  剩${_clients.length}个',
         );

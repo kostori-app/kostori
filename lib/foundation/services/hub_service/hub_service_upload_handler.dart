@@ -113,7 +113,7 @@ extension HubServiceUploadHandler on HubService {
       final hash = md5.convert(parsed.bytes).toString();
       final cached = _uploadCache[hash];
       if (cached != null) {
-        Log.info('HubUpload', 'cache hit: $hash → $cached');
+        HubLog.info('HubUpload', 'cache hit: $hash → $cached');
         await sendJson(request, {'url': cached});
         return;
       }
@@ -145,13 +145,13 @@ extension HubServiceUploadHandler on HubService {
 
       // ── 写缓存 & 返回 ─────────────────────────────────────────────────
       _uploadCache[hash] = url;
-      Log.info(
+      HubLog.info(
         'HubUpload',
         '✅ ${parsed.filename} (${parsed.bytes.length}B) $hash → $url',
       );
       await sendJson(request, {'url': url});
     } catch (e, st) {
-      Log.error('HubUpload', 'upload failed: $e\n$st');
+      HubLog.error('HubUpload', 'upload failed: $e\n$st');
       await sendJson(request, {
         'error': 'Upload failed: $e',
       }, status: HttpStatus.internalServerError);

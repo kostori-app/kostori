@@ -98,11 +98,7 @@ class RemotePlay {
                                             ).setUrl(video);
                                             DLNADevice(value.info).play();
                                           } catch (e) {
-                                            Log.addLog(
-                                              LogLevel.error,
-                                              'DLNA',
-                                              '$e',
-                                            );
+                                            PlayLog.error('DLNA', '$e');
                                             App.rootContext.showMessage(
                                               message: 'DLNA 异常: $e',
                                             );

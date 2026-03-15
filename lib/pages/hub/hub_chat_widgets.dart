@@ -961,7 +961,7 @@ class _BubbleImage extends StatelessWidget {
           heroTag: messageId,
         );
       } catch (e) {
-        Log.addLog(LogLevel.error, 'HubBubbleImage', '$e');
+        HubLog.error('HubBubbleImage', '$e');
       }
     } else {
       await BangumiWidget.showImagePreview(

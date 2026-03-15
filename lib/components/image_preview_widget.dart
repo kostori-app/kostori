@@ -558,8 +558,8 @@ class _TopBar extends ConsumerWidget {
         }
       });
     } catch (e) {
-      Log.addLog(LogLevel.error, '删除失败', e.toString());
-      context.showMessage(message: '删除失败: $e');
+      Log.error('删除失败', e.toString());
+      context.showMessage(message: '删除失败: $e', level: LogLevel.error);
     }
   }
 

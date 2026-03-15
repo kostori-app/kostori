@@ -184,7 +184,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
           ),
         );
       } catch (e) {
-        Log.addLog(LogLevel.error, 'addStats', e.toString());
+        StatsLog.error('addStats', e.toString());
       }
     }
     setStats();

@@ -40,7 +40,7 @@ class ServerBinder {
           ? await _isPortAvailable(p, InternetAddressType.IPv6)
           : true;
       if (v4ok && v6ok) return p;
-      Log.warning('ServerBinder', '端口 $p 不可用，尝试 ${p + 1}...');
+      HubLog.warning('ServerBinder', '端口 $p 不可用，尝试 ${p + 1}...');
     }
     throw Exception('端口 $startPort 到 ${startPort + 9} 全部被占用');
   }
@@ -53,7 +53,7 @@ class ServerBinder {
     if (isRunning) return;
     _port = await findAvailablePort(preferredPort, mode);
     if (_port != preferredPort) {
-      Log.warning('ServerBinder', '⚠️ 端口 $preferredPort 被占用，改用 $_port');
+      HubLog.warning('ServerBinder', '⚠️ 端口 $preferredPort 被占用，改用 $_port');
     }
     switch (mode) {
       case BindMode.ipv4:
@@ -64,7 +64,7 @@ class ServerBinder {
         await _bindV4(_port!, onRequest);
         await _bindV6(_port!, onRequest);
     }
-    Log.info('ServerBinder', '✅ 已绑定：${boundAddresses.join(' | ')}');
+    HubLog.info('ServerBinder', '✅ 已绑定：${boundAddresses.join(' | ')}');
   }
 
   Future<void> _bindV4(int port, void Function(HttpRequest) onRequest) async {
@@ -81,7 +81,7 @@ class ServerBinder {
       );
       _serverV6!.listen(onRequest);
     } catch (e) {
-      Log.warning('ServerBinder', '⚠️ IPv6 绑定失败：$e');
+      HubLog.warning('ServerBinder', '⚠️ IPv6 绑定失败：$e');
     }
   }
 
@@ -118,7 +118,7 @@ class ServerBinder {
         await _bindSecureV6(_port!, onRequest, context);
     }
 
-    Log.info('ServerBinder', '🔒 HTTPS 已绑定：${boundAddresses.join(' | ')}');
+    HubLog.info('ServerBinder', '🔒 HTTPS 已绑定：${boundAddresses.join(' | ')}');
   }
 
   Future<void> _bindSecureV4(
@@ -148,7 +148,7 @@ class ServerBinder {
       );
       _serverV6!.listen(onRequest);
     } catch (e) {
-      Log.warning('ServerBinder', '⚠️ IPv6 HTTPS 绑定失败：$e');
+      HubLog.warning('ServerBinder', '⚠️ IPv6 HTTPS 绑定失败：$e');
     }
   }
 }

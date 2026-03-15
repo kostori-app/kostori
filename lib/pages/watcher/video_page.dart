@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
@@ -128,22 +127,8 @@ class _VideoPageState extends State<VideoPage>
         if (didPop) return;
         if (playerController.showTabBody) {
           closeTabBodyAnimated();
-          if (App.isAndroid) {
-            Log.addLog(
-              LogLevel.info,
-              'videoPopScope.showTabBody',
-              'isFullScreen: ${playerController.isFullScreen} \n showTabBody: ${playerController.showTabBody}',
-            );
-          }
         } else if (playerController.isFullScreen) {
           await playerController.toggleFullScreen(context);
-          if (App.isAndroid) {
-            Log.addLog(
-              LogLevel.info,
-              'videoPopScope.isFullScreen',
-              'isFullScreen: ${playerController.isFullScreen} \n showTabBody: ${playerController.showTabBody}',
-            );
-          }
         }
       },
       child: Observer(

@@ -90,7 +90,7 @@ abstract class _InfoController with Store {
       });
       isLoading = false;
     } catch (e) {
-      Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());
+      Log.error('queryBangumiInfoByID', e.toString());
     }
   }
 
@@ -108,7 +108,7 @@ abstract class _InfoController with Store {
         allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
       }
     } catch (e) {
-      Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
+      Log.error('queryBangumiEpisodeByID', e.toString());
     }
   }
 
@@ -183,7 +183,7 @@ abstract class _InfoController with Store {
             relationValue[a.relation]!.compareTo(relationValue[b.relation]!),
       );
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'queryBangumiCharactersByID', '$e\n$s');
+      Log.error('queryBangumiCharactersByID', '$e\n$s');
     }
   }
 

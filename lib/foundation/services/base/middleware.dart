@@ -66,7 +66,7 @@ class Middleware {
       try {
         return true;
       } catch (e, stack) {
-        Log.error('ErrorHandler', '$e', stack);
+        HubLog.error('ErrorHandler', '$e', stack);
         request.response
           ..statusCode = HttpStatus.internalServerError
           ..headers.contentType = ContentType.json

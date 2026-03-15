@@ -362,11 +362,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                       ),
                                     );
                                   } catch (e) {
-                                    Log.addLog(
-                                      LogLevel.error,
-                                      'addStats',
-                                      e.toString(),
-                                    );
+                                    Log.error('addStats', e.toString());
                                   }
                                 }
                               }

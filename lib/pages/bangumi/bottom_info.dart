@@ -141,7 +141,7 @@ class BottomInfoState extends State<BottomInfo>
       await infoController.queryBangumiInfoByID(id, defaultToDb: true);
       setState(() {});
     } catch (e) {
-      Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());
+      Log.error('queryBangumiInfoByID', e.toString());
     }
   }
 
@@ -150,7 +150,7 @@ class BottomInfoState extends State<BottomInfo>
       await infoController.queryBangumiEpisodeByID(id, defaultToDb: true);
       setState(() {});
     } catch (e) {
-      Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
+      Log.error('queryBangumiEpisodeByID', e.toString());
     }
   }
 

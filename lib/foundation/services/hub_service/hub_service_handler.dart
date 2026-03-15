@@ -40,7 +40,7 @@ extension HubServiceHandler on HubService {
     String fromId,
     Map<String, dynamic> data,
   ) async {
-    Log.info('send', '服务端接收: ${jsonEncode(data)}');
+    HubLog.info('send', '服务端接收: ${jsonEncode(data)}');
     final messageType = data['messageType'] as String? ?? 'broadcast';
 
     // ── 白名单校验：拒绝所有未知类型 ────────────────────────────────────────
@@ -49,7 +49,7 @@ extension HubServiceHandler on HubService {
         'type': 'error',
         'message': '非法消息类型：$messageType',
       });
-      Log.warning('HubService', '⚠️ 非法消息类型 "$messageType" from $fromId');
+      HubLog.warning('HubService', '⚠️ 非法消息类型 "$messageType" from $fromId');
       return;
     }
 

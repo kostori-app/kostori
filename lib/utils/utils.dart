@@ -504,7 +504,7 @@ class Utils {
         ),
       );
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'Invalid time format', '$rawTime\n$e\n$s');
+      Log.error('Invalid time format', '$rawTime\n$e\n$s');
       return const SizedBox.shrink();
     }
   }
@@ -649,7 +649,7 @@ class BangumiUtils {
           ? {shouldAdjustWeek: currentWeekEpisode}
           : {shouldAdjustWeek: lastPastEpisode};
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'findCurrentWeekEpisode', '$e\n$s');
+      Log.error('findCurrentWeekEpisode', '$e\n$s');
       return {false: null};
     }
   }

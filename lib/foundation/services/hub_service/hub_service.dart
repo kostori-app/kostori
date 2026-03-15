@@ -121,7 +121,7 @@ class HubService extends BaseHttpService {
       json['type'] = 'message';
       member.send(json);
     }
-    Log.info(
+    HubLog.info(
       'HubService',
       '📢 广播[${room.roomName}] from:${msg.sender.userId} to:${room.participants.length}个',
     );
@@ -182,7 +182,7 @@ class HubService extends BaseHttpService {
     final json = buildJson();
     target.send(json);
     _clients[msg.sender.userId]?.send(json);
-    Log.info(
+    HubLog.info(
       'HubService',
       '📩 单播  from:${msg.sender.userId}  to:$targetUserId',
     );

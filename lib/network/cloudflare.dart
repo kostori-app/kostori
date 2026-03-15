@@ -102,7 +102,7 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
   var uri = Uri.parse(url);
 
   SingleInstanceCookieJar.instance?.deleteCookieByName('cf_clearance');
-  Log.info("Cloudflare", "Cleared old cf_clearance");
+  NetLog.info("Cloudflare", "Cleared old cf_clearance");
 
   if (!App.isLinux) {
     try {
@@ -114,17 +114,9 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
           Uri(scheme: uri.scheme, host: uri.host, path: '/').toString(),
         ),
       );
-      Log.addLog(
-        LogLevel.info,
-        "Cloudflare",
-        "Cleared old cf_clearance from WebView",
-      );
+      NetLog.info("Cloudflare", "Cleared old cf_clearance from WebView");
     } catch (e) {
-      Log.addLog(
-        LogLevel.warning,
-        "Cloudflare",
-        "Failed to clear WebView cf_clearance: $e",
-      );
+      NetLog.warning("Cloudflare", "Failed to clear WebView cf_clearance: $e");
     }
   }
 
@@ -133,15 +125,11 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
       initialUrl: url,
       onTitleChange: (title, controller) async {
         if (await _isChallenging(controller, url)) {
-          Log.addLog(LogLevel.info, "Cloudflare", "Still challenging...");
+          NetLog.info("Cloudflare", "Still challenging...");
           return;
         }
 
-        Log.addLog(
-          LogLevel.info,
-          "Cloudflare",
-          "Challenge passed, extracting cookies...",
-        );
+        NetLog.info("Cloudflare", "Challenge passed, extracting cookies...");
 
         final ua = controller.userAgent;
         if (ua != null) {
@@ -170,17 +158,17 @@ void passCloudflare(CloudflareException e, void Function() onFinished) async {
         final currentUrl = (await controller.getUrl())?.toString() ?? '';
 
         if (currentUrl.contains("/cdn-cgi/")) {
-          Log.addLog(LogLevel.info, "Cloudflare", "Still redirecting...");
+          NetLog.info("Cloudflare", "Still redirecting...");
           return;
         }
 
         final success = await _trySaveCookies(controller, url, uri);
 
         if (!success) {
-          Log.addLog(LogLevel.info, "Cloudflare", "cf_clearance not ready");
+          NetLog.info("Cloudflare", "cf_clearance not ready");
           return;
         }
-        Log.addLog(LogLevel.info, "Cloudflare", "Challenge passed");
+        NetLog.info("Cloudflare", "Challenge passed");
         final ua = await controller.getUA();
         if (ua != null) {
           appdata.implicitData['ua'] = ua;
@@ -251,7 +239,7 @@ Future<bool> _isChallenging(dynamic controller, String url) async {
           '';
     }
   } catch (e) {
-    Log.addLog(LogLevel.info, "Cloudflare", "evaluateJavascript error: $e");
+    NetLog.info("Cloudflare", "evaluateJavascript error: $e");
     return true;
   }
 
@@ -260,11 +248,10 @@ Future<bool> _isChallenging(dynamic controller, String url) async {
       head.contains('interstitial') ||
       body.contains('reported-unsafe') ||
       body.contains('ERR_BLOCKED') ||
-      body.isEmpty; // 页面内容为空也视为未就绪
+      body.isEmpty;
 
   if (isSecurityBlock) {
-    Log.addLog(
-      LogLevel.info,
+    NetLog.info(
       "Cloudflare",
       "Security block page detected, treating as challenging",
     );
@@ -292,28 +279,20 @@ Future<bool> _trySaveCookies(dynamic controller, String url, Uri uri) async {
         cookiesMap = {for (var c in cookies) c.name: c.value.toString()};
       }
     } catch (e) {
-      Log.addLog(LogLevel.info, "Cloudflare", "getCookies error: $e");
+      NetLog.info("Cloudflare", "getCookies error: $e");
       continue;
     }
 
-    Log.addLog(LogLevel.info, "Cloudflare", "Attempt $i cookies: $cookiesMap");
+    NetLog.info("Cloudflare", "Attempt $i cookies: $cookiesMap");
 
     if (cookiesMap.containsKey('cf_clearance')) {
       _saveCookies(uri, cookiesMap);
-      Log.addLog(
-        LogLevel.info,
-        "Cloudflare",
-        "cf_clearance saved successfully!",
-      );
+      NetLog.info("Cloudflare", "cf_clearance saved successfully!");
       return true;
     }
   }
 
-  Log.addLog(
-    LogLevel.warning,
-    "Cloudflare",
-    "Failed to get cf_clearance after 3 attempts",
-  );
+  NetLog.warning("Cloudflare", "Failed to get cf_clearance after 3 attempts");
   return false;
 }
 
@@ -324,11 +303,7 @@ void _saveCookies(Uri uri, Map<String, String> cookies) {
       ? ".${splits.sublist(splits.length - 2).join('.')}"
       : ".$host";
 
-  Log.addLog(
-    LogLevel.info,
-    "Cloudflare",
-    "Saving cookies with domain: $domain",
-  );
+  NetLog.info("Cloudflare", "Saving cookies with domain: $domain");
 
   final rootUri = Uri(scheme: uri.scheme, host: uri.host, path: '/');
 

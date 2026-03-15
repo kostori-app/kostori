@@ -62,7 +62,7 @@ class TaskbarManager {
         }),
       );
     } catch (e) {
-      Log.addLog(LogLevel.error, 'TaskbarManager setController error', '$e');
+      Log.error('TaskbarManager setController error', '$e');
     }
   }
 

@@ -341,7 +341,7 @@ class PageJumpTarget {
         ),
       );
     } else {
-      Log.error("Page Jump", "Unknown page: $page");
+      SourceLog.error("Page Jump", "Unknown page: $page");
     }
   }
 

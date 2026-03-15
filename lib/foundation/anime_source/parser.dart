@@ -139,7 +139,6 @@ class AnimeSourceParser {
       account: _loadAccountConfig(),
       categoryData: _loadCategoryData(),
       categoryAnimesData: _loadCategoryAnimesData(),
-      favoriteData: _loadFavoriteData(),
       explorePages: _loadExploreData(),
       searchPageData: _loadSearchData(),
       settings: _parseSettings(),
@@ -216,7 +215,7 @@ class AnimeSourceParser {
           source.saveData();
           return const Res(true);
         } catch (e, s) {
-          Log.error("Network", "$e\n$s");
+          SourceLog.error("Network", "$e\n$s");
           return Res.error(e.toString());
         }
       };
@@ -257,7 +256,7 @@ class AnimeSourceParser {
           """);
           return res;
         } catch (e, s) {
-          Log.error("Network", "$e\n$s");
+          SourceLog.error("Network", "$e\n$s");
           return false;
         }
       };
@@ -332,7 +331,7 @@ class AnimeSourceParser {
               ),
             );
           } catch (e, s) {
-            Log.error("Data Analysis", "$e\n$s");
+            SourceLog.error("Data Analysis", "$e\n$s");
             return Res.error(e.toString());
           }
         };
@@ -351,7 +350,7 @@ class AnimeSourceParser {
                 subData: res["maxPage"],
               );
             } catch (e, s) {
-              Log.error("Network", "$e\n$s");
+              SourceLog.error("Network", "$e\n$s");
               return Res.error(e.toString());
             }
           };
@@ -369,7 +368,7 @@ class AnimeSourceParser {
                 subData: res["next"],
               );
             } catch (e, s) {
-              Log.error("Network", "$e\n$s");
+              SourceLog.error("Network", "$e\n$s");
               return Res.error(e.toString());
             }
           };
@@ -394,7 +393,7 @@ class AnimeSourceParser {
               ),
             );
           } catch (e, s) {
-            Log.error("Data Analysis", "$e\n$s");
+            SourceLog.error("Data Analysis", "$e\n$s");
             return Res.error(e.toString());
           }
         };
@@ -422,7 +421,7 @@ class AnimeSourceParser {
             }
             return Res(list, subData: res['maxPage']);
           } catch (e, s) {
-            Log.error("Network", "$e\n$s");
+            SourceLog.error("Network", "$e\n$s");
             return Res.error(e.toString());
           }
         };
@@ -621,7 +620,10 @@ class AnimeSourceParser {
           }
           return Res(options);
         } catch (e) {
-          Log.error("Data Analysis", "Failed to load category options.\n$e");
+          SourceLog.error(
+            "Data Analysis",
+            "Failed to load category options.\n$e",
+          );
           return Res.error(e.toString());
         }
       };
@@ -657,7 +659,7 @@ class AnimeSourceParser {
               subData: res["maxPage"],
             );
           } catch (e, s) {
-            Log.error("Network", "$e\n$s");
+            SourceLog.error("Network", "$e\n$s");
             return Res.error(e.toString());
           }
         };
@@ -676,7 +678,7 @@ class AnimeSourceParser {
               subData: res["next"],
             );
           } catch (e, s) {
-            Log.error("Network", "$e\n$s");
+            SourceLog.error("Network", "$e\n$s");
             return Res.error(e.toString());
           }
         };
@@ -708,7 +710,7 @@ class AnimeSourceParser {
             subData: res["maxPage"],
           );
         } catch (e, s) {
-          Log.error("Network", "$e\n$s");
+          SourceLog.error("Network", "$e\n$s");
           return Res.error(e.toString());
         }
       },
@@ -759,7 +761,7 @@ class AnimeSourceParser {
             subData: res["maxPage"],
           );
         } catch (e, s) {
-          Log.error("Network", "$e\n$s");
+          SourceLog.error("Network", "$e\n$s");
           return Res.error(e.toString());
         }
       };
@@ -778,7 +780,7 @@ class AnimeSourceParser {
             subData: res["next"],
           );
         } catch (e, s) {
-          Log.error("Network", "$e\n$s");
+          SourceLog.error("Network", "$e\n$s");
           return Res.error(e.toString());
         }
       };
@@ -798,7 +800,7 @@ class AnimeSourceParser {
         res['sourceKey'] = _key;
         return Res(AnimeDetails.fromJson(res));
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };
@@ -812,176 +814,10 @@ class AnimeSourceParser {
         """);
         return res;
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };
-  }
-
-  FavoriteData? _loadFavoriteData() {
-    if (!_checkExists("favorites")) return null;
-
-    final bool multiFolder = _getValue("favorites.multiFolder");
-    final bool? isOldToNewSort = _getValue("favorites.isOldToNewSort");
-
-    Future<Res<T>> retryZone<T>(Future<Res<T>> Function() func) async {
-      if (!AnimeSource.find(_key!)!.isLogged) {
-        return const Res.error("Not login");
-      }
-      var res = await func();
-      if (res.error && res.errorMessage!.contains("Login expired")) {
-        var reLoginRes = await AnimeSource.find(_key!)!.reLogin();
-        if (!reLoginRes) {
-          return const Res.error("Login expired and re-login failed");
-        } else {
-          return func();
-        }
-      }
-      return res;
-    }
-
-    Future<Res<bool>> addOrDelFavFunc(
-      String animeId,
-      String folderId,
-      bool isAdding,
-      String? favId,
-    ) async {
-      func() async {
-        try {
-          await JsEngine().runCode("""
-            AnimeSource.sources.$_key.favorites.addOrDelFavorite(
-              ${jsonEncode(animeId)}, ${jsonEncode(folderId)}, ${jsonEncode(isAdding)})
-          """);
-          return const Res(true);
-        } catch (e, s) {
-          Log.error("Network", "$e\n$s");
-          return Res<bool>.error(e.toString());
-        }
-      }
-
-      return retryZone(func);
-    }
-
-    Future<Res<List<Anime>>> Function(int page, [String? folder])? loadAnime;
-
-    Future<Res<List<Anime>>> Function(String? next, [String? folder])? loadNext;
-
-    if (_checkExists("favorites.loadAnimes")) {
-      loadAnime = (int page, [String? folder]) async {
-        Future<Res<List<Anime>>> func() async {
-          try {
-            var res = await JsEngine().runCode("""
-            AnimeSource.sources.$_key.favorites.loadAnimes(
-              ${jsonEncode(page)}, ${jsonEncode(folder)})
-          """);
-            return Res(
-              List.generate(
-                res["animes"].length,
-                (index) => Anime.fromJson(res["animes"][index], _key!),
-              ),
-              subData: res["maxPage"],
-            );
-          } catch (e, s) {
-            Log.error("Network", "$e\n$s");
-            return Res.error(e.toString());
-          }
-        }
-
-        return retryZone(func);
-      };
-    }
-
-    if (_checkExists("favorites.loadNext")) {
-      loadNext = (String? next, [String? folder]) async {
-        Future<Res<List<Anime>>> func() async {
-          try {
-            var res = await JsEngine().runCode("""
-            AnimeSource.sources.$_key.favorites.loadNext(
-              ${jsonEncode(next)}, ${jsonEncode(folder)})
-          """);
-            return Res(
-              List.generate(
-                res["animes"].length,
-                (index) => Anime.fromJson(res["animes"][index], _key!),
-              ),
-              subData: res["next"],
-            );
-          } catch (e, s) {
-            Log.error("Network", "$e\n$s");
-            return Res.error(e.toString());
-          }
-        }
-
-        return retryZone(func);
-      };
-    }
-
-    Future<Res<Map<String, String>>> Function([String? animeId])? loadFolders;
-
-    Future<Res<bool>> Function(String name)? addFolder;
-
-    Future<Res<bool>> Function(String key)? deleteFolder;
-
-    if (multiFolder) {
-      loadFolders = ([String? animeId]) async {
-        Future<Res<Map<String, String>>> func() async {
-          try {
-            var res = await JsEngine().runCode("""
-            AnimeSource.sources.$_key.favorites.loadFolders(${jsonEncode(animeId)})
-          """);
-            List<String>? subData;
-            if (res["favorited"] != null) {
-              subData = List.from(res["favorited"]);
-            }
-            return Res(Map.from(res["folders"]), subData: subData);
-          } catch (e, s) {
-            Log.error("Network", "$e\n$s");
-            return Res.error(e.toString());
-          }
-        }
-
-        return retryZone(func);
-      };
-      if (_checkExists("favorites.addFolder")) {
-        addFolder = (name) async {
-          try {
-            await JsEngine().runCode("""
-            AnimeSource.sources.$_key.favorites.addFolder(${jsonEncode(name)})
-          """);
-            return const Res(true);
-          } catch (e, s) {
-            Log.error("Network", "$e\n$s");
-            return Res.error(e.toString());
-          }
-        };
-      }
-      if (_checkExists("favorites.deleteFolder")) {
-        deleteFolder = (key) async {
-          try {
-            await JsEngine().runCode("""
-            AnimeSource.sources.$_key.favorites.deleteFolder(${jsonEncode(key)})
-          """);
-            return const Res(true);
-          } catch (e, s) {
-            Log.error("Network", "$e\n$s");
-            return Res.error(e.toString());
-          }
-        };
-      }
-    }
-
-    return FavoriteData(
-      key: _key!,
-      title: _name!,
-      multiFolder: multiFolder,
-      loadAnime: loadAnime,
-      loadNext: loadNext,
-      loadFolders: loadFolders,
-      addFolder: addFolder,
-      deleteFolder: deleteFolder,
-      addOrDelFavorite: addOrDelFavFunc,
-      isOldToNewSort: isOldToNewSort,
-    );
   }
 
   CommentsLoader? _parseCommentsLoader() {
@@ -997,7 +833,7 @@ class AnimeSourceParser {
           subData: res["maxPage"],
         );
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };
@@ -1014,7 +850,7 @@ class AnimeSourceParser {
           """);
           return const Res(true);
         } catch (e, s) {
-          Log.error("Network", "$e\n$s");
+          SourceLog.error("Network", "$e\n$s");
           return Res.error(e.toString());
         }
       }
@@ -1057,7 +893,10 @@ class AnimeSourceParser {
           AnimeSource.sources.$_key.anime.onThumbnailLoad(${jsonEncode(imageKey)})
         """);
       if (res is! Map) {
-        Log.error("Network", "function onThumbnailLoad return invalid data");
+        SourceLog.error(
+          "Network",
+          "function onThumbnailLoad return invalid data",
+        );
         throw "function onThumbnailLoad return invalid data";
       }
       return res as Map<String, dynamic>;
@@ -1075,7 +914,7 @@ class AnimeSourceParser {
         """);
         return Res(List<String>.from(res['thumbnails']), subData: res['next']);
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };
@@ -1092,7 +931,7 @@ class AnimeSourceParser {
         """);
         return const Res(true);
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };
@@ -1109,7 +948,7 @@ class AnimeSourceParser {
         """);
         return Res(res is num ? res.toInt() : 0);
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };
@@ -1126,7 +965,7 @@ class AnimeSourceParser {
         """);
         return Res(res is num ? res.toInt() : 0);
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };
@@ -1235,7 +1074,7 @@ class AnimeSourceParser {
         """);
         return const Res(true);
       } catch (e, s) {
-        Log.error("Network", "$e\n$s");
+        SourceLog.error("Network", "$e\n$s");
         return Res.error(e.toString());
       }
     };

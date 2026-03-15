@@ -44,13 +44,13 @@ Future<void> captureAndSave(BuildContext context) async {
     if (file == null) return;
 
     ImageSaver.showResult(success: true, message: '截图成功');
-    Log.addLog(LogLevel.info, '截图保存', file.path);
+    Log.info('截图保存', file.path);
 
     final data = await file.readAsBytes();
     await Share.shareFile(data: data, filename: filename, mime: 'image/png');
   } catch (e) {
     ImageSaver.showResult(success: false, message: '截图失败: $e');
-    Log.addLog(LogLevel.error, '截图失败', '$e');
+    Log.error('截图失败', '$e');
   }
 }
 

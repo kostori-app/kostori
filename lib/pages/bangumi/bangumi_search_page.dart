@@ -680,8 +680,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                     airDate = air != null ? formatDate(air) : '';
                     endDate = end != null ? formatDate(end) : '';
 
-                    Log.addLog(
-                      LogLevel.info,
+                    Log.info(
                       'pickDate',
                       "Air Date: $airDate, End Date: $endDate",
                     );

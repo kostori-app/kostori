@@ -415,11 +415,7 @@ class _TimetableState extends State<_Timetable> {
             item.copyWith(airTime: airTimeStr, extraInfo: episodeInfo),
           );
         } catch (e, s) {
-          Log.addLog(
-            LogLevel.error,
-            '解析airTime或处理剧集失败',
-            '${item.id}\n$airTimeStr\n$e\n$s',
-          );
+          Log.error('解析airTime或处理剧集失败', '${item.id}\n$airTimeStr\n$e\n$s');
         }
       }
 
@@ -430,7 +426,7 @@ class _TimetableState extends State<_Timetable> {
         setState(() => bangumiCalendar = todayItems);
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, '处理今日番剧失败', "$e\n$s");
+      Log.error('处理今日番剧失败', "$e\n$s");
       if (mounted) setState(() => bangumiCalendar = []);
     }
   }
@@ -523,12 +519,12 @@ class _TimetableState extends State<_Timetable> {
             final episodes = await BangumiManager().allEpInfoFind(item.id);
             if (episodes.isNotEmpty) result[item.id] = episodes;
           } catch (e, s) {
-            Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
+            Log.warning('_fetchBatchEpisodes', '${item.id}: $e\n$s');
           }
         }),
       );
     } catch (e, s) {
-      Log.addLog(LogLevel.warning, '批量获取剧集', '$e\n$s');
+      Log.warning('_fetchBatchEpisodes', '$e\n$s');
     }
 
     return result;

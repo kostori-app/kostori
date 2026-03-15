@@ -146,20 +146,23 @@ abstract class BaseHttpService implements BaseService {
     bool autoReconnect = true,
   }) async {
     try {
-      Log.info('$runtimeType', '🔌 连接到 $url');
+      HubLog.info('$runtimeType', '🔌 连接到 $url');
       final socket = await WebSocket.connect(url);
       _wsConnections[url] = socket;
 
       socket.listen(
         (data) => onMessage?.call(data),
         onDone: () async {
-          Log.info('$runtimeType', '🔌 断开连接：$url');
+          HubLog.info('$runtimeType', '🔌 断开连接：$url');
           _wsConnections.remove(url);
           onDone?.call();
 
           // 自动重连
           if (autoReconnect) {
-            Log.info('$runtimeType', '🔄 ${reconnectDelay.inSeconds}s 后重连...');
+            HubLog.info(
+              '$runtimeType',
+              '🔄 ${reconnectDelay.inSeconds}s 后重连...',
+            );
             await Future.delayed(reconnectDelay);
             await connectTo(
               url,
@@ -172,15 +175,15 @@ abstract class BaseHttpService implements BaseService {
           }
         },
         onError: (e) {
-          Log.error('$runtimeType', '连接错误：$e');
+          HubLog.error('$runtimeType', '连接错误：$e');
           onError?.call(e);
         },
       );
 
-      Log.info('$runtimeType', '✅ 已连接到 $url');
+      HubLog.info('$runtimeType', '✅ 已连接到 $url');
       return socket;
     } catch (e) {
-      Log.error('$runtimeType', '连接失败：$url  $e');
+      HubLog.error('$runtimeType', '连接失败：$url  $e');
       if (autoReconnect) {
         await Future.delayed(reconnectDelay);
         return connectTo(
@@ -197,7 +200,7 @@ abstract class BaseHttpService implements BaseService {
   void sendTo(String url, dynamic data) {
     final socket = _wsConnections[url];
     if (socket == null) {
-      Log.warning('$runtimeType', '⚠️ 未连接到 $url');
+      HubLog.warning('$runtimeType', '⚠️ 未连接到 $url');
       return;
     }
     socket.add(data is String ? data : jsonEncode(data));
@@ -496,9 +499,9 @@ abstract class BaseHttpService implements BaseService {
     _registerCommonRoutes();
     registerRoutes();
     await _binder.bind(preferredPort, mode, _handleRequest);
-    Log.info('$runtimeType', '✅ 启动完成：${boundAddresses.join(' | ')}');
-    Log.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
-    Log.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
+    HubLog.info('$runtimeType', '✅ 启动完成：${boundAddresses.join(' | ')}');
+    HubLog.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
+    HubLog.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
   }
 
   Future<void> startServerSecure({
@@ -519,9 +522,9 @@ abstract class BaseHttpService implements BaseService {
       privateKeyPath: privateKeyPath,
       password: password,
     );
-    Log.info('$runtimeType', '🔒 HTTPS 启动完成：${boundAddresses.join(' | ')}');
-    Log.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
-    Log.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
+    HubLog.info('$runtimeType', '🔒 HTTPS 启动完成：${boundAddresses.join(' | ')}');
+    HubLog.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
+    HubLog.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
   }
 
   Future<void> stopServer() async {
@@ -538,7 +541,7 @@ abstract class BaseHttpService implements BaseService {
     _wsClients.clear();
 
     await _binder.close();
-    Log.info('$runtimeType', '🛑 已停止');
+    HubLog.info('$runtimeType', '🛑 已停止');
   }
 
   // ── 路由注册 ──────────────────────────────────
@@ -581,7 +584,7 @@ abstract class BaseHttpService implements BaseService {
       final from = request.connectionInfo?.remoteAddress.address ?? '?';
       final watch = Stopwatch()..start();
 
-      Log.info(
+      HubLog.info(
         '$runtimeType',
         'isUpgrade=${WebSocketTransformer.isUpgradeRequest(request)}  path=$path',
       );
@@ -597,13 +600,13 @@ abstract class BaseHttpService implements BaseService {
           );
           return;
         }
-        Log.info('$runtimeType', '⚡ WS $path  (from $from)');
+        HubLog.info('$runtimeType', '⚡ WS $path  (from $from)');
         final socket = await WebSocketTransformer.upgrade(request);
         await wsHandler(socket, request);
         return;
       }
 
-      Log.info('$runtimeType', '→ $method $path  (from $from)');
+      HubLog.info('$runtimeType', '→ $method $path  (from $from)');
       final match = _router.resolve(method, path);
 
       if (match == null) {
@@ -624,12 +627,12 @@ abstract class BaseHttpService implements BaseService {
       await match.entry.handler(request);
 
       watch.stop();
-      Log.info(
+      HubLog.info(
         '$runtimeType',
         '← $method $path  ${watch.elapsedMilliseconds}ms',
       );
     } catch (e, stack) {
-      Log.error('$runtimeType', '❌ $e\n$stack');
+      HubLog.error('$runtimeType', '❌ $e\n$stack');
       try {
         await sendError(
           request,

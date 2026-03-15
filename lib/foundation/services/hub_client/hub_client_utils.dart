@@ -103,7 +103,7 @@ extension HubClientUtils on HubClient {
         return [info.machineId ?? '', info.name].join('|');
       }
     } catch (e) {
-      Log.warning('HubClient', '设备信息获取失败，降级：$e');
+      HubLog.warning('HubClient', '设备信息获取失败，降级：$e');
     }
     return '${Platform.operatingSystem}|$pid';
   }
@@ -120,7 +120,7 @@ extension HubClientUtils on HubClient {
       }
       if (App.isLinux) return (await DeviceInfoPlugin().linuxInfo).prettyName;
     } catch (e) {
-      Log.warning('HubClient', '获取设备名失败：$e');
+      HubLog.warning('HubClient', '获取设备名失败：$e');
     }
     return 'User';
   }

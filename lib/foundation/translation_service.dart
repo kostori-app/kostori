@@ -89,7 +89,7 @@ class TranslationService {
 
       return Res(buffer.toString());
     } catch (e) {
-      Log.addLog(LogLevel.warning, 'TranslationService', e.toString());
+      Log.warning('TranslationService', e.toString());
       return Res.error(e.toString());
     }
   }
@@ -107,7 +107,7 @@ class TranslationService {
 
       return Res(res);
     } catch (e) {
-      Log.addLog(LogLevel.warning, 'TranslationService', e.toString());
+      Log.warning('TranslationService', e.toString());
       return Res.error(e.toString());
     }
   }
@@ -125,7 +125,7 @@ class TranslationService {
 
       return Res(res);
     } catch (e) {
-      Log.addLog(LogLevel.warning, 'TranslationService', e.toString());
+      Log.warning('TranslationService', e.toString());
       return Res.error(e.toString());
     }
   }
@@ -143,7 +143,7 @@ class TranslationService {
 
       return Res(res);
     } catch (e) {
-      Log.addLog(LogLevel.warning, 'TranslationService', e.toString());
+      Log.warning('TranslationService', e.toString());
       return Res.error(e.toString());
     }
   }
@@ -161,7 +161,7 @@ class TranslationService {
 
       return Res(res);
     } catch (e) {
-      Log.addLog(LogLevel.warning, 'TranslationService', e.toString());
+      Log.warning('TranslationService', e.toString());
       return Res.error(e.toString());
     }
   }
@@ -179,7 +179,7 @@ class TranslationService {
 
       return Res(res);
     } catch (e) {
-      Log.addLog(LogLevel.warning, 'TranslationService', e.toString());
+      Log.warning('TranslationService', e.toString());
       return Res.error(e.toString());
     }
   }
@@ -707,13 +707,9 @@ class TranslationController extends ChangeNotifier {
   }
 
   Future<void> translate(String text, {String? targetLanguage}) async {
-    Log.addLog(
-      LogLevel.info,
-      'TranslationController',
-      '开始翻译，文本长度: ${text.length}',
-    );
+    Log.info('TranslationController', '开始翻译，文本长度: ${text.length}');
     if (_isTranslating) {
-      Log.addLog(LogLevel.warning, 'TranslationController', '翻译正在进行中，忽略此次请求');
+      Log.warning('TranslationController', '翻译正在进行中，忽略此次请求');
       return;
     }
 
@@ -725,18 +721,13 @@ class TranslationController extends ChangeNotifier {
     });
 
     final textToTranslate = text;
-    Log.addLog(
-      LogLevel.info,
-      'TranslationController',
-      '待翻译文本: $textToTranslate',
-    );
-    Log.addLog(LogLevel.info, 'TranslationController', '使用普通翻译');
+    Log.info('TranslationController', '待翻译文本: $textToTranslate');
+    Log.info('TranslationController', '使用普通翻译');
     final result = await _translationService.translate(
       textToTranslate,
       targetLanguage: targetLanguage,
     );
-    Log.addLog(
-      LogLevel.info,
+    Log.info(
       'TranslationController',
       '普通翻译结果: ${result.success ? "成功" : "失败"}, 数据长度: ${result.success ? result.data.length : result.errorMessage?.length}',
     );
@@ -748,11 +739,7 @@ class TranslationController extends ChangeNotifier {
         _isTranslationComplete = true;
       });
     } else {
-      Log.addLog(
-        LogLevel.error,
-        'TranslationController',
-        '翻译失败: ${result.errorMessage}',
-      );
+      Log.error('TranslationController', '翻译失败: ${result.errorMessage}');
       _setState(() {
         _rawTranslatedText = 'translate failed please try again later'.tl;
         _translatedText = _rawTranslatedText;

@@ -866,7 +866,12 @@
     "Let all members invite others": "允许所有成员邀请其他人加入房间",
     "Decline & Block": "拒绝并屏蔽",
     "Memes": "表情包",
-    "Meme saved": "已保存到表情包"
+    "Meme saved": "已保存到表情包",
+    "Network Info": "网络信息",
+    "Hub Info": "Hub信息",
+    "Stats Info": "统计信息",
+    "Source Info": "源信息",
+    "Player Info": "播放信息"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",

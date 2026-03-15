@@ -109,18 +109,14 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
             item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
           );
         } catch (e, s) {
-          Log.addLog(
-            LogLevel.error,
-            '处理番剧时间',
-            'ID:${item.id}, 时间:$airTimeStr\n$e\n$s',
-          );
+          Log.error('处理番剧时间', 'ID:${item.id}, 时间:$airTimeStr\n$e\n$s');
         }
       }
 
       _sortCalendarByTime(newCalendar);
       if (mounted) setState(() => bangumiCalendar = newCalendar);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, '处理番剧日历', '$e\n$s');
+      Log.error('处理番剧日历', '$e\n$s');
       if (mounted) setState(() => bangumiCalendar = []);
     }
   }
@@ -211,7 +207,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
         try {
           result.addAll(await _fetchBatchEpisodes(batch));
         } catch (e, s) {
-          Log.addLog(LogLevel.error, '获取剧集批次${i ~/ batchSize + 1}失败', '$e\n$s');
+          Log.error('获取剧集批次${i ~/ batchSize + 1}失败', '$e\n$s');
         }
       }
       appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
@@ -238,7 +234,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
               : await BangumiManager().allEpInfoFind(item.id);
           if (episodes.isNotEmpty) result[item.id] = episodes;
         } catch (e, s) {
-          Log.addLog(LogLevel.warning, '批量获取剧集', '${item.id}: $e\n$s');
+          Log.warning('批量获取剧集', '${item.id}: $e\n$s');
         }
       }),
     );
@@ -274,7 +270,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     try {
       return DateFormat('HH:mm').format(DateTime.parse(isoTime).toLocal());
     } catch (e, s) {
-      Log.addLog(LogLevel.error, '时间解析', '$e\n$s');
+      Log.warning('时间解析', '$e\n$s');
       return '00:00';
     }
   }
@@ -343,7 +339,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
               lastPastIndex = i;
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, '时间解析', '$e\n$s');
+            Log.error('时间解析', '$e\n$s');
           }
         }
       }
@@ -523,7 +519,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
       if (context.mounted) {
         ImageSaver.showResult(success: false, message: '截图失败: $e');
       }
-      Log.addLog(LogLevel.error, '截图失败', '$e');
+      Log.error('截图失败', '$e');
     }
   }
 

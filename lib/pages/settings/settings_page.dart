@@ -55,7 +55,7 @@ import 'package:yaml/yaml.dart';
 
 part 'about.dart';
 
-part 'app.dart';
+part 'app_settings.dart';
 
 part 'appearance.dart';
 
@@ -82,6 +82,8 @@ part 'hub_service_setting.dart';
 part 'hub_client_setting.dart';
 
 part 'hub_upload_settings.dart';
+
+part 'log_settings.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});
@@ -110,6 +112,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     "APP",
     "Network",
     "Service",
+    "Log",
     "About",
   ];
 
@@ -124,6 +127,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Icons.apps,
     Icons.public,
     Icons.miscellaneous_services_rounded,
+    Icons.receipt_long_rounded,
     Icons.info,
   ];
 
@@ -505,7 +509,8 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       7 => const AppSettings(),
       8 => const NetworkSettings(),
       9 => const ServiceSettings(),
-      10 => const AboutSettings(),
+      10 => const LogSettings(),
+      11 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }

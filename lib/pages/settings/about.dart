@@ -317,8 +317,11 @@ Future<Map<bool, String?>> checkUpdate() async {
     }
     return {false: null};
   } catch (e, s) {
-    App.rootContext.showMessage(message: 'Check update failed...'.tl);
-    Log.addLog(LogLevel.error, "checkUpdate", '$e\n$s');
+    App.rootContext.showMessage(
+      message: 'Check update failed...'.tl,
+      level: LogLevel.error,
+    );
+    Log.error("checkUpdate", '$e\n$s');
     return {false: null};
   }
 }
@@ -796,8 +799,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
     }
 
     if (latestVersion != value.values.first.toString()) {
-      Log.addLog(
-        LogLevel.info,
+      Log.info(
         "Version Consistent",
         '$latestVersion -> ${value.values.first.toString()}',
       );
@@ -854,10 +856,13 @@ class _UpdateDialogState extends State<UpdateDialog> {
             isDownloading = false;
           });
           if (CancelToken.isCancel(e)) {
-            App.rootContext.showMessage(message: "Download canceled");
+            App.rootContext.showMessage(
+              message: "Download canceled",
+              level: LogLevel.warning,
+            );
           } else {
             App.rootContext.showMessage(message: e.toString());
-            Log.addLog(LogLevel.error, 'startDownload', e.toString());
+            Log.error('startDownload', e.toString());
           }
         });
   }

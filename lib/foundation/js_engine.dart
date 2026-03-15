@@ -113,7 +113,7 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
       }
       _engine!.evaluate(utf8.decode(jsInit), name: "<init>");
     } catch (e, s) {
-      Log.error('JS Engine', 'JS Engine Init Error:\n$e\n$s');
+      SourceLog.error('JS Engine', 'JS Engine Init Error:\n$e\n$s');
     }
   }
 
@@ -125,7 +125,7 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
         switch (method) {
           case "log":
             String level = message["level"];
-            Log.addLog(
+            SourceLog.log(
               switch (level) {
                 "error" => LogLevel.error,
                 "warning" => LogLevel.warning,
@@ -224,7 +224,7 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
       }
       return null;
     } catch (e, s) {
-      Log.error("Failed to handle message: $message\n$e\n$s", "JsEngine");
+      SourceLog.error("JsEngine", "Failed to handle message: $message\n$e\n$s");
       rethrow;
     }
   }
@@ -314,7 +314,7 @@ mixin class _JSEngineApi {
       case "parse":
         if (_documents.length > 8) {
           var shouldDelete = _documents.keys.first;
-          Log.warning(
+          SourceLog.warning(
             "JS Engine",
             "Too many documents, deleting the oldest: $shouldDelete\n"
                 "Current documents: ${_documents.keys}",
@@ -526,7 +526,7 @@ mixin class _JSEngineApi {
           return value;
       }
     } catch (e, s) {
-      Log.error("JS Engine", "Failed to convert $type: $e", s);
+      SourceLog.error("JS Engine", "Failed to convert $type: $e", s);
       return null;
     }
   }

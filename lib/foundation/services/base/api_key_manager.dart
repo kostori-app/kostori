@@ -35,7 +35,9 @@ class ApiKeyManager {
   }
 
   bool get isUsingFixed => _useFixed;
+
   String? get fixedKey => _fixedKey;
+
   String? get randomKey => _randomKey;
 
   // ─────────────────────────────────────────
@@ -50,7 +52,9 @@ class ApiKeyManager {
   }
 
   bool get isUsingAdminFixed => _useAdminFixed;
+
   String? get adminFixedKey => _adminFixedKey;
+
   String? get adminRandomKey => _adminRandomKey;
 
   // ─────────────────────────────────────────
@@ -68,8 +72,8 @@ class ApiKeyManager {
     _useAdminFixed = appdata.implicitData[_useAdminFixedPref] ?? false;
     _adminRandomKey = _generateKey();
 
-    Log.info('ApiKeyManager', '用户层 activeKey：$activeKey');
-    Log.info('ApiKeyManager', '管理层 activeKey：$adminActiveKey');
+    HubLog.info('ApiKeyManager', '用户层 activeKey：$activeKey');
+    HubLog.info('ApiKeyManager', '管理层 activeKey：$adminActiveKey');
   }
 
   // ─────────────────────────────────────────
@@ -88,12 +92,12 @@ class ApiKeyManager {
 
   void regenerateRandomKey() {
     _randomKey = _generateKey();
-    Log.info('ApiKeyManager', '用户层随机 Key 已重新生成');
+    HubLog.info('ApiKeyManager', '用户层随机 Key 已重新生成');
   }
 
   void regenerateAdminRandomKey() {
     _adminRandomKey = _generateKey();
-    Log.info('ApiKeyManager', '管理层随机 Key 已重新生成');
+    HubLog.info('ApiKeyManager', '管理层随机 Key 已重新生成');
   }
 
   // ─────────────────────────────────────────

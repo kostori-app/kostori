@@ -2,7 +2,7 @@ part of 'package:kostori/foundation/services/services.dart';
 
 extension HubClientHandler on HubClient {
   void _handleMessage(Map<String, dynamic> data) {
-    Log.info('handle', '客户端接收: ${jsonEncode(data)}');
+    HubLog.info('handle', '客户端接收: ${jsonEncode(data)}');
     final event = HubEvent.fromJson(data);
 
     switch (event) {
@@ -41,7 +41,7 @@ extension HubClientHandler on HubClient {
             serverUploadEnabled: event.uploadEnabled,
           ),
         );
-        Log.info(
+        HubLog.info(
           'HubClient',
           '✅ 鉴权成功  ID：${event.yourId}  在线：${event.clients.length}个',
         );
@@ -64,7 +64,10 @@ extension HubClientHandler on HubClient {
             roomList: newRooms,
           ),
         );
-        Log.info('HubClient', '🚪 加入房间：${event.room.roomName}（离开：$prevRoomId）');
+        HubLog.info(
+          'HubClient',
+          '🚪 加入房间：${event.room.roomName}（离开：$prevRoomId）',
+        );
         for (final fn in List.of(_messageListeners)) {
           fn(data);
         }
@@ -97,7 +100,7 @@ extension HubClientHandler on HubClient {
 
       case HubEventPong():
         _pongTimeoutTimer?.cancel();
-        Log.info('HubClient', 'pong');
+        HubLog.info('HubClient', 'pong');
 
       case HubEventError():
         App.rootContext.showMessage(
@@ -113,7 +116,7 @@ extension HubClientHandler on HubClient {
         _handleSystem(event, data);
 
       case HubEventUnknown():
-        Log.warning('HubClient', '未知消息类型：${event.type}');
+        HubLog.warning('HubClient', '未知消息类型：${event.type}');
     }
   }
 
@@ -509,7 +512,7 @@ extension HubClientHandler on HubClient {
         );
 
       case HubSystemUnknown():
-        Log.warning('HubClient', '未知系统事件：${event.event}\n $data');
+        HubLog.warning('HubClient', '未知系统事件：${event.event}\n $data');
     }
     for (final fn in List.of(_messageListeners)) {
       fn(data);

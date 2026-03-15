@@ -346,11 +346,7 @@ class _PlayerItemState extends State<PlayerItem>
                                     playerController.playOrPause();
                                     return KeyEventResult.handled;
                                   } catch (e) {
-                                    Log.addLog(
-                                      LogLevel.error,
-                                      '播放器内部错误',
-                                      e.toString(),
-                                    );
+                                    PlayLog.error('播放器内部错误', e.toString());
                                     return KeyEventResult.ignored;
                                   }
                                 }
@@ -375,11 +371,7 @@ class _PlayerItemState extends State<PlayerItem>
                                         playerController.getPlayerTimer();
                                     return KeyEventResult.handled;
                                   } catch (e) {
-                                    Log.addLog(
-                                      LogLevel.error,
-                                      '播放器内部错误',
-                                      e.toString(),
-                                    );
+                                    PlayLog.error('播放器内部错误', e.toString());
                                     return KeyEventResult.ignored;
                                   }
                                 }
@@ -409,11 +401,7 @@ class _PlayerItemState extends State<PlayerItem>
                                         playerController.getPlayerTimer();
                                     return KeyEventResult.handled;
                                   } catch (e) {
-                                    Log.addLog(
-                                      LogLevel.error,
-                                      '左方向键被按下',
-                                      e.toString(),
-                                    );
+                                    PlayLog.error('左方向键被按下', e.toString());
                                     return KeyEventResult.ignored;
                                   }
                                 }
@@ -482,11 +470,7 @@ class _PlayerItemState extends State<PlayerItem>
                                       playerController.playerTimer =
                                           playerController.getPlayerTimer();
                                     } catch (e) {
-                                      Log.addLog(
-                                        LogLevel.error,
-                                        '播放器内部错误',
-                                        e.toString(),
-                                      );
+                                      PlayLog.error('播放器内部错误', e.toString());
                                     }
                                   }
                                 }

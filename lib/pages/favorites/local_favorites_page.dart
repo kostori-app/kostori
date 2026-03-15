@@ -793,11 +793,7 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
                                     ),
                                   );
                                 } catch (e) {
-                                  Log.addLog(
-                                    LogLevel.error,
-                                    'addStats',
-                                    e.toString(),
-                                  );
+                                  StatsLog.error('addStats', e.toString());
                                 }
                               }
                             }

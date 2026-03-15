@@ -313,7 +313,7 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
-                            Log.addLog(LogLevel.info, 'imageUrl', img);
+                            DebugLog.info('imageUrl', img);
                             BangumiWidget.showImagePreview(
                               context: context,
                               url: img,

@@ -17,12 +17,10 @@ export 'package:dio/dio.dart';
 class MyLogInterceptor implements Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (appdata.settings['debugInfo']) {
-      Log.error(
-        "Network",
-        "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}",
-      );
-    }
+    NetLog.error(
+      "Network",
+      "${err.requestOptions.method} ${err.requestOptions.path}\n$err\n${err.response?.data.toString()}",
+    );
     switch (err.type) {
       case DioExceptionType.badResponse:
         var statusCode = err.response?.statusCode;
@@ -102,30 +100,26 @@ class MyLogInterceptor implements Interceptor {
       content = response.data.toString();
     }
 
-    if (appdata.settings['debugInfo']) {
-      Log.addLog(
-        (response.statusCode != null && response.statusCode! < 400)
-            ? LogLevel.info
-            : LogLevel.error,
-        "Network",
-        "Response ${response.realUri.toString()} ${response.statusCode}\n"
-            "headers:\n$headers\n$content",
-      );
-    }
+    NetLog.log(
+      (response.statusCode != null && response.statusCode! < 400)
+          ? LogLevel.info
+          : LogLevel.error,
+      "Network",
+      "Response ${response.realUri.toString()} ${response.statusCode}\n"
+          "headers:\n$headers\n$content",
+    );
 
     handler.next(response);
   }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (appdata.settings['debugInfo']) {
-      Log.info(
-        "Network",
-        "${options.method} ${options.uri}\n"
-            "headers:\n${options.headers}\n"
-            "data:\n${options.data}",
-      );
-    }
+    NetLog.info(
+      "Network",
+      "${options.method} ${options.uri}\n"
+          "headers:\n${options.headers}\n"
+          "data:\n${options.data}",
+    );
 
     options.connectTimeout = const Duration(seconds: 15);
     options.receiveTimeout = const Duration(seconds: 15);

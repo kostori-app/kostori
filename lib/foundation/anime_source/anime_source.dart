@@ -23,8 +23,6 @@ import 'package:kostori/utils/translations.dart';
 
 part 'category.dart';
 
-part 'favorites.dart';
-
 part 'models.dart';
 
 part 'parser.dart';
@@ -64,7 +62,7 @@ class AnimeSourceManager with ChangeNotifier, Init {
           );
           _sources.add(source);
         } catch (e, s) {
-          Log.error("AnimeSource", "$e\n$s");
+          SourceLog.error("AnimeSource", "$e\n$s");
         }
       }
     }
@@ -205,9 +203,6 @@ class AnimeSource {
   /// Category animes data used to build a animes page with a category tag.
   final CategoryAnimesData? categoryAnimesData;
 
-  /// Favorite data used to build favorite page.
-  final FavoriteData? favoriteData;
-
   /// Explore pages.
   final List<ExplorePageData> explorePages;
 
@@ -303,7 +298,7 @@ class AnimeSource {
     final List accountData = data["account"];
     var res = await account!.login!(accountData[0], accountData[1]);
     if (res.error) {
-      Log.error("Failed to re-login", res.errorMessage ?? "Error");
+      SourceLog.error("Failed to re-login", res.errorMessage ?? "Error");
     }
     return !res.error;
   }
@@ -314,7 +309,6 @@ class AnimeSource {
     required this.account,
     required this.categoryData,
     required this.categoryAnimesData,
-    required this.favoriteData,
     required this.explorePages,
     required this.searchPageData,
     required this.settings,

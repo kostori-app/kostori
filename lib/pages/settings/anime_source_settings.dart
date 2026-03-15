@@ -297,7 +297,7 @@ class _BodyState extends State<_Body> {
       await addSource(content, fileName);
     } catch (e, s) {
       App.rootContext.showMessage(message: e.toString());
-      Log.error("Add anime source", "$e\n$s");
+      SourceLog.error("Add anime source", "$e\n$s");
     }
   }
 
@@ -332,7 +332,7 @@ class _BodyState extends State<_Body> {
     } catch (e, s) {
       if (cancel) return;
       context.showMessage(message: e.toString());
-      Log.error("Add anime source", "$e\n$s");
+      SourceLog.error("Add anime source", "$e\n$s");
     }
   }
 
@@ -561,7 +561,6 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
 void _validatePages() {
   List explorePages = appdata.settings['explore_pages'];
   List categoryPages = appdata.settings['categories'];
-  List networkFavorites = appdata.settings['favorites'];
 
   var totalExplorePages = AnimeSource.all()
       .map((e) => e.explorePages.map((e) => e.title))
@@ -569,11 +568,6 @@ void _validatePages() {
       .toList();
   var totalCategoryPages = AnimeSource.all()
       .map((e) => e.categoryData?.key)
-      .where((element) => element != null)
-      .map((e) => e!)
-      .toList();
-  var totalNetworkFavorites = AnimeSource.all()
-      .map((e) => e.favoriteData?.key)
       .where((element) => element != null)
       .map((e) => e!)
       .toList();
@@ -588,15 +582,9 @@ void _validatePages() {
       categoryPages.remove(page);
     }
   }
-  for (var page in List.from(networkFavorites)) {
-    if (!totalNetworkFavorites.contains(page)) {
-      networkFavorites.remove(page);
-    }
-  }
 
   appdata.settings['explore_pages'] = explorePages.toSet().toList();
   appdata.settings['categories'] = categoryPages.toSet().toList();
-  appdata.settings['favorites'] = networkFavorites.toSet().toList();
 
   appdata.saveData();
 }
@@ -617,10 +605,6 @@ void _addAllPagesWithAnimeSource(AnimeSource source) {
   if (source.categoryData != null &&
       !categoryPages.contains(source.categoryData!.key)) {
     categoryPages.add(source.categoryData!.key);
-  }
-  if (source.favoriteData != null &&
-      !networkFavorites.contains(source.favoriteData!.key)) {
-    networkFavorites.add(source.favoriteData!.key);
   }
   if (source.searchPageData != null && !searchPages.contains(source.key)) {
     searchPages.add(source.key);
@@ -751,14 +735,14 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
           try {
             await AnimeSourceSettings.update(source, false);
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'Update ${source.name}', '$e\n$s');
+            SourceLog.error('Update ${source.name}', '$e\n$s');
           }
           current++;
           loadingController.setProgress(current / total);
         }
       } catch (e, s) {
         context.showMessage(message: e.toString());
-        Log.addLog(LogLevel.error, 'Updates', '$e\n$s');
+        SourceLog.error('Updates', '$e\n$s');
       }
       loadingController.close();
     }
@@ -997,7 +981,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
           );
         }
       } catch (e, s) {
-        Log.error("animeSourcePage", "Failed to build a setting\n$e\n$s");
+        SourceLog.error("animeSourcePage", "Failed to build a setting\n$e\n$s");
       }
     }
   }

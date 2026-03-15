@@ -191,8 +191,8 @@ class _RenderDialogueComposePageState
           Size(frame.image.width.toDouble(), frame.image.height.toDouble()),
         );
       } catch (e) {
-        Log.addLog(LogLevel.warning, 'getImageSizes', e.toString());
-        sizes.add(const Size(0, 0)); // 失败时添加默认尺寸避免崩溃
+        Log.warning('getImageSizes', e.toString());
+        sizes.add(const Size(0, 0));
       }
     }
 
@@ -209,16 +209,12 @@ class _RenderDialogueComposePageState
         final frame = await codec.getNextFrame();
         firstImageHeight = frame.image.height.toDouble();
       } catch (e) {
-        Log.addLog(LogLevel.warning, '_initCropHeights', e.toString());
+        Log.warning('_initCropHeights', e.toString());
       }
     }
 
     setState(() {
-      Log.addLog(
-        LogLevel.info,
-        'firstImageHeight',
-        firstImageHeight.toString(),
-      );
+      Log.info('firstImageHeight', firstImageHeight.toString());
       cropHeights = List.generate(
         imageList.length,
         (index) => index == 0 ? firstImageHeight : 125.0,

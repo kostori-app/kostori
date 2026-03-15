@@ -200,6 +200,11 @@ class Settings with ChangeNotifier {
     'aiTranslatePrompt':
         "你是一个专业的@a母语译者，需将文本流畅地翻译为@a。\n\n## 翻译规则\n1. 仅输出译文内容，禁止解释或添加任何额外内容（如\"以下是翻译：\"、\"译文如下：\"等）\n2. 返回的译文必须和原文保持完全相同的段落数量和格式\n3. 如果文本包含HTML标签，请在翻译后考虑标签应放在译文的哪个位置，同时保持译文的流畅性\n4. 对于无需翻译的内容（如专有名词、代码等），请保留原文\n\n## Context Awareness\nDocument Metadata:\nTitle: 《Options》\n\n",
     'calendarFetchEpisodes': false,
+    'enableNetLog': true,
+    'enableHubLog': true,
+    "enableStatsLog": true,
+    "enableSourceLog": true,
+    'enablePlayerLog': true,
   };
 
   dynamic operator [](String key) {

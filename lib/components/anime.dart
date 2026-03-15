@@ -91,7 +91,7 @@ class AnimeTile extends ConsumerWidget {
           ),
         );
       } catch (e) {
-        Log.addLog(LogLevel.error, 'addStats', e.toString());
+        StatsLog.error('addStats', e.toString());
       }
     }
 

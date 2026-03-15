@@ -121,7 +121,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           ),
         );
       } catch (e) {
-        Log.addLog(LogLevel.error, 'addStats', e.toString());
+        StatsLog.error('addStats', e.toString());
       }
     }
 
@@ -247,7 +247,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   Future<void> updateBangumiId() async {
     if (Utils.containsIllegalCharacters(anime.title)) {
-      Log.addLog(LogLevel.warning, 'updateBangumiId', '名称不合法: ${anime.title}');
+      Log.warning('updateBangumiId', '名称不合法: ${anime.title}');
       return;
     }
     var res = await Bangumi.combinedBangumiSearch(anime.title);
@@ -263,8 +263,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (!matched) {
       debugPrint(Utils.isHalfOverlap(anime.title, res.first.name).toString());
       debugPrint(Utils.isHalfOverlap(anime.title, res.first.nameCn).toString());
-      Log.addLog(
-        LogLevel.warning,
+      Log.warning(
         'updateBangumiId',
         '名称不匹配: ${anime.title} - ${res.first.nameCn} - ${res.first.name}',
       );

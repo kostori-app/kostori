@@ -333,7 +333,7 @@ class BangumiWidget {
         ),
       );
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'showImagePreviewOverlay', '$e\n$s');
+      Log.error('showImagePreviewOverlay', '$e\n$s');
     }
   }
 

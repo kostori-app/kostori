@@ -155,7 +155,7 @@ class WatcherState extends State<Watcher>
             message: '加载剧集时出错 ${e.toString()}',
             context: context,
           );
-          Log.addLog(LogLevel.info, "playNextEpisode", "加载剧集时出错");
+          PlayLog.info("playNextEpisode", "加载剧集时出错");
         }
       } else {
         showCenter(
@@ -169,7 +169,7 @@ class WatcherState extends State<Watcher>
           message: '没有更多剧集可播放',
           context: context,
         );
-        Log.addLog(LogLevel.info, "下一集", "没有更多剧集可播放");
+        PlayLog.info("下一集", "没有更多剧集可播放");
       }
     });
   }
@@ -199,7 +199,7 @@ class WatcherState extends State<Watcher>
       return;
     }
     epIndex = episodeIndex;
-    Log.addLog(LogLevel.info, "加载剧集", "$episodeIndex");
+    PlayLog.info("加载剧集", "$episodeIndex");
 
     try {
       final progressFind = HistoryManager().progressFind(
@@ -209,11 +209,7 @@ class WatcherState extends State<Watcher>
         road,
       );
       if (progressFind == null) {
-        Log.addLog(
-          LogLevel.warning,
-          'progress not found',
-          '$episodeIndex-$road',
-        );
+        PlayLog.warning('progress not found', '$episodeIndex-$road');
         return;
       }
       this.progressFind = progressFind;
@@ -236,7 +232,7 @@ class WatcherState extends State<Watcher>
       );
 
       if (res is! String || res.isEmpty) {
-        Log.addLog(LogLevel.error, "加载剧集", "$res 不合法");
+        PlayLog.error("加载剧集", "$res 不合法");
         App.rootContext.showMessage(message: '获取视频链接异常');
         throw Exception("$res 不合法");
       }
@@ -255,7 +251,7 @@ class WatcherState extends State<Watcher>
       loaded = episodeIndex;
       updateHistory();
     } catch (e, s) {
-      Log.addLog(LogLevel.error, "_loadEpisode", "$e\n$s");
+      PlayLog.error("_loadEpisode", "$e\n$s");
     }
   }
 
@@ -265,7 +261,7 @@ class WatcherState extends State<Watcher>
         await playerController.player.open(Media(res, httpHeaders: headers));
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, "openMedia", "$e\n$s");
+      PlayLog.error("openMedia", "$e\n$s");
     }
     // 监听缓冲流
     var sub = playerController.player.stream.buffer.listen(null);

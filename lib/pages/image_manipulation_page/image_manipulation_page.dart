@@ -60,7 +60,7 @@ class ImagesNotifier extends StateNotifier<List<File>> {
       final folder = Directory(folderPath);
       if (!await folder.exists()) {
         await folder.create(recursive: true);
-        Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+        Log.info('创建截图文件夹成功', folderPath);
       }
       directory = folder;
     }
@@ -94,7 +94,7 @@ class ImagesNotifier extends StateNotifier<List<File>> {
         newList[i].deleteSync();
         newList.removeAt(i);
       } catch (e) {
-        Log.addLog(LogLevel.error, 'deleteIndexes', e.toString());
+        Log.error('deleteIndexes', e.toString());
       }
     }
     state = newList;
@@ -469,7 +469,7 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
       final folder = Directory(folderPath);
       if (!await folder.exists()) {
         await folder.create(recursive: true);
-        Log.addLog(LogLevel.info, '创建截图文件夹成功', folderPath);
+        Log.info('创建截图文件夹成功', folderPath);
       }
       dir = folder;
     }

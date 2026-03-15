@@ -25,8 +25,7 @@ abstract class _ShadersController with Store {
     if (!await shadersDirectory.exists()) {
       await shadersDirectory.create(recursive: true);
       if (appdata.settings['debugInfo']) {
-        Log.addLog(
-          LogLevel.info,
+        PlayLog.info(
           "shadersDirectory create",
           'Create GLSL Shader: ${shadersDirectory.path}',
         );
@@ -45,8 +44,7 @@ abstract class _ShadersController with Store {
       final targetFile = File(path.join(shadersDirectory.path, fileName));
       if (await targetFile.exists()) {
         if (appdata.settings['debugInfo']) {
-          Log.addLog(
-            LogLevel.info,
+          PlayLog.info(
             "targetFile exists",
             'GLSL Shader exists, skip: ${targetFile.path}',
           );
@@ -60,23 +58,14 @@ abstract class _ShadersController with Store {
         await targetFile.writeAsBytes(bytes);
         copiedFilesCount++;
         if (appdata.settings['debugInfo']) {
-          Log.addLog(
-            LogLevel.info,
-            "targetFile writeAsBytes",
-            'Copy: ${targetFile.path}',
-          );
+          PlayLog.info("targetFile writeAsBytes", 'Copy: ${targetFile.path}');
         }
       } catch (e) {
-        Log.addLog(
-          LogLevel.warning,
-          "targetFile writeAsBytes",
-          'Copy: ($filePath): $e',
-        );
+        PlayLog.warning("targetFile writeAsBytes", 'Copy: ($filePath): $e');
       }
     }
     if (appdata.settings['debugInfo']) {
-      Log.addLog(
-        LogLevel.info,
+      PlayLog.info(
         "copyShadersToExternalDirectory",
         '$copiedFilesCount GLSL files copied to ${shadersDirectory.path}',
       );

@@ -374,7 +374,7 @@ abstract class _PlayerController with Store {
           proxyUrl = 'http://$proxyUrl';
         }
         await pp.setProperty('http-proxy', proxyUrl);
-        Log.addLog(LogLevel.info, 'Player: HTTP 代理设置', proxyUrl);
+        PlayLog.info('Player: HTTP 代理设置', proxyUrl);
       }
     }
 
@@ -489,7 +489,7 @@ abstract class _PlayerController with Store {
       try {
         audioHandler.stop();
       } catch (e) {
-        Log.addLog(LogLevel.error, "clearController", e.toString());
+        PlayLog.error("clearController", e.toString());
       }
     }
     if (App.isDesktop) {
@@ -667,7 +667,7 @@ abstract class _PlayerController with Store {
                   child: InkWell(
                     onTap: () async {
                       await pause();
-                      Log.addLog(LogLevel.info, 'image图片路径', image);
+                      Log.info('image图片路径', image);
                       final file = File(image);
                       final data = await file.readAsBytes();
                       await Share.shareFile(
@@ -792,7 +792,7 @@ abstract class _PlayerController with Store {
     try {
       final Uint8List? screenData = await playerController.player.screenshot();
       if (screenData == null) {
-        Log.addLog(LogLevel.error, '截图失败', '截图数据为空');
+        Log.error('截图失败', '截图数据为空');
         return;
       }
 
@@ -810,7 +810,7 @@ abstract class _PlayerController with Store {
       saveAddress = file.path;
       showScreenshotPopup(context, saveAddress, filename);
       ImageSaver.showResult(success: true, message: '截图成功');
-      Log.addLog(LogLevel.info, '保存文件成功', file.path);
+      Log.info('保存文件成功', file.path);
 
       if (App.isAndroid) {
         const platform = MethodChannel('kostori/media');
@@ -818,7 +818,7 @@ abstract class _PlayerController with Store {
       }
     } catch (e) {
       ImageSaver.showResult(success: false, message: '截图失败: $e');
-      Log.addLog(LogLevel.error, '截图失败', '$e');
+      Log.error('截图失败', '$e');
     }
   }
 

@@ -1,20 +1,43 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
+
+enum LogSource {
+  normal(null),
+  net(Icons.wifi_rounded),
+  hub(Icons.hub_rounded),
+  source(Icons.source),
+  stats(Icons.query_stats_outlined),
+  player(Icons.display_settings_rounded),
+  debug(Icons.bug_report_rounded);
+
+  final IconData? icon;
+
+  const LogSource(this.icon);
+}
 
 class LogItem {
   final LogLevel level;
   final String title;
   final String content;
+  final LogSource source;
   final DateTime time = DateTime.now();
 
   @override
-  toString() => "${level.name} $title $time \n$content\n\n";
+  toString() =>
+      "${level.name} ${source != LogSource.normal ? '[${source.name}] ' : ''}$title $time \n$content\n\n";
 
-  LogItem(this.level, this.title, this.content);
+  LogItem(
+    this.level,
+    this.title,
+    this.content, {
+    this.source = LogSource.normal,
+  });
 }
 
 enum LogLevel { error, warning, info }
@@ -45,7 +68,12 @@ class Log {
 
   static IOSink? _file;
 
-  static void addLog(LogLevel level, String title, String content) {
+  static void addLog(
+    LogLevel level,
+    String title,
+    String content, {
+    LogSource source = LogSource.normal,
+  }) {
     if (isMuted) return;
     if (_file == null && App.isInitialized) {
       Directory dir;
@@ -73,7 +101,7 @@ class Log {
         }
     }
 
-    var newLog = LogItem(level, title, content);
+    var newLog = LogItem(level, title, content, source: source);
 
     if (newLog == _logs.lastOrNull) {
       return;
@@ -119,5 +147,167 @@ class Log {
       res += log.toString();
     }
     return res;
+  }
+}
+
+/// 网络请求日志
+class NetLog {
+  NetLog._();
+
+  static const _settingKey = 'enableNetLog';
+
+  static bool get enabled => appdata.settings[_settingKey] as bool? ?? false;
+
+  static void info(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.info, title, content, source: LogSource.net);
+  }
+
+  static void warning(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.warning, title, content, source: LogSource.net);
+  }
+
+  static void error(String title, Object content, [Object? stackTrace]) {
+    if (!enabled) return;
+    var info = content.toString();
+    if (stackTrace != null) info += "\n${stackTrace.toString()}";
+    Log.addLog(LogLevel.error, title, info, source: LogSource.net);
+  }
+
+  static void log(LogLevel level, String title, String content) {
+    if (!enabled) return;
+    Log.addLog(level, title, content, source: LogSource.net);
+  }
+}
+
+/// Hub / WebSocket 日志
+class HubLog {
+  HubLog._();
+
+  static const _settingKey = 'enableHubLog';
+
+  static bool get enabled => appdata.settings[_settingKey] as bool? ?? false;
+
+  static void info(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.info, title, content, source: LogSource.hub);
+  }
+
+  static void warning(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.warning, title, content, source: LogSource.hub);
+  }
+
+  static void error(String title, Object content, [Object? stackTrace]) {
+    if (!enabled) return;
+    var info = content.toString();
+    if (stackTrace != null) info += "\n${stackTrace.toString()}";
+    Log.addLog(LogLevel.error, title, info, source: LogSource.hub);
+  }
+}
+
+class SourceLog {
+  SourceLog._();
+
+  static const _settingKey = 'enableSourceLog';
+
+  static bool get enabled => appdata.settings[_settingKey] as bool? ?? false;
+
+  static void info(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.info, title, content, source: LogSource.source);
+  }
+
+  static void warning(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.warning, title, content, source: LogSource.source);
+  }
+
+  static void error(String title, Object content, [Object? stackTrace]) {
+    if (!enabled) return;
+    var info = content.toString();
+    if (stackTrace != null) info += "\n${stackTrace.toString()}";
+    Log.addLog(LogLevel.error, title, info, source: LogSource.source);
+  }
+
+  static void log(LogLevel level, String title, String content) {
+    if (!enabled) return;
+    Log.addLog(level, title, content, source: LogSource.source);
+  }
+}
+
+class StatsLog {
+  StatsLog._();
+
+  static const _settingKey = 'enableStatsLog';
+
+  static bool get enabled => appdata.settings[_settingKey] as bool? ?? false;
+
+  static void info(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.info, title, content, source: LogSource.stats);
+  }
+
+  static void warning(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.warning, title, content, source: LogSource.stats);
+  }
+
+  static void error(String title, Object content, [Object? stackTrace]) {
+    if (!enabled) return;
+    var info = content.toString();
+    if (stackTrace != null) info += "\n${stackTrace.toString()}";
+    Log.addLog(LogLevel.error, title, info, source: LogSource.stats);
+  }
+}
+
+class PlayLog {
+  PlayLog._();
+
+  static const _settingKey = 'enablePlayerLog';
+
+  static bool get enabled => appdata.settings[_settingKey] as bool? ?? false;
+
+  static void info(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.info, title, content, source: LogSource.player);
+  }
+
+  static void warning(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.warning, title, content, source: LogSource.player);
+  }
+
+  static void error(String title, Object content, [Object? stackTrace]) {
+    if (!enabled) return;
+    var info = content.toString();
+    if (stackTrace != null) info += "\n${stackTrace.toString()}";
+    Log.addLog(LogLevel.error, title, info, source: LogSource.player);
+  }
+}
+
+class DebugLog {
+  DebugLog._();
+
+  static const _settingKey = 'debugInfo';
+
+  static bool get enabled => appdata.settings[_settingKey] as bool? ?? false;
+
+  static void info(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.info, title, content, source: LogSource.debug);
+  }
+
+  static void warning(String title, String content) {
+    if (!enabled) return;
+    Log.addLog(LogLevel.warning, title, content, source: LogSource.debug);
+  }
+
+  static void error(String title, Object content, [Object? stackTrace]) {
+    if (!enabled) return;
+    var info = content.toString();
+    if (stackTrace != null) info += "\n${stackTrace.toString()}";
+    Log.addLog(LogLevel.error, title, info, source: LogSource.debug);
   }
 }

@@ -498,7 +498,7 @@ class KostoriFolder {
         if (status.isPermanentlyDenied) {
           await openAppSettings();
         }
-        Log.addLog(LogLevel.warning, '权限请求失败', '权限请求失败');
+        Log.warning('权限请求失败', '权限请求失败');
         return null;
       }
     }
@@ -509,7 +509,7 @@ class KostoriFolder {
     );
 
     if (picturesDir == null) {
-      Log.addLog(LogLevel.error, '获取 Pictures 目录失败', '');
+      Log.error('获取 Pictures 目录失败', '');
       return null;
     }
 
@@ -520,7 +520,7 @@ class KostoriFolder {
     // 4. 如果文件夹不存在则创建
     if (!await folder.exists()) {
       await folder.create(recursive: true);
-      Log.addLog(LogLevel.info, '创建文件夹成功', folderPath);
+      Log.info('创建文件夹成功', folderPath);
     }
 
     return folder;
@@ -544,10 +544,10 @@ class ImageSaver {
         await platform.invokeMethod('scanFolder', {'path': file.parent.path});
       }
 
-      Log.addLog(LogLevel.info, '保存文件成功', file.path);
+      Log.info('保存文件成功', file.path);
     } catch (e) {
       showResult(success: false, message: '保存失败: $e');
-      Log.addLog(LogLevel.error, '保存失败', '$e');
+      Log.error('保存失败', '$e');
     } finally {
       await ref?.read(imagesProvider.notifier).loadImages();
     }
@@ -566,14 +566,14 @@ class ImageSaver {
 
       if (savedPath != null) {
         showResult(success: true);
-        Log.addLog(LogLevel.info, 'saveImageToGallery', savedPath);
+        Log.info('saveImageToGallery', savedPath);
       } else {
         showResult(success: false, message: '保存失败：权限或目录异常');
-        Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+        Log.error('保存失败：权限或目录异常', '');
       }
     } catch (e, s) {
       showResult(success: false, message: '保存失败: $e');
-      Log.addLog(LogLevel.error, 'saveImageToGallery', '$e\n$s');
+      Log.error('saveImageToGallery', '$e\n$s');
     }
   }
 
@@ -588,7 +588,7 @@ class ImageSaver {
       await file.writeAsBytes(bytes);
       return file;
     } catch (e) {
-      Log.addLog(LogLevel.error, '_writeFile', '$e');
+      Log.error('_writeFile', '$e');
       return null;
     }
   }
@@ -612,7 +612,7 @@ class ImageSaver {
 
       return file.path;
     } catch (e) {
-      Log.addLog(LogLevel.error, '_saveImageToLocalFolder', '$e');
+      Log.error('_saveImageToLocalFolder', '$e');
       return null;
     }
   }
@@ -622,7 +622,7 @@ class ImageSaver {
     if (App.isAndroid) {
       final folder = await KostoriFolder.checkPermissionAndPrepareFolder();
       if (folder == null) {
-        Log.addLog(LogLevel.error, '保存失败：权限或目录异常', '');
+        Log.error('保存失败：权限或目录异常', '');
         return null;
       }
       return folder.path;

@@ -48,7 +48,7 @@ class HubClientInfo {
 
   void send(Map<String, dynamic> data) {
     try {
-      Log.info('send', '服务端发送: ${jsonEncode(data)}');
+      HubLog.info('send', '服务端发送: ${jsonEncode(data)}');
       connection.add(jsonEncode(data));
     } catch (_) {}
   }

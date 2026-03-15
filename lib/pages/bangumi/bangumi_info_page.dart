@@ -228,7 +228,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
       await infoController.queryBangumiInfoByID(id);
       setState(() {});
     } catch (e) {
-      Log.addLog(LogLevel.error, 'queryBangumiInfoByID', e.toString());
+      Log.error('queryBangumiInfoByID', e.toString());
     }
   }
 
@@ -237,7 +237,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
       await infoController.queryBangumiEpisodeByID(id);
       setState(() {});
     } catch (e) {
-      Log.addLog(LogLevel.error, 'queryBangumiEpisodeByID', e.toString());
+      Log.error('queryBangumiEpisodeByID', e.toString());
     }
   }
 

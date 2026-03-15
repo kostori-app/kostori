@@ -115,7 +115,7 @@ class HubCrypto {
       final output = cipher.process(input);
       return base64Encode(output);
     } catch (e) {
-      Log.warning('HubCrypto', '加密失败：$e');
+      HubLog.warning('HubCrypto', '加密失败：$e');
       return plainText;
     }
   }
@@ -138,7 +138,7 @@ class HubCrypto {
       final output = cipher.process(Uint8List.fromList(input));
       return utf8.decode(output);
     } catch (e) {
-      Log.warning('HubCrypto', '解密失败：$e');
+      HubLog.warning('HubCrypto', '解密失败：$e');
       return encrypted;
     }
   }

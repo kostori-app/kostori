@@ -399,7 +399,7 @@ abstract mixin class _AnimePageActions {
                     );
                   }
                 } catch (e) {
-                  Log.addLog(LogLevel.error, "绑定bangumiId", "$e");
+                  Log.error("绑定bangumiId", "$e");
                 }
                 App.rootContext.showMessage(message: '绑定bangumiId成功');
                 Navigator.pop(context);
@@ -617,8 +617,8 @@ class _RatingDialogState extends State<RatingDialog> {
         App.rootContext.showMessage(message: '无改动');
       }
     } catch (e, s) {
-      App.rootContext.showMessage(message: '应用失败');
-      Log.addLog(LogLevel.error, 'save statsDataImpl', '$e \n $s');
+      App.rootContext.showMessage(message: '应用失败', level: LogLevel.error);
+      Log.error('save statsDataImpl', '$e \n $s');
     } finally {
       Navigator.pop(context);
     }

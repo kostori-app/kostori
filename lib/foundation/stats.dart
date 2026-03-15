@@ -754,7 +754,7 @@ class StatsManager with ChangeNotifier {
       _db.execute(sql, values);
       notifyListeners();
     } catch (e) {
-      Log.addLog(LogLevel.error, 'updateStats', e.toString());
+      StatsLog.error('updateStats', e.toString());
     }
   }
 
@@ -1194,7 +1194,7 @@ extension StatsHelper on StatsManager {
           manager.addStats(manager.createStatsData(id: id, type: type));
         }
       } catch (e) {
-        Log.addLog(LogLevel.error, 'addFavoriteRecord', e.toString());
+        StatsLog.error('addFavoriteRecord', e.toString());
       }
     }
 
@@ -1255,7 +1255,7 @@ extension StatsHelper on StatsManager {
           ),
         );
       } catch (e, s) {
-        Log.addLog(LogLevel.error, 'RatingDialog.addStats', '$e\n$s');
+        StatsLog.error('RatingDialog.addStats', '$e\n$s');
         return null;
       }
     }

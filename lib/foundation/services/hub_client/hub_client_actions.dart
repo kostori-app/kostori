@@ -2,7 +2,7 @@ part of 'package:kostori/foundation/services/services.dart';
 
 extension HubClientActions on HubClient {
   void _send(Map<String, dynamic> data) {
-    Log.info('send', '客户端发送: ${jsonEncode(data)}');
+    HubLog.info('send', '客户端发送: ${jsonEncode(data)}');
     _socket?.add(jsonEncode(data));
   }
 

@@ -33,7 +33,7 @@ class HubImageUploader {
     ProgressCallback? onProgress,
   }) async {
     final url = '${_httpUrl(serverBaseUrl)}/hub/upload';
-    Log.info(
+    HubLog.info(
       'HubUploader',
       '→ server upload  file=$fileName  size=${bytes.length}B  url=$url',
     );
@@ -60,7 +60,7 @@ class HubImageUploader {
       final msg = response.data is Map
           ? (response.data['error'] ?? 'Upload failed')
           : 'Upload failed (${response.statusCode})';
-      Log.warning('HubUploader', '✗ server upload failed: $msg');
+      HubLog.warning('HubUploader', '✗ server upload failed: $msg');
       throw Exception(msg.toString());
     }
 
@@ -70,11 +70,11 @@ class HubImageUploader {
 
     final resultUrl = data['url'] as String?;
     if (resultUrl == null || resultUrl.isEmpty) {
-      Log.warning('HubUploader', '✗ server returned no URL');
+      HubLog.warning('HubUploader', '✗ server returned no URL');
       throw Exception('Server returned no URL');
     }
 
-    Log.info('HubUploader', '✓ server upload ok → $resultUrl');
+    HubLog.info('HubUploader', '✓ server upload ok → $resultUrl');
     return resultUrl;
   }
 
@@ -123,7 +123,10 @@ class HubImageUploader {
       );
       authorization = 'AWS ${oss.accessKeyId}:$sig';
       putUrl = 'https://$endpoint/${oss.bucket}/$key';
-      Log.info('HubUploader', '→ S3-compatible upload  url=$putUrl  key=$key');
+      HubLog.info(
+        'HubUploader',
+        '→ S3-compatible upload  url=$putUrl  key=$key',
+      );
     } else {
       // ── 阿里云 OSS V1 ──────────────────────────────────
       final sts = 'PUT\n$contentMd5\n$contentType\n$date\n/${oss.bucket}/$key';
@@ -135,10 +138,10 @@ class HubImageUploader {
       );
       authorization = 'OSS ${oss.accessKeyId}:$sig';
       putUrl = 'https://${oss.bucket}.$endpoint/$key';
-      Log.info('HubUploader', '→ Aliyun OSS upload  url=$putUrl  key=$key');
+      HubLog.info('HubUploader', '→ Aliyun OSS upload  url=$putUrl  key=$key');
     }
 
-    Log.info(
+    HubLog.info(
       'HubUploader',
       '  size=${bytes.length}B  mime=$contentType  md5=$contentMd5',
     );
@@ -167,7 +170,7 @@ class HubImageUploader {
           response.statusCode! >= 200 &&
           response.statusCode! < 300) {
         final url = oss.accessUrl(key);
-        Log.info('HubUploader', '✓ OSS upload ok → $url');
+        HubLog.info('HubUploader', '✓ OSS upload ok → $url');
         return url;
       }
 
@@ -175,7 +178,7 @@ class HubImageUploader {
         'OSS upload failed: ${response.statusCode} ${response.data}',
       );
     } on DioException catch (e) {
-      Log.warning(
+      HubLog.warning(
         'HubUploader',
         '✗ OSS upload error  status=${e.response?.statusCode}  '
             'body=${e.response?.data}',

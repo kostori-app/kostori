@@ -306,7 +306,7 @@ class BangumiManager with ChangeNotifier {
       _db.execute("COMMIT");
     } catch (e, s) {
       _db.execute("ROLLBACK");
-      Log.addLog(LogLevel.error, 'batchAddBangumiData', '$e\n$s');
+      Log.error('batchAddBangumiData', '$e\n$s');
     }
   }
 

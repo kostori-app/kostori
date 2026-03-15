@@ -195,9 +195,9 @@ class HubClient {
     final deviceId = await getDeviceId();
     final displayName = name ?? savedName ?? await getDefaultDisplayName();
 
-    Log.info('HubClient', '连接到 $url  deviceId=$deviceId');
+    HubLog.info('HubClient', '连接到 $url  deviceId=$deviceId');
     _socket = await WebSocket.connect(url);
-    Log.info('HubClient', '✅ 已连接，发送鉴权...');
+    HubLog.info('HubClient', '✅ 已连接，发送鉴权...');
 
     _socket!.add(
       jsonEncode({
@@ -213,7 +213,7 @@ class HubClient {
     _socket!.listen(
       _handleRaw,
       onDone: () {
-        Log.info('HubClient', '🔴 连接断开');
+        HubLog.info('HubClient', '🔴 连接断开');
         _stopHeartbeat();
         _socket = null;
         _setState((s) => s.copyWith(isConnected: false, myId: null));
@@ -221,7 +221,7 @@ class HubClient {
         if (_shouldReconnect && autoReconnect) _scheduleReconnect();
       },
       onError: (e) {
-        Log.error('HubClient', '❌ 错误：$e');
+        HubLog.error('HubClient', '❌ 错误：$e');
         _stopHeartbeat();
         _socket = null;
         _setState((s) => s.copyWith(isConnected: false, myId: null));
@@ -272,7 +272,7 @@ class HubClient {
       result.remove('encrypted');
       return result;
     } catch (e) {
-      Log.warning('HubClient', '解密失败：$e');
+      HubLog.warning('HubClient', '解密失败：$e');
       return data;
     }
   }
@@ -286,7 +286,7 @@ class HubClient {
         ping();
         _pongTimeoutTimer?.cancel();
         _pongTimeoutTimer = Timer(const Duration(seconds: 10), () {
-          Log.warning('HubClient', '💀 pong 超时，断线重连');
+          HubLog.warning('HubClient', '💀 pong 超时，断线重连');
           _socket?.close();
         });
       } else {
@@ -306,7 +306,7 @@ class HubClient {
     final token = savedToken;
     if (address == null || token == null) return;
     final delay = Duration(seconds: min(30, 1 << _reconnectAttempts));
-    Log.info(
+    HubLog.info(
       'HubClient',
       '🔄 ${delay.inSeconds}s 后重连（第${_reconnectAttempts + 1}次）',
     );

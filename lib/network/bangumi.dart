@@ -70,12 +70,12 @@ class Bangumi {
               bangumiList.add(bangumiItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'bangumiPostSearch', '$e\n$s');
+            NetLog.error('bangumiPostSearch', '$e\n$s');
           }
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumiPostSearch', '$e\n$s');
+      NetLog.error('bangumiPostSearch', '$e\n$s');
     }
     return bangumiList;
   }
@@ -117,12 +117,12 @@ class Bangumi {
               bangumiList.add(bangumiItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'bangumiGetSearch', '$e\n$s');
+            NetLog.error('bangumiGetSearch', '$e\n$s');
           }
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumiGetSearch', '$e\n$s');
+      NetLog.error('bangumiGetSearch', '$e\n$s');
     }
     return bangumiList;
   }
@@ -134,11 +134,7 @@ class Bangumi {
             bangumiPostSearch(keyword).timeout(const Duration(seconds: 5)),
             bangumiGetSearch(keyword).timeout(const Duration(seconds: 5)),
           ]).catchError((e, s) {
-            Log.addLog(
-              LogLevel.warning,
-              'bangumi',
-              'Partial search failed: $e',
-            );
+            NetLog.warning('bangumi', 'Partial search failed: $e');
             return [<BangumiItem>[], <BangumiItem>[]];
           });
 
@@ -197,7 +193,7 @@ class Bangumi {
 
       return uniqueItems.values.toList();
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', 'Combined search failed: $e\n$s');
+      NetLog.error('bangumi', 'Combined search failed: $e\n$s');
       return [];
     }
   }
@@ -232,16 +228,12 @@ class Bangumi {
             CharacterActor characterItem = CharacterActor.fromJson(jsonItem);
             characterList.add(characterItem);
           } catch (e, s) {
-            Log.addLog(
-              LogLevel.error,
-              'postCharactersSearchByStringNext',
-              '$e\n$s',
-            );
+            NetLog.error('postCharactersSearchByStringNext', '$e\n$s');
           }
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'postCharactersSearchByStringNext', '$e\n$s');
+      NetLog.error('postCharactersSearchByStringNext', '$e\n$s');
     }
     return characterList;
   }
@@ -276,16 +268,12 @@ class Bangumi {
             CharacterActor personItem = CharacterActor.fromJson(jsonItem);
             personList.add(personItem);
           } catch (e, s) {
-            Log.addLog(
-              LogLevel.error,
-              'postPersonsSearchByStringNext',
-              '$e\n$s',
-            );
+            NetLog.error('postPersonsSearchByStringNext', '$e\n$s');
           }
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'postPersonsSearchByStringNext', '$e\n$s');
+      NetLog.error('postPersonsSearchByStringNext', '$e\n$s');
     }
     return personList;
   }
@@ -298,7 +286,7 @@ class Bangumi {
       );
       return BangumiItem.fromJson(res.data);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getBangumiInfoByID', '$e\n$s');
+      NetLog.error('getBangumiInfoByID', '$e\n$s');
       return null;
     }
   }
@@ -319,12 +307,12 @@ class Bangumi {
               bangumiList.add(bangumiSRI);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'getBangumiSRIByID', '$e\n$s');
+            NetLog.error('getBangumiSRIByID', '$e\n$s');
           }
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getBangumiSRIByID', '$e\n$s');
+      NetLog.error('getBangumiSRIByID', '$e\n$s');
     }
     return bangumiList;
   }
@@ -342,7 +330,7 @@ class Bangumi {
       final jsonData = res.data;
       commentResponse = CommentResponse.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      NetLog.error('bangumi', '$e\n$s');
     }
     return commentResponse;
   }
@@ -357,7 +345,7 @@ class Bangumi {
       final jsonData = res.data;
       characterResponse = CharacterResponse.fromJson(jsonData);
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getCharatersByID', '$e');
+      NetLog.error('getCharatersByID', '$e');
     }
     return characterResponse;
   }
@@ -374,7 +362,7 @@ class Bangumi {
       final jsonData = res.data['data'];
       topicsResponse = TopicsResponse.fromJson(jsonData);
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getTopicsByID', '$e');
+      NetLog.error('getTopicsByID', '$e');
     }
     return topicsResponse;
   }
@@ -390,7 +378,7 @@ class Bangumi {
       TopicsInfoItem topicsInfoItem = TopicsInfoItem.fromJson(jsonData);
       return topicsInfoItem;
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getTopicsInfoByID', '$e');
+      NetLog.error('getTopicsInfoByID', '$e');
     }
     return null;
   }
@@ -415,12 +403,12 @@ class Bangumi {
               topicsInfoItems.add(topicsInfoItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e\n$s');
+            NetLog.error('getTopicsLatestByID', '$e\n$s');
           }
         }
       }
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e');
+      NetLog.error('getTopicsLatestByID', '$e');
     }
     return topicsInfoItems;
   }
@@ -445,12 +433,12 @@ class Bangumi {
               topicsInfoItems.add(topicsInfoItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e\n$s');
+            NetLog.error('getTopicsLatestByID', '$e\n$s');
           }
         }
       }
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getTopicsLatestByID', '$e');
+      NetLog.error('getTopicsLatestByID', '$e');
     }
     return topicsInfoItems;
   }
@@ -470,7 +458,7 @@ class Bangumi {
       final jsonData = res.data['data'];
       reviewsResponse = ReviewsResponse.fromJson(jsonData);
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getReviewsByID', '$e');
+      NetLog.error('getReviewsByID', '$e');
     }
     return reviewsResponse;
   }
@@ -487,7 +475,7 @@ class Bangumi {
         return reviewsInfoItem;
       }
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getReviewsInfoByID', '$e');
+      NetLog.error('getReviewsInfoByID', '$e');
     }
     return null;
   }
@@ -507,12 +495,12 @@ class Bangumi {
           try {
             reviewsCommentsItem.add(ReviewsCommentsItem.fromJson(json));
           } catch (e) {
-            Log.addLog(LogLevel.error, 'getReviewsCommentsByID', '$e');
+            NetLog.error('getReviewsCommentsByID', '$e');
           }
         }
       }
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getReviewsCommentsByID', '$e');
+      NetLog.error('getReviewsCommentsByID', '$e');
     }
     return reviewsCommentsItem;
   }
@@ -532,11 +520,11 @@ class Bangumi {
             bangumiReviewsSubjects.add(bangumiItem);
           }
         } catch (e, s) {
-          Log.addLog(LogLevel.error, 'getReviewsSubjectsByID', '$e\n$s');
+          NetLog.error('getReviewsSubjectsByID', '$e\n$s');
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getReviewsSubjectsByID', '$e\n$s');
+      NetLog.error('getReviewsSubjectsByID', '$e\n$s');
     }
     return bangumiReviewsSubjects;
   }
@@ -561,13 +549,13 @@ class Bangumi {
               bangumiList.add(bangumiItem);
             }
           } catch (e, s) {
-            Log.addLog(LogLevel.error, 'getCalendar', '$e\n$s');
+            NetLog.error('getCalendar', '$e\n$s');
           }
         }
         bangumiCalendar.add(bangumiList);
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getCalendar', '$e\n$s');
+      NetLog.error('getCalendar', '$e\n$s');
     }
     return bangumiCalendar;
   }
@@ -580,7 +568,7 @@ class Bangumi {
         BangumiManager().batchAddBangumiCalendar(jsonlist);
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumiGetCalendarData', '$e\n$s');
+      NetLog.error('bangumiGetCalendarData', '$e\n$s');
     }
   }
 
@@ -591,7 +579,7 @@ class Bangumi {
         BangumiManager().addBangumiBinding(res);
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumiGetBangumiInfoBind', '$e\n$s');
+      NetLog.error('bangumiGetBangumiInfoBind', '$e\n$s');
     }
   }
 
@@ -605,14 +593,14 @@ class Bangumi {
       final responseData = response.data;
       if (responseData is! Map<String, dynamic> ||
           responseData['items'] is! List) {
-        Log.addLog(LogLevel.error, 'bangumi', 'Invalid API response structure');
+        NetLog.error('bangumi', 'Invalid API response structure');
         return;
       }
 
       final itemsList = responseData['items'] as List;
 
       if (itemsList.isEmpty) {
-        Log.addLog(LogLevel.error, 'bangumi', 'Received empty data list');
+        NetLog.error('bangumi', 'Received empty data list');
         return;
       }
 
@@ -624,23 +612,14 @@ class Bangumi {
       BangumiManager().clearBangumiData();
       BangumiManager().batchAddBangumiData(last100Items);
     } on DioException catch (e, s) {
-      Log.addLog(
-        LogLevel.error,
-        'getBangumiData',
-        'Network error: ${e.message}\nStack: $s',
-      );
+      NetLog.error('getBangumiData', 'Network error: ${e.message}\nStack: $s');
     } on FormatException catch (e, s) {
-      Log.addLog(
-        LogLevel.error,
+      NetLog.error(
         'getBangumiData',
         'Data parsing failed: ${e.message}\nStack: $s',
       );
     } catch (e, s) {
-      Log.addLog(
-        LogLevel.error,
-        'getBangumiData',
-        'Unexpected error: $e\nStack: $s',
-      );
+      NetLog.error('getBangumiData', 'Unexpected error: $e\nStack: $s');
     }
   }
 
@@ -649,8 +628,7 @@ class Bangumi {
       try {
         return BangumiData.fromJson(json);
       } catch (e, s) {
-        Log.addLog(
-          LogLevel.error,
+        NetLog.error(
           'parseBangumiDataList',
           'Failed to parse item: $e\nStack: $s',
         );
@@ -667,26 +645,20 @@ class Bangumi {
       );
       final jsonData = res.data;
       if (appdata.settings['bangumiDataVer'] != jsonData['tag_name']) {
-        Log.addLog(
-          LogLevel.info,
-          'checkBangumiData',
-          '${jsonData['tag_name']}',
-        );
+        NetLog.info('checkBangumiData', '${jsonData['tag_name']}');
 
         await getBangumiData();
         App.rootContext.showMessage(
           message:
               'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} -> ${jsonData['tag_name']}',
         );
-        Log.addLog(
-          LogLevel.info,
+        NetLog.info(
           'checkBangumiData',
           '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
         );
         appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
         appdata.saveData();
-        Log.addLog(
-          LogLevel.info,
+        NetLog.info(
           'bangumiDataVer',
           '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}',
         );
@@ -697,8 +669,11 @@ class Bangumi {
         );
       }
     } catch (e, s) {
-      App.rootContext.showMessage(message: 'bangumiData更新失败...');
-      Log.addLog(LogLevel.error, 'checkBangumiData', '$e\n$s');
+      App.rootContext.showMessage(
+        message: 'bangumiData更新失败...',
+        level: LogLevel.error,
+      );
+      NetLog.error('checkBangumiData', '$e\n$s');
     }
   }
 
@@ -709,30 +684,31 @@ class Bangumi {
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
-      Log.addLog(LogLevel.info, 'bangumi', '${jsonData['tag_name']}');
+      NetLog.info('bangumi', '${jsonData['tag_name']}');
       appdata.settings['getBangumiAllEpInfoTime'] = null;
-      Log.addLog(LogLevel.info, 'bangumi', 'Cleared bangumi data successfully');
+      NetLog.info('bangumi', 'Cleared bangumi data successfully');
       await getBangumiData();
       await getCalendarData();
       App.rootContext.showMessage(
         message:
             'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}',
       );
-      Log.addLog(
-        LogLevel.info,
+      NetLog.info(
         'bangumi',
         '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
       );
       appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
       appdata.saveData();
-      Log.addLog(
-        LogLevel.info,
+      NetLog.info(
         'bangumi',
         '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}',
       );
     } catch (e, s) {
-      App.rootContext.showMessage(message: 'bangumiData重置失败...');
-      Log.addLog(LogLevel.error, 'bangumi', '$e\n$s');
+      App.rootContext.showMessage(
+        message: 'bangumiData重置失败...',
+        level: LogLevel.error,
+      );
+      NetLog.error('bangumi', '$e\n$s');
     }
   }
 
@@ -765,7 +741,7 @@ class Bangumi {
       final jsonData = res.data['data'][0];
       episodeInfo = EpisodeInfo.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getBangumiEpisodeByID', '$e\n$s');
+      NetLog.error('getBangumiEpisodeByID', '$e\n$s');
     }
     return episodeInfo;
   }
@@ -782,7 +758,7 @@ class Bangumi {
       final jsonData = res.data['data'][0];
       episodeInfo = EpisodeInfo.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getBangumiEpisodeByEpID', '$e\n$s');
+      NetLog.error('getBangumiEpisodeByEpID', '$e\n$s');
     }
     return episodeInfo;
   }
@@ -803,7 +779,7 @@ class Bangumi {
 
       return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'bangumiGetBangumiEpisodeAllByID', '$e\n$s');
+      NetLog.error('bangumiGetBangumiEpisodeAllByID', '$e\n$s');
       return [];
     }
   }
@@ -821,7 +797,7 @@ class Bangumi {
       final jsonData = res.data;
       commentResponse = EpisodeCommentResponse.fromJson(jsonData);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getBangumiCommentsByEpisodeID', '$e\n$s');
+      NetLog.error('getBangumiCommentsByEpisodeID', '$e\n$s');
     }
     return commentResponse;
   }
@@ -849,7 +825,7 @@ class Bangumi {
       );
       return CharacterCommentResponse.fromJson(res.data);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, logTag, '$e\n$s');
+      NetLog.error(logTag, '$e\n$s');
       return CharacterCommentResponse.fromTemplate();
     }
   }
@@ -875,7 +851,7 @@ class Bangumi {
       );
       return CharacterFullItem.fromJson(res.data);
     } catch (e, s) {
-      Log.addLog(LogLevel.error, logTag, '$e\n$s');
+      NetLog.error(logTag, '$e\n$s');
       return CharacterFullItem.fromTemplate();
     }
   }
@@ -906,7 +882,7 @@ class Bangumi {
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getCharacterCastsByCharacterID', '$e\n$s');
+      NetLog.error('getCharacterCastsByCharacterID', '$e\n$s');
     }
     return characterCastsItems;
   }
@@ -936,7 +912,7 @@ class Bangumi {
         );
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getCastsByPersonId', '$e\n$s');
+      NetLog.error('getCastsByPersonId', '$e\n$s');
     }
     return characterPersonCastsItem;
   }
@@ -963,7 +939,7 @@ class Bangumi {
       final avatar = res.data["avatar"]["large"];
       return avatar;
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getBangumiUserAvatarByName', '$e');
+      NetLog.error('getBangumiUserAvatarByName', '$e');
     }
     return '';
   }
@@ -994,7 +970,7 @@ class Bangumi {
         bangumiList.add(BangumiItem.fromJson(jsonItem));
       }
     } catch (e) {
-      Log.addLog(LogLevel.error, 'getBangumiUseFavorites', '$e');
+      NetLog.error('getBangumiUseFavorites', '$e');
     }
     return bangumiList;
   }
@@ -1028,7 +1004,7 @@ class Bangumi {
         }
       }
     } catch (e, s) {
-      Log.addLog(LogLevel.error, 'getBangumiTrendsList', '$e\n$s');
+      NetLog.error('getBangumiTrendsList', '$e\n$s');
     }
     return bangumiList;
   }
