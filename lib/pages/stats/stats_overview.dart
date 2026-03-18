@@ -40,12 +40,35 @@ class StatsOverviewScreen extends StatelessWidget {
           Positioned(
             bottom: 10,
             right: 10,
-            child: FilledButton(
-              onPressed: () {
-                captureAndSave(context);
-                App.rootContext.pop();
-              },
-              child: Text('Share'.tl),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    captureAndSave(context);
+                    App.rootContext.pop();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.share,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],

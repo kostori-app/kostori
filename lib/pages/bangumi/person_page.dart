@@ -348,6 +348,7 @@ class _PersonPageState extends State<PersonPage>
                                                   ),
                                                 ),
                                               ),
+                                              const SizedBox(height: 20.0),
                                             ],
                                           ),
                                         ),
@@ -362,21 +363,46 @@ class _PersonPageState extends State<PersonPage>
           ),
         ),
         Positioned(
-          bottom: 10,
-          right: 10,
-          child: FilledButton.icon(
-            onPressed: () {
-              showPopUpWidget(
-                App.rootContext,
-                StatefulBuilder(
-                  builder: (context, setState) {
-                    return ShareWidget(characterFullItem: characterFullItem);
-                  },
+          top: 0,
+          right: 0,
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-              );
-            },
-            label: Text('Share'.tl),
-            icon: Icon(Icons.share),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () {
+                  showPopUpWidget(
+                    App.rootContext,
+                    StatefulBuilder(
+                      builder: (context, setState) {
+                        return ShareWidget(
+                          characterFullItem: characterFullItem,
+                        );
+                      },
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(
+                    Icons.share,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ],
