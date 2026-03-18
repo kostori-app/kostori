@@ -709,8 +709,7 @@ class _ToastOverlayState extends State<_ToastOverlay> {
         ),
         decoration: BoxDecoration(
           color: cs.surfaceContainer.toOpacity(0.62),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: cs.outlineVariant.toOpacity(0.35)),
+          border: Border(left: BorderSide(color: accent, width: 4)),
         ),
         child: IntrinsicWidth(
           child: IntrinsicHeight(
@@ -718,17 +717,6 @@ class _ToastOverlayState extends State<_ToastOverlay> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(14),
-                      bottomLeft: Radius.circular(14),
-                    ),
-                  ),
-                ),
                 Flexible(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
