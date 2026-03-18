@@ -8,7 +8,11 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/data_sync.dart';
@@ -48,6 +52,7 @@ class _MePageState extends State<MePage> {
       slivers: [
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
+        const TodayRecommendation(),
         const _ImageManipulation(),
         const _StatsViewPage(),
         SliverPadding(
@@ -236,6 +241,193 @@ class _SyncDataWidgetState extends State<_SyncDataWidget>
   }
 }
 
+class TodayRecommendation extends StatelessWidget {
+  const TodayRecommendation({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final doingFolder = appdata.settings['FavoriteTypeDoing'] ?? 'none';
+
+    if (doingFolder == 'none' ||
+        doingFolder.isEmpty ||
+        !LocalFavoritesManager().existsFolder(doingFolder)) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final animes = LocalFavoritesManager().getAllAnimes(doingFolder);
+    if (animes.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final recommendations = _getRecommendations(animes);
+    final cs = Theme.of(context).colorScheme;
+
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: cs.outlineVariant, width: 0.6),
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome, color: cs.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Text('Today Recommendation'.tl, style: ts.s16),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.secondaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text('${recommendations.length}', style: ts.s12),
+                  ),
+                ],
+              ),
+            ),
+            if (recommendations.isEmpty)
+              const SizedBox(height: 220)
+            else
+              SizedBox(
+                height: 220,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final double totalWidth = constraints.maxWidth;
+                    int centerCount;
+                    if (totalWidth < 480) {
+                      centerCount = 1;
+                    } else if (totalWidth < 800) {
+                      centerCount = 2;
+                    } else {
+                      centerCount = 3;
+                    }
+                    final double sidePeekWidth = totalWidth < 480 ? 40.0 : 56.0;
+                    final double calculatedItemExtent =
+                        (totalWidth - (sidePeekWidth * 2)) / centerCount;
+
+                    return CarouselView(
+                      itemExtent: calculatedItemExtent,
+                      shrinkExtent: sidePeekWidth,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      itemSnapping: true,
+                      onTap: (index) {
+                        final anime = recommendations[index];
+                        context.to(
+                          () => AnimePage(
+                            id: anime.id,
+                            sourceKey: anime.sourceKey,
+                          ),
+                        );
+                      },
+                      children: recommendations
+                          .map((anime) => _TodayRecCard(anime: anime))
+                          .toList(),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<FavoriteItem> _getRecommendations(List<FavoriteItem> animes) {
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+
+    final savedDate =
+        appdata.implicitData['today_recommendation_date'] as String?;
+    final savedIds =
+        appdata.implicitData['today_recommendation_ids'] as List<dynamic>?;
+
+    if (savedDate != today || savedIds == null) {
+      final count = animes.length.clamp(1, 10);
+      final shuffled = List<FavoriteItem>.from(animes)..shuffle();
+
+      final result = shuffled.take(count).toList();
+
+      appdata.implicitData['today_recommendation_ids'] = result
+          .map((a) => '${a.id}|${a.type.value}')
+          .toList();
+      appdata.implicitData['today_recommendation_date'] = today;
+      appdata.writeImplicitData();
+
+      return result;
+    }
+
+    return savedIds.map((saved) {
+      final parts = (saved as String).split('|');
+      if (parts.length != 2) return animes.first;
+
+      final id = parts[0];
+      final type = int.tryParse(parts[1]);
+
+      return animes.firstWhere(
+        (a) => a.id == id && a.type.value == type,
+        orElse: () => animes.first,
+      );
+    }).toList();
+  }
+}
+
+class _TodayRecCard extends StatelessWidget {
+  final FavoriteItem anime;
+
+  const _TodayRecCard({required this.anime});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: AnimatedImage(
+            image: CachedImageProvider(anime.cover, sourceKey: anime.sourceKey),
+            fit: BoxFit.cover,
+            height: double.infinity,
+            width: double.infinity,
+            filterQuality: FilterQuality.high,
+          ),
+        ),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: const Alignment(0, 0.3),
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black.withAlpha(204)],
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 8,
+          right: 8,
+          bottom: 8,
+          child: Text(
+            anime.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: ts.s12.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ImageManipulation extends ConsumerStatefulWidget {
   const _ImageManipulation();
 
@@ -244,10 +436,24 @@ class _ImageManipulation extends ConsumerStatefulWidget {
 }
 
 class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
+  bool _isLoadingImages = false;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(imagesProvider.notifier).loadImages());
+    Future.microtask(_loadImagesIfNeeded);
+  }
+
+  Future<void> _loadImagesIfNeeded() async {
+    if (_isLoadingImages) return;
+    final images = ref.read(imagesProvider);
+    if (images.isEmpty) {
+      _isLoadingImages = true;
+      await ref.read(imagesProvider.notifier).loadImages();
+      if (mounted) {
+        setState(() => _isLoadingImages = false);
+      }
+    }
   }
 
   @override
@@ -297,60 +503,68 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
               ).paddingHorizontal(16),
               SizedBox(
                 height: 220,
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(
-                    scrollbars: true,
-                    dragDevices: {
-                      ui.PointerDeviceKind.touch,
-                      ui.PointerDeviceKind.mouse,
-                      ui.PointerDeviceKind.stylus,
-                      ui.PointerDeviceKind.trackpad,
-                    },
-                  ),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: images.length > 10 ? 10 : images.length,
-                    itemBuilder: (context, index) {
-                      final file = images[index];
-                      final filename = file.path
-                          .split(Platform.pathSeparator)
-                          .last;
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
+                child: _isLoadingImages && images.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(
+                          scrollbars: true,
+                          dragDevices: {
+                            ui.PointerDeviceKind.touch,
+                            ui.PointerDeviceKind.mouse,
+                            ui.PointerDeviceKind.stylus,
+                            ui.PointerDeviceKind.trackpad,
+                          },
                         ),
-                        child: Card(
-                          margin: const EdgeInsets.all(8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            onTap: () {
-                              BangumiWidget.showImagePreview(
-                                context: context,
-                                url: file.path,
-                                title: filename,
-                                heroTag: filename,
-                                allUrls: images,
-                                initialIndex: index,
-                              );
-                            },
-                            child: SizedBox(
-                              width: 200 * (4 / 3),
-                              height: 200,
-                              child: Hero(
-                                tag: filename,
-                                child: Image.file(file, fit: BoxFit.cover),
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: images.isEmpty
+                              ? 0
+                              : (images.length > 10 ? 10 : images.length),
+                          itemBuilder: (context, index) {
+                            final file = images[index];
+                            final filename = file.path
+                                .split(Platform.pathSeparator)
+                                .last;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
                               ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ).paddingHorizontal(8).paddingVertical(16),
-                ),
+                              child: Card(
+                                margin: const EdgeInsets.all(8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: InkWell(
+                                  onTap: () {
+                                    BangumiWidget.showImagePreview(
+                                      context: context,
+                                      url: file.path,
+                                      title: filename,
+                                      heroTag: filename,
+                                      allUrls: images,
+                                      initialIndex: index,
+                                    );
+                                  },
+                                  child: SizedBox(
+                                    width: 200 * (4 / 3),
+                                    height: 200,
+                                    child: Hero(
+                                      tag: filename,
+                                      child: Image.file(
+                                        file,
+                                        fit: BoxFit.cover,
+                                        cacheWidth: 400,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ).paddingHorizontal(8).paddingVertical(16),
+                      ),
               ),
             ],
           ),

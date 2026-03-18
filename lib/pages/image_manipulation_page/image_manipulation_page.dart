@@ -69,20 +69,26 @@ class ImagesNotifier extends StateNotifier<List<File>> {
       return [];
     }
 
-    final files = directory.listSync(recursive: false).whereType<File>().where((
-      file,
-    ) {
-      final ext = file.path.toLowerCase();
-      return ext.endsWith('.jpg') ||
-          ext.endsWith('.jpeg') ||
-          ext.endsWith('.png') ||
-          ext.endsWith('.webp') ||
-          ext.endsWith('.gif');
-    }).toList();
+    final List<File> files = [];
+    await for (final entity in directory.list()) {
+      if (entity is File) {
+        final ext = entity.path.toLowerCase();
+        if (ext.endsWith('.jpg') ||
+            ext.endsWith('.jpeg') ||
+            ext.endsWith('.png') ||
+            ext.endsWith('.webp') ||
+            ext.endsWith('.gif')) {
+          files.add(entity);
+        }
+      }
+    }
 
-    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    final fileModTimes = await Future.wait(
+      files.map((f) => f.lastModified().then((t) => MapEntry(f, t))),
+    );
+    fileModTimes.sort((a, b) => b.value.compareTo(a.value));
 
-    return files;
+    return fileModTimes.map((e) => e.key).toList();
   }
 
   void deleteIndexes(List<int> indexes) {

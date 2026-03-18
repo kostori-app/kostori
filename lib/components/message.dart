@@ -668,10 +668,7 @@ class _ToastOverlayState extends State<_ToastOverlay> {
     );
 
     final topOffset =
-        widget.position +
-        MediaQuery.of(context).viewPadding.top +
-        // kToolbarHeight +
-        16;
+        widget.position + MediaQuery.of(context).viewPadding.top + 16;
 
     return switch (widget.style) {
       ToastStyle.topRight => Positioned(
