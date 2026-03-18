@@ -189,6 +189,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                         }
                       }
                       await _keyManager.setUseFixed(val);
+                      await _keyManager.setUseAdminFixed(val);
                       setState(() {});
                     },
                   ),

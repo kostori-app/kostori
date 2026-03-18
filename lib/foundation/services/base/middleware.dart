@@ -17,11 +17,13 @@ class Middleware {
       final queryToken = request.uri.queryParameters['token'];
       final token = bearerToken ?? queryToken;
 
-      final valid =
-          token != null &&
+      final valid = token != null &&
           (admin
+              // 管理接口：只接受管理层 Key
               ? ApiKeyManager().validateAdmin(token)
-              : ApiKeyManager().validate(token));
+              // 普通接口：既接受用户层 Key，也接受管理层 Key
+              : (ApiKeyManager().validate(token) ||
+                  ApiKeyManager().validateAdmin(token)));
 
       if (!valid) {
         request.response

@@ -182,7 +182,7 @@ class ApiKeyManager {
   String? _validateKey(String key) {
     if (key.length < 8) return '密钥长度不能少于 8 位';
     if (key.length > 64) return '密钥长度不能超过 64 位';
-    final valid = RegExp(r'^[a-zA-Z0-9_\-\.]+$');
+    final valid = RegExp(r'^[a-zA-Z0-9_\-.]+$');
     if (!valid.hasMatch(key)) return '只允许字母、数字、_ - . 字符';
     return null;
   }
