@@ -100,7 +100,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
             height: 56,
             child: Row(
               children: [
-                Center(child: Text('统计图表'.tl, style: ts.s18)),
+                Center(child: Text('统计图表'.tl, style: ts.s16)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(
@@ -167,11 +167,28 @@ class _StatsViewPageState extends State<StatsViewPage> {
     const double cardHeight = 80;
     const double spacing = 8;
 
+    final int doing = appdata.settings['FavoriteTypeDoing'] != 'none'
+        ? LocalFavoritesManager().folderAnimes(
+            appdata.settings['FavoriteTypeDoing'],
+          )
+        : 0;
+    final int wish = appdata.settings['FavoriteTypeWish'] != 'none'
+        ? LocalFavoritesManager().folderAnimes(
+            appdata.settings['FavoriteTypeWish'],
+          )
+        : 0;
+    final int collect = appdata.settings['FavoriteTypeCollect'] != 'none'
+        ? LocalFavoritesManager().folderAnimes(
+            appdata.settings['FavoriteTypeCollect'],
+          )
+        : 0;
+
+    final int all = doing + wish + collect;
     List<Widget> cardList = List.generate(6, (index) {
       Widget content;
       switch (index) {
         case 0:
-          content = Text('收藏: ${LocalFavoritesManager().totalAnimes}');
+          content = Text('收藏: $all');
           break;
         case 1:
           content = Text(
@@ -180,7 +197,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
           break;
         case 2:
           content = Text(
-            '完成率: ${appdata.settings['FavoriteTypeCollect'] != 'none' ? '${(LocalFavoritesManager().folderAnimes(appdata.settings['FavoriteTypeCollect']) / LocalFavoritesManager().totalAnimes * 100).toStringAsFixed(1)}%' : '0%'}',
+            '完成率: ${appdata.settings['FavoriteTypeCollect'] != 'none' ? '${(LocalFavoritesManager().folderAnimes(appdata.settings['FavoriteTypeCollect']) / all * 100).toStringAsFixed(1)}%' : '0%'}',
           );
           break;
         case 3:
