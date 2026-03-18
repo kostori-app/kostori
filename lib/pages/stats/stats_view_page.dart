@@ -35,7 +35,9 @@ class _StatsViewPageState extends State<StatsViewPage> {
 
     ratingList = List.generate(10, (i) => ratingBangumiMap[i + 1]?.length ?? 0);
     _calculateStats();
-    setState(() => loading = false);
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
   void _calculateStats() {
