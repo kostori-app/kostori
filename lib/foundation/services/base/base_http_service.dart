@@ -263,7 +263,18 @@ abstract class BaseHttpService implements BaseService {
     addGet(
       '/bangumi/calendar/screenshot',
       (req) async {
-        final mode = req.uri.queryParameters['mode'] ?? 'weekly';
+        String mode = 'weekly';
+        try {
+          mode = req.uri.queryParameters['mode'] ?? 'weekly';
+        } on FormatException catch (e) {
+          await sendError(
+            req,
+            HttpStatus.badRequest,
+            'INVALID_QUERY',
+            'Invalid query string: ${e.message}',
+          );
+          return;
+        }
         final showWeekly = mode != 'today';
 
         // 需要一个 BuildContext 来渲染截图，这里复用应用的 navigator 上下文
@@ -654,6 +665,21 @@ abstract class BaseHttpService implements BaseService {
       final path = request.uri.path;
       final from = request.connectionInfo?.remoteAddress.address ?? '?';
       final watch = Stopwatch()..start();
+
+      if (method == 'PROPFIND') {
+        request.response
+          ..statusCode = HttpStatus.methodNotAllowed
+          ..headers.set('Allow', 'GET, POST, PUT, DELETE, OPTIONS')
+          ..headers.contentType = ContentType.json
+          ..write(
+            jsonEncode({
+              'error': 'Method Not Allowed',
+              'message': 'WebDAV is not supported',
+            }),
+          );
+        await request.response.close();
+        return;
+      }
 
       HubLog.info(
         '$runtimeType',
