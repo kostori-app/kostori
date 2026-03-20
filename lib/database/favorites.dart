@@ -1,16 +1,17 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/local_favorite_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/stats.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart';
 
@@ -194,7 +195,7 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
       super.hashCode ^ updateTime.hashCode ^ hasNewUpdate.hashCode;
 }
 
-class LocalFavoritesManager with ChangeNotifier {
+class LocalFavoritesManager {
   factory LocalFavoritesManager() =>
       cache ?? (cache = LocalFavoritesManager._create());
 
@@ -257,14 +258,14 @@ class LocalFavoritesManager with ChangeNotifier {
     }
     _initHashedIds(folderNames, _db.handle).then((value) {
       _hashedIds = value;
-      notifyListeners();
+      _notify();
     });
   }
 
   void refreshHashedIds() {
     _initHashedIds(folderNames, _db.handle).then((value) {
       _hashedIds = value;
-      notifyListeners();
+      _notify();
     });
   }
 
@@ -383,7 +384,7 @@ class LocalFavoritesManager with ChangeNotifier {
         [folders[i], i],
       );
     }
-    notifyListeners();
+    _notify();
   }
 
   int count(String folderName) {
@@ -468,7 +469,7 @@ class LocalFavoritesManager with ChangeNotifier {
     """,
       [id],
     );
-    notifyListeners();
+    _notify();
   }
 
   List<FavoriteItemWithFolderInfo> allAnimes() {
@@ -531,7 +532,7 @@ class LocalFavoritesManager with ChangeNotifier {
         primary key (id, type)
       );
     """);
-    notifyListeners();
+    _notify();
     counts[name] = 0;
     return name;
   }
@@ -632,7 +633,7 @@ class LocalFavoritesManager with ChangeNotifier {
     );
 
     initCounts();
-    notifyListeners();
+    _notify();
     return true;
   }
 
@@ -722,7 +723,7 @@ class LocalFavoritesManager with ChangeNotifier {
     );
 
     initCounts();
-    notifyListeners();
+    _notify();
   }
 
   void batchMoveFavorites(
@@ -820,7 +821,7 @@ class LocalFavoritesManager with ChangeNotifier {
 
         displayOrder++;
       }
-      notifyListeners();
+      _notify();
     } catch (e) {
       Log.error("Batch Copy Favorites", e.toString());
       _db.execute("ROLLBACK");
@@ -842,7 +843,7 @@ class LocalFavoritesManager with ChangeNotifier {
       );
     }
 
-    notifyListeners();
+    _notify();
   }
 
   void batchDeleteAnimes(String folder, List<FavoriteItem> animes) {
@@ -880,7 +881,7 @@ class LocalFavoritesManager with ChangeNotifier {
         action: FavoriteAction.remove,
       );
     }
-    notifyListeners();
+    _notify();
   }
 
   void batchDeleteAnimesInAllFolders(List<AnimeID> animes) {
@@ -910,7 +911,7 @@ class LocalFavoritesManager with ChangeNotifier {
       var hash = anime.id.hashCode ^ anime.type.value;
       _hashedIds.remove(hash);
     }
-    notifyListeners();
+    _notify();
   }
 
   /// delete a folder
@@ -928,7 +929,7 @@ class LocalFavoritesManager with ChangeNotifier {
     );
     counts.remove(name);
     refreshHashedIds();
-    notifyListeners();
+    _notify();
   }
 
   void deleteAnimeWithId(String folder, String id, AnimeType type) {
@@ -952,7 +953,7 @@ class LocalFavoritesManager with ChangeNotifier {
       counts[folder] = count(folder);
     }
     reduceHashedId(id, type.value);
-    notifyListeners();
+    _notify();
   }
 
   Future<int> removeInvalid() async {
@@ -1005,7 +1006,7 @@ class LocalFavoritesManager with ChangeNotifier {
     );
     counts[after] = counts[before] ?? 0;
     counts.remove(before);
-    notifyListeners();
+    _notify();
   }
 
   List<FavoriteItem> searchInFolder(String folder, String keyword) {
@@ -1096,7 +1097,7 @@ class LocalFavoritesManager with ChangeNotifier {
       """,
       [tags.join(","), id],
     );
-    notifyListeners();
+    _notify();
   }
 
   bool isExist(String id, AnimeType type) {
@@ -1120,7 +1121,7 @@ class LocalFavoritesManager with ChangeNotifier {
         anime.type.value,
       ],
     );
-    notifyListeners();
+    _notify();
   }
 
   String folderToJson(String folder) {
@@ -1211,14 +1212,29 @@ class LocalFavoritesManager with ChangeNotifier {
           );
         }
       }
-      notifyListeners();
+      _notify();
     }
   }
 
+  final _favoritesStream = StreamController<void>.broadcast();
+
+  void _notify() => _favoritesStream.add(null);
+
   void close() {
+    _favoritesStream.close();
     _db.close();
   }
 }
+
+final favoritesChangedProvider = StreamProvider<void>((ref) {
+  return LocalFavoritesManager()._favoritesStream.stream;
+});
+
+final folderNamesProvider = StreamProvider<List<String>>((ref) {
+  return LocalFavoritesManager()._favoritesStream.stream.map(
+    (_) => LocalFavoritesManager().folderNames,
+  );
+});
 
 enum FavoriteSortType {
   nameAsc("name_asc"),

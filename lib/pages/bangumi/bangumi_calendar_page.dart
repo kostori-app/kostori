@@ -10,7 +10,7 @@ import 'package:kostori/components/calendar_screenshot_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
@@ -23,7 +23,7 @@ import 'package:kostori/utils/utils.dart';
 
 Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
   try {
-    final allItems = BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
+    final allItems = await BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
     final allIds = allItems.map((item) => item.id.toString()).toList();
     final existenceMap = await BangumiManager().checkWhetherDataExistsBatch(
       allIds,
@@ -49,7 +49,7 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
         final airTime = DateTime.parse(airTimeStr).toLocal();
         final weekday = airTime.weekday;
         final episodes = allEpisodesMap[item.id];
-        final episodeResult = _processEpisodeInfo(
+        final episodeResult = await _processEpisodeInfo(
           episodes: episodes,
           now: now,
           currentWeekInfo: currentWeekInfo,
@@ -80,12 +80,12 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
   }
 }
 
-Map<String, dynamic>? _processEpisodeInfo({
+Future<Map<String, dynamic>?> _processEpisodeInfo({
   required List<EpisodeInfo>? episodes,
   required DateTime now,
   required (int, int) currentWeekInfo,
   required BangumiItem bangumiItem,
-}) {
+}) async {
   if (episodes == null || episodes.isEmpty) {
     return appdata.settings['calendarFetchEpisodes'] ?? false ? null : {};
   }
@@ -95,7 +95,7 @@ Map<String, dynamic>? _processEpisodeInfo({
   if (type0Episodes.isEmpty) return null;
 
   final finalEpisode = type0Episodes.last;
-  final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
+  final currentWeekEp = await BangumiUtils.findCurrentWeekEpisode(
     episodes,
     bangumiItem,
     true,

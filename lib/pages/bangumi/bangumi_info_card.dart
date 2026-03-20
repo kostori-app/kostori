@@ -1,24 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/line_chart_page.dart';
+import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class BangumiInfoCardV extends StatefulWidget {
+class BangumiInfoCardV extends ConsumerStatefulWidget {
   const BangumiInfoCardV({
     super.key,
     required this.bangumiItem,
@@ -35,10 +37,12 @@ class BangumiInfoCardV extends StatefulWidget {
   final InfoController infoController;
 
   @override
-  State<BangumiInfoCardV> createState() => _BangumiInfoCardVState();
+  ConsumerState<BangumiInfoCardV> createState() => _BangumiInfoCardVState();
 }
 
-class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
+class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
+  Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
+
   BangumiItem get bangumiItem => widget.bangumiItem;
 
   InfoController get infoController => widget.infoController;
@@ -148,11 +152,19 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
 
   int? latestRating;
 
-  void setStats() {
-    stats = manager.getStatsByIdAndType(
+  Future<void> setStats() async {
+    stats = (await manager.getStatsByIdAndType(
       id: bangumiItem.id.toString(),
       type: 'bangumi'.hashCode,
-    )!;
+    ))!;
+  }
+
+  Future<void> _loadCurrentWeekEp() async {
+    final ep = await BangumiUtils.findCurrentWeekEpisode(
+      allEpisodes,
+      bangumiItem,
+    );
+    if (mounted) setState(() => _currentWeekEp = ep);
   }
 
   void liked() {
@@ -166,12 +178,42 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
   @override
   void initState() {
     super.initState();
-    if (!manager.isExist(
+    _init();
+    _loadCurrentWeekEp();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.listenManual(statsAllProvider, (_, next) {
+        final updated = next
+            .when(
+              data: (data) => data,
+              loading: () => <StatsDataImpl>[],
+              error: (_, _) => <StatsDataImpl>[],
+            )
+            .firstWhereOrNull(
+              (s) =>
+                  s.id == bangumiItem.id.toString() &&
+                  s.type == 'bangumi'.hashCode,
+            );
+        if (mounted) {
+          setState(() {
+            latestRating = updated
+                ?.rating
+                .lastOrNull
+                ?.platformEventRecords
+                .lastOrNull
+                ?.rating;
+          });
+        }
+      });
+    });
+  }
+
+  Future<void> _init() async {
+    if (!await manager.isExistAsync(
       bangumiItem.id.toString(),
       AnimeType('bangumi'.hashCode),
     )) {
       try {
-        manager.addStats(
+        await manager.addStats(
           manager.createStatsData(
             id: bangumiItem.id.toString(),
             title: bangumiItem.nameCn.isNotEmpty
@@ -187,13 +229,14 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
         StatsLog.error('addStats', e.toString());
       }
     }
-    setStats();
-    isLiked = manager.getGroupLikedStatus(
+    await setStats();
+    isLiked = await manager.getGroupLikedStatus(
       id: bangumiItem.id.toString(),
       type: 'bangumi'.hashCode,
     );
     latestRating =
         stats.rating.lastOrNull?.platformEventRecords.lastOrNull?.rating;
+    if (mounted) setState(() {});
   }
 
   Widget _button() {
@@ -287,10 +330,7 @@ class _BangumiInfoCardVState extends State<BangumiInfoCardV> {
                         : 260;
                     double width = height * 0.72;
                     // 获取当前周的剧集
-                    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
-                      allEpisodes,
-                      bangumiItem,
-                    );
+                    final currentWeekEp = _currentWeekEp;
 
                     final type0Episodes = allEpisodes
                         .where((ep) => ep.type == 0)

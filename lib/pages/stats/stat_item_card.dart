@@ -1,24 +1,56 @@
 part of 'stats_page.dart';
 
-class StatItemWidget extends StatelessWidget {
+class StatItemWidget extends StatefulWidget {
   final List<StatsDataImpl> statsGroup;
   final DateTime selectedDay;
 
-  StatItemWidget({
+  const StatItemWidget({
     super.key,
     required this.statsGroup,
     required this.selectedDay,
   });
 
+  @override
+  State<StatItemWidget> createState() => _StatItemWidgetState();
+}
+
+class _StatItemWidgetState extends State<StatItemWidget> {
+  bool _liked = false;
+  BangumiItem? _bangumiItem;
+
+  List<StatsDataImpl> get statsGroup => widget.statsGroup;
+
+  DateTime get selectedDay => widget.selectedDay;
+
   StatsDataImpl get _primaryStat {
-    final masterItems = statsGroup.where((stat) => stat.isBangumi).toList();
-    if (masterItems.isNotEmpty) {
-      return masterItems.first;
-    }
-    return statsGroup.first;
+    final masterItems = statsGroup.where((s) => s.isBangumi).toList();
+    return masterItems.isNotEmpty ? masterItems.first : statsGroup.first;
   }
 
-  final height =
+  @override
+  void initState() {
+    super.initState();
+    _loadLiked();
+    _loadBangumiItem();
+  }
+
+  Future<void> _loadLiked() async {
+    final liked = await StatsManager().getGroupLikedStatus(
+      id: _primaryStat.id,
+      type: _primaryStat.type,
+    );
+    if (mounted) setState(() => _liked = liked);
+  }
+
+  Future<void> _loadBangumiItem() async {
+    final primary = _primaryStat;
+    if (primary.bangumiId != null) {
+      final item = await BangumiManager().getBangumiItem(primary.bangumiId!);
+      if (mounted) setState(() => _bangumiItem = item);
+    }
+  }
+
+  final double height =
       (App.isAndroid || MediaQuery.of(App.rootContext).size.width <= 700)
       ? 210.0
       : 300.0;
@@ -584,10 +616,7 @@ class StatItemWidget extends StatelessWidget {
           : const SizedBox.shrink();
     }
 
-    final bool liked = StatsManager().getGroupLikedStatus(
-      id: stats.id,
-      type: stats.type,
-    );
+    final bool liked = _liked;
 
     return SizedBox(
       height: height,
@@ -676,7 +705,7 @@ class StatItemWidget extends StatelessWidget {
     final primaryStat = _primaryStat;
     BangumiItem? bangumiItem;
     if (primaryStat.bangumiId != null) {
-      bangumiItem = BangumiManager().getBangumiItem(primaryStat.bangumiId!);
+      bangumiItem = _bangumiItem;
     }
 
     return Padding(

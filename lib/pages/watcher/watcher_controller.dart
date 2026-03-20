@@ -1,5 +1,5 @@
 import 'package:kostori/foundation/anime_source/anime_source.dart';
-import 'package:kostori/foundation/history.dart';
+import 'package:kostori/database/history.dart';
 import 'package:mobx/mobx.dart';
 
 part 'watcher_controller.g.dart';

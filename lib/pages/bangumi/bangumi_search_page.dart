@@ -3,31 +3,32 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
-class BangumiSearchPage extends StatefulWidget {
+class BangumiSearchPage extends ConsumerStatefulWidget {
   const BangumiSearchPage({super.key, this.tag});
 
   final String? tag;
 
   @override
-  State<BangumiSearchPage> createState() => _BangumiSearchPageState();
+  ConsumerState<BangumiSearchPage> createState() => _BangumiSearchPageState();
 }
 
-class _BangumiSearchPageState extends State<BangumiSearchPage> {
+class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   final ScrollController _scrollController = ScrollController();
   final maxWidth = 1250.0;
   List<String> tags = [];
@@ -948,17 +949,26 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
   }
 
   Widget _searchHistorySliver() {
-    final history = SearchHistoryManager().getSearchAll();
+    final history = ref
+        .watch(searchHistoryProvider)
+        .when(
+          data: (data) => data,
+          loading: () => <SearchHistoryItem>[],
+          error: (_, _) => <SearchHistoryItem>[],
+        );
 
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, index) {
-        final item = history[index].keyword;
+        final item = history[index];
         return ListTile(
           leading: const Icon(Icons.history),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(item, style: ts.s14.copyWith(fontWeight: FontWeight.w500)),
+              Text(
+                item.keyword,
+                style: ts.s14.copyWith(fontWeight: FontWeight.w500),
+              ),
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -969,14 +979,12 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${history[index].useCount} 次',
+                    '${item.useCount} 次',
                     style: ts.s12.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Icon(
                     Icons.schedule,
                     size: 14,
@@ -984,7 +992,7 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    Utils.formatTime(history[index].lastUsedAt),
+                    Utils.formatTime(item.lastUsedAt),
                     style: ts.s12.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),
@@ -993,13 +1001,11 @@ class _BangumiSearchPageState extends State<BangumiSearchPage> {
               ),
             ],
           ),
-          onTap: () => _performSearch(item),
+          onTap: () => _performSearch(item.keyword),
           trailing: IconButton(
             icon: const Icon(Icons.clear),
-            onPressed: () {
-              SearchHistoryManager().deleteSearch(item);
-              setState(() {});
-            },
+            onPressed: () =>
+                ref.read(searchHistoryProvider.notifier).delete(item.keyword),
           ),
         );
       }, childCount: history.length),

@@ -2,11 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/search_history.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
@@ -392,43 +393,30 @@ class SearchOptionWidget extends StatelessWidget {
   }
 }
 
-class SearchHistory extends StatefulWidget {
+class SearchHistory extends ConsumerWidget {
   const SearchHistory(this.search, {super.key});
 
   final void Function(String) search;
 
   @override
-  State<SearchHistory> createState() => SearchHistoryState();
-}
-
-class SearchHistoryState extends State<SearchHistory> {
-  @override
-  Widget build(BuildContext context) {
-    final manager = SearchHistoryManager();
-
-    return AnimatedBuilder(
-      animation: manager,
-      builder: (context, _) {
-        final history = manager.getSearchAll();
-
-        return SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            if (index == 0) {
-              return const SizedBox(height: 16);
-            }
-
-            if (index == 1) {
-              return _buildHeader(context, manager);
-            }
-
-            return buildItem(context, history[index - 2], manager);
-          }, childCount: 2 + history.length),
-        ).sliverPaddingHorizontal(16);
-      },
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncValue = ref.watch(searchHistoryProvider);
+    final history = asyncValue.when(
+      data: (data) => data,
+      loading: () => <SearchHistoryItem>[],
+      error: (_, _) => <SearchHistoryItem>[],
     );
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, index) {
+        if (index == 0) return const SizedBox(height: 16);
+        if (index == 1) return _buildHeader(context, ref);
+        return _buildItem(context, ref, history[index - 2]);
+      }, childCount: 2 + history.length),
+    ).sliverPaddingHorizontal(16);
   }
 
-  Widget _buildHeader(BuildContext context, SearchHistoryManager manager) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
     return ListTile(
       leading: const Icon(Icons.history),
       contentPadding: EdgeInsets.zero,
@@ -441,7 +429,7 @@ class SearchHistoryState extends State<SearchHistory> {
               FilledButton(
                 child: Text("Clear".tl),
                 onPressed: () {
-                  manager.clearSearch();
+                  ref.read(searchHistoryProvider.notifier).clear();
                   context.pop();
                 },
               ),
@@ -466,26 +454,23 @@ class SearchHistoryState extends State<SearchHistory> {
     );
   }
 
-  Widget buildItem(
+  Widget _buildItem(
     BuildContext context,
+    WidgetRef ref,
     SearchHistoryItem item,
-    SearchHistoryManager manager,
   ) {
     void showMenu(Offset offset) {
       showMenuX(context, offset, [
         MenuEntry(
           icon: Icons.copy,
           text: 'Copy'.tl,
-          onClick: () {
-            Clipboard.setData(ClipboardData(text: item.keyword));
-          },
+          onClick: () => Clipboard.setData(ClipboardData(text: item.keyword)),
         ),
         MenuEntry(
           icon: Icons.delete,
           text: 'Delete'.tl,
-          onClick: () {
-            manager.deleteSearch(item.keyword);
-          },
+          onClick: () =>
+              ref.read(searchHistoryProvider.notifier).delete(item.keyword),
         ),
       ]);
     }
@@ -493,9 +478,7 @@ class SearchHistoryState extends State<SearchHistory> {
     return Builder(
       builder: (context) {
         return InkWell(
-          onTap: () {
-            widget.search(item.keyword);
-          },
+          onTap: () => search(item.keyword),
           onLongPress: () {
             var renderBox = context.findRenderObject() as RenderBox;
             var offset = renderBox.localToGlobal(Offset.zero);
@@ -506,9 +489,7 @@ class SearchHistoryState extends State<SearchHistory> {
               ),
             );
           },
-          onSecondaryTapUp: (details) {
-            showMenu(details.globalPosition);
-          },
+          onSecondaryTapUp: (details) => showMenu(details.globalPosition),
           child: Container(
             decoration: BoxDecoration(
               border: Border(
@@ -522,15 +503,11 @@ class SearchHistoryState extends State<SearchHistory> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 第一行：关键词
                 Text(
                   item.keyword,
                   style: ts.s14.copyWith(fontWeight: FontWeight.w500),
                 ),
-
                 const SizedBox(height: 4),
-
-                // 第二行：次数 + 时间
                 Row(
                   children: [
                     Icon(
@@ -545,9 +522,7 @@ class SearchHistoryState extends State<SearchHistory> {
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
-
                     const SizedBox(width: 12),
-
                     Icon(
                       Icons.schedule,
                       size: 14,

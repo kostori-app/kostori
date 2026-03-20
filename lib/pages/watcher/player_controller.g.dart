@@ -373,6 +373,24 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$saveAddressAtom = Atom(
+    name: '_PlayerController.saveAddress',
+    context: context,
+  );
+
+  @override
+  String get saveAddress {
+    _$saveAddressAtom.reportRead();
+    return super.saveAddress;
+  }
+
+  @override
+  set saveAddress(String value) {
+    _$saveAddressAtom.reportWrite(value, super.saveAddress, () {
+      super.saveAddress = value;
+    });
+  }
+
   late final _$showTabBodyAtom = Atom(
     name: '_PlayerController.showTabBody',
     context: context,
@@ -694,6 +712,7 @@ lastPreviewTime: ${lastPreviewTime},
 currentEpisoded: ${currentEpisoded},
 currentRoad: ${currentRoad},
 videoUrl: ${videoUrl},
+saveAddress: ${saveAddress},
 showTabBody: ${showTabBody},
 volume: ${volume},
 brightness: ${brightness},

@@ -7,14 +7,15 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/foundation/favorites.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
+import 'package:kostori/pages/user_profile_analysis_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
@@ -54,6 +55,7 @@ class _MePageState extends State<MePage> {
         const _SyncDataWidget(),
         const TodayRecommendation(),
         const _ImageManipulation(),
+        const _UserProfileAnalysis(),
         const _StatsViewPage(),
         SliverPadding(
           padding: EdgeInsets.only(top: context.padding.bottom + 56),
@@ -103,37 +105,32 @@ class _MePageState extends State<MePage> {
   }
 }
 
-class _SyncDataWidget extends StatefulWidget {
+class _SyncDataWidget extends ConsumerStatefulWidget {
   const _SyncDataWidget();
 
   @override
-  State<_SyncDataWidget> createState() => _SyncDataWidgetState();
+  ConsumerState<_SyncDataWidget> createState() => _SyncDataWidgetState();
 }
 
-class _SyncDataWidgetState extends State<_SyncDataWidget>
+class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
     with WidgetsBindingObserver {
+  late DateTime lastCheck;
+
   @override
   void initState() {
     super.initState();
-    DataSync().addListener(update);
+    ref.listenManual(dataSyncStateProvider, (_, _) {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addObserver(this);
     lastCheck = DateTime.now();
   }
 
-  void update() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
   @override
   void dispose() {
-    super.dispose();
-    DataSync().removeListener(update);
     WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
-
-  late DateTime lastCheck;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -264,7 +261,7 @@ class TodayRecommendation extends StatelessWidget {
 
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: cs.outlineVariant, width: 0.6),
@@ -296,8 +293,9 @@ class TodayRecommendation extends StatelessWidget {
             if (recommendations.isEmpty)
               const SizedBox(height: 220)
             else
-              SizedBox(
+              Container(
                 height: 220,
+                padding: const EdgeInsets.all(16),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final double totalWidth = constraints.maxWidth;
@@ -482,7 +480,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                 height: 56,
                 child: Row(
                   children: [
-                    Center(child: Text('Image Operations'.tl, style: ts.s18)),
+                    Center(child: Text('Image Operations'.tl, style: ts.s16)),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       padding: const EdgeInsets.symmetric(
@@ -567,6 +565,73 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                       ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserProfileAnalysis extends StatelessWidget {
+  const _UserProfileAnalysis();
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 0.6,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            context.to(() => const UserProfileAnalysisPage());
+          },
+          child: SizedBox(
+            height: 56,
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                Icon(
+                  Icons.analytics_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'User Profile Analysis'.tl,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'AI',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
           ),
         ),
       ),

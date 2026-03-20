@@ -745,7 +745,7 @@ class _AnimeDescription extends StatelessWidget {
   }
 }
 
-class SliverGridAnimes extends StatefulWidget {
+class SliverGridAnimes extends ConsumerStatefulWidget {
   const SliverGridAnimes({
     super.key,
     required this.animes,
@@ -784,10 +784,10 @@ class SliverGridAnimes extends StatefulWidget {
   final bool asSliver;
 
   @override
-  State<SliverGridAnimes> createState() => _SliverGridAnimesState();
+  ConsumerState<SliverGridAnimes> createState() => _SliverGridAnimesState();
 }
 
-class _SliverGridAnimesState extends State<SliverGridAnimes> {
+class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   List<Anime> animes = [];
   List<int> heroIDs = [];
 
@@ -822,14 +822,8 @@ class _SliverGridAnimesState extends State<SliverGridAnimes> {
       }
     }
     generateHeroID();
-    HistoryManager().addListener(update);
+    ref.listenManual(historyAllProvider, (_, _) => update());
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    HistoryManager().removeListener(update);
-    super.dispose();
   }
 
   void update() {

@@ -3,11 +3,11 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/history.dart';
-import 'package:kostori/foundation/search_history.dart';
-import 'package:kostori/foundation/stats.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/database/search_history.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:path_provider/path_provider.dart';
 
 export "context.dart";

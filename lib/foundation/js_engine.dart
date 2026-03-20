@@ -378,22 +378,20 @@ mixin class _JSEngineApi {
     return null;
   }
 
-  dynamic handleCookieCallback(Map<String, dynamic> data) {
+  Future<dynamic> handleCookieCallback(Map<String, dynamic> data) async {
     switch (data["function"]) {
       case "set":
-        _cookieJar!.saveFromResponse(
+        await _cookieJar!.saveFromResponse(
           Uri.parse(data["url"]),
           (data["cookies"] as List).map((e) {
             var c = Cookie(e["name"], e["value"]);
-            if (e['domain'] != null) {
-              c.domain = e['domain'];
-            }
+            if (e['domain'] != null) c.domain = e['domain'];
             return c;
           }).toList(),
         );
         return null;
       case "get":
-        var cookies = _cookieJar!.loadForRequest(Uri.parse(data["url"]));
+        var cookies = await _cookieJar!.loadForRequest(Uri.parse(data["url"]));
         return cookies
             .map(
               (e) => {

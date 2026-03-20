@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
-class HistoryPage extends StatefulWidget {
+class HistoryPage extends ConsumerStatefulWidget {
   const HistoryPage({super.key});
 
   @override
-  State<HistoryPage> createState() => _HistoryPageState();
+  ConsumerState<HistoryPage> createState() => _HistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
+class _HistoryPageState extends ConsumerState<HistoryPage> {
   bool multiSelectMode = false;
-
   Map<HistoryTimeGroup, bool> expandedStates = {};
-  var animes = HistoryManager().getAll();
+  var animes = <History>[];
   Map<History, bool> selectedAnimes = {};
   final scrollController = ScrollController();
   var controller = FlyoutController();
@@ -56,29 +56,41 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   void initState() {
-    HistoryManager().addListener(onUpdate);
+    super.initState();
+    _loadHistory();
+    ref.listenManual(historyAllProvider, (_, next) {
+      final list = next.when(
+        data: (d) => d,
+        loading: () => animes,
+        error: (_, _) => animes,
+      );
+      if (mounted) {
+        setState(() {
+          animes = list;
+          if (multiSelectMode) {
+            selectedAnimes.removeWhere((a, _) => !animes.contains(a));
+            if (selectedAnimes.isEmpty) multiSelectMode = false;
+          }
+        });
+      }
+    });
     expandedStates = fromJsonMap(
       Map<String, dynamic>.from(appdata.implicitData['expandedStates'] ?? {}),
     );
-    super.initState();
   }
 
   @override
   void dispose() {
-    HistoryManager().removeListener(onUpdate);
     scrollController.dispose();
     super.dispose();
   }
 
-  void onUpdate() {
-    setState(() {
-      animes = HistoryManager().getAll();
-      if (multiSelectMode) {
-        selectedAnimes.removeWhere((anime, _) => !animes.contains(anime));
-        if (selectedAnimes.isEmpty) multiSelectMode = false;
-      }
-    });
+  Future<void> _loadHistory() async {
+    final list = await HistoryManager().getAll();
+    if (mounted) setState(() => animes = list);
   }
+
+  void onUpdate() => _loadHistory();
 
   void scrollToTop() {
     if (scrollController.hasClients) {
@@ -97,9 +109,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   void deSelect() {
-    setState(() {
-      selectedAnimes.clear();
-    });
+    setState(() => selectedAnimes.clear());
   }
 
   void invertSelection() {
@@ -124,20 +134,15 @@ class _HistoryPageState extends State<HistoryPage> {
 
   List<HistoryGroup> buildHistoryGroups(List<History> histories) {
     Map<HistoryTimeGroup, List<History>> map = {};
-
     for (var group in HistoryTimeGroup.values) {
       map[group] = [];
     }
-
     for (var h in histories) {
-      final group = groupByTime(h.time);
-      map[group]!.add(h);
+      map[groupByTime(h.time)]!.add(h);
     }
-
     for (var entry in map.entries) {
       entry.value.sort((a, b) => b.time.compareTo(a.time));
     }
-
     List<HistoryGroup> groups = map.entries
         .where((entry) => entry.value.isNotEmpty)
         .map(
@@ -148,7 +153,6 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
         )
         .toList();
-
     groups.sort((a, b) => a.group.order.compareTo(b.group.order));
     return groups;
   }
@@ -233,37 +237,7 @@ class _HistoryPageState extends State<HistoryPage> {
           },
           child: IconButton(
             icon: const Icon(Icons.clear_all),
-            onPressed: () {
-              controller.show();
-            },
-          ),
-        ),
-      ),
-      Tooltip(
-        message: 'Clear Progress'.tl,
-        child: Flyout(
-          controller: controller,
-          flyoutBuilder: (context) {
-            return FlyoutContent(
-              title: 'Clear Progress'.tl,
-              content: Text('Are you sure you want to clear your progress?'.tl),
-              actions: [
-                Button.filled(
-                  color: context.colorScheme.error,
-                  onPressed: () {
-                    HistoryManager().clearProgress();
-                    context.pop();
-                  },
-                  child: Text('Clear'.tl),
-                ),
-              ],
-            );
-          },
-          child: IconButton(
-            icon: const Icon(Icons.clear_all),
-            onPressed: () {
-              controller.show();
-            },
+            onPressed: () => controller.show(),
           ),
         ),
       ),
@@ -275,13 +249,10 @@ class _HistoryPageState extends State<HistoryPage> {
       List<Widget> slivers = [];
 
       for (var groupData in groups) {
-        // Header
         slivers.add(
           SliverToBoxAdapter(
             child: InkWell(
-              onTap: () {
-                toggleGroupExpansion(groupData.group);
-              },
+              onTap: () => toggleGroupExpansion(groupData.group),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -306,7 +277,6 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
         );
 
-        // Grid with animation
         slivers.add(
           SliverAnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
@@ -332,11 +302,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                 }
                               });
                             }
-                          : (a, heroID) {
+                          : (a, heroID) async {
                               if (a.viewMore != null) {
-                                var context =
+                                final ctx =
                                     App.mainNavigatorKey!.currentContext!;
-                                a.viewMore!.jump(context);
+                                a.viewMore!.jump(ctx);
                               } else {
                                 App.mainNavigatorKey?.currentContext?.to(
                                   () => AnimePage(
@@ -348,12 +318,12 @@ class _HistoryPageState extends State<HistoryPage> {
                                   ),
                                 );
                                 final stats = StatsManager();
-                                if (!stats.isExist(
+                                if (!await stats.isExistAsync(
                                   a.id,
                                   AnimeType(a.sourceKey.hashCode),
                                 )) {
                                   try {
-                                    stats.addStats(
+                                    await stats.addStats(
                                       stats.createStatsData(
                                         id: a.id,
                                         title: a.title,
@@ -377,9 +347,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           icon: Icons.remove,
                           text: 'Remove'.tl,
                           color: context.colorScheme.error,
-                          onClick: () {
-                            _removeHistory(c as History);
-                          },
+                          onClick: () => _removeHistory(c as History),
                         ),
                       ],
                     ),
@@ -416,13 +384,13 @@ class _HistoryPageState extends State<HistoryPage> {
               : Container(),
           title: multiSelectMode
               ? Text(selectedAnimes.length.toString())
-              : Text(''),
+              : const Text(''),
           actions: multiSelectMode ? selectActions : normalActions,
         ),
         ...buildGroupedSlivers(groups),
         SliverPadding(
           padding: const EdgeInsets.only(bottom: 80),
-          sliver: SliverToBoxAdapter(child: SizedBox.shrink()),
+          sliver: SliverToBoxAdapter(child: const SizedBox.shrink()),
         ),
       ],
     );

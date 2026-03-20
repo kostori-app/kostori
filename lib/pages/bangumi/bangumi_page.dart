@@ -5,7 +5,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -349,17 +349,9 @@ class _TimetableState extends State<_Timetable> {
 
   @override
   void initState() {
-    weekday = DateTime.now().weekday;
-    // 异步加载数据
-    filterTodayBangumiItems();
-    BangumiManager().addListener(onHistoryChange);
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    BangumiManager().removeListener(onHistoryChange);
-    super.dispose();
+    weekday = DateTime.now().weekday;
+    filterTodayBangumiItems();
   }
 
   Future<void> filterTodayBangumiItems() async {
@@ -368,7 +360,7 @@ class _TimetableState extends State<_Timetable> {
       final todayWeekday = today.weekday;
 
       // 获取一周7天的所有番剧条目
-      final allItems = BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
+      final allItems = await BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
 
       // 批量检测这些条目的数据是否存在，existenceMap: idStr -> airTimeStr
       final existenceMap = await BangumiManager().checkWhetherDataExistsBatch(
@@ -395,7 +387,7 @@ class _TimetableState extends State<_Timetable> {
           // 只保留今日对应weekday的番剧
           if (airTime.weekday != todayWeekday) continue;
 
-          final episodeInfo = _processEpisodeInfo(
+          final episodeInfo = await _processEpisodeInfo(
             episodes: allEpisodesMap[item.id],
             now: today,
             currentWeekInfo: Utils.getISOWeekNumber(today),
@@ -432,12 +424,12 @@ class _TimetableState extends State<_Timetable> {
   }
 
   // 判断是否“本周最后一集”，并返回本周剧集信息
-  Map<String, dynamic>? _processEpisodeInfo({
+  Future<Map<String, dynamic>?> _processEpisodeInfo({
     required List<EpisodeInfo>? episodes,
     required DateTime now,
     required (int, int) currentWeekInfo,
     required BangumiItem bangumiItem,
-  }) {
+  }) async {
     if (episodes == null || episodes.isEmpty) return null;
 
     final (currentYear, currentWeek) = currentWeekInfo;
@@ -450,7 +442,7 @@ class _TimetableState extends State<_Timetable> {
     final finalEpisode = type0Episodes.last;
 
     // 找本周对应的集数
-    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
+    final currentWeekEp = await BangumiUtils.findCurrentWeekEpisode(
       episodes,
       bangumiItem,
     );

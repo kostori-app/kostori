@@ -77,7 +77,7 @@ class StatsOverviewScreen extends StatelessWidget {
   }
 }
 
-class StatsOverview extends StatelessWidget {
+class StatsOverview extends StatefulWidget {
   const StatsOverview({
     super.key,
     required this.stats,
@@ -88,6 +88,35 @@ class StatsOverview extends StatelessWidget {
   final List<StatsDataImpl> stats;
   final DateTime selectedDate;
   final TimeRange timeRange;
+
+  @override
+  State<StatsOverview> createState() => _StatsOverviewState();
+}
+
+class _StatsOverviewState extends State<StatsOverview> {
+  List<BangumiItem> _bangumiItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBangumiItems();
+  }
+
+  Future<void> _loadBangumiItems() async {
+    final uniqueIds = _uniqueBangumiIds;
+    final items = <BangumiItem>[];
+    for (final id in uniqueIds) {
+      final item = await BangumiManager().getBangumiItem(id);
+      if (item != null) items.add(item);
+    }
+    if (mounted) setState(() => _bangumiItems = items);
+  }
+
+  List<StatsDataImpl> get stats => widget.stats;
+
+  DateTime get selectedDate => widget.selectedDate;
+
+  TimeRange get timeRange => widget.timeRange;
 
   List<StatsDataImpl> get _deduplicatedStats {
     final Map<String, StatsDataImpl> uniqueStats = {};
@@ -141,20 +170,6 @@ class StatsOverview extends StatelessWidget {
       }
     }
     return uniqueIds.toList();
-  }
-
-  List<BangumiItem> get _bangumiItems {
-    final uniqueIds = _uniqueBangumiIds;
-    final List<BangumiItem> items = [];
-
-    for (final bangumiId in uniqueIds) {
-      final item = BangumiManager().getBangumiItem(bangumiId);
-      if (item != null) {
-        items.add(item);
-      }
-    }
-
-    return items;
   }
 
   List<MapEntry<String, int>> get _sortedTagCounts =>

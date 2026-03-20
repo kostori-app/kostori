@@ -49,6 +49,7 @@ class BottomInfoState extends State<BottomInfo>
   late InfoController infoController;
   late final TranslationController _translationController;
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
+  Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
 
   bool commentsIsLoading = false;
   bool topicsIsLoading = false;
@@ -83,6 +84,7 @@ class BottomInfoState extends State<BottomInfo>
     infoController.allEpisodes = [];
     queryBangumiInfoByID(infoController.bangumiId);
     queryBangumiEpisodeByID(infoController.bangumiId);
+    _loadCurrentWeekEp();
     infoController.characterList.clear();
     infoController.commentsList.clear();
     infoController.staffList.clear();
@@ -130,6 +132,14 @@ class BottomInfoState extends State<BottomInfo>
 
   void updata() {
     setState(() {});
+  }
+
+  Future<void> _loadCurrentWeekEp() async {
+    final ep = await BangumiUtils.findCurrentWeekEpisode(
+      infoController.allEpisodes,
+      infoController.bangumiItem,
+    );
+    if (mounted) setState(() => _currentWeekEp = ep);
   }
 
   Future<void> _handleTranslation(String text) async {
@@ -316,10 +326,7 @@ class BottomInfoState extends State<BottomInfo>
     );
 
     // 获取当前周的剧集
-    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
-      allEpisodes,
-      bangumiItem,
-    );
+    final currentWeekEp = _currentWeekEp;
 
     final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
 

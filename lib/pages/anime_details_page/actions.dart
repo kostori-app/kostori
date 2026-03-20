@@ -482,22 +482,25 @@ class _RatingDialogState extends State<RatingDialog> {
   }
 
   void _initializeData() async {
-    stats = StatsManager().getOrCreateTodayEvents(
+    final s = await StatsManager().getStatsByIdAndType(
       id: _statsDataImpl.id,
       type: _statsDataImpl.type,
     );
+    if (s == null) return;
+    stats = StatsManager().getOrCreateTodayEvents(statsData: s);
 
+    final bangumiBundle = await manager.getOrCreateBangumiStats(
+      statsDataImpl: stats.statsData,
+    );
+
+    if (!mounted) return;
     setState(() {
-      bangumiStats = manager.getOrCreateBangumiStats(
-        statsDataImpl: stats.statsData,
-      );
+      bangumiStats = bangumiBundle;
       final targetStats = bangumiStats ?? stats;
       _rating = (targetStats.ratingRecord.rating ?? 0).toDouble();
       final idKey = targetStats.statsData.id;
       _showingDraft = commentDrafts[idKey]?.isNotEmpty == true;
-      if (!_showingDraft) {
-        commentDrafts[idKey] = '';
-      }
+      if (!_showingDraft) commentDrafts[idKey] = '';
       _commentController = TextEditingController(
         text: _showingDraft
             ? commentDrafts[idKey]
@@ -536,13 +539,18 @@ class _RatingDialogState extends State<RatingDialog> {
         return total;
       }
 
+      final otherWatch = await StatsManager().getOtherBangumiTotalWatchAsync(
+        current: targetStats.statsData,
+        time: now,
+      );
+      final totalWatch = getTotalWatchDuration() + otherWatch;
+
       if (targetStats.ratingRecord.rating != newRating) {
         DailyEvent? todayRecord = targetStats.statsData.rating.firstWhereOrNull(
-          (dailyEvent) {
-            return dailyEvent.date.year == now.year &&
-                dailyEvent.date.month == now.month &&
-                dailyEvent.date.day == now.day;
-          },
+          (dailyEvent) =>
+              dailyEvent.date.year == now.year &&
+              dailyEvent.date.month == now.month &&
+              dailyEvent.date.day == now.day,
         );
 
         final newRatingRecord = PlatformEventRecord(
@@ -550,56 +558,49 @@ class _RatingDialogState extends State<RatingDialog> {
           platform: AppPlatform.current,
           rating: newRating,
           dateStr: now.yyyymmddHHmmss,
-          watchDuration:
-              getTotalWatchDuration() +
-              StatsManager().getOtherBangumiTotalWatch(
-                current: targetStats.statsData,
-                time: now,
-              ),
+          watchDuration: totalWatch,
         );
 
         if (todayRecord != null) {
           todayRecord.platformEventRecords.add(newRatingRecord);
           todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
         } else {
-          final newDailyEvent = DailyEvent(
-            dateStr: todayStr,
-            platformEventRecords: [newRatingRecord],
+          targetStats.statsData.rating.add(
+            DailyEvent(
+              dateStr: todayStr,
+              platformEventRecords: [newRatingRecord],
+            ),
           );
-          targetStats.statsData.rating.add(newDailyEvent);
         }
       }
 
       if (targetStats.commentRecord.comment != newComment) {
         DailyEvent? todayRecord = targetStats.statsData.comment
-            .firstWhereOrNull((dailyEvent) {
-              return dailyEvent.date.year == now.year &&
+            .firstWhereOrNull(
+              (dailyEvent) =>
+                  dailyEvent.date.year == now.year &&
                   dailyEvent.date.month == now.month &&
-                  dailyEvent.date.day == now.day;
-            });
+                  dailyEvent.date.day == now.day,
+            );
 
         final newCommentRecord = PlatformEventRecord(
           value: todayRecord != null ? targetStats.commentRecord.value + 1 : 1,
           platform: AppPlatform.current,
           comment: newComment,
           dateStr: now.yyyymmddHHmmss,
-          watchDuration:
-              getTotalWatchDuration() +
-              StatsManager().getOtherBangumiTotalWatch(
-                current: targetStats.statsData,
-                time: now,
-              ),
+          watchDuration: totalWatch,
         );
 
         if (todayRecord != null) {
           todayRecord.platformEventRecords.add(newCommentRecord);
           todayRecord.platformEventRecords.removeWhere((p) => p.value == 0);
         } else {
-          final newDailyEvent = DailyEvent(
-            dateStr: todayStr,
-            platformEventRecords: [newCommentRecord],
+          targetStats.statsData.comment.add(
+            DailyEvent(
+              dateStr: todayStr,
+              platformEventRecords: [newCommentRecord],
+            ),
           );
-          targetStats.statsData.comment.add(newDailyEvent);
         }
       }
 

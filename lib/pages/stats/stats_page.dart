@@ -13,14 +13,14 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/components/word_cloud_widget.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
@@ -39,29 +39,24 @@ part 'stats_overview.dart';
 
 part 'stats_view_page.dart';
 
-class StatsCalendarPage extends StatefulWidget {
+class StatsCalendarPage extends ConsumerStatefulWidget {
   const StatsCalendarPage({super.key, required this.controller});
 
   final StatsController controller;
 
   @override
-  State<StatsCalendarPage> createState() => _StatsCalendarPageState();
+  ConsumerState<StatsCalendarPage> createState() => _StatsCalendarPageState();
 }
 
-class _StatsCalendarPageState extends State<StatsCalendarPage> {
-  late final StatsController controller;
+class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
+  StatsController get controller => widget.controller;
 
   @override
   void initState() {
     super.initState();
-    controller = widget.controller;
-    DataSync().addListener(controller.loadEvents);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    DataSync().removeListener(controller.loadEvents);
+    ref.listenManual(dataSyncStateProvider, (_, _) {
+      controller.loadEvents();
+    });
   }
 
   void showStats({

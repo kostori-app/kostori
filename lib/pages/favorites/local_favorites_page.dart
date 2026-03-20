@@ -4,16 +4,16 @@ const _asyncDataFetchLimit = 500;
 
 final excludedFolders = ["default", "默认"];
 
-class _LocalFavoritesPage extends StatefulWidget {
+class _LocalFavoritesPage extends ConsumerStatefulWidget {
   const _LocalFavoritesPage({required this.favoritesController});
-
   final FavoritesController favoritesController;
 
   @override
-  State<_LocalFavoritesPage> createState() => _LocalFavoritesPageState();
+  ConsumerState<_LocalFavoritesPage> createState() =>
+      _LocalFavoritesPageState();
 }
 
-class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
+class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final ScrollController scrollController = ScrollController();
 
@@ -231,14 +231,13 @@ class _LocalFavoritesPageState extends State<_LocalFavoritesPage>
       });
     });
     updateAnimes();
-    manager.addListener(updateAnimes);
+    ref.listenManual(favoritesChangedProvider, (_, _) => updateAnimes());
     super.initState();
   }
 
   @override
   void dispose() {
     favoritesController.tabController.dispose();
-    manager.removeListener(updateAnimes);
     scrollController.dispose();
     super.dispose();
   }

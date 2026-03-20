@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/database/search_history.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
-import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/history.dart';
-import 'package:kostori/foundation/search_history.dart';
-import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
@@ -30,6 +31,7 @@ Future<File> exportAppData() async {
     var searchHistoryFile = FilePath.join(dataPath, "search_history.db");
     var appdata = FilePath.join(dataPath, "appdata.json");
     var cookies = FilePath.join(dataPath, "cookie.db");
+    var aiDatabase = FilePath.join(dataPath, "ai_database.db");
     zipFile.addFile("history.db", historyFile);
     zipFile.addFile("local_favorite.db", localFavoriteFile);
     zipFile.addFile("bangumi.db", bangumiFile);
@@ -37,6 +39,7 @@ Future<File> exportAppData() async {
     zipFile.addFile("search_history.db", searchHistoryFile);
     zipFile.addFile("appdata.json", appdata);
     zipFile.addFile("cookie.db", cookies);
+    zipFile.addFile("ai_database.db", aiDatabase);
     for (var file in Directory(
       FilePath.join(dataPath, "anime_source"),
     ).listSync()) {
@@ -118,12 +121,20 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       appdata.syncData(data);
     }
     if (await cookieFile.exists()) {
-      SingleInstanceCookieJar.instance?.dispose();
+      await SingleInstanceCookieJar.instance?.dispose();
+      SingleInstanceCookieJar.instance = null;
       File(FilePath.join(App.dataPath, "cookie.db")).deleteIfExistsSync();
       cookieFile.renameSync(FilePath.join(App.dataPath, "cookie.db"));
       SingleInstanceCookieJar.instance = SingleInstanceCookieJar(
         FilePath.join(App.dataPath, "cookie.db"),
-      )..init();
+      );
+    }
+    var aiFile = cacheDir.joinFile("ai_database.db");
+    if (await aiFile.exists()) {
+      await AiDatabase.instance.close();
+      File(FilePath.join(App.dataPath, "ai_database.db")).deleteIfExistsSync();
+      aiFile.renameSync(FilePath.join(App.dataPath, "ai_database.db"));
+      AiDatabase.init();
     }
     var animeSourceDir = FilePath.join(cacheDirPath, "anime_source");
     if (Directory(animeSourceDir).existsSync()) {

@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'dart:ui';
 
 import 'package:crypto/crypto.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';

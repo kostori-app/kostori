@@ -22,12 +22,12 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
   bool loading = false;
   bool useBriefMode = true;
 
-  void loadFavorites() {
+  Future<void> loadFavorites() async {
     setState(() {
       loading = true;
     });
-    allHistory = hManager.getAll();
-    allBind = bManager.getBindAll();
+    allHistory = await hManager.getAll();
+    allBind = await bManager.getBindAll();
 
     favoriteHistory = allHistory.where((anime) {
       return fManager.isExist(anime.id, AnimeType(anime.sourceKey.hashCode));

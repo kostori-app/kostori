@@ -8,12 +8,12 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
@@ -84,7 +84,7 @@ class WatcherState extends State<Watcher>
     playerController.changePlayerSettings();
     epIndex = 1;
     currentRoad = 0;
-    updateStats(int: true);
+    updateStats(init: true);
     playerController.player.stream.completed.listen((completed) {
       if (completed) {
         playNextEpisode();
@@ -386,8 +386,8 @@ class WatcherState extends State<Watcher>
     );
   }
 
-  void updateStats({bool int = false}) async {
-    final (statsDataImpl, todayRecord, platformRecord) = stats
+  void updateStats({bool init = false}) async {
+    final (statsDataImpl, todayRecord, platformRecord) = await stats
         .getOrCreateTodayPlatformRecord(
           id: anime.id,
           type: anime.sourceKey.hashCode,
@@ -400,7 +400,7 @@ class WatcherState extends State<Watcher>
       statsDataImpl.totalWatchDurations.add(todayRecord);
     }
     this.statsDataImpl = statsDataImpl;
-    if (int) {
+    if (init) {
       await stats.addStats(statsDataImpl);
     }
   }

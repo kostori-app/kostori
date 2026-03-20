@@ -1,12 +1,13 @@
 // ignore_for_file: use_build_context_synchronously
 
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
-import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/network/app_dio.dart';
@@ -16,13 +17,11 @@ import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
 
-class DataSync with ChangeNotifier {
+class DataSync {
   DataSync._() {
     if (isEnabled) {
       downloadData();
     }
-    LocalFavoritesManager().addListener(onDataChanged);
-    AnimeSourceManager().addListener(onDataChanged);
     if (App.isDesktop) {
       Future.delayed(const Duration(seconds: 1), () {
         var controller = WindowFrame.of(App.rootContext);
@@ -31,10 +30,29 @@ class DataSync with ChangeNotifier {
     }
   }
 
+  static DataSync? instance;
+
+  factory DataSync() => instance ?? (instance = DataSync._());
+
+  bool _isDownloading = false;
+  bool get isDownloading => _isDownloading;
+
+  bool _isUploading = false;
+  bool get isUploading => _isUploading;
+
+  bool _haveWaitingTask = false;
+
+  String? _lastError;
+  String? get lastError => _lastError;
+
+  bool get isEnabled {
+    var config = appdata.settings['webdav'];
+    var autoSync = appdata.implicitData['webdavAutoSync'] ?? false;
+    return autoSync && config is List && config.isNotEmpty;
+  }
+
   void onDataChanged() {
-    if (isEnabled) {
-      uploadData();
-    }
+    if (isEnabled) uploadData();
   }
 
   bool _handleWindowClose() {
@@ -59,38 +77,10 @@ class DataSync with ChangeNotifier {
     exit(0);
   }
 
-  static DataSync? instance;
-
-  factory DataSync() => instance ?? (instance = DataSync._());
-
-  bool _isDownloading = false;
-
-  bool get isDownloading => _isDownloading;
-
-  bool _isUploading = false;
-
-  bool get isUploading => _isUploading;
-
-  bool _haveWaitingTask = false;
-
-  String? _lastError;
-
-  String? get lastError => _lastError;
-
-  bool get isEnabled {
-    var config = appdata.settings['webdav'];
-    var autoSync = appdata.implicitData['webdavAutoSync'] ?? false;
-    return autoSync && config is List && config.isNotEmpty;
-  }
-
   List<String>? _validateConfig() {
     var config = appdata.settings['webdav'];
-    if (config is! List) {
-      return null;
-    }
-    if (config.isEmpty) {
-      return [];
-    }
+    if (config is! List) return null;
+    if (config.isEmpty) return [];
     if (config.length != 3 || config.whereType<String>().length != 3) {
       return null;
     }
@@ -107,24 +97,19 @@ class DataSync with ChangeNotifier {
     _haveWaitingTask = false;
     _isUploading = true;
     _lastError = null;
-    notifyListeners();
+    _dataSyncStateController.add(null);
     try {
       var config = _validateConfig();
       if (config == null) {
         _lastError = 'Invalid WebDAV configuration';
         return const Res.error('Invalid WebDAV configuration');
       }
-      if (config.isEmpty) {
-        return const Res(true);
-      }
-      String url = config[0];
-      String user = config[1];
-      String pass = config[2];
+      if (config.isEmpty) return const Res(true);
 
       var client = newClient(
-        url,
-        user: user,
-        password: pass,
+        config[0],
+        user: config[1],
+        password: config[2],
         adapter: RHttpAdapter(),
       );
 
@@ -134,16 +119,11 @@ class DataSync with ChangeNotifier {
         var data = await exportAppData();
         var time = (DateTime.now().millisecondsSinceEpoch ~/ 86400000)
             .toString();
-        var filename = time;
-        filename += '-';
-        filename += appdata.settings['dataVersion'].toString();
-        filename += '.kostori';
+        var filename = '$time-${appdata.settings['dataVersion']}.kostori';
         var files = await client.readDir('/');
         files = files.where((e) => e.name!.endsWith('.kostori')).toList();
         var old = files.firstWhereOrNull((e) => e.name!.startsWith("$time-"));
-        if (old != null) {
-          await client.remove(old.name!);
-        }
+        if (old != null) await client.remove(old.name!);
         if (files.length >= 10) {
           files.sort((a, b) => a.name!.compareTo(b.name!));
           await client.remove(files.first.name!);
@@ -159,7 +139,7 @@ class DataSync with ChangeNotifier {
       }
     } finally {
       _isUploading = false;
-      notifyListeners();
+      _dataSyncStateController.add(null);
     }
   }
 
@@ -172,24 +152,19 @@ class DataSync with ChangeNotifier {
     _haveWaitingTask = false;
     _isDownloading = true;
     _lastError = null;
-    notifyListeners();
+    _dataSyncStateController.add(null);
     try {
       var config = _validateConfig();
       if (config == null) {
         _lastError = 'Invalid WebDAV configuration';
         return const Res.error('Invalid WebDAV configuration');
       }
-      if (config.isEmpty) {
-        return const Res(true);
-      }
-      String url = config[0];
-      String user = config[1];
-      String pass = config[2];
+      if (config.isEmpty) return const Res(true);
 
       var client = newClient(
-        url,
-        user: user,
-        password: pass,
+        config[0],
+        user: config[1],
+        password: config[2],
         adapter: RHttpAdapter(),
       );
 
@@ -197,9 +172,7 @@ class DataSync with ChangeNotifier {
         var files = await client.readDir('/');
         files.sort((a, b) => b.name!.compareTo(a.name!));
         var file = files.firstWhereOrNull((e) => e.name!.endsWith('.kostori'));
-        if (file == null) {
-          throw 'No data file found';
-        }
+        if (file == null) throw 'No data file found';
         var version = file.name!
             .split('-')
             .elementAtOrNull(1)
@@ -226,7 +199,20 @@ class DataSync with ChangeNotifier {
       }
     } finally {
       _isDownloading = false;
-      notifyListeners();
+      _dataSyncStateController.add(null);
     }
   }
 }
+
+// ─── Riverpod ────────────────────────────────────────────
+
+final _dataSyncStateController = StreamController<void>.broadcast();
+
+/// 监听上传/下载状态变化
+final dataSyncStateProvider = StreamProvider<void>((ref) {
+  // 监听收藏变化触发同步
+  ref.listen(favoritesChangedProvider, (_, __) {
+    DataSync().onDataChanged();
+  });
+  return _dataSyncStateController.stream;
+});

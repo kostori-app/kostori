@@ -2,9 +2,9 @@
 
 import 'dart:math';
 
+import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
@@ -538,7 +538,7 @@ class Bangumi {
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
-      BangumiManager().clearBnagumiCalendar();
+      BangumiManager().clearBangumiCalendar();
       for (dynamic jsonDayList in jsonData) {
         List<BangumiItem> bangumiList = [];
         final jsonList = jsonDayList['items'];
@@ -774,7 +774,7 @@ class Bangumi {
 
       final List<dynamic> jsonDataList = res.data['data'] ?? [];
       if (res.data['data'] != null) {
-        BangumiManager().addBnagumiAllEpInfo(id, res.data['data']);
+        BangumiManager().addBangumiAllEpInfo(id, res.data['data']);
       }
 
       return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();

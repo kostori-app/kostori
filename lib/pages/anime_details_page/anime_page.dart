@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/animated.dart';
@@ -17,18 +18,18 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
-import 'package:kostori/foundation/favorites.dart';
-import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/foundation/stats.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
@@ -49,7 +50,7 @@ part 'episodes.dart';
 
 part 'favorite.dart';
 
-class AnimePage extends StatefulWidget {
+class AnimePage extends ConsumerStatefulWidget {
   const AnimePage({
     super.key,
     required this.id,
@@ -70,7 +71,7 @@ class AnimePage extends StatefulWidget {
   final int? heroID;
 
   @override
-  State<AnimePage> createState() => _AnimePageState();
+  ConsumerState<AnimePage> createState() => _AnimePageState();
 }
 
 class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
@@ -110,9 +111,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }
 
   Future<void> updateStatsClicks() async {
-    if (!stats.isExist(widget.id, AnimeType(widget.sourceKey.hashCode))) {
+    if (!await stats.isExistAsync(
+      widget.id,
+      AnimeType(widget.sourceKey.hashCode),
+    )) {
       try {
-        stats.addStats(
+        await stats.addStats(
           stats.createStatsData(
             id: widget.id,
             title: widget.title,
@@ -125,7 +129,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       }
     }
 
-    final (statsDataImpl, todayClick, platformRecord) = stats
+    final (statsDataImpl, todayClick, platformRecord) = await stats
         .getOrCreateTodayPlatformRecord(
           id: widget.id,
           type: widget.sourceKey.hashCode,
@@ -135,33 +139,28 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     platformRecord.value += 1;
     platformRecord.date = now;
     statsDataImpl.lastClickTime = now;
-
     await stats.addStats(statsDataImpl);
   }
 
   Future<void> updateStats() async {
-    final s = stats.getOrCreateTodayEvents(
+    final s = await stats.getStatsByIdAndType(
       id: widget.id,
       type: widget.sourceKey.hashCode,
     );
-    final bangumiStats = stats.getOrCreateBangumiStats(
-      statsDataImpl: s.statsData,
-    );
-    final TodayEventBundle targetStats = bangumiStats ?? s;
+    if (s == null) return;
+    final bundle = stats.getOrCreateTodayEvents(statsData: s);
+    final bangumiBundle = await stats.getOrCreateBangumiStats(statsDataImpl: s);
+    final TodayEventBundle targetStats = bangumiBundle ?? bundle;
 
-    statsDataImpl = s.statsData;
-    todayComment = s.todayComment;
+    statsDataImpl = bundle.statsData;
+    todayComment = bundle.todayComment;
     commentRecord = targetStats.commentRecord;
-
-    todayClick = s.todayClick;
-    clickRecord = s.clickRecord;
-
-    todayWatch = s.todayWatch;
-    watchRecord = s.watchRecord;
-
-    todayRating = s.todayRating;
+    todayClick = bundle.todayClick;
+    clickRecord = bundle.clickRecord;
+    todayWatch = bundle.todayWatch;
+    watchRecord = bundle.watchRecord;
+    todayRating = bundle.todayRating;
     ratingRecord = targetStats.ratingRecord;
-
     ratingValue = ratingRecord?.rating ?? 0;
   }
 
@@ -178,16 +177,17 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   void initState() {
+    super.initState();
     updateStatsClicks();
     scrollController.addListener(onScroll);
-    HistoryManager().addListener(updateHistory);
-    BangumiManager().addListener(updateBangumiBind);
-    StatsManager().addListener(updateStats);
+    ref.listenManual(historyAllProvider, (_, _) => update());
     tabController = TabController(length: 3, vsync: this);
     tabController.addListener(() {
       setState(() {});
     });
-    super.initState();
+    ref.listenManual(statsAllProvider, (_, _) {
+      updateStats();
+    });
   }
 
   @override
@@ -195,6 +195,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (history == null) {
       history = History.fromModel(model: data!);
       HistoryManager().addHistory(history!);
+    }
+    if (history?.bangumiId != null) {
+      updateBangumiBind();
     }
     history!.time = DateTime.now();
     HistoryManager().addHistoryAsync(history!);
@@ -207,18 +210,19 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         updateBangumiId();
       }
     }
-    isLiked = stats.getGroupLikedStatus(
+    isLiked = await stats.getGroupLikedStatus(
       id: data!.id,
       type: data!.sourceKey.hashCode,
     );
     if (history!.bangumiId != null) {
       Bangumi.getBangumiInfoBind(history!.bangumiId as int);
     }
-    stats.updateStats(
+    await stats.updateStats(
       id: widget.id,
       type: widget.sourceKey.hashCode,
       bangumiId: history!.bangumiId,
     );
+    await updateStats();
     watcherController.anime = data!;
     await initializeProgress();
   }
@@ -226,9 +230,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   @override
   void dispose() {
     scrollController.removeListener(onScroll);
-    HistoryManager().removeListener(updateHistory);
-    BangumiManager().removeListener(updateBangumiBind);
-    StatsManager().removeListener(updateStats);
     Future.microtask(() {
       DataSync().onDataChanged();
     });
@@ -427,6 +428,17 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         margin: const EdgeInsets.symmetric(vertical: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
+            final bindAll = ref
+                .watch(bangumiBindAllProvider)
+                .when(
+                  data: (data) => data,
+                  loading: () => <BangumiItem>[],
+                  error: (_, _) => <BangumiItem>[],
+                );
+            final bangumiItem = history?.bangumiId != null
+                ? bindAll.firstWhereOrNull((e) => e.id == history!.bangumiId)
+                : null;
+
             final maxImageWidth = constraints.maxWidth * 0.3;
             final calculatedHeight = maxImageWidth / 0.72;
             final imageHeight = math.min(calculatedHeight, 300.0);
@@ -455,8 +467,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   )
                                 : BangumiWidget.showImagePreview(
                                     context: context,
-                                    url: bangumiItem!.images['large']!,
-                                    title: bangumiItem!.nameCn,
+                                    url: bangumiItem.images['large']!,
+                                    title: bangumiItem.nameCn,
                                     heroTag: "cover${widget.heroID}",
                                   );
                           },
@@ -541,7 +553,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   child: Row(
                                     children: [
                                       Text(
-                                        '${bangumiItem?.collection?['doing']} 在看',
+                                        '${bangumiItem.collection?['doing']} 在看',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Theme.of(
@@ -549,9 +561,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                           ).colorScheme.primary,
                                         ),
                                       ),
-                                      Text(' / '),
+                                      const Text(' / '),
                                       Text(
-                                        '${bangumiItem?.collection?['collect']} 看过',
+                                        '${bangumiItem.collection?['collect']} 看过',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: Theme.of(
@@ -559,10 +571,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                           ).colorScheme.error,
                                         ),
                                       ),
-                                      Text(' / '),
+                                      const Text(' / '),
                                       Text(
-                                        '${bangumiItem?.collection?['dropped']} 抛弃',
-                                        style: TextStyle(
+                                        '${bangumiItem.collection?['dropped']} 抛弃',
+                                        style: const TextStyle(
                                           fontSize: 12,
                                           color: Colors.grey,
                                         ),
@@ -579,41 +591,39 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                         CrossAxisAlignment.center,
                                     children: [
                                       Text(
-                                        '${bangumiItem?.score}',
+                                        '${bangumiItem.score}',
                                         style: ts.s24,
                                       ),
-                                      SizedBox(width: 5),
+                                      const SizedBox(width: 5),
                                       Container(
-                                        padding: EdgeInsets.all(
-                                          2.0,
-                                        ), // 可选，设置内边距
+                                        padding: const EdgeInsets.all(2.0),
                                         decoration: BoxDecoration(
                                           borderRadius: BorderRadius.circular(
                                             8,
-                                          ), // 设置圆角半径
+                                          ),
                                           border: Border.all(
                                             color: Theme.of(context)
                                                 .colorScheme
                                                 .secondaryContainer
                                                 .toOpacity(0.72),
-                                            width: 2.0, // 设置边框宽度
+                                            width: 2.0,
                                           ),
                                         ),
                                         child: Text(
                                           Utils.getRatingLabel(
-                                            bangumiItem!.score,
+                                            bangumiItem.score,
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start, // 右对齐
+                                            CrossAxisAlignment.start,
                                         children: [
                                           RatingBarIndicator(
                                             itemCount: 5,
                                             rating:
-                                                bangumiItem!.score.toDouble() /
+                                                bangumiItem.score.toDouble() /
                                                 2,
                                             itemBuilder: (context, index) =>
                                                 const Icon(Icons.star_rounded),
@@ -621,10 +631,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                           ),
                                           Text(
                                             '@t reviews | #@r'.tlParams({
-                                              'r': bangumiItem!.rank,
-                                              't': bangumiItem!.total,
+                                              'r': bangumiItem.rank,
+                                              't': bangumiItem.total,
                                             }),
-                                            style: TextStyle(fontSize: 12),
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -713,7 +725,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             icon: (ratingValue != 0)
                 ? Row(
                     children: [
-                      Text(Utils.getRatingLabel(ratingValue as int)),
+                      Text(Utils.getRatingLabel(ratingValue ?? 0)),
                       SizedBox(width: 4),
                       RatingBarIndicator(
                         itemCount: 5,

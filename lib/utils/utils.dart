@@ -6,7 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -567,11 +567,11 @@ class Utils {
 class BangumiUtils {
   BangumiUtils._();
 
-  static Map<bool, EpisodeInfo?> findCurrentWeekEpisode(
+  static Future<Map<bool, EpisodeInfo?>> findCurrentWeekEpisode(
     List<EpisodeInfo> allEpisodes,
     BangumiItem bangumiItem, [
     bool calendar = false,
-  ]) {
+  ]) async {
     if (allEpisodes.isEmpty) return {false: null};
 
     final now = DateTime.now();
@@ -581,7 +581,7 @@ class BangumiUtils {
     if (targetEpisodes.isEmpty) return {false: null};
 
     // 获取番剧的标准播出时间
-    String? bangumiDataAirTime = BangumiManager().findbangumiDataByID(
+    String? bangumiDataAirTime = await BangumiManager().findbangumiDataByID(
       bangumiItem.id,
     );
     final bangumiAirTime = bangumiDataAirTime != null

@@ -23,21 +23,22 @@ class _StatsViewPageState extends State<StatsViewPage> {
   }
 
   Future<void> _loadData() async {
-    final map = await Future(() => StatsManager().getRatingsWithBangumiIds());
+    final map = await StatsManager().getRatingsWithBangumiIds();
 
-    ratingBangumiMap = map.map((rating, ids) {
-      final items = ids
-          .map((id) => BangumiManager().getBangumiItem(id))
-          .whereType<BangumiItem>()
-          .toList();
-      return MapEntry(rating, items);
-    });
+    final newMap = <int, List<BangumiItem>>{};
+    for (final entry in map.entries) {
+      final items = <BangumiItem>[];
+      for (final id in entry.value) {
+        final item = await BangumiManager().getBangumiItem(id);
+        if (item != null) items.add(item);
+      }
+      newMap[entry.key] = items;
+    }
+    ratingBangumiMap = newMap;
 
     ratingList = List.generate(10, (i) => ratingBangumiMap[i + 1]?.length ?? 0);
     _calculateStats();
-    if (mounted) {
-      setState(() => loading = false);
-    }
+    if (mounted) setState(() => loading = false);
   }
 
   void _calculateStats() {
@@ -292,16 +293,20 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
   }
 
   Future<void> _loadWordCloudData() async {
-    final allStats = await Future(() => StatsManager().getStatsAll());
+    final allStats = await StatsManager().getStatsAll();
 
     final seenIds = <int>{};
-    final likedItems = allStats
+    final likedStats = allStats
         .where(
           (s) => s.bangumiId != null && s.liked && seenIds.add(s.bangumiId!),
         )
-        .map((s) => BangumiManager().getBangumiItem(s.bangumiId!))
-        .whereType<BangumiItem>()
         .toList();
+
+    final likedItems = <BangumiItem>[];
+    for (final s in likedStats) {
+      final item = await BangumiManager().getBangumiItem(s.bangumiId!);
+      if (item != null) likedItems.add(item);
+    }
 
     setState(() {
       wordCloudData = BangumiUtils.sortedTagItemMap(

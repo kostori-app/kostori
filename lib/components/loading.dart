@@ -103,8 +103,8 @@ class SliverListLoadingIndicator extends StatelessWidget {
   }
 }
 
-abstract class LoadingState<T extends StatefulWidget, S extends Object>
-    extends State<T> {
+abstract class LoadingState<T extends ConsumerStatefulWidget, S extends Object>
+    extends ConsumerState<T> {
   bool isLoading = false;
 
   S? data;

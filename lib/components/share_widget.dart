@@ -11,7 +11,7 @@ import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
@@ -20,7 +20,7 @@ import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/stats.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
@@ -93,6 +93,7 @@ class ShareWidget extends StatefulWidget {
 class _ShareWidgetState extends State<ShareWidget> {
   bool showLineChart = false;
   bool isLoding = true;
+  Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
 
   late final BangumiItem bangumiItem;
   late final List<EpisodeInfo> allEpisodes;
@@ -112,8 +113,10 @@ class _ShareWidgetState extends State<ShareWidget> {
 
   @override
   void initState() {
+    super.initState();
     if (widget.id != null) {
       id = widget.id!;
+      _loadCurrentWeekEp();
       queryBangumi();
     } else if (widget.anime != null) {
       anime = widget.anime!;
@@ -128,7 +131,14 @@ class _ShareWidgetState extends State<ShareWidget> {
       selectedCharacterItems = widget.selectedCharacterItems!;
       isLoding = false;
     }
-    super.initState();
+  }
+
+  Future<void> _loadCurrentWeekEp() async {
+    final ep = await BangumiUtils.findCurrentWeekEpisode(
+      allEpisodes,
+      bangumiItem,
+    );
+    if (mounted) setState(() => _currentWeekEp = ep);
   }
 
   Future<void> queryBangumi() async {
@@ -140,10 +150,10 @@ class _ShareWidgetState extends State<ShareWidget> {
       offset: 0,
     )).commentList;
     try {
-      stats = StatsManager().getStatsByIdAndType(
+      stats = (await StatsManager().getStatsByIdAndType(
         id: bangumiItem.id.toString(),
         type: 'bangumi'.hashCode,
-      )!;
+      ))!;
       latestRating =
           stats.rating.lastOrNull?.platformEventRecords.lastOrNull?.rating;
       latestComment =
@@ -344,10 +354,7 @@ class _ShareWidgetState extends State<ShareWidget> {
     );
 
     // 获取当前周的剧集
-    final currentWeekEp = BangumiUtils.findCurrentWeekEpisode(
-      allEpisodes,
-      bangumiItem,
-    );
+    final currentWeekEp = _currentWeekEp;
 
     final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
 

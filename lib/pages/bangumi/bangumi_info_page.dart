@@ -7,7 +7,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
-import 'package:kostori/foundation/history.dart';
+import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_card.dart';
@@ -162,7 +162,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
   }
 
   Future<void> queryBangumiHistory(int id) async {
-    infoController.bangumiHistory = HistoryManager().bangumiByIDFind(id);
+    infoController.bangumiHistory = await HistoryManager().bangumiByIDFind(id);
   }
 
   @override

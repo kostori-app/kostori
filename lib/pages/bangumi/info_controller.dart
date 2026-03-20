@@ -1,6 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'package:kostori/foundation/bangumi.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_item.dart';
@@ -10,7 +11,6 @@ import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
-import 'package:kostori/foundation/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
