@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
@@ -21,7 +20,9 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
@@ -54,9 +55,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
   @override
   void initState() {
     super.initState();
-    ref.listenManual(dataSyncStateProvider, (_, _) {
-      controller.loadEvents();
-    });
+    DataSync().addListener(controller.loadEvents);
+  }
+
+  @override
+  void dispose() {
+    DataSync().removeListener(controller.loadEvents);
+    super.dispose();
   }
 
   void showStats({
@@ -154,6 +159,18 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                       ),
                     ),
                     const Spacer(),
+                    IconButton(
+                      tooltip: '年度总览',
+                      icon: const Icon(Icons.grid_view_rounded),
+                      onPressed: () {
+                        context.to(
+                          () => YearlyTilePage(
+                            year: controller.focusedDay.year,
+                            controller: controller,
+                          ),
+                        );
+                      },
+                    ),
                     MenuAnchor(
                       builder: (context, controller, child) {
                         return IconButton(
@@ -696,4 +713,493 @@ String _getSourceType(int type) {
   } catch (e) {
     return 'unknown';
   }
+}
+
+class YearlyTilePage extends ConsumerStatefulWidget {
+  const YearlyTilePage({
+    super.key,
+    required this.year,
+    required this.controller,
+  });
+
+  final int year;
+  final StatsController controller;
+
+  @override
+  ConsumerState<YearlyTilePage> createState() => _YearlyTilePageState();
+}
+
+class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
+  late int _year = widget.year;
+  late Map<DateTime, double> _heatmapData = _buildYearHeatmap();
+
+  Future<void> _captureOffscreen(BuildContext context) async {
+    try {
+      final bytes = await ImageSaver.captureWidgetToImage(
+        context: context,
+        width: 1200.0,
+        delay: const Duration(milliseconds: 500),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '$_year 年',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 0.9,
+                ),
+                itemCount: 12,
+                itemBuilder: (context, i) => _buildTile(context, i),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (bytes == null) return;
+
+      final filename = 'yearly_${DateTime.now().millisecondsSinceEpoch}.png';
+      await ImageSaver.saveOrShareImage(
+        bytes: bytes,
+        filename: filename,
+        desktopSuccessMessage: '已复制到剪贴板',
+      );
+    } catch (e) {
+      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      Log.error('截图失败', '$e');
+    } finally {
+      await ref.read(imagesProvider.notifier).loadImages();
+    }
+  }
+
+  static const _monthNames = [
+    '一月',
+    '二月',
+    '三月',
+    '四月',
+    '五月',
+    '六月',
+    '七月',
+    '八月',
+    '九月',
+    '十月',
+    '十一月',
+    '十二月',
+  ];
+
+  final now = DateTime.now();
+
+  List<StatsDataImpl> _getMonthStats(int month) {
+    return widget.controller.eventMap.entries
+        .where((e) => e.key.year == _year && e.key.month == month)
+        .expand((e) => e.value)
+        .toList();
+  }
+
+  double _monthIntensity(int month) {
+    return widget.controller.eventMap.entries
+        .where((e) => e.key.year == _year && e.key.month == month)
+        .fold(0.0, (sum, e) => sum + e.value.length);
+  }
+
+  Map<DateTime, double> _buildYearHeatmap() {
+    final map = <DateTime, double>{};
+    for (final entry in widget.controller.eventMap.entries) {
+      if (entry.key.year != _year) continue;
+      final key = DateTime(entry.key.year, entry.key.month, entry.key.day);
+      map[key] = (map[key] ?? 0) + entry.value.length;
+    }
+    return map;
+  }
+
+  void _changeYear(int delta) {
+    setState(() {
+      _year += delta;
+      _heatmapData = _buildYearHeatmap();
+    });
+  }
+
+  void _showMonthStats(BuildContext context, int month) {
+    final stats = _getMonthStats(month);
+    if (stats.isEmpty) {
+      context.showMessage(message: '${_monthNames[month - 1]}暂无记录');
+      return;
+    }
+    showPopUpWidget(
+      App.rootContext,
+      StatsOverviewScreen(
+        stats: stats,
+        selectedDay: DateTime(_year, month, 1),
+        title: '$_year年${_monthNames[month - 1]}',
+        timeRange: TimeRange.monthly,
+      ),
+    );
+  }
+
+  Widget _buildTile(BuildContext context, int i) {
+    final scheme = Theme.of(context).colorScheme;
+    final intensities = List.generate(12, (i) => _monthIntensity(i + 1));
+    final maxIntensity = intensities.isEmpty
+        ? 1.0
+        : intensities
+              .reduce((a, b) => a > b ? a : b)
+              .clamp(1.0, double.infinity);
+    final month = i + 1;
+    final stats = _getMonthStats(month);
+    final isEmpty = stats.isEmpty;
+    final isFuture =
+        _year > now.year || (_year == now.year && month > now.month);
+    final intensity = maxIntensity > 0 ? intensities[i] / maxIntensity : 0.0;
+
+    return GestureDetector(
+      onTap: isEmpty || isFuture ? null : () => _showMonthStats(context, month),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isEmpty || isFuture
+              ? scheme.surfaceContainerHighest.withValues(alpha: 0.4)
+              : scheme.primary.withValues(alpha: 0.05 + intensity * 0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isEmpty || isFuture
+                ? scheme.outlineVariant.withValues(alpha: 0.4)
+                : scheme.primary.withValues(alpha: 0.2 + intensity * 0.3),
+            width: 0.8,
+          ),
+        ),
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  _monthNames[i],
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: isEmpty || isFuture
+                        ? scheme.onSurface.withValues(alpha: 0.3)
+                        : scheme.onSurface,
+                  ),
+                ),
+                const Spacer(),
+                if (!isEmpty && !isFuture)
+                  Text(
+                    '${stats.length}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            if (!isEmpty && !isFuture)
+              Expanded(
+                child: _MiniHeatmap(
+                  data: _heatmapData,
+                  year: _year,
+                  month: month,
+                  intensity: intensity,
+                ),
+              )
+            else
+              Expanded(
+                child: Center(
+                  child: Text(
+                    isFuture ? '未来' : '暂无记录',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.onSurface.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: Appbar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left),
+              onPressed: () => _changeYear(-1),
+            ),
+            Text('$_year 年'),
+            IconButton(
+              icon: const Icon(Icons.chevron_right),
+              onPressed: () => _changeYear(1),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () => _captureOffscreen(context),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(12),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 0.9,
+          ),
+          itemCount: 12,
+          itemBuilder: (context, i) => _buildTile(context, i),
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniHeatmap extends StatelessWidget {
+  const _MiniHeatmap({
+    required this.data,
+    required this.year,
+    required this.month,
+    required this.intensity,
+  });
+
+  final Map<DateTime, double> data;
+  final int year;
+  final int month;
+  final double intensity;
+
+  @override
+  Widget build(BuildContext context) {
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final firstWeekday = DateTime(year, month, 1).weekday;
+    final primary = Theme.of(context).colorScheme.primary;
+
+    final monthData = <int, double>{};
+    for (final e in data.entries) {
+      if (e.key.year == year && e.key.month == month) {
+        monthData[e.key.day] = e.value;
+      }
+    }
+
+    final maxVal = monthData.values.isEmpty
+        ? 1.0
+        : monthData.values
+              .reduce((a, b) => a > b ? a : b)
+              .clamp(1.0, double.infinity);
+
+    final paddedDays = [
+      ...List<int?>.filled(firstWeekday - 1, null),
+      ...List.generate(daysInMonth, (i) => i + 1),
+    ];
+    while (paddedDays.length % 7 != 0) {
+      paddedDays.add(null);
+    }
+    final rows = paddedDays.length ~/ 7;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 2.0;
+        final cellSize = (constraints.maxHeight - 6 * gap) / 7;
+        final trendHeight = (cellSize * 0.35).clamp(4.0, 35.0);
+
+        final heatmap = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(rows, (row) {
+            return Row(
+              children: List.generate(7, (col) {
+                final idx = row * 7 + col;
+                final day = idx < paddedDays.length ? paddedDays[idx] : null;
+                final val = day != null ? (monthData[day] ?? 0) : 0.0;
+                final cellIntensity = day != null
+                    ? (val / maxVal).clamp(0.0, 1.0)
+                    : 0.0;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(gap),
+                    child: SizedBox(
+                      height: cellSize,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: day == null
+                              ? Colors.transparent
+                              : cellIntensity == 0
+                              ? primary.withValues(alpha: 0.07)
+                              : primary.withValues(
+                                  alpha: 0.15 + cellIntensity * 0.7,
+                                ),
+                          borderRadius: BorderRadius.circular(cellSize * 0.3),
+                          boxShadow: day != null && cellIntensity > 0
+                              ? [
+                                  BoxShadow(
+                                    color: primary.withValues(
+                                      alpha: cellIntensity * 0.3,
+                                    ),
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: day == null
+                            ? null
+                            : Center(
+                                child: Text(
+                                  '$day',
+                                  style: TextStyle(
+                                    fontSize: (cellSize * 0.45).clamp(4.0, 9.0),
+                                    height: 1,
+                                    fontWeight: cellIntensity > 0.5
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: cellIntensity > 0.6
+                                        ? Colors.white.withValues(alpha: 0.9)
+                                        : primary.withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            );
+          }),
+        );
+
+        return Stack(
+          children: [
+            Positioned.fill(child: heatmap),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    height: trendHeight,
+                    child: CustomPaint(
+                      painter: _MiniTrendPainter(
+                        monthData: monthData,
+                        daysInMonth: daysInMonth,
+                        maxVal: maxVal,
+                        color: primary,
+                      ),
+                      child: const SizedBox.expand(),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: intensity,
+                      minHeight: 3,
+                      backgroundColor: primary.withValues(alpha: 0.1),
+                      valueColor: AlwaysStoppedAnimation(
+                        primary.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MiniTrendPainter extends CustomPainter {
+  const _MiniTrendPainter({
+    required this.monthData,
+    required this.daysInMonth,
+    required this.maxVal,
+    required this.color,
+  });
+
+  final Map<int, double> monthData;
+  final int daysInMonth;
+  final double maxVal;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (monthData.isEmpty || daysInMonth < 2) return;
+
+    final linePaint = Paint()
+      ..color = color.withValues(alpha: 0.7)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.0)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..style = PaintingStyle.fill;
+
+    Offset toOffset(int day) {
+      final x = size.width * (day - 1) / (daysInMonth - 1);
+      final val = monthData[day] ?? 0;
+      final y = size.height * (1 - (val / maxVal).clamp(0.0, 1.0)) * 0.85 + 2;
+      return Offset(x, y);
+    }
+
+    final days = List.generate(daysInMonth, (i) => i + 1);
+
+    final fillPath = Path()..moveTo(0, size.height);
+    for (final d in days) {
+      final o = toOffset(d);
+      if (d == 1) {
+        fillPath.lineTo(o.dx, o.dy);
+      } else {
+        fillPath.lineTo(o.dx, o.dy);
+      }
+    }
+    fillPath.lineTo(size.width, size.height);
+    fillPath.close();
+    canvas.drawPath(fillPath, fillPaint);
+
+    final linePath = Path();
+    for (var i = 0; i < days.length; i++) {
+      final o = toOffset(days[i]);
+      if (i == 0) {
+        linePath.moveTo(o.dx, o.dy);
+      } else {
+        linePath.lineTo(o.dx, o.dy);
+      }
+    }
+    canvas.drawPath(linePath, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(_MiniTrendPainter old) =>
+      old.monthData != monthData || old.maxVal != maxVal;
 }

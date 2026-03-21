@@ -8,10 +8,11 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_subject_relations_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
@@ -20,7 +21,6 @@ import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/database/stats.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
@@ -37,17 +37,8 @@ Future<void> captureAndSave(BuildContext context) async {
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final bytes = byteData!.buffer.asUint8List();
 
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filename = 'popup_$timestamp.png';
-
-    final file = await ImageSaver.writeFile(bytes: bytes, filename: filename);
-    if (file == null) return;
-
-    ImageSaver.showResult(success: true, message: '截图成功');
-    Log.info('截图保存', file.path);
-
-    final data = await file.readAsBytes();
-    await Share.shareFile(data: data, filename: filename, mime: 'image/png');
+    final filename = 'popup_${DateTime.now().millisecondsSinceEpoch}.png';
+    await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
   } catch (e) {
     ImageSaver.showResult(success: false, message: '截图失败: $e');
     Log.error('截图失败', '$e');

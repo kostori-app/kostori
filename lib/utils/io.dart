@@ -2,9 +2,11 @@
 
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
@@ -18,6 +20,7 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/file_type.dart';
+import 'package:pasteboard/pasteboard.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -488,10 +491,8 @@ class FileSelectResult {
 
 class KostoriFolder {
   static Future<Directory?> checkPermissionAndPrepareFolder() async {
-    // 1. 检查并请求权限
     Permission permission = Permission.manageExternalStorage;
     var status = await permission.status;
-
     if (!status.isGranted) {
       status = await permission.request();
       if (!status.isGranted) {
@@ -502,27 +503,19 @@ class KostoriFolder {
         return null;
       }
     }
-
-    // 2. 获取 Pictures 目录路径
     Directory? picturesDir = await AbsolutePath.absoluteDirectory(
       dirType: DirectoryType.pictures,
     );
-
     if (picturesDir == null) {
       Log.error('获取 Pictures 目录失败', '');
       return null;
     }
-
-    // 3. 构建目标文件夹路径
     final folderPath = '${picturesDir.path}/Kostori';
     final folder = Directory(folderPath);
-
-    // 4. 如果文件夹不存在则创建
     if (!await folder.exists()) {
       await folder.create(recursive: true);
       Log.info('创建文件夹成功', folderPath);
     }
-
     return folder;
   }
 }
@@ -536,14 +529,11 @@ class ImageSaver {
     try {
       final file = await writeFile(bytes: bytes, filename: filename);
       if (file == null) return;
-
       showResult(success: true, message: '保存成功');
-
       if (App.isAndroid) {
         const platform = MethodChannel('kostori/media');
         await platform.invokeMethod('scanFolder', {'path': file.parent.path});
       }
-
       Log.info('保存文件成功', file.path);
     } catch (e) {
       showResult(success: false, message: '保存失败: $e');
@@ -574,6 +564,65 @@ class ImageSaver {
     } catch (e, s) {
       showResult(success: false, message: '保存失败: $e');
       Log.error('saveImageToGallery', '$e\n$s');
+    }
+  }
+
+  /// 将任意 Widget 渲染为 PNG 字节（离屏渲染）
+  static Future<Uint8List?> captureWidgetToImage({
+    required BuildContext context,
+    required Widget child,
+    double width = 800.0,
+    double pixelRatio = 2.0,
+    Duration delay = const Duration(milliseconds: 400),
+  }) async {
+    final offscreenKey = GlobalKey();
+
+    final entry = OverlayEntry(
+      builder: (_) => Positioned(
+        left: -10000,
+        top: -10000,
+        width: width,
+        child: RepaintBoundary(
+          key: offscreenKey,
+          child: Material(child: child),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(entry);
+
+    try {
+      await Future.delayed(delay);
+
+      final boundary =
+          offscreenKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary == null) return null;
+
+      final image = await boundary.toImage(pixelRatio: pixelRatio);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      return byteData?.buffer.asUint8List();
+    } finally {
+      entry.remove();
+    }
+  }
+
+  /// 保存或分享图片（桌面复制到剪贴板，移动端分享）
+  static Future<void> saveOrShareImage({
+    required Uint8List bytes,
+    required String filename,
+    String desktopSuccessMessage = '已复制到剪贴板',
+    String mobileSuccessMessage = '截图成功',
+  }) async {
+    if (App.isDesktop) {
+      await Pasteboard.writeImage(bytes);
+      ImageSaver.showResult(success: true, message: desktopSuccessMessage);
+    } else {
+      final file = await ImageSaver.writeFile(bytes: bytes, filename: filename);
+      if (file == null) return;
+      ImageSaver.showResult(success: true, message: mobileSuccessMessage);
+      final data = await file.readAsBytes();
+      await Share.shareFile(data: data, filename: filename, mime: 'image/png');
     }
   }
 
