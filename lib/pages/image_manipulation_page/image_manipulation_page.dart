@@ -316,59 +316,55 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
               : Text('Image Operations (@i)'.tlParams({"i": images.length})),
           actions: [
             if (multiSelect) ...[
-              TextButton.icon(
+              IconButton(
                 onPressed: () {
                   final allIndexes = Set<int>.from(
                     List.generate(images.length, (i) => i),
                   );
                   ref.read(selectedIndexesProvider.notifier).state = allIndexes;
                 },
+                tooltip: 'Select All'.tl,
                 icon: const Icon(Icons.select_all),
-                label: Text('Select All'.tl),
               ),
-              TextButton.icon(
+
+              IconButton(
                 onPressed: () {
                   final images = ref.read(imagesProvider);
                   final current = ref.read(selectedIndexesProvider);
-                  final toggled = <int>{};
-
-                  for (int i = 0; i < images.length; i++) {
-                    if (!current.contains(i)) {
-                      toggled.add(i);
-                    }
-                  }
+                  final toggled = {
+                    for (int i = 0; i < images.length; i++)
+                      if (!current.contains(i)) i,
+                  };
 
                   if (toggled.isEmpty) {
                     ref.read(multiSelectModeProvider.notifier).state = false;
                   }
-
                   ref.read(selectedIndexesProvider.notifier).state = toggled;
                 },
+                tooltip: 'Invert Selection'.tl,
                 icon: const Icon(Icons.flip),
-                label: Text('Invert Selection'.tl),
               ),
-              TextButton.icon(
+
+              IconButton(
                 onPressed: () {
                   ref.read(multiSelectModeProvider.notifier).state = false;
                   ref.read(selectedIndexesProvider.notifier).state = {};
                 },
+                tooltip: 'Deselect'.tl,
                 icon: const Icon(Icons.deselect),
-                label: Text('Deselect'.tl),
               ),
-              TextButton.icon(
+              IconButton(
                 onPressed: () {
                   showConfirmDialog(
                     context: App.rootContext,
                     title: "Delete".tl,
                     content: '删除${selectedIndexes.length}张图片',
                     btnColor: context.colorScheme.error,
-                    onConfirm: () {
-                      _deleteSelected();
-                    },
+                    onConfirm: _deleteSelected,
                   );
                 },
+                tooltip: 'Delete'.tl,
                 icon: const Icon(Icons.delete, color: Colors.red),
-                label: Text('Delete'.tl, style: TextStyle(color: Colors.red)),
               ),
             ],
           ],
