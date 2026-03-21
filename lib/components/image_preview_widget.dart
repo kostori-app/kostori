@@ -278,7 +278,6 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
 
   Widget _buildImageArea() {
     final imageList = ref.watch(imageListProvider);
-    final currentIndex = ref.watch(currentIndexProvider);
 
     if (imageList.length > 1) {
       return PhotoViewGallery.builder(
@@ -293,7 +292,7 @@ class _ImagePreviewWidgetState extends ConsumerState<ImagePreviewWidget> {
             scaleStateController: _scaleControllerForIndex(i),
             imageProvider: FileImage(file),
             heroAttributes: PhotoViewHeroAttributes(
-              tag: i == currentIndex ? widget.heroTag : file.path,
+              tag: file.path.split(Platform.pathSeparator).last,
             ),
             initialScale: PhotoViewComputedScale.contained,
             minScale: PhotoViewComputedScale.contained / 3,
