@@ -12,6 +12,7 @@ import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:path/path.dart' as p;
 
@@ -1085,9 +1086,9 @@ extension StatsHelper on StatsManager {
     required StatsDataImpl statsDataImpl,
   }) async {
     if (statsDataImpl.bangumiId == null) return null;
-    final bangumiItem = await BangumiManager().getBangumiItem(
-      statsDataImpl.bangumiId!,
-    );
+    final bangumiItem = await providerContainer
+        .read(bangumiManagerProvider)
+        .getBangumiItem(statsDataImpl.bangumiId!);
     if (bangumiItem == null) return null;
 
     final bangumiType = AnimeType('bangumi'.hashCode);

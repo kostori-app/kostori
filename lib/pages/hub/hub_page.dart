@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
-import 'package:kostori/foundation/services/services.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/widget_utils.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';

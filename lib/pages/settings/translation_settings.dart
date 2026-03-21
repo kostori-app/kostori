@@ -61,6 +61,9 @@ class _TranslationSettingsState extends State<TranslationSettings> {
                             'siliconFlow',
                             'doubao',
                             'gemini',
+                            'qiniu',
+                            'deepseek',
+                            'openrouter',
                           ].contains(source);
 
                           return ListTile(

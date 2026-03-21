@@ -1,4 +1,15 @@
-enum TranslationSource { bing, google, deepl, siliconFlow, doubao, gemini }
+enum TranslationSource {
+  bing,
+  google,
+  deepl,
+  siliconFlow,
+  doubao,
+  gemini,
+  deepseek,
+  qiniu,
+  openrouter,
+  ohmygpt,
+}
 
 extension TranslationSourceExt on TranslationSource {
   String get asString {
@@ -15,6 +26,14 @@ extension TranslationSourceExt on TranslationSource {
         return 'doubao';
       case TranslationSource.gemini:
         return 'gemini';
+      case TranslationSource.deepseek:
+        return 'deepseek';
+      case TranslationSource.qiniu:
+        return 'qiniu';
+      case TranslationSource.openrouter:
+        return 'openrouter';
+      case TranslationSource.ohmygpt:
+        return 'ohmygpt';
     }
   }
 
@@ -32,6 +51,14 @@ extension TranslationSourceExt on TranslationSource {
         return TranslationSource.doubao;
       case 'gemini':
         return TranslationSource.gemini;
+      case 'deepseek':
+        return TranslationSource.deepseek;
+      case 'qiniu':
+        return TranslationSource.qiniu;
+      case 'openrouter':
+        return TranslationSource.openrouter;
+      case 'ohmygpt':
+        return TranslationSource.ohmygpt;
       default:
         return null;
     }

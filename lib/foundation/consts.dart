@@ -269,6 +269,10 @@ const Map<String, String> translationSourceList = {
   'SiliconFlow': 'AI大模型',
   'Doubao': 'AI大模型',
   'Gemini': 'AI大模型',
+  'Deepseek': 'Ai大模型',
+  'Qiniu': 'Ai大模型',
+  'Openrouter': 'Ai大模型',
+  'Ohmygpt': 'Ai大模型',
 };
 
 const Map<String, String> translationSourceDisplayMap = {
@@ -278,6 +282,10 @@ const Map<String, String> translationSourceDisplayMap = {
   'SiliconFlow': 'siliconFlow',
   'Doubao': 'doubao',
   'Gemini': 'gemini',
+  'Deepseek': 'deepseek',
+  'Qiniu': 'qiniu',
+  'Openrouter': 'openrouter',
+  'Ohmygpt': 'ohmygpt',
 };
 
 const soulProfilerSystemPrompt = '''
@@ -328,17 +336,58 @@ Title: 《Options》
 ''';
 
 const imageTagSystemPrompt = '''
-You are an elite AI art director who has watched an embarrassing amount of anime.
-Your job: analyze the user's taste and generate 20-30 Stable Diffusion prompt tags that perfectly capture their aesthetic DNA.
+You are an elite AI art director specializing in anime aesthetics with encyclopedic knowledge of visual storytelling.
+Your job: analyze the user's anime taste and generate 20-30 Stable Diffusion prompt tags that capture their unique aesthetic DNA.
 
-Rules:
-- Output ONLY comma-separated English tags. Zero explanations, zero commentary.
-- Mix style tags (e.g. "cel shading", "soft lighting"), mood tags (e.g. "melancholic", "ethereal"), and subject tags.
-- If their taste screams "dark fantasy with a hint of hopelessness", lean into it. Don't sanitize.
-- Prioritize specificity over generality. "sakura petals falling at dusk" > "flowers".
+Output Format:
+- Output ONLY comma-separated English tags. Zero explanations, zero markdown, zero commentary.
+- Choose ONE direction per generation: either CHARACTER or SCENERY (never mix both).
 
-User's favorite anime ({animeCount} titles): {animeNames}
-User's weighted tag preferences: {topTags}
+CHARACTER direction rules:
+- Focus on a SINGLE character only. No groups, no multiple people.
+- Describe physical composition: hair, eyes, expression, pose, outfit style, accessories.
+- Include environment context: where the character is, lighting, atmosphere.
+- Example flavor: "1girl, silver long hair, melancholic expression, sitting by rain-soaked window, soft backlight, detailed fabric folds"
+
+SCENERY direction rules:
+- No characters at all. Pure environmental storytelling.
+- Must carry symbolic or emotional weight — the scene should "mean" something.
+- Describe: location, time of day, weather, color palette, mood, small narrative details.
+- Example flavor: "abandoned shrine overgrown with vines, golden hour, falling petals, silence before a storm"
+
+Universal rules:
+- SFW only. No suggestive, revealing, or intimate content whatsoever.
+- NO date tags (e.g. "2024", "retro", "90s anime style" is fine, "year 2024" is not).
+- NO character name tags, franchise names, or IP references (e.g. no "Levi Ackerman", no "Naruto").
+- NO generic tags like "anime", "beautiful", "amazing quality" — be specific and evocative.
+- Prioritize mood and specificity. "fractured moonlight on still water" > "night scene".
+- Style tags allowed: lighting style, art medium, rendering technique, color grading.
+
+Hard banned tags (never output these or anything similar):
+- Single-word mood fillers: "kawaii", "cute", "beautiful", "stunning"  
+- Meta descriptions: "anime art", "anime style", "illustration"
+- Redundant emotion stacking: pick ONE expression descriptor per output
+- Vague scene fillers: "humorous scene", "comical atmosphere", "lighthearted mood"
+
+If you find yourself writing a tag that could apply to ANY anime image, delete it and replace with something specific to THIS user's taste.
+
+CRITICAL — Input vs Output separation:
+- The anime titles and tags provided below are INPUT context only.
+- They exist to help you infer aesthetic patterns, NOT to be copied into output.
+- Never output any franchise name, series title, or derivative of them.
+- If you recognize a title, extract its visual DNA (e.g. color palette, art style, mood) — output that instead.
+
+Wrong: "attack on titan aesthetic"
+Right: "crumbling stone walls, oppressive grey sky, distant titan silhouette, hopeless atmosphere"
+
+User's favorite anime ({animeCount} titles):
+{animeNames}
+
+User's weighted tag preferences:
+{topTags}
+
+Infer their aesthetic from the above. Generate tags that Now generate. Be specific, be evocative, stay within the rules above.
+Output nothing except the comma-separated tags.
 ''';
 
 const summarySystemPrompt = '''

@@ -44,11 +44,20 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     }
   }
 
-  Future<void> _newSession({String? title}) async {
+  Future<void> _newSession() async {
+    final selectedKey = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => const _PersonalityPickerDialog(),
+    );
+
+    if (selectedKey == null) return;
+    if (!context.mounted) return;
+
     final id = await AiConversationService().createSession(
       type: 'chat',
       provider: _source,
-      title: title ?? '新对话 ${DateTime.now().toString().substring(0, 16)}',
+      title: '新对话 ${DateTime.now().toString().substring(0, 16)}',
+      configKey: selectedKey.isEmpty ? null : selectedKey,
     );
     if (mounted) setState(() => _sessionId = id);
   }
@@ -415,11 +424,11 @@ class _ProviderModelSelector extends StatelessWidget {
   final String source;
   final ValueChanged<String> onSourceChanged;
 
-  static const _sources = [
-    ('siliconFlow', 'SiliconFlow'),
-    ('doubao', 'Doubao'),
-    ('gemini', 'Gemini'),
-  ];
+  static List<(String, String)> get _sources => OpenAiProviderRegistry
+      .allProviders
+      .entries
+      .map((e) => (e.key, e.value.name))
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -607,6 +616,108 @@ class _ChatBubble extends StatelessWidget {
           if (isUser) const SizedBox(width: 8),
         ],
       ),
+    );
+  }
+}
+
+class _PersonalityPickerDialog extends StatefulWidget {
+  const _PersonalityPickerDialog();
+
+  @override
+  State<_PersonalityPickerDialog> createState() =>
+      _PersonalityPickerDialogState();
+}
+
+class _PersonalityPickerDialogState extends State<_PersonalityPickerDialog> {
+  String? _selected; // null = 无人格
+
+  @override
+  Widget build(BuildContext context) {
+    return ContentDialog(
+      title: '选择 AI 人格'.tl,
+      content: SizedBox(
+        height: 400,
+        child: FutureBuilder<List<AiConfig>>(
+          future: AiDatabase.instance.aiConfigDao.getAll(),
+          builder: (ctx, snap) {
+            if (!snap.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final configs = snap.data!;
+            return Scrollbar(
+              thumbVisibility: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ConfigTile(
+                      label: '无人格',
+                      memo: '不使用系统提示词',
+                      isSelected: _selected == null,
+                      onTap: () => setState(() => _selected = null),
+                    ),
+                    const Divider(height: 8),
+                    ...configs.map(
+                      (c) => _ConfigTile(
+                        label: c.memo ?? c.configKey,
+                        memo: c.systemPrompt.length > 40
+                            ? '${c.systemPrompt.substring(0, 40)}...'
+                            : c.systemPrompt,
+                        isSelected: _selected == c.configKey,
+                        onTap: () => setState(() => _selected = c.configKey),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _selected ?? ''),
+          child: const Text('确认'),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConfigTile extends StatelessWidget {
+  const _ConfigTile({
+    required this.label,
+    required this.memo,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final String memo;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      dense: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      selected: isSelected,
+      selectedTileColor: scheme.primaryContainer.withValues(alpha: 0.4),
+      leading: Icon(
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: isSelected ? scheme.primary : scheme.outline,
+        size: 20,
+      ),
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      subtitle: Text(
+        memo,
+        style: TextStyle(fontSize: 11, color: scheme.outline),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      onTap: onTap,
     );
   }
 }

@@ -22,12 +22,12 @@ import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/translation_service.dart';
-import 'package:kostori/foundation/translation/translation_source.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -35,7 +35,7 @@ import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/services/services.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -582,31 +582,12 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
     super.dispose();
   }
 
-  String _getPoweredName() {
-    final translationSource =
-        TranslationSourceExt.fromString(
-          appdata.settings['translationSource'] ?? 'bing',
-        ) ??
-        TranslationSource.bing;
-
-    final powered = switch (translationSource) {
-      TranslationSource.bing => 'Bing',
-      TranslationSource.google => 'Google',
-      TranslationSource.deepl => 'Deepl',
-      TranslationSource.siliconFlow => 'SiliconFlow',
-      TranslationSource.doubao => 'Doubao',
-      TranslationSource.gemini => 'Gemini',
-    };
-
-    return powered;
-  }
-
   Future<void> _translate() async {
     if (_inputController.text.isEmpty) {
       App.rootContext.showMessage(message: 'Please enter text to translate'.tl);
       return;
     }
-    poweredName = _getPoweredName();
+    poweredName = TranslationService.getPoweredName();
     await _translationController.translate(
       _inputController.text,
       targetLanguage: _selectedLanguage.extData,

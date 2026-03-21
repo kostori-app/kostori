@@ -15,7 +15,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/services/services.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/utils/ext.dart';

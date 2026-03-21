@@ -8,26 +8,9 @@ class AiSettings extends StatefulWidget {
 }
 
 class _AiSettingsState extends State<AiSettings> {
-  static const _providers = [
-    (
-      'siliconFlow',
-      'SiliconFlow',
-      'THUDM/GLM-4-9B-0414',
-      'https://api.siliconflow.cn/v1',
-    ),
-    (
-      'doubao',
-      'Doubao',
-      'doubao-1-5-lite-32k-250115',
-      'https://ark.cn-beijing.volces.com/api/v3',
-    ),
-    (
-      'gemini',
-      'Gemini',
-      'gemini-2.0-flash',
-      'https://generativelanguage.googleapis.com/v1beta',
-    ),
-  ];
+  final _providers = OpenAiProviderRegistry.allProviders.entries
+      .map((e) => (e.key, e.value.name, e.value.defaultModel, e.value.baseUrl))
+      .toList();
 
   @override
   Widget build(BuildContext context) {

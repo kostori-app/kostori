@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:kostori/database/ai_database.dart';
-import 'package:kostori/foundation/ai_base.dart';
+import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -54,6 +54,29 @@ class TranslationService {
       ),
       _ => _translateWithBing(text, targetLanguage),
     };
+  }
+
+  static String getPoweredName() {
+    final translationSource =
+        TranslationSourceExt.fromString(
+          appdata.settings['translationSource'] ?? 'bing',
+        ) ??
+        TranslationSource.bing;
+
+    final powered = switch (translationSource) {
+      TranslationSource.bing => 'Bing',
+      TranslationSource.google => 'Google',
+      TranslationSource.deepl => 'Deepl',
+      TranslationSource.siliconFlow => 'SiliconFlow',
+      TranslationSource.doubao => 'Doubao',
+      TranslationSource.gemini => 'Gemini',
+      TranslationSource.deepseek => 'Deepseek',
+      TranslationSource.qiniu => 'qiniu',
+      TranslationSource.openrouter => 'openrouter',
+      TranslationSource.ohmygpt => 'ohmygpt',
+    };
+
+    return powered;
   }
 
   // ─── AI 翻译（统一用 AiBase）──────────────

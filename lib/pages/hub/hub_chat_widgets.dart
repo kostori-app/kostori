@@ -10,7 +10,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/services/services.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/utils/ext.dart';

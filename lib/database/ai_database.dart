@@ -216,7 +216,7 @@ class AiDatabase extends _$AiDatabase {
             memo: const Value('周月总结'),
             isSystem: const Value(true),
           ),
-        ], mode: InsertMode.insertOrIgnore);
+        ], mode: InsertMode.insertOrReplace);
       });
     },
   );

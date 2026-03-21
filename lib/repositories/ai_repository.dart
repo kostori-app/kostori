@@ -5,8 +5,8 @@ import 'package:kostori/database/daos/ai_api_key_dao.dart';
 import 'package:kostori/database/daos/ai_config_dao.dart';
 import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
-import 'package:kostori/foundation/ai_base.dart';
-import 'package:kostori/foundation/ai_conversation_service.dart';
+import 'package:kostori/foundation/ai_service/ai_base.dart';
+import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
 import 'package:kostori/foundation/res.dart';
 
 class AiRepository {

@@ -7,7 +7,8 @@ import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/stats.dart';
-import 'package:kostori/foundation/ai_conversation_service.dart';
+import 'package:kostori/foundation/ai_service/ai_conversation_service.dart';
+import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
@@ -276,20 +277,18 @@ class _AiSourceSelector extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
 
-  static const _sources = [
-    ('siliconFlow', 'SiliconFlow'),
-    ('doubao', 'Doubao'),
-    ('gemini', 'Gemini'),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final sources = OpenAiProviderRegistry.allProviders.entries
+        .map((e) => (e.key, e.value.name))
+        .toList();
+
     return _AiCard(
       icon: Icons.psychology,
       title: 'AI Source'.tl,
       child: Wrap(
         spacing: 8,
-        children: _sources.map((s) {
+        children: sources.map((s) {
           return ChoiceChip(
             label: Text(s.$2),
             selected: selected == s.$1,

@@ -6,7 +6,6 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/translation/sort.dart';
-import 'package:kostori/foundation/translation/translation_source.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
@@ -30,25 +29,6 @@ class _TranslatedContentState extends State<TranslatedContent> {
   TranslationService translationService = TranslationService();
   late TranslationController translationController;
 
-  String getPoweredName() {
-    final translationSource =
-        TranslationSourceExt.fromString(
-          appdata.settings['translationSource'] ?? 'bing',
-        ) ??
-        TranslationSource.bing;
-
-    final powered = switch (translationSource) {
-      TranslationSource.bing => 'Bing',
-      TranslationSource.google => 'Google',
-      TranslationSource.deepl => 'Deepl',
-      TranslationSource.siliconFlow => 'SiliconFlow',
-      TranslationSource.doubao => 'Doubao',
-      TranslationSource.gemini => 'Gemini',
-    };
-
-    return powered;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -68,7 +48,7 @@ class _TranslatedContentState extends State<TranslatedContent> {
 
   @override
   Widget build(BuildContext context) {
-    final poweredName = getPoweredName();
+    final poweredName = TranslationService.getPoweredName();
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(
