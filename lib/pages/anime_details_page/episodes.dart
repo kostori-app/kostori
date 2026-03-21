@@ -43,8 +43,8 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     });
   }
 
-  void showEp({required int ep, required int road}) {
-    final progressFind = HistoryManager().progressFind(
+  Future<void> showEp({required int ep, required int road}) async {
+    final progressFind = await HistoryManager().progressFindAsync(
       state.anime.id,
       AnimeType(state.anime.sourceKey.hashCode),
       ep,

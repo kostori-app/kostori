@@ -202,7 +202,7 @@ class WatcherState extends State<Watcher>
     PlayLog.info("加载剧集", "$episodeIndex");
 
     try {
-      final progressFind = HistoryManager().progressFind(
+      final progressFind = await HistoryManager().progressFindAsync(
         anime.id,
         AnimeType(anime.sourceKey.hashCode),
         epIndex - 1,

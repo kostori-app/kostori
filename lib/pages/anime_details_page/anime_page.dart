@@ -89,15 +89,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   late TabController tabController;
 
   void updateHistory() async {
-    var newHistory = HistoryManager().find(
+    var newHistory = await HistoryManager().findAsync(
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
     if (newHistory?.lastWatchEpisode != history?.lastWatchEpisode ||
         newHistory?.lastWatchTime != history?.lastWatchTime) {
       history = newHistory;
-
-      update();
+      if (mounted) update();
     }
   }
 
