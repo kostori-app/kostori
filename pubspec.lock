@@ -1480,6 +1480,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.2.1"
+  pasteboard:
+    dependency: "direct main"
+    description:
+      name: pasteboard
+      sha256: fedbe8da188d2f713aa8b01260737342e6e1087534a3ab26e1a719f8d3e8f32f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.5.0"
   path:
     dependency: "direct main"
     description:
@@ -2467,4 +2475,4 @@ packages:
     version: "0.0.12"
 sdks:
   dart: ">=3.10.0 <4.0.0"
-  flutter: ">=3.41.4"
+  flutter: ">=3.41.5"
