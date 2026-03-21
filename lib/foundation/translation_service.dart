@@ -1,14 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/ai_base.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/foundation/translation/ai/doubao_chat_models.dart';
-import 'package:kostori/foundation/translation/ai/gemini_chat_models.dart';
-import 'package:kostori/foundation/translation/ai/sf_chat_models.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/foundation/translation/translation_models.dart';
 import 'package:kostori/foundation/translation/translation_source.dart';
@@ -22,71 +21,112 @@ class TranslationService {
 
   TranslationService._internal();
 
-  static const int _googleMaxChunkChars = 2000; // 单段最大字符数，留余量避免请求过大
-  static const int _googleMaxConcurrency = 3; // 适量并发数，平衡速度与稳定性
+  static const int _googleMaxChunkChars = 2000;
+  static const int _googleMaxConcurrency = 3;
 
   String? savedLang = appdata.implicitData['currentLanguage'];
 
-  /// 获取当前翻译语言
-  String _getCurrentLanguage(String? targetLanguage) {
-    return targetLanguage ?? savedLang ?? translationSorts.first.extData;
-  }
+  String _getCurrentLanguage(String? targetLanguage) =>
+      targetLanguage ?? savedLang ?? translationSorts.first.extData;
 
   Future<Res<String>> translate(String text, {String? targetLanguage}) async {
-    final translationSource = TranslationSourceExt.fromString(
+    final source = TranslationSourceExt.fromString(
       appdata.settings['translationSource'] ?? 'bing',
     );
-    return switch (translationSource) {
+    return switch (source) {
       TranslationSource.bing => _translateWithBing(text, targetLanguage),
       TranslationSource.google => _translateWithGoogle(text, targetLanguage),
       TranslationSource.deepl => _translateWithDeepl(text, targetLanguage),
-      TranslationSource.siliconFlow => _translateWithSiliconFlow(
+      TranslationSource.siliconFlow => _translateWithAi(
+        'siliconFlow',
         text,
         targetLanguage,
       ),
-      TranslationSource.doubao => _translateWithDoubao(text, targetLanguage),
-      TranslationSource.gemini => _translateWithGemini(text, targetLanguage),
+      TranslationSource.doubao => _translateWithAi(
+        'doubao',
+        text,
+        targetLanguage,
+      ),
+      TranslationSource.gemini => _translateWithAi(
+        'gemini',
+        text,
+        targetLanguage,
+      ),
       _ => _translateWithBing(text, targetLanguage),
     };
   }
+
+  // ─── AI 翻译（统一用 AiBase）──────────────
+
+  Future<Res<String>> _translateWithAi(
+    String provider,
+    String text,
+    String? targetLanguage,
+  ) async {
+    try {
+      if (text.trim().isEmpty) return const Res('');
+
+      final ai = AiFactory.create(provider);
+      if (ai == null) return Res.error('未知服务商: $provider');
+
+      final config = await AiDatabase.instance.aiConfigDao.getById(1);
+
+      final baseSystemPrompt = config?.systemPrompt ?? '';
+
+      final currentExtData = _getCurrentLanguage(targetLanguage);
+      final currentLabel = translationSorts.labelByExtData(currentExtData);
+
+      final processedSystemPrompt = baseSystemPrompt.replaceAll(
+        '@a',
+        currentLabel,
+      );
+      final userPrompt = '翻译为$currentLabel（仅输出译文内容）：$text';
+
+      final result = await ai.generate(
+        userPrompt,
+        systemPrompt: processedSystemPrompt.isNotEmpty
+            ? processedSystemPrompt
+            : null,
+      );
+
+      if (!result.success) return result;
+      if (result.data.isEmpty) {
+        return Res.error('Empty $provider translation response');
+      }
+      return Res(result.data);
+    } catch (e) {
+      Log.warning('TranslationService', e.toString());
+      return Res.error(e.toString());
+    }
+  }
+
+  // ─── Google ────────────────────────────────
 
   Future<Res<String>> _translateWithGoogle(
     String text,
     String? targetLanguage,
   ) async {
     try {
-      if (text.trim().isEmpty) {
-        return const Res('');
-      }
-
+      if (text.trim().isEmpty) return const Res('');
       final chunks = _splitTextForGoogle(
         text,
         maxChunkChars: _googleMaxChunkChars,
       );
-
-      // 单段直接调用
       if (chunks.length == 1) {
-        final translated = await googleTranslateSingle(
-          chunks.first,
-          targetLanguage,
-        );
-        return Res(translated);
+        return Res(await googleTranslateSingle(chunks.first, targetLanguage));
       }
-
-      // 分段并发翻译（按批次控制并发度，保证顺序拼接）
       final buffer = StringBuffer();
       for (int i = 0; i < chunks.length; i += _googleMaxConcurrency) {
         final end = min(i + _googleMaxConcurrency, chunks.length);
-        final batch = chunks.sublist(i, end);
-        final futures = batch
-            .map((seg) => googleTranslateSingle(seg, targetLanguage))
-            .toList();
-        final results = await Future.wait(futures);
+        final results = await Future.wait(
+          chunks
+              .sublist(i, end)
+              .map((s) => googleTranslateSingle(s, targetLanguage)),
+        );
         for (final r in results) {
           buffer.write(r);
         }
       }
-
       return Res(buffer.toString());
     } catch (e) {
       Log.warning('TranslationService', e.toString());
@@ -94,131 +134,48 @@ class TranslationService {
     }
   }
 
-  Future<Res<String>> _translateWithBing(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      if (text.trim().isEmpty) {
-        return const Res('');
-      }
-
-      final res = await bingTranslateSingle(text, targetLanguage);
-
-      return Res(res);
-    } catch (e) {
-      Log.warning('TranslationService', e.toString());
-      return Res.error(e.toString());
-    }
-  }
-
-  Future<Res<String>> _translateWithDeepl(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      if (text.trim().isEmpty) {
-        return const Res('');
-      }
-
-      final res = await deeplTranslateSingle(text, targetLanguage);
-
-      return Res(res);
-    } catch (e) {
-      Log.warning('TranslationService', e.toString());
-      return Res.error(e.toString());
-    }
-  }
-
-  Future<Res<String>> _translateWithSiliconFlow(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      if (text.trim().isEmpty) {
-        return const Res('');
-      }
-
-      final res = await siliconFlowTranslateSingle(text, targetLanguage);
-
-      return Res(res);
-    } catch (e) {
-      Log.warning('TranslationService', e.toString());
-      return Res.error(e.toString());
-    }
-  }
-
-  Future<Res<String>> _translateWithGemini(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      if (text.trim().isEmpty) {
-        return const Res('');
-      }
-
-      final res = await geminiTranslateSingle(text, targetLanguage);
-
-      return Res(res);
-    } catch (e) {
-      Log.warning('TranslationService', e.toString());
-      return Res.error(e.toString());
-    }
-  }
-
-  Future<Res<String>> _translateWithDoubao(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      if (text.trim().isEmpty) {
-        return const Res('');
-      }
-
-      final res = await doubaoTranslateSingle(text, targetLanguage);
-
-      return Res(res);
-    } catch (e) {
-      Log.warning('TranslationService', e.toString());
-      return Res.error(e.toString());
-    }
-  }
-
-  // 单段 Google 翻译，带重试与超时
   Future<String> googleTranslateSingle(
     String text,
     String? targetLanguage,
   ) async {
     try {
-      var params = {
-        "client": "gtx",
-        "sl": "auto",
-        "tl": _getCurrentLanguage(targetLanguage),
-        "dt": "t",
-        "q": text,
-      };
       final response = await AppDio().request(
         "https://translate.googleapis.com/translate_a/t",
-        queryParameters: params,
+        queryParameters: {
+          "client": "gtx",
+          "sl": "auto",
+          "tl": _getCurrentLanguage(targetLanguage),
+          "dt": "t",
+          "q": text,
+        },
         options: Options(
           method: 'GET',
           receiveTimeout: const Duration(seconds: 20),
         ),
       );
-
       final res = _parseGoogleResponse(response.data);
-      if (res.isEmpty) {
-        throw Exception('Empty google translation response');
-      }
+      if (res.isEmpty) throw Exception('Empty google translation response');
       return res;
     } on DioException catch (e) {
       final message =
           e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
-
       App.rootContext.showMessage(message: message);
       rethrow;
+    }
+  }
+
+  // ─── Bing ──────────────────────────────────
+
+  Future<Res<String>> _translateWithBing(
+    String text,
+    String? targetLanguage,
+  ) async {
+    try {
+      if (text.trim().isEmpty) return const Res('');
+      return Res(await bingTranslateSingle(text, targetLanguage));
     } catch (e) {
-      rethrow;
+      Log.warning('TranslationService', e.toString());
+      return Res.error(e.toString());
     }
   }
 
@@ -227,54 +184,55 @@ class TranslationService {
     String? targetLanguage,
   ) async {
     try {
-      var params = {
-        "api-version": "3.0",
-        "from": "",
-        "to": _getCurrentLanguage(targetLanguage),
-      };
-
-      var data = [
-        {"Text": text},
-      ];
-
       final auth = await AppDio().request(
         'https://edge.microsoft.com/translate/auth',
         options: Options(method: 'GET'),
       );
-
-      if (auth.statusCode != 200) {
-        throw Exception('Auth acquisition error');
-      }
-
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${auth.data}',
-      };
+      if (auth.statusCode != 200) throw Exception('Auth acquisition error');
 
       final response = await AppDio().request(
         "https://api-edge.cognitive.microsofttranslator.com/translate",
-        data: data,
-        queryParameters: params,
+        data: [
+          {"Text": text},
+        ],
+        queryParameters: {
+          "api-version": "3.0",
+          "from": "",
+          "to": _getCurrentLanguage(targetLanguage),
+        },
         options: Options(
           method: 'POST',
-          headers: headers,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${auth.data}',
+          },
           receiveTimeout: const Duration(seconds: 20),
         ),
       );
       final list = MsTranslatorModel.listFromJson(response.data);
       final res = list.map((e) => e.translations.first.text).join('');
-      if (res.isEmpty) {
-        throw Exception('Empty bing translation response');
-      }
+      if (res.isEmpty) throw Exception('Empty bing translation response');
       return res;
     } on DioException catch (e) {
       final message =
           e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
-
       App.rootContext.showMessage(message: message);
       rethrow;
+    }
+  }
+
+  // ─── DeepL ─────────────────────────────────
+
+  Future<Res<String>> _translateWithDeepl(
+    String text,
+    String? targetLanguage,
+  ) async {
+    try {
+      if (text.trim().isEmpty) return const Res('');
+      return Res(await deeplTranslateSingle(text, targetLanguage));
     } catch (e) {
-      rethrow;
+      Log.warning('TranslationService', e.toString());
+      return Res.error(e.toString());
     }
   }
 
@@ -283,322 +241,41 @@ class TranslationService {
     String? targetLanguage,
   ) async {
     try {
-      final configs = appdata.settings['translationConfig'] as List;
-      final deeplConfig = configs.firstWhere(
-        (e) => e['source'] == 'deepl',
-        orElse: () => null,
-      );
-
-      final apiKey = deeplConfig['apiKey'];
-
-      var data = {
-        "text": [text],
-        "target_lang": "ZH",
-      };
-
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'DeepL-Auth-Key $apiKey',
-      };
+      final apiKey = appdata.settings['deeplKey'] as String?;
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception('DeepL not configured');
+      }
 
       final response = await AppDio().request(
         "https://api-free.deepl.com/v2/translate",
-        data: data,
-        options: Options(
-          method: 'POST',
-          headers: headers,
-          receiveTimeout: const Duration(seconds: 20),
-        ),
-      );
-
-      final json = DeepLTranslationModel.fromJson(response.data);
-      final res = json.content;
-      if (res.isEmpty) {
-        throw Exception('Empty deepl translation response');
-      }
-      return res;
-    } on DioException catch (e) {
-      final message =
-          e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
-
-      App.rootContext.showMessage(message: message);
-      rethrow;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<String> siliconFlowTranslateSingle(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      final configs = appdata.settings['translationConfig'] as List;
-      final siliconFlowConfig = configs.firstWhere(
-        (e) => e['source'] == 'siliconFlow',
-        orElse: () => null,
-      );
-
-      final isSiliconFlow = appdata.implicitData['isSiliconFlow'] ?? true;
-
-      final contentTemplate = isSiliconFlow
-          ? (siliconFlowConfig?['aiTranslatePrompt'] ??
-                appdata.settings['aiTranslatePrompt'])
-          : appdata.settings['aiTranslatePrompt'];
-
-      final translationContentTemplate = "翻译为@a（仅输出译文内容）：";
-
-      final currentExtData = _getCurrentLanguage(targetLanguage);
-
-      final currentLabel = translationSorts.labelByExtData(currentExtData);
-
-      final content = contentTemplate.replaceAll('@a', currentLabel);
-      final processedTemplate = translationContentTemplate.replaceAll(
-        '@a',
-        currentLabel,
-      );
-
-      final translationContent = '$processedTemplate$text';
-
-      final defaultModel = "THUDM/GLM-4-9B-0414";
-
-      final model = isSiliconFlow
-          ? (siliconFlowConfig?['model'] ?? defaultModel)
-          : defaultModel;
-
-      var data = {
-        "model": model,
-        "messages": [
-          {"role": "system", "content": content},
-          {"role": "user", "content": translationContent},
-        ],
-      };
-
-      String auth;
-      if (!isSiliconFlow) {
-        final res = await AppDio().request(
-          'https://api2.immersivetranslate.com/free-model/get-token?deviceId=fake-device-id',
-          options: Options(method: 'GET'),
-        );
-        if (res.statusCode != 200) {
-          throw Exception(res.statusMessage);
-        }
-        auth = res.data["data"] as String;
-      } else {
-        auth = siliconFlowConfig['apiKey'];
-      }
-
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $auth',
-      };
-
-      final String url = isSiliconFlow
-          ? 'https://api.siliconflow.cn/v1/chat/completions'
-          : 'https://aigw1.immersivetranslate.com/v1/free/chat/completions';
-
-      final response = await AppDio().request(
-        url,
-        data: data,
-        options: Options(
-          method: 'POST',
-          headers: headers,
-          receiveTimeout: const Duration(seconds: 20),
-        ),
-      );
-
-      final json = SfChatModel.fromJson(response.data);
-
-      final res = json.content;
-
-      if (res.isEmpty) {
-        throw Exception('Empty siliconFlow translation response');
-      }
-      return res;
-    } on DioException catch (e) {
-      final message =
-          e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
-
-      App.rootContext.showMessage(message: message);
-      rethrow;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<String> doubaoTranslateSingle(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      final configs = appdata.settings['translationConfig'] as List;
-
-      final doubaoConfig = configs.firstWhere(
-        (e) => e['source'] == 'doubao',
-        orElse: () => null,
-      );
-
-      final contentTemplate =
-          doubaoConfig?['aiTranslatePrompt'] ??
-          appdata.settings['aiTranslatePrompt'] ??
-          '';
-
-      final translationContentTemplate = "翻译为@a（仅输出译文内容）：";
-
-      final currentExtData = _getCurrentLanguage(targetLanguage);
-
-      final currentLabel = translationSorts.labelByExtData(currentExtData);
-
-      final content = contentTemplate.replaceAll('@a', currentLabel);
-      final processedTemplate = translationContentTemplate.replaceAll(
-        '@a',
-        currentLabel,
-      );
-
-      final translationContent = '$processedTemplate$text';
-
-      final apiKey = doubaoConfig['apiKey'];
-
-      final defaultModel = "doubao-1-5-lite-32k-250115";
-
-      final model = doubaoConfig?['model'] ?? defaultModel;
-
-      final headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      };
-
-      var data = {
-        "model": model,
-        "messages": [
-          {"role": "system", "content": content},
-          {"role": "user", "content": translationContent},
-        ],
-      };
-
-      final response = await AppDio().request(
-        'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
-        data: data,
-        options: Options(
-          method: 'POST',
-          headers: headers,
-          receiveTimeout: const Duration(seconds: 20),
-        ),
-      );
-
-      final json = DbChatModel.fromJson(response.data);
-
-      final res = json.content;
-
-      if (res.isEmpty) {
-        throw Exception('Empty doubao translation response');
-      }
-      return res;
-    } on DioException catch (e) {
-      final message =
-          e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
-
-      App.rootContext.showMessage(message: message);
-      rethrow;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  Future<String> geminiTranslateSingle(
-    String text,
-    String? targetLanguage,
-  ) async {
-    try {
-      final configs = appdata.settings['translationConfig'] as List;
-
-      final geminiConfig = configs.firstWhere(
-        (e) => e['source'] == 'gemini',
-        orElse: () => null,
-      );
-
-      final contentTemplate =
-          geminiConfig?['aiTranslatePrompt'] ??
-          appdata.settings['aiTranslatePrompt'] ??
-          '';
-
-      final translationContentTemplate = "翻译为@a（仅输出译文内容）：";
-
-      final currentExtData = _getCurrentLanguage(targetLanguage);
-
-      final currentLabel = translationSorts.labelByExtData(currentExtData);
-
-      final content = contentTemplate.replaceAll('@a', currentLabel);
-      final processedTemplate = translationContentTemplate.replaceAll(
-        '@a',
-        currentLabel,
-      );
-
-      final translationContent = '$processedTemplate$text';
-
-      final defaultModel = "gemini-2.5-flash-lite";
-
-      final model = geminiConfig?['model'] ?? defaultModel;
-
-      final url =
-          'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent';
-
-      final apiKey = geminiConfig['apiKey'];
-
-      var data = {
-        "system_instruction": {
-          "parts": [
-            {"text": content},
-          ],
+        data: {
+          "text": [text],
+          "target_lang": "ZH",
         },
-        "contents": [
-          {
-            "parts": [
-              {"text": translationContent},
-            ],
-          },
-        ],
-      };
-
-      final headers = {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      };
-
-      final response = await AppDio().request(
-        url,
-        data: data,
         options: Options(
           method: 'POST',
-          headers: headers,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'DeepL-Auth-Key $apiKey',
+          },
           receiveTimeout: const Duration(seconds: 20),
         ),
       );
-
-      final json = GmGenerateContentModel.fromJson(response.data);
-
-      final res = json.content;
-
-      if (res.isEmpty) {
-        throw Exception('Empty gemini translation response');
-      }
+      final res = DeepLTranslationModel.fromJson(response.data).content;
+      if (res.isEmpty) throw Exception('Empty deepl translation response');
       return res;
     } on DioException catch (e) {
       final message =
           e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
-
       App.rootContext.showMessage(message: message);
-      rethrow;
-    } catch (e) {
       rethrow;
     }
   }
+
+  // ─── 工具 ──────────────────────────────────
 
   List<String> _splitTextForGoogle(String text, {int maxChunkChars = 2000}) {
-    if (text.length <= maxChunkChars) {
-      return [text];
-    }
-
+    if (text.length <= maxChunkChars) return [text];
     const boundaries = {
       '\n',
       '\r',
@@ -615,68 +292,49 @@ class TranslationService {
       ':',
       ' ',
     };
-
     final chunks = <String>[];
     int index = 0;
-
     while (index < text.length) {
       final remaining = text.length - index;
       int take = remaining <= maxChunkChars ? remaining : maxChunkChars;
-
       String slice = text.substring(index, index + take);
       if (remaining > maxChunkChars) {
         int cut = -1;
         for (int i = slice.length - 1; i >= 0; i--) {
-          final ch = slice[i];
-          if (boundaries.contains(ch)) {
-            cut = i + 1; // 包含边界字符
+          if (boundaries.contains(slice[i])) {
+            cut = i + 1;
             break;
           }
         }
-        if (cut <= 0) {
-          // 找不到自然边界，硬切
-          cut = slice.length;
-        }
+        if (cut <= 0) cut = slice.length;
         slice = slice.substring(0, cut);
         take = slice.length;
       }
-
       chunks.add(slice);
       index += take;
     }
-
     return chunks;
   }
 
-  // 兼容不同返回格式的解析
   String _parseGoogleResponse(dynamic data) {
     try {
-      if (data is List && data.isNotEmpty) {
-        final first = data[0];
-
-        // 典型结构：[[["译文","原文", ...], ["片段2", ...], ...], ...]
-        if (first is List) {
-          final buffer = StringBuffer();
-          for (final item in first) {
-            if (item is List && item.isNotEmpty && item[0] is String) {
-              buffer.write(item[0] as String);
-            }
-          }
-          final text = buffer.toString();
-          if (text.isNotEmpty) {
-            return text;
+      if (data is! List || data.isEmpty) return '';
+      final first = data[0];
+      if (first is List) {
+        final buffer = StringBuffer();
+        for (final item in first) {
+          if (item is List && item.isNotEmpty && item[0] is String) {
+            buffer.write(item[0] as String);
           }
         }
-
-        // 退化结构：data[0][0] 直接是字符串
-        if (data[0] is List &&
-            (data[0] as List).isNotEmpty &&
-            data[0][0] is String) {
-          return data[0][0] as String;
-        }
+        final text = buffer.toString();
+        if (text.isNotEmpty) return text;
       }
-    } catch (_) {
-      // ignore
+      if (first is List && first.isNotEmpty && first[0] is String) {
+        return first[0] as String;
+      }
+    } catch (e, st) {
+      Log.error('TranslationService', 'Error parsing Google response: $e\n$st');
     }
     return '';
   }

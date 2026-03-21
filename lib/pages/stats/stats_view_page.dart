@@ -413,7 +413,7 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
   @override
   Widget build(BuildContext context) {
     if (wordCloudData.length < 2) {
-      return const Center(child: PolygonRefreshIndicator());
+      return const Center(child: KostoriRefreshIndicator());
     }
     return Column(
       children: [

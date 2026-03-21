@@ -1,15 +1,15 @@
-// 运行代码生成:
-//   flutter pub run build_runner build --delete-conflicting-outputs
-
 import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:kostori/database/daos/ai_api_key_dao.dart';
 import 'package:kostori/database/daos/ai_config_dao.dart';
+import 'package:kostori/database/daos/ai_model_dao.dart';
 import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
+import 'package:kostori/database/daos/ai_session_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/consts.dart';
 import 'package:path/path.dart' as p;
 
 part 'ai_database.g.dart';
@@ -18,9 +18,7 @@ part 'ai_database.g.dart';
 // 表定义
 // ═══════════════════════════════════════════════════════════
 
-/// API Key 存储表（加密存储真实密钥）
 class AiApiKeys extends Table {
-  /// 服务商唯一标识: 'siliconFlow' | 'doubao' | 'gemini'
   @override
   Set<Column> get primaryKey => {provider};
 
@@ -28,63 +26,93 @@ class AiApiKeys extends Table {
 
   TextColumn get apiKey => text()();
 
-  /// 自定义 baseUrl（可为空，使用默认值）
   TextColumn get baseUrl => text().nullable()();
 
-  /// 当前使用的模型名称
   TextColumn get model => text().nullable()();
 
-  /// Key 是否启用
   BoolColumn get isEnabled => boolean().withDefault(const Constant(true))();
 
-  /// 最后更新时间
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// AI 任务记录表：翻译历史、侧写报告等
+/// 会话表：一次完整对话（含多轮消息）
+class AiSessions extends Table {
+  @override
+  Set<Column> get primaryKey => {sessionId};
+
+  /// UUID 或随机字符串
+  TextColumn get sessionId => text()();
+
+  /// 会话类型: 'chat' | 'soul_profile' | 'translation'
+  TextColumn get type => text().withLength(min: 1, max: 20)();
+
+  /// 会话标题
+  TextColumn get title => text().withDefault(const Constant('新对话'))();
+
+  /// 关联的 System Prompt 配置 key
+  TextColumn get configKey => text().nullable()();
+
+  /// 使用的服务商
+  TextColumn get provider => text()();
+
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// AI 消息记录表：每一轮对话的单条消息
+@TableIndex(name: 'tasks_session_idx', columns: {#sessionId})
 class AiTasks extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  /// 任务类型: 'translation' | 'soul_profile' | 'anime_recommend'
+  TextColumn get sessionId => text()();
+
   TextColumn get taskType => text().withLength(min: 1, max: 50)();
 
-  /// 使用的服务商，外键关联 AiApiKeys.provider
-  TextColumn get provider => text()();
+  TextColumn get role => text().withDefault(const Constant('user'))();
 
-  /// 输入内容：原文或番剧列表 ID
   TextColumn get inputContent => text()();
 
-  /// AI 返回的结果（Markdown）
-  TextColumn get outputContent => text()();
+  TextColumn get outputContent => text().nullable()();
 
-  /// 使用的模型名称
+  TextColumn get thought => text().nullable()();
+
+  TextColumn get provider => text()();
+
   TextColumn get modelName => text().nullable()();
 
-  /// 消耗 Token 数量
   IntColumn get tokenConsumed => integer().withDefault(const Constant(0))();
 
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// AI 配置与人格表：存放 System Prompt
 class AiConfigs extends Table {
-  @override
-  Set<Column> get primaryKey => {configKey};
+  IntColumn get id => integer().autoIncrement()();
 
-  /// 唯一键: 'translator_v1' | 'profile_expert'
-  TextColumn get configKey => text()();
+  TextColumn get configKey => text().unique()();
 
-  /// System Prompt
   TextColumn get systemPrompt => text()();
 
-  /// 创造力参数: 0.0 ~ 1.0
   RealColumn get temperature => real().withDefault(const Constant(0.7))();
 
-  /// 备注
   TextColumn get memo => text().nullable()();
+
+  BoolColumn get isSystem => boolean().withDefault(const Constant(false))();
 }
 
-/// AI 服务状态表：记录 Key 的有效性与调用统计
+class AiModels extends Table {
+  TextColumn get modelId => text()();
+
+  TextColumn get provider => text()();
+
+  TextColumn get label => text()();
+
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column> get primaryKey => {provider, modelId};
+}
+
 class AiProviderStats extends Table {
   @override
   Set<Column> get primaryKey => {provider};
@@ -103,8 +131,22 @@ class AiProviderStats extends Table {
 // ═══════════════════════════════════════════════════════════
 
 @DriftDatabase(
-  tables: [AiApiKeys, AiTasks, AiConfigs, AiProviderStats],
-  daos: [AiApiKeyDao, AiTaskDao, AiConfigDao, AiProviderStatsDao],
+  tables: [
+    AiApiKeys,
+    AiSessions,
+    AiTasks,
+    AiConfigs,
+    AiModels,
+    AiProviderStats,
+  ],
+  daos: [
+    AiApiKeyDao,
+    AiSessionDao,
+    AiTaskDao,
+    AiConfigDao,
+    AiModelDao,
+    AiProviderStatsDao,
+  ],
 )
 class AiDatabase extends _$AiDatabase {
   static AiDatabase? _instance;
@@ -114,11 +156,70 @@ class AiDatabase extends _$AiDatabase {
   AiDatabase._() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 4;
 
   @override
-  MigrationStrategy get migration =>
-      MigrationStrategy(onCreate: (m) => m.createAll());
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 3) {
+        // 原有逻辑不变
+        await m.deleteTable(aiConfigs.actualTableName);
+        await m.createTable(aiConfigs);
+        await _ensureTableExists(m, aiModels);
+        await _ensureTableExists(m, aiSessions);
+        await _ensureTableExists(m, aiTasks);
+        try {
+          await m.addColumn(aiTasks, aiTasks.sessionId);
+          await m.addColumn(aiTasks, aiTasks.role);
+          await m.addColumn(aiTasks, aiTasks.thought);
+        } catch (e) {
+          //
+        }
+      }
+      if (from < 4) {
+        await m.addColumn(aiConfigs, aiConfigs.isSystem);
+      }
+    },
+    beforeOpen: (details) async {
+      await batch((batch) {
+        batch.insertAll(aiConfigs, [
+          AiConfigsCompanion.insert(
+            id: const Value(1),
+            configKey: 'ai_translator_v1',
+            systemPrompt: aiTranslatePrompt,
+            temperature: const Value(0.3),
+            memo: const Value('专业母语译者'),
+            isSystem: const Value(true),
+          ),
+          AiConfigsCompanion.insert(
+            id: const Value(2),
+            configKey: 'soul_profiler_v1',
+            systemPrompt: soulProfilerSystemPrompt,
+            temperature: const Value(0.85),
+            memo: const Value('动漫灵魂侧写师'),
+            isSystem: const Value(true),
+          ),
+          AiConfigsCompanion.insert(
+            id: const Value(3),
+            configKey: 'image_tag_v1',
+            systemPrompt: imageTagSystemPrompt,
+            temperature: const Value(0.8),
+            memo: const Value('AI 绘画 Tag 生成'),
+            isSystem: const Value(true),
+          ),
+          AiConfigsCompanion.insert(
+            id: const Value(4),
+            configKey: 'summary_v1',
+            systemPrompt: summarySystemPrompt,
+            temperature: const Value(0.7),
+            memo: const Value('周月总结'),
+            isSystem: const Value(true),
+          ),
+        ], mode: InsertMode.insertOrIgnore);
+      });
+    },
+  );
 
   @override
   Future<void> close() async {
@@ -126,14 +227,18 @@ class AiDatabase extends _$AiDatabase {
     _instance = null;
   }
 
-  static void init() {
-    _instance = AiDatabase._();
+  Future<void> _ensureTableExists(Migrator m, TableInfo table) async {
+    try {
+      await customStatement('SELECT 1 FROM ${table.actualTableName} LIMIT 1');
+    } catch (e) {
+      await m.createTable(table);
+    }
   }
+
+  static void init() => _instance = AiDatabase._();
 }
 
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    final file = File(p.join(App.dataPath, 'ai_database.db'));
-    return NativeDatabase.createInBackground(file);
-  });
-}
+LazyDatabase _openConnection() => LazyDatabase(() async {
+  final file = File(p.join(App.dataPath, 'ai_database.db'));
+  return NativeDatabase.createInBackground(file);
+});

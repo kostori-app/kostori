@@ -18,19 +18,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/cache_manager.dart';
+import 'package:kostori/foundation/translation_service.dart';
+import 'package:kostori/foundation/translation/translation_source.dart';
+import 'package:kostori/foundation/translation/sort.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/device_info.dart';
-import 'package:kostori/foundation/favorites.dart';
+import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/services/services.dart';
-import 'package:kostori/foundation/translation/translation_source.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -44,7 +49,6 @@ import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -86,6 +90,8 @@ part 'hub_upload_settings.dart';
 
 part 'log_settings.dart';
 
+part 'ai_settings.dart';
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});
 
@@ -112,6 +118,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     "Local Favorites",
     "APP",
     "Network",
+    "Ai",
     "Service",
     "Log",
     "About",
@@ -127,6 +134,7 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Icons.collections_bookmark_rounded,
     Icons.apps,
     Icons.public,
+    Icons.auto_awesome,
     Icons.miscellaneous_services_rounded,
     Icons.receipt_long_rounded,
     Icons.info,
@@ -509,9 +517,10 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
       6 => const LocalFavoritesSettings(),
       7 => const AppSettings(),
       8 => const NetworkSettings(),
-      9 => const ServiceSettings(),
-      10 => const LogSettings(),
-      11 => const AboutSettings(),
+      9 => const AiSettings(),
+      10 => const ServiceSettings(),
+      11 => const LogSettings(),
+      12 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }
@@ -537,5 +546,269 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
         currentPage = -1;
       });
     }
+  }
+}
+
+class _ManualTranslationCard extends StatefulWidget {
+  const _ManualTranslationCard();
+
+  @override
+  State<_ManualTranslationCard> createState() => _ManualTranslationCardState();
+}
+
+class _ManualTranslationCardState extends State<_ManualTranslationCard> {
+  final TextEditingController _inputController = TextEditingController();
+  final TranslationController _translationController = TranslationController();
+  late Sort _selectedLanguage;
+
+  String poweredName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    String? savedLang = appdata.implicitData['currentLanguage'];
+    _selectedLanguage = savedLang != null
+        ? translationSorts.firstWhere(
+            (s) => s.extData == savedLang,
+            orElse: () => translationSorts.first,
+          )
+        : translationSorts.first;
+  }
+
+  @override
+  void dispose() {
+    _inputController.dispose();
+    _translationController.dispose();
+    super.dispose();
+  }
+
+  String _getPoweredName() {
+    final translationSource =
+        TranslationSourceExt.fromString(
+          appdata.settings['translationSource'] ?? 'bing',
+        ) ??
+        TranslationSource.bing;
+
+    final powered = switch (translationSource) {
+      TranslationSource.bing => 'Bing',
+      TranslationSource.google => 'Google',
+      TranslationSource.deepl => 'Deepl',
+      TranslationSource.siliconFlow => 'SiliconFlow',
+      TranslationSource.doubao => 'Doubao',
+      TranslationSource.gemini => 'Gemini',
+    };
+
+    return powered;
+  }
+
+  Future<void> _translate() async {
+    if (_inputController.text.isEmpty) {
+      App.rootContext.showMessage(message: 'Please enter text to translate'.tl);
+      return;
+    }
+    poweredName = _getPoweredName();
+    await _translationController.translate(
+      _inputController.text,
+      targetLanguage: _selectedLanguage.extData,
+    );
+  }
+
+  void _showDialogSelector(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ContentDialog(
+          title: '选择翻译语言'.tl,
+          displayButton: false,
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.6,
+            ),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(
+                context,
+              ).copyWith(scrollbars: false),
+              child: SingleChildScrollView(
+                child: RadioGroup<SortId>(
+                  groupValue: _selectedLanguage.id,
+                  onChanged: (value) {
+                    if (value == null) return;
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: translationSorts.map((sort) {
+                      return ListTile(
+                        dense: true,
+                        title: Text(
+                          sort.label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 24,
+                          ),
+                        ),
+                        trailing: Radio<SortId>(value: sort.id),
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _translate();
+                          _selectedLanguage = sort;
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingCard(
+      children: [
+        _SettingPartTitle(
+          title: 'Manual Translation'.tl,
+          icon: Icons.translate,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ListenableBuilder(
+            listenable: _translationController,
+            builder: (context, _) {
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      const Spacer(),
+                      IconButton(
+                        onPressed: _translationController.isTranslating
+                            ? null
+                            : _translate,
+                        icon: _translationController.isTranslating
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Icon(
+                                Icons.translate,
+                                size: 24,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () => _showDialogSelector(context),
+                        icon: Icon(
+                          Icons.keyboard_double_arrow_down_rounded,
+                          size: 24,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        TextField(
+                          controller: _inputController,
+                          maxLines: 3,
+                          scrollPadding: const EdgeInsets.only(bottom: 100),
+                          decoration: InputDecoration(
+                            hintText: 'Enter text to translate'.tl,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_translationController.hasTranslation) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.translate, size: 14),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Translation result'.tl,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        color: Colors.grey.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Powered by $poweredName',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant
+                                              .withValues(alpha: 0.8),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                CustomMarkdownWidget(
+                                  data:
+                                      _translationController.translatedText ??
+                                      '',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 }

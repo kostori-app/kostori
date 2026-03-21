@@ -1,8 +1,3 @@
-// lib/repositories/ai_repository.dart
-//
-// 统一入口：将 Drift 数据库与 AiBase 提供者对接。
-// 所有 AI 调用请走这里，Key 从数据库读取，调用结果自动入库。
-
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/ai_database.dart';
@@ -11,6 +6,7 @@ import 'package:kostori/database/daos/ai_config_dao.dart';
 import 'package:kostori/database/daos/ai_provider_stats_dao.dart';
 import 'package:kostori/database/daos/ai_task_dao.dart';
 import 'package:kostori/foundation/ai_base.dart';
+import 'package:kostori/foundation/ai_conversation_service.dart';
 import 'package:kostori/foundation/res.dart';
 
 class AiRepository {
@@ -18,7 +14,6 @@ class AiRepository {
 
   AiRepository(this._db);
 
-  // 快捷访问 DAO
   AiApiKeyDao get _keyDao => _db.aiApiKeyDao;
 
   AiTaskDao get _taskDao => _db.aiTaskDao;
@@ -27,11 +22,8 @@ class AiRepository {
 
   AiProviderStatsDao get _statsDao => _db.aiProviderStatsDao;
 
-  // ═══════════════════════════════════════════════════════
-  // API Key 管理
-  // ═══════════════════════════════════════════════════════
+  // ─── API Key ───────────────────────────────
 
-  /// 保存/更新某服务商的 Key 配置
   Future<void> saveApiKey({
     required String provider,
     required String apiKey,
@@ -46,7 +38,6 @@ class AiRepository {
         model: Value(model),
       ),
     );
-    // 确保 stats 行存在
     await _statsDao.upsert(AiProviderStatsCompanion.insert(provider: provider));
   }
 
@@ -64,71 +55,100 @@ class AiRepository {
   Future<void> deleteApiKey(String provider) =>
       _keyDao.deleteByProvider(provider);
 
-  // ═══════════════════════════════════════════════════════
-  // AI 调用（自动读取 Key、自动入库、自动统计）
-  // ═══════════════════════════════════════════════════════
+  // ─── 会话管理（委托给 AiConversationService）──
 
-  /// 通用发送：内部读取 DB 中的 Key，覆盖 AiBase.getConfig()
+  Future<String> createSession({
+    required String type,
+    required String provider,
+    String title = '新对话',
+    String? configKey,
+  }) => AiConversationService().createSession(
+    type: type,
+    provider: provider,
+    title: title,
+    configKey: configKey,
+  );
+
+  Stream<List<AiSession>> watchSessions({String? type}) =>
+      AiConversationService().watchSessions(type: type);
+
+  Stream<List<AiTask>> watchMessages(String sessionId) =>
+      AiConversationService().watchMessages(sessionId);
+
+  Future<void> deleteSession(String sessionId) =>
+      AiConversationService().deleteSession(sessionId);
+
+  Future<void> renameSession(String sessionId, String title) =>
+      AiConversationService().renameSession(sessionId, title);
+
+  // ─── AI 调用 ───────────────────────────────
+
+  /// 带上下文记忆的多轮对话（推荐）
+  Future<Res<String>> sendMessage({
+    required String sessionId,
+    required String userMessage,
+    String taskType = 'chat',
+    int maxContextMessages = 20,
+  }) => AiConversationService().sendMessage(
+    sessionId: sessionId,
+    userMessage: userMessage,
+    taskType: taskType,
+    maxContextMessages: maxContextMessages,
+  );
+
+  /// 一次性任务（无上下文）
+  Future<Res<String>> runTask({
+    required String provider,
+    required String taskType,
+    required String prompt,
+    String? configKey,
+    String? sessionTitle,
+  }) => AiConversationService().runTask(
+    provider: provider,
+    taskType: taskType,
+    prompt: prompt,
+    configKey: configKey,
+    sessionTitle: sessionTitle,
+  );
+
+  /// 兼容旧调用：直接 chat（自动创建临时会话）
   Future<Res<String>> chat({
     required String provider,
     required List<AiMessage> messages,
-    String? configKey, // 对应 AiConfigs.configKey，用于读取 systemPrompt
-    String? taskType, // 填写后自动将结果写入 AiTasks
+    String? configKey,
+    String? taskType,
   }) async {
-    // 1. 读取 Key
-    final keyRow = await _keyDao.getByProvider(provider);
-    if (keyRow == null || !keyRow.isEnabled) {
-      return Res.error('[$provider] API Key 未配置或已禁用');
-    }
-
-    // 2. 读取 System Prompt（可选）
-    String? systemPrompt;
-    if (configKey != null) {
-      final cfg = await _configDao.getByKey(configKey);
-      systemPrompt = cfg?.systemPrompt;
-    }
-
-    // 3. 构建 AiConfig 并调用
-    final config = _buildConfig(provider, keyRow);
-    final ai = AiFactory.createFromConfig(config);
-    if (ai == null) return Res.error('未知服务商: $provider');
-
-    final result = await ai.chat(messages, systemPrompt: systemPrompt);
-
-    // 4. 统计与入库
-    await _statsDao.incrementCalls(provider);
-    if (result.success && taskType != null) {
-      await _taskDao.insert(
-        AiTasksCompanion.insert(
-          taskType: taskType,
-          provider: provider,
-          inputContent: messages.last.content,
-          outputContent: result.data,
-          modelName: Value(keyRow.model),
-          // token 信息由调用方传入（如需精确统计，可扩展 Res）
-        ),
-      );
-    }
-
-    return result;
+    final sessionId = await createSession(
+      type: taskType ?? 'chat',
+      provider: provider,
+      configKey: configKey,
+    );
+    // 把消息列表转成单次调用（取最后一条 user 消息）
+    final lastUser = messages.lastWhere(
+      (m) => m.role == 'user',
+      orElse: () => messages.last,
+    );
+    return sendMessage(
+      sessionId: sessionId,
+      userMessage: lastUser.content,
+      taskType: taskType ?? 'chat',
+      maxContextMessages: 0,
+    );
   }
 
-  /// 单次 generate 快捷方法
   Future<Res<String>> generate({
     required String provider,
     required String prompt,
     String? configKey,
     String? taskType,
-  }) => chat(
+  }) => runTask(
     provider: provider,
-    messages: [AiUserMessage(content: prompt)],
+    taskType: taskType ?? 'generate',
+    prompt: prompt,
     configKey: configKey,
-    taskType: taskType,
   );
 
-  // ═══════════════════════════════════════════════════════
-  // AiConfigs (System Prompt 管理)
-  // ═══════════════════════════════════════════════════════
+  // ─── AiConfigs ─────────────────────────────
 
   Future<void> saveConfig({
     required String configKey,
@@ -149,89 +169,55 @@ class AiRepository {
 
   Stream<List<AiConfig>> watchAllConfigs() => _configDao.watchAll();
 
-  Future<void> updateSystemPrompt(String configKey, String prompt) =>
-      _configDao.updateSystemPrompt(configKey, prompt);
+  Future<void> updateSystemPrompt(String key, String prompt) =>
+      _configDao.upsert(
+        AiConfigsCompanion(configKey: Value(key), systemPrompt: Value(prompt)),
+      );
 
-  Future<void> deleteConfig(String configKey) =>
-      _configDao.deleteByKey(configKey);
+  Future<void> deleteConfig(String key) => _configDao.deleteByKey(key);
 
-  // ═══════════════════════════════════════════════════════
-  // AiTasks (历史记录)
-  // ═══════════════════════════════════════════════════════
+  // ─── AiTasks ───────────────────────────────
 
   Stream<List<AiTask>> watchAllTasks() => _taskDao.watchAll();
 
   Stream<List<AiTask>> watchTasksByType(String taskType) =>
       _taskDao.watchByType(taskType);
 
-  Future<List<AiTask>> getTasksByProvider(String provider) =>
-      _taskDao.getByProvider(provider);
-
-  Future<int> totalTokensConsumed() => _taskDao.totalTokensConsumed();
-
   Future<void> deleteTask(int id) => _taskDao.deleteById(id);
 
   Future<void> clearTasksByType(String taskType) =>
       _taskDao.deleteByType(taskType);
 
-  // ═══════════════════════════════════════════════════════
-  // AiProviderStats (状态 / 健康检查)
-  // ═══════════════════════════════════════════════════════
+  // ─── AiProviderStats ───────────────────────
 
   Stream<List<AiProviderStat>> watchAllStats() => _statsDao.watchAll();
 
   Future<AiProviderStat?> getStats(String provider) =>
       _statsDao.getByProvider(provider);
 
-  /// 校验 Key 可用性并更新 stats
   Future<bool> validateKey(String provider) async {
     final result = await generate(provider: provider, prompt: 'Hello');
-    final valid = result.success;
-    await _statsDao.updateValidity(provider, isValid: valid);
-    return valid;
+    await _statsDao.updateValidity(provider, isValid: result.success);
+    return result.success;
   }
 
   Future<void> resetCallCount(String provider) =>
       _statsDao.resetCalls(provider);
-
-  // ═══════════════════════════════════════════════════════
-  // 内部工具
-  // ═══════════════════════════════════════════════════════
-
-  AiProviderConfig _buildConfig(String provider, AiApiKey row) {
-    final key = row.apiKey;
-    final model = row.model;
-    final baseUrl = row.baseUrl;
-
-    switch (provider) {
-      case 'siliconFlow':
-        return SiliconFlowConfig(
-          apiKey: key,
-          model: model ?? 'THUDM/GLM-4-9B-0414',
-          baseUrl: baseUrl ?? 'https://api.siliconflow.cn/v1',
-        );
-      case 'doubao':
-        return DoubaoConfig(
-          apiKey: key,
-          model: model ?? 'doubao-1-5-lite-32k-250115',
-          baseUrl: baseUrl ?? 'https://ark.cn-beijing.volces.com/api/v3',
-        );
-      case 'gemini':
-        return GeminiConfig(
-          apiKey: key,
-          model: model ?? 'gemini-2.0-flash',
-          baseUrl: baseUrl,
-        );
-      default:
-        throw UnsupportedError('未知服务商: $provider');
-    }
-  }
 }
 
-final aiDatabaseProvider = Provider<AiDatabase>((ref) {
-  return AiDatabase.instance;
-});
+// ─── Riverpod ──────────────────────────────
 
-final aiRepositoryProvider = Provider<AiRepository>((ref) {
-  return AiRepository(ref.watch(aiDatabaseProvider));
-});
+final aiDatabaseProvider = Provider<AiDatabase>((ref) => AiDatabase.instance);
+
+final aiRepositoryProvider = Provider<AiRepository>(
+  (ref) => AiRepository(ref.watch(aiDatabaseProvider)),
+);
+
+// 会话流 Providers
+final aiSessionsProvider = StreamProvider.family<List<AiSession>, String?>(
+  (ref, type) => ref.watch(aiRepositoryProvider).watchSessions(type: type),
+);
+
+final aiMessagesProvider = StreamProvider.family<List<AiTask>, String>(
+  (ref, sessionId) => ref.watch(aiRepositoryProvider).watchMessages(sessionId),
+);

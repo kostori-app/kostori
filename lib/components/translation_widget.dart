@@ -56,11 +56,6 @@ class _TranslatedContentState extends State<TranslatedContent> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   void didUpdateWidget(TranslatedContent oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.data != widget.data) {

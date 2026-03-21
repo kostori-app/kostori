@@ -12,10 +12,10 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
-import 'package:kostori/pages/user_profile_analysis_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
@@ -55,7 +55,7 @@ class _MePageState extends State<MePage> {
         const _SyncDataWidget(),
         const TodayRecommendation(),
         const _ImageManipulation(),
-        const _UserProfileAnalysis(),
+        const AiHubEntry(),
         const _StatsViewPage(),
         SliverPadding(
           padding: EdgeInsets.only(top: context.padding.bottom + 56),
@@ -568,73 +568,6 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                       ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _UserProfileAnalysis extends StatelessWidget {
-  const _UserProfileAnalysis();
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverToBoxAdapter(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outlineVariant,
-            width: 0.6,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            context.to(() => const UserProfileAnalysisPage());
-          },
-          child: SizedBox(
-            height: 56,
-            child: Row(
-              children: [
-                const SizedBox(width: 16),
-                Icon(
-                  Icons.analytics_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'User Profile Analysis'.tl,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'AI',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-              ],
-            ),
           ),
         ),
       ),

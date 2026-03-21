@@ -715,15 +715,20 @@ class __AnimeSourceCallbackSettingState
 }
 
 class _SettingPartTitle extends StatelessWidget {
-  const _SettingPartTitle({required this.title, required this.icon});
+  const _SettingPartTitle({
+    required this.title,
+    required this.icon,
+    this.trailing,
+  });
 
   final String title;
   final IconData icon;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8, right: 8),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
@@ -736,6 +741,7 @@ class _SettingPartTitle extends StatelessWidget {
           Icon(icon, size: 24),
           const SizedBox(width: 8),
           Text(title, style: ts.s18),
+          if (trailing != null) ...[const Spacer(), trailing!],
         ],
       ),
     );
@@ -754,17 +760,19 @@ class _SettingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: context.brightness == Brightness.light
-          ? Colors.white.toOpacity(0.72)
-          : const Color(0xFF1E1E1E).toOpacity(0.72),
-      elevation: 4,
-      shadowColor: Theme.of(context).colorScheme.shadow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [...children, const SizedBox(height: 8)],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Material(
+        color: context.brightness == Brightness.light
+            ? Colors.white.toOpacity(0.72)
+            : const Color(0xFF1E1E1E).toOpacity(0.72),
+        elevation: 4,
+        shadowColor: Theme.of(context).colorScheme.shadow,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [...children, const SizedBox(height: 8)],
+        ),
       ),
     );
   }

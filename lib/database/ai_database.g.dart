@@ -182,17 +182,9 @@ class $AiApiKeysTable extends AiApiKeys
 class AiApiKey extends DataClass implements Insertable<AiApiKey> {
   final String provider;
   final String apiKey;
-
-  /// 自定义 baseUrl（可为空，使用默认值）
   final String? baseUrl;
-
-  /// 当前使用的模型名称
   final String? model;
-
-  /// Key 是否启用
   final bool isEnabled;
-
-  /// 最后更新时间
   final DateTime updatedAt;
   const AiApiKey({
     required this.provider,
@@ -423,6 +415,479 @@ class AiApiKeysCompanion extends UpdateCompanion<AiApiKey> {
   }
 }
 
+class $AiSessionsTable extends AiSessions
+    with TableInfo<$AiSessionsTable, AiSession> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiSessionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 20,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('新对话'),
+  );
+  static const VerificationMeta _configKeyMeta = const VerificationMeta(
+    'configKey',
+  );
+  @override
+  late final GeneratedColumn<String> configKey = GeneratedColumn<String>(
+    'config_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _providerMeta = const VerificationMeta(
+    'provider',
+  );
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+    'provider',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    sessionId,
+    type,
+    title,
+    configKey,
+    provider,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_sessions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiSession> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('config_key')) {
+      context.handle(
+        _configKeyMeta,
+        configKey.isAcceptableOrUnknown(data['config_key']!, _configKeyMeta),
+      );
+    }
+    if (data.containsKey('provider')) {
+      context.handle(
+        _providerMeta,
+        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {sessionId};
+  @override
+  AiSession map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiSession(
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      configKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config_key'],
+      ),
+      provider: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AiSessionsTable createAlias(String alias) {
+    return $AiSessionsTable(attachedDatabase, alias);
+  }
+}
+
+class AiSession extends DataClass implements Insertable<AiSession> {
+  /// UUID 或随机字符串
+  final String sessionId;
+
+  /// 会话类型: 'chat' | 'soul_profile' | 'translation'
+  final String type;
+
+  /// 会话标题
+  final String title;
+
+  /// 关联的 System Prompt 配置 key
+  final String? configKey;
+
+  /// 使用的服务商
+  final String provider;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const AiSession({
+    required this.sessionId,
+    required this.type,
+    required this.title,
+    this.configKey,
+    required this.provider,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['session_id'] = Variable<String>(sessionId);
+    map['type'] = Variable<String>(type);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || configKey != null) {
+      map['config_key'] = Variable<String>(configKey);
+    }
+    map['provider'] = Variable<String>(provider);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AiSessionsCompanion toCompanion(bool nullToAbsent) {
+    return AiSessionsCompanion(
+      sessionId: Value(sessionId),
+      type: Value(type),
+      title: Value(title),
+      configKey: configKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(configKey),
+      provider: Value(provider),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory AiSession.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiSession(
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      type: serializer.fromJson<String>(json['type']),
+      title: serializer.fromJson<String>(json['title']),
+      configKey: serializer.fromJson<String?>(json['configKey']),
+      provider: serializer.fromJson<String>(json['provider']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'sessionId': serializer.toJson<String>(sessionId),
+      'type': serializer.toJson<String>(type),
+      'title': serializer.toJson<String>(title),
+      'configKey': serializer.toJson<String?>(configKey),
+      'provider': serializer.toJson<String>(provider),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  AiSession copyWith({
+    String? sessionId,
+    String? type,
+    String? title,
+    Value<String?> configKey = const Value.absent(),
+    String? provider,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => AiSession(
+    sessionId: sessionId ?? this.sessionId,
+    type: type ?? this.type,
+    title: title ?? this.title,
+    configKey: configKey.present ? configKey.value : this.configKey,
+    provider: provider ?? this.provider,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  AiSession copyWithCompanion(AiSessionsCompanion data) {
+    return AiSession(
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      type: data.type.present ? data.type.value : this.type,
+      title: data.title.present ? data.title.value : this.title,
+      configKey: data.configKey.present ? data.configKey.value : this.configKey,
+      provider: data.provider.present ? data.provider.value : this.provider,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiSession(')
+          ..write('sessionId: $sessionId, ')
+          ..write('type: $type, ')
+          ..write('title: $title, ')
+          ..write('configKey: $configKey, ')
+          ..write('provider: $provider, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    sessionId,
+    type,
+    title,
+    configKey,
+    provider,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiSession &&
+          other.sessionId == this.sessionId &&
+          other.type == this.type &&
+          other.title == this.title &&
+          other.configKey == this.configKey &&
+          other.provider == this.provider &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AiSessionsCompanion extends UpdateCompanion<AiSession> {
+  final Value<String> sessionId;
+  final Value<String> type;
+  final Value<String> title;
+  final Value<String?> configKey;
+  final Value<String> provider;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const AiSessionsCompanion({
+    this.sessionId = const Value.absent(),
+    this.type = const Value.absent(),
+    this.title = const Value.absent(),
+    this.configKey = const Value.absent(),
+    this.provider = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiSessionsCompanion.insert({
+    required String sessionId,
+    required String type,
+    this.title = const Value.absent(),
+    this.configKey = const Value.absent(),
+    required String provider,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : sessionId = Value(sessionId),
+       type = Value(type),
+       provider = Value(provider);
+  static Insertable<AiSession> custom({
+    Expression<String>? sessionId,
+    Expression<String>? type,
+    Expression<String>? title,
+    Expression<String>? configKey,
+    Expression<String>? provider,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (sessionId != null) 'session_id': sessionId,
+      if (type != null) 'type': type,
+      if (title != null) 'title': title,
+      if (configKey != null) 'config_key': configKey,
+      if (provider != null) 'provider': provider,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiSessionsCompanion copyWith({
+    Value<String>? sessionId,
+    Value<String>? type,
+    Value<String>? title,
+    Value<String?>? configKey,
+    Value<String>? provider,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return AiSessionsCompanion(
+      sessionId: sessionId ?? this.sessionId,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      configKey: configKey ?? this.configKey,
+      provider: provider ?? this.provider,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (configKey.present) {
+      map['config_key'] = Variable<String>(configKey.value);
+    }
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiSessionsCompanion(')
+          ..write('sessionId: $sessionId, ')
+          ..write('type: $type, ')
+          ..write('title: $title, ')
+          ..write('configKey: $configKey, ')
+          ..write('provider: $provider, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -441,6 +906,17 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _taskTypeMeta = const VerificationMeta(
     'taskType',
   );
@@ -456,16 +932,15 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _providerMeta = const VerificationMeta(
-    'provider',
-  );
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
   @override
-  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
-    'provider',
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+    'role',
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('user'),
   );
   static const VerificationMeta _inputContentMeta = const VerificationMeta(
     'inputContent',
@@ -484,6 +959,28 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
   @override
   late final GeneratedColumn<String> outputContent = GeneratedColumn<String>(
     'output_content',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _thoughtMeta = const VerificationMeta(
+    'thought',
+  );
+  @override
+  late final GeneratedColumn<String> thought = GeneratedColumn<String>(
+    'thought',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _providerMeta = const VerificationMeta(
+    'provider',
+  );
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+    'provider',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -527,10 +1024,13 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    sessionId,
     taskType,
-    provider,
+    role,
     inputContent,
     outputContent,
+    thought,
+    provider,
     modelName,
     tokenConsumed,
     createdAt,
@@ -550,6 +1050,14 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
     if (data.containsKey('task_type')) {
       context.handle(
         _taskTypeMeta,
@@ -558,13 +1066,11 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
     } else if (isInserting) {
       context.missing(_taskTypeMeta);
     }
-    if (data.containsKey('provider')) {
+    if (data.containsKey('role')) {
       context.handle(
-        _providerMeta,
-        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+        _roleMeta,
+        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
       );
-    } else if (isInserting) {
-      context.missing(_providerMeta);
     }
     if (data.containsKey('input_content')) {
       context.handle(
@@ -585,8 +1091,20 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
           _outputContentMeta,
         ),
       );
+    }
+    if (data.containsKey('thought')) {
+      context.handle(
+        _thoughtMeta,
+        thought.isAcceptableOrUnknown(data['thought']!, _thoughtMeta),
+      );
+    }
+    if (data.containsKey('provider')) {
+      context.handle(
+        _providerMeta,
+        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+      );
     } else if (isInserting) {
-      context.missing(_outputContentMeta);
+      context.missing(_providerMeta);
     }
     if (data.containsKey('model_name')) {
       context.handle(
@@ -622,13 +1140,17 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
       taskType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}task_type'],
       )!,
-      provider: attachedDatabase.typeMapping.read(
+      role: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}provider'],
+        data['${effectivePrefix}role'],
       )!,
       inputContent: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -637,6 +1159,14 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
       outputContent: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}output_content'],
+      ),
+      thought: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thought'],
+      ),
+      provider: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider'],
       )!,
       modelName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -661,31 +1191,25 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
 
 class AiTask extends DataClass implements Insertable<AiTask> {
   final int id;
-
-  /// 任务类型: 'translation' | 'soul_profile' | 'anime_recommend'
+  final String sessionId;
   final String taskType;
-
-  /// 使用的服务商，外键关联 AiApiKeys.provider
-  final String provider;
-
-  /// 输入内容：原文或番剧列表 ID
+  final String role;
   final String inputContent;
-
-  /// AI 返回的结果（Markdown）
-  final String outputContent;
-
-  /// 使用的模型名称
+  final String? outputContent;
+  final String? thought;
+  final String provider;
   final String? modelName;
-
-  /// 消耗 Token 数量
   final int tokenConsumed;
   final DateTime createdAt;
   const AiTask({
     required this.id,
+    required this.sessionId,
     required this.taskType,
-    required this.provider,
+    required this.role,
     required this.inputContent,
-    required this.outputContent,
+    this.outputContent,
+    this.thought,
+    required this.provider,
     this.modelName,
     required this.tokenConsumed,
     required this.createdAt,
@@ -694,10 +1218,17 @@ class AiTask extends DataClass implements Insertable<AiTask> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<String>(sessionId);
     map['task_type'] = Variable<String>(taskType);
-    map['provider'] = Variable<String>(provider);
+    map['role'] = Variable<String>(role);
     map['input_content'] = Variable<String>(inputContent);
-    map['output_content'] = Variable<String>(outputContent);
+    if (!nullToAbsent || outputContent != null) {
+      map['output_content'] = Variable<String>(outputContent);
+    }
+    if (!nullToAbsent || thought != null) {
+      map['thought'] = Variable<String>(thought);
+    }
+    map['provider'] = Variable<String>(provider);
     if (!nullToAbsent || modelName != null) {
       map['model_name'] = Variable<String>(modelName);
     }
@@ -709,10 +1240,17 @@ class AiTask extends DataClass implements Insertable<AiTask> {
   AiTasksCompanion toCompanion(bool nullToAbsent) {
     return AiTasksCompanion(
       id: Value(id),
+      sessionId: Value(sessionId),
       taskType: Value(taskType),
-      provider: Value(provider),
+      role: Value(role),
       inputContent: Value(inputContent),
-      outputContent: Value(outputContent),
+      outputContent: outputContent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(outputContent),
+      thought: thought == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thought),
+      provider: Value(provider),
       modelName: modelName == null && nullToAbsent
           ? const Value.absent()
           : Value(modelName),
@@ -728,10 +1266,13 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AiTask(
       id: serializer.fromJson<int>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
       taskType: serializer.fromJson<String>(json['taskType']),
-      provider: serializer.fromJson<String>(json['provider']),
+      role: serializer.fromJson<String>(json['role']),
       inputContent: serializer.fromJson<String>(json['inputContent']),
-      outputContent: serializer.fromJson<String>(json['outputContent']),
+      outputContent: serializer.fromJson<String?>(json['outputContent']),
+      thought: serializer.fromJson<String?>(json['thought']),
+      provider: serializer.fromJson<String>(json['provider']),
       modelName: serializer.fromJson<String?>(json['modelName']),
       tokenConsumed: serializer.fromJson<int>(json['tokenConsumed']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -742,10 +1283,13 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
       'taskType': serializer.toJson<String>(taskType),
-      'provider': serializer.toJson<String>(provider),
+      'role': serializer.toJson<String>(role),
       'inputContent': serializer.toJson<String>(inputContent),
-      'outputContent': serializer.toJson<String>(outputContent),
+      'outputContent': serializer.toJson<String?>(outputContent),
+      'thought': serializer.toJson<String?>(thought),
+      'provider': serializer.toJson<String>(provider),
       'modelName': serializer.toJson<String?>(modelName),
       'tokenConsumed': serializer.toJson<int>(tokenConsumed),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -754,19 +1298,27 @@ class AiTask extends DataClass implements Insertable<AiTask> {
 
   AiTask copyWith({
     int? id,
+    String? sessionId,
     String? taskType,
-    String? provider,
+    String? role,
     String? inputContent,
-    String? outputContent,
+    Value<String?> outputContent = const Value.absent(),
+    Value<String?> thought = const Value.absent(),
+    String? provider,
     Value<String?> modelName = const Value.absent(),
     int? tokenConsumed,
     DateTime? createdAt,
   }) => AiTask(
     id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
     taskType: taskType ?? this.taskType,
-    provider: provider ?? this.provider,
+    role: role ?? this.role,
     inputContent: inputContent ?? this.inputContent,
-    outputContent: outputContent ?? this.outputContent,
+    outputContent: outputContent.present
+        ? outputContent.value
+        : this.outputContent,
+    thought: thought.present ? thought.value : this.thought,
+    provider: provider ?? this.provider,
     modelName: modelName.present ? modelName.value : this.modelName,
     tokenConsumed: tokenConsumed ?? this.tokenConsumed,
     createdAt: createdAt ?? this.createdAt,
@@ -774,14 +1326,17 @@ class AiTask extends DataClass implements Insertable<AiTask> {
   AiTask copyWithCompanion(AiTasksCompanion data) {
     return AiTask(
       id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       taskType: data.taskType.present ? data.taskType.value : this.taskType,
-      provider: data.provider.present ? data.provider.value : this.provider,
+      role: data.role.present ? data.role.value : this.role,
       inputContent: data.inputContent.present
           ? data.inputContent.value
           : this.inputContent,
       outputContent: data.outputContent.present
           ? data.outputContent.value
           : this.outputContent,
+      thought: data.thought.present ? data.thought.value : this.thought,
+      provider: data.provider.present ? data.provider.value : this.provider,
       modelName: data.modelName.present ? data.modelName.value : this.modelName,
       tokenConsumed: data.tokenConsumed.present
           ? data.tokenConsumed.value
@@ -794,10 +1349,13 @@ class AiTask extends DataClass implements Insertable<AiTask> {
   String toString() {
     return (StringBuffer('AiTask(')
           ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
           ..write('taskType: $taskType, ')
-          ..write('provider: $provider, ')
+          ..write('role: $role, ')
           ..write('inputContent: $inputContent, ')
           ..write('outputContent: $outputContent, ')
+          ..write('thought: $thought, ')
+          ..write('provider: $provider, ')
           ..write('modelName: $modelName, ')
           ..write('tokenConsumed: $tokenConsumed, ')
           ..write('createdAt: $createdAt')
@@ -808,10 +1366,13 @@ class AiTask extends DataClass implements Insertable<AiTask> {
   @override
   int get hashCode => Object.hash(
     id,
+    sessionId,
     taskType,
-    provider,
+    role,
     inputContent,
     outputContent,
+    thought,
+    provider,
     modelName,
     tokenConsumed,
     createdAt,
@@ -821,10 +1382,13 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       identical(this, other) ||
       (other is AiTask &&
           other.id == this.id &&
+          other.sessionId == this.sessionId &&
           other.taskType == this.taskType &&
-          other.provider == this.provider &&
+          other.role == this.role &&
           other.inputContent == this.inputContent &&
           other.outputContent == this.outputContent &&
+          other.thought == this.thought &&
+          other.provider == this.provider &&
           other.modelName == this.modelName &&
           other.tokenConsumed == this.tokenConsumed &&
           other.createdAt == this.createdAt);
@@ -832,52 +1396,67 @@ class AiTask extends DataClass implements Insertable<AiTask> {
 
 class AiTasksCompanion extends UpdateCompanion<AiTask> {
   final Value<int> id;
+  final Value<String> sessionId;
   final Value<String> taskType;
-  final Value<String> provider;
+  final Value<String> role;
   final Value<String> inputContent;
-  final Value<String> outputContent;
+  final Value<String?> outputContent;
+  final Value<String?> thought;
+  final Value<String> provider;
   final Value<String?> modelName;
   final Value<int> tokenConsumed;
   final Value<DateTime> createdAt;
   const AiTasksCompanion({
     this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
     this.taskType = const Value.absent(),
-    this.provider = const Value.absent(),
+    this.role = const Value.absent(),
     this.inputContent = const Value.absent(),
     this.outputContent = const Value.absent(),
+    this.thought = const Value.absent(),
+    this.provider = const Value.absent(),
     this.modelName = const Value.absent(),
     this.tokenConsumed = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   AiTasksCompanion.insert({
     this.id = const Value.absent(),
+    required String sessionId,
     required String taskType,
-    required String provider,
+    this.role = const Value.absent(),
     required String inputContent,
-    required String outputContent,
+    this.outputContent = const Value.absent(),
+    this.thought = const Value.absent(),
+    required String provider,
     this.modelName = const Value.absent(),
     this.tokenConsumed = const Value.absent(),
     this.createdAt = const Value.absent(),
-  }) : taskType = Value(taskType),
-       provider = Value(provider),
+  }) : sessionId = Value(sessionId),
+       taskType = Value(taskType),
        inputContent = Value(inputContent),
-       outputContent = Value(outputContent);
+       provider = Value(provider);
   static Insertable<AiTask> custom({
     Expression<int>? id,
+    Expression<String>? sessionId,
     Expression<String>? taskType,
-    Expression<String>? provider,
+    Expression<String>? role,
     Expression<String>? inputContent,
     Expression<String>? outputContent,
+    Expression<String>? thought,
+    Expression<String>? provider,
     Expression<String>? modelName,
     Expression<int>? tokenConsumed,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
       if (taskType != null) 'task_type': taskType,
-      if (provider != null) 'provider': provider,
+      if (role != null) 'role': role,
       if (inputContent != null) 'input_content': inputContent,
       if (outputContent != null) 'output_content': outputContent,
+      if (thought != null) 'thought': thought,
+      if (provider != null) 'provider': provider,
       if (modelName != null) 'model_name': modelName,
       if (tokenConsumed != null) 'token_consumed': tokenConsumed,
       if (createdAt != null) 'created_at': createdAt,
@@ -886,20 +1465,26 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
 
   AiTasksCompanion copyWith({
     Value<int>? id,
+    Value<String>? sessionId,
     Value<String>? taskType,
-    Value<String>? provider,
+    Value<String>? role,
     Value<String>? inputContent,
-    Value<String>? outputContent,
+    Value<String?>? outputContent,
+    Value<String?>? thought,
+    Value<String>? provider,
     Value<String?>? modelName,
     Value<int>? tokenConsumed,
     Value<DateTime>? createdAt,
   }) {
     return AiTasksCompanion(
       id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
       taskType: taskType ?? this.taskType,
-      provider: provider ?? this.provider,
+      role: role ?? this.role,
       inputContent: inputContent ?? this.inputContent,
       outputContent: outputContent ?? this.outputContent,
+      thought: thought ?? this.thought,
+      provider: provider ?? this.provider,
       modelName: modelName ?? this.modelName,
       tokenConsumed: tokenConsumed ?? this.tokenConsumed,
       createdAt: createdAt ?? this.createdAt,
@@ -912,17 +1497,26 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
     if (taskType.present) {
       map['task_type'] = Variable<String>(taskType.value);
     }
-    if (provider.present) {
-      map['provider'] = Variable<String>(provider.value);
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
     }
     if (inputContent.present) {
       map['input_content'] = Variable<String>(inputContent.value);
     }
     if (outputContent.present) {
       map['output_content'] = Variable<String>(outputContent.value);
+    }
+    if (thought.present) {
+      map['thought'] = Variable<String>(thought.value);
+    }
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
     }
     if (modelName.present) {
       map['model_name'] = Variable<String>(modelName.value);
@@ -940,10 +1534,13 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
   String toString() {
     return (StringBuffer('AiTasksCompanion(')
           ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
           ..write('taskType: $taskType, ')
-          ..write('provider: $provider, ')
+          ..write('role: $role, ')
           ..write('inputContent: $inputContent, ')
           ..write('outputContent: $outputContent, ')
+          ..write('thought: $thought, ')
+          ..write('provider: $provider, ')
           ..write('modelName: $modelName, ')
           ..write('tokenConsumed: $tokenConsumed, ')
           ..write('createdAt: $createdAt')
@@ -958,6 +1555,19 @@ class $AiConfigsTable extends AiConfigs
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $AiConfigsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
   static const VerificationMeta _configKeyMeta = const VerificationMeta(
     'configKey',
   );
@@ -968,6 +1578,7 @@ class $AiConfigsTable extends AiConfigs
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
   static const VerificationMeta _systemPromptMeta = const VerificationMeta(
     'systemPrompt',
@@ -1001,12 +1612,29 @@ class $AiConfigsTable extends AiConfigs
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isSystemMeta = const VerificationMeta(
+    'isSystem',
+  );
+  @override
+  late final GeneratedColumn<bool> isSystem = GeneratedColumn<bool>(
+    'is_system',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_system" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
     configKey,
     systemPrompt,
     temperature,
     memo,
+    isSystem,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1020,6 +1648,9 @@ class $AiConfigsTable extends AiConfigs
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
     if (data.containsKey('config_key')) {
       context.handle(
         _configKeyMeta,
@@ -1054,15 +1685,25 @@ class $AiConfigsTable extends AiConfigs
         memo.isAcceptableOrUnknown(data['memo']!, _memoMeta),
       );
     }
+    if (data.containsKey('is_system')) {
+      context.handle(
+        _isSystemMeta,
+        isSystem.isAcceptableOrUnknown(data['is_system']!, _isSystemMeta),
+      );
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {configKey};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   AiConfig map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return AiConfig(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
       configKey: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}config_key'],
@@ -1079,6 +1720,10 @@ class $AiConfigsTable extends AiConfigs
         DriftSqlType.string,
         data['${effectivePrefix}memo'],
       ),
+      isSystem: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_system'],
+      )!,
     );
   }
 
@@ -1089,41 +1734,42 @@ class $AiConfigsTable extends AiConfigs
 }
 
 class AiConfig extends DataClass implements Insertable<AiConfig> {
-  /// 唯一键: 'translator_v1' | 'profile_expert'
+  final int id;
   final String configKey;
-
-  /// System Prompt
   final String systemPrompt;
-
-  /// 创造力参数: 0.0 ~ 1.0
   final double temperature;
-
-  /// 备注
   final String? memo;
+  final bool isSystem;
   const AiConfig({
+    required this.id,
     required this.configKey,
     required this.systemPrompt,
     required this.temperature,
     this.memo,
+    required this.isSystem,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
     map['config_key'] = Variable<String>(configKey);
     map['system_prompt'] = Variable<String>(systemPrompt);
     map['temperature'] = Variable<double>(temperature);
     if (!nullToAbsent || memo != null) {
       map['memo'] = Variable<String>(memo);
     }
+    map['is_system'] = Variable<bool>(isSystem);
     return map;
   }
 
   AiConfigsCompanion toCompanion(bool nullToAbsent) {
     return AiConfigsCompanion(
+      id: Value(id),
       configKey: Value(configKey),
       systemPrompt: Value(systemPrompt),
       temperature: Value(temperature),
       memo: memo == null && nullToAbsent ? const Value.absent() : Value(memo),
+      isSystem: Value(isSystem),
     );
   }
 
@@ -1133,36 +1779,45 @@ class AiConfig extends DataClass implements Insertable<AiConfig> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return AiConfig(
+      id: serializer.fromJson<int>(json['id']),
       configKey: serializer.fromJson<String>(json['configKey']),
       systemPrompt: serializer.fromJson<String>(json['systemPrompt']),
       temperature: serializer.fromJson<double>(json['temperature']),
       memo: serializer.fromJson<String?>(json['memo']),
+      isSystem: serializer.fromJson<bool>(json['isSystem']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
       'configKey': serializer.toJson<String>(configKey),
       'systemPrompt': serializer.toJson<String>(systemPrompt),
       'temperature': serializer.toJson<double>(temperature),
       'memo': serializer.toJson<String?>(memo),
+      'isSystem': serializer.toJson<bool>(isSystem),
     };
   }
 
   AiConfig copyWith({
+    int? id,
     String? configKey,
     String? systemPrompt,
     double? temperature,
     Value<String?> memo = const Value.absent(),
+    bool? isSystem,
   }) => AiConfig(
+    id: id ?? this.id,
     configKey: configKey ?? this.configKey,
     systemPrompt: systemPrompt ?? this.systemPrompt,
     temperature: temperature ?? this.temperature,
     memo: memo.present ? memo.value : this.memo,
+    isSystem: isSystem ?? this.isSystem,
   );
   AiConfig copyWithCompanion(AiConfigsCompanion data) {
     return AiConfig(
+      id: data.id.present ? data.id.value : this.id,
       configKey: data.configKey.present ? data.configKey.value : this.configKey,
       systemPrompt: data.systemPrompt.present
           ? data.systemPrompt.value
@@ -1171,88 +1826,104 @@ class AiConfig extends DataClass implements Insertable<AiConfig> {
           ? data.temperature.value
           : this.temperature,
       memo: data.memo.present ? data.memo.value : this.memo,
+      isSystem: data.isSystem.present ? data.isSystem.value : this.isSystem,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('AiConfig(')
+          ..write('id: $id, ')
           ..write('configKey: $configKey, ')
           ..write('systemPrompt: $systemPrompt, ')
           ..write('temperature: $temperature, ')
-          ..write('memo: $memo')
+          ..write('memo: $memo, ')
+          ..write('isSystem: $isSystem')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(configKey, systemPrompt, temperature, memo);
+  int get hashCode =>
+      Object.hash(id, configKey, systemPrompt, temperature, memo, isSystem);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is AiConfig &&
+          other.id == this.id &&
           other.configKey == this.configKey &&
           other.systemPrompt == this.systemPrompt &&
           other.temperature == this.temperature &&
-          other.memo == this.memo);
+          other.memo == this.memo &&
+          other.isSystem == this.isSystem);
 }
 
 class AiConfigsCompanion extends UpdateCompanion<AiConfig> {
+  final Value<int> id;
   final Value<String> configKey;
   final Value<String> systemPrompt;
   final Value<double> temperature;
   final Value<String?> memo;
-  final Value<int> rowid;
+  final Value<bool> isSystem;
   const AiConfigsCompanion({
+    this.id = const Value.absent(),
     this.configKey = const Value.absent(),
     this.systemPrompt = const Value.absent(),
     this.temperature = const Value.absent(),
     this.memo = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.isSystem = const Value.absent(),
   });
   AiConfigsCompanion.insert({
+    this.id = const Value.absent(),
     required String configKey,
     required String systemPrompt,
     this.temperature = const Value.absent(),
     this.memo = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.isSystem = const Value.absent(),
   }) : configKey = Value(configKey),
        systemPrompt = Value(systemPrompt);
   static Insertable<AiConfig> custom({
+    Expression<int>? id,
     Expression<String>? configKey,
     Expression<String>? systemPrompt,
     Expression<double>? temperature,
     Expression<String>? memo,
-    Expression<int>? rowid,
+    Expression<bool>? isSystem,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
       if (configKey != null) 'config_key': configKey,
       if (systemPrompt != null) 'system_prompt': systemPrompt,
       if (temperature != null) 'temperature': temperature,
       if (memo != null) 'memo': memo,
-      if (rowid != null) 'rowid': rowid,
+      if (isSystem != null) 'is_system': isSystem,
     });
   }
 
   AiConfigsCompanion copyWith({
+    Value<int>? id,
     Value<String>? configKey,
     Value<String>? systemPrompt,
     Value<double>? temperature,
     Value<String?>? memo,
-    Value<int>? rowid,
+    Value<bool>? isSystem,
   }) {
     return AiConfigsCompanion(
+      id: id ?? this.id,
       configKey: configKey ?? this.configKey,
       systemPrompt: systemPrompt ?? this.systemPrompt,
       temperature: temperature ?? this.temperature,
       memo: memo ?? this.memo,
-      rowid: rowid ?? this.rowid,
+      isSystem: isSystem ?? this.isSystem,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
     if (configKey.present) {
       map['config_key'] = Variable<String>(configKey.value);
     }
@@ -1265,6 +1936,320 @@ class AiConfigsCompanion extends UpdateCompanion<AiConfig> {
     if (memo.present) {
       map['memo'] = Variable<String>(memo.value);
     }
+    if (isSystem.present) {
+      map['is_system'] = Variable<bool>(isSystem.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiConfigsCompanion(')
+          ..write('id: $id, ')
+          ..write('configKey: $configKey, ')
+          ..write('systemPrompt: $systemPrompt, ')
+          ..write('temperature: $temperature, ')
+          ..write('memo: $memo, ')
+          ..write('isSystem: $isSystem')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AiModelsTable extends AiModels with TableInfo<$AiModelsTable, AiModel> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiModelsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _modelIdMeta = const VerificationMeta(
+    'modelId',
+  );
+  @override
+  late final GeneratedColumn<String> modelId = GeneratedColumn<String>(
+    'model_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _providerMeta = const VerificationMeta(
+    'provider',
+  );
+  @override
+  late final GeneratedColumn<String> provider = GeneratedColumn<String>(
+    'provider',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [modelId, provider, label, isActive];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_models';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiModel> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('model_id')) {
+      context.handle(
+        _modelIdMeta,
+        modelId.isAcceptableOrUnknown(data['model_id']!, _modelIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modelIdMeta);
+    }
+    if (data.containsKey('provider')) {
+      context.handle(
+        _providerMeta,
+        provider.isAcceptableOrUnknown(data['provider']!, _providerMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_providerMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_labelMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {provider, modelId};
+  @override
+  AiModel map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiModel(
+      modelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model_id'],
+      )!,
+      provider: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}provider'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+    );
+  }
+
+  @override
+  $AiModelsTable createAlias(String alias) {
+    return $AiModelsTable(attachedDatabase, alias);
+  }
+}
+
+class AiModel extends DataClass implements Insertable<AiModel> {
+  final String modelId;
+  final String provider;
+  final String label;
+  final bool isActive;
+  const AiModel({
+    required this.modelId,
+    required this.provider,
+    required this.label,
+    required this.isActive,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['model_id'] = Variable<String>(modelId);
+    map['provider'] = Variable<String>(provider);
+    map['label'] = Variable<String>(label);
+    map['is_active'] = Variable<bool>(isActive);
+    return map;
+  }
+
+  AiModelsCompanion toCompanion(bool nullToAbsent) {
+    return AiModelsCompanion(
+      modelId: Value(modelId),
+      provider: Value(provider),
+      label: Value(label),
+      isActive: Value(isActive),
+    );
+  }
+
+  factory AiModel.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiModel(
+      modelId: serializer.fromJson<String>(json['modelId']),
+      provider: serializer.fromJson<String>(json['provider']),
+      label: serializer.fromJson<String>(json['label']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'modelId': serializer.toJson<String>(modelId),
+      'provider': serializer.toJson<String>(provider),
+      'label': serializer.toJson<String>(label),
+      'isActive': serializer.toJson<bool>(isActive),
+    };
+  }
+
+  AiModel copyWith({
+    String? modelId,
+    String? provider,
+    String? label,
+    bool? isActive,
+  }) => AiModel(
+    modelId: modelId ?? this.modelId,
+    provider: provider ?? this.provider,
+    label: label ?? this.label,
+    isActive: isActive ?? this.isActive,
+  );
+  AiModel copyWithCompanion(AiModelsCompanion data) {
+    return AiModel(
+      modelId: data.modelId.present ? data.modelId.value : this.modelId,
+      provider: data.provider.present ? data.provider.value : this.provider,
+      label: data.label.present ? data.label.value : this.label,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiModel(')
+          ..write('modelId: $modelId, ')
+          ..write('provider: $provider, ')
+          ..write('label: $label, ')
+          ..write('isActive: $isActive')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(modelId, provider, label, isActive);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiModel &&
+          other.modelId == this.modelId &&
+          other.provider == this.provider &&
+          other.label == this.label &&
+          other.isActive == this.isActive);
+}
+
+class AiModelsCompanion extends UpdateCompanion<AiModel> {
+  final Value<String> modelId;
+  final Value<String> provider;
+  final Value<String> label;
+  final Value<bool> isActive;
+  final Value<int> rowid;
+  const AiModelsCompanion({
+    this.modelId = const Value.absent(),
+    this.provider = const Value.absent(),
+    this.label = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiModelsCompanion.insert({
+    required String modelId,
+    required String provider,
+    required String label,
+    this.isActive = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : modelId = Value(modelId),
+       provider = Value(provider),
+       label = Value(label);
+  static Insertable<AiModel> custom({
+    Expression<String>? modelId,
+    Expression<String>? provider,
+    Expression<String>? label,
+    Expression<bool>? isActive,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (modelId != null) 'model_id': modelId,
+      if (provider != null) 'provider': provider,
+      if (label != null) 'label': label,
+      if (isActive != null) 'is_active': isActive,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiModelsCompanion copyWith({
+    Value<String>? modelId,
+    Value<String>? provider,
+    Value<String>? label,
+    Value<bool>? isActive,
+    Value<int>? rowid,
+  }) {
+    return AiModelsCompanion(
+      modelId: modelId ?? this.modelId,
+      provider: provider ?? this.provider,
+      label: label ?? this.label,
+      isActive: isActive ?? this.isActive,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (modelId.present) {
+      map['model_id'] = Variable<String>(modelId.value);
+    }
+    if (provider.present) {
+      map['provider'] = Variable<String>(provider.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1273,11 +2258,11 @@ class AiConfigsCompanion extends UpdateCompanion<AiConfig> {
 
   @override
   String toString() {
-    return (StringBuffer('AiConfigsCompanion(')
-          ..write('configKey: $configKey, ')
-          ..write('systemPrompt: $systemPrompt, ')
-          ..write('temperature: $temperature, ')
-          ..write('memo: $memo, ')
+    return (StringBuffer('AiModelsCompanion(')
+          ..write('modelId: $modelId, ')
+          ..write('provider: $provider, ')
+          ..write('label: $label, ')
+          ..write('isActive: $isActive, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1615,14 +2600,22 @@ abstract class _$AiDatabase extends GeneratedDatabase {
   _$AiDatabase(QueryExecutor e) : super(e);
   $AiDatabaseManager get managers => $AiDatabaseManager(this);
   late final $AiApiKeysTable aiApiKeys = $AiApiKeysTable(this);
+  late final $AiSessionsTable aiSessions = $AiSessionsTable(this);
   late final $AiTasksTable aiTasks = $AiTasksTable(this);
   late final $AiConfigsTable aiConfigs = $AiConfigsTable(this);
+  late final $AiModelsTable aiModels = $AiModelsTable(this);
   late final $AiProviderStatsTable aiProviderStats = $AiProviderStatsTable(
     this,
   );
+  late final Index tasksSessionIdx = Index(
+    'tasks_session_idx',
+    'CREATE INDEX tasks_session_idx ON ai_tasks (session_id)',
+  );
   late final AiApiKeyDao aiApiKeyDao = AiApiKeyDao(this as AiDatabase);
+  late final AiSessionDao aiSessionDao = AiSessionDao(this as AiDatabase);
   late final AiTaskDao aiTaskDao = AiTaskDao(this as AiDatabase);
   late final AiConfigDao aiConfigDao = AiConfigDao(this as AiDatabase);
+  late final AiModelDao aiModelDao = AiModelDao(this as AiDatabase);
   late final AiProviderStatsDao aiProviderStatsDao = AiProviderStatsDao(
     this as AiDatabase,
   );
@@ -1632,9 +2625,12 @@ abstract class _$AiDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     aiApiKeys,
+    aiSessions,
     aiTasks,
     aiConfigs,
+    aiModels,
     aiProviderStats,
+    tasksSessionIdx,
   ];
 }
 
@@ -1851,13 +2847,251 @@ typedef $$AiApiKeysTableProcessedTableManager =
       AiApiKey,
       PrefetchHooks Function()
     >;
+typedef $$AiSessionsTableCreateCompanionBuilder =
+    AiSessionsCompanion Function({
+      required String sessionId,
+      required String type,
+      Value<String> title,
+      Value<String?> configKey,
+      required String provider,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$AiSessionsTableUpdateCompanionBuilder =
+    AiSessionsCompanion Function({
+      Value<String> sessionId,
+      Value<String> type,
+      Value<String> title,
+      Value<String?> configKey,
+      Value<String> provider,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$AiSessionsTableFilterComposer
+    extends Composer<_$AiDatabase, $AiSessionsTable> {
+  $$AiSessionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configKey => $composableBuilder(
+    column: $table.configKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiSessionsTableOrderingComposer
+    extends Composer<_$AiDatabase, $AiSessionsTable> {
+  $$AiSessionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configKey => $composableBuilder(
+    column: $table.configKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiSessionsTableAnnotationComposer
+    extends Composer<_$AiDatabase, $AiSessionsTable> {
+  $$AiSessionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get configKey =>
+      $composableBuilder(column: $table.configKey, builder: (column) => column);
+
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$AiSessionsTableTableManager
+    extends
+        RootTableManager<
+          _$AiDatabase,
+          $AiSessionsTable,
+          AiSession,
+          $$AiSessionsTableFilterComposer,
+          $$AiSessionsTableOrderingComposer,
+          $$AiSessionsTableAnnotationComposer,
+          $$AiSessionsTableCreateCompanionBuilder,
+          $$AiSessionsTableUpdateCompanionBuilder,
+          (
+            AiSession,
+            BaseReferences<_$AiDatabase, $AiSessionsTable, AiSession>,
+          ),
+          AiSession,
+          PrefetchHooks Function()
+        > {
+  $$AiSessionsTableTableManager(_$AiDatabase db, $AiSessionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiSessionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiSessionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiSessionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> sessionId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> configKey = const Value.absent(),
+                Value<String> provider = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiSessionsCompanion(
+                sessionId: sessionId,
+                type: type,
+                title: title,
+                configKey: configKey,
+                provider: provider,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String sessionId,
+                required String type,
+                Value<String> title = const Value.absent(),
+                Value<String?> configKey = const Value.absent(),
+                required String provider,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiSessionsCompanion.insert(
+                sessionId: sessionId,
+                type: type,
+                title: title,
+                configKey: configKey,
+                provider: provider,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiSessionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AiDatabase,
+      $AiSessionsTable,
+      AiSession,
+      $$AiSessionsTableFilterComposer,
+      $$AiSessionsTableOrderingComposer,
+      $$AiSessionsTableAnnotationComposer,
+      $$AiSessionsTableCreateCompanionBuilder,
+      $$AiSessionsTableUpdateCompanionBuilder,
+      (AiSession, BaseReferences<_$AiDatabase, $AiSessionsTable, AiSession>),
+      AiSession,
+      PrefetchHooks Function()
+    >;
 typedef $$AiTasksTableCreateCompanionBuilder =
     AiTasksCompanion Function({
       Value<int> id,
+      required String sessionId,
       required String taskType,
-      required String provider,
+      Value<String> role,
       required String inputContent,
-      required String outputContent,
+      Value<String?> outputContent,
+      Value<String?> thought,
+      required String provider,
       Value<String?> modelName,
       Value<int> tokenConsumed,
       Value<DateTime> createdAt,
@@ -1865,10 +3099,13 @@ typedef $$AiTasksTableCreateCompanionBuilder =
 typedef $$AiTasksTableUpdateCompanionBuilder =
     AiTasksCompanion Function({
       Value<int> id,
+      Value<String> sessionId,
       Value<String> taskType,
-      Value<String> provider,
+      Value<String> role,
       Value<String> inputContent,
-      Value<String> outputContent,
+      Value<String?> outputContent,
+      Value<String?> thought,
+      Value<String> provider,
       Value<String?> modelName,
       Value<int> tokenConsumed,
       Value<DateTime> createdAt,
@@ -1888,13 +3125,18 @@ class $$AiTasksTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get taskType => $composableBuilder(
     column: $table.taskType,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get provider => $composableBuilder(
-    column: $table.provider,
+  ColumnFilters<String> get role => $composableBuilder(
+    column: $table.role,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1905,6 +3147,16 @@ class $$AiTasksTableFilterComposer
 
   ColumnFilters<String> get outputContent => $composableBuilder(
     column: $table.outputContent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get thought => $composableBuilder(
+    column: $table.thought,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get provider => $composableBuilder(
+    column: $table.provider,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1938,13 +3190,18 @@ class $$AiTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get taskType => $composableBuilder(
     column: $table.taskType,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get provider => $composableBuilder(
-    column: $table.provider,
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1955,6 +3212,16 @@ class $$AiTasksTableOrderingComposer
 
   ColumnOrderings<String> get outputContent => $composableBuilder(
     column: $table.outputContent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get thought => $composableBuilder(
+    column: $table.thought,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get provider => $composableBuilder(
+    column: $table.provider,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1986,11 +3253,14 @@ class $$AiTasksTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
   GeneratedColumn<String> get taskType =>
       $composableBuilder(column: $table.taskType, builder: (column) => column);
 
-  GeneratedColumn<String> get provider =>
-      $composableBuilder(column: $table.provider, builder: (column) => column);
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
 
   GeneratedColumn<String> get inputContent => $composableBuilder(
     column: $table.inputContent,
@@ -2001,6 +3271,12 @@ class $$AiTasksTableAnnotationComposer
     column: $table.outputContent,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get thought =>
+      $composableBuilder(column: $table.thought, builder: (column) => column);
+
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
 
   GeneratedColumn<String> get modelName =>
       $composableBuilder(column: $table.modelName, builder: (column) => column);
@@ -2043,19 +3319,25 @@ class $$AiTasksTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
                 Value<String> taskType = const Value.absent(),
-                Value<String> provider = const Value.absent(),
+                Value<String> role = const Value.absent(),
                 Value<String> inputContent = const Value.absent(),
-                Value<String> outputContent = const Value.absent(),
+                Value<String?> outputContent = const Value.absent(),
+                Value<String?> thought = const Value.absent(),
+                Value<String> provider = const Value.absent(),
                 Value<String?> modelName = const Value.absent(),
                 Value<int> tokenConsumed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => AiTasksCompanion(
                 id: id,
+                sessionId: sessionId,
                 taskType: taskType,
-                provider: provider,
+                role: role,
                 inputContent: inputContent,
                 outputContent: outputContent,
+                thought: thought,
+                provider: provider,
                 modelName: modelName,
                 tokenConsumed: tokenConsumed,
                 createdAt: createdAt,
@@ -2063,19 +3345,25 @@ class $$AiTasksTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                required String sessionId,
                 required String taskType,
-                required String provider,
+                Value<String> role = const Value.absent(),
                 required String inputContent,
-                required String outputContent,
+                Value<String?> outputContent = const Value.absent(),
+                Value<String?> thought = const Value.absent(),
+                required String provider,
                 Value<String?> modelName = const Value.absent(),
                 Value<int> tokenConsumed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => AiTasksCompanion.insert(
                 id: id,
+                sessionId: sessionId,
                 taskType: taskType,
-                provider: provider,
+                role: role,
                 inputContent: inputContent,
                 outputContent: outputContent,
+                thought: thought,
+                provider: provider,
                 modelName: modelName,
                 tokenConsumed: tokenConsumed,
                 createdAt: createdAt,
@@ -2104,19 +3392,21 @@ typedef $$AiTasksTableProcessedTableManager =
     >;
 typedef $$AiConfigsTableCreateCompanionBuilder =
     AiConfigsCompanion Function({
+      Value<int> id,
       required String configKey,
       required String systemPrompt,
       Value<double> temperature,
       Value<String?> memo,
-      Value<int> rowid,
+      Value<bool> isSystem,
     });
 typedef $$AiConfigsTableUpdateCompanionBuilder =
     AiConfigsCompanion Function({
+      Value<int> id,
       Value<String> configKey,
       Value<String> systemPrompt,
       Value<double> temperature,
       Value<String?> memo,
-      Value<int> rowid,
+      Value<bool> isSystem,
     });
 
 class $$AiConfigsTableFilterComposer
@@ -2128,6 +3418,11 @@ class $$AiConfigsTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get configKey => $composableBuilder(
     column: $table.configKey,
     builder: (column) => ColumnFilters(column),
@@ -2147,6 +3442,11 @@ class $$AiConfigsTableFilterComposer
     column: $table.memo,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<bool> get isSystem => $composableBuilder(
+    column: $table.isSystem,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$AiConfigsTableOrderingComposer
@@ -2158,6 +3458,11 @@ class $$AiConfigsTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get configKey => $composableBuilder(
     column: $table.configKey,
     builder: (column) => ColumnOrderings(column),
@@ -2177,6 +3482,11 @@ class $$AiConfigsTableOrderingComposer
     column: $table.memo,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isSystem => $composableBuilder(
+    column: $table.isSystem,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AiConfigsTableAnnotationComposer
@@ -2188,6 +3498,9 @@ class $$AiConfigsTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   GeneratedColumn<String> get configKey =>
       $composableBuilder(column: $table.configKey, builder: (column) => column);
 
@@ -2203,6 +3516,9 @@ class $$AiConfigsTableAnnotationComposer
 
   GeneratedColumn<String> get memo =>
       $composableBuilder(column: $table.memo, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSystem =>
+      $composableBuilder(column: $table.isSystem, builder: (column) => column);
 }
 
 class $$AiConfigsTableTableManager
@@ -2233,31 +3549,35 @@ class $$AiConfigsTableTableManager
               $$AiConfigsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 Value<String> configKey = const Value.absent(),
                 Value<String> systemPrompt = const Value.absent(),
                 Value<double> temperature = const Value.absent(),
                 Value<String?> memo = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<bool> isSystem = const Value.absent(),
               }) => AiConfigsCompanion(
+                id: id,
                 configKey: configKey,
                 systemPrompt: systemPrompt,
                 temperature: temperature,
                 memo: memo,
-                rowid: rowid,
+                isSystem: isSystem,
               ),
           createCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 required String configKey,
                 required String systemPrompt,
                 Value<double> temperature = const Value.absent(),
                 Value<String?> memo = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<bool> isSystem = const Value.absent(),
               }) => AiConfigsCompanion.insert(
+                id: id,
                 configKey: configKey,
                 systemPrompt: systemPrompt,
                 temperature: temperature,
                 memo: memo,
-                rowid: rowid,
+                isSystem: isSystem,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -2279,6 +3599,181 @@ typedef $$AiConfigsTableProcessedTableManager =
       $$AiConfigsTableUpdateCompanionBuilder,
       (AiConfig, BaseReferences<_$AiDatabase, $AiConfigsTable, AiConfig>),
       AiConfig,
+      PrefetchHooks Function()
+    >;
+typedef $$AiModelsTableCreateCompanionBuilder =
+    AiModelsCompanion Function({
+      required String modelId,
+      required String provider,
+      required String label,
+      Value<bool> isActive,
+      Value<int> rowid,
+    });
+typedef $$AiModelsTableUpdateCompanionBuilder =
+    AiModelsCompanion Function({
+      Value<String> modelId,
+      Value<String> provider,
+      Value<String> label,
+      Value<bool> isActive,
+      Value<int> rowid,
+    });
+
+class $$AiModelsTableFilterComposer
+    extends Composer<_$AiDatabase, $AiModelsTable> {
+  $$AiModelsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiModelsTableOrderingComposer
+    extends Composer<_$AiDatabase, $AiModelsTable> {
+  $$AiModelsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get modelId => $composableBuilder(
+    column: $table.modelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get provider => $composableBuilder(
+    column: $table.provider,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiModelsTableAnnotationComposer
+    extends Composer<_$AiDatabase, $AiModelsTable> {
+  $$AiModelsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get modelId =>
+      $composableBuilder(column: $table.modelId, builder: (column) => column);
+
+  GeneratedColumn<String> get provider =>
+      $composableBuilder(column: $table.provider, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+}
+
+class $$AiModelsTableTableManager
+    extends
+        RootTableManager<
+          _$AiDatabase,
+          $AiModelsTable,
+          AiModel,
+          $$AiModelsTableFilterComposer,
+          $$AiModelsTableOrderingComposer,
+          $$AiModelsTableAnnotationComposer,
+          $$AiModelsTableCreateCompanionBuilder,
+          $$AiModelsTableUpdateCompanionBuilder,
+          (AiModel, BaseReferences<_$AiDatabase, $AiModelsTable, AiModel>),
+          AiModel,
+          PrefetchHooks Function()
+        > {
+  $$AiModelsTableTableManager(_$AiDatabase db, $AiModelsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiModelsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiModelsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiModelsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> modelId = const Value.absent(),
+                Value<String> provider = const Value.absent(),
+                Value<String> label = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiModelsCompanion(
+                modelId: modelId,
+                provider: provider,
+                label: label,
+                isActive: isActive,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String modelId,
+                required String provider,
+                required String label,
+                Value<bool> isActive = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiModelsCompanion.insert(
+                modelId: modelId,
+                provider: provider,
+                label: label,
+                isActive: isActive,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiModelsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AiDatabase,
+      $AiModelsTable,
+      AiModel,
+      $$AiModelsTableFilterComposer,
+      $$AiModelsTableOrderingComposer,
+      $$AiModelsTableAnnotationComposer,
+      $$AiModelsTableCreateCompanionBuilder,
+      $$AiModelsTableUpdateCompanionBuilder,
+      (AiModel, BaseReferences<_$AiDatabase, $AiModelsTable, AiModel>),
+      AiModel,
       PrefetchHooks Function()
     >;
 typedef $$AiProviderStatsTableCreateCompanionBuilder =
@@ -2474,10 +3969,14 @@ class $AiDatabaseManager {
   $AiDatabaseManager(this._db);
   $$AiApiKeysTableTableManager get aiApiKeys =>
       $$AiApiKeysTableTableManager(_db, _db.aiApiKeys);
+  $$AiSessionsTableTableManager get aiSessions =>
+      $$AiSessionsTableTableManager(_db, _db.aiSessions);
   $$AiTasksTableTableManager get aiTasks =>
       $$AiTasksTableTableManager(_db, _db.aiTasks);
   $$AiConfigsTableTableManager get aiConfigs =>
       $$AiConfigsTableTableManager(_db, _db.aiConfigs);
+  $$AiModelsTableTableManager get aiModels =>
+      $$AiModelsTableTableManager(_db, _db.aiModels);
   $$AiProviderStatsTableTableManager get aiProviderStats =>
       $$AiProviderStatsTableTableManager(_db, _db.aiProviderStats);
 }
