@@ -108,7 +108,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
       animation: _curvedAnimation,
       builder: (context, _) {
         return GestureDetector(
-          onTap: () => navigator?.pop(), // ← 点击背景关闭
+          onTap: () => navigator?.pop(),
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(
               sigmaX: 0.001 + 6.0 * _curvedAnimation.value,
@@ -119,7 +119,7 @@ class PopUpWidget<T> extends PopupRoute<T> {
                 (80 * _curvedAnimation.value).toInt(),
               ),
               child: GestureDetector(
-                onTap: () {}, // ← 阻止点击内容区穿透到背景
+                onTap: () {},
                 child: FadeTransition(opacity: _curvedAnimation, child: child),
               ),
             ),
@@ -180,7 +180,6 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
       color: colorScheme.surface,
       child: Column(
         children: [
-          // 顶部栏
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             height: 56 + context.padding.top,
@@ -209,14 +208,17 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Text(
-                  widget.title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
                 if (widget.tailing != null) ...widget.tailing!,
                 const SizedBox(width: 8),
               ],
