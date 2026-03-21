@@ -6,6 +6,7 @@ final excludedFolders = ["default", "默认"];
 
 class _LocalFavoritesPage extends ConsumerStatefulWidget {
   const _LocalFavoritesPage({required this.favoritesController});
+
   final FavoritesController favoritesController;
 
   @override
@@ -188,6 +189,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
   @override
   void initState() {
+    super.initState();
     var sort = appdata.implicitData["favori_sort"] ?? "displayOrder_asc";
     sortType = FavoriteSortType.fromString(sort);
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
@@ -231,12 +233,12 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       });
     });
     updateAnimes();
-    ref.listenManual(favoritesChangedProvider, (_, _) => updateAnimes());
-    super.initState();
+    manager.addListener(updateAnimes);
   }
 
   @override
   void dispose() {
+    manager.removeListener(updateAnimes);
     favoritesController.tabController.dispose();
     scrollController.dispose();
     super.dispose();

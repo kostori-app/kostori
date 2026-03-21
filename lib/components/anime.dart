@@ -167,7 +167,7 @@ class AnimeTile extends ConsumerWidget {
 
     final isFavorite = appdata.settings['showFavoriteStatusOnTile']
         ? ref.watch(
-            favoritesVersion.select(
+            favoritesChangedProvider.select(
               (_) => LocalFavoritesManager().isExist(anime.id, _animeType),
             ),
           )
@@ -175,7 +175,7 @@ class AnimeTile extends ConsumerWidget {
 
     final history = appdata.settings['showHistoryStatusOnTile']
         ? ref.watch(
-            historyVersion.select(
+            historyAllProvider.select(
               (_) => HistoryManager().find(anime.id, _animeType),
             ),
           )
@@ -188,9 +188,6 @@ class AnimeTile extends ConsumerWidget {
     if (!isFavorite && history == null) {
       return child;
     }
-
-    ref.watch(favoritesVersion);
-    ref.watch(historyVersion);
 
     return Stack(
       children: [
@@ -822,8 +819,14 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
       }
     }
     generateHeroID();
-    ref.listenManual(historyAllProvider, (_, _) => update());
+    HistoryManager().addListener(update);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    HistoryManager().removeListener(update);
+    super.dispose();
   }
 
   void update() {

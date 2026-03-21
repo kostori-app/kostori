@@ -180,14 +180,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     super.initState();
     updateStatsClicks();
     scrollController.addListener(onScroll);
-    ref.listenManual(historyAllProvider, (_, _) => update());
+    HistoryManager().addListener(updateHistory);
+    BangumiManager().addListener(updateBangumiBind);
+    StatsManager().addListener(updateStats);
     tabController = TabController(length: 3, vsync: this);
-    tabController.addListener(() {
-      setState(() {});
-    });
-    ref.listenManual(statsAllProvider, (_, _) {
-      updateStats();
-    });
+    tabController.addListener(() => setState(() {}));
   }
 
   @override
@@ -230,6 +227,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   @override
   void dispose() {
     scrollController.removeListener(onScroll);
+    HistoryManager().removeListener(updateHistory);
+    BangumiManager().removeListener(updateBangumiBind);
+    StatsManager().removeListener(updateStats);
     Future.microtask(() {
       DataSync().onDataChanged();
     });

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -367,7 +368,7 @@ LazyDatabase _openConn() => LazyDatabase(() async {
 // HistoryManager（单例）
 // ═══════════════════════════════════════════════════════════
 
-class HistoryManager {
+class HistoryManager with ChangeNotifier {
   static HistoryManager? _cache;
 
   HistoryManager._();
@@ -399,13 +400,14 @@ class HistoryManager {
   // ─── 缓存 ──────────────────────────────────
 
   Future<void> _updateCache() async {
-    final rows = await (_db.selectOnly(
-      _db.historyTable,
-    )..addColumns([_db.historyTable.id])).get();
-    _cachedHistoryIds = {
-      for (final r in rows) r.read(_db.historyTable.id)!: true,
-    };
-    cachedHistories.removeWhere((k, _) => !_cachedHistoryIds!.containsKey(k));
+    final rows = await _db.select(_db.historyTable).get();
+    _cachedHistoryIds = {};
+    cachedHistories.clear();
+    for (final r in rows) {
+      final h = History.fromDrift(r);
+      _cachedHistoryIds![h.id] = true;
+      cachedHistories[h.id] = h;
+    }
   }
 
   void updateCache() => _updateCache();
@@ -417,9 +419,8 @@ class HistoryManager {
     _cachedHistoryIds ??= {};
     _cachedHistoryIds![item.id] = true;
     cachedHistories[item.id] = item;
-    if (cachedHistories.length > 10) {
-      cachedHistories.remove(cachedHistories.keys.first);
-    }
+    cachedHistories.remove(cachedHistories.keys.first);
+    notifyListeners();
   }
 
   /// Drift 后台数据库已在独立 isolate 运行，直接 await 即可
@@ -432,6 +433,7 @@ class HistoryManager {
     )..where((t) => t.historyId.equals(id) & t.type.equals(type.value))).go();
     _cachedHistoryIds?.remove(id);
     cachedHistories.remove(id);
+    notifyListeners();
   }
 
   Future<void> clearHistory() async {
@@ -439,10 +441,12 @@ class HistoryManager {
     await _db.delete(_db.progressTable).go();
     _cachedHistoryIds = {};
     cachedHistories.clear();
+    notifyListeners();
   }
 
   Future<void> clearProgress() async {
     await _db.delete(_db.progressTable).go();
+    notifyListeners();
   }
 
   Future<void> clearUnfavoritedHistory() async {
@@ -465,6 +469,7 @@ class HistoryManager {
       }
     });
     await _updateCache();
+    notifyListeners();
   }
 
   Future<void> batchDeleteHistories(List<AnimeID> histories) async {
@@ -477,6 +482,7 @@ class HistoryManager {
       }
     });
     await _updateCache();
+    notifyListeners();
   }
 
   // ─── 查询 ──────────────────────────────────
@@ -484,7 +490,9 @@ class HistoryManager {
   History? find(String id, AnimeType type) {
     if (_cachedHistoryIds == null) return null;
     if (!_cachedHistoryIds!.containsKey(id)) return null;
-    return cachedHistories[id];
+    if (cachedHistories.containsKey(id)) return cachedHistories[id];
+    // 缓存没有，同步查 DB（Drift 不支持同步，改用 findAsync）
+    return null; // 返回 null 让调用方用 findAsync
   }
 
   Future<History?> findAsync(String id, AnimeType type) async {

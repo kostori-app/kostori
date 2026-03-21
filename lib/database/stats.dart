@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:flutter/widgets.dart' show debugPrint;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/favorites.dart';
@@ -481,13 +481,14 @@ LazyDatabase _openConn() => LazyDatabase(() async {
 // StatsManager
 // ═══════════════════════════════════════════════════════════
 
-class StatsManager {
+class StatsManager with ChangeNotifier {
   static StatsManager? _cache;
 
   StatsManager._();
 
   factory StatsManager() => _cache ??= StatsManager._();
 
+  void notify() => notifyListeners();
   late _StatsDb _db;
   bool isInitialized = false;
 
@@ -588,6 +589,7 @@ class StatsManager {
       ],
       updates: {_db.statsTable},
     );
+    notifyListeners();
   }
 
   Future<void> updateStats({
@@ -622,6 +624,7 @@ class StatsManager {
     await (_db.update(
       _db.statsTable,
     )..where((t) => t.id.equals(id) & t.type.equals(type))).write(companion);
+    notifyListeners();
   }
 
   Future<void> updateGroupLiked({
@@ -663,7 +666,11 @@ class StatsManager {
 
   Future<List<StatsDataImpl>> getStatsAll() async {
     final rows = await _db.select(_db.statsTable).get();
-    final all = rows.map(StatsDataImpl.fromDrift).toList();
+    final all = <StatsDataImpl>[];
+    for (var i = 0; i < rows.length; i++) {
+      all.add(StatsDataImpl.fromDrift(rows[i]));
+      if (i % 50 == 0) await Future.delayed(Duration.zero);
+    }
     final selectors = appdata.settings['statsSelectors'];
     if (selectors == null || (selectors as List).isEmpty) return all;
     final selectorList = List<int>.from(selectors);
@@ -1071,6 +1078,7 @@ extension StatsHelper on StatsManager {
       type: type,
       favorite: statsDataImpl.favorite,
     );
+    notify();
   }
 
   Future<TodayEventBundle?> getOrCreateBangumiStats({

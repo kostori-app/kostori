@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:path/path.dart' as p;
@@ -52,7 +53,7 @@ class SearchHistoryItem {
   });
 }
 
-class SearchHistoryManager {
+class SearchHistoryManager with ChangeNotifier {
   static SearchHistoryManager? _cache;
 
   SearchHistoryManager._();

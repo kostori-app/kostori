@@ -4,6 +4,7 @@ import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -195,7 +196,7 @@ class FavoriteItemWithUpdateInfo extends FavoriteItem {
       super.hashCode ^ updateTime.hashCode ^ hasNewUpdate.hashCode;
 }
 
-class LocalFavoritesManager {
+class LocalFavoritesManager with ChangeNotifier {
   factory LocalFavoritesManager() =>
       cache ?? (cache = LocalFavoritesManager._create());
 
@@ -258,14 +259,14 @@ class LocalFavoritesManager {
     }
     _initHashedIds(folderNames, _db.handle).then((value) {
       _hashedIds = value;
-      _notify();
+      notifyListeners();
     });
   }
 
   void refreshHashedIds() {
     _initHashedIds(folderNames, _db.handle).then((value) {
       _hashedIds = value;
-      _notify();
+      notifyListeners();
     });
   }
 
@@ -384,7 +385,7 @@ class LocalFavoritesManager {
         [folders[i], i],
       );
     }
-    _notify();
+    notifyListeners();
   }
 
   int count(String folderName) {
@@ -469,7 +470,7 @@ class LocalFavoritesManager {
     """,
       [id],
     );
-    _notify();
+    notifyListeners();
   }
 
   List<FavoriteItemWithFolderInfo> allAnimes() {
@@ -532,7 +533,7 @@ class LocalFavoritesManager {
         primary key (id, type)
       );
     """);
-    _notify();
+    notifyListeners();
     counts[name] = 0;
     return name;
   }
@@ -633,7 +634,7 @@ class LocalFavoritesManager {
     );
 
     initCounts();
-    _notify();
+    notifyListeners();
     return true;
   }
 
@@ -723,7 +724,7 @@ class LocalFavoritesManager {
     );
 
     initCounts();
-    _notify();
+    notifyListeners();
   }
 
   void batchMoveFavorites(
@@ -821,7 +822,7 @@ class LocalFavoritesManager {
 
         displayOrder++;
       }
-      _notify();
+      notifyListeners();
     } catch (e) {
       Log.error("Batch Copy Favorites", e.toString());
       _db.execute("ROLLBACK");
@@ -843,7 +844,7 @@ class LocalFavoritesManager {
       );
     }
 
-    _notify();
+    notifyListeners();
   }
 
   void batchDeleteAnimes(String folder, List<FavoriteItem> animes) {
@@ -881,7 +882,7 @@ class LocalFavoritesManager {
         action: FavoriteAction.remove,
       );
     }
-    _notify();
+    notifyListeners();
   }
 
   void batchDeleteAnimesInAllFolders(List<AnimeID> animes) {
@@ -911,7 +912,7 @@ class LocalFavoritesManager {
       var hash = anime.id.hashCode ^ anime.type.value;
       _hashedIds.remove(hash);
     }
-    _notify();
+    notifyListeners();
   }
 
   /// delete a folder
@@ -929,7 +930,7 @@ class LocalFavoritesManager {
     );
     counts.remove(name);
     refreshHashedIds();
-    _notify();
+    notifyListeners();
   }
 
   void deleteAnimeWithId(String folder, String id, AnimeType type) {
@@ -953,7 +954,7 @@ class LocalFavoritesManager {
       counts[folder] = count(folder);
     }
     reduceHashedId(id, type.value);
-    _notify();
+    notifyListeners();
   }
 
   Future<int> removeInvalid() async {
@@ -1006,7 +1007,7 @@ class LocalFavoritesManager {
     );
     counts[after] = counts[before] ?? 0;
     counts.remove(before);
-    _notify();
+    notifyListeners();
   }
 
   List<FavoriteItem> searchInFolder(String folder, String keyword) {
@@ -1097,7 +1098,7 @@ class LocalFavoritesManager {
       """,
       [tags.join(","), id],
     );
-    _notify();
+    notifyListeners();
   }
 
   bool isExist(String id, AnimeType type) {
@@ -1121,7 +1122,7 @@ class LocalFavoritesManager {
         anime.type.value,
       ],
     );
-    _notify();
+    notifyListeners();
   }
 
   String folderToJson(String folder) {
@@ -1212,13 +1213,13 @@ class LocalFavoritesManager {
           );
         }
       }
-      _notify();
+      notifyListeners();
     }
   }
 
   final _favoritesStream = StreamController<void>.broadcast();
 
-  void _notify() => _favoritesStream.add(null);
+  Stream<void> get onChanged => _favoritesStream.stream;
 
   void close() {
     _favoritesStream.close();
@@ -1228,12 +1229,6 @@ class LocalFavoritesManager {
 
 final favoritesChangedProvider = StreamProvider<void>((ref) {
   return LocalFavoritesManager()._favoritesStream.stream;
-});
-
-final folderNamesProvider = StreamProvider<List<String>>((ref) {
-  return LocalFavoritesManager()._favoritesStream.stream.map(
-    (_) => LocalFavoritesManager().folderNames,
-  );
 });
 
 enum FavoriteSortType {

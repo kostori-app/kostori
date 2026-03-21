@@ -2,12 +2,13 @@
 
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/network/app_dio.dart';
@@ -17,11 +18,13 @@ import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
 
-class DataSync {
+class DataSync with ChangeNotifier {
   DataSync._() {
     if (isEnabled) {
       downloadData();
     }
+    LocalFavoritesManager().onChanged.listen((_) => onDataChanged());
+    AnimeSourceManager().addListener(onDataChanged);
     if (App.isDesktop) {
       Future.delayed(const Duration(seconds: 1), () {
         var controller = WindowFrame.of(App.rootContext);
@@ -35,14 +38,17 @@ class DataSync {
   factory DataSync() => instance ?? (instance = DataSync._());
 
   bool _isDownloading = false;
+
   bool get isDownloading => _isDownloading;
 
   bool _isUploading = false;
+
   bool get isUploading => _isUploading;
 
   bool _haveWaitingTask = false;
 
   String? _lastError;
+
   String? get lastError => _lastError;
 
   bool get isEnabled {
@@ -97,7 +103,7 @@ class DataSync {
     _haveWaitingTask = false;
     _isUploading = true;
     _lastError = null;
-    _dataSyncStateController.add(null);
+    notifyListeners();
     try {
       var config = _validateConfig();
       if (config == null) {
@@ -139,7 +145,7 @@ class DataSync {
       }
     } finally {
       _isUploading = false;
-      _dataSyncStateController.add(null);
+      notifyListeners();
     }
   }
 
@@ -152,7 +158,7 @@ class DataSync {
     _haveWaitingTask = false;
     _isDownloading = true;
     _lastError = null;
-    _dataSyncStateController.add(null);
+    notifyListeners();
     try {
       var config = _validateConfig();
       if (config == null) {
@@ -199,20 +205,7 @@ class DataSync {
       }
     } finally {
       _isDownloading = false;
-      _dataSyncStateController.add(null);
+      notifyListeners();
     }
   }
 }
-
-// ─── Riverpod ────────────────────────────────────────────
-
-final _dataSyncStateController = StreamController<void>.broadcast();
-
-/// 监听上传/下载状态变化
-final dataSyncStateProvider = StreamProvider<void>((ref) {
-  // 监听收藏变化触发同步
-  ref.listen(favoritesChangedProvider, (_, __) {
-    DataSync().onDataChanged();
-  });
-  return _dataSyncStateController.stream;
-});

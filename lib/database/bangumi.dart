@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -307,7 +308,7 @@ BangumiItem _bindingRowToItem(BangumiBindingTableData r) => BangumiItem(
 // BangumiManager（单例）
 // ═══════════════════════════════════════════════════════════
 
-class BangumiManager {
+class BangumiManager with ChangeNotifier {
   static BangumiManager? _cache;
 
   BangumiManager._();
