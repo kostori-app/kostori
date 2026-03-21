@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
@@ -10,14 +11,15 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/utils/translations.dart';
 
-class BangumiSubjectTabPage extends StatefulWidget {
+class BangumiSubjectTabPage extends ConsumerStatefulWidget {
   const BangumiSubjectTabPage({super.key});
 
   @override
-  State<BangumiSubjectTabPage> createState() => _BangumiSubjectTabPageState();
+  ConsumerState<BangumiSubjectTabPage> createState() =>
+      _BangumiSubjectTabPageState();
 }
 
-class _BangumiSubjectTabPageState extends State<BangumiSubjectTabPage>
+class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
     with TickerProviderStateMixin {
   final ScrollController scrollControllerLatest = ScrollController();
   final ScrollController scrollControllerTrending = ScrollController();

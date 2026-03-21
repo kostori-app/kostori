@@ -2,12 +2,14 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
-import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_card.dart';
@@ -15,17 +17,17 @@ import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/bangumi/info_tab_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class BangumiInfoPage extends StatefulWidget {
+class BangumiInfoPage extends ConsumerStatefulWidget {
   const BangumiInfoPage({super.key, required this.bangumiItem, this.heroTag});
 
   final BangumiItem bangumiItem;
   final Object? heroTag;
 
   @override
-  State<BangumiInfoPage> createState() => _BangumiInfoPageState();
+  ConsumerState<BangumiInfoPage> createState() => _BangumiInfoPageState();
 }
 
-class _BangumiInfoPageState extends State<BangumiInfoPage>
+class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
     with TickerProviderStateMixin {
   late TabController infoTabController;
 
@@ -45,6 +47,8 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
   int get bangumiId => widget.bangumiItem.id;
 
   BangumiItem get bangumiItem => widget.bangumiItem;
+
+  BangumiManager get manager => ref.watch(bangumiManagerProvider);
 
   Future<void> loadCharacters() async {
     if (charactersIsLoading) return;
@@ -178,7 +182,7 @@ class _BangumiInfoPageState extends State<BangumiInfoPage>
     infoController.allEpisodes = [];
     queryBangumiEpisodeByID(bangumiId);
     queryBangumiInfoByID(bangumiId);
-    Bangumi.getBangumiInfoBind(bangumiId);
+    Bangumi.instance.getBangumiInfoBind(bangumiId);
     queryBangumiHistory(bangumiId);
     infoTabController = TabController(
       length: infoController.tabs.length,

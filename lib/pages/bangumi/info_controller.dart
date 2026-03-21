@@ -12,6 +12,7 @@ import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:mobx/mobx.dart';
@@ -25,6 +26,8 @@ abstract class _InfoController with Store {
   late List<EpisodeInfo> allEpisodes;
   late int bangumiId;
   late int episode;
+
+  BangumiManager get manager => providerContainer.read(bangumiManagerProvider);
 
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
@@ -75,17 +78,17 @@ abstract class _InfoController with Store {
     isLoading = true;
     try {
       if (defaultToDb) {
-        BangumiItem? bangumiBind = await BangumiManager().bindFind(id);
+        BangumiItem? bangumiBind = await Bangumi.instance.bindFind(id);
         if (bangumiBind != null) {
           bangumiItem = bangumiBind;
         } else {
-          bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+          bangumiItem = (await Bangumi.instance.getBangumiInfoByID(id))!;
         }
       } else {
-        bangumiItem = (await Bangumi.getBangumiInfoByID(id))!;
+        bangumiItem = (await Bangumi.instance.getBangumiInfoByID(id))!;
       }
       bangumiSRI.clear();
-      await Bangumi.getBangumiSRIByID(id).then((v) {
+      await Bangumi.instance.getBangumiSRIByID(id).then((v) {
         bangumiSRI.addAll(v);
       });
       isLoading = false;
@@ -100,12 +103,12 @@ abstract class _InfoController with Store {
   }) async {
     try {
       if (defaultToDb) {
-        allEpisodes = await BangumiManager().allEpInfoFind(id);
+        allEpisodes = await manager.allEpInfoFind(id);
         if (allEpisodes.isEmpty) {
-          allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+          allEpisodes = await Bangumi.instance.getBangumiEpisodeAllByID(id);
         }
       } else {
-        allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
+        allEpisodes = await Bangumi.instance.getBangumiEpisodeAllByID(id);
       }
     } catch (e) {
       Log.error('queryBangumiEpisodeByID', e.toString());
@@ -116,7 +119,9 @@ abstract class _InfoController with Store {
     if (offset == 0) {
       commentsList.clear();
     }
-    await Bangumi.getBangumiCommentsByID(id, offset: offset).then((value) {
+    await Bangumi.instance.getBangumiCommentsByID(id, offset: offset).then((
+      value,
+    ) {
       commentsList.addAll(value.commentList);
     });
   }
@@ -125,7 +130,7 @@ abstract class _InfoController with Store {
     if (offset == 0) {
       topicsList.clear();
     }
-    await Bangumi.getTopicsByID(id, offset: offset).then((value) {
+    await Bangumi.instance.getTopicsByID(id, offset: offset).then((value) {
       topicsList.addAll(value.topicsList);
     });
   }
@@ -134,7 +139,7 @@ abstract class _InfoController with Store {
     if (offset == 0) {
       topicsLatestList.clear();
     }
-    await Bangumi.getTopicsLatestByID(offset: offset).then((value) {
+    await Bangumi.instance.getTopicsLatestByID(offset: offset).then((value) {
       final existingIds = topicsLatestList.map((e) => e.id).toSet();
       final newItems = value
           .where((item) => !existingIds.contains(item.id))
@@ -147,7 +152,7 @@ abstract class _InfoController with Store {
     if (offset == 0) {
       topicsTrendingList.clear();
     }
-    await Bangumi.getTopicsTrendingByID(offset: offset).then((value) {
+    await Bangumi.instance.getTopicsTrendingByID(offset: offset).then((value) {
       final existingIds = topicsTrendingList.map((e) => e.id).toSet();
       final newItems = value
           .where((item) => !existingIds.contains(item.id))
@@ -160,14 +165,14 @@ abstract class _InfoController with Store {
     if (offset == 0) {
       reviewsList.clear();
     }
-    await Bangumi.getReviewsByID(id, offset: offset).then((value) {
+    await Bangumi.instance.getReviewsByID(id, offset: offset).then((value) {
       reviewsList.addAll(value.reviewsList);
     });
   }
 
   Future<void> queryBangumiCharactersByID(int id) async {
     characterList.clear();
-    await Bangumi.getCharatersByID(id).then((value) {
+    await Bangumi.instance.getCharatersByID(id).then((value) {
       characterList.addAll(value.characterList);
     });
     Map<String, int> relationValue = {
@@ -189,7 +194,7 @@ abstract class _InfoController with Store {
 
   Future<void> queryBangumiStaffsByID(int id) async {
     staffList.clear();
-    await Bangumi.getBangumiStaffByID(id).then((value) {
+    await Bangumi.instance.getBangumiStaffByID(id).then((value) {
       staffList.addAll(value.data);
     });
   }
@@ -203,8 +208,10 @@ abstract class _InfoController with Store {
       episodeCommentsList.clear();
     }
 
-    episodeInfo = await Bangumi.getBangumiEpisodeByID(id, episode);
-    await Bangumi.getEpisodeCommentsByEpisodeID(episodeInfo.id).then((value) {
+    episodeInfo = await Bangumi.instance.getBangumiEpisodeByID(id, episode);
+    await Bangumi.instance.getEpisodeCommentsByEpisodeID(episodeInfo.id).then((
+      value,
+    ) {
       episodeCommentsList.addAll(value.commentList);
     });
   }
@@ -216,7 +223,7 @@ abstract class _InfoController with Store {
     if (offset == 0) {
       episodeCommentsList.clear();
     }
-    await Bangumi.getEpisodeCommentsByEpisodeID(id).then((value) {
+    await Bangumi.instance.getEpisodeCommentsByEpisodeID(id).then((value) {
       episodeCommentsList.addAll(value.commentList);
     });
   }

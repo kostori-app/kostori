@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/reviews_comments_card.dart';
@@ -14,16 +15,16 @@ import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 // 日志页
-class BangumiReviewsPage extends StatefulWidget {
+class BangumiReviewsPage extends ConsumerStatefulWidget {
   const BangumiReviewsPage({super.key, required this.reviewsItem});
 
   final ReviewsItem reviewsItem;
 
   @override
-  State<BangumiReviewsPage> createState() => _BangumiReviewsPageState();
+  ConsumerState<BangumiReviewsPage> createState() => _BangumiReviewsPageState();
 }
 
-class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
+class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
   final ScrollController scrollController = ScrollController();
   final Map<int, GlobalKey> _replyKeys = {};
 
@@ -35,9 +36,9 @@ class _BangumiReviewsPageState extends State<BangumiReviewsPage> {
   bool isHide = false;
 
   Future<void> queryBangumiReviewsByID(int id) async {
-    reviewsInfoItem = await Bangumi.getReviewsInfoByID(id);
-    reviewsCommentsItem = await Bangumi.getReviewsCommentsByID(id);
-    bangumiReviewsSubjects = await Bangumi.getReviewsSubjectsByID(id);
+    reviewsInfoItem = await Bangumi.instance.getReviewsInfoByID(id);
+    reviewsCommentsItem = await Bangumi.instance.getReviewsCommentsByID(id);
+    bangumiReviewsSubjects = await Bangumi.instance.getReviewsSubjectsByID(id);
     isLoading = false;
     // ← 加这段
     _replyKeys.clear();

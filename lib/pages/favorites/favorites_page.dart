@@ -11,17 +11,18 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/database/favorites.dart';
-import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/database/stats.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
@@ -46,14 +47,14 @@ const _kLeftBarWidth = 256.0;
 
 const _kTwoPanelChangeWidth = 720.0;
 
-class FavoritesPage extends StatefulWidget {
+class FavoritesPage extends ConsumerStatefulWidget {
   const FavoritesPage({super.key});
 
   @override
-  State<FavoritesPage> createState() => _FavoritesPageState();
+  ConsumerState<FavoritesPage> createState() => _FavoritesPageState();
 }
 
-class _FavoritesPageState extends State<FavoritesPage> {
+class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   late final FavoritesController favoritesController;
 
   String? folder;

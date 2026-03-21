@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bean/card/topics_info_comments_card.dart';
 import 'package:kostori/components/components.dart';
@@ -10,16 +11,16 @@ import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class BangumiTopicsPage extends StatefulWidget {
+class BangumiTopicsPage extends ConsumerStatefulWidget {
   const BangumiTopicsPage({super.key, required this.id});
 
   final int id;
 
   @override
-  State<BangumiTopicsPage> createState() => _BangumiTopicsPageState();
+  ConsumerState<BangumiTopicsPage> createState() => _BangumiTopicsPageState();
 }
 
-class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
+class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
   final ScrollController scrollController = ScrollController();
   final Map<int, GlobalKey> _replyKeys = {};
 
@@ -57,7 +58,7 @@ class _BangumiTopicsPageState extends State<BangumiTopicsPage> {
   }
 
   Future<void> queryBangumiTopicsInfoByID(int id) async {
-    topicsInfoItem = await Bangumi.getTopicsInfoByID(id);
+    topicsInfoItem = await Bangumi.instance.getTopicsInfoByID(id);
     if (topicsInfoItem != null) {
       isLoading = false;
       _buildReplyKeys();

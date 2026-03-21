@@ -45,7 +45,9 @@ class _StatItemWidgetState extends State<StatItemWidget> {
   Future<void> _loadBangumiItem() async {
     final primary = _primaryStat;
     if (primary.bangumiId != null) {
-      final item = await BangumiManager().getBangumiItem(primary.bangumiId!);
+      final item = await providerContainer
+          .read(bangumiManagerProvider)
+          .getBangumiItem(primary.bangumiId!);
       if (mounted) setState(() => _bangumiItem = item);
     }
   }

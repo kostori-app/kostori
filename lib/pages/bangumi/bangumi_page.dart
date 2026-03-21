@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -10,6 +11,7 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
@@ -18,14 +20,14 @@ import 'package:kostori/pages/bangumi/bangumi_subject_tab_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
-class BangumiPage extends StatefulWidget {
+class BangumiPage extends ConsumerStatefulWidget {
   const BangumiPage({super.key});
 
   @override
-  State<BangumiPage> createState() => _BangumiPageState();
+  ConsumerState<BangumiPage> createState() => _BangumiPageState();
 }
 
-class _BangumiPageState extends State<BangumiPage>
+class _BangumiPageState extends ConsumerState<BangumiPage>
     with SingleTickerProviderStateMixin {
   final ScrollController scrollController = ScrollController();
   List<BangumiItem> bangumiItems = [];
@@ -98,7 +100,9 @@ class _BangumiPageState extends State<BangumiPage>
   Future<void> queryBangumiByTrend() async {
     isLoadingMore = true;
     setState(() {});
-    var result = await Bangumi.getBangumiTrendsList(offset: count * 24);
+    var result = await Bangumi.instance.getBangumiTrendsList(
+      offset: count * 24,
+    );
     count += 1;
     bangumiItems.addAll(result);
     isLoadingMore = false;
@@ -360,12 +364,16 @@ class _TimetableState extends State<_Timetable> {
       final todayWeekday = today.weekday;
 
       // 获取一周7天的所有番剧条目
-      final allItems = await BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
+      final allItems = await providerContainer
+          .read(bangumiManagerProvider)
+          .getWeeks([1, 2, 3, 4, 5, 6, 7]);
 
       // 批量检测这些条目的数据是否存在，existenceMap: idStr -> airTimeStr
-      final existenceMap = await BangumiManager().checkWhetherDataExistsBatch(
-        allItems.map((e) => e.id.toString()).toList(),
-      );
+      final existenceMap = await providerContainer
+          .read(bangumiManagerProvider)
+          .checkWhetherDataExistsBatch(
+            allItems.map((e) => e.id.toString()).toList(),
+          );
 
       // 过滤只保留存在数据的条目
       final validItems = allItems
@@ -508,7 +516,9 @@ class _TimetableState extends State<_Timetable> {
       await Future.wait(
         batch.map((item) async {
           try {
-            final episodes = await BangumiManager().allEpInfoFind(item.id);
+            final episodes = await providerContainer
+                .read(bangumiManagerProvider)
+                .allEpInfoFind(item.id);
             if (episodes.isNotEmpty) result[item.id] = episodes;
           } catch (e, s) {
             Log.warning('_fetchBatchEpisodes', '${item.id}: $e\n$s');

@@ -730,7 +730,7 @@ class _RatingDialogState extends State<RatingDialog> {
   }
 }
 
-class _BangumiSearchSheet extends StatefulWidget {
+class _BangumiSearchSheet extends ConsumerStatefulWidget {
   final String initialQuery;
 
   final Widget Function(
@@ -746,10 +746,11 @@ class _BangumiSearchSheet extends StatefulWidget {
   });
 
   @override
-  State<_BangumiSearchSheet> createState() => _BangumiSearchSheetState();
+  ConsumerState<_BangumiSearchSheet> createState() =>
+      _BangumiSearchSheetState();
 }
 
-class _BangumiSearchSheetState extends State<_BangumiSearchSheet> {
+class _BangumiSearchSheetState extends ConsumerState<_BangumiSearchSheet> {
   List<BangumiItem> res = [];
   bool isLoading = true;
 
@@ -762,7 +763,7 @@ class _BangumiSearchSheetState extends State<_BangumiSearchSheet> {
   Future<void> fetchSearchResults(String query) async {
     setState(() => isLoading = true);
     final effectiveQuery = query.isEmpty ? widget.initialQuery : query;
-    final result = await Bangumi.combinedBangumiSearch(effectiveQuery);
+    final result = await Bangumi.instance.combinedBangumiSearch(effectiveQuery);
 
     if (!mounted) return;
     setState(() {

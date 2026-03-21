@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
@@ -17,16 +18,16 @@ import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class PersonPage extends StatefulWidget {
+class PersonPage extends ConsumerStatefulWidget {
   const PersonPage({super.key, required this.personID});
 
   final int personID;
 
   @override
-  State<PersonPage> createState() => _PersonPageState();
+  ConsumerState<PersonPage> createState() => _PersonPageState();
 }
 
-class _PersonPageState extends State<PersonPage>
+class _PersonPageState extends ConsumerState<PersonPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late CharacterFullItem characterFullItem;
@@ -37,7 +38,6 @@ class _PersonPageState extends State<PersonPage>
   List<CharacterPersonCastsItem> characterPersonCastsList = [];
   bool commentsQueryTimeout = false;
   bool characterPersonCastsQueryTimeout = false;
-
   int currentType = 0;
 
   @override
@@ -73,7 +73,9 @@ class _PersonPageState extends State<PersonPage>
     setState(() {
       loadingPerson = true;
     });
-    await Bangumi.getPersonByPersonID(widget.personID).then((character) {
+    await Bangumi.instance.getPersonByPersonID(widget.personID).then((
+      character,
+    ) {
       characterFullItem = character;
     });
     if (mounted) {
@@ -87,7 +89,9 @@ class _PersonPageState extends State<PersonPage>
     setState(() {
       loadingComments = true;
     });
-    await Bangumi.getPersonCommentsByPersonID(widget.personID).then((value) {
+    await Bangumi.instance.getPersonCommentsByPersonID(widget.personID).then((
+      value,
+    ) {
       commentsList = value.commentList;
       if (commentsList.isEmpty && mounted) {
         setState(() {
@@ -106,18 +110,16 @@ class _PersonPageState extends State<PersonPage>
     setState(() {
       loadingPersonCasts = true;
     });
-    await Bangumi.getCastsByPersonId(
-      widget.personID,
-      offset: offset,
-      type: type,
-    ).then((value) {
-      characterPersonCastsList.addAll(value);
-      if (characterPersonCastsList.isEmpty && mounted) {
-        setState(() {
-          characterPersonCastsQueryTimeout = true;
+    await Bangumi.instance
+        .getCastsByPersonId(widget.personID, offset: offset, type: type)
+        .then((value) {
+          characterPersonCastsList.addAll(value);
+          if (characterPersonCastsList.isEmpty && mounted) {
+            setState(() {
+              characterPersonCastsQueryTimeout = true;
+            });
+          }
         });
-      }
-    });
     if (mounted) {
       setState(() {
         loadingPersonCasts = false;

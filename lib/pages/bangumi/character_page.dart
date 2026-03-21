@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/character_comments_card.dart';
 import 'package:kostori/components/components.dart';
@@ -17,16 +18,16 @@ import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
-class CharacterPage extends StatefulWidget {
+class CharacterPage extends ConsumerStatefulWidget {
   const CharacterPage({super.key, required this.characterID});
 
   final int characterID;
 
   @override
-  State<CharacterPage> createState() => _CharacterPageState();
+  ConsumerState<CharacterPage> createState() => _CharacterPageState();
 }
 
-class _CharacterPageState extends State<CharacterPage>
+class _CharacterPageState extends ConsumerState<CharacterPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late CharacterFullItem characterFullItem;
@@ -71,7 +72,7 @@ class _CharacterPageState extends State<CharacterPage>
     setState(() {
       loadingCharacter = true;
     });
-    await Bangumi.getCharacterByCharacterID(widget.characterID).then((
+    await Bangumi.instance.getCharacterByCharacterID(widget.characterID).then((
       character,
     ) {
       characterFullItem = character;
@@ -87,16 +88,16 @@ class _CharacterPageState extends State<CharacterPage>
     setState(() {
       loadingComments = true;
     });
-    await Bangumi.getCharacterCommentsByCharacterID(widget.characterID).then((
-      value,
-    ) {
-      commentsList = value.commentList;
-      if (commentsList.isEmpty && mounted) {
-        setState(() {
-          commentsQueryTimeout = true;
+    await Bangumi.instance
+        .getCharacterCommentsByCharacterID(widget.characterID)
+        .then((value) {
+          commentsList = value.commentList;
+          if (commentsList.isEmpty && mounted) {
+            setState(() {
+              commentsQueryTimeout = true;
+            });
+          }
         });
-      }
-    });
     if (mounted) {
       setState(() {
         loadingComments = false;
@@ -108,16 +109,16 @@ class _CharacterPageState extends State<CharacterPage>
     setState(() {
       loadingCharacterCasts = true;
     });
-    await Bangumi.getCharacterCastsByCharacterID(widget.characterID).then((
-      value,
-    ) {
-      characterCastsList = value;
-      if (characterCastsList.isEmpty && mounted) {
-        setState(() {
-          characterCastsQueryTimeout = true;
+    await Bangumi.instance
+        .getCharacterCastsByCharacterID(widget.characterID)
+        .then((value) {
+          characterCastsList = value;
+          if (characterCastsList.isEmpty && mounted) {
+            setState(() {
+              characterCastsQueryTimeout = true;
+            });
+          }
         });
-      }
-    });
     if (mounted) {
       setState(() {
         loadingCharacterCasts = false;
@@ -367,7 +368,9 @@ class _CharacterPageState extends State<CharacterPage>
                     App.rootContext,
                     StatefulBuilder(
                       builder: (context, setState) {
-                        return ShareWidget(characterFullItem: characterFullItem);
+                        return ShareWidget(
+                          characterFullItem: characterFullItem,
+                        );
                       },
                     ),
                   );

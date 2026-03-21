@@ -11,6 +11,7 @@ import 'package:kostori/foundation/ai_conversation_service.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
@@ -240,10 +241,10 @@ mixin _AnimeDataMixin {
           (s) => s.bangumiId != null && s.liked && seenIds.add(s.bangumiId!),
         )
         .toList();
-
+    final bangumi = providerContainer.read(bangumiManagerProvider);
     final likedItems = <BangumiItem>[];
     for (final s in likedStats) {
-      final item = await BangumiManager().getBangumiItem(s.bangumiId!);
+      final item = await bangumi.getBangumiItem(s.bangumiId!);
       if (item != null) likedItems.add(item);
     }
 

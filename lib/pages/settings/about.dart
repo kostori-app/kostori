@@ -2,14 +2,14 @@
 
 part of 'settings_page.dart';
 
-class AboutSettings extends StatefulWidget {
+class AboutSettings extends ConsumerStatefulWidget {
   const AboutSettings({super.key});
 
   @override
-  State<AboutSettings> createState() => _AboutSettingsState();
+  ConsumerState<AboutSettings> createState() => _AboutSettingsState();
 }
 
-class _AboutSettingsState extends State<AboutSettings> {
+class _AboutSettingsState extends ConsumerState<AboutSettings> {
   bool isCheckingAppUpdate = false;
   bool isCheckingBangumiDataUpdate = false;
   bool isCheckingBangumiDataReset = false;
@@ -144,7 +144,7 @@ class _AboutSettingsState extends State<AboutSettings> {
                       setState(() {
                         isCheckingBangumiDataUpdate = true;
                       });
-                      Bangumi.checkBangumiData().then((value) {
+                      Bangumi.instance.checkBangumiData().then((value) {
                         setState(() {
                           isCheckingBangumiDataUpdate = false;
                         });
@@ -161,7 +161,7 @@ class _AboutSettingsState extends State<AboutSettings> {
                       setState(() {
                         isCheckingBangumiDataReset = true;
                       });
-                      Bangumi.resetBangumiData().then((value) {
+                      Bangumi.instance.resetBangumiData().then((value) {
                         setState(() {
                           isCheckingBangumiDataReset = false;
                         });

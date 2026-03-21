@@ -9,7 +9,6 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_tag.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
-import 'package:kostori/network/bangumi.dart';
 import 'package:path/path.dart' as p;
 
 part 'bangumi.g.dart';
@@ -309,11 +308,7 @@ BangumiItem _bindingRowToItem(BangumiBindingTableData r) => BangumiItem(
 // ═══════════════════════════════════════════════════════════
 
 class BangumiManager with ChangeNotifier {
-  static BangumiManager? _cache;
-
-  BangumiManager._();
-
-  factory BangumiManager() => _cache ??= BangumiManager._();
+  BangumiManager();
 
   late _BangumiDb _db;
   bool isInitialized = false;
@@ -326,7 +321,6 @@ class BangumiManager with ChangeNotifier {
 
   void close() {
     _db.close();
-    _cache = null;
     isInitialized = false;
   }
 
@@ -494,18 +488,11 @@ class BangumiManager with ChangeNotifier {
         );
   }
 
-  Future<BangumiItem?> bindFind(int id) async {
-    var row = await (_db.select(
+  Future<BangumiItem?> findBinding(int id) async {
+    final row = await (_db.select(
       _db.bangumiBindingTable,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (row == null) {
-      await Bangumi.getBangumiInfoBind(id);
-      row = await (_db.select(
-        _db.bangumiBindingTable,
-      )..where((t) => t.id.equals(id))).getSingleOrNull();
-      if (row == null) return null;
-    }
-    return _bindingRowToItem(row);
+    return row == null ? null : _bindingRowToItem(row);
   }
 
   Future<BangumiItem?> getBangumiItem(int id) async {
@@ -556,6 +543,18 @@ class BangumiManager with ChangeNotifier {
 // Riverpod
 // ═══════════════════════════════════════════════════════════
 
+final bangumiManagerProvider = Provider<BangumiManager>((ref) {
+  return BangumiManager();
+});
+
+final bangumiInitProvider = FutureProvider<BangumiManager>((ref) async {
+  final manager = ref.watch(bangumiManagerProvider);
+  if (!manager.isInitialized) {
+    await manager.init();
+  }
+  return manager;
+});
+
 final bangumiBindAllProvider =
     StreamNotifierProvider<BangumiBindAllNotifier, List<BangumiItem>>(
       BangumiBindAllNotifier.new,
@@ -563,9 +562,12 @@ final bangumiBindAllProvider =
 
 class BangumiBindAllNotifier extends StreamNotifier<List<BangumiItem>> {
   @override
-  Stream<List<BangumiItem>> build() async* {
-    final manager = BangumiManager();
-    await manager.init();
-    yield* manager.watchBindAll();
+  Stream<List<BangumiItem>> build() {
+    final initAsync = ref.watch(bangumiInitProvider);
+    return initAsync.when(
+      data: (manager) => manager.watchBindAll(),
+      loading: () => const Stream.empty(),
+      error: (err, stack) => Stream.error(err, stack),
+    );
   }
 }

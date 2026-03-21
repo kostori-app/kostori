@@ -11,6 +11,7 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -581,9 +582,9 @@ class BangumiUtils {
     if (targetEpisodes.isEmpty) return {false: null};
 
     // 获取番剧的标准播出时间
-    String? bangumiDataAirTime = await BangumiManager().findbangumiDataByID(
-      bangumiItem.id,
-    );
+    String? bangumiDataAirTime = await providerContainer
+        .read(bangumiManagerProvider)
+        .findbangumiDataByID(bangumiItem.id);
     final bangumiAirTime = bangumiDataAirTime != null
         ? DateTime.tryParse(bangumiDataAirTime)?.toLocal()
         : null;

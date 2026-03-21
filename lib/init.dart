@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
+import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -18,6 +20,8 @@ import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
+
+final providerContainer = ProviderContainer();
 
 extension _FutureInit<T> on Future<T> {
   /// Prevent unhandled exception
@@ -63,6 +67,7 @@ Future<void> init() async {
     });
     await SMTCManagerWindows.instance.init();
   }
+  providerContainer.read(bangumiManagerProvider);
 }
 
 void _checkOldConfigs() {
@@ -88,8 +93,8 @@ void _checkOldConfigs() {
 
 Future<void> _checkAppUpdates() async {
   AnimeSourceSettings.checkAnimeSourceUpdate();
-  await Bangumi.getCalendarData();
-  await Bangumi.checkBangumiData();
+  await Bangumi.instance.getCalendarData();
+  await Bangumi.instance.checkBangumiData();
   if (appdata.settings['checkUpdateOnStart']) {
     await checkUpdateUi(false, true);
   }

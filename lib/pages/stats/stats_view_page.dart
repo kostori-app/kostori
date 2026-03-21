@@ -29,7 +29,9 @@ class _StatsViewPageState extends State<StatsViewPage> {
     for (final entry in map.entries) {
       final items = <BangumiItem>[];
       for (final id in entry.value) {
-        final item = await BangumiManager().getBangumiItem(id);
+        final item = await providerContainer
+            .read(bangumiManagerProvider)
+            .getBangumiItem(id);
         if (item != null) items.add(item);
       }
       newMap[entry.key] = items;
@@ -304,7 +306,9 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
 
     final likedItems = <BangumiItem>[];
     for (final s in likedStats) {
-      final item = await BangumiManager().getBangumiItem(s.bangumiId!);
+      final item = await providerContainer
+          .read(bangumiManagerProvider)
+          .getBangumiItem(s.bangumiId!);
       if (item != null) likedItems.add(item);
     }
 

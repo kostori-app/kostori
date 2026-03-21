@@ -30,6 +30,7 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
@@ -79,7 +80,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   bool showAppbarTitle = false;
 
   var scrollController = ScrollController();
-
   bool isDownloaded = false;
   bool isBangumi = false;
 
@@ -102,7 +102,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   void updateBangumiBind() async {
     if (history?.bangumiId != null) {
-      bangumiBindInfo = await BangumiManager().bindFind(
+      bangumiBindInfo = await Bangumi.instance.bindFind(
         history!.bangumiId as int,
       );
       update();
@@ -180,7 +180,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     updateStatsClicks();
     scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
-    BangumiManager().addListener(updateBangumiBind);
+    providerContainer
+        .read(bangumiManagerProvider)
+        .addListener(updateBangumiBind);
     StatsManager().addListener(updateStats);
     tabController = TabController(length: 3, vsync: this);
     tabController.addListener(() => setState(() {}));
@@ -211,7 +213,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       type: data!.sourceKey.hashCode,
     );
     if (history!.bangumiId != null) {
-      Bangumi.getBangumiInfoBind(history!.bangumiId as int);
+      Bangumi.instance.getBangumiInfoBind(history!.bangumiId as int);
     }
     await stats.updateStats(
       id: widget.id,
@@ -227,7 +229,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void dispose() {
     scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
-    BangumiManager().removeListener(updateBangumiBind);
+    providerContainer
+        .read(bangumiManagerProvider)
+        .removeListener(updateBangumiBind);
     StatsManager().removeListener(updateStats);
     Future.microtask(() {
       DataSync().onDataChanged();
@@ -250,7 +254,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       Log.warning('updateBangumiId', '名称不合法: ${anime.title}');
       return;
     }
-    var res = await Bangumi.combinedBangumiSearch(anime.title);
+    var res = await Bangumi.instance.combinedBangumiSearch(anime.title);
     if (res.isEmpty) {
       debugPrint('res isEmpty');
       return;

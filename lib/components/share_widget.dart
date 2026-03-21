@@ -3,12 +3,12 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/ui_components.dart';
-import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
@@ -45,7 +45,7 @@ Future<void> captureAndSave(BuildContext context) async {
   }
 }
 
-class ShareWidget extends StatefulWidget {
+class ShareWidget extends ConsumerStatefulWidget {
   const ShareWidget({
     super.key,
     this.id,
@@ -78,10 +78,10 @@ class ShareWidget extends StatefulWidget {
   final CharacterFullItem? characterFullItem;
 
   @override
-  State<ShareWidget> createState() => _ShareWidgetState();
+  ConsumerState<ShareWidget> createState() => _ShareWidgetState();
 }
 
-class _ShareWidgetState extends State<ShareWidget> {
+class _ShareWidgetState extends ConsumerState<ShareWidget> {
   bool showLineChart = false;
   bool isLoding = true;
   Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
@@ -133,10 +133,10 @@ class _ShareWidgetState extends State<ShareWidget> {
   }
 
   Future<void> queryBangumi() async {
-    bangumiItem = (await BangumiManager().bindFind(id))!;
-    allEpisodes = await Bangumi.getBangumiEpisodeAllByID(id);
-    bangumiSRI = await Bangumi.getBangumiSRIByID(id);
-    commentsList = (await Bangumi.getBangumiCommentsByID(
+    bangumiItem = (await Bangumi.instance.bindFind(id))!;
+    allEpisodes = await Bangumi.instance.getBangumiEpisodeAllByID(id);
+    bangumiSRI = await Bangumi.instance.getBangumiSRIByID(id);
+    commentsList = (await Bangumi.instance.getBangumiCommentsByID(
       id,
       offset: 0,
     )).commentList;

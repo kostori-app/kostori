@@ -113,7 +113,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   }
 
   Future<List<BangumiItem>> bangumiSearch() async {
-    return Bangumi.bangumiPostSearch(
+    return Bangumi.instance.bangumiPostSearch(
       keyword,
       tags: tags,
       sort: sort,
@@ -123,11 +123,11 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   }
 
   Future<List<CharacterActor>> bangumiCharacterSearch(String keyword) async {
-    return Bangumi.postCharactersSearchByStringNext(keyword: keyword);
+    return Bangumi.instance.postCharactersSearchByStringNext(keyword: keyword);
   }
 
   Future<List<CharacterActor>> bangumiPersonSearch(String keyword) async {
-    return Bangumi.postPersonsSearchByStringNext(keyword: keyword);
+    return Bangumi.instance.postPersonsSearchByStringNext(keyword: keyword);
   }
 
   Future<void> _loadinitial() async {
@@ -159,7 +159,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         _isLoading = true;
       });
       if (subjectSearch) {
-        final result = await Bangumi.bangumiPostSearch(
+        final result = await Bangumi.instance.bangumiPostSearch(
           keyword,
           tags: tags,
           offset: bangumiItems.length,
@@ -169,13 +169,13 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         );
         bangumiItems.addAll(result);
       } else if (defaultCategory == 'character') {
-        final result = await Bangumi.postCharactersSearchByStringNext(
+        final result = await Bangumi.instance.postCharactersSearchByStringNext(
           keyword: keyword,
           offset: characterItmes.length,
         );
         characterItmes.addAll(result);
       } else if (defaultCategory == 'person') {
-        final result = await Bangumi.postPersonsSearchByStringNext(
+        final result = await Bangumi.instance.postPersonsSearchByStringNext(
           keyword: keyword,
           offset: characterItmes.length,
         );
@@ -908,7 +908,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     }
 
     if (RegExp(r'^\d+$').hasMatch(value)) {
-      final res = await Bangumi.isBangumiExists(int.parse(value));
+      final res = await Bangumi.instance.isBangumiExists(int.parse(value));
       if (res.keys.first) {
         App.rootContext.showMessage(message: '正在跳转...');
         context.to(() => BangumiInfoPage(bangumiItem: res.values.first!));
@@ -1211,7 +1211,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     List<Object> results = [];
 
                     if (subjectSearch) {
-                      results = await Bangumi.bangumiPostSearch(
+                      results = await Bangumi.instance.bangumiPostSearch(
                         value,
                         tags: tags,
                         sort: 'match',
@@ -1219,13 +1219,11 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                         endDate: endDate,
                       );
                     } else if (defaultCategory == 'character') {
-                      results = await Bangumi.postCharactersSearchByStringNext(
-                        keyword: value,
-                      );
+                      results = await Bangumi.instance
+                          .postCharactersSearchByStringNext(keyword: value);
                     } else if (defaultCategory == 'person') {
-                      results = await Bangumi.postPersonsSearchByStringNext(
-                        keyword: keyword,
-                      );
+                      results = await Bangumi.instance
+                          .postPersonsSearchByStringNext(keyword: keyword);
                     }
 
                     // 只处理最新的一次搜索结果

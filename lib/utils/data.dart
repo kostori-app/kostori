@@ -10,6 +10,7 @@ import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:zip_flutter/zip_flutter.dart';
@@ -94,10 +95,10 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       LocalFavoritesManager().init();
     }
     if (await bangumiFile.exists()) {
-      BangumiManager().close();
+      providerContainer.read(bangumiManagerProvider).close();
       File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
       bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
-      BangumiManager().init();
+      providerContainer.read(bangumiManagerProvider).init();
     }
     if (await statsFile.exists()) {
       StatsManager().close();

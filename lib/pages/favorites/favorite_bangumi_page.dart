@@ -12,7 +12,7 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
   final ScrollController scrollController = ScrollController();
   final hManager = HistoryManager();
   final fManager = LocalFavoritesManager();
-  final bManager = BangumiManager();
+  final bManager = providerContainer.read(bangumiManagerProvider);
 
   List<History> allHistory = [];
   List<BangumiItem> allBind = [];

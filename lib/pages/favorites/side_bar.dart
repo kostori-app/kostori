@@ -1,6 +1,6 @@
 part of 'favorites_page.dart';
 
-class _LeftBar extends StatefulWidget {
+class _LeftBar extends ConsumerStatefulWidget {
   const _LeftBar({
     this.favPage,
     this.onSelected,
@@ -17,10 +17,10 @@ class _LeftBar extends StatefulWidget {
   final FavoritesController favoritesController;
 
   @override
-  State<_LeftBar> createState() => _LeftBarState();
+  ConsumerState<_LeftBar> createState() => _LeftBarState();
 }
 
-class _LeftBarState extends State<_LeftBar> implements FolderList {
+class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
   late _FavoritesPageState favPage;
 
   FavoritesController get favoritesController => widget.favoritesController;
@@ -58,7 +58,7 @@ class _LeftBarState extends State<_LeftBar> implements FolderList {
   }
 
   Future<void> getNameAvatar() async {
-    nameAvatar = await Bangumi.getBangumiUserAvatarByName(name);
+    nameAvatar = await Bangumi.instance.getBangumiUserAvatarByName(name);
     appdata.implicitData['nameAvatar'] = nameAvatar;
     appdata.writeImplicitData();
     setState(() {});

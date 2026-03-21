@@ -147,7 +147,9 @@ class _StatsOverviewState extends State<StatsOverview> {
   Future<void> _loadBangumiItems() async {
     final items = <BangumiItem>[];
     for (final id in _uniqueBangumiIds) {
-      final item = await BangumiManager().getBangumiItem(id);
+      final item = await providerContainer
+          .read(bangumiManagerProvider)
+          .getBangumiItem(id);
       if (item != null) items.add(item);
     }
     if (mounted) setState(() => _bangumiItems = items);

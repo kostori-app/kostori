@@ -3,18 +3,20 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/calendar_screenshot_widget.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/io.dart';
@@ -23,11 +25,13 @@ import 'package:kostori/utils/utils.dart';
 
 Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
   try {
-    final allItems = await BangumiManager().getWeeks([1, 2, 3, 4, 5, 6, 7]);
+    final allItems = await providerContainer
+        .read(bangumiManagerProvider)
+        .getWeeks([1, 2, 3, 4, 5, 6, 7]);
     final allIds = allItems.map((item) => item.id.toString()).toList();
-    final existenceMap = await BangumiManager().checkWhetherDataExistsBatch(
-      allIds,
-    );
+    final existenceMap = await providerContainer
+        .read(bangumiManagerProvider)
+        .checkWhetherDataExistsBatch(allIds);
 
     final validItems = allItems
         .where((item) => existenceMap.containsKey(item.id.toString()))
@@ -184,13 +188,13 @@ Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
   final result = <int, List<EpisodeInfo>>{};
   final nowStr = Utils.formatDate(DateTime.now());
   final needsUpdate = appdata.settings['getBangumiAllEpInfoTime'] != nowStr;
-
+  final manager = providerContainer.read(bangumiManagerProvider);
   await Future.wait(
     batch.map((item) async {
       try {
         final episodes = needsUpdate
-            ? await Bangumi.getBangumiEpisodeAllByID(item.id)
-            : await BangumiManager().allEpInfoFind(item.id);
+            ? await Bangumi.instance.getBangumiEpisodeAllByID(item.id)
+            : await manager.allEpInfoFind(item.id);
         if (episodes.isNotEmpty) result[item.id] = episodes;
       } catch (e, s) {
         Log.warning('批量获取剧集', '${item.id}: $e\n$s');
@@ -201,14 +205,15 @@ Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
   return result;
 }
 
-class BangumiCalendarPage extends StatefulWidget {
+class BangumiCalendarPage extends ConsumerStatefulWidget {
   const BangumiCalendarPage({super.key});
 
   @override
-  State<BangumiCalendarPage> createState() => _BangumiCalendarPageState();
+  ConsumerState<BangumiCalendarPage> createState() =>
+      _BangumiCalendarPageState();
 }
 
-class _BangumiCalendarPageState extends State<BangumiCalendarPage>
+class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
     with SingleTickerProviderStateMixin {
   TabController? controller;
   List<List<BangumiItem>> bangumiCalendar = [];
@@ -222,6 +227,7 @@ class _BangumiCalendarPageState extends State<BangumiCalendarPage>
     'Saturday',
     'Sunday',
   ];
+  BangumiManager get manager => ref.watch(bangumiManagerProvider);
 
   @override
   void initState() {

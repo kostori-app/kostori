@@ -1,7 +1,7 @@
 // ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
 import 'package:flutter/material.dart';
-import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/database/favorites.dart';
+import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:mobx/mobx.dart';
 
@@ -48,17 +48,15 @@ abstract class _FavoritesController with Store {
     if (offset == 0) {
       doingList.clear();
     }
-    await Bangumi.getBangumiUseFavoritesByName(
-      offset: offset,
-      name: name,
-      type: 3,
-    ).then((value) {
-      final existingIds = doingList.map((e) => e.id).toSet();
-      final newItems = value
-          .where((item) => !existingIds.contains(item.id))
-          .toList();
-      doingList.addAll(newItems);
-    });
+    await Bangumi.instance
+        .getBangumiUseFavoritesByName(offset: offset, name: name, type: 3)
+        .then((value) {
+          final existingIds = doingList.map((e) => e.id).toSet();
+          final newItems = value
+              .where((item) => !existingIds.contains(item.id))
+              .toList();
+          doingList.addAll(newItems);
+        });
   }
 
   //想看
@@ -69,17 +67,15 @@ abstract class _FavoritesController with Store {
     if (offset == 0) {
       wishList.clear();
     }
-    await Bangumi.getBangumiUseFavoritesByName(
-      offset: offset,
-      name: name,
-      type: 1,
-    ).then((value) {
-      final existingIds = wishList.map((e) => e.id).toSet();
-      final newItems = value
-          .where((item) => !existingIds.contains(item.id))
-          .toList();
-      wishList.addAll(newItems);
-    });
+    await Bangumi.instance
+        .getBangumiUseFavoritesByName(offset: offset, name: name, type: 1)
+        .then((value) {
+          final existingIds = wishList.map((e) => e.id).toSet();
+          final newItems = value
+              .where((item) => !existingIds.contains(item.id))
+              .toList();
+          wishList.addAll(newItems);
+        });
   }
 
   //看过
@@ -90,17 +86,15 @@ abstract class _FavoritesController with Store {
     if (offset == 0) {
       collectList.clear();
     }
-    await Bangumi.getBangumiUseFavoritesByName(
-      offset: offset,
-      name: name,
-      type: 2,
-    ).then((value) {
-      final existingIds = collectList.map((e) => e.id).toSet();
-      final newItems = value
-          .where((item) => !existingIds.contains(item.id))
-          .toList();
-      collectList.addAll(newItems);
-    });
+    await Bangumi.instance
+        .getBangumiUseFavoritesByName(offset: offset, name: name, type: 2)
+        .then((value) {
+          final existingIds = collectList.map((e) => e.id).toSet();
+          final newItems = value
+              .where((item) => !existingIds.contains(item.id))
+              .toList();
+          collectList.addAll(newItems);
+        });
   }
 
   //搁置
@@ -111,17 +105,15 @@ abstract class _FavoritesController with Store {
     if (offset == 0) {
       onHoldList.clear();
     }
-    await Bangumi.getBangumiUseFavoritesByName(
-      offset: offset,
-      name: name,
-      type: 4,
-    ).then((value) {
-      final existingIds = onHoldList.map((e) => e.id).toSet();
-      final newItems = value
-          .where((item) => !existingIds.contains(item.id))
-          .toList();
-      onHoldList.addAll(newItems);
-    });
+    await Bangumi.instance
+        .getBangumiUseFavoritesByName(offset: offset, name: name, type: 4)
+        .then((value) {
+          final existingIds = onHoldList.map((e) => e.id).toSet();
+          final newItems = value
+              .where((item) => !existingIds.contains(item.id))
+              .toList();
+          onHoldList.addAll(newItems);
+        });
   }
 
   //抛弃
@@ -132,17 +124,15 @@ abstract class _FavoritesController with Store {
     if (offset == 0) {
       droppedList.clear();
     }
-    await Bangumi.getBangumiUseFavoritesByName(
-      offset: offset,
-      name: name,
-      type: 5,
-    ).then((value) {
-      final existingIds = droppedList.map((e) => e.id).toSet();
-      final newItems = value
-          .where((item) => !existingIds.contains(item.id))
-          .toList();
-      droppedList.addAll(newItems);
-    });
+    await Bangumi.instance
+        .getBangumiUseFavoritesByName(offset: offset, name: name, type: 5)
+        .then((value) {
+          final existingIds = droppedList.map((e) => e.id).toSet();
+          final newItems = value
+              .where((item) => !existingIds.contains(item.id))
+              .toList();
+          droppedList.addAll(newItems);
+        });
   }
 
   Future<void> updateAnimes() async {}
