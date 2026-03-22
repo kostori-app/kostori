@@ -1,8 +1,5 @@
 part of 'ai_hub_page.dart';
 
-// ═════════════════════════════════════════════
-// 模块4：周月总结
-// ═════════════════════════════════════════════
 enum _SummaryRange { week, month }
 
 class SummaryPage extends ConsumerStatefulWidget {
@@ -30,7 +27,6 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
           ? now.subtract(const Duration(days: 7))
           : DateTime(now.year, now.month, 1);
 
-      // 筛选时间范围内有活动的条目
       final activeStats = allStats.where((s) {
         final allEvents = [
           ...s.totalClickCount,
@@ -46,7 +42,6 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
         return;
       }
 
-      // 构建总结数据
       int totalWatch = 0;
       int totalClicks = 0;
       final watchedTitles = <String>[];
@@ -109,6 +104,40 @@ Generate a $rangeLabel anime watch report based on the following data:
     }
   }
 
+  Future<void> _exportScreenshot() async {
+    if (_result == null) return;
+    try {
+      final bytes = await ImageSaver.captureWidgetToImage(
+        context: context,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _range == _SummaryRange.week ? '本周总结' : '本月总结',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              CustomMarkdownWidget(data: _result!),
+            ],
+          ),
+        ),
+      );
+      if (bytes == null) return;
+      final filename = 'summary_${DateTime.now().millisecondsSinceEpoch}.png';
+      await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
+    } catch (e) {
+      ImageSaver.showResult(success: false, message: '截图失败: $e');
+    } finally {
+      await ref.read(imagesProvider.notifier).loadImages();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -132,9 +161,22 @@ Generate a $rangeLabel anime watch report based on the following data:
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            _AiSourceSelector(
-              selected: _source,
-              onChanged: (v) => setState(() => _source = v),
+            // ── 服务商 + 模型选择 ──────────────────
+            _AiCard(
+              icon: Icons.psychology,
+              title: 'AI 设置'.tl,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _AiSourceSelector(
+                    selected: _source,
+                    onChanged: (v) => setState(() => _source = v),
+                  ),
+                  const SizedBox(height: 8),
+                  _ModelSelector(provider: _source),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             _AiCard(
@@ -180,6 +222,11 @@ Generate a $rangeLabel anime watch report based on the following data:
               _AiCard(
                 icon: Icons.article_outlined,
                 title: '总结报告'.tl,
+                trailing: IconButton(
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  tooltip: '导出截图'.tl,
+                  onPressed: _exportScreenshot,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,

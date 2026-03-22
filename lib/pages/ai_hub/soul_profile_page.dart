@@ -12,22 +12,11 @@ class SoulProfilePage extends ConsumerStatefulWidget {
 
 class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
     with _AnimeDataMixin {
-  final _promptCtrl = TextEditingController();
   bool _isLoading = false;
   String? _result;
   String _source = 'siliconFlow';
 
-  @override
-  void dispose() {
-    _promptCtrl.dispose();
-    super.dispose();
-  }
-
   Future<void> _run() async {
-    if (_promptCtrl.text.isEmpty) {
-      App.rootContext.showMessage(message: 'Please enter a prompt'.tl);
-      return;
-    }
     setState(() {
       _isLoading = true;
       _result = null;
@@ -61,7 +50,7 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
       final result = await AiConversationService().runTask(
         provider: _source,
         taskType: 'soul_profile',
-        prompt: _promptCtrl.text,
+        prompt: '分析我的番剧品味，给出灵魂侧写',
         configKey: '${_soulProfileConfigKey}_runtime',
         sessionTitle: '灵魂侧写 ${DateTime.now().toString().substring(0, 10)}',
       );
@@ -78,6 +67,40 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
         '${_soulProfileConfigKey}_runtime',
       );
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _exportScreenshot() async {
+    if (_result == null) return;
+    try {
+      final bytes = await ImageSaver.captureWidgetToImage(
+        context: context,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '灵魂侧写',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              CustomMarkdownWidget(data: _result!),
+            ],
+          ),
+        ),
+      );
+      if (bytes == null) return;
+      final filename = 'summary_${DateTime.now().millisecondsSinceEpoch}.png';
+      await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
+    } catch (e) {
+      ImageSaver.showResult(success: false, message: '截图失败: $e');
+    } finally {
+      await ref.read(imagesProvider.notifier).loadImages();
     }
   }
 
@@ -105,48 +128,35 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            _AiSourceSelector(
-              selected: _source,
-              onChanged: (v) => setState(() => _source = v),
+            _AiCard(
+              icon: Icons.psychology,
+              title: 'AI 设置'.tl,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _AiSourceSelector(
+                    selected: _source,
+                    onChanged: (v) => setState(() => _source = v),
+                  ),
+                  const SizedBox(height: 8),
+                  _ModelSelector(provider: _source),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
-            _AiCard(
-              icon: Icons.edit_note,
-              title: 'Your Question'.tl,
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _promptCtrl,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: '例如：分析我的番剧品味'.tl,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _isLoading ? null : _run,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.analytics),
-                      label: Text(
-                        _isLoading ? 'Analyzing...'.tl : 'Analyze'.tl,
-                      ),
-                    ),
-                  ),
-                ],
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isLoading ? null : _run,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.analytics),
+                label: Text(_isLoading ? 'Analyzing...'.tl : 'Analyze'.tl),
               ),
             ),
             if (_result != null) ...[
@@ -154,6 +164,11 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
               _AiCard(
                 icon: Icons.auto_awesome,
                 title: 'Result'.tl,
+                trailing: IconButton(
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  tooltip: '导出截图'.tl,
+                  onPressed: _exportScreenshot,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

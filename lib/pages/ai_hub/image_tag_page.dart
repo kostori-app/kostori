@@ -101,9 +101,21 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
         padding: const EdgeInsets.all(8),
         child: Column(
           children: [
-            _AiSourceSelector(
-              selected: _source,
-              onChanged: (v) => setState(() => _source = v),
+            _AiCard(
+              icon: Icons.psychology,
+              title: 'AI 设置'.tl,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _AiSourceSelector(
+                    selected: _source,
+                    onChanged: (v) => setState(() => _source = v),
+                  ),
+                  const SizedBox(height: 8),
+                  _ModelSelector(provider: _source),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             SizedBox(

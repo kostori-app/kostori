@@ -497,13 +497,19 @@ class _ModelSelector extends StatelessWidget {
       future: AiDatabase.instance.aiApiKeyDao.getByProvider(provider),
       builder: (ctx, keySnap) {
         final currentModel = keySnap.data?.model ?? '...';
+        final displayName = currentModel.contains('/')
+            ? currentModel.split('/').last
+            : currentModel;
+
         return StreamBuilder<List<AiModel>>(
           stream: (AiDatabase.instance.select(
             AiDatabase.instance.aiModels,
           )..where((t) => t.provider.equals(provider))).watch(),
           builder: (ctx, modelSnap) {
             final models = modelSnap.data ?? [];
+
             final chip = Container(
+              constraints: const BoxConstraints(maxWidth: 150),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest,
@@ -512,18 +518,31 @@ class _ModelSelector extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.model_training, size: 14),
+                  Icon(
+                    Icons.model_training,
+                    size: 13,
+                    color: scheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 4),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 120),
+                  Flexible(
                     child: Text(
-                      currentModel,
-                      style: const TextStyle(fontSize: 12),
+                      displayName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
                       overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
-                  if (models.length > 1)
-                    const Icon(Icons.arrow_drop_up, size: 16),
+                  if (models.length > 1) ...[
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.arrow_drop_up,
+                      size: 14,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ],
                 ],
               ),
             );
@@ -539,23 +558,49 @@ class _ModelSelector extends StatelessWidget {
                 );
               },
               child: chip,
-              itemBuilder: (_) => models
-                  .map(
-                    (m) => PopupMenuItem(
-                      value: m.modelId,
-                      child: Row(
-                        children: [
-                          if (m.modelId == currentModel)
-                            Icon(Icons.check, size: 16, color: scheme.primary)
-                          else
-                            const SizedBox(width: 16),
-                          const SizedBox(width: 8),
-                          Text(m.label),
-                        ],
+              itemBuilder: (_) => models.map((m) {
+                final isSelected = m.modelId == currentModel;
+                return PopupMenuItem(
+                  value: m.modelId,
+                  child: Row(
+                    children: [
+                      Icon(
+                        isSelected ? Icons.check : Icons.circle_outlined,
+                        size: 16,
+                        color: isSelected
+                            ? scheme.primary
+                            : scheme.outlineVariant,
                       ),
-                    ),
-                  )
-                  .toList(),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              m.label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            Text(
+                              m.modelId,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: scheme.outline,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             );
           },
         );
