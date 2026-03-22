@@ -15,6 +15,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/translations.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:mobx/mobx.dart';
 
 part 'info_controller.g.dart';
@@ -23,7 +24,6 @@ class InfoController = _InfoController with _$InfoController;
 
 abstract class _InfoController with Store {
   late BangumiItem bangumiItem;
-  late List<EpisodeInfo> allEpisodes;
   late int bangumiId;
   late int episode;
 
@@ -43,6 +43,9 @@ abstract class _InfoController with Store {
   List<History> bangumiHistory = [];
 
   bool showLineChart = false;
+
+  @observable
+  ObservableList<EpisodeInfo> allEpisodes = ObservableList();
 
   @observable
   bool isLoading = false;
@@ -74,6 +77,14 @@ abstract class _InfoController with Store {
   @observable
   var bangumiSRI = ObservableList<BangumiSRI>();
 
+  @observable
+  Map<bool, EpisodeInfo?> currentWeekEp = {false: null};
+
+  @action
+  void setCurrentWeekEp(Map<bool, EpisodeInfo?> value) {
+    currentWeekEp = value;
+  }
+
   Future<void> queryBangumiInfoByID(int id, {bool defaultToDb = false}) async {
     isLoading = true;
     try {
@@ -102,13 +113,26 @@ abstract class _InfoController with Store {
     bool defaultToDb = false,
   }) async {
     try {
-      if (defaultToDb) {
-        allEpisodes = await manager.allEpInfoFind(id);
-        if (allEpisodes.isEmpty) {
-          allEpisodes = await Bangumi.instance.getBangumiEpisodeAllByID(id);
-        }
-      } else {
-        allEpisodes = await Bangumi.instance.getBangumiEpisodeAllByID(id);
+      final result = defaultToDb
+          ? await manager
+                .allEpInfoFind(id)
+                .then(
+                  (db) async => db.isNotEmpty
+                      ? db
+                      : await Bangumi.instance.getBangumiEpisodeAllByID(id),
+                )
+          : await Bangumi.instance.getBangumiEpisodeAllByID(id);
+
+      allEpisodes
+        ..clear()
+        ..addAll(result);
+
+      // 加载完直接计算
+      if (allEpisodes.isNotEmpty) {
+        currentWeekEp = await BangumiUtils.findCurrentWeekEpisode(
+          allEpisodes,
+          bangumiItem,
+        );
       }
     } catch (e) {
       Log.error('queryBangumiEpisodeByID', e.toString());

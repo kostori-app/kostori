@@ -537,7 +537,7 @@ class Bangumi {
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
-      manager.clearBangumiCalendar();
+      await manager.clearBangumiCalendar();
       for (dynamic jsonDayList in jsonData) {
         List<BangumiItem> bangumiList = [];
         final jsonList = jsonDayList['items'];
@@ -564,10 +564,10 @@ class Bangumi {
       var res = await getCalendar();
 
       for (dynamic jsonlist in res) {
-        manager.batchAddBangumiCalendar(jsonlist);
+        await manager.batchAddBangumiCalendar(jsonlist);
       }
     } catch (e, s) {
-      NetLog.error('bangumiGetCalendarData', '$e\n$s');
+      NetLog.error('getCalendarData', '$e\n$s');
     }
   }
 
@@ -584,7 +584,7 @@ class Bangumi {
     try {
       var res = await getBangumiInfoByID(id);
       if (res != null) {
-        manager.addBangumiBinding(res);
+        await manager.addBangumiBinding(res);
       }
     } catch (e, s) {
       NetLog.error('bangumiGetBangumiInfoBind', '$e\n$s');
@@ -617,8 +617,10 @@ class Bangumi {
       final last100Items = bangumiDataList.length > 200
           ? bangumiDataList.sublist(bangumiDataList.length - 200)
           : bangumiDataList;
-      manager.clearBangumiData();
-      manager.batchAddBangumiData(last100Items);
+      await manager.clearBangumiData();
+      DebugLog.info('getBangumiData', 'clearBangumiData success');
+      await manager.batchAddBangumiData(last100Items);
+      DebugLog.info('getBangumiData', 'batchAddBangumiData success');
     } on DioException catch (e, s) {
       NetLog.error('getBangumiData', 'Network error: ${e.message}\nStack: $s');
     } on FormatException catch (e, s) {
@@ -696,9 +698,9 @@ class Bangumi {
         options: Options(method: 'GET', headers: bangumiHTTPHeader),
       );
       final jsonData = res.data;
-      NetLog.info('bangumi', '${jsonData['tag_name']}');
+      NetLog.info('resetBangumiData', '${jsonData['tag_name']}');
       appdata.settings['getBangumiAllEpInfoTime'] = null;
-      NetLog.info('bangumi', 'Cleared bangumi data successfully');
+      NetLog.info('resetBangumiData', 'Cleared bangumi data successfully');
       await getBangumiData();
       await getCalendarData();
       App.rootContext.showMessage(
@@ -706,13 +708,13 @@ class Bangumi {
             'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}',
       );
       NetLog.info(
-        'bangumi',
+        'resetBangumiData',
         '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
       );
       appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
       appdata.saveData();
       NetLog.info(
-        'bangumi',
+        'resetBangumiData',
         '更新完成,当前数据库版本: ${appdata.settings['bangumiDataVer']}',
       );
     } catch (e, s) {
@@ -720,7 +722,7 @@ class Bangumi {
         message: 'bangumiData重置失败...',
         level: LogLevel.error,
       );
-      NetLog.error('bangumi', '$e\n$s');
+      NetLog.error('resetBangumiData', '$e\n$s');
     }
   }
 
@@ -786,7 +788,7 @@ class Bangumi {
 
       final List<dynamic> jsonDataList = res.data['data'] ?? [];
       if (res.data['data'] != null) {
-        manager.addBangumiAllEpInfo(id, res.data['data']);
+        await manager.addBangumiAllEpInfo(id, res.data['data']);
       }
 
       return jsonDataList.map((json) => EpisodeInfo.fromJson(json)).toList();

@@ -573,15 +573,15 @@ class BangumiUtils {
     BangumiItem bangumiItem, [
     bool calendar = false,
   ]) async {
+    DebugLog.info('findCurrentWeekEpisode', allEpisodes.toString());
     if (allEpisodes.isEmpty) return {false: null};
 
     final now = DateTime.now();
     final currentWeek = Utils.getISOWeekNumber(now);
     final targetEpisodes = allEpisodes.where((e) => e.type == 0).toList();
-
+    DebugLog.info('findCurrentWeekEpisode', targetEpisodes.toString());
     if (targetEpisodes.isEmpty) return {false: null};
 
-    // 获取番剧的标准播出时间
     String? bangumiDataAirTime = await providerContainer
         .read(bangumiManagerProvider)
         .findbangumiDataByID(bangumiItem.id);
@@ -589,14 +589,13 @@ class BangumiUtils {
         ? DateTime.tryParse(bangumiDataAirTime)?.toLocal()
         : null;
 
-    // 判断是否需要调整周数（周一5点前属于上周）
     final shouldAdjustWeek =
         bangumiAirTime != null &&
         bangumiAirTime.weekday == DateTime.monday &&
         (bangumiAirTime.hour < 5);
 
     EpisodeInfo? currentWeekEpisode;
-    EpisodeInfo? lastPastEpisode; // 现在会记录所有年份中最近的过去剧集
+    EpisodeInfo? lastPastEpisode;
 
     try {
       for (final ep in targetEpisodes) {
@@ -604,13 +603,10 @@ class BangumiUtils {
           final airDate = DateTime.parse(ep.airDate).toLocal();
           final (airYear, airWeekNum) = Utils.getISOWeekNumber(airDate);
           final (currentYear, currentWeekNum) = currentWeek;
-
-          // 应用周数调整
           final adjustedWeekNum = shouldAdjustWeek
               ? (airWeekNum == 1 ? 52 : airWeekNum + 1)
               : airWeekNum;
 
-          // 判断是否当前周但未播出
           if (airYear == currentYear && adjustedWeekNum == currentWeekNum) {
             if (calendar) {
               if (airDate.isAfter(now)) {
@@ -632,13 +628,12 @@ class BangumiUtils {
               if (airDate.isAfter(lastAirDate)) {
                 lastPastEpisode = ep;
               } else if (airDate.isAtSameMomentAs(lastAirDate)) {
-                // 如果时间一样，优先取后面的项（即覆盖）
                 lastPastEpisode = ep;
               }
             }
           }
         } catch (e) {
-          // Log.addLog(LogLevel.warning, 'dateParse', '解析日期失败: ${ep.airDate}');
+          DebugLog.warning('dateParse', '解析日期失败: ${ep.airDate}');
         }
       }
 

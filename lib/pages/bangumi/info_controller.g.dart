@@ -9,6 +9,24 @@ part of 'info_controller.dart';
 // ignore_for_file: non_constant_identifier_names, unnecessary_brace_in_string_interps, unnecessary_lambdas, prefer_expression_function_bodies, lines_longer_than_80_chars, avoid_as, avoid_annotating_with_dynamic, no_leading_underscores_for_local_identifiers
 
 mixin _$InfoController on _InfoController, Store {
+  late final _$allEpisodesAtom = Atom(
+    name: '_InfoController.allEpisodes',
+    context: context,
+  );
+
+  @override
+  ObservableList<EpisodeInfo> get allEpisodes {
+    _$allEpisodesAtom.reportRead();
+    return super.allEpisodes;
+  }
+
+  @override
+  set allEpisodes(ObservableList<EpisodeInfo> value) {
+    _$allEpisodesAtom.reportWrite(value, super.allEpisodes, () {
+      super.allEpisodes = value;
+    });
+  }
+
   late final _$isLoadingAtom = Atom(
     name: '_InfoController.isLoading',
     context: context,
@@ -189,9 +207,45 @@ mixin _$InfoController on _InfoController, Store {
     });
   }
 
+  late final _$currentWeekEpAtom = Atom(
+    name: '_InfoController.currentWeekEp',
+    context: context,
+  );
+
+  @override
+  Map<bool, EpisodeInfo?> get currentWeekEp {
+    _$currentWeekEpAtom.reportRead();
+    return super.currentWeekEp;
+  }
+
+  @override
+  set currentWeekEp(Map<bool, EpisodeInfo?> value) {
+    _$currentWeekEpAtom.reportWrite(value, super.currentWeekEp, () {
+      super.currentWeekEp = value;
+    });
+  }
+
+  late final _$_InfoControllerActionController = ActionController(
+    name: '_InfoController',
+    context: context,
+  );
+
+  @override
+  void setCurrentWeekEp(Map<bool, EpisodeInfo?> value) {
+    final _$actionInfo = _$_InfoControllerActionController.startAction(
+      name: '_InfoController.setCurrentWeekEp',
+    );
+    try {
+      return super.setCurrentWeekEp(value);
+    } finally {
+      _$_InfoControllerActionController.endAction(_$actionInfo);
+    }
+  }
+
   @override
   String toString() {
     return '''
+allEpisodes: ${allEpisodes},
 isLoading: ${isLoading},
 commentsList: ${commentsList},
 topicsList: ${topicsList},
@@ -201,7 +255,8 @@ reviewsList: ${reviewsList},
 characterList: ${characterList},
 staffList: ${staffList},
 episodeCommentsList: ${episodeCommentsList},
-bangumiSRI: ${bangumiSRI}
+bangumiSRI: ${bangumiSRI},
+currentWeekEp: ${currentWeekEp}
     ''';
   }
 }

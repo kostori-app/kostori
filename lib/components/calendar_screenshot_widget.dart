@@ -299,9 +299,9 @@ class _ScreenshotBangumiRow extends StatelessWidget {
   final BangumiItem bangumiItem;
 
   String get _episodeName {
-    final cn = bangumiItem.extraInfo?['episode_name_cn'];
-    final name = bangumiItem.extraInfo?['episode_name'] ?? '';
-    return (cn == null || (cn as String).isEmpty) ? name : cn;
+    final cn = bangumiItem.extraInfo?.episodeNameCn;
+    final name = bangumiItem.extraInfo?.episodeName ?? '';
+    return (cn == null || cn.isEmpty) ? name : cn;
   }
 
   @override
@@ -363,7 +363,7 @@ class _ScreenshotBangumiRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 if (appdata.settings['calendarFetchEpisodes'] ?? false)
                   Text(
-                    'EP ${bangumiItem.extraInfo?['episode_ep'] ?? '-'} $_episodeName',
+                    'EP ${bangumiItem.extraInfo?.episodeEp?.toCleanString() ?? '-'} $_episodeName',
                     style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

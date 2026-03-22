@@ -123,33 +123,15 @@ class NetworkCacheManager implements Interceptor {
         ),
       );
     } else if (diff < const Duration(hours: 2)) {
-      var o = options.copyWith(method: "HEAD");
-      var dio = AppDio();
-      try {
-        var response = await dio.fetch(o);
-        if (response.statusCode == 200 &&
-            compareHeaders(cache.responseHeaders, response.headers.map)) {
-          return handler.resolve(
-            Response(
-              requestOptions: options,
-              data: cache.data,
-              headers: Headers.fromMap(cache.responseHeaders)
-                ..set('kostori-cache', 'true'),
-              statusCode: 200,
-            ),
-          );
-        }
-      } catch (e) {
-        return handler.resolve(
-          Response(
-            requestOptions: options,
-            data: cache.data,
-            headers: Headers.fromMap(cache.responseHeaders)
-              ..set('kostori-cache', 'true'),
-            statusCode: 200,
-          ),
-        );
-      }
+      return handler.resolve(
+        Response(
+          requestOptions: options,
+          data: cache.data,
+          headers: Headers.fromMap(cache.responseHeaders)
+            ..set('kostori-cache', 'true'),
+          statusCode: 200,
+        ),
+      );
     }
     removeCache(options.uri);
     handler.next(options);

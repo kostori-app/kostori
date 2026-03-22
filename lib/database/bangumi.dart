@@ -9,6 +9,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/bangumi_tag.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:path/path.dart' as p;
 
 part 'bangumi.g.dart';
@@ -308,7 +309,9 @@ BangumiItem _bindingRowToItem(BangumiBindingTableData r) => BangumiItem(
 // ═══════════════════════════════════════════════════════════
 
 class BangumiManager with ChangeNotifier {
-  BangumiManager();
+  BangumiManager._();
+
+  static final BangumiManager instance = BangumiManager._();
 
   late _BangumiDb _db;
   bool isInitialized = false;
@@ -327,34 +330,57 @@ class BangumiManager with ChangeNotifier {
   // ─── bangumi_data ──────────────────────────
 
   Future<void> addBangumiData(BangumiData item) async {
-    await _db
-        .into(_db.bangumiDataTable)
-        .insertOnConflictUpdate(
-          BangumiDataTableCompanion.insert(
-            title: item.title ?? '',
-            titleTranslate: Value(
-              item.titleTranslate != null
-                  ? jsonEncode(item.titleTranslate)
-                  : null,
+    try {
+      await _db
+          .into(_db.bangumiDataTable)
+          .insertOnConflictUpdate(
+            BangumiDataTableCompanion.insert(
+              title: item.title ?? '',
+              titleTranslate: Value(
+                item.titleTranslate != null
+                    ? jsonEncode(item.titleTranslate)
+                    : null,
+              ),
+              type: Value(item.type),
+              lang: Value(item.lang),
+              officialSite: Value(item.officialSite),
+              begin: Value(item.begin),
+              broadcast: Value(item.broadcast),
+              end: Value(item.end),
+              comment: Value(item.comment),
+              sites: Value(item.sites != null ? jsonEncode(item.sites) : null),
             ),
-            type: Value(item.type),
-            lang: Value(item.lang),
-            officialSite: Value(item.officialSite),
-            begin: Value(item.begin),
-            broadcast: Value(item.broadcast),
-            end: Value(item.end),
-            comment: Value(item.comment),
-            sites: Value(item.sites != null ? jsonEncode(item.sites) : null),
-          ),
-        );
+          );
+    } catch (e, s) {
+      DebugLog.error('addBangumiData', 'title=${item.title} error=$e\n$s');
+    }
   }
 
   Future<void> batchAddBangumiData(List<BangumiData> list) async {
-    await _db.transaction(() async {
-      for (final item in list) {
-        await addBangumiData(item);
-      }
-    });
+    DebugLog.info('batchAddBangumiData', 'start, list.length=${list.length}');
+    try {
+      await _db.transaction(() async {
+        for (int i = 0; i < list.length; i++) {
+          await addBangumiData(list[i]);
+          if (i % 50 == 0) {
+            DebugLog.info('batchAddBangumiData', 'progress $i/${list.length}');
+          }
+        }
+      });
+      DebugLog.info('batchAddBangumiData', 'done, inserted=${list.length}');
+      final count = await _db
+          .customSelect(
+            'SELECT COUNT(*) as cnt FROM bangumi_data',
+            readsFrom: {_db.bangumiDataTable},
+          )
+          .getSingle();
+      DebugLog.info(
+        'batchAddBangumiData',
+        'db count after insert=${count.read<int>('cnt')}',
+      );
+    } catch (e, s) {
+      DebugLog.error('batchAddBangumiData', 'error=$e\n$s');
+    }
   }
 
   Future<String?> findbangumiDataByID(int id) async {
@@ -369,10 +395,27 @@ class BangumiManager with ChangeNotifier {
     return rows.first.read<String?>('begin');
   }
 
-  Future<Map<String, String?>> checkWhetherDataExistsBatch(
+  Future<Map<String, BangumiDataEntry>> checkWhetherDataExistsBatch(
     List<String> ids,
   ) async {
+    DebugLog.info(
+      'checkWhetherDataExistsBatch',
+      'start, ids.length=${ids.length}',
+    );
     if (ids.isEmpty) return {};
+
+    // 查询前先看数据库总数
+    final count = await _db
+        .customSelect(
+          'SELECT COUNT(*) as cnt FROM bangumi_data',
+          readsFrom: {_db.bangumiDataTable},
+        )
+        .getSingle();
+    DebugLog.info(
+      'checkWhetherDataExistsBatch',
+      'total db rows=${count.read<int>('cnt')}',
+    );
+
     final conditions = List.generate(
       ids.length,
       (_) => 'sites LIKE ?',
@@ -380,23 +423,40 @@ class BangumiManager with ChangeNotifier {
     final patterns = ids
         .map((id) => Variable.withString('%"bangumi","id":"$id"%'))
         .toList();
+
     final rows = await _db
         .customSelect(
-          'SELECT sites, begin FROM bangumi_data WHERE $conditions',
+          'SELECT sites, begin, end FROM bangumi_data WHERE $conditions',
           variables: patterns,
           readsFrom: {_db.bangumiDataTable},
         )
         .get();
-    final result = <String, String?>{};
+
+    DebugLog.info('checkWhetherDataExistsBatch', 'matched rows=${rows.length}');
+
+    final result = <String, BangumiDataEntry>{};
     for (final row in rows) {
-      final sites = jsonDecode(row.read<String>('sites')) as List;
-      final begin = row.read<String?>('begin');
-      for (final site in sites.cast<Map>()) {
-        if (site['site'] == 'bangumi') {
-          result[site['id'].toString()] = begin;
+      try {
+        final sites = jsonDecode(row.read<String>('sites')) as List;
+        final begin = row.read<String?>('begin');
+        final end = row.read<String?>('end');
+        for (final site in sites.cast<Map>()) {
+          if (site['site'] == 'bangumi') {
+            result[site['id'].toString()] = BangumiDataEntry(
+              begin: begin,
+              end: end,
+            );
+          }
         }
+      } catch (e) {
+        DebugLog.error('checkWhetherDataExistsBatch', 'parse error: $e');
       }
     }
+
+    DebugLog.info(
+      'checkWhetherDataExistsBatch',
+      'result size=${result.length}',
+    );
     return result;
   }
 
@@ -436,11 +496,17 @@ class BangumiManager with ChangeNotifier {
   }
 
   Future<void> batchAddBangumiCalendar(List<BangumiItem> items) async {
-    await _db.transaction(() async {
-      for (final item in items) {
-        await addBangumiCalendar(item);
-      }
-    });
+    try {
+      await _db.transaction(() async {
+        for (final item in items) {
+          await addBangumiCalendar(item);
+        }
+      });
+      DebugLog.info('batchAddBangumiCalendar', items.length.toString());
+    } catch (e, stack) {
+      DebugLog.info('batchAddBangumiCalendar', e.toString());
+      DebugLog.info('batchAddBangumiCalendar', stack.toString());
+    }
   }
 
   Future<List<BangumiItem>> getWeeks(List<int> weeks) async {
@@ -533,9 +599,31 @@ class BangumiManager with ChangeNotifier {
     final row = await (_db.select(
       _db.bangumiAllEpInfoTable,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (row?.data == null) return [];
-    final list = jsonDecode(row!.data!) as List;
-    return list.map((e) => EpisodeInfo.fromJson(e)).toList();
+
+    DebugLog.info(
+      'allEpInfoFind',
+      'id=$id, row=${row == null ? 'null' : 'found'}, data=${row?.data == null ? 'null' : 'length:${row!.data!.length}'}',
+    );
+
+    if (row?.data == null) {
+      DebugLog.info(
+        'allEpInfoFind',
+        'id=$id → row or data is null, returning []',
+      );
+      return [];
+    }
+
+    try {
+      final list = jsonDecode(row!.data!) as List;
+      DebugLog.info(
+        'allEpInfoFind',
+        'id=$id → decoded ${list.length} episodes',
+      );
+      return list.map((e) => EpisodeInfo.fromJson(e)).toList();
+    } catch (e, s) {
+      DebugLog.error('allEpInfoFind', 'id=$id → jsonDecode failed: $e\n$s');
+      return [];
+    }
   }
 }
 
@@ -544,7 +632,7 @@ class BangumiManager with ChangeNotifier {
 // ═══════════════════════════════════════════════════════════
 
 final bangumiManagerProvider = Provider<BangumiManager>((ref) {
-  return BangumiManager();
+  return BangumiManager.instance;
 });
 
 final bangumiInitProvider = FutureProvider<BangumiManager>((ref) async {

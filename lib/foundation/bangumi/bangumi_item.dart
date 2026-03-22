@@ -39,7 +39,7 @@ class BangumiItem {
 
   List<String>? alias;
 
-  Map<String, dynamic>? extraInfo; // 新增字段
+  EpisodeResult? extraInfo;
 
   BangumiItem({
     required this.id,
@@ -206,7 +206,7 @@ class BangumiItem {
     int? totalEpisodes,
     List<BangumiTag>? tags,
     List<String>? alias,
-    Map<String, dynamic>? extraInfo,
+    EpisodeResult? extraInfo,
   }) {
     return BangumiItem(
       id: id ?? this.id,
@@ -231,5 +231,50 @@ class BangumiItem {
   @override
   String toString() {
     return 'BangumiItem{id: $id, type: $type, name: $name, nameCn: $nameCn, summary: $summary, airDate: $airDate, airWeekday: $airWeekday, rank: $rank, total: $total, score: $score, totalEpisodes: $totalEpisodes, count: $count, collection: $collection, images: $images, tags: $tags, alias: $alias}';
+  }
+}
+
+class EpisodeResult {
+  final String? episodeAirdate;
+  final String? episodeName;
+  final String? episodeNameCn;
+  final double? episodeEp;
+  final bool isCurrentWeek;
+  final bool isFinalEpisode;
+  final bool hasNextEpisodes;
+
+  const EpisodeResult({
+    this.episodeAirdate,
+    this.episodeName,
+    this.episodeNameCn,
+    this.episodeEp,
+    required this.isCurrentWeek,
+    required this.isFinalEpisode,
+    required this.hasNextEpisodes,
+  });
+
+  /// fetchEpisodes=false 时，根据 end 字段判断是否完结
+  factory EpisodeResult.fromEndDate(String? endDateStr) {
+    final endDate = endDateStr != null ? DateTime.tryParse(endDateStr) : null;
+    final hasEnded = endDate != null && endDate.isBefore(DateTime.now());
+    return EpisodeResult(
+      isCurrentWeek: !hasEnded,
+      isFinalEpisode: hasEnded,
+      hasNextEpisodes: !hasEnded,
+    );
+  }
+
+  bool get shouldSkip => isFinalEpisode && !hasNextEpisodes && !isCurrentWeek;
+}
+
+class BangumiDataEntry {
+  final String? begin;
+  final String? end;
+  const BangumiDataEntry({this.begin, this.end});
+}
+
+extension NumDisplayExtension on num {
+  String toCleanString() {
+    return this % 1 == 0 ? toInt().toString() : toString();
   }
 }

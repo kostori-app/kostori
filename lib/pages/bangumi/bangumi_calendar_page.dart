@@ -28,6 +28,7 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
     final allItems = await providerContainer
         .read(bangumiManagerProvider)
         .getWeeks([1, 2, 3, 4, 5, 6, 7]);
+
     final allIds = allItems.map((item) => item.id.toString()).toList();
     final existenceMap = await providerContainer
         .read(bangumiManagerProvider)
@@ -36,6 +37,7 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
     final validItems = allItems
         .where((item) => existenceMap.containsKey(item.id.toString()))
         .toList();
+
     final fetchEpisodes = appdata.settings['calendarFetchEpisodes'] ?? false;
     final allEpisodesMap = fetchEpisodes
         ? await _fetchEpisodesInBatches(validItems)
@@ -46,27 +48,24 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
     final currentWeekInfo = Utils.getISOWeekNumber(now);
 
     for (final item in validItems) {
-      final airTimeStr = existenceMap[item.id.toString()] ?? item.airTime;
+      final entry = existenceMap[item.id.toString()]!;
+      final airTimeStr = entry.begin ?? item.airTime;
       if (airTimeStr == null) continue;
 
       try {
-        final airTime = DateTime.parse(airTimeStr).toLocal();
-        final weekday = airTime.weekday;
+        final weekday = DateTime.parse(airTimeStr).toLocal().weekday;
         final episodes = allEpisodesMap[item.id];
-        final episodeResult = await _processEpisodeInfo(
-          episodes: episodes,
-          now: now,
-          currentWeekInfo: currentWeekInfo,
-          bangumiItem: item,
-        );
 
-        if (episodeResult == null) continue;
+        final episodeResult = fetchEpisodes
+            ? await _processEpisodeInfo(
+                episodes: episodes,
+                now: now,
+                currentWeekInfo: currentWeekInfo,
+                bangumiItem: item,
+              )
+            : EpisodeResult.fromEndDate(entry.end);
 
-        if (episodeResult['isFinalEpisode'] == true &&
-            episodeResult['hasNextEpisodes'] == false &&
-            episodeResult['isCurrentWeek'] == false) {
-          continue;
-        }
+        if (episodeResult == null || episodeResult.shouldSkip) continue;
 
         newCalendar[weekday - 1].add(
           item.copyWith(airTime: airTimeStr, extraInfo: episodeResult),
@@ -84,15 +83,13 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
   }
 }
 
-Future<Map<String, dynamic>?> _processEpisodeInfo({
+Future<EpisodeResult?> _processEpisodeInfo({
   required List<EpisodeInfo>? episodes,
   required DateTime now,
   required (int, int) currentWeekInfo,
   required BangumiItem bangumiItem,
 }) async {
-  if (episodes == null || episodes.isEmpty) {
-    return appdata.settings['calendarFetchEpisodes'] ?? false ? null : {};
-  }
+  if (episodes == null || episodes.isEmpty) return null;
 
   final (_, currentWeek) = currentWeekInfo;
   final type0Episodes = episodes.where((ep) => ep.type == 0).toList();
@@ -105,33 +102,31 @@ Future<Map<String, dynamic>?> _processEpisodeInfo({
     true,
   );
 
-  final isFinalEpisode =
-      currentWeekEp.values.first != null &&
-      currentWeekEp.values.first?.sort == finalEpisode.sort;
-
-  final airTime = Utils.safeParseDate(currentWeekEp.values.first?.airDate);
+  final currentEp = currentWeekEp.values.first;
+  final airTime = Utils.safeParseDate(currentEp?.airDate);
   if (airTime == null) return null;
 
   final airWeek = Utils.getISOWeekNumber(airTime).$2;
-  bool isCurrentWeek = currentWeek == airWeek;
-
+  var isCurrentWeek = currentWeek == airWeek;
   if (currentWeekEp.keys.first == true && !isCurrentWeek) {
     if (currentWeek == airWeek + 1) isCurrentWeek = true;
   }
 
+  final isFinalEpisode =
+      currentEp != null && currentEp.sort == finalEpisode.sort;
   final maxSort = type0Episodes
       .map((e) => e.sort)
       .reduce((a, b) => a > b ? a : b);
 
-  return {
-    'episode_airdate': currentWeekEp.values.first?.airDate,
-    'episode_name': currentWeekEp.values.first?.name,
-    'episode_name_cn': currentWeekEp.values.first?.nameCn,
-    'episode_ep': currentWeekEp.values.first?.sort,
-    'isCurrentWeek': isCurrentWeek,
-    'isFinalEpisode': isFinalEpisode,
-    'hasNextEpisodes': finalEpisode.sort < maxSort,
-  };
+  return EpisodeResult(
+    episodeAirdate: currentEp?.airDate,
+    episodeName: currentEp?.name,
+    episodeNameCn: currentEp?.nameCn,
+    episodeEp: currentEp?.sort.toDouble(),
+    isCurrentWeek: isCurrentWeek,
+    isFinalEpisode: isFinalEpisode,
+    hasNextEpisodes: finalEpisode.sort < maxSort,
+  );
 }
 
 void _sortCalendarByTime(List<List<BangumiItem>> calendar) {
@@ -168,7 +163,9 @@ Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
     for (var i = 0; i < items.length; i += batchSize) {
       final batch = items.sublist(i, (i + batchSize).clamp(0, items.length));
       try {
-        result.addAll(await _fetchBatchEpisodes(batch));
+        result.addAll(
+          await _fetchBatchEpisodes(batch, needsUpdate: needsUpdate),
+        );
       } catch (e, s) {
         Log.error('获取剧集批次${i ~/ batchSize + 1}失败', '$e\n$s');
       }
@@ -176,28 +173,32 @@ Future<Map<int, List<EpisodeInfo>>> _fetchEpisodesInBatches(
     appdata.settings['getBangumiAllEpInfoTime'] = nowStr;
     appdata.saveData();
   } else {
-    result.addAll(await _fetchBatchEpisodes(items));
+    result.addAll(await _fetchBatchEpisodes(items, needsUpdate: needsUpdate));
   }
 
   return result;
 }
 
 Future<Map<int, List<EpisodeInfo>>> _fetchBatchEpisodes(
-  List<BangumiItem> batch,
-) async {
+  List<BangumiItem> batch, {
+  required bool needsUpdate,
+}) async {
   final result = <int, List<EpisodeInfo>>{};
-  final nowStr = Utils.formatDate(DateTime.now());
-  final needsUpdate = appdata.settings['getBangumiAllEpInfoTime'] != nowStr;
   final manager = providerContainer.read(bangumiManagerProvider);
   await Future.wait(
     batch.map((item) async {
       try {
+        DebugLog.info(
+          'fetch episodes',
+          'querying id=${item.id}, type=${item.id.runtimeType}',
+        );
         final episodes = needsUpdate
             ? await Bangumi.instance.getBangumiEpisodeAllByID(item.id)
             : await manager.allEpInfoFind(item.id);
+        DebugLog.info('fetch episodes', 'result count=${episodes.length}');
         if (episodes.isNotEmpty) result[item.id] = episodes;
       } catch (e, s) {
-        Log.warning('批量获取剧集', '${item.id}: $e\n$s');
+        Log.warning('_fetchBatchEpisodes', '${item.id}: $e\n$s');
       }
     }),
   );
@@ -326,8 +327,11 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
     final currentTimeStr = DateFormat('HH:mm').format(now);
     final currentWeekday = now.weekday;
 
+    DebugLog.info('contentList', bangumiCalendar.length.toString());
+
     return List.generate(7, (weekdayIndex) {
       final bangumiList = bangumiCalendar[weekdayIndex];
+      DebugLog.info('day[$weekdayIndex] count', bangumiList.length.toString());
       if (bangumiList.isEmpty) {
         return const Center(child: Text('这一天没有番剧'));
       }
@@ -536,9 +540,9 @@ class _CardInfo extends StatelessWidget {
   final double imageWidth;
 
   String get _episodeName {
-    final cn = bangumiItem.extraInfo?['episode_name_cn'];
-    final name = bangumiItem.extraInfo?['episode_name'] ?? '';
-    return (cn == null || (cn as String).isEmpty) ? name : cn;
+    final cn = bangumiItem.extraInfo?.episodeNameCn;
+    final name = bangumiItem.extraInfo?.episodeName ?? '';
+    return (cn == null || cn.isEmpty) ? name : cn;
   }
 
   @override
@@ -567,7 +571,7 @@ class _CardInfo extends StatelessWidget {
         if (appdata.settings['calendarFetchEpisodes'] ?? false)
           Text(
             'Episode @e: @n'.tlParams({
-              'e': bangumiItem.extraInfo?['episode_ep'] ?? 0,
+              'e': bangumiItem.extraInfo?.episodeEp?.toCleanString() ?? 0,
               'n': _episodeName,
             }),
             style: TextStyle(fontSize: imageWidth * 0.12),

@@ -179,7 +179,6 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
     infoController.topicsList.clear();
     infoController.reviewsList.clear();
     infoController.bangumiItem = bangumiItem;
-    infoController.allEpisodes = [];
     queryBangumiEpisodeByID(bangumiId);
     queryBangumiInfoByID(bangumiId);
     Bangumi.instance.getBangumiInfoBind(bangumiId);
@@ -239,6 +238,10 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
   Future<void> queryBangumiEpisodeByID(int id) async {
     try {
       await infoController.queryBangumiEpisodeByID(id);
+      DebugLog.info(
+        'queryBangumiEpisodeByID',
+        infoController.allEpisodes.toString(),
+      );
       setState(() {});
     } catch (e) {
       Log.error('queryBangumiEpisodeByID', e.toString());
@@ -375,7 +378,6 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                                     ),
                                     child: BangumiInfoCardV(
                                       bangumiItem: infoController.bangumiItem,
-                                      allEpisodes: infoController.allEpisodes,
                                       isLoading: infoController.isLoading,
                                       heroTag: widget.heroTag,
                                       infoController: infoController,

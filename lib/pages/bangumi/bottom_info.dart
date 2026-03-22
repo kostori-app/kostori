@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -49,7 +50,6 @@ class BottomInfoState extends State<BottomInfo>
   late InfoController infoController;
   late final TranslationController _translationController;
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
-  Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
 
   bool commentsIsLoading = false;
   bool topicsIsLoading = false;
@@ -81,10 +81,8 @@ class BottomInfoState extends State<BottomInfo>
     _translationController = TranslationController();
     infoController = widget.infoController;
     infoController.bangumiId = widget.bangumiId!;
-    infoController.allEpisodes = [];
     queryBangumiInfoByID(infoController.bangumiId);
     queryBangumiEpisodeByID(infoController.bangumiId);
-    _loadCurrentWeekEp();
     infoController.characterList.clear();
     infoController.commentsList.clear();
     infoController.staffList.clear();
@@ -132,14 +130,6 @@ class BottomInfoState extends State<BottomInfo>
 
   void updata() {
     setState(() {});
-  }
-
-  Future<void> _loadCurrentWeekEp() async {
-    final ep = await BangumiUtils.findCurrentWeekEpisode(
-      infoController.allEpisodes,
-      infoController.bangumiItem,
-    );
-    if (mounted) setState(() => _currentWeekEp = ep);
   }
 
   Future<void> _handleTranslation(String text) async {
@@ -315,26 +305,12 @@ class BottomInfoState extends State<BottomInfo>
     if (bangumiId == null) {
       return Center(child: infoBodyBone);
     }
-
     var bangumiItem = infoController.bangumiItem;
-    var allEpisodes = infoController.allEpisodes;
-
     double standardDeviation = Utils.getDeviation(
       bangumiItem.total,
       bangumiItem.count!.values.toList(),
       bangumiItem.score,
     );
-
-    // 获取当前周的剧集
-    final currentWeekEp = _currentWeekEp;
-
-    final type0Episodes = allEpisodes.where((ep) => ep.type == 0).toList();
-
-    final isCompleted =
-        currentWeekEp.values.first != null &&
-        type0Episodes.isNotEmpty &&
-        currentWeekEp.values.first == type0Episodes.last;
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: SingleChildScrollView(
@@ -405,10 +381,31 @@ class BottomInfoState extends State<BottomInfo>
                                   child: Text(bangumiItem.airDate),
                                 ),
                                 SizedBox(height: 12.0),
-                                BangumiWidget.bangumiTimeText(
-                                  bangumiItem,
-                                  currentWeekEp,
-                                  isCompleted,
+                                Observer(
+                                  builder: (_) {
+                                    final currentWeekEp =
+                                        infoController.currentWeekEp;
+                                    final type0Episodes = infoController
+                                        .allEpisodes
+                                        .where((ep) => ep.type == 0)
+                                        .toList();
+                                    final lastSort = type0Episodes.isNotEmpty
+                                        ? type0Episodes.last.sort
+                                        : null;
+                                    final currentSort = currentWeekEp.isEmpty
+                                        ? null
+                                        : currentWeekEp.values.first?.sort;
+                                    final isCompleted =
+                                        currentSort != null &&
+                                        lastSort != null &&
+                                        currentSort.toDouble() ==
+                                            lastSort.toDouble();
+                                    return BangumiWidget.bangumiTimeText(
+                                      bangumiItem,
+                                      currentWeekEp,
+                                      isCompleted,
+                                    );
+                                  },
                                 ),
                                 Spacer(),
                                 Align(

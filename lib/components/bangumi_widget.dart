@@ -261,43 +261,51 @@ class BangumiWidget {
     bool isCompleted,
   ) {
     final now = DateTime.now();
-    // DateTime time = Utils.safeParseDate(now.toString())!;
-    return (currentWeekEp.values.first?.sort != null)
-        ? Expanded(
-            child: Text(
-              isCompleted
-                  ? 'Full @b episodes released'.tlParams({
-                      'b': bangumiItem.totalEpisodes,
-                    })
-                  : currentWeekEp.values.first?.sort ==
-                        currentWeekEp.values.first?.ep
-                  ? 'Up to ep @s • Total @t eps planned'.tlParams({
-                      's': currentWeekEp.values.first?.sort as int,
-                      't': bangumiItem.totalEpisodes,
-                    })
-                  : 'Up to ep @e (@s) • Total @t eps planned'.tlParams({
-                      'e': currentWeekEp.values.first?.ep as int,
-                      's': currentWeekEp.values.first?.sort as int,
-                      't': bangumiItem.totalEpisodes,
-                    }),
-              style: TextStyle(fontSize: 12.0),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          )
-        : (!now.isAfter(Utils.safeParseDate(bangumiItem.airDate)!))
-        ? Text(
-            'Not Yet Airing'.tl,
-            style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
-          )
-        : Text(
-            'Full @b episodes released'.tlParams({
-              'b': bangumiItem.totalEpisodes,
-            }),
-            style: TextStyle(fontSize: 12.0),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          );
+    final ep = currentWeekEp.values.first;
+
+    if (ep?.sort != null) {
+      return Expanded(
+        child: Text(
+          isCompleted
+              ? 'Full @b episodes released'.tlParams({
+                  'b': bangumiItem.totalEpisodes,
+                })
+              : ep?.sort == ep?.ep
+              ? 'Up to ep @s • Total @t eps planned'.tlParams({
+                  's': ep!.sort.toCleanString(),
+                  't': bangumiItem.totalEpisodes,
+                })
+              : 'Up to ep @e (@s) • Total @t eps planned'.tlParams({
+                  'e': ep!.ep,
+                  's': ep.sort.toCleanString(),
+                  't': bangumiItem.totalEpisodes,
+                }),
+          style: const TextStyle(fontSize: 12.0),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    final airDate = Utils.safeParseDate(bangumiItem.airDate);
+
+    if (airDate == null || !now.isAfter(airDate)) {
+      return Text(
+        'Not Yet Airing'.tl,
+        style: const TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
+      );
+    }
+
+    if (!isCompleted) {
+      return const SizedBox.shrink();
+    }
+
+    return Text(
+      'Full @b episodes released'.tlParams({'b': bangumiItem.totalEpisodes}),
+      style: const TextStyle(fontSize: 12.0),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
   }
 
   static Future<void> showImagePreview({

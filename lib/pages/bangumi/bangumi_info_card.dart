@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -25,13 +26,11 @@ class BangumiInfoCardV extends ConsumerStatefulWidget {
     super.key,
     required this.bangumiItem,
     required this.isLoading,
-    required this.allEpisodes,
     this.heroTag,
     required this.infoController,
   });
 
   final BangumiItem bangumiItem;
-  final List<EpisodeInfo> allEpisodes;
   final bool isLoading;
   final Object? heroTag;
   final InfoController infoController;
@@ -41,13 +40,11 @@ class BangumiInfoCardV extends ConsumerStatefulWidget {
 }
 
 class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
-  Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
-
   BangumiItem get bangumiItem => widget.bangumiItem;
 
   InfoController get infoController => widget.infoController;
 
-  List<EpisodeInfo> get allEpisodes => widget.allEpisodes;
+  List<EpisodeInfo> get allEpisodes => infoController.allEpisodes;
 
   Widget get voteBarChart => LineChatPage(bangumiItem: widget.bangumiItem);
 
@@ -159,14 +156,6 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
     ))!;
   }
 
-  Future<void> _loadCurrentWeekEp() async {
-    final ep = await BangumiUtils.findCurrentWeekEpisode(
-      allEpisodes,
-      bangumiItem,
-    );
-    if (mounted) setState(() => _currentWeekEp = ep);
-  }
-
   void liked() {
     StatsManager().updateGroupLiked(
       id: bangumiItem.id.toString(),
@@ -179,7 +168,6 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
   void initState() {
     super.initState();
     _init();
-    _loadCurrentWeekEp();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.listenManual(statsAllProvider, (_, next) {
         final updated = next
@@ -329,18 +317,6 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                         ? 210
                         : 260;
                     double width = height * 0.72;
-                    // 获取当前周的剧集
-                    final currentWeekEp = _currentWeekEp;
-
-                    final type0Episodes = allEpisodes
-                        .where((ep) => ep.type == 0)
-                        .toList();
-
-                    final isCompleted =
-                        currentWeekEp.values.first != null &&
-                        type0Episodes.isNotEmpty &&
-                        currentWeekEp.values.first == type0Episodes.last;
-
                     return Container(
                       width: MediaQuery.of(context).size.width,
                       height: height,
@@ -517,10 +493,38 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                               ),
                                             ),
                                           SizedBox(width: 4.0),
-                                          BangumiWidget.bangumiTimeText(
-                                            bangumiItem,
-                                            currentWeekEp,
-                                            isCompleted,
+                                          Observer(
+                                            builder: (_) {
+                                              final currentWeekEp =
+                                                  infoController.currentWeekEp;
+                                              final type0Episodes =
+                                                  infoController.allEpisodes
+                                                      .where(
+                                                        (ep) => ep.type == 0,
+                                                      )
+                                                      .toList();
+                                              final lastSort =
+                                                  type0Episodes.isNotEmpty
+                                                  ? type0Episodes.last.sort
+                                                  : null;
+                                              final currentSort =
+                                                  currentWeekEp.isEmpty
+                                                  ? null
+                                                  : currentWeekEp
+                                                        .values
+                                                        .first
+                                                        ?.sort;
+                                              final isCompleted =
+                                                  currentSort != null &&
+                                                  lastSort != null &&
+                                                  currentSort.toDouble() ==
+                                                      lastSort.toDouble();
+                                              return BangumiWidget.bangumiTimeText(
+                                                bangumiItem,
+                                                currentWeekEp,
+                                                isCompleted,
+                                              );
+                                            },
                                           ),
                                         ],
                                       )
