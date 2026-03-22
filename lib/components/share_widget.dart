@@ -107,8 +107,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
     super.initState();
     if (widget.id != null) {
       id = widget.id!;
-      _loadCurrentWeekEp();
-      queryBangumi();
+      queryBangumi().then((_) => _loadCurrentWeekEp());
     } else if (widget.anime != null) {
       anime = widget.anime!;
       isLoding = false;

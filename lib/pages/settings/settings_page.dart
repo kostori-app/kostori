@@ -693,95 +693,110 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest
-                          .withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: MediaQuery.of(context).viewInsets.bottom,
                     ),
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _inputController,
-                          maxLines: 3,
-                          scrollPadding: const EdgeInsets.only(bottom: 100),
-                          decoration: InputDecoration(
-                            hintText: 'Enter text to translate'.tl,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            filled: true,
-                          ),
+                    child: SingleChildScrollView(
+                      reverse: true,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        const SizedBox(height: 12),
-                        if (_translationController.hasTranslation) ...[
-                          const SizedBox(height: 12),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(8),
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: _inputController,
+                              maxLines: 3,
+                              scrollPadding: EdgeInsets.only(
+                                bottom:
+                                    MediaQuery.of(context).viewInsets.bottom +
+                                    100,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Enter text to translate'.tl,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                filled: true,
+                              ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                            const SizedBox(height: 12),
+                            if (_translationController.hasTranslation) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.translate, size: 14),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Translation result'.tl,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.translate, size: 14),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Translation result'.tl,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            color: Colors.grey.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Powered by $poweredName',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant
+                                                  .withValues(alpha: 0.8),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const Spacer(),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        color: Colors.grey.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Powered by $poweredName',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant
-                                              .withValues(alpha: 0.8),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
+                                    const SizedBox(height: 8),
+                                    CustomMarkdownWidget(
+                                      data:
+                                          _translationController
+                                              .translatedText ??
+                                          '',
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                CustomMarkdownWidget(
-                                  data:
-                                      _translationController.translatedText ??
-                                      '',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],

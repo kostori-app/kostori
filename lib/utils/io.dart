@@ -615,12 +615,13 @@ class ImageSaver {
     String mobileSuccessMessage = '截图成功',
   }) async {
     if (App.isDesktop) {
+      await writeFile(bytes: bytes, filename: filename);
       await Pasteboard.writeImage(bytes);
-      ImageSaver.showResult(success: true, message: desktopSuccessMessage);
+      showResult(success: true, message: desktopSuccessMessage);
     } else {
-      final file = await ImageSaver.writeFile(bytes: bytes, filename: filename);
+      final file = await writeFile(bytes: bytes, filename: filename);
       if (file == null) return;
-      ImageSaver.showResult(success: true, message: mobileSuccessMessage);
+      showResult(success: true, message: mobileSuccessMessage);
       final data = await file.readAsBytes();
       await Share.shareFile(data: data, filename: filename, mime: 'image/png');
     }

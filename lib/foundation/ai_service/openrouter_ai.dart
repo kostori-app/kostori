@@ -1,8 +1,8 @@
 import 'package:kostori/database/ai_database.dart';
-import 'package:kostori/foundation/res.dart';
-import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_configs.dart';
+import 'package:kostori/foundation/res.dart';
+import 'package:kostori/network/app_dio.dart';
 
 class OpenRouterAi extends AiBase {
   @override
@@ -41,8 +41,18 @@ class OpenRouterAi extends AiBase {
   String parseContent(dynamic responseData) {
     final json = responseData as Map<String, dynamic>;
     final output = json['output'] as List;
-    final content = output.first['content'] as List;
-    return content.first['text'] as String;
+    final messageBlock = output.firstWhere(
+      (o) => o['type'] == 'message',
+      orElse: () => output.last,
+    );
+
+    final content = messageBlock['content'] as List;
+    final outputText = content.firstWhere(
+      (c) => c['type'] == 'output_text',
+      orElse: () => content.first,
+    );
+
+    return outputText['text'] as String;
   }
 
   @override
