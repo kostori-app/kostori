@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
+import 'package:kostori/components/qr_clipboard_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/app.dart';
@@ -53,6 +54,7 @@ class _MePageState extends State<MePage> {
       slivers: [
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
+        const QrClipboardWidget(),
         const TodayRecommendation(),
         const _ImageManipulation(),
         const AiHubEntry(),
@@ -293,6 +295,7 @@ class TodayRecommendation extends StatelessWidget {
                 ],
               ),
             ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
             if (recommendations.isEmpty)
               const SizedBox(height: 220)
             else
@@ -307,8 +310,12 @@ class TodayRecommendation extends StatelessWidget {
                       centerCount = 1;
                     } else if (totalWidth < 800) {
                       centerCount = 2;
-                    } else {
+                    } else if (totalWidth < 1200) {
                       centerCount = 3;
+                    } else if (totalWidth < 1600) {
+                      centerCount = 4;
+                    } else {
+                      centerCount = 5;
                     }
                     final double sidePeekWidth = totalWidth < 480 ? 40.0 : 56.0;
                     final double calculatedItemExtent =
@@ -460,7 +467,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
   @override
   Widget build(BuildContext context) {
     final images = ref.watch(imagesProvider);
-
+    final cs = Theme.of(context).colorScheme;
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -483,6 +490,8 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                 height: 56,
                 child: Row(
                   children: [
+                    Icon(Icons.browse_gallery, color: cs.primary, size: 20),
+                    const SizedBox(width: 8),
                     Center(child: Text('Image Operations'.tl, style: ts.s16)),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -502,6 +511,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                   ],
                 ),
               ).paddingHorizontal(16),
+              const Divider(height: 1, indent: 16, endIndent: 16),
               SizedBox(
                 height: 220,
                 child: _isLoadingImages && images.isEmpty
@@ -528,15 +538,15 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                                 .last;
                             return Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
+                                horizontal: 2,
                                 vertical: 4,
                               ),
                               child: Card(
-                                margin: const EdgeInsets.all(8),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 clipBehavior: Clip.antiAlias,
+                                color: Colors.transparent,
                                 child: InkWell(
                                   onTap: () {
                                     BangumiWidget.showImagePreview(
@@ -564,7 +574,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                               ),
                             );
                           },
-                        ).paddingHorizontal(8).paddingVertical(16),
+                        ).paddingVertical(16),
                       ),
               ),
             ],

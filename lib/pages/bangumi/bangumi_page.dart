@@ -433,6 +433,7 @@ class _TimetableState extends State<_Timetable> {
                   ],
                 ),
               ).paddingHorizontal(16),
+              const Divider(height: 1, indent: 16, endIndent: 16),
               SizedBox(
                 height: bangumiCalendar.isEmpty
                     ? 0

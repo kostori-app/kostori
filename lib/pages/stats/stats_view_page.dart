@@ -87,6 +87,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
     if (loading) {
       return Skeletonizer.zone(child: Bone.multiText(lines: 3));
     }
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
@@ -103,6 +104,8 @@ class _StatsViewPageState extends State<StatsViewPage> {
             height: 56,
             child: Row(
               children: [
+                Icon(Icons.query_stats_outlined, color: cs.primary, size: 20),
+                const SizedBox(width: 8),
                 Center(child: Text('统计图表'.tl, style: ts.s16)),
                 const Spacer(),
                 IconButton(
@@ -128,6 +131,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
               ],
             ),
           ).paddingHorizontal(16),
+          const Divider(height: 1, indent: 16, endIndent: 16),
           Padding(
             padding: const EdgeInsets.all(16),
             child: buildViewWidget(context),
