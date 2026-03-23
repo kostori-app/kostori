@@ -161,7 +161,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, setSS) => HubSheet(
+        builder: (context, setSS) => Sheet(
           title: "Rooms".tl,
           icon: Icons.meeting_room_outlined,
           headerTrailing: TextButton.icon(

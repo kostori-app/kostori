@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';

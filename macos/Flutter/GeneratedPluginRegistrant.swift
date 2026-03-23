@@ -23,6 +23,7 @@ import flutter_volume_controller
 import local_auth_darwin
 import media_kit_libs_macos_video
 import media_kit_video
+import mobile_scanner
 import network_info_plus
 import package_info_plus
 import pasteboard
@@ -54,6 +55,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FLALocalAuthPlugin.register(with: registry.registrar(forPlugin: "FLALocalAuthPlugin"))
   MediaKitLibsMacosVideoPlugin.register(with: registry.registrar(forPlugin: "MediaKitLibsMacosVideoPlugin"))
   MediaKitVideoPlugin.register(with: registry.registrar(forPlugin: "MediaKitVideoPlugin"))
+  MobileScannerPlugin.register(with: registry.registrar(forPlugin: "MobileScannerPlugin"))
   NetworkInfoPlusPlugin.register(with: registry.registrar(forPlugin: "NetworkInfoPlusPlugin"))
   FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
   PasteboardPlugin.register(with: registry.registrar(forPlugin: "PasteboardPlugin"))

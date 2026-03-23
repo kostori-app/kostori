@@ -248,7 +248,7 @@ class _RenderHorizontalPicPageState
       future: _loadUiImages(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: PolygonRefreshIndicator());
         }
         if (snapshot.hasError ||
             snapshot.data == null ||

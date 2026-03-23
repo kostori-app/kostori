@@ -15,6 +15,7 @@ import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -391,9 +392,23 @@ class _PersonPageState extends ConsumerState<PersonPage>
                       builder: (context, setState) {
                         return ShareWidget(
                           characterFullItem: characterFullItem,
+                          isCharacter: false,
                         );
                       },
                     ),
+                  );
+                },
+                onLongPress: () {
+                  final type = KostoriRouteType.person;
+                  final id = '${characterFullItem.id}';
+                  showKostoriShareSheet(
+                    context,
+                    ref,
+                    type: type,
+                    payload: id,
+                    title: characterFullItem.nameCN,
+                    backgroundImagePath: characterFullItem.image,
+                    subtitle: '人物',
                   );
                 },
                 child: Padding(

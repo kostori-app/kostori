@@ -143,7 +143,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _hubClient.isGlobalAdmin ||
               !rooms.any((r) => r.ownerUserId == myId);
 
-          return HubSheet(
+          return Sheet(
             title: 'Rooms'.tl,
             icon: Icons.meeting_room_outlined,
             headerTrailing: canCreate
@@ -287,7 +287,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setSS) {
           final blocked = _hubClient.blockedUsers;
-          return HubSheet(
+          return Sheet(
             title: 'Blocked Users'.tl,
             icon: Icons.block_outlined,
             builder: (context, sc) {

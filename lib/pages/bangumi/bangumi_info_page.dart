@@ -15,6 +15,7 @@ import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_card.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/bangumi/info_tab_view.dart';
+import 'package:kostori/utils/protocol_parser.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BangumiInfoPage extends ConsumerStatefulWidget {
@@ -292,6 +293,18 @@ class _BangumiInfoPageState extends ConsumerState<BangumiInfoPage>
                         onPressed: () {
                           shareImage();
                         },
+                        onLongPress: () => showKostoriShareSheet(
+                          context,
+                          ref,
+                          type: KostoriRouteType.bangumi,
+                          payload: '${infoController.bangumiItem.id}',
+                          title: infoController.bangumiItem.nameCn.isNotEmpty
+                              ? infoController.bangumiItem.nameCn
+                              : infoController.bangumiItem.name,
+                          subtitle: infoController.bangumiItem.name,
+                          backgroundImagePath:
+                              infoController.bangumiItem.images['large'],
+                        ),
                         icon: const Icon(Icons.share),
                       ),
                       SizedBox(width: 8),

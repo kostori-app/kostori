@@ -21,7 +21,7 @@ class CharacterFullItem {
     return CharacterFullItem(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      nameCN: json['nameCN'] ?? '',
+      nameCN: json['nameCN'] ?? json['name'] ?? '',
       info: json['info'] ?? '',
       summary: json['summary'] ?? '',
       image: (json['images']?['large']) ?? '',
@@ -78,7 +78,7 @@ class CharacterInfoboxItem {
 
 class CharacterInfoboxValue {
   final String value;
-  final String? label; // 对应 k
+  final String? label;
 
   CharacterInfoboxValue({required this.value, this.label});
 

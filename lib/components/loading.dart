@@ -138,9 +138,7 @@ abstract class LoadingState<T extends ConsumerStatefulWidget, S extends Object>
 
   Widget buildLoading() {
     return Center(
-      child: const CircularProgressIndicator(
-        strokeWidth: 2,
-      ).fixWidth(32).fixHeight(32),
+      child: const PolygonRefreshIndicator().fixWidth(32).fixHeight(32),
     );
   }
 

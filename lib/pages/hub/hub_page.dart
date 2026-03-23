@@ -514,7 +514,7 @@ class _PeopleActions extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => HubSheet(
+      builder: (_) => Sheet(
         title: client.displayName,
         icon: Icons.manage_accounts_outlined,
         initialSize: 0.45,
@@ -595,7 +595,7 @@ class _PeopleActions extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => HubSheet(
+      builder: (_) => Sheet(
         title: 'Mute Duration'.tl,
         icon: Icons.mic_off_outlined,
         initialSize: 0.35,

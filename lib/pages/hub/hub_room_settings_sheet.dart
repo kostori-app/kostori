@@ -924,117 +924,6 @@ class _HubInputDialogState extends State<_HubInputDialog> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 公共 UI 组件（供 hub_page.dart / hub_client_setting.dart 共用）
-// ─────────────────────────────────────────────────────────────────────────────
-
-class HubSheet extends StatelessWidget {
-  final String title;
-  final IconData? icon;
-  final Widget Function(BuildContext context, ScrollController sc) builder;
-  final Widget? headerTrailing;
-  final Widget? footer;
-  final double initialSize;
-
-  const HubSheet({
-    super.key,
-    required this.title,
-    required this.builder,
-    this.icon,
-    this.headerTrailing,
-    this.footer,
-    this.initialSize = 0.6,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final sc = ScrollController();
-    final height = MediaQuery.of(context).size.height * initialSize;
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      child: Container(
-        color: cs.surface,
-        height: height,
-        child: Column(
-          children: [
-            _HubSheetHandle(),
-            _HubSheetHeader(title: title, icon: icon, trailing: headerTrailing),
-            Expanded(child: builder(context, sc)),
-            if (footer != null) footer!,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HubSheetHandle extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(top: 10, bottom: 4),
-      child: Container(
-        width: 36,
-        height: 4,
-        decoration: BoxDecoration(
-          color: cs.onSurfaceVariant.toOpacity(0.25),
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-}
-
-class _HubSheetHeader extends StatelessWidget {
-  final String title;
-  final IconData? icon;
-  final Widget? trailing;
-
-  const _HubSheetHeader({required this.title, this.icon, this.trailing});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 8, 10),
-          child: Row(
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 18, color: cs.onSurface.toOpacity(0.7)),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              if (trailing != null) trailing!,
-              IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        ),
-        Divider(
-          height: 1,
-          color: Theme.of(context).colorScheme.outlineVariant.toOpacity(0.4),
-        ),
-      ],
-    );
-  }
-}
-
-/// 分区标题，带左侧小图标和文字。
 class HubSettingSection extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -1137,10 +1026,6 @@ class HubEmptyHint extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 概况小组件
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _StatChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1182,10 +1067,6 @@ class _StatChip extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 内联编辑字段（欢迎语 / 密码共用）
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _InlineEditField extends StatefulWidget {
   final TextEditingController controller;
@@ -1282,10 +1163,6 @@ class _InlineEditFieldState extends State<_InlineEditField> {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 管理员面板 - 在线用户行（含全局管理员切换 + 禁言 + 封禁）
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _AdminUserTile extends StatefulWidget {
   final HubClientDto client;

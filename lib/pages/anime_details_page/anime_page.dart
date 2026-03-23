@@ -40,6 +40,7 @@ import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/protocol_parser.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
@@ -702,6 +703,15 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             icon: const Icon(Icons.share),
             text: 'Share'.tl,
             onPressed: share,
+            onLongPressed: () => showKostoriShareSheet(
+              context,
+              ref,
+              type: KostoriRouteType.anime,
+              payload: '${widget.id}|${widget.sourceKey}',
+              title: anime.title,
+              subtitle: widget.sourceKey,
+              backgroundImagePath: anime.cover,
+            ),
             iconColor: Theme.of(context).colorScheme.inversePrimary,
           ),
         if (!isZero)

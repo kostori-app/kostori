@@ -922,7 +922,15 @@
     "No models. Add one above.": "暂无模型，点击上方添加",
     "API Configuration": "接口配置",
     "Placeholders: {animeCount} {animeNames} {topTags}": "占位符：{animeCount} {animeNames} {topTags}",
-    "AI Hub": "AI 工坊"
+    "AI Hub": "AI 工坊",
+    "Select Year & Month": "选择年份和月份",
+    "Enter Year": "输入年份",
+    "Select Day": "选择日期",
+    "Full Year": "全年",
+    "Quick Select": "快速选择",
+    "Select Date Range": "选择日期范围",
+    "Manual Select": "手动选择",
+    "QR & Clipboard": "二维码与剪贴板"
   },
   "zh_TW": {
     "@a to add • @b to remove • @c to move": "@a 項添加 • @b 項刪除 • @c 項移動",
