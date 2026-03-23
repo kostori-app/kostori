@@ -13,7 +13,6 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/translations.dart';
@@ -208,60 +207,78 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   List<Widget> _buildTagCategories() {
     return [
       SliverToBoxAdapter(
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        child: SizedBox(
+          height: 40,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final category = categories[index];
               final selectedCount = selectedCountForCategory(category);
+              final isSelected = selectedCount > 0;
+              final colorScheme = Theme.of(context).colorScheme;
 
               return Padding(
-                padding: EdgeInsets.only(left: index == 0 ? 16 : 0, right: 16),
-                child: ChoiceChip(
-                  label: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(category.title),
-                      if (selectedCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.only(right: 6),
+                child: InkWell(
+                  onTap: () => _showTagSelectionDialog(context, category),
+                  borderRadius: BorderRadius.circular(6),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? colorScheme.primary.toOpacity(0.08)
+                          : colorScheme.surfaceContainerHighest.toOpacity(0.6),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        width: 0.5,
+                        color: isSelected
+                            ? colorScheme.primary.toOpacity(0.5)
+                            : colorScheme.outline.toOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          category.title,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.onSurface,
+                            fontWeight: isSelected
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                          ),
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
-                              shape: BoxShape.circle,
+                              color: colorScheme.primary,
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               '$selectedCount',
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onPrimary,
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                  selected: selectedCount > 0,
-                  onSelected: (_) => _showTagSelectionDialog(context, category),
-                  selectedColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.toOpacity(0.1),
-                  labelStyle: TextStyle(
-                    color: selectedCount > 0
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).textTheme.bodyMedium?.color,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: BorderSide(
-                      color: selectedCount > 0
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.toOpacity(0.72)
-                          : Colors.grey.shade300,
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -284,96 +301,135 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            final color = Theme.of(context).colorScheme.primary;
+
             return ContentDialog(
               title: 'Select @c'.tlParams({"c": category.title}),
               displayButton: false,
-              content: Container(
-                constraints: BoxConstraints(maxWidth: 500, maxHeight: 600),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 标签区
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: category.tags.map((tag) {
-                            final isSelected = currentSelected.contains(tag);
-                            return InputChip(
-                              backgroundColor: Colors.black.toOpacity(0.5),
-                              shape: StadiumBorder(
-                                side: BorderSide(
-                                  color: isSelected
-                                      ? Theme.of(
-                                          context,
-                                        ).colorScheme.primary.toOpacity(0.72)
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.primary.withAlpha(4),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 480,
+                  maxHeight: 520,
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 标签区
+                      Flexible(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: category.tags.map((tag) {
+                              final isSelected = currentSelected.contains(tag);
+                              return InkWell(
+                                onTap: () => setState(() {
+                                  isSelected
+                                      ? currentSelected.remove(tag)
+                                      : currentSelected.add(tag);
+                                }),
+                                borderRadius: BorderRadius.circular(6),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 120),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? color.toOpacity(0.1)
+                                        : Theme.of(context)
+                                              .colorScheme
+                                              .surfaceContainerHighest
+                                              .toOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(
+                                      width: 0.5,
+                                      color: isSelected
+                                          ? color.toOpacity(0.5)
+                                          : Theme.of(context)
+                                                .colorScheme
+                                                .outline
+                                                .toOpacity(0.25),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (isSelected) ...[
+                                        Icon(
+                                          Icons.check,
+                                          size: 12,
+                                          color: color,
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
+                                      Text(
+                                        tag,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: isSelected
+                                              ? color
+                                              : Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurface,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w500
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              label: Text(tag),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                setState(() {
-                                  if (selected) {
-                                    if (!currentSelected.contains(tag)) {
-                                      currentSelected.add(tag);
-                                    }
-                                  } else {
-                                    currentSelected.remove(tag);
-                                  }
-                                });
-                              },
-                              selectedColor: Theme.of(
-                                context,
-                              ).colorScheme.primary.toOpacity(0.22),
-                              checkmarkColor: isSelected
-                                  ? Theme.of(
-                                      context,
-                                    ).colorScheme.primary.toOpacity(0.72)
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.primary.withAlpha(4),
-                              showCheckmark: true,
-                            );
-                          }).toList(),
+                              );
+                            }).toList(),
+                          ),
                         ),
                       ),
-                    ),
-                    // 操作栏
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          OutlinedButton(
-                            onPressed: () =>
-                                setState(() => currentSelected.clear()),
-                            child: Text('Clear'.tl),
-                          ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: Text('Cancel'.tl),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              _updateSelectedTags(category, currentSelected);
-                              Navigator.pop(context);
-                            },
-                            child: Text(
-                              'Confirm (@c)'.tlParams({
-                                "c": currentSelected.length,
-                              }),
+                      // 操作栏
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Row(
+                          children: [
+                            if (currentSelected.isNotEmpty)
+                              TextButton.icon(
+                                onPressed: () =>
+                                    setState(() => currentSelected.clear()),
+                                icon: const Icon(Icons.clear_all, size: 16),
+                                label: Text('Clear'.tl),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
+                                ),
+                              ),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text('Cancel'.tl),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              onPressed: () {
+                                _updateSelectedTags(category, currentSelected);
+                                Navigator.pop(context);
+                              },
+                              child: Text(
+                                currentSelected.isEmpty
+                                    ? 'Confirm'.tl
+                                    : 'Confirm (@c)'.tlParams({
+                                        "c": currentSelected.length,
+                                      }),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             );
@@ -599,31 +655,13 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     DateTime now = DateTime.now();
     DateTime? air = Utils.safeParseDate(airDate);
     DateTime? end = Utils.safeParseDate(endDate);
+    int quickYear = now.year;
 
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStates) {
-            Future<void> pickDate(bool isAirDate) async {
-              DateTime initial = isAirDate ? (air ?? now) : (end ?? now);
-              DateTime? picked = await showDatePicker(
-                context: context,
-                initialDate: initial,
-                firstDate: DateTime(now.year - 50),
-                lastDate: DateTime(now.year + 30),
-              );
-              if (picked != null) {
-                setStates(() {
-                  if (isAirDate) {
-                    air = picked;
-                  } else {
-                    end = picked;
-                  }
-                });
-              }
-            }
-
             String formatDate(DateTime? date) {
               if (date == null) return "Unselected".tl;
               return "${date.year.toString().padLeft(4, '0')}-"
@@ -631,35 +669,500 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   "${date.day.toString().padLeft(2, '0')}";
             }
 
-            return ContentDialog(
-              title: "Select Date".tl,
-              content: SizedBox(
-                child: Column(
-                  children: [
-                    ListTile(
-                      title: Text("Start Date".tl),
-                      subtitle: Text(formatDate(air)),
-                      trailing: Icon(Icons.date_range),
-                      onTap: () => pickDate(true),
-                    ),
-                    ListTile(
-                      title: Text("End Date".tl),
-                      subtitle: Text(formatDate(end)),
-                      trailing: Icon(Icons.date_range),
-                      onTap: () => pickDate(false),
-                    ),
-                  ],
+            // 自定义日期选择器（年月日）
+            Future<DateTime?> pickDate(DateTime? initial) async {
+              DateTime temp = initial ?? now;
+              int selYear = temp.year;
+              int selMonth = temp.month;
+              int selDay = temp.day;
+              int step = 0;
+
+              return await showDialog<DateTime>(
+                context: context,
+                builder: (ctx) => StatefulBuilder(
+                  builder: (ctx, setInner) {
+                    int daysInMonth = DateUtils.getDaysInMonth(
+                      selYear,
+                      selMonth,
+                    );
+                    if (selDay > daysInMonth) selDay = daysInMonth;
+
+                    Widget yearMonthPicker() => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left),
+                              onPressed: () => setInner(() => selYear--),
+                            ),
+                            GestureDetector(
+                              onTap: () async {
+                                final ctrl = TextEditingController(
+                                  text: selYear.toString(),
+                                );
+                                final result = await showDialog<int>(
+                                  context: ctx,
+                                  builder: (_) => ContentDialog(
+                                    title: 'Enter Year'.tl,
+                                    content: TextField(
+                                      controller: ctrl,
+                                      keyboardType: TextInputType.number,
+                                      autofocus: true,
+                                    ),
+                                    actions: [
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.pop(
+                                          ctx,
+                                          int.tryParse(ctrl.text),
+                                        ),
+                                        child: Text('OK'.tl),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (result != null) {
+                                  setInner(() => selYear = result);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '$selYear',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.chevron_right),
+                              onPressed: () => setInner(() => selYear++),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // 月份网格
+                        GridView.count(
+                          crossAxisCount: 4,
+                          shrinkWrap: true,
+                          mainAxisSpacing: 6,
+                          crossAxisSpacing: 6,
+                          childAspectRatio: 2.0,
+                          children: List.generate(12, (i) {
+                            final month = i + 1;
+                            final isSelected = selMonth == month;
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => setInner(() {
+                                selMonth = month;
+                                step = 1;
+                              }),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 150),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '$month月',
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary
+                                        : null,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+                    );
+
+                    Widget dayPicker() => Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: () => setInner(() => step = 0),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.arrow_back_ios, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '$selYear年 $selMonth月',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // 星期标题
+                        Row(
+                          children: ['日', '一', '二', '三', '四', '五', '六']
+                              .map(
+                                (d) => Expanded(
+                                  child: Center(
+                                    child: Text(
+                                      d,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.outline,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                        const SizedBox(height: 4),
+                        // 日历网格
+                        Builder(
+                          builder: (_) {
+                            final firstDay =
+                                DateTime(selYear, selMonth, 1).weekday % 7;
+                            final totalCells = firstDay + daysInMonth;
+                            final rows = (totalCells / 7).ceil();
+                            return GridView.count(
+                              crossAxisCount: 7,
+                              shrinkWrap: true,
+                              mainAxisSpacing: 4,
+                              crossAxisSpacing: 2,
+                              childAspectRatio: 1.2,
+                              children: List.generate(rows * 7, (i) {
+                                final day = i - firstDay + 1;
+                                if (day < 1 || day > daysInMonth) {
+                                  return const SizedBox.shrink();
+                                }
+                                final isSelected = selDay == day;
+                                return InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () => setInner(() => selDay = day),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 150),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.primary
+                                          : null,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '$day',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: isSelected
+                                            ? Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimary
+                                            : null,
+                                        fontWeight: isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+
+                    return ContentDialog(
+                      title: step == 0
+                          ? "Select Year & Month".tl
+                          : "Select Day".tl,
+                      content: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: step == 0
+                            ? KeyedSubtree(
+                                key: const ValueKey(0),
+                                child: yearMonthPicker(),
+                              )
+                            : KeyedSubtree(
+                                key: const ValueKey(1),
+                                child: dayPicker(),
+                              ),
+                      ),
+                      actions: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(
+                            ctx,
+                            DateTime(selYear, selMonth, selDay),
+                          ),
+                          child: Text("Confirm".tl),
+                        ),
+                      ],
+                    );
+                  },
                 ),
+              );
+            }
+
+            // 快捷选择：设置区间
+            void applyQuick(DateTime start, DateTime end_) {
+              setStates(() {
+                air = start;
+                end = end_;
+              });
+            }
+
+            // 季度信息
+            final quarters = [
+              {
+                'label': 'Full Year'.tl,
+                'start': 1,
+                'startDay': 1,
+                'end': 12,
+                'endDay': 31,
+              },
+              {
+                'label': 'Q1',
+                'start': 1,
+                'startDay': 1,
+                'end': 3,
+                'endDay': 31,
+              },
+              {
+                'label': 'Q2',
+                'start': 4,
+                'startDay': 1,
+                'end': 6,
+                'endDay': 30,
+              },
+              {
+                'label': 'Q3',
+                'start': 7,
+                'startDay': 1,
+                'end': 9,
+                'endDay': 30,
+              },
+              {
+                'label': 'Q4',
+                'start': 10,
+                'startDay': 1,
+                'end': 12,
+                'endDay': 31,
+              },
+            ];
+
+            return ContentDialog(
+              title: "Select Date Range".tl,
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── 快捷选择 ──
+                  Text(
+                    'Quick Select'.tl,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  // 年份导航
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.keyboard_double_arrow_left),
+                        onPressed: () => setStates(() => quickYear -= 10),
+                        tooltip: '-10',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () => setStates(() => quickYear--),
+                      ),
+                      GestureDetector(
+                        onTap: () async {
+                          final ctrl = TextEditingController(
+                            text: quickYear.toString(),
+                          );
+                          final result = await showDialog<int>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: Text('Enter Year'.tl),
+                              content: TextField(
+                                controller: ctrl,
+                                keyboardType: TextInputType.number,
+                                autofocus: true,
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text('Cancel'.tl),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(
+                                    context,
+                                    int.tryParse(ctrl.text),
+                                  ),
+                                  child: Text('OK'.tl),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (result != null) {
+                            setStates(() => quickYear = result);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$quickYear',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () => setStates(() => quickYear++),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.keyboard_double_arrow_right),
+                        onPressed: () => setStates(() => quickYear += 10),
+                        tooltip: '+10',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // 快捷按钮行
+                  Row(
+                    children: quarters.map((q) {
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              minimumSize: const Size(0, 34),
+                              textStyle: const TextStyle(fontSize: 12),
+                            ),
+                            onPressed: () => applyQuick(
+                              DateTime(
+                                quickYear,
+                                q['start'] as int,
+                                q['startDay'] as int,
+                              ),
+                              DateTime(
+                                quickYear,
+                                q['end'] as int,
+                                q['endDay'] as int,
+                              ),
+                            ),
+                            child: Text(q['label'] as String),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const Divider(height: 24),
+                  // ── 手动选择 ──
+                  Text(
+                    'Manual Select'.tl,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.play_arrow_outlined),
+                    title: Text("Start Date".tl),
+                    subtitle: Text(
+                      formatDate(air),
+                      style: TextStyle(
+                        color: air != null
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                    ),
+                    trailing: air != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setStates(() => air = null),
+                          )
+                        : const Icon(Icons.date_range),
+                    onTap: () async {
+                      final picked = await pickDate(air);
+                      if (picked != null) setStates(() => air = picked);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.stop_outlined),
+                    title: Text("End Date".tl),
+                    subtitle: Text(
+                      formatDate(end),
+                      style: TextStyle(
+                        color: end != null
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
+                    ),
+                    trailing: end != null
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setStates(() => end = null),
+                          )
+                        : const Icon(Icons.date_range),
+                    onTap: () async {
+                      final picked = await pickDate(end);
+                      if (picked != null) setStates(() => end = picked);
+                    },
+                  ),
+                ],
               ),
               actions: [
                 TextButton(
-                  onPressed: () {
-                    setStates(() {
-                      air = null;
-                      end = null;
-                    });
-                  },
-                  child: Text("Clear Date".tl),
+                  onPressed: () => setStates(() {
+                    air = null;
+                    end = null;
+                  }),
+                  child: Text("Clear".tl),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -669,7 +1172,6 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                       );
                       return;
                     }
-
                     if (air != null && end != null && end!.isBefore(air!)) {
                       context.showMessage(
                         message:
@@ -677,27 +1179,16 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                       );
                       return;
                     }
-
                     airDate = air != null ? formatDate(air) : '';
                     endDate = end != null ? formatDate(end) : '';
-
-                    Log.info(
-                      'pickDate',
-                      "Air Date: $airDate, End Date: $endDate",
-                    );
-
                     Navigator.pop(context);
                     setState(() {
                       _isLoading = true;
                       bangumiItems.clear();
                     });
-
                     final newItems = await bangumiSearch();
                     bangumiItems = newItems;
-
-                    setState(() {
-                      _isLoading = false;
-                    });
+                    setState(() => _isLoading = false);
                   },
                   child: Text("Apply".tl),
                 ),
@@ -1252,15 +1743,18 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   }
 
   Widget _tagsWidget(BuildContext context) {
+    if (tags.isEmpty) return const SizedBox.shrink();
+
+    final color = Theme.of(context).colorScheme.primary;
+
     return Padding(
-      padding: const EdgeInsets.all(4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Wrap(
-        spacing: 8.0,
-        runSpacing: 6.0,
+        spacing: 6,
+        runSpacing: 6,
         children: tags.map((tag) {
-          return ActionChip(
-            label: Text(tag),
-            onPressed: () async {
+          return InkWell(
+            onTap: () async {
               setState(() {
                 tags.remove(tag);
                 _isLoading = true;
@@ -1270,14 +1764,30 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               });
               final newItems = await bangumiSearch();
               bangumiItems = newItems;
-              setState(() {
-                _isLoading = false;
-              });
+              setState(() => _isLoading = false);
             },
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.primary.toOpacity(0.72),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                color: color.toOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(width: 0.5, color: color.toOpacity(0.4)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    tag,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: color,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Icon(Icons.close, size: 13, color: color.toOpacity(0.7)),
+                ],
               ),
             ),
           );
@@ -1287,74 +1797,90 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   }
 
   Widget _dataTagsWidget(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    Widget buildTag({
+      required String label,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onRemove,
+    }) {
+      return InkWell(
+        onTap: onRemove,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.toOpacity(0.08),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(width: 0.5, color: color.toOpacity(0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: color,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Icon(Icons.close, size: 13, color: color.toOpacity(0.7)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final tags = [
+      if (airDate.isNotEmpty)
+        buildTag(
+          label: airDate,
+          icon: Icons.calendar_today,
+          color: colorScheme.primary,
+          onRemove: () async {
+            setState(() {
+              airDate = '';
+              _isLoading = true;
+              bangumiItems.clear();
+              selectedBangumiItems.clear();
+              multiSelectMode = false;
+            });
+            final newItems = await bangumiSearch();
+            bangumiItems = newItems;
+            setState(() => _isLoading = false);
+          },
+        ),
+      if (endDate.isNotEmpty)
+        buildTag(
+          label: endDate,
+          icon: Icons.calendar_today,
+          color: colorScheme.secondary,
+          onRemove: () async {
+            setState(() {
+              endDate = '';
+              _isLoading = true;
+              bangumiItems.clear();
+              selectedBangumiItems.clear();
+              multiSelectMode = false;
+            });
+            final newItems = await bangumiSearch();
+            bangumiItems = newItems;
+            setState(() => _isLoading = false);
+          },
+        ),
+    ];
+
+    if (tags.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Wrap(
-          spacing: 4.0,
-          // runSpacing: 8.0,
-          children: [
-            if (airDate.isNotEmpty)
-              ActionChip(
-                avatar: Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Colors.green,
-                ),
-                label: Text(airDate),
-                onPressed: () async {
-                  setState(() {
-                    airDate = '';
-                    _isLoading = true;
-                    bangumiItems.clear();
-                    selectedBangumiItems.clear();
-                    multiSelectMode = false;
-                  });
-                  final newItems = await bangumiSearch();
-                  bangumiItems = newItems;
-                  setState(() {
-                    _isLoading = false;
-                  });
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.green.toOpacity(0.6)),
-                ),
-                backgroundColor: Colors.green.toOpacity(0.1),
-                labelStyle: TextStyle(color: Colors.green),
-              ),
-            if (endDate.isNotEmpty)
-              ActionChip(
-                avatar: Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Colors.blue,
-                ),
-                label: Text(endDate),
-                onPressed: () async {
-                  setState(() {
-                    endDate = '';
-                    _isLoading = true;
-                    bangumiItems.clear();
-                    selectedBangumiItems.clear();
-                    multiSelectMode = false;
-                  });
-
-                  final newItems = await bangumiSearch();
-                  bangumiItems = newItems;
-                  setState(() {
-                    _isLoading = false;
-                  });
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.blue.toOpacity(0.6)),
-                ),
-                backgroundColor: Colors.blue.toOpacity(0.1),
-                labelStyle: TextStyle(color: Colors.blue),
-              ),
-          ],
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Wrap(spacing: 6, runSpacing: 6, children: tags),
       ),
     );
   }
