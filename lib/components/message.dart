@@ -316,8 +316,8 @@ class ContentDialog extends StatelessWidget {
     bool displayButton = true,
   }) {
     return showDialog<T>(
-      context: App.rootContext,
-      barrierDismissible: isDismissible,
+      context: context,
+      barrierColor: Colors.black.toOpacity(0.36),
       builder: (context) => ContentDialog(
         title: title,
         content: content,
@@ -332,100 +332,143 @@ class ContentDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var dialogContent = SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title != null)
-            Padding(
-              padding: const EdgeInsets.only(
-                left: 24,
-                top: 24,
-                bottom: 12,
-                right: 24,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title!,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+    final cs = context.colorScheme;
+    final isDark = context.brightness == Brightness.dark;
+
+    final titleWidget = title != null
+        ? Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    title!,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                      height: 1.3,
                     ),
                   ),
+                ),
+                if (titleActions.isNotEmpty) ...[
+                  const SizedBox(width: 8),
                   ...titleActions,
+                ],
+              ],
+            ),
+          )
+        : null;
+
+    final contentWidget = Padding(
+      padding: EdgeInsets.fromLTRB(20, title != null ? 10 : 20, 20, 0),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          fontSize: 14,
+          color: cs.onSurface.toOpacity(0.75),
+          height: 1.5,
+        ),
+        child: content,
+      ),
+    );
+    final actionsWidget = displayButton
+        ? Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            child: Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    cancel?.call();
+                    if (!isDismissible) context.pop();
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: cs.onSurface.toOpacity(0.55),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel'.tl,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ),
+                const Spacer(),
+                ...actions.separated(const SizedBox(width: 8)),
+              ],
+            ),
+          )
+        : null;
+    final divider = displayButton
+        ? Divider(
+            height: 1,
+            thickness: 0.5,
+            color: isDark
+                ? Colors.white.toOpacity(0.08)
+                : Colors.black.toOpacity(0.07),
+          )
+        : null;
+
+    return Dialog(
+      insetPadding: context.width < 400
+          ? const EdgeInsets.symmetric(horizontal: 8, vertical: 24)
+          : const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: BlurEffect(
+          blur: 18,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? cs.surface.toOpacity(0.55)
+                  : cs.surface.toOpacity(0.72),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.toOpacity(0.09)
+                    : Colors.black.toOpacity(0.07),
+                width: 0.8,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (titleWidget != null) titleWidget,
+                  contentWidget,
+                  const SizedBox(height: 4),
+                  if (divider != null) divider,
+                  if (actionsWidget != null) actionsWidget,
+                  if (!displayButton) const SizedBox(height: 16),
                 ],
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: content,
           ),
-          const SizedBox(height: 16),
-          if (displayButton)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                const SizedBox(width: 24),
-                Button.text(
-                  onPressed: () {
-                    cancel?.call();
-                    if (!isDismissible) {
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: Text("Cancel".tl),
-                ),
-                const Spacer(),
-                ...actions,
-                const SizedBox(width: 24),
-              ],
-            ).paddingRight(12),
-          if (displayButton) const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
+  }
+}
 
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: context.brightness == Brightness.dark
-              ? Colors.white.toOpacity(0.1)
-              : Colors.black.toOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      insetPadding: context.width < 400
-          ? const EdgeInsets.symmetric(horizontal: 4)
-          : const EdgeInsets.symmetric(horizontal: 16),
-      elevation: 2,
-      shadowColor: context.colorScheme.shadow,
-      backgroundColor: context.colorScheme.surface.toOpacity(0.3),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 3, sigmaY: 3),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 600),
-            decoration: BoxDecoration(
-              color: context.colorScheme.surface.toOpacity(0.22),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: MediaQuery.removePadding(
-              removeTop: true,
-              removeBottom: true,
-              context: context,
-              child: Material(color: Colors.transparent, child: dialogContent),
-            ),
-          ),
-        ),
-      ),
-    );
+extension _WidgetListSep on List<Widget> {
+  List<Widget> separated(Widget separator) {
+    if (isEmpty) return this;
+    final result = <Widget>[];
+    for (var i = 0; i < length; i++) {
+      result.add(this[i]);
+      if (i < length - 1) result.add(separator);
+    }
+    return result;
   }
 }
 
