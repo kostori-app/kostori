@@ -322,8 +322,8 @@ class BangumiManager with ChangeNotifier {
     isInitialized = true;
   }
 
-  void close() {
-    _db.close();
+  Future<void> close() async {
+    await _db.close();
     isInitialized = false;
   }
 

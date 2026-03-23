@@ -79,10 +79,10 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       }
     }
     if (await historyFile.exists()) {
-      HistoryManager().close();
+      await HistoryManager().close();
       File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
       historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
-      HistoryManager().init();
+      await HistoryManager().init();
     }
     if (await localFavoriteFile.exists()) {
       LocalFavoritesManager().close();
@@ -95,26 +95,26 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       LocalFavoritesManager().init();
     }
     if (await bangumiFile.exists()) {
-      providerContainer.read(bangumiManagerProvider).close();
+      await providerContainer.read(bangumiManagerProvider).close();
       File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
       bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
-      providerContainer.read(bangumiManagerProvider).init();
+      await providerContainer.read(bangumiManagerProvider).init();
     }
     if (await statsFile.exists()) {
-      StatsManager().close();
+      await StatsManager().close();
       File(FilePath.join(App.dataPath, "stats.db")).deleteIfExistsSync();
       statsFile.renameSync(FilePath.join(App.dataPath, "stats.db"));
-      StatsManager().init();
+      await StatsManager().init();
     }
     if (await searchHistoryFile.exists()) {
-      SearchHistoryManager().close();
+      await SearchHistoryManager().close();
       File(
         FilePath.join(App.dataPath, "search_history.db"),
       ).deleteIfExistsSync();
       searchHistoryFile.renameSync(
         FilePath.join(App.dataPath, "search_history.db"),
       );
-      SearchHistoryManager().init();
+      await SearchHistoryManager().init();
     }
     if (await appdataFile.exists()) {
       var content = await appdataFile.readAsString();

@@ -389,8 +389,8 @@ class HistoryManager with ChangeNotifier {
     await _updateCache();
   }
 
-  void close() {
-    _db.close();
+  Future<void> close() async {
+    await _db.close();
     _cache = null;
     isInitialized = false;
   }
