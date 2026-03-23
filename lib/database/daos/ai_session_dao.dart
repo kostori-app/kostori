@@ -13,6 +13,17 @@ class AiSessionDao extends DatabaseAccessor<AiDatabase>
   Future<void> upsertSession(AiSessionsCompanion entry) =>
       into(aiSessions).insertOnConflictUpdate(entry);
 
+  Future<int> updateOnlyProvider(String sessionId, String provider) {
+    return (update(
+      aiSessions,
+    )..where((t) => t.sessionId.equals(sessionId))).write(
+      AiSessionsCompanion(
+        provider: Value(provider),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   Future<AiSession?> getSession(String sessionId) => (select(
     aiSessions,
   )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();

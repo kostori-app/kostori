@@ -30,11 +30,9 @@ class AiApiKeyDao extends DatabaseAccessor<AiDatabase> with _$AiApiKeyDaoMixin {
   }
 
   /// 监听指定服务商 Key 变化
-  Stream<AiApiKey?> watchByProvider(String provider) {
-    return (select(
-      aiApiKeys,
-    )..where((t) => t.provider.equals(provider))).watchSingleOrNull();
-  }
+  Stream<AiApiKey?> watchByProvider(String provider) => (select(
+    aiApiKeys,
+  )..where((t) => t.provider.equals(provider))).watchSingleOrNull();
 
   // ─── 写入 ──────────────────────────────────
 

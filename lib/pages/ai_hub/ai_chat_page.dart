@@ -1,9 +1,5 @@
 part of 'ai_hub_page.dart';
 
-// ═════════════════════════════════════════════
-// 模块3：AI 对话（带上下文记忆 + 多话题）
-// ═════════════════════════════════════════════
-
 class AiChatPage extends ConsumerStatefulWidget {
   const AiChatPage({super.key});
 
@@ -14,31 +10,46 @@ class AiChatPage extends ConsumerStatefulWidget {
 class _AiChatPageState extends ConsumerState<AiChatPage> {
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+  final _focusNode = FocusNode();
 
   String _source = 'siliconFlow';
   String? _sessionId;
   bool _isSending = false;
+  String? _lastError;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.unfocus();
+    });
     _loadOrCreateSession();
   }
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
 
-  // 启动时加载最近一个 chat 会话，没有则新建
+  Future<void> _switchSession(String id) async {
+    final session = await AiDatabase.instance.aiSessionDao.getSession(id);
+    if (mounted) {
+      setState(() {
+        _sessionId = id;
+        if (session != null) _source = session.provider;
+      });
+    }
+  }
+
   Future<void> _loadOrCreateSession() async {
     final sessions = await AiConversationService()
         .watchSessions(type: 'chat')
         .first;
     if (sessions.isNotEmpty) {
-      if (mounted) setState(() => _sessionId = sessions.first.sessionId);
+      await _switchSession(sessions.first.sessionId);
     } else {
       await _newSession();
     }
@@ -62,20 +73,34 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     if (mounted) setState(() => _sessionId = id);
   }
 
-  Future<void> _send() async {
-    final text = _inputCtrl.text.trim();
+  Future<void> _send({String? overrideMessage, int? rollbackFromId}) async {
+    final text = overrideMessage ?? _inputCtrl.text.trim();
     if (text.isEmpty || _sessionId == null) return;
-    _inputCtrl.clear();
+    if (overrideMessage == null) _inputCtrl.clear();
+
+    if (rollbackFromId != null) {
+      await AiConversationService().rollbackToMessage(
+        _sessionId!,
+        rollbackFromId,
+      );
+    }
+
     setState(() => _isSending = true);
     try {
-      await AiConversationService().sendMessage(
+      final result = await AiConversationService().sendMessage(
         sessionId: _sessionId!,
         userMessage: text,
         taskType: 'chat',
+        providerOverride: _source,
       );
+      if (!result.success && mounted) {
+        setState(() => _lastError = result.errorMessage);
+      } else {
+        setState(() => _lastError = null);
+      }
       _scrollToBottom();
     } catch (e) {
-      App.rootContext.showMessage(message: 'Error: $e');
+      if (mounted) setState(() => _lastError = e.toString());
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
@@ -102,9 +127,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       ),
       builder: (_) => _ChatSessionSheet(
         currentSessionId: _sessionId,
-        onSelectSession: (id) {
-          setState(() => _sessionId = id);
-          Navigator.pop(context);
+        onSelectSession: (id) async {
+          await _switchSession(id);
+          if (mounted) Navigator.pop(context);
         },
         onNewSession: () async {
           Navigator.pop(context);
@@ -185,7 +210,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 },
               ),
         actions: [
-          // 话题列表
           IconButton(
             icon: const Icon(Icons.forum_outlined),
             tooltip: '话题列表'.tl,
@@ -195,7 +219,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       ),
       body: Column(
         children: [
-          // ── 消息列表 ──────────────────────────
           Expanded(
             child: _sessionId == null
                 ? const Center(child: CircularProgressIndicator())
@@ -234,19 +257,39 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                         itemBuilder: (_, i) {
                           final m = messages[i];
                           final isUser = m.role == 'user';
+                          final isLast = i == messages.length - 1;
+
                           return _ChatBubble(
                             content: isUser
                                 ? m.inputContent
                                 : (m.outputContent ?? '...'),
                             isUser: isUser,
+                            task: m,
+                            errorText: (isLast && !isUser && _lastError != null)
+                                ? _lastError
+                                : null,
+                            onRetry: (isLast && !isUser && _lastError != null)
+                                ? () => _send(overrideMessage: m.inputContent)
+                                : null,
+                            onRollback: () {
+                              if (isUser) {
+                                _send(
+                                  overrideMessage: m.inputContent,
+                                  rollbackFromId: m.id,
+                                );
+                              } else {
+                                _send(
+                                  overrideMessage: m.inputContent,
+                                  rollbackFromId: m.id,
+                                );
+                              }
+                            },
                           );
                         },
                       );
                     },
                   ),
           ),
-
-          // ── 服务商/模型 选择栏 ─────────────────
           Container(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
             decoration: BoxDecoration(
@@ -263,10 +306,15 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                   source: _source,
                   onSourceChanged: (v) {
                     setState(() => _source = v);
+                    if (_sessionId != null) {
+                      AiConversationService().updateSessionProvider(
+                        _sessionId!,
+                        v,
+                      );
+                    }
                   },
                 ),
                 const Spacer(),
-                // 新建对话快捷按钮
                 IconButton(
                   icon: const Icon(Icons.add_comment_outlined, size: 20),
                   tooltip: '新建对话'.tl,
@@ -286,6 +334,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 Expanded(
                   child: TextField(
                     controller: _inputCtrl,
+                    focusNode: _focusNode,
+                    autofocus: false,
                     maxLines: 4,
                     minLines: 1,
                     textInputAction: TextInputAction.newline,
@@ -307,7 +357,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     ? const SizedBox(
                         width: 40,
                         height: 40,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: PolygonRefreshIndicator(),
                       )
                     : IconButton.filled(
                         icon: const Icon(Icons.send, size: 20),
@@ -321,10 +371,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// 话题列表 Sheet
-// ─────────────────────────────────────────────
 
 class _ChatSessionSheet extends StatelessWidget {
   const _ChatSessionSheet({
@@ -341,7 +387,7 @@ class _ChatSessionSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HubSheet(
+    return Sheet(
       title: '话题列表'.tl,
       icon: Icons.forum_outlined,
       initialSize: 0.6,
@@ -410,10 +456,6 @@ class _ChatSessionSheet extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────
-// 服务商 + 模型选择器（左下角）
-// ─────────────────────────────────────────────
 
 class _ProviderModelSelector extends StatelessWidget {
   const _ProviderModelSelector({
@@ -485,181 +527,145 @@ class _ProviderModelSelector extends StatelessWidget {
   }
 }
 
-class _ModelSelector extends StatelessWidget {
-  const _ModelSelector({required this.provider});
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({
+    required this.content,
+    required this.isUser,
+    required this.task,
+    this.onRetry,
+    this.onRollback,
+    this.errorText,
+  });
 
-  final String provider;
+  final String content;
+  final bool isUser;
+  final AiTask task;
+  final VoidCallback? onRetry;
+  final VoidCallback? onRollback;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return FutureBuilder<AiApiKey?>(
-      future: AiDatabase.instance.aiApiKeyDao.getByProvider(provider),
-      builder: (ctx, keySnap) {
-        final currentModel = keySnap.data?.model ?? '...';
-        final displayName = currentModel.contains('/')
-            ? currentModel.split('/').last
-            : currentModel;
 
-        return StreamBuilder<List<AiModel>>(
-          stream: (AiDatabase.instance.select(
-            AiDatabase.instance.aiModels,
-          )..where((t) => t.provider.equals(provider))).watch(),
-          builder: (ctx, modelSnap) {
-            final models = modelSnap.data ?? [];
+    Widget bubble = GestureDetector(
+      onLongPress: () => _showMenu(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isUser ? scheme.primary : scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser ? 16 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 16),
+          ),
+        ),
+        child: isUser
+            ? Text(
+                content,
+                style: TextStyle(color: scheme.onPrimary, fontSize: 14),
+              )
+            : CustomMarkdownWidget(data: content),
+      ),
+    );
 
-            final chip = Container(
-              constraints: const BoxConstraints(maxWidth: 150),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20),
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: isUser
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: isUser
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!isUser) ...[
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: scheme.primaryContainer,
+                  child: Icon(
+                    Icons.auto_awesome,
+                    size: 16,
+                    color: scheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Flexible(child: bubble),
+              if (isUser) const SizedBox(width: 8),
+            ],
+          ),
+          // 错误提示 + 重试
+          if (errorText != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 40),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.model_training,
-                    size: 13,
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  Icon(Icons.error_outline, size: 14, color: scheme.error),
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      displayName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+                      errorText!,
+                      style: TextStyle(fontSize: 11, color: scheme.error),
                     ),
                   ),
-                  if (models.length > 1) ...[
-                    const SizedBox(width: 2),
-                    Icon(
-                      Icons.arrow_drop_up,
-                      size: 14,
-                      color: scheme.onSurfaceVariant,
+                  if (onRetry != null) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: onRetry,
+                      child: Text(
+                        '重试',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ],
               ),
-            );
-
-            if (models.length <= 1) return chip;
-
-            return PopupMenuButton<String>(
-              offset: const Offset(0, -160),
-              onSelected: (modelId) async {
-                await AiDatabase.instance.aiApiKeyDao.updateModel(
-                  provider,
-                  modelId,
-                );
-              },
-              child: chip,
-              itemBuilder: (_) => models.map((m) {
-                final isSelected = m.modelId == currentModel;
-                return PopupMenuItem(
-                  value: m.modelId,
-                  child: Row(
-                    children: [
-                      Icon(
-                        isSelected ? Icons.check : Icons.circle_outlined,
-                        size: 16,
-                        color: isSelected
-                            ? scheme.primary
-                            : scheme.outlineVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              m.label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                            Text(
-                              m.modelId,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: scheme.outline,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            );
-          },
-        );
-      },
+            ),
+        ],
+      ),
     );
   }
-}
 
-// ─────────────────────────────────────────────
-// 消息气泡
-// ─────────────────────────────────────────────
-
-class _ChatBubble extends StatelessWidget {
-  const _ChatBubble({required this.content, required this.isUser});
-
-  final String content;
-  final bool isUser;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: scheme.primaryContainer,
-              child: Icon(Icons.auto_awesome, size: 16, color: scheme.primary),
+  void _showMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Sheet(
+        title: isUser ? '我的消息' : 'AI 消息',
+        icon: isUser ? Icons.person_outline : Icons.auto_awesome,
+        initialSize: 0.28,
+        builder: (ctx, _) => Column(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.copy_outlined),
+              title: const Text('复制'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Clipboard.setData(ClipboardData(text: content));
+                App.rootContext.showMessage(message: '已复制');
+              },
             ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isUser ? scheme.primary : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isUser ? 16 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 16),
-                ),
+            if (onRollback != null)
+              ListTile(
+                leading: const Icon(Icons.replay_outlined),
+                title: Text(isUser ? '从此处重新发送' : '重新生成此回复'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onRollback!();
+                },
               ),
-              child: isUser
-                  ? Text(
-                      content,
-                      style: TextStyle(color: scheme.onPrimary, fontSize: 14),
-                    )
-                  : CustomMarkdownWidget(data: content),
-            ),
-          ),
-          if (isUser) const SizedBox(width: 8),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -674,7 +680,7 @@ class _PersonalityPickerDialog extends StatefulWidget {
 }
 
 class _PersonalityPickerDialogState extends State<_PersonalityPickerDialog> {
-  String? _selected; // null = 无人格
+  String? _selected;
 
   @override
   Widget build(BuildContext context) {

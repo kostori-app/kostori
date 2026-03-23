@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/database/ai_database.dart';
@@ -13,7 +14,6 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
-import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/translations.dart';
@@ -27,17 +27,9 @@ part 'soul_profile_page.dart';
 
 part 'summary_page.dart';
 
-// ─────────────────────────────────────────────
-// Config Keys
-// ─────────────────────────────────────────────
-
 const _soulProfileConfigKey = 'soul_profiler_v1';
 const _imageTagConfigKey = 'image_tag_v1';
 const _summaryConfigKey = 'summary_v1';
-
-// ─────────────────────────────────────────────
-// 入口 widget（原 _UserProfileAnalysis）
-// ─────────────────────────────────────────────
 
 class AiHubEntry extends StatelessWidget {
   const AiHubEntry({super.key});
@@ -65,6 +57,7 @@ class AiHubEntry extends StatelessWidget {
                 Icon(
                   Icons.auto_awesome,
                   color: Theme.of(context).colorScheme.primary,
+                  size: 20,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -366,7 +359,7 @@ class _SessionHistorySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HubSheet(
+    return Sheet(
       title: 'History'.tl,
       icon: Icons.history,
       initialSize: 0.7,
@@ -534,6 +527,130 @@ class _RangeChip extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ModelSelector extends StatelessWidget {
+  const _ModelSelector({required this.provider});
+
+  final String provider;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return StreamBuilder<AiApiKey?>(
+      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(provider),
+      builder: (ctx, keySnap) {
+        final currentModel = keySnap.data?.model ?? '...';
+        final displayName = currentModel.contains('/')
+            ? currentModel.split('/').last
+            : currentModel;
+
+        return StreamBuilder<List<AiModel>>(
+          stream: (AiDatabase.instance.select(
+            AiDatabase.instance.aiModels,
+          )..where((t) => t.provider.equals(provider))).watch(),
+          builder: (ctx, modelSnap) {
+            final models = modelSnap.data ?? [];
+
+            final chip = Container(
+              constraints: const BoxConstraints(maxWidth: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.model_training,
+                    size: 13,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      displayName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  if (models.length > 1) ...[
+                    const SizedBox(width: 2),
+                    Icon(
+                      Icons.arrow_drop_up,
+                      size: 14,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ],
+                ],
+              ),
+            );
+
+            if (models.length <= 1) return chip;
+
+            return PopupMenuButton<String>(
+              offset: const Offset(0, -160),
+              onSelected: (modelId) async {
+                await AiDatabase.instance.aiApiKeyDao.updateModel(
+                  provider,
+                  modelId,
+                );
+              },
+              child: chip,
+              itemBuilder: (_) => models.map((m) {
+                final isSelected = m.modelId == currentModel;
+                return PopupMenuItem(
+                  value: m.modelId,
+                  child: Row(
+                    children: [
+                      Icon(
+                        isSelected ? Icons.check : Icons.circle_outlined,
+                        size: 16,
+                        color: isSelected
+                            ? scheme.primary
+                            : scheme.outlineVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              m.label,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            Text(
+                              m.modelId,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: scheme.outline,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        );
+      },
     );
   }
 }

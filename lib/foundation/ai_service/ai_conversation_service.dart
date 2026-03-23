@@ -70,13 +70,15 @@ class AiConversationService {
     required String sessionId,
     required String userMessage,
     String taskType = 'chat',
-    int maxContextMessages = 20, // 最多携带最近 N 条历史
+    int maxContextMessages = 20,
+    String? providerOverride,
   }) async {
     final session = await _sessionDao.getSession(sessionId);
     if (session == null) return Res.error('会话不存在: $sessionId');
 
-    final ai = AiFactory.create(session.provider);
-    if (ai == null) return Res.error('未知服务商: ${session.provider}');
+    final provider = providerOverride ?? session.provider;
+    final ai = AiFactory.create(provider);
+    if (ai == null) return Res.error('未知服务商: $provider');
 
     // 1. 读取 System Prompt
     String? systemPrompt;
@@ -137,6 +139,14 @@ class AiConversationService {
 
     return result;
   }
+
+  Future<void> updateSessionProvider(String sessionId, String provider) async {
+    await _sessionDao.updateOnlyProvider(sessionId, provider);
+  }
+
+  /// 删除 taskId 及其之后的所有消息，用于回滚到某个节点重新发送
+  Future<void> rollbackToMessage(String sessionId, int taskId) =>
+      _taskDao.deleteMessagesFrom(sessionId, taskId);
 
   // ─── 单次任务（无上下文，自动创建临时会话）─
 
