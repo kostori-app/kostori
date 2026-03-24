@@ -21,7 +21,9 @@ import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/protocol_parser.dart';
@@ -44,6 +46,8 @@ Future<void> captureAndSave(BuildContext context) async {
   } catch (e) {
     ImageSaver.showResult(success: false, message: '截图失败: $e');
     Log.error('截图失败', '$e');
+  } finally {
+    await providerContainer.read(imagesProvider.notifier).loadImages();
   }
 }
 
