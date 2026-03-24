@@ -100,6 +100,7 @@ void showKostoriShareSheet(
                   title: title,
                   subtitle: subtitle,
                   backgroundImagePath: backgroundImagePath,
+                  exportWidth: 400,
                 ),
               );
             },
