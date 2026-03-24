@@ -3,6 +3,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app_page_route.dart';
 import 'package:kostori/foundation/blur_fade_route.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 extension Navigation on BuildContext {
   void pop<T>([T? result]) {
@@ -73,4 +74,8 @@ extension Navigation on BuildContext {
   Color useTextColor(MaterialColor color) {
     return color[brightness == Brightness.light ? 800 : 100]!;
   }
+}
+
+extension ContextI18n on BuildContext {
+  Translations get t => Translations.of(this);
 }

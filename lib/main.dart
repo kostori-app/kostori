@@ -16,6 +16,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/headless.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/pages/main_page.dart';
@@ -262,75 +263,77 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           secondary = light.harmonized().secondary;
           tertiary = light.harmonized().tertiary;
         }
-        return MaterialApp(
-          title: "kostori",
-          home: home,
-          debugShowCheckedModeBanner: false,
-          scrollBehavior: MyCustomScrollBehavior(),
-          theme: getTheme(primary, secondary, tertiary, Brightness.light),
-          navigatorKey: App.rootNavigatorKey,
-          darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
-          themeMode: switch (appdata.settings['theme_mode']) {
-            'light' => ThemeMode.light,
-            'dark' => ThemeMode.dark,
-            _ => ThemeMode.system,
-          },
-          color: Colors.transparent,
-          localizationsDelegates: [
-            GlobalMaterialLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          locale: () {
-            var lang = appdata.settings['language'];
-            if (lang == 'system') {
-              return null;
-            }
-            return switch (lang) {
-              'zh-CN' => const Locale('zh', 'CN'),
-              'zh-TW' => const Locale('zh', 'TW'),
-              'en-US' => const Locale('en'),
-              _ => null,
-            };
-          }(),
-          supportedLocales: const [
-            Locale('en'),
-            Locale('zh', 'CN'),
-            Locale('zh', 'TW'),
-          ],
-          builder: (context, widget) {
-            ErrorWidget.builder = (details) {
-              Log.error(
-                "Unhandled Exception",
-                "${details.exception}\n${details.stack}",
-              );
-              return Material(
-                child: Center(child: Text(details.exception.toString())),
-              );
-            };
-            if (widget != null) {
-              widget = OverlayWidget(widget);
-              if (App.isDesktop) {
-                widget = Shortcuts(
-                  shortcuts: {
-                    LogicalKeySet(LogicalKeyboardKey.escape):
-                        VoidCallbackIntent(App.pop),
-                  },
-                  child: MouseBackDetector(
-                    onTapDown: App.pop,
-                    child: WindowFrame(widget),
+        return TranslationProvider(
+          child: MaterialApp(
+            title: "kostori",
+            home: home,
+            debugShowCheckedModeBanner: false,
+            scrollBehavior: MyCustomScrollBehavior(),
+            theme: getTheme(primary, secondary, tertiary, Brightness.light),
+            navigatorKey: App.rootNavigatorKey,
+            darkTheme: getTheme(primary, secondary, tertiary, Brightness.dark),
+            themeMode: switch (appdata.settings['theme_mode']) {
+              'light' => ThemeMode.light,
+              'dark' => ThemeMode.dark,
+              _ => ThemeMode.system,
+            },
+            color: Colors.transparent,
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            locale: () {
+              var lang = appdata.settings['language'];
+              if (lang == 'system') {
+                return null;
+              }
+              return switch (lang) {
+                'zh-CN' => const Locale('zh', 'CN'),
+                'zh-TW' => const Locale('zh', 'TW'),
+                'en-US' => const Locale('en'),
+                _ => null,
+              };
+            }(),
+            supportedLocales: const [
+              Locale('en'),
+              Locale('zh', 'CN'),
+              Locale('zh', 'TW'),
+            ],
+            builder: (context, widget) {
+              ErrorWidget.builder = (details) {
+                Log.error(
+                  "Unhandled Exception",
+                  "${details.exception}\n${details.stack}",
+                );
+                return Material(
+                  child: Center(child: Text(details.exception.toString())),
+                );
+              };
+              if (widget != null) {
+                widget = OverlayWidget(widget);
+                if (App.isDesktop) {
+                  widget = Shortcuts(
+                    shortcuts: {
+                      LogicalKeySet(LogicalKeyboardKey.escape):
+                          VoidCallbackIntent(App.pop),
+                    },
+                    child: MouseBackDetector(
+                      onTapDown: App.pop,
+                      child: WindowFrame(widget),
+                    ),
+                  );
+                }
+
+                return _SystemUiProvider(
+                  Material(
+                    color: App.isLinux ? Colors.transparent : null,
+                    child: widget,
                   ),
                 );
               }
-
-              return _SystemUiProvider(
-                Material(
-                  color: App.isLinux ? Colors.transparent : null,
-                  child: widget,
-                ),
-              );
-            }
-            throw ('widget is null');
-          },
+              throw ('widget is null');
+            },
+          ),
         );
       },
     );

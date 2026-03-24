@@ -1,0 +1,2941 @@
+///
+/// Generated file. Do not edit.
+///
+// coverage:ignore-file
+// ignore_for_file: type=lint, unused_import
+// dart format off
+
+import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
+import 'package:slang/generated.dart';
+
+import 'strings.g.dart';
+
+// Path: <root>
+class TranslationsZhCn extends Translations
+    with BaseTranslations<AppLocale, Translations> {
+  /// You can call this constructor and build your own translation instance of this locale.
+  /// Constructing via the enum [AppLocale.build] is preferred.
+  TranslationsZhCn({Map<String,
+      Node>? overrides, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver, TranslationMetadata<
+      AppLocale,
+      Translations>? meta})
+      : assert(overrides ==
+      null, 'Set "translation_overrides: true" in order to enable this feature.'),
+        $meta = meta ?? TranslationMetadata(
+          locale: AppLocale.zhCn,
+          overrides: overrides ?? {},
+          cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver,
+        ),
+        super(cardinalResolver: cardinalResolver,
+          ordinalResolver: ordinalResolver) {
+    super.$meta.setFlatMapFunction(
+        $meta.getTranslation); // copy base translations to super.$meta
+    $meta.setFlatMapFunction(_flatMapFunction);
+  }
+
+  /// Metadata for the translations of <zh-CN>.
+  @override final TranslationMetadata<AppLocale, Translations> $meta;
+
+  /// Access flat map
+  @override dynamic operator [](String key) =>
+      $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+
+  late final TranslationsZhCn _root = this; // ignore: unused_field
+
+  @override
+  TranslationsZhCn $copyWith(
+      {TranslationMetadata<AppLocale, Translations>? meta}) =>
+      TranslationsZhCn(meta: meta ?? this.$meta);
+
+  // Translations
+  @override String aToAddBToRemoveCToMove(
+      {required Object a, required Object b, required Object c}) =>
+      '${a} 项添加 • ${b} 项删除 • ${c} 项移动';
+
+  @override String aToAddBToRemove({required Object a, required Object b}) =>
+      '${a} 项添加 • ${b} 项删除';
+
+  @override String cUpdates({required Object c}) => '${c} 项更新';
+
+  @override String get aNewVersionIsAvailableDoYouWantToUpdateNow =>
+      '发现新版本，是否立即更新？';
+
+  @override String get app => '应用';
+
+  @override String get about => '关于';
+
+  @override String get accounts => '账户';
+
+  @override String get addAAnimeSourceInHomePage => '在首页添加番剧源';
+
+  @override String get addAnimeSource => '添加番剧源';
+
+  @override String get addNewFavoriteTo => '添加新收藏到';
+
+  @override String get addToFavorites => '添加到收藏';
+
+  @override String get add => '添加';
+
+  @override String addedCountAnimesToDownloadQueue({required Object count}) =>
+      '已将 ${count} 部番剧加入下载队列';
+
+  @override String get added => '已添加';
+
+  @override String get aggregatedSearch => '聚合搜索';
+
+  @override String get aggregated => '聚合';
+
+  @override String get aiSource => 'AI 数据源';
+
+  @override String get ai => 'AI';
+
+  @override String get allEpisodes => '全部剧集';
+
+  @override String get alsoRemoveFilesOnDisk => '同时删除本地文件';
+
+  @override String get animeSourceList => '番剧源列表';
+
+  @override String get animeSource => '番剧源';
+
+  @override String get appearance => '外观';
+
+  @override String get areYouSureYouWantToClearYourHistory =>
+      '确定要清除历史记录吗？';
+
+  @override String get areYouSureYouWantToClearYourProgress =>
+      '确定要清除全部进度吗？';
+
+  @override String get authorizationRequired => '需要身份验证';
+
+  @override String get autoPageTurning => '自动翻页';
+
+  @override String get back => '返回';
+
+  @override String get bangumi => 'Bangumi';
+
+  @override String get block => '封锁';
+
+  @override String get blue => '蓝色';
+
+  @override String get brief => '简介';
+
+  @override String get cacheLimit => '缓存限制';
+
+  @override String get cacheSize => '缓存大小';
+
+  @override String get cacheCleared => '缓存已清除';
+
+  @override String get cancel => '取消';
+
+  @override String get categories => '分类';
+
+  @override String get categoryPages => '分类页面';
+
+  @override String get characters => '角色';
+
+  @override String get checkForUpdatesOnStartup => '启动时检查更新';
+
+  @override String get checkForUpdates => '检查更新';
+
+  @override String get checkUpdates => '检查更新';
+
+  @override String get check => '检查';
+
+  @override String get clearCache => '清除缓存';
+
+  @override String get clearHistory => '清除历史记录';
+
+  @override String get clearProgress => '清除进度';
+
+  @override String get clearSearchHistory => '清除搜索历史';
+
+  @override String get clearUnfavorited => '清除未收藏';
+
+  @override String get clear => '清除';
+
+  @override String get clickIfLoginExpired => '如果登录过期请点击';
+
+  @override String get close => '关闭';
+
+  @override String get comment => '评论';
+
+  @override String get comments => '评论';
+
+  @override String get confirm => '确认';
+
+  @override String get kContinue => '继续';
+
+  @override String get copied => '已复制';
+
+  @override String get analyze => '分析';
+
+  @override String get analyzing => '分析中...';
+
+  @override String get analysisResult => '分析结果';
+
+  @override String get yourQuestion => '您的提问';
+
+  @override String get pleaseEnterAPrompt => '请输入提示词';
+
+  @override String get egWhatKindOfAnimeDoILike => '例如：我喜欢什么样的番剧？';
+
+  @override String get aiSourceNotAvailable => 'AI 数据源不可用';
+
+  @override String get copyId => '复制 ID';
+
+  @override String get copyTitle => '复制标题';
+
+  @override String get copyUrl => '复制 URL';
+
+  @override String get copyToFolder => '复制到文件夹';
+
+  @override String get copy => '复制';
+
+  @override String get createAccount => '创建账户';
+
+  @override String get createFolder => '创建文件夹';
+
+  @override String get create => '创建';
+
+  @override String currentlySeenEp({required Object ep}) =>
+      '目前看到第 ${ep} 话';
+
+  @override String get dnsOverrides => 'DNS 覆写';
+
+  @override String get dark => '深色';
+
+  @override String get dataSync => '数据同步';
+
+  @override String get data => '数据';
+
+  @override String get dateDesc => '按日期降序';
+
+  @override String get date => '日期';
+
+  @override String get defaultSearchTarget => '默认搜索目标';
+
+  @override String deleteCAnimes({required Object c}) => '删除 ${c} 部番剧吗？';
+
+  @override String get deleteAnime => '删除番剧';
+
+  @override String get deleteFolder => '删除文件夹';
+
+  @override String deleteAnimeSourceN({required Object n}) =>
+      '确定要删除番剧源 \'${n}\' 吗？';
+
+  @override String deleteFolderF({required Object f}) =>
+      '确定要删除文件夹 \'${f}\' 吗？';
+
+  @override String get deleteFolderPrompt => '删除文件夹？';
+
+  @override String get delete => '删除';
+
+  @override String get description => '描述';
+
+  @override String get deselect => '取消选择';
+
+  @override String get detailed => '详细';
+
+  @override String get details => '详情';
+
+  @override String determineTheBindingA({required Object a}) =>
+      '确定绑定：${a} 吗？';
+
+  @override String get disable => '禁用';
+
+  @override String get disabled => '已禁用';
+
+  @override String discoverTheNewVersionV({required Object v}) =>
+      '发现新版本 ${v}';
+
+  @override String get displayModeOfAnimeTile => '番剧卡片显示模式';
+
+  @override String get displayTimeAndBatteryInfoInReader =>
+      '在阅读器中显示时间与电池信息';
+
+  @override String get doNotReportAnyIssuesRelatedToSourcesToAppRepo =>
+      '请勿将与源相关的问题反馈至本应用的仓库。';
+
+  @override String get downloadAll => '下载全部';
+
+  @override String get downloadSelected => '下载选中项';
+
+  @override String get downloadThreads => '下载线程';
+
+  @override String get download => '下载';
+
+  @override String get downloading => '下载中';
+
+  @override String get edit => '编辑';
+
+  @override String get enableDnsOverrides => '启用 DNS 覆写';
+
+  @override String get enable => '启用';
+
+  @override String get end => '结束';
+
+  @override String episodeEp({required Object ep}) => '第 ${ep} 话';
+
+  @override String get error => '错误';
+
+  @override String get exitMultiSelect => '退出多选';
+
+  @override String get exit => '退出';
+
+  @override String get explorePages => '浏览页面';
+
+  @override String get explore => '浏览';
+
+  @override String get exportAppData => '导出应用数据';
+
+  @override String get export => '导出';
+
+  @override String get failedToImport => '导入失败';
+
+  @override String get fanyuan => '番源';
+
+  @override String get favoriteActions => '收藏操作';
+
+  @override String get favorite => '收藏';
+
+  @override String get favorites => '收藏';
+
+  @override String get finished => '已完结';
+
+  @override String get folderName => '文件夹名称';
+
+  @override String get folder => '文件夹';
+
+  @override String get folders => '文件夹';
+
+  @override String get following => '追番中';
+
+  @override String get fullScreen => '全屏';
+
+  @override String get fullscreen => '全屏';
+
+  @override String get gitMirror => 'Git 镜像';
+
+  @override String get green => '绿色';
+
+  @override String get help => '帮助';
+
+  @override String get history => '历史';
+
+  @override String get home => '首页';
+
+  @override String get iconProducer => '图标制作';
+
+  @override String get ignoreCertificateErrors => '忽略证书错误';
+
+  @override String get importAnimes => '导入番剧';
+
+  @override String get importAppData => '导入应用数据';
+
+  @override String get importFromFile => '从文件导入';
+
+  @override String get import => '导入';
+
+  @override String importedAAnimes({required Object a}) => '已导入 ${a} 部番剧';
+
+  @override String get information => '信息';
+
+  @override String get initialPage => '初始页面';
+
+  @override String get invertSelection => '反向选择';
+
+  @override String get keywordBlocking => '关键字屏蔽';
+
+  @override String get kostoriIsAFreeAndOpenSourceAppForAnimeWatching =>
+      'Kostori 是一款免费开源的番剧观看应用。';
+
+  @override String get language => '语言';
+
+  @override String get later => '稍后';
+
+  @override String get light => '浅色';
+
+  @override String get limitImageWidth => '限制图片宽度';
+
+  @override String get localFavorites => '本地收藏';
+
+  @override String get local => '本地';
+
+  @override String get logIn => '登录';
+
+  @override String get logOut => '登出';
+
+  @override String get log => '日志';
+
+  @override String get manualTranslation => '手动翻译';
+
+  @override String get enterTextToTranslate => '输入要翻译的文字';
+
+  @override String get translate => '翻译';
+
+  @override String get translating => '翻译中...';
+
+  @override String get translationResult => '翻译结果';
+
+  @override String get pleaseEnterTextToTranslate => '请输入要翻译的文字';
+
+  @override String get loginWithWebview => '使用 WebView 登录';
+
+  @override String get login => '登录';
+
+  @override String get longPressAndDragToReorder => '长按并拖动以重新排序。';
+
+  @override String get longPressOnTheFavoriteButtonToQuicklyAddToThisFolder =>
+      '长按收藏按钮可快速添加到此文件夹';
+
+  @override String get longPressToZoom => '长按缩放';
+
+  @override String get me => '我';
+
+  @override String get moveToFirst => '移至首位';
+
+  @override String get moveFavoriteAfterReading => '观看完毕后移动收藏';
+
+  @override String get moveToFolder => '移动到文件夹';
+
+  @override String get move => '移动';
+
+  @override String get multiSelect => '多选';
+
+  @override String get multipleAnimes => '多部番剧';
+
+  @override String get name => '名称';
+
+  @override String get networkFavoritePages => '网络收藏页面';
+
+  @override String get network => '网络';
+
+  @override String get newFolder => '新文件夹';
+
+  @override String get newVersion => '新版本';
+
+  @override String get newVersionAvailable => '有新版本可用';
+
+  @override String get next => '下一步';
+
+  @override String get noExplorePages => '暂无浏览页面';
+
+  @override String get noNewVersionAvailable => '暂无新版本';
+
+  @override String get noSearchResultsFound => '找不到搜索结果';
+
+  @override String get noLikedAnimeFound => '找不到喜欢的番剧';
+
+  @override String get noUpdates => '暂无更新';
+
+  @override String get ok => '确定';
+
+  @override String get onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer =>
+      '一旦操作成功，应用将自动与服务器同步数据。';
+
+  @override String get openLog => '打开日志';
+
+  @override String get openAnime => '打开番剧';
+
+  @override String get openHelp => '打开帮助';
+
+  @override String get openInBrowser => '在浏览器中打开';
+
+  @override String get openLink => '打开链接';
+
+  @override String get open => '打开';
+
+  @override String get operation => '操作';
+
+  @override String get orange => '橙色';
+
+  @override String get order => '排序';
+
+  @override String get password => '密码';
+
+  @override String get pause => '暂停';
+
+  @override String get paused => '已暂停';
+
+  @override String get pink => '粉色';
+
+  @override String get playlist => '播放列表';
+
+  @override String get pleaseCheckYourSettings => '请检查您的设置';
+
+  @override String get preview => '预览';
+
+  @override String get proxy => '代理';
+
+  @override String get purple => '紫色';
+
+  @override String get quickFavorite => '快速收藏';
+
+  @override String get ranking => '排行';
+
+  @override String get reLogin => '重新登录';
+
+  @override String get read => '已读';
+
+  @override String get reading => '阅读中';
+
+  @override String get red => '红色';
+
+  @override String get refresh => '刷新';
+
+  @override String get related => '相关';
+
+  @override String get removeAnimeFromFavorite => '将番剧从收藏中移除？';
+
+  @override String get remove => '移除';
+
+  @override String get rename => '重命名';
+
+  @override String get reorder => '排序';
+
+  @override String get resetBangumiData => '重置 Bangumi 数据';
+
+  @override String get reset => '重置';
+
+  @override String get retry => '重试';
+
+  @override String get reviews => '评价';
+
+  @override String get saveImage => '保存图片';
+
+  @override String get savedFailed => '保存失败';
+
+  @override String get saved => '已保存';
+
+  @override String get searchAll => '搜索全部';
+
+  @override String get searchHistory => '搜索历史';
+
+  @override String get searchIn => '搜索';
+
+  @override String get search => '搜索';
+
+  @override String get selectAll => '全选';
+
+  @override String get selectADirectoryWhichContainsTheAnimeFiles =>
+      '选择包含番剧文件的目录。';
+
+  @override String get selectAFolder => '选择一个文件夹';
+
+  @override String get selectAnImageOnScreen => '在屏幕上选择一个图像';
+
+  @override String get selectFile => '选择文件';
+
+  @override String get selectInRange => '范围选择';
+
+  @override String get select => '选择';
+
+  @override String selectedAAnimes({required Object a}) => '已选择 ${a} 部番剧';
+
+  @override String get setCacheLimit => '设置缓存限制';
+
+  @override String get setNewStoragePath => '设置新存储路径';
+
+  @override String get setSourceListUrl => '设置源列表地址';
+
+  @override String get set => '设置';
+
+  @override String get settings => '设置';
+
+  @override String get share => '分享';
+
+  @override String get showAll => '显示全部';
+
+  @override String get showFavoriteStatusOnAnimeTile =>
+      '在番剧卡片上显示收藏状态';
+
+  @override String get showHistoryOnAnimeTile => '在番剧卡片上显示历史记录';
+
+  @override String get singleAnime => '单部番剧';
+
+  @override String get sizeInMb => '大小 (MB)';
+
+  @override String get sizeOfAnimeTile => '番剧卡片大小';
+
+  @override String get sort => '排序';
+
+  @override String get sourceFolder => '源文件夹';
+
+  @override String get sourceUrl => '源 URL';
+
+  @override String get staffList => '演职人员表';
+
+  @override String get start => '开始';
+
+  @override String get storagePathForLocalAnimes => '本地番剧存储路径';
+
+  @override String get submit => '提交';
+
+  @override String get suggestions => '建议';
+
+  @override String get syncData => '同步数据';
+
+  @override String get sync => '同步';
+
+  @override String get syncingData => '正在同步数据';
+
+  @override String get system => '系统';
+
+  @override String get tapToTurnPages => '点击翻页';
+
+  @override String get theUrlShouldPointToAIndexJsonFile =>
+      'URL 应指向 \'index.json\' 文件';
+
+  @override String theFolderIsLinkedToSource({required Object source}) =>
+      '该文件夹已链接至源 ${source}';
+
+  @override String get themeColor => '主题颜色';
+
+  @override String get themeMode => '主题模式';
+
+  @override String get timetable => '时间表';
+
+  @override String get topics => '话题';
+
+  @override String get topicsLatest => '最新话题';
+
+  @override String get topicsTrending => '热门话题';
+
+  @override String get turnPageByVolumeKeys => '使用音量键翻页';
+
+  @override String get unselected => '未选中';
+
+  @override String get updateAnimesInfo => '更新番剧信息';
+
+  @override String get updateTime => '更新时间';
+
+  @override String get update => '更新';
+
+  @override String get updatesAvailable => '有更新可用';
+
+  @override String get updating => '更新中';
+
+  @override String get uploadTime => '上传时间';
+
+  @override String get upload => '上传';
+
+  @override String get uploader => '上传者';
+
+  @override String get useAConfigFile => '使用配置文件';
+
+  @override String get user => '用户';
+
+  @override String get username => '用户名';
+
+  @override String get userProfileAnalysis => '用户画像分析';
+
+  @override String get viewList => '查看列表';
+
+  @override String get viewMore => '查看更多';
+
+  @override String get view => '查看';
+
+  @override String get webDavAutoSync => 'WebDAV 自动同步';
+
+  @override String get kDefault => '默认';
+
+  @override String lastWatchTimeTime({required Object time}) =>
+      '上次观看时间：${time}';
+
+  @override String minAppVersionRequired({required Object version}) =>
+      '需要最低应用版本 ${version}';
+
+  @override String get more => '更多';
+
+  @override String get notYetAiring => '尚未播出';
+
+  @override String fullBEpisodesReleased({required Object b}) =>
+      '全 ${b} 话已发布';
+
+  @override String upToEpSTotalEpsPlanned(
+      {required Object s, required Object t}) =>
+      '更新至第 ${s} 话 • 计划全 ${t} 话';
+
+  @override String upToEpETotalEpsPlanned(
+      {required Object e, required Object s, required Object t}) =>
+      '更新至第 ${e} 话 (${s}) • 计划全 ${t} 话';
+
+  @override String tReviewsR({required Object t, required Object r}) =>
+      '${t} 条评价 | #${r}';
+
+  @override String tReviews({required Object t}) => '${t} 条评价';
+
+  @override String get showMore => '展开 +';
+
+  @override String get showLess => '收起 -';
+
+  @override String get tags => '标签';
+
+  @override String get clearTags => '清除标签';
+
+  @override String showingLResults({required Object l}) => '显示 ${l} 条结果';
+
+  @override String get selectTime => '选择时间';
+
+  @override String get switchLayout => '切换布局';
+
+  @override String get enterKeywords => '输入关键字...';
+
+  @override String get ratingChart => '评分图表';
+
+  @override String get lineChart => '折线图';
+
+  @override String get barChart => '柱状图';
+
+  @override String standardDeviationS({required Object s}) => '标准差：${s}';
+
+  @override String get nobodysPostedAnythingYet => '还没有人发布内容...';
+
+  @override String get reload => '重新加载';
+
+  @override String get failedToLoadPleaseTryAgain => '加载失败，请重试。';
+
+  @override String get doing => '在看';
+
+  @override String get collect => '看过';
+
+  @override String get wish => '想看';
+
+  @override String get onHold => '搁置';
+
+  @override String get dropped => '抛弃';
+
+  @override String get todayRecommendation => '今日推荐';
+
+  @override String tTotalCount({required Object t}) => '共 ${t} 项';
+
+  @override String get introduction => '简介';
+
+  @override String get linkedItems => '关联项';
+
+  @override String timeS({required Object s}) => '时间：${s}';
+
+  @override String broadcastTimeA({required Object a}) => '播出时间：${a}';
+
+  @override String get profileInformation => '个人资料';
+
+  @override String get characterIntroduction => '角色介绍';
+
+  @override String voiceActorC({required Object c}) => '声优：${c}';
+
+  @override String episodeEN({required Object e, required Object n}) =>
+      '第 ${e} 话：${n}';
+
+  @override String get hotspot => '热点';
+
+  @override String get completed => '已完成';
+
+  @override String get mainCharacter => '主角';
+
+  @override String get supportingCharacter => '配角';
+
+  @override String get cameo => '客串';
+
+  @override String get idleCorner => '闲暇角落';
+
+  @override String get unknown => '未知';
+
+  @override String get debugInfo => '调试信息';
+
+  @override String get install => '安装';
+
+  @override String get viewOnGithub => '在 GitHub 上查看';
+
+  @override String get noProxyOverrides => '无代理覆写';
+
+  @override String get save => '保存';
+
+  @override String get mirror => '镜像';
+
+  @override String get result => '结果';
+
+  @override String get all => '全部';
+
+  @override String get reloadConfigs => '重新加载配置';
+
+  @override String get invalidUrlConfig => '无效的 URL 配置';
+
+  @override String get inconsistentVersions => '版本不一致';
+
+  @override String noUpdateAvailableForThisArchitectureA({required Object a}) =>
+      '当前架构 (${a}) 暂无可用更新';
+
+  @override String get checkUpdateFailed => '检查更新失败...';
+
+  @override String get downloadFailed => '下载失败';
+
+  @override String get failedToCheckTheHashValuePleaseTryAgain =>
+      '哈希值检查失败，请重试';
+
+  @override String get english => '英语';
+
+  @override String get dynamicColor => '动态色彩';
+
+  @override String get mondaySchedule => '周一时间表';
+
+  @override String get tuesdaySchedule => '周二时间表';
+
+  @override String get wednesdaySchedule => '周三时间表';
+
+  @override String get thursdaySchedule => '周四时间表';
+
+  @override String get fridaySchedule => '周五时间表';
+
+  @override String get saturdaySchedule => '周六时间表';
+
+  @override String get sundaySchedule => '周日时间表';
+
+  @override String get popularityRanking => '人气排行';
+
+  @override String get imageOperations => '图片操作';
+
+  @override String get saveToAlbum => '保存到相册';
+
+  @override String get stitchLongImage => '拼接长图';
+
+  @override String get stitchHorizontalImage => '横向拼接';
+
+  @override String get stitchSubtitles => '拼接字幕';
+
+  @override String get saveLongImage => '保存长图';
+
+  @override String get borderColor => '边框颜色';
+
+  @override String get apply => '应用';
+
+  @override String get heightPx => '高度(px)';
+
+  @override String get setUniformHeight => '设置统一高度';
+
+  @override String get uniformHeight => '统一高度';
+
+  @override String get cropImage => '裁剪图片';
+
+  @override String get finishCropping => '完成裁剪';
+
+  @override String get sortImages => '图片排序';
+
+  @override String get finishSorting => '完成排序';
+
+  @override String get noImages => '无图片';
+
+  @override String cropHeightCPx({required Object c}) => '裁剪高度：${c} px';
+
+  @override String get enterHexColorCode =>
+      '输入十六进制颜色代码，例如 #FF000000';
+
+  @override String get showImageBorders => '显示图片边框';
+
+  @override String get outerBorderRadius => '外边框圆角';
+
+  @override String get outerBorderWidth => '外边框宽度';
+
+  @override String get outerBorderColor => '外边框颜色';
+
+  @override String get showOuterBorder => '显示外边框';
+
+  @override String get innerBorderWidth => '内边框宽度';
+
+  @override String get innerBorderColor => '内边框颜色';
+
+  @override String get borderSettings => '边框设置';
+
+  @override String get saving => '保存中';
+
+  @override String get saveSuccessful => '保存成功';
+
+  @override String saveFailedE({required Object e}) => '保存失败：${e}';
+
+  @override String get failedToLoadImagesOrNoImages => '加载图片失败或无图片';
+
+  @override String get monday => '周一';
+
+  @override String get tuesday => '周二';
+
+  @override String get wednesday => '周三';
+
+  @override String get thursday => '周四';
+
+  @override String get friday => '周五';
+
+  @override String get saturday => '周六';
+
+  @override String get sunday => '周日';
+
+  @override String get defaultOrder => '默认排序';
+
+  @override String get byTime => '按时间';
+
+  @override String get byName => '按名称';
+
+  @override String get recentlyWatched => '最近观看';
+
+  @override String get localFavoriteBinding => '本地收藏绑定';
+
+  @override String get awful => '极差';
+
+  @override String get terrible => '很差';
+
+  @override String get bad => '差';
+
+  @override String get poor => '较差';
+
+  @override String get okay => '不过不失';
+
+  @override String get fine => '还行';
+
+  @override String get good => '推荐';
+
+  @override String get great => '力荐';
+
+  @override String get master => '神作';
+
+  @override String get epic => '史诗';
+
+  @override String get overview => '概览';
+
+  @override String get discussion => '讨论';
+
+  @override String get logs => '日志';
+
+  @override String get playerDetails => '播放器详情';
+
+  @override String get status => '状态';
+
+  @override String get audioOptionLowLatency => '音频选项：\n 低延迟';
+
+  @override String get audioOptionCompatibility => '音频选项：\n 兼容性';
+
+  @override String get switchSuccessful => '切换成功';
+
+  @override String get switchFailed => '切换失败';
+
+  @override String get remoteCast => '远程投屏';
+
+  @override String get copyLink => '复制链接';
+
+  @override String get aValidWebDavDirectoryUrl => '有效的 WebDAV 目录 URL';
+
+  @override String get autoSyncData => '自动同步数据';
+
+  @override String get screenshotShare => '截图分享';
+
+  @override String get bestMatch => '最佳匹配';
+
+  @override String get topRank => '排名靠前';
+
+  @override String get mostFavorited => '最多收藏';
+
+  @override String get highestRating => '最高评分';
+
+  @override String get selectColor => '选择颜色';
+
+  @override String get colorWheel => '色轮';
+
+  @override String get primary => '主色';
+
+  @override String get accent => '强调色';
+
+  @override String get custom => '自定义';
+
+  @override String confirmC({required Object c}) => '确认 (${c})';
+
+  @override String selectC({required Object c}) => '选择 ${c}';
+
+  @override String get selectDate => '选择日期';
+
+  @override String get startDate => '开始日期';
+
+  @override String get endDate => '结束日期';
+
+  @override String get clearDate => '清除日期';
+
+  @override String get pleaseSelectADate => '请选择日期';
+
+  @override String get endDateCannotBeEarlierThanStartDate =>
+      '结束日期不能早于开始日期';
+
+  @override String get type => '类型';
+
+  @override String get background => '背景';
+
+  @override String get emotion => '情感';
+
+  @override String get source => '来源';
+
+  @override String get audience => '受众';
+
+  @override String get category => '类别';
+
+  @override String imageOperationsI({required Object i}) => '图片操作 (${i})';
+
+  @override String sSelected({required Object s}) => '已选择 ${s}';
+
+  @override String get simplifiedChinese => '简体中文';
+
+  @override String get traditionalChinese => '繁体中文';
+
+  @override String get teal => '鸭蛋蓝';
+
+  @override String get deepPurple => '深紫色';
+
+  @override String get yellow => '黄色';
+
+  @override String get cyan => '青色';
+
+  @override String get m3Default => 'M3 默认';
+
+  @override String get deepOrange => '深橙色';
+
+  @override String get indigo => '靛蓝色';
+
+  @override String get cloudyBlue => '阴云蓝';
+
+  @override String get darkPastelGreen => '暗粉绿';
+
+  @override String get dust => '尘埃色';
+
+  @override String get electricLime => '电光绿';
+
+  @override String get freshGreen => '鲜绿色';
+
+  @override String get lightEggplant => '浅茄紫';
+
+  @override String get nastyGreen => '脏绿色';
+
+  @override String get reallyLightBlue => '极浅蓝';
+
+  @override String get tea => '茶色';
+
+  @override String get warmPurple => '暖紫色';
+
+  @override String get yellowishTan => '偏黄褐色';
+
+  @override String get cement => '水泥色';
+
+  @override String get darkGrassGreen => '深草绿';
+
+  @override String get dustyTeal => '尘土青';
+
+  @override String get greyTeal => '灰青色';
+
+  @override String get macaroniAndCheese => '起司色';
+
+  @override String get pinkishTan => '偏粉褐色';
+
+  @override String get spruce => '杉绿色';
+
+  @override String get strongBlue => '亮蓝色';
+
+  @override String get toxicGreen => '毒液绿';
+
+  @override String get windowsBlue => '视窗蓝';
+
+  @override String get blueBlue => '纯蓝色';
+
+  @override String get blueWithAHintOfPurple => '蓝紫色';
+
+  @override String get booger => '鼻涕绿';
+
+  @override String get brightSeaGreen => '亮海绿';
+
+  @override String get greenTeal => '绿青色';
+
+  @override String get brownish => '偏褐色';
+
+  @override String get offGreen => '浅灰绿';
+
+  @override String get tangerine => '橘黄色';
+
+  @override String get uglyGreen => '丑绿色';
+
+  @override String get secondary => '次要';
+
+  @override String get tertiary => '三级';
+
+  @override String get surface => '表面';
+
+  @override String get jumpToPage => '跳转到页';
+
+  @override String get page => '页';
+
+  @override String pagePM({required Object p, required Object m}) =>
+      '第 ${p} / ${m} 页';
+
+  @override String get first => '首页';
+
+  @override String get last => '末页';
+
+  @override String get disableLengthLimitation => '禁用长度限制';
+
+  @override String get updateLog => '更新日志';
+
+  @override String get liked => '喜欢';
+
+  @override String get rating => '评分';
+
+  @override String get pixelFormat => '像素格式';
+
+  @override String get hwPixelFormat => '硬件像素格式';
+
+  @override String get resolution => '分辨率';
+
+  @override String get displayWidth => '显示宽度';
+
+  @override String get displayHeight => '显示高度';
+
+  @override String get aspect => '宽高比';
+
+  @override String get pixelAspectRatio => '像素纵横比';
+
+  @override String get colormatrix => '色彩矩阵';
+
+  @override String get colorLevels => '色彩级别';
+
+  @override String get primaries => '原色';
+
+  @override String get gamma => '伽玛值';
+
+  @override String get signalPeak => '信号峰值';
+
+  @override String get lights => '光照';
+
+  @override String get chromaLocation => '色度位置';
+
+  @override String get rotate => '旋转';
+
+  @override String get stereoIn => '立体声输入';
+
+  @override String get averageBpp => '平均 Bpp';
+
+  @override String get alpha => '透明度';
+
+  @override String get trackId => '轨道 ID';
+
+  @override String get trackTitle => '轨道标题';
+
+  @override String get trackLanguage => '轨道语言';
+
+  @override String get trackImage => '轨道图像';
+
+  @override String get trackAlbumArt => '轨道专辑封面';
+
+  @override String get trackCodec => '轨道解码器';
+
+  @override String get trackDecoder => '轨道解码器';
+
+  @override String get trackWidth => '轨道宽度';
+
+  @override String get trackHeight => '轨道高度';
+
+  @override String get trackChannelsCount => '轨道声道数';
+
+  @override String get trackChannels => '轨道声道';
+
+  @override String get trackSampleRate => '轨道采样率';
+
+  @override String get trackFps => '轨道 FPS';
+
+  @override String get trackBitrate => '轨道位元率';
+
+  @override String get trackRotate => '轨道旋转';
+
+  @override String get trackPar => '轨道 PAR';
+
+  @override String get trackAudioChannels => '轨道音频声道';
+
+  @override String get format => '格式';
+
+  @override String get sampleRate => '采样率';
+
+  @override String get channelCount => '声道数';
+
+  @override String get hrChannels => 'HR 声道';
+
+  @override String get uriTrack => 'URI 轨道';
+
+  @override String get channelsCount => '声道数';
+
+  @override String get channels => '声道';
+
+  @override String get fps => 'FPS';
+
+  @override String get bitrate => '位元率';
+
+  @override String get par => 'PAR';
+
+  @override String get audioChannels => '音频声道';
+
+  @override String get audioBitrate => '音频位元率';
+
+  @override String get audio => '音频';
+
+  @override String get video => '视频';
+
+  @override String get media => '媒体';
+
+  @override String noLogsForL({required Object l}) => '暂无 ${l} 的日志';
+
+  @override String get onlyValidForThisRun => '仅在此次运行中有效';
+
+  @override String get nameField => '名称';
+
+  @override String get brandField => '品牌';
+
+  @override String get modelField => '型号';
+
+  @override String get deviceField => '设备';
+
+  @override String get productField => '产品';
+
+  @override String get manufacturerField => '制造商';
+
+  @override String get versionReleaseField => '版本发布';
+
+  @override String get versionSdkIntField => 'SDK 版本';
+
+  @override String get displayField => '显示';
+
+  @override String get hardwareField => '硬件';
+
+  @override String get physicalRamSizeField => '实体内存大小';
+
+  @override String get availableRamSizeField => '可用内存大小';
+
+  @override String get freeDiskSizeField => '可用磁盘空间';
+
+  @override String get totalDiskSizeField => '磁盘总大小';
+
+  @override String get isPhysicalDeviceField => '是否为实体设备';
+
+  @override String get systemNameField => '系统名称';
+
+  @override String get systemVersionField => '系统版本';
+
+  @override String get modelNameField => '型号名称';
+
+  @override String get identifierForVendorField => '供应商识别符';
+
+  @override String get sysnameField => '系统名称';
+
+  @override String get nodenameField => '节点名称';
+
+  @override String get releaseField => '发布版本';
+
+  @override String get versionField => '版本';
+
+  @override String get machineField => '机器型号';
+
+  @override String get computerNameField => '电脑名称';
+
+  @override String get numberOfCoresField => '核心数';
+
+  @override String get systemMemoryInMegabytesField => '系统内存 (MB)';
+
+  @override String get userNameField => '用户名';
+
+  @override String get majorVersionField => '主版本号';
+
+  @override String get minorVersionField => '次版本号';
+
+  @override String get buildNumberField => '编译号';
+
+  @override String get displayVersionField => '显示版本';
+
+  @override String get productNameField => '产品名称';
+
+  @override String get registeredOwnerField => '注册所有者';
+
+  @override String get releaseIdField => '发布 ID';
+
+  @override String get packageNameField => '包名';
+
+  @override String get appNameField => '应用名称';
+
+  @override String get buildSignatureField => '编译签名';
+
+  @override String get installerStoreField => '安装渠道';
+
+  @override String get installTimeField => '安装时间';
+
+  @override String get updateTimeField => '更新时间';
+
+  @override String get january => '一月';
+
+  @override String get february => '二月';
+
+  @override String get march => '三月';
+
+  @override String get april => '四月';
+
+  @override String get may => '五月';
+
+  @override String get june => '六月';
+
+  @override String get july => '七月';
+
+  @override String get august => '八月';
+
+  @override String get september => '九月';
+
+  @override String get october => '十月';
+
+  @override String get november => '十一月';
+
+  @override String get december => '十二月';
+
+  @override String get today => '今天';
+
+  @override String get yesterday => '昨天';
+
+  @override String get last3Days => '最近 3 天';
+
+  @override String get last7Days => '最近 7 天';
+
+  @override String get last30Days => '最近 30 天';
+
+  @override String get last3Months => '最近 3 个月';
+
+  @override String get last6Months => '最近 6 个月';
+
+  @override String get thisYear => '今年';
+
+  @override String get older => '更久以前';
+
+  @override String get markTheSelectedFavoritesAs => '将选中的收藏标记为';
+
+  @override String get favoriteType => '收藏类型';
+
+  @override String get doingStatus => '在看';
+
+  @override String get wishStatus => '想看';
+
+  @override String get collectStatus => '看过';
+
+  @override String get onHoldStatus => '搁置';
+
+  @override String get droppedStatus => '抛弃';
+
+  @override String get player => '播放器';
+
+  @override String get audioOption => '音频选项';
+
+  @override String get hardwareDecoding => '硬件解码';
+
+  @override String get hardwareDecoder => '硬件解码器';
+
+  @override String get videoRenderer => '视频渲染器';
+
+  @override String get videoSynchronizationMode => '视频同步模式';
+
+  @override String get enableNoProxyOverrides => '启用无代理覆写';
+
+  @override String get actor => '演员';
+
+  @override String get dub => '配音';
+
+  @override String get chineseDub => '中配';
+
+  @override String get japaneseDub => '日配';
+
+  @override String get englishDub => '英配';
+
+  @override String get koreanDub => '韩配';
+
+  @override String selectedACharacter({required Object a}) =>
+      '已选择 ${a} 位角色';
+
+  @override String get searchOptions => '搜索选项';
+
+  @override String get searchSources => '搜索源';
+
+  @override String get translation => '翻译';
+
+  @override String get apiKeyCannotBeEmpty => 'API Key 不能为空';
+
+  @override String pleaseEnterTranslationPrompt({required Object a}) =>
+      '请输入翻译提示词，使用 ${a} 作为目标语言的占位符';
+
+  @override String thePromptMustContainAPlaceholderForTarget(
+      {required Object a}) => '提示词必须包含 ${a} 作为目标语言的占位符';
+
+  @override String get thisFieldCannotBeEmpty => '此字段不能为空';
+
+  @override String thePromptMustContainAPlaceholder({required Object a}) =>
+      '提示词必须包含 ${a} 占位符';
+
+  @override String get translationPrompt => '翻译提示词';
+
+  @override String get modelName => '模型名称';
+
+  @override String get apiConfiguration => 'API 配置';
+
+  @override String get wordCloud => '词云';
+
+  @override String get statsCalendar => '统计日历';
+
+  @override String get kostoriChangelog => 'Kostori 更新日志';
+
+  @override String get copyPath => '复制路径';
+
+  @override String get properties => '属性';
+
+  @override String get noEndpoint => '无端点';
+
+  @override String get testAll => '测试全部';
+
+  @override String get customEndpoint => '自定义端点';
+
+  @override String get pingTest => '延迟测试';
+
+  @override String get continuousPing => '持续延迟测试';
+
+  @override String get service => '服务';
+
+  @override String get serviceSettings => '服务设置';
+
+  @override String get enableService => '启用服务';
+
+  @override String get serviceIsStopped => '服务已停止';
+
+  @override String runningOnH({required Object h}) => '运行在 ${h}';
+
+  @override String get apiKey => 'API Key';
+
+  @override String get activeKey => '当前 Key';
+
+  @override String get usingFixedKey => '使用固定 Key';
+
+  @override String get usingRandomKeyRegeneratedOnStartup =>
+      '使用随机 Key (启动时重置)';
+
+  @override String get useFixedKey => '使用固定 Key';
+
+  @override String get keepTheSameKeyAfterRestart => '重启后保持相同 Key';
+
+  @override String get fixedKey => '固定 Key';
+
+  @override String get leaveEmptyToAutoGenerate => '留空以自动生成';
+
+  @override String get enterFixedKey => '输入固定 Key';
+
+  @override String get regenerateRandomKey => '重置随机 Key';
+
+  @override String get generateANewRandomKeyImmediately =>
+      '立即生成一个新的随机 Key';
+
+  @override String get regenerate => '重置';
+
+  @override String get port => '端口';
+
+  @override String defaultP({required Object p}) => '默认：${p}';
+
+  @override String get bindMode => '绑定模式';
+
+  @override String get chooseIpVersionToListenOn => '选择监听的 IP 版本';
+
+  @override String get hubServer => 'Hub 服务端';
+
+  @override String get enableHub => '启用 Hub';
+
+  @override String get hubServerIsStopped => 'Hub 服务端已停止';
+
+  @override String get clientsCount => '位客户端';
+
+  @override String get hubPort => 'Hub 端口';
+
+  @override String get onlineClients => '在线客户端';
+
+  @override String get connectedAt => '连接时间';
+
+  @override String get messageHistory => '消息记录';
+
+  @override String get hubClient => 'Hub 客户端';
+
+  @override String get connectToHub => '连接到 Hub';
+
+  @override String get connected => '已连接';
+
+  @override String get notConnected => '未连接';
+
+  @override String get hubAddress => 'Hub 地址';
+
+  @override String get clientName => '客户端名称';
+
+  @override String get displayNameInHub => '在 Hub 中的显示名称';
+
+  @override String get myDevice => '我的设备';
+
+  @override String get hubToken => 'Hub 令牌';
+
+  @override String get tokenFromTheHubServer => '来自 Hub 服务端的令牌';
+
+  @override String get pasteHubServerToken => '粘贴 Hub 服务端令牌';
+
+  @override String get runningOn => '运行在';
+
+  @override String get rooms => '房间';
+
+  @override String get roomsCount => '个房间';
+
+  @override String get membersCount => '位成员';
+
+  @override String get roomAdmins => '房间管理员';
+
+  @override String get deleteRoom => '删除房间';
+
+  @override String get createRoom => '创建房间';
+
+  @override String get roomName => '房间名称';
+
+  @override String get leaveEmptyForPublic => '留空以公开';
+
+  @override String get announcement => '公告';
+
+  @override String get announcements => '公告';
+
+  @override String get editProfile => '编辑资料';
+
+  @override String get avatarUrl => '头像 URL';
+
+  @override String get bio => '个人简介';
+
+  @override String get profile => '个人资料';
+
+  @override String get notSet => '未设置';
+
+  @override String get currentRoom => '当前房间';
+
+  @override String get lobby => '大厅';
+
+  @override String get noRooms => '暂无房间';
+
+  @override String get current => '当前';
+
+  @override String get join => '加入';
+
+  @override String get leaveRoom => '离开房间';
+
+  @override String get roomPassword => '房间密码';
+
+  @override String get blacklist => '黑名单';
+
+  @override String get bannedCount => '位已封锁';
+
+  @override String get noBannedUsers => '暂无封锁用户';
+
+  @override String get removeFromBlacklist => '移出黑名单';
+
+  @override String get addToBlacklist => '加入黑名单';
+
+  @override String get mute5min => '禁言 5 分钟';
+
+  @override String get unmute => '解除禁言';
+
+  @override String get removeGlobalAdmin => '撤销全局管理员';
+
+  @override String get setGlobalAdmin => '设为全局管理员';
+
+  @override String get kick => '剔出';
+
+  @override String get joinedEvent => '加入了';
+
+  @override String get leftEvent => '离开了';
+
+  @override String get newRoom => '新房间';
+
+  @override String get portAndBindMode => '端口与绑定模式';
+
+  @override String get hubManagement => 'Hub 管理';
+
+  @override String get chatRoom => '聊天室';
+
+  @override String get openChatDialog => '打开聊天窗口';
+
+  @override String get hubDetails => 'Hub 详情';
+
+  @override String get connectionSettings => '连接设置';
+
+  @override String get serverAddress => '服务器地址';
+
+  @override String get host => '主机';
+
+  @override String get authentication => '身份验证';
+
+  @override String get paste => '粘贴';
+
+  @override String get unblock => '取消封锁';
+
+  @override String get profileAndRoom => '个人资料与房间';
+
+  @override String get roomSettings => '房间设置';
+
+  @override String get noAnnouncement => '暂无公告';
+
+  @override String get setAnnouncement => '设置公告';
+
+  @override String get enterAnnouncementPrompt => '输入公告内容...';
+
+  @override String get removeAdmin => '撤销管理员';
+
+  @override String get addRoomAdmin => '新增房间管理员';
+
+  @override String get roomBans => '房间封锁';
+
+  @override String get banMember => '封锁成员';
+
+  @override String get unban => '解除封锁';
+
+  @override String get server => '服务器';
+
+  @override String get mute => '禁言';
+
+  @override String get secondsLabel => '秒';
+
+  @override String get serverShutdown => '服务器已关闭';
+
+  @override String get youAreNowAGlobalAdmin => '您现在是全局管理员';
+
+  @override String get yourGlobalAdminHasBeenRevoked =>
+      '您的全局管理员权限已被撤销';
+
+  @override String get youAreNowARoomAdmin => '您现在是房间管理员';
+
+  @override String get yourRoomAdminHasBeenRevoked =>
+      '您的房间管理员权限已被撤销';
+
+  @override String get youAreMutedFor => '您被禁言了';
+
+  @override String get secondsUnit => '秒';
+
+  @override String get youHaveBeenUnmuted => '您已被解除禁言';
+
+  @override String get youAreBannedFromRoom => '您被该房间封锁了';
+
+  @override String get youCanNowRejoinRoom => '您现在可以重新加入房间了';
+
+  @override String get youHaveBeenKickedFromTheRoom => '您已被移出房间';
+
+  @override String get roomDeletedMovedToLobby => '房间已删除，已回到大厅';
+
+  @override String get eventLog => '事件日志';
+
+  @override String get pingInterval => '心跳间隔';
+
+  @override String get onlineStatus => '在线';
+
+  @override String get noMessagesYet => '暂无消息';
+
+  @override String get newMessages => '条新消息';
+
+  @override String get reply => '回复';
+
+  @override String get recall => '撤回';
+
+  @override String get enterToSend => 'Enter 发送  ·  Ctrl+Enter 换行';
+
+  @override String get messagePlaceholder => '发送消息...';
+
+  @override String get connectionTimedOut => '连接超时';
+
+  @override String get blockedUsers => '封锁用户';
+
+  @override String get blockedCount => '位已封锁';
+
+  @override String get serverBlacklist => '服务器黑名单';
+
+  @override String get userKey => '用户 Key';
+
+  @override String get adminKey => '管理员 Key';
+
+  @override String get keepTheSameKeysAfterRestart => '重启后保持相同 Key';
+
+  @override String get regeneratedOnEveryStartup => '每次启动时重新生成';
+
+  @override String get noKeyRequired => '无需 Key';
+
+  @override String get anyoneCanConnectWithoutApiKey =>
+      '任何人无需 API Key 即可连接';
+
+  @override String get clientsMustProvideAValidApiKey =>
+      '客户端必须提供有效的 API Key';
+
+  @override String get endpointMustBeAValidUrl =>
+      '端点必须是有效的 http(s) URL';
+
+  @override String get bucketCannotBeEmpty => '存储桶 (Bucket) 不能为空';
+
+  @override String get accessKeyIdCannotBeEmpty => 'Access Key ID 不能为空';
+
+  @override String get accessKeySecretCannotBeEmpty =>
+      'Access Key Secret 不能为空';
+
+  @override String get cdnDomainMustBeAValidUrl => 'CDN 域名必须是有效的 URL';
+
+  @override String get maxSizeMustBe1to100Mb => '最大容量必须在 1–100 MB 之间';
+
+  @override String get cleared => '已清除';
+
+  @override String get imageUpload => '图片上传';
+
+  @override String get clientImageUpload => '客户端图片上传';
+
+  @override String get serverOss => '服务器 OSS';
+
+  @override String get clientOss => '客户端 OSS';
+
+  @override String get imagesStoredOnServerDisk =>
+      '图片存储在服务器磁盘中，通过 /hub/files/ 提供服务';
+
+  @override String get serverReceivesAndProxiesImageToOss =>
+      '服务器接收并代理图片到 OSS。Key 仅保存在服务器。';
+
+  @override String get clientUploadsDirectlyToOss =>
+      '客户端直接上传到 OSS。服务器仅获取最终 URL。';
+
+  @override String get maxSizeMb => '最大容量 (MB)';
+
+  @override String get storePath => '存储路径';
+
+  @override String get leaveEmptyForDefault => '留空以使用默认路径';
+
+  @override String get notConfiguredWillUseServerOrBase64 =>
+      '未配置 · 将使用服务器或 Base64';
+
+  @override String get imageTooLargeToSend => '图片太大，无法发送';
+
+  @override String get pleaseConfigureServerUploadOrClientOss =>
+      '请配置服务器上传或客户端 OSS。';
+
+  @override String get stopTheServerToChangeUploadMode =>
+      '停止服务器以修改上传模式';
+
+  @override String get enableClientOss => '启用客户端 OSS';
+
+  @override String get uploadImagesDirectlyFromClientToOss =>
+      '从客户端直接上传图片到 OSS';
+
+  @override String get ossNotConfigured => 'OSS 未配置';
+
+  @override String get dropToSendImage => '拖放以发送图片';
+
+  @override String get longPressImageToSave => '长按图片以保存';
+
+  @override String get pleaseEnterAValidUrl =>
+      '请输入以 http:// 或 https:// 开头的有效 URL';
+
+  @override String get setRoomPassword => '设置房间密码';
+
+  @override String get adminPanel => '管理面板';
+
+  @override String get enterRoomName => '输入房间名称';
+
+  @override String get roomAnnouncement => '房间公告';
+
+  @override String get leaveEmptyForPublicRoom => '留空以设为公开房间';
+
+  @override String get maxParticipants => '最大人数';
+
+  @override String get upTo => '最多';
+
+  @override String get peopleLabel => '人';
+
+  @override String get noLimit => '无限制';
+
+  @override String get optional => '可选';
+
+  @override String get enterDisplayName => '输入显示名称';
+
+  @override String get enterBio => '输入简介';
+
+  @override String get autoReconnect => '自动重连';
+
+  @override String get directMessage => '私聊';
+
+  @override String get noAnnouncementsYet => '暂无公告';
+
+  @override String get enterAnnouncementText => '输入公告内容...';
+
+  @override String get welcomeMessage => '欢迎消息';
+
+  @override String get noWelcomeMessage => '暂无欢迎消息';
+
+  @override String get enterWelcomeMessage =>
+      '输入显示给新加入用户的欢迎消息...';
+
+  @override String get security => '安全';
+
+  @override String get changePassword => '修改密码';
+
+  @override String get setPassword => '设置密码';
+
+  @override String get protectedStatus => '受保护';
+
+  @override String get removePassword => '移除密码';
+
+  @override String get enterPasswordToChange => '输入密码 (留空以移除)';
+
+  @override String get noAdminsYet => '暂无管理员';
+
+  @override String get noBannedMembers => '暂无封锁成员';
+
+  @override String get noMembersAvailable => '暂无可用成员';
+
+  @override String get accessControl => '访问控制';
+
+  @override String get broadcast => '广播';
+
+  @override String get addAnnouncement => '发布公告';
+
+  @override String areYouSureYouWantToDeleteR({required Object r}) =>
+      '确定要删除 ${r} 吗？此操作不可撤销。';
+
+  @override String get membersList => '成员列表';
+
+  @override String get onlineUsersList => '在线成员列表';
+
+  @override String get room => '房间';
+
+  @override String get noPasswordSet => '未设置密码';
+
+  @override String get passwordProtected => '密码保护';
+
+  @override String get imageLabel => '图片';
+
+  @override String get stickersLabel => '贴纸';
+
+  @override String get roomId => '房间 ID';
+
+  @override String get pokedYou => '戳了你一下';
+
+  @override String kickedFromServerByP({required Object p}) =>
+      '被 ${p} 移出了服务器';
+
+  @override String kickedFromRoomByP({required Object p}) =>
+      '被 ${p} 移出了房间';
+
+  @override String get leftTheRoom => '离开了房间';
+
+  @override String get joinedTheRoom => '加入了房间';
+
+  @override String pWasKickedByO({required Object p, required Object o}) =>
+      '${p} 被 ${o} 踢出了房间';
+
+  @override String get youLabel => '您';
+
+  @override String get leftTheServer => '离开了服务器';
+
+  @override String get joinedTheServer => '加入了服务器';
+
+  @override String get updatedTheAnnouncement => '更新了公告';
+
+  @override String get recalledAMessage => '撤回了一条消息';
+
+  @override String pReactedWithO({required Object p, required Object o}) =>
+      '${p} 对消息做出了回应 ${o}';
+
+  @override String pRemovedReactionO({required Object p, required Object o}) =>
+      '${p} 取消了回应 ${o}';
+
+  @override String get noUsersAvailableToInvite => '暂无可用邀请的用户';
+
+  @override String get inviteToRoom => '邀请加入房间';
+
+  @override String get invite => '邀请';
+
+  @override String get roomInvite => '房间邀请';
+
+  @override String get invitedYouTo => '邀请你加入';
+
+  @override String get acceptInvite => '接受';
+
+  @override String get acceptedYourInvite => '接受了你的邀请';
+
+  @override String get declinedYourInvite => '拒绝了你的邀请';
+
+  @override String get blockedYourInvites => '屏蔽了你的邀请';
+
+  @override String get blockedInvitesList => '邀请屏蔽列表';
+
+  @override String get noBlockedInvites => '暂无屏蔽的邀请者';
+
+  @override String get allowMemberInvites => '允许成员邀请';
+
+  @override String get letAllMembersInviteOthers =>
+      '允许所有成员邀请其他人加入房间';
+
+  @override String get declineAndBlock => '拒绝并屏蔽';
+
+  @override String get memes => '表情包';
+
+  @override String get memeSaved => '已保存到表情包';
+
+  @override String get networkInfo => '网络信息';
+
+  @override String get hubInfo => 'Hub 信息';
+
+  @override String get statsInfo => '统计信息';
+
+  @override String get sourceInfo => '源信息';
+
+  @override String get playerInfo => '播放信息';
+
+  @override String get hideLabel => '隐藏';
+
+  @override String get showLabel => '显示';
+
+  @override String get personaManagement => '角色管理';
+
+  @override String get promptConfiguration => '提示配置';
+
+  @override String get systemPrompt => '系统提示';
+
+  @override String get temperature => '温度 (Temperature)';
+
+  @override String get promptSaved => '提示词已保存';
+
+  @override String get editSystemPrompt => '编辑系统提示词';
+
+  @override String get noHistoryYet => '暂无历史';
+
+  @override String get clearAll => '清空';
+
+  @override String get configCopiedToClipboard => '配置已复制到剪贴板';
+
+  @override String get importedAsNewConfig => '已作为新配置导入';
+
+  @override String get imported => '已导入';
+
+  @override String get invalidClipboardFormat => '剪贴板格式无效';
+
+  @override String get cannotModifySystemPreset => '不能修改系统预设';
+
+  @override String get configKeyAlreadyExists => '配置 Key 已存在，请修改。';
+
+  @override String get requiredField => '必填';
+
+  @override String get configKey => '配置 Key';
+
+  @override String get memoField => '备注';
+
+  @override String get valueRange => '范围：0.0 - 1.0';
+
+  @override String get readOnlySystemPreset => '只读系统预设';
+
+  @override String get deleteConfig => '删除配置';
+
+  @override String get areYouSureYouWantToDeleteGeneric => '确定要删除吗';
+
+  @override String get baseUrl => '基础 URL';
+
+  @override String get optionalField => '可选';
+
+  @override String get model => '模型';
+
+  @override String get addModel => '添加模型';
+
+  @override String get modelId => '模型 ID';
+
+  @override String get displayName => '显示名称';
+
+  @override String get noModelsAddOneAbove => '暂无模型，请在上方添加。';
+
+  @override String placeholdersDescription(
+      {required Object animeCount, required Object animeNames, required Object topTags}) =>
+      '占位符：${animeCount} ${animeNames} ${topTags}';
+
+  @override String get aiHub => 'AI 中心';
+
+  @override String get selectYearAndMonth => '选择年月';
+
+  @override String get enterYear => '输入年份';
+
+  @override String get selectDay => '选择日期';
+
+  @override String get fullYear => '全年';
+
+  @override String get quickSelect => '快速选择';
+
+  @override String get selectDateRange => '选择日期范围';
+
+  @override String get manualSelect => '手动选择';
+
+  @override String get qrAndClipboard => '二维码与剪贴板';
+}
+
+/// The flat map containing all translations for locale <zh-CN>.
+/// Only for edge cases! For simple maps, use the map function of this library.
+///
+/// The Dart AOT compiler has issues with very large switch statements,
+/// so the map is split into smaller functions (512 entries each).
+extension on TranslationsZhCn {
+  dynamic _flatMapFunction(String path) {
+    return switch (path) {
+      'aToAddBToRemoveCToMove' =>
+          (
+          {required Object a, required Object b, required Object c}) => '${a} 项添加 • ${b} 项删除 • ${c} 项移动',
+      'aToAddBToRemove' =>
+          (
+          {required Object a, required Object b}) => '${a} 项添加 • ${b} 项删除',
+      'cUpdates' => ({required Object c}) => '${c} 项更新',
+      'aNewVersionIsAvailableDoYouWantToUpdateNow' => '发现新版本，是否立即更新？',
+      'app' => '应用',
+      'about' => '关于',
+      'accounts' => '账户',
+      'addAAnimeSourceInHomePage' => '在首页添加番剧源',
+      'addAnimeSource' => '添加番剧源',
+      'addNewFavoriteTo' => '添加新收藏到',
+      'addToFavorites' => '添加到收藏',
+      'add' => '添加',
+      'addedCountAnimesToDownloadQueue' =>
+          ({required Object count}) => '已将 ${count} 部番剧加入下载队列',
+      'added' => '已添加',
+      'aggregatedSearch' => '聚合搜索',
+      'aggregated' => '聚合',
+      'aiSource' => 'AI 数据源',
+      'ai' => 'AI',
+      'allEpisodes' => '全部剧集',
+      'alsoRemoveFilesOnDisk' => '同时删除本地文件',
+      'animeSourceList' => '番剧源列表',
+      'animeSource' => '番剧源',
+      'appearance' => '外观',
+      'areYouSureYouWantToClearYourHistory' => '确定要清除历史记录吗？',
+      'areYouSureYouWantToClearYourProgress' => '确定要清除全部进度吗？',
+      'authorizationRequired' => '需要身份验证',
+      'autoPageTurning' => '自动翻页',
+      'back' => '返回',
+      'bangumi' => 'Bangumi',
+      'block' => '封锁',
+      'blue' => '蓝色',
+      'brief' => '简介',
+      'cacheLimit' => '缓存限制',
+      'cacheSize' => '缓存大小',
+      'cacheCleared' => '缓存已清除',
+      'cancel' => '取消',
+      'categories' => '分类',
+      'categoryPages' => '分类页面',
+      'characters' => '角色',
+      'checkForUpdatesOnStartup' => '启动时检查更新',
+      'checkForUpdates' => '检查更新',
+      'checkUpdates' => '检查更新',
+      'check' => '检查',
+      'clearCache' => '清除缓存',
+      'clearHistory' => '清除历史记录',
+      'clearProgress' => '清除进度',
+      'clearSearchHistory' => '清除搜索历史',
+      'clearUnfavorited' => '清除未收藏',
+      'clear' => '清除',
+      'clickIfLoginExpired' => '如果登录过期请点击',
+      'close' => '关闭',
+      'comment' => '评论',
+      'comments' => '评论',
+      'confirm' => '确认',
+      'kContinue' => '继续',
+      'copied' => '已复制',
+      'analyze' => '分析',
+      'analyzing' => '分析中...',
+      'analysisResult' => '分析结果',
+      'yourQuestion' => '您的提问',
+      'pleaseEnterAPrompt' => '请输入提示词',
+      'egWhatKindOfAnimeDoILike' => '例如：我喜欢什么样的番剧？',
+      'aiSourceNotAvailable' => 'AI 数据源不可用',
+      'copyId' => '复制 ID',
+      'copyTitle' => '复制标题',
+      'copyUrl' => '复制 URL',
+      'copyToFolder' => '复制到文件夹',
+      'copy' => '复制',
+      'createAccount' => '创建账户',
+      'createFolder' => '创建文件夹',
+      'create' => '创建',
+      'currentlySeenEp' => ({required Object ep}) => '目前看到第 ${ep} 话',
+      'dnsOverrides' => 'DNS 覆写',
+      'dark' => '深色',
+      'dataSync' => '数据同步',
+      'data' => '数据',
+      'dateDesc' => '按日期降序',
+      'date' => '日期',
+      'defaultSearchTarget' => '默认搜索目标',
+      'deleteCAnimes' => ({required Object c}) => '删除 ${c} 部番剧吗？',
+      'deleteAnime' => '删除番剧',
+      'deleteFolder' => '删除文件夹',
+      'deleteAnimeSourceN' =>
+          ({required Object n}) => '确定要删除番剧源 \'${n}\' 吗？',
+      'deleteFolderF' =>
+          ({required Object f}) => '确定要删除文件夹 \'${f}\' 吗？',
+      'deleteFolderPrompt' => '删除文件夹？',
+      'delete' => '删除',
+      'description' => '描述',
+      'deselect' => '取消选择',
+      'detailed' => '详细',
+      'details' => '详情',
+      'determineTheBindingA' => ({required Object a}) => '确定绑定：${a} 吗？',
+      'disable' => '禁用',
+      'disabled' => '已禁用',
+      'discoverTheNewVersionV' => ({required Object v}) => '发现新版本 ${v}',
+      'displayModeOfAnimeTile' => '番剧卡片显示模式',
+      'displayTimeAndBatteryInfoInReader' => '在阅读器中显示时间与电池信息',
+      'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => '请勿将与源相关的问题反馈至本应用的仓库。',
+      'downloadAll' => '下载全部',
+      'downloadSelected' => '下载选中项',
+      'downloadThreads' => '下载线程',
+      'download' => '下载',
+      'downloading' => '下载中',
+      'edit' => '编辑',
+      'enableDnsOverrides' => '启用 DNS 覆写',
+      'enable' => '启用',
+      'end' => '结束',
+      'episodeEp' => ({required Object ep}) => '第 ${ep} 话',
+      'error' => '错误',
+      'exitMultiSelect' => '退出多选',
+      'exit' => '退出',
+      'explorePages' => '浏览页面',
+      'explore' => '浏览',
+      'exportAppData' => '导出应用数据',
+      'export' => '导出',
+      'failedToImport' => '导入失败',
+      'fanyuan' => '番源',
+      'favoriteActions' => '收藏操作',
+      'favorite' => '收藏',
+      'favorites' => '收藏',
+      'finished' => '已完结',
+      'folderName' => '文件夹名称',
+      'folder' => '文件夹',
+      'folders' => '文件夹',
+      'following' => '追番中',
+      'fullScreen' => '全屏',
+      'fullscreen' => '全屏',
+      'gitMirror' => 'Git 镜像',
+      'green' => '绿色',
+      'help' => '帮助',
+      'history' => '历史',
+      'home' => '首页',
+      'iconProducer' => '图标制作',
+      'ignoreCertificateErrors' => '忽略证书错误',
+      'importAnimes' => '导入番剧',
+      'importAppData' => '导入应用数据',
+      'importFromFile' => '从文件导入',
+      'import' => '导入',
+      'importedAAnimes' => ({required Object a}) => '已导入 ${a} 部番剧',
+      'information' => '信息',
+      'initialPage' => '初始页面',
+      'invertSelection' => '反向选择',
+      'keywordBlocking' => '关键字屏蔽',
+      'kostoriIsAFreeAndOpenSourceAppForAnimeWatching' => 'Kostori 是一款免费开源的番剧观看应用。',
+      'language' => '语言',
+      'later' => '稍后',
+      'light' => '浅色',
+      'limitImageWidth' => '限制图片宽度',
+      'localFavorites' => '本地收藏',
+      'local' => '本地',
+      'logIn' => '登录',
+      'logOut' => '登出',
+      'log' => '日志',
+      'manualTranslation' => '手动翻译',
+      'enterTextToTranslate' => '输入要翻译的文字',
+      'translate' => '翻译',
+      'translating' => '翻译中...',
+      'translationResult' => '翻译结果',
+      'pleaseEnterTextToTranslate' => '请输入要翻译的文字',
+      'loginWithWebview' => '使用 WebView 登录',
+      'login' => '登录',
+      'longPressAndDragToReorder' => '长按并拖动以重新排序。',
+      'longPressOnTheFavoriteButtonToQuicklyAddToThisFolder' => '长按收藏按钮可快速添加到此文件夹',
+      'longPressToZoom' => '长按缩放',
+      'me' => '我',
+      'moveToFirst' => '移至首位',
+      'moveFavoriteAfterReading' => '观看完毕后移动收藏',
+      'moveToFolder' => '移动到文件夹',
+      'move' => '移动',
+      'multiSelect' => '多选',
+      'multipleAnimes' => '多部番剧',
+      'name' => '名称',
+      'networkFavoritePages' => '网络收藏页面',
+      'network' => '网络',
+      'newFolder' => '新文件夹',
+      'newVersion' => '新版本',
+      'newVersionAvailable' => '有新版本可用',
+      'next' => '下一步',
+      'noExplorePages' => '暂无浏览页面',
+      'noNewVersionAvailable' => '暂无新版本',
+      'noSearchResultsFound' => '找不到搜索结果',
+      'noLikedAnimeFound' => '找不到喜欢的番剧',
+      'noUpdates' => '暂无更新',
+      'ok' => '确定',
+      'onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer' => '一旦操作成功，应用将自动与服务器同步数据。',
+      'openLog' => '打开日志',
+      'openAnime' => '打开番剧',
+      'openHelp' => '打开帮助',
+      'openInBrowser' => '在浏览器中打开',
+      'openLink' => '打开链接',
+      'open' => '打开',
+      'operation' => '操作',
+      'orange' => '橙色',
+      'order' => '排序',
+      'password' => '密码',
+      'pause' => '暂停',
+      'paused' => '已暂停',
+      'pink' => '粉色',
+      'playlist' => '播放列表',
+      'pleaseCheckYourSettings' => '请检查您的设置',
+      'preview' => '预览',
+      'proxy' => '代理',
+      'purple' => '紫色',
+      'quickFavorite' => '快速收藏',
+      'ranking' => '排行',
+      'reLogin' => '重新登录',
+      'read' => '已读',
+      'reading' => '阅读中',
+      'red' => '红色',
+      'refresh' => '刷新',
+      'related' => '相关',
+      'removeAnimeFromFavorite' => '将番剧从收藏中移除？',
+      'remove' => '移除',
+      'rename' => '重命名',
+      'reorder' => '排序',
+      'resetBangumiData' => '重置 Bangumi 数据',
+      'reset' => '重置',
+      'retry' => '重试',
+      'reviews' => '评价',
+      'saveImage' => '保存图片',
+      'savedFailed' => '保存失败',
+      'saved' => '已保存',
+      'searchAll' => '搜索全部',
+      'searchHistory' => '搜索历史',
+      'searchIn' => '搜索',
+      'search' => '搜索',
+      'selectAll' => '全选',
+      'selectADirectoryWhichContainsTheAnimeFiles' => '选择包含番剧文件的目录。',
+      'selectAFolder' => '选择一个文件夹',
+      'selectAnImageOnScreen' => '在屏幕上选择一个图像',
+      'selectFile' => '选择文件',
+      'selectInRange' => '范围选择',
+      'select' => '选择',
+      'selectedAAnimes' => ({required Object a}) => '已选择 ${a} 部番剧',
+      'setCacheLimit' => '设置缓存限制',
+      'setNewStoragePath' => '设置新存储路径',
+      'setSourceListUrl' => '设置源列表地址',
+      'set' => '设置',
+      'settings' => '设置',
+      'share' => '分享',
+      'showAll' => '显示全部',
+      'showFavoriteStatusOnAnimeTile' => '在番剧卡片上显示收藏状态',
+      'showHistoryOnAnimeTile' => '在番剧卡片上显示历史记录',
+      'singleAnime' => '单部番剧',
+      'sizeInMb' => '大小 (MB)',
+      'sizeOfAnimeTile' => '番剧卡片大小',
+      'sort' => '排序',
+      'sourceFolder' => '源文件夹',
+      'sourceUrl' => '源 URL',
+      'staffList' => '演职人员表',
+      'start' => '开始',
+      'storagePathForLocalAnimes' => '本地番剧存储路径',
+      'submit' => '提交',
+      'suggestions' => '建议',
+      'syncData' => '同步数据',
+      'sync' => '同步',
+      'syncingData' => '正在同步数据',
+      'system' => '系统',
+      'tapToTurnPages' => '点击翻页',
+      'theUrlShouldPointToAIndexJsonFile' => 'URL 应指向 \'index.json\' 文件',
+      'theFolderIsLinkedToSource' =>
+          ({required Object source}) => '该文件夹已链接至源 ${source}',
+      'themeColor' => '主题颜色',
+      'themeMode' => '主题模式',
+      'timetable' => '时间表',
+      'topics' => '话题',
+      'topicsLatest' => '最新话题',
+      'topicsTrending' => '热门话题',
+      'turnPageByVolumeKeys' => '使用音量键翻页',
+      'unselected' => '未选中',
+      'updateAnimesInfo' => '更新番剧信息',
+      'updateTime' => '更新时间',
+      'update' => '更新',
+      'updatesAvailable' => '有更新可用',
+      'updating' => '更新中',
+      'uploadTime' => '上传时间',
+      'upload' => '上传',
+      'uploader' => '上传者',
+      'useAConfigFile' => '使用配置文件',
+      'user' => '用户',
+      'username' => '用户名',
+      'userProfileAnalysis' => '用户画像分析',
+      'viewList' => '查看列表',
+      'viewMore' => '查看更多',
+      'view' => '查看',
+      'webDavAutoSync' => 'WebDAV 自动同步',
+      'kDefault' => '默认',
+      'lastWatchTimeTime' => ({required Object time}) => '上次观看时间：${time}',
+      'minAppVersionRequired' =>
+          ({required Object version}) => '需要最低应用版本 ${version}',
+      'more' => '更多',
+      'notYetAiring' => '尚未播出',
+      'fullBEpisodesReleased' => ({required Object b}) => '全 ${b} 话已发布',
+      'upToEpSTotalEpsPlanned' =>
+          (
+          {required Object s, required Object t}) => '更新至第 ${s} 话 • 计划全 ${t} 话',
+      'upToEpETotalEpsPlanned' =>
+          (
+          {required Object e, required Object s, required Object t}) => '更新至第 ${e} 话 (${s}) • 计划全 ${t} 话',
+      'tReviewsR' =>
+          ({required Object t, required Object r}) => '${t} 条评价 | #${r}',
+      'tReviews' => ({required Object t}) => '${t} 条评价',
+      'showMore' => '展开 +',
+      'showLess' => '收起 -',
+      'tags' => '标签',
+      'clearTags' => '清除标签',
+      'showingLResults' => ({required Object l}) => '显示 ${l} 条结果',
+      'selectTime' => '选择时间',
+      'switchLayout' => '切换布局',
+      'enterKeywords' => '输入关键字...',
+      'ratingChart' => '评分图表',
+      'lineChart' => '折线图',
+      'barChart' => '柱状图',
+      'standardDeviationS' => ({required Object s}) => '标准差：${s}',
+      'nobodysPostedAnythingYet' => '还没有人发布内容...',
+      'reload' => '重新加载',
+      'failedToLoadPleaseTryAgain' => '加载失败，请重试。',
+      'doing' => '在看',
+      'collect' => '看过',
+      'wish' => '想看',
+      'onHold' => '搁置',
+      'dropped' => '抛弃',
+      'todayRecommendation' => '今日推荐',
+      'tTotalCount' => ({required Object t}) => '共 ${t} 项',
+      'introduction' => '简介',
+      'linkedItems' => '关联项',
+      'timeS' => ({required Object s}) => '时间：${s}',
+      'broadcastTimeA' => ({required Object a}) => '播出时间：${a}',
+      'profileInformation' => '个人资料',
+      'characterIntroduction' => '角色介绍',
+      'voiceActorC' => ({required Object c}) => '声优：${c}',
+      'episodeEN' =>
+          ({required Object e, required Object n}) => '第 ${e} 话：${n}',
+      'hotspot' => '热点',
+      'completed' => '已完成',
+      'mainCharacter' => '主角',
+      'supportingCharacter' => '配角',
+      'cameo' => '客串',
+      'idleCorner' => '闲暇角落',
+      'unknown' => '未知',
+      'debugInfo' => '调试信息',
+      'install' => '安装',
+      'viewOnGithub' => '在 GitHub 上查看',
+      'noProxyOverrides' => '无代理覆写',
+      'save' => '保存',
+      'mirror' => '镜像',
+      'result' => '结果',
+      'all' => '全部',
+      'reloadConfigs' => '重新加载配置',
+      'invalidUrlConfig' => '无效的 URL 配置',
+      'inconsistentVersions' => '版本不一致',
+      'noUpdateAvailableForThisArchitectureA' =>
+          ({required Object a}) => '当前架构 (${a}) 暂无可用更新',
+      'checkUpdateFailed' => '检查更新失败...',
+      'downloadFailed' => '下载失败',
+      'failedToCheckTheHashValuePleaseTryAgain' => '哈希值检查失败，请重试',
+      'english' => '英语',
+      'dynamicColor' => '动态色彩',
+      'mondaySchedule' => '周一时间表',
+      'tuesdaySchedule' => '周二时间表',
+      'wednesdaySchedule' => '周三时间表',
+      'thursdaySchedule' => '周四时间表',
+      'fridaySchedule' => '周五时间表',
+      'saturdaySchedule' => '周六时间表',
+      'sundaySchedule' => '周日时间表',
+      'popularityRanking' => '人气排行',
+      'imageOperations' => '图片操作',
+      'saveToAlbum' => '保存到相册',
+      'stitchLongImage' => '拼接长图',
+      'stitchHorizontalImage' => '横向拼接',
+      'stitchSubtitles' => '拼接字幕',
+      'saveLongImage' => '保存长图',
+      'borderColor' => '边框颜色',
+      'apply' => '应用',
+      'heightPx' => '高度(px)',
+      'setUniformHeight' => '设置统一高度',
+      'uniformHeight' => '统一高度',
+      'cropImage' => '裁剪图片',
+      'finishCropping' => '完成裁剪',
+      'sortImages' => '图片排序',
+      'finishSorting' => '完成排序',
+      'noImages' => '无图片',
+      'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
+      'enterHexColorCode' => '输入十六进制颜色代码，例如 #FF000000',
+      'showImageBorders' => '显示图片边框',
+      'outerBorderRadius' => '外边框圆角',
+      'outerBorderWidth' => '外边框宽度',
+      'outerBorderColor' => '外边框颜色',
+      'showOuterBorder' => '显示外边框',
+      'innerBorderWidth' => '内边框宽度',
+      'innerBorderColor' => '内边框颜色',
+      'borderSettings' => '边框设置',
+      'saving' => '保存中',
+      'saveSuccessful' => '保存成功',
+      'saveFailedE' => ({required Object e}) => '保存失败：${e}',
+      'failedToLoadImagesOrNoImages' => '加载图片失败或无图片',
+      'monday' => '周一',
+      'tuesday' => '周二',
+      'wednesday' => '周三',
+      'thursday' => '周四',
+      'friday' => '周五',
+      'saturday' => '周六',
+      'sunday' => '周日',
+      'defaultOrder' => '默认排序',
+      'byTime' => '按时间',
+      'byName' => '按名称',
+      'recentlyWatched' => '最近观看',
+      'localFavoriteBinding' => '本地收藏绑定',
+      'awful' => '极差',
+      'terrible' => '很差',
+      'bad' => '差',
+      'poor' => '较差',
+      'okay' => '不过不失',
+      'fine' => '还行',
+      'good' => '推荐',
+      'great' => '力荐',
+      'master' => '神作',
+      'epic' => '史诗',
+      'overview' => '概览',
+      'discussion' => '讨论',
+      'logs' => '日志',
+      'playerDetails' => '播放器详情',
+      'status' => '状态',
+      'audioOptionLowLatency' => '音频选项：\n 低延迟',
+      'audioOptionCompatibility' => '音频选项：\n 兼容性',
+      'switchSuccessful' => '切换成功',
+      'switchFailed' => '切换失败',
+      'remoteCast' => '远程投屏',
+      'copyLink' => '复制链接',
+      'aValidWebDavDirectoryUrl' => '有效的 WebDAV 目录 URL',
+      'autoSyncData' => '自动同步数据',
+      'screenshotShare' => '截图分享',
+      'bestMatch' => '最佳匹配',
+      'topRank' => '排名靠前',
+      'mostFavorited' => '最多收藏',
+      'highestRating' => '最高评分',
+      'selectColor' => '选择颜色',
+      'colorWheel' => '色轮',
+      'primary' => '主色',
+      'accent' => '强调色',
+      'custom' => '自定义',
+      'confirmC' => ({required Object c}) => '确认 (${c})',
+      'selectC' => ({required Object c}) => '选择 ${c}',
+      'selectDate' => '选择日期',
+      'startDate' => '开始日期',
+      'endDate' => '结束日期',
+      'clearDate' => '清除日期',
+      'pleaseSelectADate' => '请选择日期',
+      'endDateCannotBeEarlierThanStartDate' => '结束日期不能早于开始日期',
+      'type' => '类型',
+      'background' => '背景',
+      'emotion' => '情感',
+      'source' => '来源',
+      'audience' => '受众',
+      'category' => '类别',
+      'imageOperationsI' => ({required Object i}) => '图片操作 (${i})',
+      'sSelected' => ({required Object s}) => '已选择 ${s}',
+      'simplifiedChinese' => '简体中文',
+      'traditionalChinese' => '繁体中文',
+      'teal' => '鸭蛋蓝',
+      'deepPurple' => '深紫色',
+      'yellow' => '黄色',
+      'cyan' => '青色',
+      'm3Default' => 'M3 默认',
+      'deepOrange' => '深橙色',
+      'indigo' => '靛蓝色',
+      'cloudyBlue' => '阴云蓝',
+      'darkPastelGreen' => '暗粉绿',
+      'dust' => '尘埃色',
+      'electricLime' => '电光绿',
+      'freshGreen' => '鲜绿色',
+      'lightEggplant' => '浅茄紫',
+      'nastyGreen' => '脏绿色',
+      'reallyLightBlue' => '极浅蓝',
+      'tea' => '茶色',
+      'warmPurple' => '暖紫色',
+      'yellowishTan' => '偏黄褐色',
+      'cement' => '水泥色',
+      'darkGrassGreen' => '深草绿',
+      'dustyTeal' => '尘土青',
+      'greyTeal' => '灰青色',
+      'macaroniAndCheese' => '起司色',
+      'pinkishTan' => '偏粉褐色',
+      'spruce' => '杉绿色',
+      'strongBlue' => '亮蓝色',
+      'toxicGreen' => '毒液绿',
+      'windowsBlue' => '视窗蓝',
+      'blueBlue' => '纯蓝色',
+      'blueWithAHintOfPurple' => '蓝紫色',
+      'booger' => '鼻涕绿',
+      'brightSeaGreen' => '亮海绿',
+      'greenTeal' => '绿青色',
+      'brownish' => '偏褐色',
+      'offGreen' => '浅灰绿',
+      'tangerine' => '橘黄色',
+      'uglyGreen' => '丑绿色',
+      'secondary' => '次要',
+      'tertiary' => '三级',
+      'surface' => '表面',
+      'jumpToPage' => '跳转到页',
+      'page' => '页',
+      'pagePM' =>
+          ({required Object p, required Object m}) => '第 ${p} / ${m} 页',
+      'first' => '首页',
+      'last' => '末页',
+      'disableLengthLimitation' => '禁用长度限制',
+      'updateLog' => '更新日志',
+      'liked' => '喜欢',
+      'rating' => '评分',
+      'pixelFormat' => '像素格式',
+      'hwPixelFormat' => '硬件像素格式',
+      'resolution' => '分辨率',
+      'displayWidth' => '显示宽度',
+      'displayHeight' => '显示高度',
+      'aspect' => '宽高比',
+      'pixelAspectRatio' => '像素纵横比',
+      'colormatrix' => '色彩矩阵',
+      'colorLevels' => '色彩级别',
+      'primaries' => '原色',
+      'gamma' => '伽玛值',
+      'signalPeak' => '信号峰值',
+      'lights' => '光照',
+      'chromaLocation' => '色度位置',
+      _ => null,
+    } ?? switch (path) {
+      'rotate' => '旋转',
+      'stereoIn' => '立体声输入',
+      'averageBpp' => '平均 Bpp',
+      'alpha' => '透明度',
+      'trackId' => '轨道 ID',
+      'trackTitle' => '轨道标题',
+      'trackLanguage' => '轨道语言',
+      'trackImage' => '轨道图像',
+      'trackAlbumArt' => '轨道专辑封面',
+      'trackCodec' => '轨道解码器',
+      'trackDecoder' => '轨道解码器',
+      'trackWidth' => '轨道宽度',
+      'trackHeight' => '轨道高度',
+      'trackChannelsCount' => '轨道声道数',
+      'trackChannels' => '轨道声道',
+      'trackSampleRate' => '轨道采样率',
+      'trackFps' => '轨道 FPS',
+      'trackBitrate' => '轨道位元率',
+      'trackRotate' => '轨道旋转',
+      'trackPar' => '轨道 PAR',
+      'trackAudioChannels' => '轨道音频声道',
+      'format' => '格式',
+      'sampleRate' => '采样率',
+      'channelCount' => '声道数',
+      'hrChannels' => 'HR 声道',
+      'uriTrack' => 'URI 轨道',
+      'channelsCount' => '声道数',
+      'channels' => '声道',
+      'fps' => 'FPS',
+      'bitrate' => '位元率',
+      'par' => 'PAR',
+      'audioChannels' => '音频声道',
+      'audioBitrate' => '音频位元率',
+      'audio' => '音频',
+      'video' => '视频',
+      'media' => '媒体',
+      'noLogsForL' => ({required Object l}) => '暂无 ${l} 的日志',
+      'onlyValidForThisRun' => '仅在此次运行中有效',
+      'nameField' => '名称',
+      'brandField' => '品牌',
+      'modelField' => '型号',
+      'deviceField' => '设备',
+      'productField' => '产品',
+      'manufacturerField' => '制造商',
+      'versionReleaseField' => '版本发布',
+      'versionSdkIntField' => 'SDK 版本',
+      'displayField' => '显示',
+      'hardwareField' => '硬件',
+      'physicalRamSizeField' => '实体内存大小',
+      'availableRamSizeField' => '可用内存大小',
+      'freeDiskSizeField' => '可用磁盘空间',
+      'totalDiskSizeField' => '磁盘总大小',
+      'isPhysicalDeviceField' => '是否为实体设备',
+      'systemNameField' => '系统名称',
+      'systemVersionField' => '系统版本',
+      'modelNameField' => '型号名称',
+      'identifierForVendorField' => '供应商识别符',
+      'sysnameField' => '系统名称',
+      'nodenameField' => '节点名称',
+      'releaseField' => '发布版本',
+      'versionField' => '版本',
+      'machineField' => '机器型号',
+      'computerNameField' => '电脑名称',
+      'numberOfCoresField' => '核心数',
+      'systemMemoryInMegabytesField' => '系统内存 (MB)',
+      'userNameField' => '用户名',
+      'majorVersionField' => '主版本号',
+      'minorVersionField' => '次版本号',
+      'buildNumberField' => '编译号',
+      'displayVersionField' => '显示版本',
+      'productNameField' => '产品名称',
+      'registeredOwnerField' => '注册所有者',
+      'releaseIdField' => '发布 ID',
+      'packageNameField' => '包名',
+      'appNameField' => '应用名称',
+      'buildSignatureField' => '编译签名',
+      'installerStoreField' => '安装渠道',
+      'installTimeField' => '安装时间',
+      'updateTimeField' => '更新时间',
+      'january' => '一月',
+      'february' => '二月',
+      'march' => '三月',
+      'april' => '四月',
+      'may' => '五月',
+      'june' => '六月',
+      'july' => '七月',
+      'august' => '八月',
+      'september' => '九月',
+      'october' => '十月',
+      'november' => '十一月',
+      'december' => '十二月',
+      'today' => '今天',
+      'yesterday' => '昨天',
+      'last3Days' => '最近 3 天',
+      'last7Days' => '最近 7 天',
+      'last30Days' => '最近 30 天',
+      'last3Months' => '最近 3 个月',
+      'last6Months' => '最近 6 个月',
+      'thisYear' => '今年',
+      'older' => '更久以前',
+      'markTheSelectedFavoritesAs' => '将选中的收藏标记为',
+      'favoriteType' => '收藏类型',
+      'doingStatus' => '在看',
+      'wishStatus' => '想看',
+      'collectStatus' => '看过',
+      'onHoldStatus' => '搁置',
+      'droppedStatus' => '抛弃',
+      'player' => '播放器',
+      'audioOption' => '音频选项',
+      'hardwareDecoding' => '硬件解码',
+      'hardwareDecoder' => '硬件解码器',
+      'videoRenderer' => '视频渲染器',
+      'videoSynchronizationMode' => '视频同步模式',
+      'enableNoProxyOverrides' => '启用无代理覆写',
+      'actor' => '演员',
+      'dub' => '配音',
+      'chineseDub' => '中配',
+      'japaneseDub' => '日配',
+      'englishDub' => '英配',
+      'koreanDub' => '韩配',
+      'selectedACharacter' => ({required Object a}) => '已选择 ${a} 位角色',
+      'searchOptions' => '搜索选项',
+      'searchSources' => '搜索源',
+      'translation' => '翻译',
+      'apiKeyCannotBeEmpty' => 'API Key 不能为空',
+      'pleaseEnterTranslationPrompt' =>
+          (
+          {required Object a}) => '请输入翻译提示词，使用 ${a} 作为目标语言的占位符',
+      'thePromptMustContainAPlaceholderForTarget' =>
+          ({required Object a}) => '提示词必须包含 ${a} 作为目标语言的占位符',
+      'thisFieldCannotBeEmpty' => '此字段不能为空',
+      'thePromptMustContainAPlaceholder' =>
+          ({required Object a}) => '提示词必须包含 ${a} 占位符',
+      'translationPrompt' => '翻译提示词',
+      'modelName' => '模型名称',
+      'apiConfiguration' => 'API 配置',
+      'wordCloud' => '词云',
+      'statsCalendar' => '统计日历',
+      'kostoriChangelog' => 'Kostori 更新日志',
+      'copyPath' => '复制路径',
+      'properties' => '属性',
+      'noEndpoint' => '无端点',
+      'testAll' => '测试全部',
+      'customEndpoint' => '自定义端点',
+      'pingTest' => '延迟测试',
+      'continuousPing' => '持续延迟测试',
+      'service' => '服务',
+      'serviceSettings' => '服务设置',
+      'enableService' => '启用服务',
+      'serviceIsStopped' => '服务已停止',
+      'runningOnH' => ({required Object h}) => '运行在 ${h}',
+      'apiKey' => 'API Key',
+      'activeKey' => '当前 Key',
+      'usingFixedKey' => '使用固定 Key',
+      'usingRandomKeyRegeneratedOnStartup' => '使用随机 Key (启动时重置)',
+      'useFixedKey' => '使用固定 Key',
+      'keepTheSameKeyAfterRestart' => '重启后保持相同 Key',
+      'fixedKey' => '固定 Key',
+      'leaveEmptyToAutoGenerate' => '留空以自动生成',
+      'enterFixedKey' => '输入固定 Key',
+      'regenerateRandomKey' => '重置随机 Key',
+      'generateANewRandomKeyImmediately' => '立即生成一个新的随机 Key',
+      'regenerate' => '重置',
+      'port' => '端口',
+      'defaultP' => ({required Object p}) => '默认：${p}',
+      'bindMode' => '绑定模式',
+      'chooseIpVersionToListenOn' => '选择监听的 IP 版本',
+      'hubServer' => 'Hub 服务端',
+      'enableHub' => '启用 Hub',
+      'hubServerIsStopped' => 'Hub 服务端已停止',
+      'clientsCount' => '位客户端',
+      'hubPort' => 'Hub 端口',
+      'onlineClients' => '在线客户端',
+      'connectedAt' => '连接时间',
+      'messageHistory' => '消息记录',
+      'hubClient' => 'Hub 客户端',
+      'connectToHub' => '连接到 Hub',
+      'connected' => '已连接',
+      'notConnected' => '未连接',
+      'hubAddress' => 'Hub 地址',
+      'clientName' => '客户端名称',
+      'displayNameInHub' => '在 Hub 中的显示名称',
+      'myDevice' => '我的设备',
+      'hubToken' => 'Hub 令牌',
+      'tokenFromTheHubServer' => '来自 Hub 服务端的令牌',
+      'pasteHubServerToken' => '粘贴 Hub 服务端令牌',
+      'runningOn' => '运行在',
+      'rooms' => '房间',
+      'roomsCount' => '个房间',
+      'membersCount' => '位成员',
+      'roomAdmins' => '房间管理员',
+      'deleteRoom' => '删除房间',
+      'createRoom' => '创建房间',
+      'roomName' => '房间名称',
+      'leaveEmptyForPublic' => '留空以公开',
+      'announcement' => '公告',
+      'announcements' => '公告',
+      'editProfile' => '编辑资料',
+      'avatarUrl' => '头像 URL',
+      'bio' => '个人简介',
+      'profile' => '个人资料',
+      'notSet' => '未设置',
+      'currentRoom' => '当前房间',
+      'lobby' => '大厅',
+      'noRooms' => '暂无房间',
+      'current' => '当前',
+      'join' => '加入',
+      'leaveRoom' => '离开房间',
+      'roomPassword' => '房间密码',
+      'blacklist' => '黑名单',
+      'bannedCount' => '位已封锁',
+      'noBannedUsers' => '暂无封锁用户',
+      'removeFromBlacklist' => '移出黑名单',
+      'addToBlacklist' => '加入黑名单',
+      'mute5min' => '禁言 5 分钟',
+      'unmute' => '解除禁言',
+      'removeGlobalAdmin' => '撤销全局管理员',
+      'setGlobalAdmin' => '设为全局管理员',
+      'kick' => '剔出',
+      'joinedEvent' => '加入了',
+      'leftEvent' => '离开了',
+      'newRoom' => '新房间',
+      'portAndBindMode' => '端口与绑定模式',
+      'hubManagement' => 'Hub 管理',
+      'chatRoom' => '聊天室',
+      'openChatDialog' => '打开聊天窗口',
+      'hubDetails' => 'Hub 详情',
+      'connectionSettings' => '连接设置',
+      'serverAddress' => '服务器地址',
+      'host' => '主机',
+      'authentication' => '身份验证',
+      'paste' => '粘贴',
+      'unblock' => '取消封锁',
+      'profileAndRoom' => '个人资料与房间',
+      'roomSettings' => '房间设置',
+      'noAnnouncement' => '暂无公告',
+      'setAnnouncement' => '设置公告',
+      'enterAnnouncementPrompt' => '输入公告内容...',
+      'removeAdmin' => '撤销管理员',
+      'addRoomAdmin' => '新增房间管理员',
+      'roomBans' => '房间封锁',
+      'banMember' => '封锁成员',
+      'unban' => '解除封锁',
+      'server' => '服务器',
+      'mute' => '禁言',
+      'secondsLabel' => '秒',
+      'serverShutdown' => '服务器已关闭',
+      'youAreNowAGlobalAdmin' => '您现在是全局管理员',
+      'yourGlobalAdminHasBeenRevoked' => '您的全局管理员权限已被撤销',
+      'youAreNowARoomAdmin' => '您现在是房间管理员',
+      'yourRoomAdminHasBeenRevoked' => '您的房间管理员权限已被撤销',
+      'youAreMutedFor' => '您被禁言了',
+      'secondsUnit' => '秒',
+      'youHaveBeenUnmuted' => '您已被解除禁言',
+      'youAreBannedFromRoom' => '您被该房间封锁了',
+      'youCanNowRejoinRoom' => '您现在可以重新加入房间了',
+      'youHaveBeenKickedFromTheRoom' => '您已被移出房间',
+      'roomDeletedMovedToLobby' => '房间已删除，已回到大厅',
+      'eventLog' => '事件日志',
+      'pingInterval' => '心跳间隔',
+      'onlineStatus' => '在线',
+      'noMessagesYet' => '暂无消息',
+      'newMessages' => '条新消息',
+      'reply' => '回复',
+      'recall' => '撤回',
+      'enterToSend' => 'Enter 发送  ·  Ctrl+Enter 换行',
+      'messagePlaceholder' => '发送消息...',
+      'connectionTimedOut' => '连接超时',
+      'blockedUsers' => '封锁用户',
+      'blockedCount' => '位已封锁',
+      'serverBlacklist' => '服务器黑名单',
+      'userKey' => '用户 Key',
+      'adminKey' => '管理员 Key',
+      'keepTheSameKeysAfterRestart' => '重启后保持相同 Key',
+      'regeneratedOnEveryStartup' => '每次启动时重新生成',
+      'noKeyRequired' => '无需 Key',
+      'anyoneCanConnectWithoutApiKey' => '任何人无需 API Key 即可连接',
+      'clientsMustProvideAValidApiKey' => '客户端必须提供有效的 API Key',
+      'endpointMustBeAValidUrl' => '端点必须是有效的 http(s) URL',
+      'bucketCannotBeEmpty' => '存储桶 (Bucket) 不能为空',
+      'accessKeyIdCannotBeEmpty' => 'Access Key ID 不能为空',
+      'accessKeySecretCannotBeEmpty' => 'Access Key Secret 不能为空',
+      'cdnDomainMustBeAValidUrl' => 'CDN 域名必须是有效的 URL',
+      'maxSizeMustBe1to100Mb' => '最大容量必须在 1–100 MB 之间',
+      'cleared' => '已清除',
+      'imageUpload' => '图片上传',
+      'clientImageUpload' => '客户端图片上传',
+      'serverOss' => '服务器 OSS',
+      'clientOss' => '客户端 OSS',
+      'imagesStoredOnServerDisk' => '图片存储在服务器磁盘中，通过 /hub/files/ 提供服务',
+      'serverReceivesAndProxiesImageToOss' => '服务器接收并代理图片到 OSS。Key 仅保存在服务器。',
+      'clientUploadsDirectlyToOss' => '客户端直接上传到 OSS。服务器仅获取最终 URL。',
+      'maxSizeMb' => '最大容量 (MB)',
+      'storePath' => '存储路径',
+      'leaveEmptyForDefault' => '留空以使用默认路径',
+      'notConfiguredWillUseServerOrBase64' => '未配置 · 将使用服务器或 Base64',
+      'imageTooLargeToSend' => '图片太大，无法发送',
+      'pleaseConfigureServerUploadOrClientOss' => '请配置服务器上传或客户端 OSS。',
+      'stopTheServerToChangeUploadMode' => '停止服务器以修改上传模式',
+      'enableClientOss' => '启用客户端 OSS',
+      'uploadImagesDirectlyFromClientToOss' => '从客户端直接上传图片到 OSS',
+      'ossNotConfigured' => 'OSS 未配置',
+      'dropToSendImage' => '拖放以发送图片',
+      'longPressImageToSave' => '长按图片以保存',
+      'pleaseEnterAValidUrl' => '请输入以 http:// 或 https:// 开头的有效 URL',
+      'setRoomPassword' => '设置房间密码',
+      'adminPanel' => '管理面板',
+      'enterRoomName' => '输入房间名称',
+      'roomAnnouncement' => '房间公告',
+      'leaveEmptyForPublicRoom' => '留空以设为公开房间',
+      'maxParticipants' => '最大人数',
+      'upTo' => '最多',
+      'peopleLabel' => '人',
+      'noLimit' => '无限制',
+      'optional' => '可选',
+      'enterDisplayName' => '输入显示名称',
+      'enterBio' => '输入简介',
+      'autoReconnect' => '自动重连',
+      'directMessage' => '私聊',
+      'noAnnouncementsYet' => '暂无公告',
+      'enterAnnouncementText' => '输入公告内容...',
+      'welcomeMessage' => '欢迎消息',
+      'noWelcomeMessage' => '暂无欢迎消息',
+      'enterWelcomeMessage' => '输入显示给新加入用户的欢迎消息...',
+      'security' => '安全',
+      'changePassword' => '修改密码',
+      'setPassword' => '设置密码',
+      'protectedStatus' => '受保护',
+      'removePassword' => '移除密码',
+      'enterPasswordToChange' => '输入密码 (留空以移除)',
+      'noAdminsYet' => '暂无管理员',
+      'noBannedMembers' => '暂无封锁成员',
+      'noMembersAvailable' => '暂无可用成员',
+      'accessControl' => '访问控制',
+      'broadcast' => '广播',
+      'addAnnouncement' => '发布公告',
+      'areYouSureYouWantToDeleteR' =>
+          ({required Object r}) => '确定要删除 ${r} 吗？此操作不可撤销。',
+      'membersList' => '成员列表',
+      'onlineUsersList' => '在线成员列表',
+      'room' => '房间',
+      'noPasswordSet' => '未设置密码',
+      'passwordProtected' => '密码保护',
+      'imageLabel' => '图片',
+      'stickersLabel' => '贴纸',
+      'roomId' => '房间 ID',
+      'pokedYou' => '戳了你一下',
+      'kickedFromServerByP' => ({required Object p}) => '被 ${p} 移出了服务器',
+      'kickedFromRoomByP' => ({required Object p}) => '被 ${p} 移出了房间',
+      'leftTheRoom' => '离开了房间',
+      'joinedTheRoom' => '加入了房间',
+      'pWasKickedByO' =>
+          ({required Object p, required Object o}) => '${p} 被 ${o} 踢出了房间',
+      'youLabel' => '您',
+      'leftTheServer' => '离开了服务器',
+      'joinedTheServer' => '加入了服务器',
+      'updatedTheAnnouncement' => '更新了公告',
+      'recalledAMessage' => '撤回了一条消息',
+      'pReactedWithO' =>
+          (
+          {required Object p, required Object o}) => '${p} 对消息做出了回应 ${o}',
+      'pRemovedReactionO' =>
+          ({required Object p, required Object o}) => '${p} 取消了回应 ${o}',
+      'noUsersAvailableToInvite' => '暂无可用邀请的用户',
+      'inviteToRoom' => '邀请加入房间',
+      'invite' => '邀请',
+      'roomInvite' => '房间邀请',
+      'invitedYouTo' => '邀请你加入',
+      'acceptInvite' => '接受',
+      'acceptedYourInvite' => '接受了你的邀请',
+      'declinedYourInvite' => '拒绝了你的邀请',
+      'blockedYourInvites' => '屏蔽了你的邀请',
+      'blockedInvitesList' => '邀请屏蔽列表',
+      'noBlockedInvites' => '暂无屏蔽的邀请者',
+      'allowMemberInvites' => '允许成员邀请',
+      'letAllMembersInviteOthers' => '允许所有成员邀请其他人加入房间',
+      'declineAndBlock' => '拒绝并屏蔽',
+      'memes' => '表情包',
+      'memeSaved' => '已保存到表情包',
+      'networkInfo' => '网络信息',
+      'hubInfo' => 'Hub 信息',
+      'statsInfo' => '统计信息',
+      'sourceInfo' => '源信息',
+      'playerInfo' => '播放信息',
+      'hideLabel' => '隐藏',
+      'showLabel' => '显示',
+      'personaManagement' => '角色管理',
+      'promptConfiguration' => '提示配置',
+      'systemPrompt' => '系统提示',
+      'temperature' => '温度 (Temperature)',
+      'promptSaved' => '提示词已保存',
+      'editSystemPrompt' => '编辑系统提示词',
+      'noHistoryYet' => '暂无历史',
+      'clearAll' => '清空',
+      'configCopiedToClipboard' => '配置已复制到剪贴板',
+      'importedAsNewConfig' => '已作为新配置导入',
+      'imported' => '已导入',
+      'invalidClipboardFormat' => '剪贴板格式无效',
+      'cannotModifySystemPreset' => '不能修改系统预设',
+      'configKeyAlreadyExists' => '配置 Key 已存在，请修改。',
+      'requiredField' => '必填',
+      'configKey' => '配置 Key',
+      'memoField' => '备注',
+      'valueRange' => '范围：0.0 - 1.0',
+      'readOnlySystemPreset' => '只读系统预设',
+      'deleteConfig' => '删除配置',
+      'areYouSureYouWantToDeleteGeneric' => '确定要删除吗',
+      'baseUrl' => '基础 URL',
+      'optionalField' => '可选',
+      'model' => '模型',
+      'addModel' => '添加模型',
+      'modelId' => '模型 ID',
+      'displayName' => '显示名称',
+      'noModelsAddOneAbove' => '暂无模型，请在上方添加。',
+      'placeholdersDescription' =>
+          (
+          {required Object animeCount, required Object animeNames, required Object topTags}) => '占位符：${animeCount} ${animeNames} ${topTags}',
+      'aiHub' => 'AI 中心',
+      'selectYearAndMonth' => '选择年月',
+      'enterYear' => '输入年份',
+      'selectDay' => '选择日期',
+      'fullYear' => '全年',
+      'quickSelect' => '快速选择',
+      'selectDateRange' => '选择日期范围',
+      'manualSelect' => '手动选择',
+      'qrAndClipboard' => '二维码与剪贴板',
+      _ => null,
+    };
+  }
+}

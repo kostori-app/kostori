@@ -470,19 +470,16 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                 8,
                                                 5,
                                               ),
-                                              // 可选，设置内边距
                                               decoration: BoxDecoration(
                                                 borderRadius:
-                                                    BorderRadius.circular(
-                                                      8.0,
-                                                    ), // 设置圆角半径
+                                                    BorderRadius.circular(8.0),
                                                 color: Colors.transparent,
                                                 border: Border.all(
                                                   color: Theme.of(context)
                                                       .colorScheme
                                                       .primary
                                                       .toOpacity(0.72),
-                                                  width: 1.0, // 设置边框宽度
+                                                  width: 1.0,
                                                 ),
                                               ),
                                               child: Text(
@@ -604,12 +601,12 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                               5,
                                                               8,
                                                               5,
-                                                            ), // 可选，设置内边距
+                                                            ),
                                                         decoration: BoxDecoration(
                                                           borderRadius:
                                                               BorderRadius.circular(
                                                                 8,
-                                                              ), // 设置圆角半径
+                                                              ),
                                                           border: Border.all(
                                                             color:
                                                                 Theme.of(
@@ -620,8 +617,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                                     .toOpacity(
                                                                       0.72,
                                                                     ),
-                                                            width:
-                                                                1.0, // 设置边框宽度
+                                                            width: 1.0,
                                                           ),
                                                         ),
                                                         child: Text(
@@ -639,7 +635,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                     Column(
                                                       crossAxisAlignment:
                                                           CrossAxisAlignment
-                                                              .end, // 右对齐
+                                                              .end,
                                                       children: [
                                                         RatingBarIndicator(
                                                           itemCount: 5,
@@ -658,16 +654,15 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                           itemSize: 20.0,
                                                         ),
                                                         Text(
-                                                          '@t reviews | #@r'
-                                                              .tlParams({
-                                                                'r': bangumiItem
-                                                                    .rank,
-                                                                't': bangumiItem
-                                                                    .total,
-                                                              }),
-                                                          style: TextStyle(
-                                                            fontSize: 12,
+                                                          context.t.tReviewsR(
+                                                            t: bangumiItem
+                                                                .total,
+                                                            r: bangumiItem.rank,
                                                           ),
+                                                          style:
+                                                              const TextStyle(
+                                                                fontSize: 12,
+                                                              ),
                                                         ),
                                                       ],
                                                     ),

@@ -624,6 +624,10 @@ class ImageSaver {
       showResult(success: true, message: mobileSuccessMessage);
       final data = await file.readAsBytes();
       await Share.shareFile(data: data, filename: filename, mime: 'image/png');
+      if (App.isAndroid) {
+        const platform = MethodChannel('kostori/media');
+        await platform.invokeMethod('scanFolder', {'path': file.parent.path});
+      }
     }
   }
 

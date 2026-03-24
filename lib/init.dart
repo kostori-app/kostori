@@ -14,6 +14,7 @@ import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
@@ -44,6 +45,7 @@ Future<void> init() async {
     App.initComponents(),
     SAFTaskWorker().init().wait(),
     AppTranslation.init().wait(),
+    I18nUtils.init().wait(),
     JsEngine().init().wait(),
     AnimeSourceManager().init().wait(),
   ];

@@ -106,7 +106,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
               children: [
                 Icon(Icons.query_stats_outlined, color: cs.primary, size: 20),
                 const SizedBox(width: 8),
-                Center(child: Text('统计图表'.tl, style: ts.s16)),
+                Center(child: Text(context.t.statsInfo, style: ts.s16)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(
