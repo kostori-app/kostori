@@ -25,7 +25,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
     try {
       final data = await loadAnimeData();
       if (data.likedItems.isEmpty) {
-        App.rootContext.showMessage(message: 'No liked anime found'.tl);
+        App.rootContext.showMessage(message: t.noLikedAnimeFound);
         return;
       }
 
@@ -33,7 +33,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
         _imageTagConfigKey,
       );
       if (cfg == null) {
-        App.rootContext.showMessage(message: 'AI配置缺失'.tl);
+        App.rootContext.showMessage(message: t.aiConfigMissing);
         return;
       }
       final systemPrompt = cfg.systemPrompt
@@ -82,7 +82,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: Text('AI 绘画 Tag'.tl),
+        title: Text(t.imageTag),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -103,7 +103,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
           children: [
             _AiCard(
               icon: Icons.psychology,
-              title: 'AI 设置'.tl,
+              title: t.aiSettings,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -131,7 +131,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.brush),
-                  label: Text(_isLoading ? 'Generating...'.tl : '生成 Tag'.tl),
+                  label: Text(_isLoading ? t.generating : t.generateTag),
                 ),
               ),
             ),
@@ -139,13 +139,13 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
               const SizedBox(height: 8),
               _AiCard(
                 icon: Icons.tag,
-                title: 'Generated Tags'.tl,
+                title: t.generatedTags,
                 trailing: IconButton(
                   icon: const Icon(Icons.copy, size: 18),
-                  tooltip: 'Copy all'.tl,
+                  tooltip: t.copyAll,
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: _tags.join(', ')));
-                    App.rootContext.showMessage(message: 'Copied'.tl);
+                    App.rootContext.showMessage(message: t.copied);
                   },
                 ),
                 child: Wrap(
@@ -156,7 +156,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: tag));
                         App.rootContext.showMessage(
-                          message: '"$tag" copied'.tl,
+                          message: t.tagCopied,
                         );
                       },
                       child: Container(

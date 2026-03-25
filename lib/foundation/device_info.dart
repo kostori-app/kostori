@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart' show App, Navigation, ColorExt;
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 class DeviceInfo {
   static Future<Object?> getDeviceInfo() async {
@@ -56,7 +56,7 @@ class DeviceInfo {
                                   text: '${entry.key}: ${entry.value}',
                                 ),
                               );
-                              App.rootContext.showMessage(message: '复制成功');
+                              App.rootContext.showMessage(message: t.copySuccess);
                             },
                             onTap: () {},
                             child: ListTile(
@@ -79,15 +79,15 @@ class DeviceInfo {
             ),
           ),
           actions: [
-            FilledButton(
+              FilledButton(
               onPressed: () {
                 final allText = infoMap.entries
                     .map((e) => '${e.key}: ${e.value}')
                     .join('\n');
                 Clipboard.setData(ClipboardData(text: allText));
-                App.rootContext.showMessage(message: '全部复制成功');
+                App.rootContext.showMessage(message: t.allCopiedSuccess);
               },
-              child: Text("Copy".tl),
+              child: Text(t.copy),
             ),
           ],
         );
@@ -98,78 +98,78 @@ class DeviceInfo {
   static Map<String, dynamic> deviceInfoToMap(dynamic info) {
     if (info is AndroidDeviceInfo) {
       return {
-        'name'.tl: info.name,
-        'brand'.tl: info.brand,
-        'model'.tl: info.model,
-        'device'.tl: info.device,
-        'product'.tl: info.product,
-        'manufacturer'.tl: info.manufacturer,
-        'version_release'.tl: info.version.release,
-        'version_sdkInt'.tl: info.version.sdkInt,
-        'display'.tl: info.display,
-        'hardware'.tl: info.hardware,
-        'physicalRamSize'.tl: info.physicalRamSize,
-        'availableRamSize'.tl: info.availableRamSize,
-        'freeDiskSize'.tl: info.freeDiskSize,
-        'totalDiskSize'.tl: info.totalDiskSize,
-        'isPhysicalDevice'.tl: info.isPhysicalDevice,
+        t.name: info.name,
+        t.brandField: info.brand,
+        t.model: info.model,
+        t.deviceField: info.device,
+        t.productField: info.product,
+        t.manufacturerField: info.manufacturer,
+        t.versionReleaseField: info.version.release,
+        t.versionSdkIntField: info.version.sdkInt,
+        t.displayField: info.display,
+        t.hardwareField: info.hardware,
+        t.physicalRamSizeField: info.physicalRamSize,
+        t.availableRamSizeField: info.availableRamSize,
+        t.freeDiskSizeField: info.freeDiskSize,
+        t.totalDiskSizeField: info.totalDiskSize,
+        t.isPhysicalDeviceField: info.isPhysicalDevice,
       };
     } else if (info is IosDeviceInfo) {
       return {
-        'name'.tl: info.name,
-        'systemName'.tl: info.systemName,
-        'systemVersion'.tl: info.systemVersion,
-        'model'.tl: info.model,
-        'modelName'.tl: info.modelName,
-        'identifierForVendor'.tl: info.identifierForVendor,
-        'physicalRamSize'.tl: info.physicalRamSize,
-        'availableRamSize'.tl: info.availableRamSize,
-        'sysname'.tl: info.utsname.sysname,
-        'nodename'.tl: info.utsname.nodename,
-        'release'.tl: info.utsname.release,
-        'version'.tl: info.utsname.version,
-        'machine'.tl: info.utsname.machine,
-        'isPhysicalDevice'.tl: info.isPhysicalDevice,
+        t.name: info.name,
+        t.systemNameField: info.systemName,
+        t.systemVersionField: info.systemVersion,
+        t.model: info.model,
+        t.modelNameField: info.modelName,
+        t.identifierForVendorField: info.identifierForVendor,
+        t.physicalRamSizeField: info.physicalRamSize,
+        t.availableRamSizeField: info.availableRamSize,
+        t.sysnameField: info.utsname.sysname,
+        t.nodenameField: info.utsname.nodename,
+        t.releaseField: info.utsname.release,
+        t.versionField: info.utsname.version,
+        t.machineField: info.utsname.machine,
+        t.isPhysicalDeviceField: info.isPhysicalDevice,
       };
     } else if (info is WindowsDeviceInfo) {
       return {
-        'computerName'.tl: info.computerName,
-        'numberOfCores'.tl: info.numberOfCores,
-        'systemMemoryInMegabytes'.tl: info.systemMemoryInMegabytes,
-        'userName'.tl: info.userName,
-        'majorVersion'.tl: info.majorVersion,
-        'minorVersion'.tl: info.minorVersion,
-        'buildNumber'.tl: info.buildNumber,
-        'displayVersion'.tl: info.displayVersion,
-        'productName'.tl: info.productName,
-        'registeredOwner'.tl: info.registeredOwner,
-        'releaseId'.tl: info.releaseId,
-        'deviceId'.tl: info.deviceId,
+        t.computerNameField: info.computerName,
+        t.numberOfCoresField: info.numberOfCores,
+        t.systemMemoryInMegabytesField: info.systemMemoryInMegabytes,
+        t.userNameField: info.userName,
+        t.majorVersionField: info.majorVersion,
+        t.minorVersionField: info.minorVersion,
+        t.buildNumberField: info.buildNumber,
+        t.displayVersionField: info.displayVersion,
+        t.productNameField: info.productName,
+        t.registeredOwnerField: info.registeredOwner,
+        t.releaseIdField: info.releaseId,
+        'deviceId': info.deviceId,
       };
     } else if (info is LinuxDeviceInfo) {
       return {
-        'name'.tl: info.name,
-        'version'.tl: info.version,
-        'idLike'.tl: info.idLike,
-        'versionCodename'.tl: info.versionCodename,
-        'versionId'.tl: info.versionId,
-        'prettyName'.tl: info.prettyName,
+        t.name: info.name,
+        t.versionField: info.version,
+        'idLike': info.idLike,
+        'versionCodename': info.versionCodename,
+        'versionId': info.versionId,
+        'prettyName': info.prettyName,
       };
     } else if (info is MacOsDeviceInfo) {
       return {
-        'computerName'.tl: info.computerName,
-        'hostName'.tl: info.hostName,
-        'arch'.tl: info.arch,
-        'model'.tl: info.model,
-        'modelName'.tl: info.modelName,
-        'kernelVersion'.tl: info.kernelVersion,
-        'osRelease'.tl: info.osRelease,
-        'majorVersion'.tl: info.majorVersion,
-        'minorVersion'.tl: info.minorVersion,
-        'patchVersion'.tl: info.patchVersion,
-        'activeCPUs'.tl: info.activeCPUs,
-        'memorySize'.tl: info.memorySize,
-        'cpuFrequency'.tl: info.cpuFrequency,
+        t.computerNameField: info.computerName,
+        'hostName': info.hostName,
+        'arch': info.arch,
+        t.model: info.model,
+        t.modelNameField: info.modelName,
+        'kernelVersion': info.kernelVersion,
+        'osRelease': info.osRelease,
+        t.majorVersionField: info.majorVersion,
+        t.minorVersionField: info.minorVersion,
+        'patchVersion': info.patchVersion,
+        'activeCPUs': info.activeCPUs,
+        'memorySize': info.memorySize,
+        'cpuFrequency': info.cpuFrequency,
       };
     } else if (info == null) {
       return {"提示": "未获取到设备信息"};

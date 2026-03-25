@@ -84,7 +84,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                "Favorite".tl,
+                t.favorite,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -100,7 +100,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     onPressed: () {
                       // 编辑功能暂不实现
                     },
-                    child: Text("Edit".tl),
+                    child: Text(t.edit),
                   ),
                   Row(
                     children: [
@@ -108,7 +108,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                         onPressed: () {
                           Navigator.of(context).pop();
                         },
-                        child: Text("Cancel".tl),
+                        child: Text(t.cancel),
                       ),
                       const SizedBox(width: 8),
                       FilledButton(
@@ -177,12 +177,12 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                                       ).colorScheme.primary,
                                       autostart: Autostart.once,
                                     ),
-                                    message: '操作成功',
+                                    message: t.operationSuccess,
                                     context: context,
                                   );
                                 }
                               },
-                        child: Text('OK'.tl),
+                        child: Text(t.ok),
                       ),
                     ],
                   ),
@@ -194,10 +194,10 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  "@a to add • @b to remove".tlParams({
-                    "a": foldersToAdd,
-                    "b": foldersToRemove,
-                  }),
+                  t.aToAddBToRemove(
+                    a: foldersToAdd.toString(),
+                    b: foldersToRemove.toString(),
+                  ),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.outlineVariant,
                   ),
@@ -247,7 +247,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Added".tl,
+                    t.added,
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                 ),
@@ -277,7 +277,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
             children: [
               const Icon(Icons.add, size: 20),
               const SizedBox(width: 4),
-              Text("New Folder".tl),
+              Text(t.newFolder),
             ],
           ),
         ),

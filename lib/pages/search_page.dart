@@ -8,6 +8,7 @@ import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
@@ -130,23 +131,23 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget buildEmpty() {
-    var msg = "No Search Sources".tl;
+    var msg = t.noSearchSources;
     msg += '\n';
     VoidCallback onTap;
     if (AnimeSource.isEmpty) {
-      msg += "Please add some sources".tl;
+      msg += t.pleaseAddSomeSources;
       onTap = () {
         context.to(() => AnimeSourceSettings());
       };
     } else {
-      msg += "Please check your settings".tl;
+      msg += t.pleaseCheckYourSettings;
       onTap = manageSearchSources;
     }
     return NetworkError(
       message: msg,
       retry: onTap,
       withAppbar: true,
-      buttonText: "Manage".tl,
+      buttonText: t.manage,
     );
   }
 
@@ -198,7 +199,7 @@ class _SearchPageState extends State<SearchPage> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.search),
-              title: Text("Search in".tl),
+              title: Text(t.searchIn),
               trailing: IconButton(
                 icon: const Icon(Icons.settings),
                 onPressed: manageSearchSources,
@@ -224,7 +225,7 @@ class _SearchPageState extends State<SearchPage> {
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text("Aggregated Search".tl),
+              title: Text(t.aggregatedSearch),
               leading: Checkbox(
                 value: aggregatedSearch,
                 onChanged: (value) {
@@ -262,7 +263,7 @@ class _SearchPageState extends State<SearchPage> {
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             icon: const Icon(Icons.tune),
-            label: Text('Search Options'.tl),
+            label: Text(t.searchOptions),
             onPressed: () => _showSearchOptionsDialog(searchOptions),
           ),
         ),
@@ -281,7 +282,7 @@ class _SearchPageState extends State<SearchPage> {
         return StatefulBuilder(
           builder: (context, setStates) {
             return ContentDialog(
-              title: 'Search Options'.tl,
+              title: t.searchOptions,
               content: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height * 3 / 4,
@@ -420,14 +421,14 @@ class SearchHistory extends ConsumerWidget {
     return ListTile(
       leading: const Icon(Icons.history),
       contentPadding: EdgeInsets.zero,
-      title: Text("Search History".tl),
+      title: Text(t.searchHistory),
       trailing: Flyout(
         flyoutBuilder: (context) {
           return FlyoutContent(
-            title: "Clear Search History".tl,
+            title: t.clearSearchHistory,
             actions: [
               FilledButton(
-                child: Text("Clear".tl),
+                child: Text(t.clear),
                 onPressed: () {
                   ref.read(searchHistoryProvider.notifier).clear();
                   context.pop();
@@ -439,7 +440,7 @@ class SearchHistory extends ConsumerWidget {
         child: Builder(
           builder: (context) {
             return Tooltip(
-              message: "Clear".tl,
+              message: t.clear,
               child: IconButton(
                 icon: const Icon(Icons.clear_all),
                 onPressed: () {
@@ -463,12 +464,12 @@ class SearchHistory extends ConsumerWidget {
       showMenuX(context, offset, [
         MenuEntry(
           icon: Icons.copy,
-          text: 'Copy'.tl,
+          text: t.copy,
           onClick: () => Clipboard.setData(ClipboardData(text: item.keyword)),
         ),
         MenuEntry(
           icon: Icons.delete,
-          text: 'Delete'.tl,
+          text: t.delete,
           onClick: () =>
               ref.read(searchHistoryProvider.notifier).delete(item.keyword),
         ),

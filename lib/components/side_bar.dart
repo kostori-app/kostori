@@ -202,7 +202,7 @@ class _SidebarBodyState extends State<SidebarBody> {
                   width: 8,
                 ),
                 Tooltip(
-                  message: "Back".tl,
+                  message: t.back,
                   child: IconButton(
                     iconSize: 25,
                     icon: const Icon(Icons.arrow_back_ios_new),

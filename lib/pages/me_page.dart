@@ -13,12 +13,12 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/data_sync.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class MePage extends StatefulWidget {
@@ -163,7 +163,7 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
-            title: Text('Syncing Data'.tl),
+            title: Text(t.syncingData),
             trailing: const CircularProgressIndicator(
               strokeWidth: 2,
             ).fixWidth(18).fixHeight(18),
@@ -182,7 +182,7 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
-            title: Text('Sync Data'.tl),
+            title: Text(t.syncData),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -192,7 +192,7 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
                     onTap: () {
                       showDialogMessage(
                         App.rootContext,
-                        "Error".tl,
+                        t.error,
                         DataSync().lastError!,
                       );
                     },
@@ -213,7 +213,7 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
                             size: 18,
                           ),
                           const SizedBox(width: 4),
-                          Text('Error'.tl, style: ts.s12),
+                          Text(t.error, style: ts.s12),
                         ],
                       ),
                     ),
@@ -279,7 +279,7 @@ class TodayRecommendation extends StatelessWidget {
                 children: [
                   Icon(Icons.auto_awesome, color: cs.primary, size: 20),
                   const SizedBox(width: 8),
-                  Text('Today Recommendation'.tl, style: ts.s16),
+                  Text(t.todayRecommendation, style: ts.s16),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -492,7 +492,7 @@ class _ImageManipulationState extends ConsumerState<_ImageManipulation> {
                   children: [
                     Icon(Icons.browse_gallery, color: cs.primary, size: 20),
                     const SizedBox(width: 8),
-                    Center(child: Text('Image Operations'.tl, style: ts.s16)),
+                    Center(child: Text(t.imageOperations, style: ts.s16)),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       padding: const EdgeInsets.symmetric(

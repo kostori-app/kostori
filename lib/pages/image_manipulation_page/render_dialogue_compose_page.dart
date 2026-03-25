@@ -242,7 +242,7 @@ class _RenderDialogueComposePageState
   }
 
   Future<void> _captureAndSaveLongImage(BuildContext context) async {
-    App.rootContext.showMessage(message: '正在保存');
+    App.rootContext.showMessage(message: t.saving);
 
     try {
       // 读取配置项
@@ -340,10 +340,10 @@ class _RenderDialogueComposePageState
       final notifier = ref.read(imagesProvider.notifier);
       await notifier.loadImages();
 
-      App.rootContext.showMessage(message: '保存成功');
+      App.rootContext.showMessage(message: t.saveSuccess);
     } catch (e, st) {
       debugPrint('保存长图异常: $e\n$st');
-      App.rootContext.showMessage(message: '保存失败: $e');
+      App.rootContext.showMessage(message: t.saveFailedWithError(e: e.toString()));
     }
   }
 
@@ -427,9 +427,9 @@ class _RenderDialogueComposePageState
                             padding: const EdgeInsets.all(6),
                             color: Colors.black54,
                             child: Text(
-                              'Crop Height: @c px'.tlParams({
-                                "c": crop.toStringAsFixed(0),
-                              }),
+                              t.cropHeightCPx(
+                                c: crop.toStringAsFixed(0),
+                              ),
                               style: const TextStyle(color: Colors.white),
                             ),
                           ),
@@ -475,7 +475,7 @@ class _RenderDialogueComposePageState
         if (snapshot.hasError ||
             snapshot.data == null ||
             snapshot.data!.isEmpty) {
-          return Center(child: Text("No Images".tl));
+          return Center(child: Text(t.noImages));
         }
 
         final images = snapshot.data!;
@@ -559,7 +559,7 @@ class _RenderDialogueComposePageState
                   if (!isReorderMode && !isCroppingMode) ...[
                     ElevatedButton.icon(
                       icon: const Icon(Icons.color_lens),
-                      label: Text("Border Color".tl),
+                      label: Text(t.borderColor),
                       onPressed: _showBorderSettings,
                     ),
                     const SizedBox(width: 20),
@@ -568,7 +568,7 @@ class _RenderDialogueComposePageState
                     ElevatedButton.icon(
                       icon: Icon(isReorderMode ? Icons.check : Icons.sort),
                       label: Text(
-                        isReorderMode ? "Finish Sorting".tl : "Sort Images".tl,
+                        isReorderMode ? t.finishSorting : t.sortImages,
                       ),
                       onPressed: () {
                         setState(() {
@@ -582,7 +582,7 @@ class _RenderDialogueComposePageState
                     ElevatedButton.icon(
                       icon: Icon(isCroppingMode ? Icons.check : Icons.crop),
                       label: Text(
-                        isCroppingMode ? "Finish Cropping".tl : "Crop Image".tl,
+                        isCroppingMode ? t.finishCropping : t.cropImage,
                       ),
                       onPressed: () {
                         setState(() {
@@ -595,7 +595,7 @@ class _RenderDialogueComposePageState
                     const SizedBox(width: 20),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.vertical_align_center),
-                      label: Text("Uniform Height".tl),
+                      label: Text(t.uniformHeight),
                       onPressed: () {
                         double targetHeight = cropHeights.length > 1
                             ? cropHeights[1]
@@ -607,7 +607,7 @@ class _RenderDialogueComposePageState
                         showGeneralDialog(
                           context: context,
                           barrierDismissible: true,
-                          barrierLabel: 'Set Uniform Height'.tl,
+                          barrierLabel: t.setUniformHeight,
                           barrierColor: Colors.black.toOpacity(0.3),
                           pageBuilder:
                               (context, animation, secondaryAnimation) {
@@ -649,7 +649,7 @@ class _RenderDialogueComposePageState
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Text(
-                                                  "Set Uniform Height".tl,
+                                                  t.setUniformHeight,
                                                   style: Theme.of(
                                                     context,
                                                   ).textTheme.titleLarge,
@@ -674,7 +674,7 @@ class _RenderDialogueComposePageState
                                                   keyboardType:
                                                       TextInputType.number,
                                                   decoration: InputDecoration(
-                                                    labelText: 'Height(px)'.tl,
+                                                    labelText: t.heightPx,
                                                     border:
                                                         OutlineInputBorder(),
                                                     isDense: true,
@@ -702,14 +702,14 @@ class _RenderDialogueComposePageState
                                                       MainAxisAlignment.end,
                                                   children: [
                                                     TextButton(
-                                                      child: Text("Cancel".tl),
+                                                      child: Text(t.cancel),
                                                       onPressed: () =>
                                                           Navigator.of(
                                                             context,
                                                           ).pop(),
                                                     ),
                                                     ElevatedButton(
-                                                      child: Text("Apply".tl),
+                                                      child: Text(t.apply),
                                                       onPressed: () {
                                                         for (
                                                           int i = 1;
@@ -746,7 +746,7 @@ class _RenderDialogueComposePageState
                     const SizedBox(width: 20),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.save),
-                      label: Text("Save Long Image".tl),
+                      label: Text(t.saveLongImage),
                       onPressed: () => _captureAndSaveLongImage(context),
                     ),
                   ],
@@ -763,7 +763,7 @@ class _RenderDialogueComposePageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: Text("Stitch Subtitles".tl),
+        title: Text(t.stitchSubtitles),
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),

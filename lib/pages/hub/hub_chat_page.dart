@@ -19,7 +19,7 @@ import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 part 'hub_chat_page_upload.dart';
 
@@ -254,7 +254,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         );
         if (event.setByName.isNotEmpty) {
           App.rootContext.showMessage(
-            message: '📢 ${event.setByName} ${"updated the announcement".tl}',
+            message: '📢 ${event.setByName} ${t.updatedTheAnnouncement}',
             style: ToastStyle.topRight,
           );
         }
@@ -505,7 +505,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Drop to send image'.tl,
+                              t.dropToSendImage,
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
@@ -547,10 +547,10 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           }
         },
         itemBuilder: (_) => [
-          PopupMenuItem(value: 'mute', child: Text('Mute'.tl)),
-          PopupMenuItem(value: 'unmute', child: Text('Unmute'.tl)),
-          PopupMenuItem(value: 'kick', child: Text('Kick'.tl)),
-          PopupMenuItem(value: 'ban', child: Text('Room Ban'.tl)),
+          PopupMenuItem(value: 'mute', child: Text(t.mute)),
+          PopupMenuItem(value: 'unmute', child: Text(t.unmute)),
+          PopupMenuItem(value: 'kick', child: Text(t.kick)),
+          PopupMenuItem(value: 'ban', child: Text(t.roomBan)),
         ],
       ),
     ];
@@ -574,7 +574,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
           Icon(Icons.circle, size: 6, color: Colors.greenAccent.shade400),
           const SizedBox(width: 6),
           Text(
-            '$count ${"online".tl}',
+            '$count ${t.online}',
             style: TextStyle(fontSize: 12, color: cs.onSurface.toOpacity(0.5)),
           ),
         ],
@@ -646,7 +646,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Pinned Messages'.tl,
+                      t.pinnedMessages,
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -790,7 +790,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         _entries.isEmpty
             ? Center(
                 child: Text(
-                  'No messages yet'.tl,
+                  t.noMessagesYet,
                   style: TextStyle(
                     fontSize: 13,
                     color: cs.onSurface.toOpacity(0.35),
@@ -920,7 +920,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
                     Icon(Icons.arrow_downward, size: 12, color: cs.onPrimary),
                     const SizedBox(width: 4),
                     Text(
-                      'New messages'.tl,
+                      t.newMessages,
                       style: TextStyle(fontSize: 11, color: cs.onPrimary),
                     ),
                   ],
@@ -1095,7 +1095,7 @@ class _AnnouncementCarouselState extends State<_AnnouncementCarousel> {
                 builder: (_) => ContentDialog(
                   isDismissible: true,
                   displayButton: false,
-                  title: 'Announcement'.tl,
+                  title: t.announcement,
                   content: Container(
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 2 / 3,

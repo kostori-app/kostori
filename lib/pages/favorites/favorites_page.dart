@@ -22,6 +22,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
@@ -29,7 +30,6 @@ import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/favorites/favorites_controller.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 
 part 'bangumi_favorites_page.dart';
 
@@ -238,7 +238,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
         slivers: [
           SliverAppbar(
             leading: Tooltip(
-              message: "Folders".tl,
+              message: t.folders,
               child: context.width <= _kTwoPanelChangeWidth
                   ? IconButton(
                       icon: const Icon(Icons.menu),
@@ -251,7 +251,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
               onTap: context.width < _kTwoPanelChangeWidth
                   ? showFolderSelector
                   : null,
-              child: Text("Unselected".tl),
+              child: Text(t.unselected),
             ),
           ),
         ],

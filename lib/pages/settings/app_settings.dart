@@ -14,22 +14,22 @@ class _AppSettingsState extends State<AppSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("App".tl)),
+        SliverAppbar(title: Text(t.app)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
-                _SettingPartTitle(title: "Data".tl, icon: Icons.storage),
+                _SettingPartTitle(title: t.data, icon: Icons.storage),
                 ListTile(
-                  title: Text("Cache Size".tl),
+                  title: Text(t.cacheSize),
                   subtitle: Text(
                     bytesToReadableString(CacheManager().currentSize),
                   ),
                 ),
                 _CallbackSetting(
-                  title: "Clear Cache".tl,
-                  actionTitle: "Clear".tl,
+                  title: t.clearCache,
+                  actionTitle: t.clear,
                   callback: () async {
                     var loadingDialog = showLoadingDialog(
                       App.rootContext,
@@ -38,18 +38,18 @@ class _AppSettingsState extends State<AppSettings> {
                     );
                     await CacheManager().clear();
                     loadingDialog.close();
-                    context.showMessage(message: "Cache cleared".tl);
+                    context.showMessage(message: t.cacheCleared);
                     setState(() {});
                   },
                 ),
                 _CallbackSetting(
-                  title: "Cache Limit".tl,
+                  title: t.cacheLimit,
                   subtitle: "${appdata.settings['cacheSize']} MB",
                   callback: () {
                     showInputDialog(
                       context: context,
-                      title: "Set Cache Limit".tl,
-                      hintText: "Size in MB".tl,
+                      title: t.setCacheLimit,
+                      hintText: t.sizeInMb,
                       inputValidator: RegExp(r"^\d+$"),
                       onConfirm: (value) {
                         appdata.settings['cacheSize'] = int.parse(value);
@@ -62,11 +62,11 @@ class _AppSettingsState extends State<AppSettings> {
                       },
                     );
                   },
-                  actionTitle: 'Set'.tl,
+                  actionTitle: t.set,
                 ),
                 _CallbackSetting(
-                  title: "Export App Data".tl,
-                  actionTitle: 'Export'.tl,
+                  title: t.exportAppData,
+                  actionTitle: t.export,
                   callback: () async {
                     var controller = showLoadingDialog(context);
                     var file = await exportAppData();
@@ -75,8 +75,8 @@ class _AppSettingsState extends State<AppSettings> {
                   },
                 ),
                 _CallbackSetting(
-                  title: "Import App Data".tl,
-                  actionTitle: 'Import'.tl,
+                  title: t.importAppData,
+                  actionTitle: t.import,
                   callback: () async {
                     var controller = showLoadingDialog(context);
                     var file = await selectFile(ext: ['kostori']);
@@ -89,9 +89,7 @@ class _AppSettingsState extends State<AppSettings> {
                         await importAppData(cacheFile);
                       } catch (e, s) {
                         Log.error("Import data", e.toString(), s);
-                        context.showMessage(
-                          message: "Failed to import data".tl,
-                        );
+                        context.showMessage(message: t.failedToImport);
                       } finally {
                         cacheFile.deleteIgnoreError();
                         App.forceRebuild();
@@ -101,8 +99,8 @@ class _AppSettingsState extends State<AppSettings> {
                   },
                 ),
                 _CallbackSetting(
-                  title: "Data Sync".tl,
-                  actionTitle: 'Set'.tl,
+                  title: t.dataSync,
+                  actionTitle: t.set,
                   callback: () async {
                     showPopUpWidget(context, const _WebdavSetting());
                   },
@@ -116,21 +114,25 @@ class _AppSettingsState extends State<AppSettings> {
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
-                _SettingPartTitle(title: "User".tl, icon: Icons.person_outline),
+                _SettingPartTitle(title: t.user, icon: Icons.person_outline),
                 SelectSetting(
-                  title: "Language".tl,
+                  title: t.language,
                   settingKey: "language",
                   optionTranslation: {
-                    "system": "System".tl,
-                    "zh-CN": "Simplified Chinese".tl,
-                    "zh-TW": "Traditional Chinese".tl,
-                    "en-US": "English".tl,
+                    "system": t.system,
+                    "zh-CN": t.simplifiedChinese,
+                    "zh-TW": t.traditionalChinese,
+                    "en-US": "English",
                   },
-                  onChanged: () => App.forceRebuild(),
+                  onChanged: () async {
+                    var lang = appdata.settings['language'];
+                    await LocaleSettings.setLocaleRaw(lang);
+                    App.forceRebuild();
+                  },
                 ),
                 if (!App.isLinux)
                   _SwitchSetting(
-                    title: "Authorization Required".tl,
+                    title: t.authorizationRequired,
                     settingKey: "authorizationRequired",
                     onChanged: () async {
                       var current = appdata.settings['authorizationRequired'];
@@ -143,7 +145,7 @@ class _AppSettingsState extends State<AppSettings> {
                             await auth.isDeviceSupported();
                         if (!canAuthenticate) {
                           context.showMessage(
-                            message: "Biometrics not supported".tl,
+                            message: "Biometrics not supported",
                           );
                           setState(() {
                             appdata.settings['authorizationRequired'] = false;
@@ -214,7 +216,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
             TextField(
               decoration: InputDecoration(
                 labelText: "URL",
-                hintText: "A valid WebDav directory URL".tl,
+                hintText: t.aValidWebDavDirectoryUrl,
                 border: OutlineInputBorder(),
               ),
               controller: TextEditingController(text: url),
@@ -223,7 +225,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
             const SizedBox(height: 12),
             TextField(
               decoration: InputDecoration(
-                labelText: "Username".tl,
+                labelText: t.username,
                 border: const OutlineInputBorder(),
               ),
               controller: TextEditingController(text: user),
@@ -232,7 +234,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
             const SizedBox(height: 12),
             TextField(
               decoration: InputDecoration(
-                labelText: "Password".tl,
+                labelText: t.password,
                 border: const OutlineInputBorder(),
               ),
               controller: TextEditingController(text: pass),
@@ -241,7 +243,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
             const SizedBox(height: 12),
             ListTile(
               leading: Icon(Icons.sync),
-              title: Text("Auto Sync Data".tl),
+              title: Text(t.autoSyncData),
               contentPadding: EdgeInsets.zero,
               trailing: Switch(value: autoSync, onChanged: onAutoSyncChanged),
             ),
@@ -251,11 +253,11 @@ class _WebdavSettingState extends State<_WebdavSetting> {
               onChanged: (v) => setState(() => upload = v!),
               child: Row(
                 children: [
-                  Text("Operation".tl),
+                  Text(t.operation),
                   Radio(value: true),
-                  Text("Upload".tl),
+                  Text(t.upload),
                   Radio(value: false),
-                  Text("Download".tl),
+                  Text(t.download),
                 ],
               ),
             ),
@@ -275,8 +277,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              "Once the operation is successful, app will automatically sync data with the server."
-                                  .tl,
+                              t.onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer,
                             ),
                           ),
                         ],
@@ -299,7 +300,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                     appdata.implicitData['webdavAutoSync'] = false;
                     appdata.writeImplicitData();
                     appdata.saveData();
-                    context.showMessage(message: "Saved".tl);
+                    context.showMessage(message: t.saved);
                     App.rootPop();
                     return;
                   }
@@ -310,7 +311,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
 
                   if (!autoSync) {
                     appdata.saveData();
-                    context.showMessage(message: "Saved".tl);
+                    context.showMessage(message: t.saved);
                     App.rootPop();
                     return;
                   }
@@ -330,14 +331,14 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                     appdata.writeImplicitData();
                     appdata.saveData();
                     context.showMessage(message: testResult.errorMessage!);
-                    context.showMessage(message: "Saved Failed".tl);
+                    context.showMessage(message: t.savedFailed);
                   } else {
                     appdata.saveData();
-                    context.showMessage(message: "Saved".tl);
+                    context.showMessage(message: t.saved);
                     App.rootPop();
                   }
                 },
-                child: Text("Continue".tl),
+                child: Text(t['continue']),
               ),
             ),
           ],

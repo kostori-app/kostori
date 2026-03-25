@@ -24,14 +24,14 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
     try {
       final data = await loadAnimeData();
       if (data.likedItems.isEmpty) {
-        App.rootContext.showMessage(message: 'No liked anime found'.tl);
+        App.rootContext.showMessage(message: t.noLikedAnimeFound);
         return;
       }
       final cfg = await AiDatabase.instance.aiConfigDao.getByKey(
         _soulProfileConfigKey,
       );
       if (cfg == null) {
-        App.rootContext.showMessage(message: 'AI配置缺失'.tl);
+        App.rootContext.showMessage(message: t.aiConfigMissing);
         return;
       }
       final systemPrompt = cfg.systemPrompt
@@ -98,7 +98,7 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
       final filename = 'summary_${DateTime.now().millisecondsSinceEpoch}.png';
       await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
     } catch (e) {
-      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();
     }
@@ -108,7 +108,7 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: Text('灵魂侧写'.tl),
+        title: Text(t.soulProfile),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -130,7 +130,7 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
           children: [
             _AiCard(
               icon: Icons.psychology,
-              title: 'AI 设置'.tl,
+              title: t.aiSettings,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -156,17 +156,17 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.analytics),
-                label: Text(_isLoading ? 'Analyzing...'.tl : 'Analyze'.tl),
+                label: Text(_isLoading ? t.analyzing : t.analyze),
               ),
             ),
             if (_result != null) ...[
               const SizedBox(height: 8),
               _AiCard(
                 icon: Icons.auto_awesome,
-                title: 'Result'.tl,
+                title: t.result,
                 trailing: IconButton(
                   icon: const Icon(Icons.download_outlined, size: 18),
-                  tooltip: '导出截图'.tl,
+                  tooltip: t.exportScreenshot,
                   onPressed: _exportScreenshot,
                 ),
                 child: Column(

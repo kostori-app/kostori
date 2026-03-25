@@ -14,9 +14,9 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_full_item.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/utils/protocol_parser.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class PersonPage extends ConsumerStatefulWidget {
@@ -129,17 +129,17 @@ class _PersonPageState extends ConsumerState<PersonPage>
   }
 
   Map<String, int> relationValue = {
-    'Main character'.tl: 1,
-    'Supporting character'.tl: 2,
-    'Cameo'.tl: 3,
-    'Idle corner'.tl: 4,
+    t.mainCharacter: 1,
+    t.supportingCharacter: 2,
+    t.cameo: 3,
+    t.idleCorner: 4,
   };
 
   String getRelationName(int type) {
     return relationValue.entries
         .firstWhere(
           (entry) => entry.value == type,
-          orElse: () => MapEntry('Unknown'.tl, -1),
+          orElse: () => MapEntry(t.unknown, -1),
         )
         .key;
   }
@@ -193,13 +193,13 @@ class _PersonPageState extends ConsumerState<PersonPage>
                           : (characterFullItem.id == 0
                                 ? GeneralErrorWidget(
                                     errMsg:
-                                        "Nobody's posted anything yet...".tl,
+                                        t.nobodysPostedAnythingYet,
                                     actions: [
                                       GeneralErrorButton(
                                         onPressed: () {
                                           loadPerson();
                                         },
-                                        text: 'Reload'.tl,
+                                        text: t.reload,
                                       ),
                                     ],
                                   )
@@ -306,8 +306,8 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                     const EdgeInsets.symmetric(
                                                       vertical: 8.0,
                                                     ),
-                                                child: Text(
-                                                  'Profile Information'.tl,
+child: Text(
+                                                  t.profileInformation,
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .titleLarge
@@ -339,8 +339,8 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                       const EdgeInsets.symmetric(
                                                         vertical: 8.0,
                                                       ),
-                                                  child: Text(
-                                                    'Character Introduction'.tl,
+child: Text(
+                                                    t.characterIntroduction,
                                                     style: Theme.of(context)
                                                         .textTheme
                                                         .titleLarge
@@ -498,13 +498,13 @@ class _PersonPageState extends ConsumerState<PersonPage>
                 if (commentsQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: 'Failed to load, please try again.'.tl,
+                      errMsg: t.failedToLoadPleaseTryAgain,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadComments();
                           },
-                          text: 'Reload'.tl,
+                          text: t.reload,
                         ),
                       ],
                     ),
@@ -853,13 +853,13 @@ class _PersonPageState extends ConsumerState<PersonPage>
                     else if (characterPersonCastsQueryTimeout)
                       SliverFillRemaining(
                         child: GeneralErrorWidget(
-                          errMsg: 'Failed to load, please try again.'.tl,
+                          errMsg: t.failedToLoadPleaseTryAgain,
                           actions: [
                             GeneralErrorButton(
                               onPressed: () {
                                 loadPersonCasts();
                               },
-                              text: 'Reload'.tl,
+                              text: t.reload,
                             ),
                           ],
                         ),
@@ -914,7 +914,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
               await loadPersonCasts(offset: 0, type: value);
             },
             itemBuilder: (context) => [
-              PopupMenuItem(value: 0, child: Text('All'.tl)),
+              PopupMenuItem(value: 0, child: Text(t.all)),
               PopupMenuItem(value: 1, child: Text(getRelationName(1))),
               PopupMenuItem(value: 2, child: Text(getRelationName(2))),
               PopupMenuItem(value: 3, child: Text(getRelationName(3))),
@@ -925,7 +925,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
               label: Row(
                 children: [
                   Text(
-                    currentType == 0 ? 'All'.tl : getRelationName(currentType),
+                    currentType == 0 ? t.all : getRelationName(currentType),
                   ),
                   Text('(${characterPersonCastsList.length})'),
                 ],

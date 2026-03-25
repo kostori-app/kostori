@@ -11,7 +11,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/volume.dart';
 import 'package:marquee/marquee.dart';
 import 'package:photo_view/photo_view.dart';
@@ -365,26 +365,26 @@ class _TopBar extends ConsumerWidget {
     final localExists = currentFile.existsSync();
 
     return MenuButton(
-      message: "More".tl,
+      message: t.more,
       entries: [
         MenuEntry(
-          text: 'Properties'.tl,
+          text: t.properties,
           icon: Icons.info_outline,
           onClick: () => _showImageProperties(context, currentFile),
         ),
         MenuEntry(
-          text: 'Copy Path'.tl,
+          text: t.copyPath,
           icon: Icons.copy,
           onClick: () => _copyPath(context, currentFile.path),
         ),
         MenuEntry(
-          text: 'Share'.tl,
+          text: t.share,
           icon: Icons.share,
           onClick: () => _shareFile(currentFile),
         ),
         if (localExists)
           MenuEntry(
-            text: 'Delete'.tl,
+            text: t.delete,
             icon: Icons.delete,
             onClick: () => _confirmDelete(context, ref, currentFile, index),
           ),
@@ -423,7 +423,7 @@ class _TopBar extends ConsumerWidget {
 
   void _copyPath(BuildContext context, String path) {
     Clipboard.setData(ClipboardData(text: path));
-    context.showMessage(message: '已复制');
+    context.showMessage(message: t.copied);
   }
 
   Widget _iconBackground({
@@ -489,15 +489,15 @@ class _TopBar extends ConsumerWidget {
 
   MenuButton _buildDownloadMenuItems(BuildContext context) {
     return MenuButton(
-      message: "More".tl,
+      message: t.more,
       entries: [
         MenuEntry(
-          text: 'Copy Path'.tl,
+          text: t.copyPath,
           icon: Icons.copy,
           onClick: () => _copyPath(context, url),
         ),
         MenuEntry(
-          text: 'Download'.tl,
+          text: t.download,
           icon: Icons.download,
           onClick: () => ImageSaver.saveImageToGallery(url),
         ),
@@ -519,7 +519,7 @@ class _TopBar extends ConsumerWidget {
   ) {
     showConfirmDialog(
       context: context,
-      title: "确认删除该图片?".tl,
+      title: t.confirmDeleteImage,
       content: '删除后将无法恢复',
       btnColor: Theme.of(context).colorScheme.error,
       onConfirm: () => _deleteFile(context, ref, file, index),
@@ -558,7 +558,7 @@ class _TopBar extends ConsumerWidget {
       });
     } catch (e) {
       Log.error('删除失败', e.toString());
-      context.showMessage(message: '删除失败: $e', level: LogLevel.error);
+      context.showMessage(message: t.deleteFailed, level: LogLevel.error);
     }
   }
 
@@ -580,20 +580,20 @@ class _TopBar extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => ContentDialog(
-        title: '图片属性'.tl,
+        title: t.imageProperties,
         displayButton: false,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _propertyRow(
-              '文件名'.tl,
+              t.fileName,
               file.path.split(Platform.pathSeparator).last,
             ),
-            _propertyRow('格式'.tl, ext),
-            _propertyRow('分辨率'.tl, '$width × $height'),
-            _propertyRow('文件大小'.tl, size),
-            _propertyRow('修改时间'.tl, modified),
-            _propertyRow('路径'.tl, file.path),
+            _propertyRow(t.imageFormat, ext),
+            _propertyRow(t.resolution, '$width × $height'),
+            _propertyRow(t.fileSize, size),
+            _propertyRow(t.modifiedTime, modified),
+            _propertyRow(t.path, file.path),
           ],
         ),
       ),

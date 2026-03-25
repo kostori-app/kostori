@@ -319,22 +319,22 @@ class _StatItemWidgetState extends State<StatItemWidget> {
               String actionText;
               switch (record.favoriteAction) {
                 case FavoriteAction.add:
-                  actionText = "添加到 ${record.favorite?.tl ?? '未知文件夹'}";
+                  actionText = "添加到 ${record.favorite ?? 'Unknown folder'}";
                   break;
                 case FavoriteAction.remove:
-                  actionText = "从 ${record.favorite?.tl ?? '未知文件夹'} 删除";
+                  actionText = "从 ${record.favorite ?? 'Unknown folder'} 删除";
                   break;
                 case FavoriteAction.move:
                   if (record.favorite != null &&
                       record.favorite!.contains(',')) {
                     final parts = record.favorite!.split(',');
-                    actionText = "从 ${parts[0].tl} 移动到 ${parts[1].tl}";
+                    actionText = "从 ${parts[0]} 移动到 ${parts[1]}";
                   } else {
-                    actionText = "移动操作，目标未知".tl;
+                    actionText = t.moveOperationTargetUnknown;
                   }
                   break;
                 default:
-                  actionText = "操作未知".tl;
+                  actionText = t.operationUnknown;
                   break;
               }
               return Column(

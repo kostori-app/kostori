@@ -17,7 +17,7 @@ import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -55,7 +55,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
       context: context,
       builder: (context) {
         return ContentDialog(
-          title: '历史源'.tl,
+          title: t.historySource,
           displayButton: false,
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 600),
@@ -426,7 +426,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                       ClipboardData(text: bangumiItem.nameCn),
                                     );
                                     App.rootContext.showMessage(
-                                      message: '已复制到剪贴板.',
+                                      message: t.copiedToClipboard,
                                     );
                                   },
                                   child: Text(
@@ -445,7 +445,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                       ClipboardData(text: bangumiItem.name),
                                     );
                                     App.rootContext.showMessage(
-                                      message: '已复制到剪贴板.',
+                                      message: t.copiedToClipboard,
                                     );
                                   },
                                   child: Text(
@@ -654,7 +654,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                           itemSize: 20.0,
                                                         ),
                                                         Text(
-                                                          context.t.tReviewsR(
+                                                          Translations.of(context).tReviewsR(
                                                             t: bangumiItem
                                                                 .total,
                                                             r: bangumiItem.rank,
@@ -819,7 +819,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                           Row(
                             children: [
                               Text(
-                                'Rating Chart'.tl,
+                                t.ratingChart,
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -858,8 +858,8 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                 ),
                                 label: Text(
                                   infoController.showLineChart
-                                      ? 'Line Chart'.tl
-                                      : 'Bar Chart'.tl,
+                                      ? t.lineChart
+                                      : t.barChart,
                                 ),
                               ),
                             ],
@@ -873,9 +873,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                             child: Row(
                               children: [
                                 Text(
-                                  'Standard Deviation: @s'.tlParams({
-                                    's': standardDeviation.toStringAsFixed(2),
-                                  }),
+                                  t.standardDeviationS(s: standardDeviation.toStringAsFixed(2)),
                                   style: TextStyle(fontSize: 12),
                                 ),
                                 const SizedBox(width: 8),

@@ -12,8 +12,8 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
@@ -170,22 +170,22 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     List<Widget> selectActions = [
       IconButton(
         icon: const Icon(Icons.select_all),
-        tooltip: "Select All".tl,
+        tooltip: t.selectAll,
         onPressed: selectAll,
       ),
       IconButton(
         icon: const Icon(Icons.deselect),
-        tooltip: "Deselect".tl,
+        tooltip: t.deselect,
         onPressed: deSelect,
       ),
       IconButton(
         icon: const Icon(Icons.flip),
-        tooltip: "Invert Selection".tl,
+        tooltip: t.invertSelection,
         onPressed: invertSelection,
       ),
       IconButton(
         icon: const Icon(Icons.delete),
-        tooltip: "Delete".tl,
+        tooltip: t.delete,
         onPressed: selectedAnimes.isEmpty
             ? null
             : () {
@@ -204,24 +204,24 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     List<Widget> normalActions = [
       IconButton(
         icon: const Icon(Icons.checklist),
-        tooltip: multiSelectMode ? "Exit Multi-Select".tl : "Multi-Select".tl,
+        tooltip: multiSelectMode ? t.exitMultiSelect : t.multiSelect,
         onPressed: () => setState(() => multiSelectMode = !multiSelectMode),
       ),
       Tooltip(
-        message: 'Clear History'.tl,
+        message: t.clearHistory,
         child: Flyout(
           controller: controller,
           flyoutBuilder: (context) {
             return FlyoutContent(
-              title: 'Clear History'.tl,
-              content: Text('Are you sure you want to clear your history?'.tl),
+              title: t.clearHistory,
+              content: Text(t.areYouSureYouWantToClearYourHistory),
               actions: [
                 Button.outlined(
                   onPressed: () {
                     HistoryManager().clearUnfavoritedHistory();
                     context.pop();
                   },
-                  child: Text('Clear Unfavorited'.tl),
+                  child: Text(t.clearUnfavorited),
                 ),
                 const SizedBox(width: 4),
                 Button.filled(
@@ -230,7 +230,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                     HistoryManager().clearHistory();
                     context.pop();
                   },
-                  child: Text('Clear'.tl),
+                  child: Text(t.clear),
                 ),
               ],
             );
@@ -345,7 +345,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                       menuBuilder: (c) => [
                         MenuEntry(
                           icon: Icons.remove,
-                          text: 'Remove'.tl,
+                          text: t.remove,
                           color: context.colorScheme.error,
                           onClick: () => _removeHistory(c as History),
                         ),
@@ -372,7 +372,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
               : AppbarStyle.blur,
           leading: multiSelectMode
               ? Tooltip(
-                  message: "Cancel".tl,
+                  message: t.cancel,
                   child: IconButton(
                     onPressed: () => setState(() {
                       multiSelectMode = false;

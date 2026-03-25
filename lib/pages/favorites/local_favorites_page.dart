@@ -308,7 +308,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
             Flexible(
               fit: FlexFit.loose,
               child: Text(
-                name == 'default' ? 'default'.tl : name,
+                name == 'default' ? t.kDefault : name,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -337,7 +337,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   MenuButton _buildSortMenuItems() {
     return MenuButton(
       icon: Icons.sort,
-      message: "Sort".tl,
+      message: t.sort,
       entries: [
         MenuEntry(
           icon: Icons.receipt_long,
@@ -348,7 +348,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "Recently Watched".tl,
+          text: t.recentlyWatched,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.recentlyWatchedAsc
@@ -369,7 +369,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "By Name".tl,
+          text: t.byName,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.nameAsc
@@ -390,7 +390,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "By Time".tl,
+          text: t.byTime,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.timeAsc
@@ -411,7 +411,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     ? Icons.arrow_upward
                     : Icons.arrow_downward)
               : null,
-          text: "Default Order".tl,
+          text: t.defaultOrder,
           onClick: () {
             setState(() {
               sortType = sortType == FavoriteSortType.displayOrderAsc
@@ -459,7 +459,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                 ? AppbarStyle.shadow
                 : AppbarStyle.blur,
             leading: Tooltip(
-              message: "Folders".tl,
+              message: t.folders,
               child: context.width <= _kTwoPanelChangeWidth
                   ? IconButton(
                       icon: const Icon(Icons.menu),
@@ -475,12 +475,12 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               child: Text(
                 favPage.folder != null
                     ? LocalFavoritesManager().totalAnimes.toString()
-                    : "Unselected".tl,
+                    : t.unselected,
               ),
             ),
             actions: [
               Tooltip(
-                message: "Search".tl,
+                message: t.search,
                 child: IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: () {
@@ -505,12 +505,12 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                   if (favoritesController.folder != 'default')
                     MenuEntry(
                       icon: Icons.edit_outlined,
-                      text: "Rename".tl,
+                      text: t.rename,
                       onClick: () {
                         showInputDialog(
                           context: App.rootContext,
-                          title: "Rename".tl,
-                          hintText: "New Name".tl,
+                          title: t.rename,
+                          hintText: t.newName,
                           onConfirm: (value) {
                             var err = validateFolderName(value.toString());
                             if (err != null) {
@@ -531,7 +531,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                     ),
                   MenuEntry(
                     icon: Icons.upload_file,
-                    text: "Export".tl,
+                    text: t.export,
                     onClick: () {
                       var json = manager.folderToJson(
                         favoritesController.folder,
@@ -545,15 +545,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                   if (favoritesController.folder != 'default')
                     MenuEntry(
                       icon: Icons.delete_outline,
-                      text: "Delete Folder".tl,
+                      text: t.deleteFolder,
                       color: context.colorScheme.error,
                       onClick: () {
                         showConfirmDialog(
                           context: App.rootContext,
-                          title: "Delete".tl,
-                          content: "Delete folder '@f' ?".tlParams({
-                            "f": favoritesController.folder,
-                          }),
+                          title: t.delete,
+                          content: t.deleteFolderF(f: favoritesController.folder),
                           btnColor: context.colorScheme.error,
                           onConfirm: () {
                             favoritesController.isRefreshEnabled = true;
@@ -599,7 +597,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                 ? AppbarStyle.shadow
                 : AppbarStyle.blur,
             leading: Tooltip(
-              message: "Cancel".tl,
+              message: t.cancel,
               child: IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () {
@@ -611,14 +609,14 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               ),
             ),
             title: Text(
-              "Selected @c animes".tlParams({"c": selectedAnimes.length}),
+              t.selectedAAnimes(a: selectedAnimes.length),
             ),
             actions: [
               MenuButton(
                 entries: [
                   MenuEntry(
                     icon: Icons.star_rounded,
-                    text: "Favorite actions".tl,
+                    text: t.favoriteActions,
                     onClick: () async {
                       favoritesController.isRefreshEnabled = true;
                       final bool? changed = await _FavoriteDialog.show(
@@ -652,30 +650,28 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                   ),
                   MenuEntry(
                     icon: Icons.select_all,
-                    text: "Select All".tl,
+                    text: t.selectAll,
                     onClick: selectAll,
                   ),
                   MenuEntry(
                     icon: Icons.deselect,
-                    text: "Deselect".tl,
+                    text: t.deselect,
                     onClick: _cancel,
                   ),
                   MenuEntry(
                     icon: Icons.flip,
-                    text: "Invert Selection".tl,
+                    text: t.invertSelection,
                     onClick: invertSelection,
                   ),
                   MenuEntry(
                     icon: Icons.delete_outline,
-                    text: "Delete Anime".tl,
+                    text: t.deleteAnime,
                     color: context.colorScheme.error,
                     onClick: () {
                       showConfirmDialog(
                         context: context,
-                        title: "Delete".tl,
-                        content: "Delete @c animes?".tlParams({
-                          "c": selectedAnimes.length,
-                        }),
+                        title: t.delete,
+                        content: t.deleteCAnimes(c: selectedAnimes.length),
                         btnColor: context.colorScheme.error,
                         onConfirm: () {
                           _deleteAnimeWithId();
@@ -697,7 +693,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                 ? AppbarStyle.shadow
                 : AppbarStyle.blur,
             leading: Tooltip(
-              message: "Cancel".tl,
+              message: t.cancel,
               child: IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () {
@@ -711,7 +707,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
             ),
             title: TextField(
               decoration: InputDecoration(
-                hintText: keyword.isNotEmpty ? keyword : "Search All".tl,
+                hintText: keyword.isNotEmpty ? keyword : t.searchAll,
                 border: UnderlineInputBorder(),
               ),
               onChanged: (v) {

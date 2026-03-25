@@ -13,10 +13,10 @@ import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
 part 'ai_chat_page.dart';
@@ -62,7 +62,7 @@ class AiHubEntry extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'AI Hub'.tl,
+                    t.aiHub,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -107,38 +107,38 @@ class AiHubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: Appbar(title: Text('AI Hub'.tl)),
+      appBar: Appbar(title: Text(t.aiHub)),
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
           _HubModuleCard(
             icon: Icons.psychology,
-            title: '灵魂侧写'.tl,
-            subtitle: '基于你的观看记录，解析你的番剧人格'.tl,
+            title: t.soulProfile,
+            subtitle: t.soulProfilerDescription,
             color: const Color(0xFF6B8DE3),
             onTap: () => context.to(() => const SoulProfilePage()),
           ),
           const SizedBox(height: 8),
           _HubModuleCard(
             icon: Icons.brush,
-            title: 'AI 绘画 Tag'.tl,
-            subtitle: '根据你的喜好生成 AI 绘画风格标签'.tl,
+            title: t.imageTag,
+            subtitle: t.imageTagDescription,
             color: const Color(0xFFE36B8D),
             onTap: () => context.to(() => const ImageTagPage()),
           ),
           const SizedBox(height: 8),
           _HubModuleCard(
             icon: Icons.chat_bubble_outline,
-            title: 'AI 对话'.tl,
-            subtitle: '与 AI 进行有上下文记忆的多轮对话'.tl,
+            title: t.aiChat,
+            subtitle: t.aiChatDescription,
             color: const Color(0xFF4CAF50),
             onTap: () => context.to(() => const AiChatPage()),
           ),
           const SizedBox(height: 8),
           _HubModuleCard(
             icon: Icons.summarize_outlined,
-            title: '周月总结'.tl,
-            subtitle: '自动生成你的番剧观看周报/月报'.tl,
+            title: t.summary,
+            subtitle: t.summaryDescription,
             color: const Color(0xFFFF9800),
             onTap: () => context.to(() => const SummaryPage()),
           ),
@@ -280,7 +280,7 @@ class _AiSourceSelector extends StatelessWidget {
 
     return _AiCard(
       icon: Icons.psychology,
-      title: 'AI Source'.tl,
+      title: t.aiSource,
       child: Wrap(
         spacing: 8,
         children: sources.map((s) {
@@ -360,12 +360,12 @@ class _SessionHistorySheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Sheet(
-      title: 'History'.tl,
+      title: t.history,
       icon: Icons.history,
       initialSize: 0.7,
       headerTrailing: TextButton.icon(
         icon: const Icon(Icons.delete_sweep, size: 18),
-        label: Text('Clear All'.tl),
+        label: Text(t.clearAll),
         onPressed: () async {
           final sessions = await AiConversationService()
               .watchSessions(type: taskType)
@@ -381,7 +381,7 @@ class _SessionHistorySheet extends StatelessWidget {
         builder: (ctx, snapshot) {
           final sessions = snapshot.data ?? [];
           if (sessions.isEmpty) {
-            return Center(child: Text('No history yet'.tl));
+            return Center(child: Text(t.noHistoryYet));
           }
           return ListView.separated(
             controller: sc,

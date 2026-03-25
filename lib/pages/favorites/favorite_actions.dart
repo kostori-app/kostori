@@ -13,13 +13,13 @@ Future<void> newFolder() async {
       return StatefulBuilder(
         builder: (context, setState) {
           return ContentDialog(
-            title: "New Folder".tl,
+            title: t.newFolder,
             content: Column(
               children: [
                 TextField(
                   controller: controller,
                   decoration: InputDecoration(
-                    hintText: "Folder Name".tl,
+                    hintText: t.folderName,
                     errorText: error,
                   ),
                   onChanged: (s) {
@@ -34,7 +34,7 @@ Future<void> newFolder() async {
             ).paddingHorizontal(16),
             actions: [
               TextButton(
-                child: Text("Import from file".tl),
+                child: Text(t.importFromFile),
                 onPressed: () async {
                   var file = await selectFile(ext: ['json']);
                   if (file == null) return;
@@ -42,7 +42,7 @@ Future<void> newFolder() async {
                   try {
                     LocalFavoritesManager().fromJson(utf8.decode(data));
                   } catch (e) {
-                    context.showMessage(message: "Failed to import".tl);
+                    context.showMessage(message: t.failedToImport);
                     return;
                   }
                   context.pop();
@@ -60,7 +60,7 @@ Future<void> newFolder() async {
                     context.pop();
                   }
                 },
-                child: Text("Create".tl),
+                child: Text(t.create),
               ),
             ],
           );
@@ -73,11 +73,11 @@ Future<void> newFolder() async {
 String? validateFolderName(String newFolderName) {
   var folders = LocalFavoritesManager().folderNames;
   if (newFolderName.isEmpty) {
-    return "Folder name cannot be empty".tl;
+    return t.folderNameCannotBeEmpty;
   } else if (newFolderName.length > 50) {
-    return "Folder name is too long".tl;
+    return t.folderNameTooLong;
   } else if (folders.contains(newFolderName)) {
-    return "Folder already exists".tl;
+    return t.folderAlreadyExists;
   }
   return null;
 }
@@ -95,9 +95,9 @@ void addFavorite(Anime anime) {
       return StatefulBuilder(
         builder: (context, setState) {
           return ContentDialog(
-            title: "Select a folder".tl,
+            title: t.selectAFolder,
             content: ListTile(
-              title: Text("Folder".tl),
+              title: Text(t.folder),
               trailing: Select(
                 current: selectedFolder,
                 values: folders,
@@ -132,7 +132,7 @@ void addFavorite(Anime anime) {
                     context.pop();
                   }
                 },
-                child: Text("Confirm".tl),
+                child: Text(t.confirm),
               ),
             ],
           );
@@ -214,7 +214,7 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
         builder: (context, value, child) {
           var isFinished = value == animes.length;
           return ContentDialog(
-            title: isFinished ? "Finished".tl : "Updating".tl,
+            title: isFinished ? t.finished : t.updating,
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +234,7 @@ Future<List<FavoriteItem>> updateAnimesInfo(String folder) async {
                   isCanceled = true;
                   context.pop();
                 },
-                child: isFinished ? Text("OK".tl) : Text("Cancel".tl),
+                child: isFinished ? Text(t.ok) : Text(t.cancel),
               ),
             ],
           );
@@ -283,17 +283,17 @@ Future<void> sortFolders() async {
     StatefulBuilder(
       builder: (context, setState) {
         return PopUpWidgetScaffold(
-          title: "Sort".tl,
+          title: t.sort,
           tailing: [
             Tooltip(
-              message: "Help".tl,
+              message: t.help,
               child: IconButton(
                 icon: const Icon(Icons.help_outline),
                 onPressed: () {
                   showInfoDialog(
                     context: context,
-                    title: "Reorder".tl,
-                    content: "Long press and drag to reorder.".tl,
+                    title: t.reorder,
+                    content: t.longPressAndDragToReorder,
                   );
                 },
               ),

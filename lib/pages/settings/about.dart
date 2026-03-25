@@ -24,7 +24,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("About".tl)),
+        SliverAppbar(title: Text(t.about)),
         SizedBox(
           height: 136,
           width: double.infinity,
@@ -48,7 +48,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
             const SizedBox(height: 8),
             Text("V${App.version}", style: const TextStyle(fontSize: 16)),
             Text(
-              "Kostori is a free and open-source app for anime watching.".tl,
+              t.kostoriIsAFreeAndOpenSourceAppForAnimeWatching,
             ),
             const SizedBox(height: 8),
           ],
@@ -59,14 +59,14 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
             child: _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Github".tl,
+                  title: "Github",
                   icon: Icons.radio_button_unchecked_outlined,
                 ),
                 ListTile(
-                  title: Text("Check for updates".tl),
+                  title: Text(t.checkForUpdates),
                   trailing: Button.filled(
                     isLoading: isCheckingAppUpdate,
-                    child: Text("Check".tl),
+                    child: Text(t.check),
                     onPressed: () {
                       setState(() {
                         isCheckingAppUpdate = true;
@@ -80,10 +80,10 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
                   ).fixHeight(32),
                 ),
                 ListTile(
-                  title: Text("Update log".tl),
+                  title: Text(t.updateLog),
                   trailing: Button.filled(
                     isLoading: isUpdateLog,
-                    child: Text("Open".tl),
+                    child: Text(t.open),
                     onPressed: () async {
                       setState(() {
                         isUpdateLog = true;
@@ -91,7 +91,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
                       try {
                         await updateLog(context);
                       } catch (e) {
-                        App.rootContext.showMessage(message: '请求失败');
+                        App.rootContext.showMessage(message: t.requestFailed);
                       } finally {
                         if (mounted) {
                           setState(() {
@@ -103,11 +103,11 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
                   ).fixHeight(32),
                 ),
                 _SwitchSetting(
-                  title: "Check for updates on startup".tl,
+                  title: t.checkForUpdatesOnStartup,
                   settingKey: "checkUpdateOnStart",
                 ),
                 ListTile(
-                  title: Text("Icon producer".tl),
+                  title: Text(t.iconProducer),
                   trailing: const Icon(Icons.open_in_new),
                   onTap: () {
                     launchUrlString("https://www.pixiv.net/users/18071897");
@@ -131,7 +131,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
             child: _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Bangumi".tl,
+                  title: t.bangumi,
                   icon: Icons.radio_button_unchecked_outlined,
                 ),
                 ListTile(
@@ -139,7 +139,7 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
                   subtitle: Text(appdata.settings['bangumiDataVer']),
                   trailing: Button.filled(
                     isLoading: isCheckingBangumiDataUpdate,
-                    child: Text("Check".tl),
+                    child: Text(t.check),
                     onPressed: () {
                       setState(() {
                         isCheckingBangumiDataUpdate = true;
@@ -153,10 +153,10 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
                   ).fixHeight(32),
                 ),
                 ListTile(
-                  title: Text("Reset Bangumi-data".tl),
+                  title: Text(t.resetBangumiData),
                   trailing: Button.filled(
                     isLoading: isCheckingBangumiDataReset,
-                    child: Text("Reset".tl),
+                    child: Text(t.reset),
                     onPressed: () {
                       setState(() {
                         isCheckingBangumiDataReset = true;
@@ -180,22 +180,22 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
             child: _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Info".tl,
+                  title: t.information,
                   icon: Icons.radio_button_unchecked_outlined,
                 ),
                 ListTile(
-                  title: Text("设备信息".tl),
+                  title: Text(t.deviceField),
                   trailing: Button.filled(
-                    child: Text("Open".tl),
+                    child: Text(t.open),
                     onPressed: () async {
                       await DeviceInfo.showDeviceInfoDialog();
                     },
                   ).fixHeight(32),
                 ),
                 ListTile(
-                  title: Text("软件信息".tl),
+                  title: Text(t.properties),
                   trailing: Button.filled(
-                    child: Text("Open".tl),
+                    child: Text(t.open),
                     onPressed: () async {
                       await showDeviceInfoDialog();
                     },
@@ -213,18 +213,18 @@ class _AboutSettingsState extends ConsumerState<AboutSettings> {
 Future<void> showDeviceInfoDialog() async {
   final packageInfo = await PackageInfo.fromPlatform();
   final appMap = {
-    "appName".tl: packageInfo.appName,
-    "packageName".tl: packageInfo.packageName,
-    "version".tl: packageInfo.version,
-    "buildNumber".tl: packageInfo.buildNumber,
+    t.appNameField: packageInfo.appName,
+    t.packageNameField: packageInfo.packageName,
+    t.versionField: packageInfo.version,
+    t.buildNumberField: packageInfo.buildNumber,
     if (packageInfo.buildSignature.isNotEmpty)
-      "buildSignature".tl: packageInfo.buildSignature,
-    if ((packageInfo.installerStore?.isNotEmpty ?? false))
-      "installerStore".tl: packageInfo.installerStore!,
+      t.buildSignatureField: packageInfo.buildSignature,
+    if (packageInfo.installerStore?.isNotEmpty ?? false)
+      t.installerStoreField: packageInfo.installerStore!,
     if (packageInfo.installTime != null)
-      "installTime".tl: packageInfo.installTime!.toIso8601String(),
+      t.installTimeField: packageInfo.installTime!.toIso8601String(),
     if (packageInfo.updateTime != null)
-      "updateTime".tl: packageInfo.updateTime!.toIso8601String(),
+      t.updateTimeField: packageInfo.updateTime!.toIso8601String(),
   };
 
   final infoMap = appMap;
@@ -263,7 +263,7 @@ Future<void> showDeviceInfoDialog() async {
                                 text: '${entry.key}: ${entry.value}',
                               ),
                             );
-                            App.rootContext.showMessage(message: '复制成功');
+                            App.rootContext.showMessage(message: t.copySuccess);
                           },
                           onTap: () {},
                           child: ListTile(
@@ -292,9 +292,9 @@ Future<void> showDeviceInfoDialog() async {
                   .map((e) => '${e.key}: ${e.value}')
                   .join('\n');
               Clipboard.setData(ClipboardData(text: allText));
-              App.rootContext.showMessage(message: '全部复制成功');
+              App.rootContext.showMessage(message: t.allCopiedSuccess);
             },
-            child: Text("Copy".tl),
+            child: Text(t.copy),
           ),
         ],
       );
@@ -318,7 +318,7 @@ Future<Map<bool, String?>> checkUpdate() async {
     return {false: null};
   } catch (e, s) {
     App.rootContext.showMessage(
-      message: 'Check update failed...'.tl,
+      message: t.checkUpdateFailed,
       level: LogLevel.error,
     );
     Log.error("checkUpdate", '$e\n$s');
@@ -334,7 +334,7 @@ Future<void> checkUpdateUi([
 
   if (!value.containsKey(true)) {
     if (showMessageIfNoUpdate) {
-      App.rootContext.showMessage(message: "No new version available".tl);
+      App.rootContext.showMessage(message: t.noNewVersionAvailable);
     }
     return;
   }
@@ -522,7 +522,7 @@ class _DraggableBlurSheetState extends State<_DraggableBlurSheet> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
-                                  'Kostori Changelog'.tl,
+                                  t.kostoriChangelog,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -792,9 +792,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
     if (matchedAsset == null && App.isAndroid) {
       App.rootContext.showMessage(
-        message: "No update available for this architecture (@a)".tlParams({
-          "a": await getAppAbi(),
-        }),
+        message: t.noUpdateAvailableForThisArchitectureA(a: await getAppAbi()),
       );
     }
 
@@ -803,7 +801,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
         "Version Consistent",
         '$latestVersion -> ${value.values.first.toString()}',
       );
-      App.rootContext.showMessage(message: "Inconsistent versions".tl);
+      App.rootContext.showMessage(message: t.inconsistentVersions);
       isVersionConsistent = false;
     }
 
@@ -846,7 +844,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           });
           if (!valid) {
             App.rootContext.showMessage(
-              message: "Failed to check the hash value. Please try again".tl,
+              message: t.failedToCheckTheHashValuePleaseTryAgain,
             );
           }
         })
@@ -879,7 +877,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
     final downloadUrl = matchedAsset?['browser_download_url'] ?? '';
 
     return ContentDialog(
-      title: "New version available".tl,
+      title: t.newVersionAvailable,
       content: isLoading
           ? Center(child: KostoriRefreshIndicator())
           : Column(
@@ -887,7 +885,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Discover the new version @v".tlParams({"v": value.values}),
+                  t.discoverTheNewVersionV(v: value.values),
                 ),
                 const SizedBox(height: 12),
                 if (isDownloading)
@@ -919,7 +917,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
                         child: TranslationWidget(
                           data: markdown,
                           title: Text(
-                            'Kostori Changelog'.tl,
+                            t.kostoriChangelog,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -944,16 +942,16 @@ class _UpdateDialogState extends State<UpdateDialog> {
                 "apkPath": file!.path,
               });
             },
-            child: Text("Install".tl),
+            child: Text(t.install),
           )
         else if (!isDownloading && App.isAndroid && isVersionConsistent) ...[
           Button.text(
             onPressed: () => _startDownload(Api.gitMirror + downloadUrl),
-            child: Text("Mirror".tl),
+            child: Text(t.mirror),
           ),
           Button.text(
             onPressed: () => _startDownload(downloadUrl),
-            child: Text("Download".tl),
+            child: Text(t.download),
           ),
         ],
         Button.text(
@@ -961,7 +959,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
             Navigator.pop(context);
             launchUrlString("https://github.com/kostori-app/kostori/releases");
           },
-          child: Text("View on GitHub".tl),
+          child: Text(t.viewOnGithub),
         ),
       ],
       cancel: () {

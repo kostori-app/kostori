@@ -28,14 +28,14 @@ class _TranslationSettingsState extends State<TranslationSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("Translation".tl)),
+        SliverAppbar(title: Text(t.translation)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "翻译服务".tl,
+                  title: t.translationService,
                   icon: Icons.translate_outlined,
                 ),
                 RadioGroup<String>(
@@ -105,8 +105,7 @@ class _TranslationSettingsState extends State<TranslationSettings> {
                                     !keyRow.isEnabled) {
                                   App.rootContext.showMessage(
                                     message:
-                                        'Please configure API Key in AI Settings first'
-                                            .tl,
+                                        t.pleaseConfigureApiKeyInAiSettingsFirst,
                                   );
                                   return;
                                 }
@@ -194,12 +193,12 @@ class _DeepLConfigPageState extends State<_DeepLConfigPage> {
   void _save() {
     final key = _apiKeyCtrl.text.trim();
     if (key.isEmpty) {
-      App.rootContext.showMessage(message: 'API key cannot be empty'.tl);
+      App.rootContext.showMessage(message: t.apiKeyCannotBeEmpty);
       return;
     }
     appdata.settings['deeplKey'] = key;
     appdata.saveData();
-    App.rootContext.showMessage(message: 'Saved'.tl);
+    App.rootContext.showMessage(message: t.saved);
     App.rootContext.pop();
   }
 
@@ -220,7 +219,7 @@ class _DeepLConfigPageState extends State<_DeepLConfigPage> {
                   child: _SettingCard(
                     children: [
                       _SettingPartTitle(
-                        title: 'API Configuration'.tl,
+                        title: t.apiConfiguration,
                         icon: Icons.key_outlined,
                       ),
                       // API Key
@@ -255,7 +254,7 @@ class _DeepLConfigPageState extends State<_DeepLConfigPage> {
                               const Icon(Icons.data_usage, size: 16),
                               const SizedBox(width: 8),
                               Text(
-                                'Usage: $_usage'.tl,
+                                '${t.usage} $_usage',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: context.colorScheme.outline,
@@ -274,7 +273,7 @@ class _DeepLConfigPageState extends State<_DeepLConfigPage> {
               bottom: 16,
               child: FloatingActionButton.extended(
                 onPressed: _save,
-                label: Text('Apply'.tl),
+                label: Text(t.apply),
                 icon: const Icon(Icons.check),
               ),
             ),

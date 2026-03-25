@@ -448,7 +448,7 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
     return Scaffold(
       appBar: AppBar(
         leading: Tooltip(
-          message: "Folders".tl,
+          message: t.folders,
           child: context.width <= _kTwoPanelChangeWidth
               ? IconButton(
                   icon: const Icon(Icons.menu),

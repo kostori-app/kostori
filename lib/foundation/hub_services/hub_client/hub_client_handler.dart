@@ -126,7 +126,7 @@ extension HubClientHandler on HubClient {
         _shouldReconnect = false;
         _setState((s) => s.copyWith(isConnected: false, myId: null));
         App.rootContext.showMessage(
-          message: 'Server shutdown'.tl,
+          message: t.serverShutdown,
           level: LogLevel.warning,
           style: ToastStyle.topRight,
         );
@@ -141,8 +141,8 @@ extension HubClientHandler on HubClient {
           );
           App.rootContext.showMessage(
             message: event.isGlobalAdmin
-                ? 'You are now a global admin'.tl
-                : 'Your global admin has been revoked'.tl,
+                ? t.youAreNowAGlobalAdmin
+                : t.yourGlobalAdminHasBeenRevoked,
             style: ToastStyle.topRight,
           );
         }
@@ -157,8 +157,8 @@ extension HubClientHandler on HubClient {
         if (event.clientId == myId) {
           App.rootContext.showMessage(
             message: event.isRoomAdmin
-                ? 'You are now a room admin'.tl
-                : 'Your room admin has been revoked'.tl,
+                ? t.youAreNowARoomAdmin
+                : t.yourRoomAdminHasBeenRevoked,
             style: ToastStyle.topRight,
           );
         }
@@ -176,14 +176,14 @@ extension HubClientHandler on HubClient {
 
       case HubSystemYouAreMuted():
         App.rootContext.showMessage(
-          message: '${"You are muted for".tl} ${event.seconds} ${"seconds".tl}',
+          message: '${t.youAreMutedFor} ${event.seconds} ${t.secondsUnit}',
           level: LogLevel.warning,
           style: ToastStyle.topRight,
         );
 
       case HubSystemYouAreUnmuted():
         App.rootContext.showMessage(
-          message: 'You have been unmuted'.tl,
+          message: t.youHaveBeenUnmuted,
           style: ToastStyle.topRight,
         );
 
@@ -194,8 +194,8 @@ extension HubClientHandler on HubClient {
       case HubSystemYouAreRoomBanned():
         App.rootContext.showMessage(
           message: event.isBanned
-              ? '${"You are banned from room".tl}: ${event.roomName}'
-              : '${"You can now rejoin room".tl}: ${event.roomName}',
+              ? '${t.youAreBannedFromRoom}: ${event.roomName}'
+              : '${t.youCanNowRejoinRoom}: ${event.roomName}',
           level: event.isBanned ? LogLevel.error : LogLevel.info,
           style: ToastStyle.topRight,
         );
@@ -206,13 +206,13 @@ extension HubClientHandler on HubClient {
       case HubSystemKickedFromRoom():
         if (event.permanent) {
           App.rootContext.showMessage(
-            message: 'Kicked from server by @p'.tlParams({'p': event.byName}),
+            message: 'Kicked from server by ${event.byName}',
             level: LogLevel.error,
             style: ToastStyle.topRight,
           );
         } else {
           App.rootContext.showMessage(
-            message: 'Kicked from room by @p'.tlParams({'p': event.byName}),
+            message: 'Kicked from room by ${event.byName}',
             level: LogLevel.warning,
             style: ToastStyle.topRight,
           );
@@ -246,7 +246,7 @@ extension HubClientHandler on HubClient {
       case HubSystemRoomCreated():
         _upsertRoom(event.room);
         App.rootContext.showMessage(
-          message: '${"New room".tl}: ${event.room.roomName}',
+          message: '${t.newRoom}: ${event.room.roomName}',
         );
         onRoomListChanged?.call();
 
@@ -265,7 +265,7 @@ extension HubClientHandler on HubClient {
           ),
         );
         App.rootContext.showMessage(
-          message: 'Room deleted, moved to lobby'.tl,
+          message: t.roomDeletedMovedToLobby,
           level: LogLevel.warning,
         );
         onRoomListChanged?.call();
@@ -298,7 +298,7 @@ extension HubClientHandler on HubClient {
           ),
         );
         App.rootContext.showMessage(
-          message: '${event.client.displayName} ${"joined the server".tl}',
+          message: '${event.client.displayName} ${t.joinedTheServer}',
           level: LogLevel.info,
           style: ToastStyle.topLeft,
           icon: const Icon(Icons.login_outlined, size: 16),
@@ -330,7 +330,7 @@ extension HubClientHandler on HubClient {
               s.copyWith(onlineClients: updatedClients, roomList: updatedRooms),
         );
         App.rootContext.showMessage(
-          message: '${event.clientName ?? ''} ${"left the server".tl}',
+          message: '${event.clientName ?? ''} ${t.leftTheServer}',
           level: LogLevel.info,
           style: ToastStyle.topLeft,
           icon: const Icon(Icons.logout_outlined, size: 16),
@@ -377,14 +377,14 @@ extension HubClientHandler on HubClient {
         if (event.roomId == currentRoomId && event.client.userId != myId) {
           if (event.joined) {
             App.rootContext.showMessage(
-              message: '${event.client.displayName} ${"joined the room".tl}',
+              message: '${event.client.displayName} ${t.joinedTheRoom}',
               level: LogLevel.info,
               style: ToastStyle.topLeft,
               icon: const Icon(Icons.meeting_room_outlined, size: 16),
             );
           } else {
             App.rootContext.showMessage(
-              message: '${event.client.displayName} ${"left the room".tl}',
+              message: '${event.client.displayName} ${t.leftTheRoom}',
               level: LogLevel.info,
               style: ToastStyle.topLeft,
               icon: const Icon(Icons.exit_to_app_outlined, size: 16),
@@ -435,7 +435,7 @@ extension HubClientHandler on HubClient {
 
       case HubSystemPoked():
         App.rootContext.showMessage(
-          message: '${event.fromName} ${"poked you".tl} 👉',
+          message: '${event.fromName} ${t.pokedYou} 👉',
           level: LogLevel.info,
           style: ToastStyle.topRight,
           icon: const Icon(Icons.touch_app_outlined, size: 16),
@@ -443,7 +443,7 @@ extension HubClientHandler on HubClient {
 
       case HubSystemAnnouncement():
         App.rootContext.showMessage(
-          message: event.text.tl,
+          message: event.text,
           level: LogLevel.info,
           style: ToastStyle.topRight,
           icon: const Icon(Icons.campaign_outlined, size: 16),
@@ -457,9 +457,9 @@ extension HubClientHandler on HubClient {
           context: App.rootContext,
           barrierDismissible: false,
           builder: (_) => ContentDialog(
-            title: 'Room Invite'.tl,
+            title: t.roomInvite,
             content: Text(
-              '${event.fromName} ${"invited you to".tl} ${event.roomName}',
+              '${event.fromName} ${t.invitedYouTo} ${event.roomName}',
             ),
             cancel: () {
               Navigator.pop(App.rootContext);
@@ -485,7 +485,7 @@ extension HubClientHandler on HubClient {
                   );
                 },
                 child: Text(
-                  'Decline & Block'.tl,
+                  t.declineAndBlock,
                   style: TextStyle(color: Colors.red),
                 ),
               ),
@@ -494,7 +494,7 @@ extension HubClientHandler on HubClient {
                   Navigator.pop(App.rootContext);
                   respondToInvite(event.roomId, event.fromId, true);
                 },
-                child: Text('Accept'.tl),
+                child: Text(t.acceptInvite),
               ),
             ],
           ),
@@ -503,10 +503,10 @@ extension HubClientHandler on HubClient {
       case HubSystemInviteResponse():
         App.rootContext.showMessage(
           message: event.accepted
-              ? '${event.userName} ${"accepted your invite".tl}'
+              ? '${event.userName} ${t.acceptedYourInvite}'
               : event.blocked
-              ? '${event.userName} ${"blocked your invites".tl}'
-              : '${event.userName} ${"declined your invite".tl}',
+              ? '${event.userName} ${t.blockedYourInvites}'
+              : '${event.userName} ${t.declinedYourInvite}',
           level: event.accepted ? LogLevel.info : LogLevel.warning,
           style: ToastStyle.topRight,
         );

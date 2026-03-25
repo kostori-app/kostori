@@ -224,7 +224,10 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
       );
 
       if (bytes == null) {
-        ImageSaver.showResult(success: false, message: '截图失败，请重试');
+        ImageSaver.showResult(
+          success: false,
+          message: t.screenshotFailedPleaseRetry,
+        );
         return;
       }
 
@@ -238,7 +241,7 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
       );
       Navigator.pop(context);
     } catch (e) {
-      ImageSaver.showResult(success: false, message: '分享失败: $e');
+      ImageSaver.showResult(success: false, message: t.shareFailed);
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();
       if (mounted) setState(() => _isExporting = false);
@@ -250,7 +253,7 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
     final hasBackground = _config.backgroundImagePath != null;
 
     return Sheet(
-      title: '分享二维码'.tl,
+      title: t.shareQrCode,
       icon: Icons.qr_code_outlined,
       initialSize: 0.75,
       footer: Padding(
@@ -294,7 +297,7 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
                       child: PolygonRefreshIndicator(),
                     )
                   : const Icon(Icons.share_outlined, size: 16),
-              label: Text(_isExporting ? '导出中…'.tl : 'Share'.tl),
+              label: Text(_isExporting ? t.exporting : t.share),
             ),
           ],
         ),
@@ -358,19 +361,25 @@ class _QrCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      child: QrImageView(
-                        data: config.content,
-                        version: QrVersions.auto,
-                        size: 220,
-                        eyeStyle: QrEyeStyle(
-                          eyeShape: QrEyeShape.square,
-                          color: config.qrForeground,
+                      child: SizedBox(
+                        width: 220,
+                        height: 220,
+                        child: PrettyQrView.data(
+                          data: config.content,
+                          errorCorrectLevel: QrErrorCorrectLevel.H,
+                          decoration: PrettyQrDecoration(
+                            background: config.qrBackground,
+                            shape: PrettyQrSquaresSymbol(
+                              color: config.qrForeground,
+                            ),
+                            image: const PrettyQrDecorationImage(
+                              image: AssetImage('images/app_icon.png'),
+                              scale: 0.2,
+                              position:
+                                  PrettyQrDecorationImagePosition.embedded,
+                            ),
+                          ),
                         ),
-                        dataModuleStyle: QrDataModuleStyle(
-                          dataModuleShape: QrDataModuleShape.square,
-                          color: config.qrForeground,
-                        ),
-                        errorCorrectionLevel: QrErrorCorrectLevel.H,
                       ),
                     ),
                     if (config.subtitle != null && config.showSubtitle) ...[

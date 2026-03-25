@@ -12,30 +12,30 @@ class _NetworkSettingsState extends State<NetworkSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("Network".tl)),
+        SliverAppbar(title: Text(t.network)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
                 _PopupWindowSetting(
-                  title: "Proxy".tl,
+                  title: t.proxy,
                   builder: () => const _ProxySettingView(),
                 ),
                 _PopupWindowSetting(
-                  title: "DNS Overrides".tl,
+                  title: t.dnsOverrides,
                   builder: () => const _DNSOverrides(),
                 ),
                 _PopupWindowSetting(
-                  title: "No Proxy Overrides".tl,
+                  title: t.noProxyOverrides,
                   builder: () => const _NoProxyOverrides(),
                 ),
                 _SwitchSetting(
-                  title: "Ignore Certificate Errors".tl,
+                  title: t.ignoreCertificateErrors,
                   settingKey: "ignoreBadCertificate",
                 ),
                 _SliderSetting(
-                  title: "Download Threads".tl,
+                  title: t.downloadThreads,
                   settingsIndex: 'downloadThreads',
                   interval: 1,
                   min: 1,
@@ -126,7 +126,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: "Proxy".tl,
+      title: t.proxy,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -150,18 +150,18 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                 appdata.settings['proxy'] = toProxyStr();
                 appdata.saveData();
               },
-              child: Column(
+                child: Column(
                 children: [
                   RadioListTile<String>(
-                    title: Text("Direct".tl),
+                    title: Text('Direct'),
                     value: 'direct',
                   ),
                   RadioListTile<String>(
-                    title: Text("System".tl),
+                    title: Text(t.system),
                     value: 'system',
                   ),
                   RadioListTile<String>(
-                    title: Text("Manual".tl),
+                    title: Text('Manual'),
                     value: 'manual',
                   ),
                 ],
@@ -185,7 +185,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
           TextFormField(
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
-              labelText: "Host".tl,
+              labelText: t.host,
             ),
             controller: TextEditingController(text: host),
             onChanged: (v) {
@@ -193,7 +193,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
             },
             validator: (v) {
               if (v?.isEmpty ?? false) {
-                return "Host cannot be empty".tl;
+                return 'Host cannot be empty';
               }
               return null;
             },
@@ -202,7 +202,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
           TextFormField(
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
-              labelText: "Port".tl,
+              labelText: t.port,
             ),
             controller: TextEditingController(text: port),
             onChanged: (v) {
@@ -213,7 +213,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                 return null;
               }
               if (int.tryParse(v!) == null) {
-                return "Port must be a number".tl;
+                return 'Port must be a number';
               }
               return null;
             },
@@ -222,7 +222,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
           TextFormField(
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
-              labelText: "Username".tl,
+              labelText: t.username,
             ),
             controller: TextEditingController(text: username),
             onChanged: (v) {
@@ -230,7 +230,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
             },
             validator: (v) {
               if ((v?.isEmpty ?? false) && password.isNotEmpty) {
-                return "Username cannot be empty".tl;
+                return 'Username cannot be empty';
               }
               return null;
             },
@@ -239,7 +239,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
           TextFormField(
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
-              labelText: "Password".tl,
+              labelText: t.password,
             ),
             controller: TextEditingController(text: password),
             onChanged: (v) {
@@ -263,7 +263,7 @@ class _ProxySettingViewState extends State<_ProxySettingView> {
                 App.rootContext.pop();
               }
             },
-            child: Text("Save".tl),
+            child: Text(t.save),
           ),
         ],
       ),
@@ -330,16 +330,16 @@ class __DNSOverridesState extends State<_DNSOverrides> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: "DNS Overrides".tl,
+      title: t.dnsOverrides,
       body: SingleChildScrollView(
         child: Column(
           children: [
             _SwitchSetting(
-              title: "Enable DNS Overrides".tl,
+              title: t.enableDnsOverrides,
               settingKey: "enableDnsOverrides",
             ),
             _SwitchSetting(
-              title: "Server Name Indication".tl,
+              title: 'Server Name Indication',
               settingKey: "sni",
             ),
             const SizedBox(height: 8),
@@ -357,7 +357,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
                 });
               },
               icon: const Icon(Icons.add),
-              label: Text("Add".tl),
+              label: Text(t.add),
             ),
           ],
         ),
@@ -383,7 +383,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
             TextField(
               controller: entry.$2,
               decoration: InputDecoration(
-                labelText: "Domain".tl,
+                labelText: 'Domain',
                 border: const OutlineInputBorder(),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -399,7 +399,7 @@ class __DNSOverridesState extends State<_DNSOverrides> {
                   child: TextField(
                     controller: entry.$3,
                     decoration: InputDecoration(
-                      labelText: "IP".tl,
+                      labelText: 'IP',
                       border: const OutlineInputBorder(),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -489,12 +489,12 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: "No Proxy Overrides".tl,
+      title: t.noProxyOverrides,
       body: SingleChildScrollView(
         child: Column(
           children: [
             _SwitchSetting(
-              title: "Enable No Proxy Overrides".tl,
+              title: t.enableNoProxyOverrides,
               settingKey: "enableNoProxyOverrides",
             ),
             const SizedBox(height: 8),
@@ -504,7 +504,7 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
             const SizedBox(height: 8),
             TextButton.icon(
               icon: const Icon(Icons.add),
-              label: Text("Add".tl),
+              label: Text(t.add),
               onPressed: () {
                 setState(() {
                   overrides.add((true, TextEditingController()));
@@ -535,7 +535,7 @@ class __NoProxyOverridesState extends State<_NoProxyOverrides> {
               child: TextField(
                 controller: entry.$2,
                 decoration: InputDecoration(
-                  labelText: "Domain".tl,
+                  labelText: 'Domain',
                   border: const OutlineInputBorder(),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 10,

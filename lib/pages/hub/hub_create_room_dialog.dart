@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 // ── 公共表单对话框 ──────────────────────────────────────────────────────────────
 
@@ -157,39 +157,39 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
     final cs = Theme.of(context).colorScheme;
 
     return ContentDialog(
-      title: 'Create Room'.tl,
+      title: t.createRoom,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── 房间名 ────────────────────────────────────────────────
-          _FieldLabel('Room Name'.tl),
+          _FieldLabel(t.roomName),
           const SizedBox(height: 6),
           InputField(
             controller: _nameCtrl,
-            hint: 'Enter room name'.tl,
+            hint: t.enterRoomName,
             icon: Icons.meeting_room_outlined,
             onSubmit: (_) => _confirm(),
           ),
           const SizedBox(height: 14),
 
           // ── 公告（可选）────────────────────────────────────────────
-          _FieldLabel('Announcement'.tl, optional: true),
+          _FieldLabel(t.announcements, optional: true),
           const SizedBox(height: 6),
           InputField(
             controller: _announcementCtrl,
-            hint: 'Room announcement'.tl,
+            hint: t.roomAnnouncement,
             icon: Icons.campaign_outlined,
             onSubmit: (_) => _confirm(),
           ),
           const SizedBox(height: 14),
 
           // ── 密码（可选）────────────────────────────────────────────
-          _FieldLabel('Password'.tl, optional: true),
+          _FieldLabel(t.password, optional: true),
           const SizedBox(height: 6),
           InputField(
             controller: _passwordCtrl,
-            hint: 'Leave empty for public room'.tl,
+            hint: t.leaveEmptyForPublicRoom,
             icon: Icons.lock_outline,
             obscure: _obscurePassword,
             onSubmit: (_) => _confirm(),
@@ -210,7 +210,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
           // ── 人数限制 ──────────────────────────────────────────────
           Row(
             children: [
-              _FieldLabel('Max Participants'.tl),
+              _FieldLabel(t.maxParticipants),
               const Spacer(),
               CustomSwitch(value: _n.hasLimit, onChanged: _n.setHasLimit),
             ],
@@ -269,7 +269,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
                   child: Text(
-                    '${'Up to'.tl} ${_n.maxParticipants.round()} ${'people'.tl}',
+                    '${t.upTo} ${_n.maxParticipants.round()} ${t.peopleLabel}',
                     style: TextStyle(
                       fontSize: 11,
                       color: cs.onSurface.toOpacity(0.45),
@@ -282,7 +282,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
             secondChild: Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 4),
               child: Text(
-                'No limit'.tl,
+                t.noLimit,
                 style: TextStyle(
                   fontSize: 12,
                   color: cs.onSurface.toOpacity(0.4),
@@ -292,7 +292,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
           ),
         ],
       ),
-      actions: [Button.filled(onPressed: _confirm, child: Text('Create'.tl))],
+      actions: [Button.filled(onPressed: _confirm, child: Text(t.create))],
     );
   }
 }
@@ -321,7 +321,7 @@ class _FieldLabel extends StatelessWidget {
         if (optional) ...[
           const SizedBox(width: 6),
           Text(
-            'optional'.tl,
+            t.optional,
             style: TextStyle(fontSize: 11, color: cs.onSurface.toOpacity(0.35)),
           ),
         ],

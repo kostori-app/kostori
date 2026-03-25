@@ -7,8 +7,8 @@ import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
 import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class _QuoteBlock {
@@ -214,15 +214,15 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Image Operations'.tl),
+          title: Text(t.imageOperations),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel'.tl),
+              child: Text(t.cancel),
             ),
             TextButton(
               onPressed: () => ImageSaver.saveImageToGallery(imageUrl),
-              child: Text('Save to Album'.tl),
+              child: Text(t.saveToAlbum),
             ),
           ],
         );

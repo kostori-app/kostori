@@ -153,13 +153,13 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     await showDialog(
       context: context,
       builder: (ctx) => ContentDialog(
-        title: 'Rename'.tl,
+        title: t.rename,
         content: TextField(
           controller: ctrl,
           autofocus: true,
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
-            labelText: '对话标题'.tl,
+            labelText: t.conversationTitle,
           ),
         ),
         actions: [
@@ -171,7 +171,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               );
               if (ctx.mounted) Navigator.pop(ctx);
             },
-            child: Text('Save'.tl),
+            child: Text(t.save),
           ),
         ],
       ),
@@ -183,7 +183,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     return Scaffold(
       appBar: Appbar(
         title: _sessionId == null
-            ? Text('AI 对话'.tl)
+            ? Text(t.aiConversation)
             : StreamBuilder<List<AiSession>>(
                 stream: AiConversationService().watchSessions(type: 'chat'),
                 builder: (ctx, snap) {
@@ -198,7 +198,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                       children: [
                         Flexible(
                           child: Text(
-                            session?.title ?? 'AI 对话'.tl,
+                            session?.title ?? t.aiConversation,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -212,7 +212,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.forum_outlined),
-            tooltip: '话题列表'.tl,
+            tooltip: t.topicList,
             onPressed: _showSessionDrawer,
           ),
         ],
@@ -238,7 +238,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                '开始与 AI 对话吧'.tl,
+                                t.startConversationWithAI,
                                 style: TextStyle(
                                   color: Theme.of(context).colorScheme.outline,
                                 ),
@@ -317,7 +317,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.add_comment_outlined, size: 20),
-                  tooltip: '新建对话'.tl,
+                  tooltip: t.newConversation,
                   onPressed: _newSession,
                 ),
               ],
@@ -340,7 +340,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                     minLines: 1,
                     textInputAction: TextInputAction.newline,
                     decoration: InputDecoration(
-                      hintText: '输入消息...'.tl,
+                      hintText: t.inputMessage,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -388,7 +388,7 @@ class _ChatSessionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Sheet(
-      title: '话题列表'.tl,
+      title: t.topicList,
       icon: Icons.forum_outlined,
       initialSize: 0.6,
       headerTrailing: FilledButton.tonal(
@@ -398,7 +398,7 @@ class _ChatSessionSheet extends StatelessWidget {
           children: [
             const Icon(Icons.add, size: 16),
             const SizedBox(width: 4),
-            Text('新建'.tl),
+            Text(t.newConversation),
           ],
         ),
       ),
@@ -407,7 +407,7 @@ class _ChatSessionSheet extends StatelessWidget {
         builder: (ctx, snapshot) {
           final sessions = snapshot.data ?? [];
           if (sessions.isEmpty) {
-            return Center(child: Text('暂无话题'.tl));
+            return Center(child: Text(t.noTopicsYet));
           }
           return ListView.separated(
             controller: sc,
@@ -652,7 +652,7 @@ class _ChatBubble extends StatelessWidget {
               onTap: () {
                 Navigator.pop(ctx);
                 Clipboard.setData(ClipboardData(text: content));
-                App.rootContext.showMessage(message: '已复制');
+                App.rootContext.showMessage(message: t.copied);
               },
             ),
             if (onRollback != null)
@@ -685,7 +685,7 @@ class _PersonalityPickerDialogState extends State<_PersonalityPickerDialog> {
   @override
   Widget build(BuildContext context) {
     return ContentDialog(
-      title: '选择 AI 人格'.tl,
+      title: t.selectAiPersonality,
       content: SizedBox(
         height: 400,
         child: FutureBuilder<List<AiConfig>>(

@@ -9,7 +9,7 @@ import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 class BangumiSubjectTabPage extends ConsumerStatefulWidget {
   const BangumiSubjectTabPage({super.key});
@@ -184,11 +184,11 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
                   if (queryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
+                        errMsg: t.nobodysPostedAnythingYet,
                         actions: [
                           GeneralErrorButton(
                             onPressed: onReload,
-                            text: 'Reload'.tl,
+                            text: t.reload,
                           ),
                         ],
                       ),
@@ -230,15 +230,15 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
       length: 2,
       child: Scaffold(
         appBar: Appbar(
-          title: Text('hotspot'.tl),
+          title: Text(t.hotspot),
           bottom: TabBar(
             controller: infoTabController,
             isScrollable: true,
             indicatorColor: Theme.of(context).colorScheme.primary,
             tabAlignment: TabAlignment.center,
             tabs: [
-              Tab(text: 'TopicsLatest'.tl),
-              Tab(text: 'TopicsTrending'.tl),
+              Tab(text: t.topicsLatest),
+              Tab(text: t.topicsTrending),
             ],
           ),
         ),

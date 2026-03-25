@@ -23,7 +23,7 @@ import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/bangumi/character_page.dart';
 import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -215,11 +215,11 @@ class BangumiWidget {
     }
 
     final stats = [
-      StatItem('doing', 'doing'.tl, Theme.of(context).colorScheme.primary),
-      StatItem('collect', 'collect'.tl, Theme.of(context).colorScheme.error),
-      StatItem('wish', 'wish'.tl, Colors.blueAccent),
-      StatItem('on_hold', 'on hold'.tl, null),
-      StatItem('dropped', 'dropped'.tl, Colors.grey),
+      StatItem('doing', t.doing, Theme.of(context).colorScheme.primary),
+      StatItem('collect', t.collect, Theme.of(context).colorScheme.error),
+      StatItem('wish', t.wish, Colors.blueAccent),
+      StatItem('onHold', t.onHold, null),
+      StatItem('dropped', t.dropped, Colors.grey),
     ];
 
     return Column(
@@ -248,7 +248,7 @@ class BangumiWidget {
         ),
         SizedBox(height: 3),
         Text(
-          '@t Total count'.tlParams({'t': formatCount(total)}),
+          t.tTotalCount(t: formatCount(total)),
           style: const TextStyle(fontSize: 12),
         ),
       ],
@@ -264,22 +264,20 @@ class BangumiWidget {
     final ep = currentWeekEp.values.first;
 
     if (ep?.sort != null) {
-      return Expanded(
+        return Expanded(
         child: Text(
           isCompleted
-              ? 'Full @b episodes released'.tlParams({
-                  'b': bangumiItem.totalEpisodes,
-                })
+              ? t.fullBEpisodesReleased(b: bangumiItem.totalEpisodes)
               : ep?.sort == ep?.ep
-              ? 'Up to ep @s • Total @t eps planned'.tlParams({
-                  's': ep!.sort.toCleanString(),
-                  't': bangumiItem.totalEpisodes,
-                })
-              : 'Up to ep @e (@s) • Total @t eps planned'.tlParams({
-                  'e': ep!.ep,
-                  's': ep.sort.toCleanString(),
-                  't': bangumiItem.totalEpisodes,
-                }),
+              ? t.upToEpSTotalEpsPlanned(
+                  s: ep!.sort.toCleanString(),
+                  t: bangumiItem.totalEpisodes,
+                )
+              : t.upToEpETotalEpsPlanned(
+                  e: ep!.ep,
+                  s: ep.sort.toCleanString(),
+                  t: bangumiItem.totalEpisodes,
+                ),
           style: const TextStyle(fontSize: 12.0),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -291,7 +289,7 @@ class BangumiWidget {
 
     if (airDate == null || !now.isAfter(airDate)) {
       return Text(
-        'Not Yet Airing'.tl,
+        t.notYetAiring,
         style: const TextStyle(fontSize: 12.0, fontWeight: FontWeight.bold),
       );
     }
@@ -301,7 +299,7 @@ class BangumiWidget {
     }
 
     return Text(
-      'Full @b episodes released'.tlParams({'b': bangumiItem.totalEpisodes}),
+      t.fullBEpisodesReleased(b: bangumiItem.totalEpisodes),
       style: const TextStyle(fontSize: 12.0),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
@@ -517,7 +515,7 @@ class _ExpandableTextState extends State<ExpandableText> {
               children: [
                 TextButton(
                   onPressed: () => setState(() => expanded = !expanded),
-                  child: Text(expanded ? 'Show less -'.tl : 'Show more +'.tl),
+                  child: Text(expanded ? t.showLess : t.showMore),
                 ),
               ],
             ),
@@ -661,8 +659,8 @@ class _ExpandableTagsState extends State<ExpandableTags>
               key: ValueKey(_currentButton),
               label: Text(
                 _currentButton == ToggleButtonType.showLess
-                    ? 'Show less -'.tl
-                    : 'Show more +'.tl,
+                    ? t.showLess
+                    : t.showMore,
                 style: TextStyle(color: Theme.of(context).colorScheme.primary),
               ),
               onPressed: _handleToggle,
@@ -765,7 +763,7 @@ class BangumiBriefCard extends StatelessWidget {
               itemSize: App.isAndroid ? 12 : 14.0,
             ),
             Text(
-              '@t reviews'.tlParams({'t': bangumiItem.total}),
+              t.tReviews(t: bangumiItem.total),
               style: TextStyle(
                 fontSize: App.isAndroid ? 7 : 9,
                 fontWeight: FontWeight.bold,
@@ -1045,17 +1043,15 @@ class BangumiDetailedCard extends StatelessWidget {
     String status;
     if (bangumiItem.totalEpisodes > 0) {
       if (air != null && air.isBefore(now)) {
-        status = 'Full @b episodes released'.tlParams({
-          'b': bangumiItem.totalEpisodes,
-        });
+        status = t.fullBEpisodesReleased(b: bangumiItem.totalEpisodes);
       } else {
-        status = 'Not Yet Airing'.tl;
+        status = t.notYetAiring;
       }
     } else {
       if (air != null && air.isBefore(now)) {
         status = '';
       } else {
-        status = 'Not Yet Airing'.tl;
+        status = t.notYetAiring;
       }
     }
 
@@ -1144,10 +1140,10 @@ class BangumiDetailedCard extends StatelessWidget {
                     itemSize: 16.0,
                   ),
                   Text(
-                    '@t reviews | #@r'.tlParams({
-                      'r': bangumiItem.rank,
-                      't': bangumiItem.total,
-                    }),
+                    t.tReviewsR(
+                      r: bangumiItem.rank,
+                      t: bangumiItem.total,
+                    ),
                     style: const TextStyle(fontSize: 10),
                   ),
                 ],
@@ -1415,7 +1411,7 @@ class _BangumiCardState extends State<BangumiCard> {
               itemSize: App.isAndroid ? 12 : 14,
             ),
             Text(
-              '@t reviews'.tlParams({'t': bangumiItem.total}),
+              t.tReviews(t: bangumiItem.total),
               style: TextStyle(
                 fontSize: App.isAndroid ? 7 : 9,
                 fontWeight: FontWeight.bold,

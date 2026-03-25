@@ -15,7 +15,7 @@ import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 
 class BangumiSearchPage extends ConsumerStatefulWidget {
@@ -65,31 +65,31 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   bool _showSearchSuggestions = false;
 
   final List<String> options = [
-    'Best Match'.tl,
-    'Top Rank'.tl,
-    'Most Favorited'.tl,
-    'Highest Rating'.tl,
+    t.bestMatch,
+    t.topRank,
+    t.mostFavorited,
+    t.highestRating,
   ];
 
-  String selectedOption = 'Top Rank'.tl;
+  String selectedOption = t.topRank;
   final Map<String, String> optionToSortType = {
-    'Best Match'.tl: 'match',
-    'Top Rank'.tl: 'rank',
-    'Most Favorited'.tl: 'heat',
-    'Highest Rating'.tl: 'score',
+    t.bestMatch: 'match',
+    t.topRank: 'rank',
+    t.mostFavorited: 'heat',
+    t.highestRating: 'score',
   };
 
   final Map<String, String> sortTypeToOption = {
-    'match': 'Best Match'.tl,
-    'rank': 'Top Rank'.tl,
-    'heat': 'Most Favorited'.tl,
-    'score': 'Highest Rating'.tl,
+    'match': t.bestMatch,
+    'rank': t.topRank,
+    'heat': t.mostFavorited,
+    'score': t.highestRating,
   };
 
   final Map<String, String> searchCategory = {
-    'subject': '条目'.tl,
-    'character': '角色'.tl,
-    'person': '人物'.tl,
+    'subject': t.subject,
+    'character': t.character,
+    'person': t.person,
   };
 
   @override
@@ -194,13 +194,13 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   }
 
   final categories = [
-    TagCategory(title: 'Type'.tl, tags: type),
-    TagCategory(title: 'Background'.tl, tags: background),
-    TagCategory(title: 'Characters'.tl, tags: role),
-    TagCategory(title: 'Emotion'.tl, tags: emotional),
-    TagCategory(title: 'Source'.tl, tags: source),
-    TagCategory(title: 'Audience'.tl, tags: audience),
-    TagCategory(title: 'Categories'.tl, tags: classification),
+    TagCategory(title: t.type, tags: type),
+    TagCategory(title: t.background, tags: background),
+    TagCategory(title: t.characters, tags: role),
+    TagCategory(title: t.emotion, tags: emotional),
+    TagCategory(title: t.source, tags: source),
+    TagCategory(title: t.audience, tags: audience),
+    TagCategory(title: t.categories, tags: classification),
   ];
 
   // 分类选择栏
@@ -304,7 +304,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             final color = Theme.of(context).colorScheme.primary;
 
             return ContentDialog(
-              title: 'Select @c'.tlParams({"c": category.title}),
+              title: t.selectC(c: category.title),
               displayButton: false,
               content: ConstrainedBox(
                 constraints: const BoxConstraints(
@@ -399,7 +399,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                 onPressed: () =>
                                     setState(() => currentSelected.clear()),
                                 icon: const Icon(Icons.clear_all, size: 16),
-                                label: Text('Clear'.tl),
+                                label: Text(t.clear),
                                 style: TextButton.styleFrom(
                                   foregroundColor: Theme.of(
                                     context,
@@ -409,7 +409,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                             const Spacer(),
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: Text('Cancel'.tl),
+                              child: Text(t.cancel),
                             ),
                             const SizedBox(width: 8),
                             FilledButton(
@@ -419,10 +419,8 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                               },
                               child: Text(
                                 currentSelected.isEmpty
-                                    ? 'Confirm'.tl
-                                    : 'Confirm (@c)'.tlParams({
-                                        "c": currentSelected.length,
-                                      }),
+                                    ? t.confirm
+                                    : t.confirmC(c: currentSelected.length),
                               ),
                             ),
                           ],
@@ -470,7 +468,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             decoration: InputDecoration(
               // filled: true,
               fillColor: Theme.of(context).cardColor,
-              hintText: 'Enter keywords...'.tl,
+              hintText: t.enterKeywords,
               prefixIcon: Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -663,7 +661,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         return StatefulBuilder(
           builder: (context, setStates) {
             String formatDate(DateTime? date) {
-              if (date == null) return "Unselected".tl;
+              if (date == null) return t.unselected;
               return "${date.year.toString().padLeft(4, '0')}-"
                   "${date.month.toString().padLeft(2, '0')}-"
                   "${date.day.toString().padLeft(2, '0')}";
@@ -705,7 +703,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                 final result = await showDialog<int>(
                                   context: ctx,
                                   builder: (_) => ContentDialog(
-                                    title: 'Enter Year'.tl,
+                                    title: t.enterYear,
                                     content: TextField(
                                       controller: ctrl,
                                       keyboardType: TextInputType.number,
@@ -717,7 +715,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                           ctx,
                                           int.tryParse(ctrl.text),
                                         ),
-                                        child: Text('OK'.tl),
+                                        child: Text(t.ok),
                                       ),
                                     ],
                                   ),
@@ -905,8 +903,8 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
 
                     return ContentDialog(
                       title: step == 0
-                          ? "Select Year & Month".tl
-                          : "Select Day".tl,
+                          ? t.selectYearAndMonth
+                          : t.selectDay,
                       content: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
                         child: step == 0
@@ -925,7 +923,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                             ctx,
                             DateTime(selYear, selMonth, selDay),
                           ),
-                          child: Text("Confirm".tl),
+                          child: Text(t.confirm),
                         ),
                       ],
                     );
@@ -945,7 +943,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             // 季度信息
             final quarters = [
               {
-                'label': 'Full Year'.tl,
+                'label': t.fullYear,
                 'start': 1,
                 'startDay': 1,
                 'end': 12,
@@ -982,14 +980,14 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
             ];
 
             return ContentDialog(
-              title: "Select Date Range".tl,
+              title: t.selectDateRange,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── 快捷选择 ──
                   Text(
-                    'Quick Select'.tl,
+                    t.quickSelect,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -1014,7 +1012,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                           final result = await showDialog<int>(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: Text('Enter Year'.tl),
+                              title: Text(t.enterYear),
                               content: TextField(
                                 controller: ctrl,
                                 keyboardType: TextInputType.number,
@@ -1023,14 +1021,14 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: Text('Cancel'.tl),
+                                  child: Text(t.cancel),
                                 ),
                                 ElevatedButton(
                                   onPressed: () => Navigator.pop(
                                     context,
                                     int.tryParse(ctrl.text),
                                   ),
-                                  child: Text('OK'.tl),
+                                  child: Text(t.ok),
                                 ),
                               ],
                             ),
@@ -1104,14 +1102,14 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   const Divider(height: 24),
                   // ── 手动选择 ──
                   Text(
-                    'Manual Select'.tl,
+                    t.manualSelect,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.play_arrow_outlined),
-                    title: Text("Start Date".tl),
+                    title: Text(t.startDate),
                     subtitle: Text(
                       formatDate(air),
                       style: TextStyle(
@@ -1134,7 +1132,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.stop_outlined),
-                    title: Text("End Date".tl),
+                    title: Text(t.endDate),
                     subtitle: Text(
                       formatDate(end),
                       style: TextStyle(
@@ -1162,20 +1160,20 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     air = null;
                     end = null;
                   }),
-                  child: Text("Clear".tl),
+                  child: Text(t.clear),
                 ),
                 ElevatedButton(
                   onPressed: () async {
                     if (air == null && end == null) {
                       App.rootContext.showMessage(
-                        message: 'Please select a date'.tl,
+                        message: t.pleaseSelectADate,
                       );
                       return;
                     }
                     if (air != null && end != null && end!.isBefore(air!)) {
                       context.showMessage(
                         message:
-                            'End date cannot be earlier than start date'.tl,
+                            t.endDateCannotBeEarlierThanStartDate,
                       );
                       return;
                     }
@@ -1190,7 +1188,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     bangumiItems = newItems;
                     setState(() => _isLoading = false);
                   },
-                  child: Text("Apply".tl),
+                  child: Text(t.apply),
                 ),
               ],
             );
@@ -1209,11 +1207,11 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         children: [
           if (bangumiItems.isNotEmpty || characterItmes.isNotEmpty) ...[
             Text(
-              'Showing @l results'.tlParams({
-                'l': subjectSearch
+              t.showingLResults(
+                l: subjectSearch
                     ? bangumiItems.length
                     : characterItmes.length,
-              }),
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -1226,7 +1224,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               endDate = '';
               setState(() {});
             },
-            tooltip: "Clear Tags".tl,
+            tooltip: t.clearTags,
             icon: const Icon(Icons.clear_all),
           ),
           if (subjectSearch)
@@ -1242,7 +1240,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               onPressed: () {
                 _showAirEndDateDialog(context);
               },
-              tooltip: "Select Time".tl,
+              tooltip: t.selectTime,
               icon: Icon(Icons.calendar_today),
             ),
           if (subjectSearch)
@@ -1251,7 +1249,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                 useBriefMode = !useBriefMode;
                 setState(() {});
               },
-              tooltip: "Switch Layout".tl,
+              tooltip: t.switchLayout,
               icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
             ),
           if (subjectSearch)
@@ -1301,13 +1299,13 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
         children: [
           if (bangumiItems.isNotEmpty)
             Text(
-              "Selected @a animes".tlParams({"a": selectedBangumiItems.length}),
+              t.selectedAAnimes(a: selectedBangumiItems.length),
             ),
           if (characterItmes.isNotEmpty)
             Text(
-              "Selected @a character".tlParams({
-                "a": selectedCharacterItems.length,
-              }),
+              t.selectedACharacter(
+                a: selectedCharacterItems.length,
+              ),
             ),
           const SizedBox(width: 8),
           IconButton(
@@ -1317,7 +1315,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
               multiSelectMode = false;
               setState(() {});
             },
-            tooltip: "Clear Tags".tl,
+            tooltip: t.clearTags,
             icon: const Icon(Icons.clear_all),
           ),
           const Spacer(),
@@ -1335,7 +1333,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                 }
               });
             },
-            tooltip: "Select All".tl,
+            tooltip: t.selectAll,
             icon: Icon(Icons.select_all),
           ),
           IconButton(
@@ -1346,7 +1344,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                 multiSelectMode = false;
               });
             },
-            tooltip: "Deselect".tl,
+            tooltip: t.deselect,
             icon: Icon(Icons.deselect),
           ),
           IconButton(
@@ -1373,7 +1371,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                 }
               });
             },
-            tooltip: "Invert Selection".tl,
+            tooltip: t.invertSelection,
             icon: Icon(Icons.flip),
           ),
           if (subjectSearch)
@@ -1382,7 +1380,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                 useBriefMode = !useBriefMode;
                 setState(() {});
               },
-              tooltip: "Switch Layout".tl,
+              tooltip: t.switchLayout,
               icon: useBriefMode ? Icon(Icons.apps) : Icon(Icons.view_agenda),
             ),
         ],
@@ -1401,10 +1399,10 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     if (RegExp(r'^\d+$').hasMatch(value)) {
       final res = await Bangumi.instance.isBangumiExists(int.parse(value));
       if (res.keys.first) {
-        App.rootContext.showMessage(message: '正在跳转...');
+        App.rootContext.showMessage(message: t.jumping);
         context.to(() => BangumiInfoPage(bangumiItem: res.values.first!));
       } else {
-        App.rootContext.showMessage(message: '查询失败');
+        App.rootContext.showMessage(message: t.queryFailed);
       }
     } else {
       FocusScope.of(context).unfocus();
@@ -1577,7 +1575,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   characterItmes.clear();
                   setState(() {});
                 },
-                child: Text('条目'.tl),
+                child: Text(t.subject),
               ),
               MenuItemButton(
                 onPressed: () {
@@ -1590,7 +1588,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   bangumiItems.clear();
                   setState(() {});
                 },
-                child: Text('角色'.tl),
+                child: Text(t.character),
               ),
               MenuItemButton(
                 onPressed: () {
@@ -1603,7 +1601,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   bangumiItems.clear();
                   setState(() {});
                 },
-                child: Text('人物'.tl),
+                child: Text(t.person),
               ),
             ],
           ),
@@ -1668,7 +1666,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   fillColor: Colors.transparent,
                   hintText: keyword.isNotEmpty
                       ? keyword
-                      : 'Enter keywords...'.tl,
+                      : t.enterKeywords,
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),

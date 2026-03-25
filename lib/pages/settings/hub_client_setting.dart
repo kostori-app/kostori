@@ -67,12 +67,12 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     final avatarCtrl = TextEditingController(text: _hubClient.savedAvatar);
 
     await showHubFormDialog(
-      title: 'Edit Profile'.tl,
-      confirmLabel: 'Save'.tl,
+      title: t.editProfile,
+      confirmLabel: t.save,
       fields: [
         InputField(
           controller: nameCtrl,
-          hint: 'Enter display name'.tl,
+          hint: t.enterDisplayName,
           icon: Icons.person_outline,
         ),
         InputField(
@@ -82,7 +82,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
         ),
         InputField(
           controller: bioCtrl,
-          hint: 'Enter bio'.tl,
+          hint: t.enterBio,
           icon: Icons.info_outline,
         ),
       ],
@@ -98,8 +98,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
           if (uri == null || !uri.hasScheme) {
             App.rootContext.showMessage(
               message:
-                  'Please enter a valid URL starting with http:// or https://'
-                      .tl,
+                  t.pleaseEnterAValidUrl,
               level: LogLevel.warning,
             );
             return null;
@@ -144,12 +143,12 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               !rooms.any((r) => r.ownerUserId == myId);
 
           return Sheet(
-            title: 'Rooms'.tl,
+            title: t.rooms,
             icon: Icons.meeting_room_outlined,
             headerTrailing: canCreate
                 ? TextButton.icon(
                     icon: const Icon(Icons.add, size: 16),
-                    label: Text('Create'.tl),
+                    label: Text(t.create),
                     onPressed: () async {
                       await _showClientCreateRoomDialog(context);
                       setSS(() {});
@@ -163,7 +162,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                     padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
                     child: TextButton.icon(
                       icon: const Icon(Icons.logout, size: 16),
-                      label: Text('Leave Room'.tl),
+                      label: Text(t.leaveRoom),
                       onPressed: () {
                         _hubClient.leaveRoom();
                         Navigator.pop(context);
@@ -173,7 +172,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                 : null,
             builder: (context, sc) {
               if (rooms.isEmpty) {
-                return Center(child: HubEmptyHint('No rooms'.tl));
+                return Center(child: HubEmptyHint(t.noRooms));
               }
               return ListView.builder(
                 controller: sc,
@@ -193,21 +192,21 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                           ? Icons.lock_outlined
                           : Icons.meeting_room_outlined,
                     ),
-                    title: Text(isLobby ? 'Lobby'.tl : room.roomName),
-                    subtitle: Text('${room.participantCount} ${'members'.tl}'),
+                    title: Text(isLobby ? t.lobby : room.roomName),
+                    subtitle: Text('${room.participantCount} ${t.members}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (canManage)
                           IconButton(
                             icon: const Icon(Icons.settings_outlined, size: 18),
-                            tooltip: 'Room Settings'.tl,
+                            tooltip: t.roomSettings,
                             onPressed: () =>
                                 showHubRoomSettingsSheet(context, room),
                           ),
                         if (isCurrent)
                           Text(
-                            'Current'.tl,
+                            t.current,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.primary,
                               fontSize: 12,
@@ -215,7 +214,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                           )
                         else ...[
                           TextButton(
-                            child: Text('Join'.tl),
+                            child: Text(t.join),
                             onPressed: () async {
                               if (room.isLocked) {
                                 final pwd = await _showPasswordDialog(context);
@@ -256,21 +255,21 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Room Password'.tl),
+        title: Text(t.roomPassword),
         content: TextField(
           controller: ctrl,
           obscureText: true,
           autofocus: true,
-          decoration: InputDecoration(labelText: 'Password'.tl),
+          decoration: InputDecoration(labelText: t.password),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'.tl),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, ctrl.text),
-            child: Text('OK'.tl),
+            child: Text(t.ok),
           ),
         ],
       ),
@@ -288,11 +287,11 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
         builder: (context, setSS) {
           final blocked = _hubClient.blockedUsers;
           return Sheet(
-            title: 'Blocked Users'.tl,
+            title: t.blockedUsers,
             icon: Icons.block_outlined,
             builder: (context, sc) {
               if (blocked.isEmpty) {
-                return Center(child: HubEmptyHint('No blocked users'.tl));
+                return Center(child: HubEmptyHint(t.noBlockedUsers));
               }
               return ListView.builder(
                 controller: sc,
@@ -309,7 +308,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                     userId: id,
                     trailing: IconButton(
                       icon: const Icon(Icons.lock_open_outlined, size: 18),
-                      tooltip: 'Unblock'.tl,
+                      tooltip: t.unblock,
                       onPressed: () {
                         _hubClient.unblockUser(id);
                         setSS(() {});
@@ -335,7 +334,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     final cs = Theme.of(context).colorScheme;
 
     return PopUpWidgetScaffold(
-      title: 'Hub Details'.tl,
+      title: t.hubDetails,
       body: CustomScrollView(
         slivers: [
           // ── 服务器地址 ──
@@ -343,7 +342,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: 'Server Address'.tl,
+                  title: t.serverAddress,
                   icon: Icons.dns_outlined,
                 ),
                 Padding(
@@ -378,7 +377,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                         children: [
                           Expanded(
                             child: _LabeledField(
-                              label: 'Host'.tl,
+                              label: t.host,
                               child: _HostInput(
                                 controller: _hostController,
                                 enabled: !isConnected,
@@ -394,7 +393,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                           SizedBox(
                             width: 80,
                             child: _LabeledField(
-                              label: 'Port'.tl,
+                              label: t.port,
                               child: _NumberInput(
                                 controller: _portController,
                                 enabled: !isConnected,
@@ -419,12 +418,12 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: 'Authentication'.tl,
+                  title: t.authentication,
                   icon: Icons.key_outlined,
                 ),
                 _SettingRow(
-                  title: 'Hub Token'.tl,
-                  subtitle: 'Token from the hub server'.tl,
+                  title: t.hubToken,
+                  subtitle: t.tokenFromTheHubServer,
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -435,26 +434,26 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                               : Icons.visibility,
                           size: 18,
                         ),
-                        tooltip: _tokenObscured ? 'Show'.tl : 'Hide'.tl,
+                        tooltip: _tokenObscured ? t.show : t.hide,
                         onPressed: () =>
                             setState(() => _tokenObscured = !_tokenObscured),
                       ),
                       if (_tokenController.text.isNotEmpty)
                         IconButton(
                           icon: const Icon(Icons.copy, size: 18),
-                          tooltip: 'Copy'.tl,
+                          tooltip: t.copy,
                           onPressed: () {
                             Clipboard.setData(
                               ClipboardData(text: _tokenController.text),
                             );
-                            App.rootContext.showMessage(message: 'Copied'.tl);
+                            App.rootContext.showMessage(message: t.copied);
                           },
                         ),
                       if (!isConnected)
                         _tokenController.text.isEmpty
                             ? IconButton(
                                 icon: const Icon(Icons.content_paste, size: 18),
-                                tooltip: 'Paste'.tl,
+                                tooltip: t.paste,
                                 onPressed: () async {
                                   final data = await Clipboard.getData(
                                     Clipboard.kTextPlain,
@@ -469,7 +468,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                               )
                             : IconButton(
                                 icon: const Icon(Icons.clear, size: 18),
-                                tooltip: 'Clear'.tl,
+                                tooltip: t.clear,
                                 onPressed: () {
                                   _tokenController.clear();
                                   _hubClient.saveToken('');
@@ -491,7 +490,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                     ),
                     decoration: InputDecoration(
                       isDense: true,
-                      hintText: 'Paste hub server token'.tl,
+                      hintText: t.pasteHubServerToken,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 10,
@@ -525,23 +524,23 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: 'Profile & Room'.tl,
+                    title: t.profileAndRoom,
                     icon: Icons.person_outline,
                   ),
                   _SettingRow(
-                    title: 'Profile'.tl,
-                    subtitle: _hubClient.savedName ?? 'Not set'.tl,
+                    title: t.displayName,
+                    subtitle: _hubClient.savedName ?? t.notSet,
                     trailing: IconButton(
                       icon: const Icon(Icons.edit_outlined, size: 18),
                       onPressed: () => _showEditProfileDialog(context),
                     ),
                   ),
                   _SettingRow(
-                    title: 'Current Room'.tl,
+                    title: t.currentRoom,
                     subtitle: () {
                       final name = hubState.currentRoomName;
                       return (name == null || name.toLowerCase() == 'lobby')
-                          ? 'Lobby'.tl
+                          ? t.lobby
                           : name;
                     }(),
                     trailing: IconButton(
@@ -559,11 +558,11 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: 'Blocked Users'.tl,
+                    title: t.blockedUsers,
                     icon: Icons.volume_off_outlined,
                   ),
                   _SettingRow(
-                    title: '${_hubClient.blockedUsers.length} ${'blocked'.tl}',
+                    title: '${_hubClient.blockedUsers.length} ${t.blocked}',
                     trailing: IconButton(
                       icon: const Icon(Icons.open_in_new, size: 18),
                       onPressed: () => _showClientBlacklistSheet(context),
@@ -579,14 +578,14 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: 'Blocked Invites'.tl,
+                    title: t.blockedInvites,
                     icon: Icons.person_off_outlined,
                   ),
                   if (hubState.blockedInviteUserIds.isEmpty)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                       child: Text(
-                        'No blocked invites'.tl,
+                        t.noBlockedInvites,
                         style: TextStyle(
                           fontSize: 13,
                           color: cs.onSurface.toOpacity(0.4),
@@ -601,7 +600,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
                       return _SettingRow(
                         title: c?.displayName ?? id,
                         trailing: TextButton(
-                          child: Text('Unblock'.tl),
+                          child: Text(t.unblock),
                           onPressed: () {
                             _hubClient.unblockInvite(id);
                             setState(() {});
@@ -619,7 +618,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: 'Online Clients'.tl,
+                    title: t.onlineClients,
                     icon: Icons.people_outline,
                   ),
                   ...hubState.onlineClients.map(

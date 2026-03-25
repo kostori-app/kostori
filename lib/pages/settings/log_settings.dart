@@ -12,37 +12,37 @@ class _LogSettingsState extends State<LogSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("Log".tl)),
+        SliverAppbar(title: Text(t.log)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
-                _SettingPartTitle(title: "Log".tl, icon: Icons.error_outline),
+                _SettingPartTitle(title: t.log, icon: Icons.error_outline),
                 _CallbackSetting(
-                  title: "Open Log".tl,
-                  actionTitle: 'Open'.tl,
+                  title: t.openLog,
+                  actionTitle: t.open,
                   callback: () => context.to(() => const LogsPage()),
                 ),
-                _SwitchSetting(title: "Debug Info".tl, settingKey: "debugInfo"),
+                _SwitchSetting(title: t.debugInfo, settingKey: "debugInfo"),
                 _SwitchSetting(
-                  title: "Network Info".tl,
+                  title: t.networkInfo,
                   settingKey: "enableNetLog",
                 ),
                 _SwitchSetting(
-                  title: "Hub Info".tl,
+                  title: t.hubInfo,
                   settingKey: "enableHubLog",
                 ),
                 _SwitchSetting(
-                  title: "Stats Info".tl,
+                  title: t.statsInfo,
                   settingKey: "enableStatsLog",
                 ),
                 _SwitchSetting(
-                  title: "Source Info".tl,
+                  title: t.sourceInfo,
                   settingKey: "enableSourceLog",
                 ),
                 _SwitchSetting(
-                  title: "Player Info".tl,
+                  title: t.playerInfo,
                   settingKey: "enablePlayerLog",
                 ),
               ],
@@ -70,7 +70,7 @@ class _LogsPageState extends State<LogsPage> {
       length: levelOrder.length,
       child: Scaffold(
         appBar: Appbar(
-          title: Text("Logs".tl),
+          title: Text(t.logs),
           bottom: TabBar(
             tabs: levelOrder
                 .map((lvl) => Tab(text: lvl.name.toUpperCase()))
@@ -90,7 +90,7 @@ class _LogsPageState extends State<LogsPage> {
                   position: position,
                   items: [
                     PopupMenuItem(
-                      child: Text("Clear".tl),
+                      child: Text(t.clear),
                       onTap: () {
                         setState(() {
                           Log.clear();
@@ -98,16 +98,16 @@ class _LogsPageState extends State<LogsPage> {
                       },
                     ),
                     PopupMenuItem(
-                      child: Text("Disable Length Limitation".tl),
+                      child: Text(t.disableLengthLimitation),
                       onTap: () {
                         Log.ignoreLimitation = true;
                         context.showMessage(
-                          message: "Only valid for this run".tl,
+                          message: t.onlyValidForThisRun,
                         );
                       },
                     ),
                     PopupMenuItem(
-                      child: Text("Export".tl),
+                      child: Text(t.export),
                       onTap: () => saveLog(Log.logs.toString()),
                     ),
                   ],
@@ -137,7 +137,7 @@ class _LogsPageState extends State<LogsPage> {
 
                 if (logs.isEmpty) {
                   return Center(
-                    child: Text("No logs for @l".tlParams({"l": level.name})),
+                    child: Text(t.noLogsForL(l: level.name)),
                   );
                 }
 
@@ -231,10 +231,10 @@ class _LogsPageState extends State<LogsPage> {
                                         ClipboardData(text: log.content),
                                       );
                                       App.rootContext.showMessage(
-                                        message: '复制成功',
+                                        message: t.copySuccess,
                                       );
                                     },
-                                    child: Text("Copy".tl),
+                                    child: Text(t.copy),
                                   ),
                                 ),
                               ],

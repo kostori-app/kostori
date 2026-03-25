@@ -74,6 +74,36 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Add to favorites'
 	String get addToFavorites => 'Add to favorites';
 
+	/// en: 'Image Properties'
+	String get imageProperties => 'Image Properties';
+
+	/// en: 'File Name'
+	String get fileName => 'File Name';
+
+	/// en: 'File Size'
+	String get fileSize => 'File Size';
+
+	/// en: 'Modified Time'
+	String get modifiedTime => 'Modified Time';
+
+	/// en: 'Path'
+	String get path => 'Path';
+
+	/// en: 'Title copied'
+	String get titleCopied => 'Title copied';
+
+	/// en: 'Format'
+	String get imageFormat => 'Format';
+
+	/// en: 'Confirm delete this image?'
+	String get confirmDeleteImage => 'Confirm delete this image?';
+
+	/// en: 'Bangumi Plan'
+	String get bangumiPlan => 'Bangumi Plan';
+
+	/// en: 'Switch Favorite User'
+	String get switchFavoriteUser => 'Switch Favorite User';
+
 	/// en: 'Add'
 	String get add => 'Add';
 
@@ -95,8 +125,38 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'AI'
 	String get ai => 'AI';
 
+	/// en: 'Soul Profile'
+	String get soulProfile => 'Soul Profile';
+
+	/// en: 'Based on your watch history, analyze your anime personality'
+	String get soulProfilerDescription => 'Based on your watch history, analyze your anime personality';
+
+	/// en: 'AI Image Tag'
+	String get imageTag => 'AI Image Tag';
+
+	/// en: 'Generate AI painting style tags based on your preferences'
+	String get imageTagDescription => 'Generate AI painting style tags based on your preferences';
+
+	/// en: 'AI Chat'
+	String get aiChat => 'AI Chat';
+
+	/// en: 'Multi-round conversation with AI with context memory'
+	String get aiChatDescription => 'Multi-round conversation with AI with context memory';
+
+	/// en: 'Summary'
+	String get summary => 'Summary';
+
+	/// en: 'Auto-generate your anime watch weekly/monthly report'
+	String get summaryDescription => 'Auto-generate your anime watch weekly/monthly report';
+
+	/// en: 'Basic Info'
+	String get basicInfo => 'Basic Info';
+
 	/// en: 'All Episodes'
 	String get allEpisodes => 'All Episodes';
+
+	/// en: 'Related Entries'
+	String get relatedEntries => 'Related Entries';
 
 	/// en: 'Also remove files on disk'
 	String get alsoRemoveFilesOnDisk => 'Also remove files on disk';
@@ -299,6 +359,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Delete'
 	String get delete => 'Delete';
 
+	/// en: 'Delete Room'
+	String get deleteRoom => 'Delete Room';
+
 	/// en: 'Description'
 	String get description => 'Description';
 
@@ -431,6 +494,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'History'
 	String get history => 'History';
 
+	/// en: 'History Source'
+	String get historySource => 'History Source';
+
 	/// en: 'Home'
 	String get home => 'Home';
 
@@ -457,6 +523,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Information'
 	String get information => 'Information';
+
+	/// en: 'My Rating'
+	String get myRating => 'My Rating';
 
 	/// en: 'Initial Page'
 	String get initialPage => 'Initial Page';
@@ -511,6 +580,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Translation result'
 	String get translationResult => 'Translation result';
+
+	/// en: 'Select Translation Language'
+	String get selectTranslationLanguage => 'Select Translation Language';
 
 	/// en: 'Please enter text to translate'
 	String get pleaseEnterTextToTranslate => 'Please enter text to translate';
@@ -740,6 +812,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Selected ${a} animes'
 	String selectedAAnimes({required Object a}) => 'Selected ${a} animes';
 
+	/// en: 'New Name'
+	String get newName => 'New Name';
+
 	/// en: 'Set Cache Limit'
 	String get setCacheLimit => 'Set Cache Limit';
 
@@ -965,6 +1040,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Reload'
 	String get reload => 'Reload';
 
+	/// en: 'Main Content'
+	String get mainContent => 'Main Content';
+
+	/// en: 'Switch'
+	String get switchh => 'Switch';
+
 	/// en: 'Failed to load, please try again.'
 	String get failedToLoadPleaseTryAgain => 'Failed to load, please try again.';
 
@@ -991,6 +1072,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Introduction'
 	String get introduction => 'Introduction';
+
+	/// en: 'Latest Comments'
+	String get latestComments => 'Latest Comments';
 
 	/// en: 'Linked Items'
 	String get linkedItems => 'Linked Items';
@@ -1130,6 +1214,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Border Color'
 	String get borderColor => 'Border Color';
 
+	/// en: 'Conversation Title'
+	String get conversationTitle => 'Conversation Title';
+
+	/// en: 'AI Conversation'
+	String get aiConversation => 'AI Conversation';
+
+	/// en: 'Topic List'
+	String get topicList => 'Topic List';
+
+	/// en: 'Start a conversation with AI'
+	String get startConversationWithAI => 'Start a conversation with AI';
+
+	/// en: 'New Conversation'
+	String get newConversation => 'New Conversation';
+
+	/// en: 'Input message...'
+	String get inputMessage => 'Input message...';
+
+	/// en: 'No topics yet'
+	String get noTopicsYet => 'No topics yet';
+
+	/// en: 'Select AI Personality'
+	String get selectAiPersonality => 'Select AI Personality';
+
 	/// en: 'Apply'
 	String get apply => 'Apply';
 
@@ -1198,6 +1306,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Failed to load images or no images'
 	String get failedToLoadImagesOrNoImages => 'Failed to load images or no images';
+
+	/// en: 'Failed to pick image'
+	String get failedToPickImage => 'Failed to pick image';
 
 	/// en: 'Monday'
 	String get monday => 'Monday';
@@ -1949,8 +2060,29 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Translation'
 	String get translation => 'Translation';
 
+	/// en: 'Translation Service'
+	String get translationService => 'Translation Service';
+
 	/// en: 'API key cannot be empty'
 	String get apiKeyCannotBeEmpty => 'API key cannot be empty';
+
+	/// en: 'Please configure API key in AI settings first'
+	String get pleaseConfigureApiKeyInAiSettingsFirst => 'Please configure API key in AI settings first';
+
+	/// en: 'Usage'
+	String get usage => 'Usage';
+
+	/// en: 'Editing'
+	String get editing => 'Editing';
+
+	/// en: 'Screenshot in progress...'
+	String get screenshotInProgress => 'Screenshot in progress...';
+
+	/// en: 'Move operation, target unknown'
+	String get moveOperationTargetUnknown => 'Move operation, target unknown';
+
+	/// en: 'Operation unknown'
+	String get operationUnknown => 'Operation unknown';
 
 	/// en: 'Please enter translation prompt, use ${a} as the placeholder for the target language'
 	String pleaseEnterTranslationPrompt({required Object a}) => 'Please enter translation prompt, use ${a} as the placeholder for the target language';
@@ -1978,6 +2110,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Stats Calendar'
 	String get statsCalendar => 'Stats Calendar';
+
+	/// en: 'Today's Records'
+	String get todaysRecords => 'Today\'s Records';
+
+	/// en: 'Daily Stats'
+	String get dailyStats => 'Daily Stats';
+
+	/// en: 'View All'
+	String get viewAll => 'View All';
 
 	/// en: 'Kostori Changelog'
 	String get kostoriChangelog => 'Kostori Changelog';
@@ -2126,53 +2267,14 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Running on'
 	String get runningOn => 'Running on';
 
+	/// en: 'online'
+	String get online => 'online';
+
 	/// en: 'Rooms'
 	String get rooms => 'Rooms';
 
-	/// en: 'rooms'
-	String get roomsCount => 'rooms';
-
-	/// en: 'members'
-	String get membersCount => 'members';
-
-	/// en: 'Room Admins'
-	String get roomAdmins => 'Room Admins';
-
-	/// en: 'Delete Room'
-	String get deleteRoom => 'Delete Room';
-
-	/// en: 'Create Room'
-	String get createRoom => 'Create Room';
-
-	/// en: 'Room Name'
-	String get roomName => 'Room Name';
-
-	/// en: 'Leave empty for public'
-	String get leaveEmptyForPublic => 'Leave empty for public';
-
-	/// en: 'Announcement'
-	String get announcement => 'Announcement';
-
-	/// en: 'Announcements'
-	String get announcements => 'Announcements';
-
-	/// en: 'Edit Profile'
-	String get editProfile => 'Edit Profile';
-
-	/// en: 'Avatar URL'
-	String get avatarUrl => 'Avatar URL';
-
-	/// en: 'Bio'
-	String get bio => 'Bio';
-
-	/// en: 'Profile'
-	String get profile => 'Profile';
-
-	/// en: 'Not set'
-	String get notSet => 'Not set';
-
-	/// en: 'Current Room'
-	String get currentRoom => 'Current Room';
+	/// en: 'Managing'
+	String get managing => 'Managing';
 
 	/// en: 'Lobby'
 	String get lobby => 'Lobby';
@@ -2222,6 +2324,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Kick'
 	String get kick => 'Kick';
 
+	/// en: 'Poke'
+	String get poke => 'Poke';
+
+	/// en: 'Banned'
+	String get banned => 'Banned';
+
 	/// en: 'joined'
 	String get joinedEvent => 'joined';
 
@@ -2270,6 +2378,18 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Room Settings'
 	String get roomSettings => 'Room Settings';
 
+	/// en: 'Room Name'
+	String get roomName => 'Room Name';
+
+	/// en: 'Room ID'
+	String get roomId => 'Room ID';
+
+	/// en: 'Announcements'
+	String get announcements => 'Announcements';
+
+	/// en: 'Room Admins'
+	String get roomAdmins => 'Room Admins';
+
 	/// en: 'No announcement'
 	String get noAnnouncement => 'No announcement';
 
@@ -2299,6 +2419,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Mute'
 	String get mute => 'Mute';
+
+	/// en: 'Mute Duration'
+	String get muteDuration => 'Mute Duration';
 
 	/// en: 'Seconds'
 	String get secondsLabel => 'Seconds';
@@ -2374,6 +2497,45 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'blocked'
 	String get blockedCount => 'blocked';
+
+	/// en: 'blocked'
+	String get blocked => 'blocked';
+
+	/// en: 'Blocked Invites'
+	String get blockedInvites => 'Blocked Invites';
+
+	/// en: 'No blocked invites'
+	String get noBlockedInvites => 'No blocked invites';
+
+	/// en: 'members'
+	String get members => 'members';
+
+	/// en: 'Not set'
+	String get notSet => 'Not set';
+
+	/// en: 'Current Room'
+	String get currentRoom => 'Current Room';
+
+	/// en: 'Edit Profile'
+	String get editProfile => 'Edit Profile';
+
+	/// en: 'No blocked users'
+	String get noBlockedUsers => 'No blocked users';
+
+	/// en: 'Create Room'
+	String get createRoom => 'Create Room';
+
+	/// en: 'Chat'
+	String get chat => 'Chat';
+
+	/// en: 'No one online'
+	String get noOneOnline => 'No one online';
+
+	/// en: 'Show'
+	String get show => 'Show';
+
+	/// en: 'Hide'
+	String get hide => 'Hide';
 
 	/// en: 'Server Blacklist'
 	String get serverBlacklist => 'Server Blacklist';
@@ -2582,6 +2744,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Online Users'
 	String get onlineUsersList => 'Online Users';
 
+	/// en: 'No users online'
+	String get noUsersOnline => 'No users online';
+
 	/// en: 'Room'
 	String get room => 'Room';
 
@@ -2596,9 +2761,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Stickers'
 	String get stickersLabel => 'Stickers';
-
-	/// en: 'Room ID'
-	String get roomId => 'Room ID';
 
 	/// en: 'poked you'
 	String get pokedYou => 'poked you';
@@ -2648,6 +2810,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Invite'
 	String get invite => 'Invite';
 
+	/// en: 'invited'
+	String get invited => 'invited';
+
 	/// en: 'Room Invite'
 	String get roomInvite => 'Room Invite';
 
@@ -2668,9 +2833,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Blocked Invites'
 	String get blockedInvitesList => 'Blocked Invites';
-
-	/// en: 'No blocked invites'
-	String get noBlockedInvites => 'No blocked invites';
 
 	/// en: 'Allow Member Invites'
 	String get allowMemberInvites => 'Allow Member Invites';
@@ -2695,6 +2857,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Stats Info'
 	String get statsInfo => 'Stats Info';
+
+	/// en: 'Rating Details'
+	String get ratingDetails => 'Rating Details';
 
 	/// en: 'Source Info'
 	String get sourceInfo => 'Source Info';
@@ -2746,6 +2911,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Cannot modify system preset'
 	String get cannotModifySystemPreset => 'Cannot modify system preset';
+
+	/// en: '番剧卡片使用模糊背景'
+	String get animeCardUseBlur => '番剧卡片使用模糊背景';
+
+	/// en: '每日番剧表启动时搜寻集信息'
+	String get calendarFetchEpisodes => '每日番剧表启动时搜寻集信息';
+
+	/// en: 'Add keyword'
+	String get addKeyword => 'Add keyword';
+
+	/// en: 'Keyword'
+	String get keyword => 'Keyword';
+
+	/// en: 'Keyword already exists'
+	String get keywordAlreadyExists => 'Keyword already exists';
+
+	/// en: 'Folder name cannot be empty'
+	String get folderNameCannotBeEmpty => 'Folder name cannot be empty';
+
+	/// en: 'Folder name is too long'
+	String get folderNameTooLong => 'Folder name is too long';
+
+	/// en: 'Folder already exists'
+	String get folderAlreadyExists => 'Folder already exists';
 
 	/// en: 'Config Key already exists. Please change it.'
 	String get configKeyAlreadyExists => 'Config Key already exists. Please change it.';
@@ -2816,11 +3005,395 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Select Date Range'
 	String get selectDateRange => 'Select Date Range';
 
+	/// en: 'Subject'
+	String get subject => 'Subject';
+
+	/// en: 'Character'
+	String get character => 'Character';
+
+	/// en: 'Person'
+	String get person => 'Person';
+
 	/// en: 'Manual Select'
 	String get manualSelect => 'Manual Select';
 
 	/// en: 'QR & Clipboard'
 	String get qrAndClipboard => 'QR & Clipboard';
+
+	/// en: 'Go'
+	String get go => 'Go';
+
+	/// en: 'Clipboard'
+	String get clipboard => 'Clipboard';
+
+	/// en: 'Recognize from Gallery'
+	String get recognizeFromGallery => 'Recognize from Gallery';
+
+	/// en: 'Scan QR Code'
+	String get scanQrCode => 'Scan QR Code';
+
+	/// en: 'Scan to Jump'
+	String get scanToJump => 'Scan to Jump';
+
+	/// en: 'QR Code'
+	String get qrCode => 'QR Code';
+
+	/// en: 'Share method: In anime/Bangumi page, click share → generate token or QR code'
+	String get shareMethodDescription => 'Share method: In anime/Bangumi page, click share → generate token or QR code';
+
+	/// en: 'Share QR Code'
+	String get shareQrCode => 'Share QR Code';
+
+	/// en: 'Exporting...'
+	String get exporting => 'Exporting...';
+
+	/// en: 'Token copied to clipboard'
+	String get tokenCopiedToClipboard => 'Token copied to clipboard';
+
+	/// en: 'Generate QR Code to Share'
+	String get generateQrCodeShare => 'Generate QR Code to Share';
+
+	/// en: 'AI Settings'
+	String get aiSettings => 'AI Settings';
+
+	/// en: 'AI Config Missing'
+	String get aiConfigMissing => 'AI Config Missing';
+
+	/// en: 'Generating...'
+	String get generating => 'Generating...';
+
+	/// en: 'Generated Tags'
+	String get generatedTags => 'Generated Tags';
+
+	/// en: 'Export Screenshot'
+	String get exportScreenshot => 'Export Screenshot';
+
+	/// en: 'Copy all'
+	String get copyAll => 'Copy all';
+
+	/// en: 'Time Range'
+	String get timeRange => 'Time Range';
+
+	/// en: 'This Week'
+	String get thisWeek => 'This Week';
+
+	/// en: 'This Month'
+	String get thisMonth => 'This Month';
+
+	/// en: 'Generate Summary'
+	String get generateSummary => 'Generate Summary';
+
+	/// en: 'Generate Tag'
+	String get generateTag => 'Generate Tag';
+
+	/// en: 'Summary Report'
+	String get summaryReport => 'Summary Report';
+
+	/// en: 'No activity in this time range'
+	String get noActivityInTimeRange => 'No activity in this time range';
+
+	/// en: 'Weekly Summary'
+	String get weeklySummary => 'Weekly Summary';
+
+	/// en: 'Monthly Summary'
+	String get monthlySummary => 'Monthly Summary';
+
+	/// en: 'Tag copied'
+	String get tagCopied => 'Tag copied';
+
+	/// en: 'AI Service Configuration'
+	String get aiServiceConfig => 'AI Service Configuration';
+
+	/// en: 'Connection to server disconnected'
+	String get connectionDisconnected => 'Connection to server disconnected';
+
+	/// en: 'Please enter server address'
+	String get enterServerAddress => 'Please enter server address';
+
+	/// en: 'Tap to share'
+	String get tapToShare => 'Tap to share';
+
+	/// en: 'No configurations found'
+	String get noConfigurationsFound => 'No configurations found';
+
+	/// en: 'No data'
+	String get noData => 'No data';
+
+	/// en: 'Login with password is disabled'
+	String get loginWithPasswordIsDisabled => 'Login with password is disabled';
+
+	/// en: 'Cannot be empty'
+	String get cannotBeEmpty => 'Cannot be empty';
+
+	/// en: 'Invalid cookies'
+	String get invalidCookies => 'Invalid cookies';
+
+	/// en: 'Webview is not available'
+	String get webviewIsNotAvailable => 'Webview is not available';
+
+	/// en: 'Sources'
+	String get sources => 'Sources';
+
+	/// en: 'Translation failed, please try again later'
+	String get translationFailedPleaseTryAgainLater => 'Translation failed, please try again later';
+
+	/// en: 'Write your review'
+	String get writeYourReview => 'Write your review';
+
+	/// en: 'Draft'
+	String get draft => 'Draft';
+
+	/// en: 'Content'
+	String get content => 'Content';
+
+	/// en: 'Toggle'
+	String get toggle => 'Toggle';
+
+	/// en: 'Room Ban'
+	String get roomBan => 'Room Ban';
+
+	/// en: 'Pinned Messages'
+	String get pinnedMessages => 'Pinned Messages';
+
+	/// en: 'Announcement'
+	String get announcement => 'Announcement';
+
+	/// en: 'Image'
+	String get image => 'Image';
+
+	/// en: 'Enter to send · Ctrl+Enter for newline'
+	String get enterToSendCtrlEnterForNewline => 'Enter to send  ·  Ctrl+Enter for newline';
+
+	/// en: 'Message...'
+	String get message => 'Message...';
+
+	/// en: 'Stickers'
+	String get stickers => 'Stickers';
+
+	/// en: 'No stickers yet'
+	String get noStickersYet => 'No stickers yet';
+
+	/// en: 'Remove sticker'
+	String get removeSticker => 'Remove sticker';
+
+	/// en: 'No search sources'
+	String get noSearchSources => 'No search sources';
+
+	/// en: 'Please add some sources'
+	String get pleaseAddSomeSources => 'Please add some sources';
+
+	/// en: 'Manage'
+	String get manage => 'Manage';
+
+	/// en: 'Import Persona'
+	String get importPersona => 'Import Persona';
+
+	/// en: 'New Persona'
+	String get newPersona => 'New Persona';
+
+	/// en: 'Not configured'
+	String get notConfigured => 'Not configured';
+
+	/// en: 'Enabled'
+	String get enabled => 'Enabled';
+
+	/// en: 'Required'
+	String get required => 'Required';
+
+	/// en: 'Link format error, cannot parse anime info'
+	String get linkFormatErrorCannotParseAnimeInfo => 'Link format error, cannot parse anime info';
+
+	/// en: 'Source not found, please confirm source is installed'
+	String get sourceNotFoundPleaseConfirmSourceInstalled => 'Source not found, please confirm source is installed';
+
+	/// en: 'Link format error, cannot parse Bangumi ID'
+	String get linkFormatErrorCannotParseBangumiId => 'Link format error, cannot parse Bangumi ID';
+
+	/// en: 'Fetching Bangumi info...'
+	String get fetchingBangumiInfo => 'Fetching Bangumi info...';
+
+	/// en: 'Bangumi entry not found'
+	String get bangumiEntryNotFound => 'Bangumi entry not found';
+
+	/// en: 'Failed to fetch Bangumi info'
+	String get failedToFetchBangumiInfo => 'Failed to fetch Bangumi info';
+
+	/// en: 'Link format error, cannot parse character ID'
+	String get linkFormatErrorCannotParseCharacterId => 'Link format error, cannot parse character ID';
+
+	/// en: 'Verifying character info...'
+	String get verifyingCharacterInfo => 'Verifying character info...';
+
+	/// en: 'Character not found'
+	String get characterNotFound => 'Character not found';
+
+	/// en: 'Failed to fetch character info'
+	String get failedToFetchCharacterInfo => 'Failed to fetch character info';
+
+	/// en: 'Link format error, cannot parse person ID'
+	String get linkFormatErrorCannotParsePersonId => 'Link format error, cannot parse person ID';
+
+	/// en: 'Verifying person info...'
+	String get verifyingPersonInfo => 'Verifying person info...';
+
+	/// en: 'Person not found'
+	String get personNotFound => 'Person not found';
+
+	/// en: 'Failed to fetch person info'
+	String get failedToFetchPersonInfo => 'Failed to fetch person info';
+
+	/// en: 'Unrecognized link'
+	String get unrecognizedLink => 'Unrecognized link';
+
+	/// en: 'No Kostori link found in clipboard'
+	String get noKostoriLinkFoundInClipboard => 'No Kostori link found in clipboard';
+
+	/// en: 'QR code feature only available on mobile'
+	String get qrCodeFeatureOnlyOnMobile => 'QR code feature only available on mobile';
+
+	/// en: 'Unrecognized Kostori protocol'
+	String get unrecognizedKostoriProtocol => 'Unrecognized Kostori protocol';
+
+	/// en: 'Please drag in image file'
+	String get pleaseDragImageFile => 'Please drag in image file';
+
+	/// en: 'Image download failed'
+	String get imageDownloadFailed => 'Image download failed';
+
+	/// en: 'Failed to fetch network image'
+	String get failedToFetchNetworkImage => 'Failed to fetch network image';
+
+	/// en: 'Image decode failed'
+	String get imageDecodeFailed => 'Image decode failed';
+
+	/// en: 'No QR code found in image'
+	String get noQrCodeFoundInImage => 'No QR code found in image';
+
+	/// en: 'Copied to clipboard'
+	String get copiedToClipboard => 'Copied to clipboard';
+
+	/// en: 'Like success'
+	String get likeSuccess => 'Like success';
+
+	/// en: 'Unlike success'
+	String get unlikeSuccess => 'Unlike success';
+
+	/// en: 'Operation success'
+	String get operationSuccess => 'Operation success';
+
+	/// en: 'Save success'
+	String get saveSuccess => 'Save success';
+
+	/// en: 'Save failed'
+	String get saveFailed => 'Save failed';
+
+	/// en: 'Save failed: $e'
+	String saveFailedWithError({required Object e}) => 'Save failed: ${e}';
+
+	/// en: 'Load success'
+	String get loadSuccess => 'Load success';
+
+	/// en: 'Address already exists'
+	String get addressAlreadyExists => 'Address already exists';
+
+	/// en: 'Please enable at least one address'
+	String get pleaseEnableAtLeastOneAddress => 'Please enable at least one address';
+
+	/// en: 'Request failed'
+	String get requestFailed => 'Request failed';
+
+	/// en: 'All copied success'
+	String get allCopiedSuccess => 'All copied success';
+
+	/// en: 'Bangumi ID bound successfully'
+	String get bindBangumiIdSuccess => 'Bangumi ID bound successfully';
+
+	/// en: 'Apply success'
+	String get applySuccess => 'Apply success';
+
+	/// en: 'No changes'
+	String get noChanges => 'No changes';
+
+	/// en: 'Apply failed'
+	String get applyFailed => 'Apply failed';
+
+	/// en: 'No results found, please try other keywords'
+	String get noResultsTryOtherKeywords => 'No results found, please try other keywords';
+
+	/// en: 'Jumping...'
+	String get jumping => 'Jumping...';
+
+	/// en: 'Query failed'
+	String get queryFailed => 'Query failed';
+
+	/// en: 'Screenshot success'
+	String get screenshotSuccess => 'Screenshot success';
+
+	/// en: 'Screenshot failed'
+	String get screenshotFailed => 'Screenshot failed';
+
+	/// en: 'No record for $month'
+	String noRecordForMonth({required Object month}) => 'No record for ${month}';
+
+	/// en: 'Screenshot failed, please retry'
+	String get screenshotFailedPleaseRetry => 'Screenshot failed, please retry';
+
+	/// en: 'Share failed'
+	String get shareFailed => 'Share failed';
+
+	/// en: 'Connection failed'
+	String get connectionFailed => 'Connection failed';
+
+	/// en: 'Copy success'
+	String get copySuccess => 'Copy success';
+
+	/// en: 'Add to favorites success'
+	String get addToFavoritesSuccess => 'Add to favorites success';
+
+	/// en: 'Delete failed'
+	String get deleteFailed => 'Delete failed';
+
+	/// en: 'Saving image...'
+	String get savingImage => 'Saving image...';
+
+	/// en: 'Save failed: permission or directory error'
+	String get saveFailedPermission => 'Save failed: permission or directory error';
+
+	/// en: 'Bangumi data update failed...'
+	String get bangumiDataUpdateFailed => 'Bangumi data update failed...';
+
+	/// en: 'Bangumi data reset failed...'
+	String get bangumiDataResetFailed => 'Bangumi data reset failed...';
+
+	/// en: 'Playing next episode'
+	String get playingNextEpisode => 'Playing next episode';
+
+	/// en: 'Failed to load episode'
+	String get failedToLoadEpisode => 'Failed to load episode';
+
+	/// en: 'No more episodes to play'
+	String get noMoreEpisodes => 'No more episodes to play';
+
+	/// en: 'Route not found'
+	String get routeNotFound => 'Route not found';
+
+	/// en: 'Loading duplicate episode'
+	String get loadingDuplicateEpisode => 'Loading duplicate episode';
+
+	/// en: 'Failed to get video URL'
+	String get getVideoUrlFailed => 'Failed to get video URL';
+
+	/// en: 'Start search'
+	String get startSearch => 'Start search';
+
+	/// en: 'DLNA error'
+	String get dlnaError => 'DLNA error';
+
+	/// en: 'Please enter episode number'
+	String get pleaseEnterEpisodeNumber => 'Please enter episode number';
+
+	/// en: 'Please enter a valid episode number between 1-999'
+	String get pleaseEnterValidEpisodeNumber => 'Please enter a valid episode number between 1-999';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -2842,6 +3415,16 @@ extension on Translations {
 			'addAnimeSource' => 'Add anime source',
 			'addNewFavoriteTo' => 'Add new favorite to',
 			'addToFavorites' => 'Add to favorites',
+			'imageProperties' => 'Image Properties',
+			'fileName' => 'File Name',
+			'fileSize' => 'File Size',
+			'modifiedTime' => 'Modified Time',
+			'path' => 'Path',
+			'titleCopied' => 'Title copied',
+			'imageFormat' => 'Format',
+			'confirmDeleteImage' => 'Confirm delete this image?',
+			'bangumiPlan' => 'Bangumi Plan',
+			'switchFavoriteUser' => 'Switch Favorite User',
 			'add' => 'Add',
 			'addedCountAnimesToDownloadQueue' => ({required Object count}) => 'Added ${count} animes to download queue.',
 			'added' => 'Added',
@@ -2849,7 +3432,17 @@ extension on Translations {
 			'aggregated' => 'Aggregated',
 			'aiSource' => 'AI Source',
 			'ai' => 'AI',
+			'soulProfile' => 'Soul Profile',
+			'soulProfilerDescription' => 'Based on your watch history, analyze your anime personality',
+			'imageTag' => 'AI Image Tag',
+			'imageTagDescription' => 'Generate AI painting style tags based on your preferences',
+			'aiChat' => 'AI Chat',
+			'aiChatDescription' => 'Multi-round conversation with AI with context memory',
+			'summary' => 'Summary',
+			'summaryDescription' => 'Auto-generate your anime watch weekly/monthly report',
+			'basicInfo' => 'Basic Info',
 			'allEpisodes' => 'All Episodes',
+			'relatedEntries' => 'Related Entries',
 			'alsoRemoveFilesOnDisk' => 'Also remove files on disk',
 			'animeSourceList' => 'Anime Source list',
 			'animeSource' => 'Anime Source',
@@ -2917,6 +3510,7 @@ extension on Translations {
 			'deleteFolderF' => ({required Object f}) => 'Delete folder \'${f}\' ?',
 			'deleteFolderPrompt' => 'Delete folder?',
 			'delete' => 'Delete',
+			'deleteRoom' => 'Delete Room',
 			'description' => 'Description',
 			'deselect' => 'Deselect',
 			'detailed' => 'Detailed',
@@ -2961,6 +3555,7 @@ extension on Translations {
 			'green' => 'Green',
 			'help' => 'Help',
 			'history' => 'History',
+			'historySource' => 'History Source',
 			'home' => 'Home',
 			'iconProducer' => 'Icon producer',
 			'ignoreCertificateErrors' => 'Ignore Certificate Errors',
@@ -2970,6 +3565,7 @@ extension on Translations {
 			'import' => 'Import',
 			'importedAAnimes' => ({required Object a}) => 'Imported ${a} animes',
 			'information' => 'Information',
+			'myRating' => 'My Rating',
 			'initialPage' => 'Initial Page',
 			'invertSelection' => 'Invert Selection',
 			'keywordBlocking' => 'Keyword blocking',
@@ -2988,6 +3584,7 @@ extension on Translations {
 			'translate' => 'Translate',
 			'translating' => 'Translating...',
 			'translationResult' => 'Translation result',
+			'selectTranslationLanguage' => 'Select Translation Language',
 			'pleaseEnterTextToTranslate' => 'Please enter text to translate',
 			'loginWithWebview' => 'Login with webview',
 			'login' => 'Login',
@@ -3064,6 +3661,7 @@ extension on Translations {
 			'selectInRange' => 'Select in range',
 			'select' => 'Select',
 			'selectedAAnimes' => ({required Object a}) => 'Selected ${a} animes',
+			'newName' => 'New Name',
 			'setCacheLimit' => 'Set Cache Limit',
 			'setNewStoragePath' => 'Set New Storage Path',
 			'setSourceListUrl' => 'Set source list url',
@@ -3139,6 +3737,8 @@ extension on Translations {
 			'standardDeviationS' => ({required Object s}) => 'Standard Deviation: ${s}',
 			'nobodysPostedAnythingYet' => 'Nobody\'s posted anything yet...',
 			'reload' => 'Reload',
+			'mainContent' => 'Main Content',
+			'switchh' => 'Switch',
 			'failedToLoadPleaseTryAgain' => 'Failed to load, please try again.',
 			'doing' => 'doing',
 			'collect' => 'collect',
@@ -3148,6 +3748,7 @@ extension on Translations {
 			'todayRecommendation' => 'Today Recommendation',
 			'tTotalCount' => ({required Object t}) => '${t} Total count',
 			'introduction' => 'Introduction',
+			'latestComments' => 'Latest Comments',
 			'linkedItems' => 'Linked Items',
 			'timeS' => ({required Object s}) => 'Time: ${s}',
 			'broadcastTimeA' => ({required Object a}) => 'Broadcast Time: ${a}',
@@ -3194,6 +3795,14 @@ extension on Translations {
 			'stitchSubtitles' => 'Stitch Subtitles',
 			'saveLongImage' => 'Save Long Image',
 			'borderColor' => 'Border Color',
+			'conversationTitle' => 'Conversation Title',
+			'aiConversation' => 'AI Conversation',
+			'topicList' => 'Topic List',
+			'startConversationWithAI' => 'Start a conversation with AI',
+			'newConversation' => 'New Conversation',
+			'inputMessage' => 'Input message...',
+			'noTopicsYet' => 'No topics yet',
+			'selectAiPersonality' => 'Select AI Personality',
 			'apply' => 'Apply',
 			'heightPx' => 'Height(px)',
 			'setUniformHeight' => 'Set Uniform Height',
@@ -3217,6 +3826,7 @@ extension on Translations {
 			'saveSuccessful' => 'Save Successful',
 			'saveFailedE' => ({required Object e}) => 'Save Failed: ${e}',
 			'failedToLoadImagesOrNoImages' => 'Failed to load images or no images',
+			'failedToPickImage' => 'Failed to pick image',
 			'monday' => 'Monday',
 			'tuesday' => 'Tuesday',
 			'wednesday' => 'Wednesday',
@@ -3306,6 +3916,8 @@ extension on Translations {
 			'pinkishTan' => 'Pinkish Tan',
 			'spruce' => 'Spruce',
 			'strongBlue' => 'Strong Blue',
+			_ => null,
+		} ?? switch (path) {
 			'toxicGreen' => 'Toxic Green',
 			'windowsBlue' => 'Windows Blue',
 			'blueBlue' => 'Blue Blue',
@@ -3343,8 +3955,6 @@ extension on Translations {
 			'signalPeak' => 'Signal Peak',
 			'lights' => 'Lights',
 			'chromaLocation' => 'Chroma Location',
-			_ => null,
-		} ?? switch (path) {
 			'rotate' => 'Rotate',
 			'stereoIn' => 'Stereo In',
 			'averageBpp' => 'Average Bpp',
@@ -3469,7 +4079,14 @@ extension on Translations {
 			'searchOptions' => 'Search Options',
 			'searchSources' => 'Search Sources',
 			'translation' => 'Translation',
+			'translationService' => 'Translation Service',
 			'apiKeyCannotBeEmpty' => 'API key cannot be empty',
+			'pleaseConfigureApiKeyInAiSettingsFirst' => 'Please configure API key in AI settings first',
+			'usage' => 'Usage',
+			'editing' => 'Editing',
+			'screenshotInProgress' => 'Screenshot in progress...',
+			'moveOperationTargetUnknown' => 'Move operation, target unknown',
+			'operationUnknown' => 'Operation unknown',
 			'pleaseEnterTranslationPrompt' => ({required Object a}) => 'Please enter translation prompt, use ${a} as the placeholder for the target language',
 			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => 'The prompt must contain ${a} as the placeholder for the target language',
 			'thisFieldCannotBeEmpty' => 'This field cannot be empty',
@@ -3479,6 +4096,9 @@ extension on Translations {
 			'apiConfiguration' => 'Api Configuration',
 			'wordCloud' => 'Word Cloud',
 			'statsCalendar' => 'Stats Calendar',
+			'todaysRecords' => 'Today\'s Records',
+			'dailyStats' => 'Daily Stats',
+			'viewAll' => 'View All',
 			'kostoriChangelog' => 'Kostori Changelog',
 			'copyPath' => 'Copy Path',
 			'properties' => 'Properties',
@@ -3528,22 +4148,9 @@ extension on Translations {
 			'tokenFromTheHubServer' => 'Token from the hub server',
 			'pasteHubServerToken' => 'Paste hub server token',
 			'runningOn' => 'Running on',
+			'online' => 'online',
 			'rooms' => 'Rooms',
-			'roomsCount' => 'rooms',
-			'membersCount' => 'members',
-			'roomAdmins' => 'Room Admins',
-			'deleteRoom' => 'Delete Room',
-			'createRoom' => 'Create Room',
-			'roomName' => 'Room Name',
-			'leaveEmptyForPublic' => 'Leave empty for public',
-			'announcement' => 'Announcement',
-			'announcements' => 'Announcements',
-			'editProfile' => 'Edit Profile',
-			'avatarUrl' => 'Avatar URL',
-			'bio' => 'Bio',
-			'profile' => 'Profile',
-			'notSet' => 'Not set',
-			'currentRoom' => 'Current Room',
+			'managing' => 'Managing',
 			'lobby' => 'Lobby',
 			'noRooms' => 'No rooms',
 			'current' => 'Current',
@@ -3560,6 +4167,8 @@ extension on Translations {
 			'removeGlobalAdmin' => 'Remove Global Admin',
 			'setGlobalAdmin' => 'Set Global Admin',
 			'kick' => 'Kick',
+			'poke' => 'Poke',
+			'banned' => 'Banned',
 			'joinedEvent' => 'joined',
 			'leftEvent' => 'left',
 			'newRoom' => 'New room',
@@ -3576,6 +4185,10 @@ extension on Translations {
 			'unblock' => 'Unblock',
 			'profileAndRoom' => 'Profile & Room',
 			'roomSettings' => 'Room Settings',
+			'roomName' => 'Room Name',
+			'roomId' => 'Room ID',
+			'announcements' => 'Announcements',
+			'roomAdmins' => 'Room Admins',
 			'noAnnouncement' => 'No announcement',
 			'setAnnouncement' => 'Set Announcement',
 			'enterAnnouncementPrompt' => 'Enter announcement...',
@@ -3586,6 +4199,7 @@ extension on Translations {
 			'unban' => 'Unban',
 			'server' => 'Server',
 			'mute' => 'Mute',
+			'muteDuration' => 'Mute Duration',
 			'secondsLabel' => 'Seconds',
 			'serverShutdown' => 'Server shutdown',
 			'youAreNowAGlobalAdmin' => 'You are now a global admin',
@@ -3611,6 +4225,19 @@ extension on Translations {
 			'connectionTimedOut' => 'Connection timed out',
 			'blockedUsers' => 'Blocked Users',
 			'blockedCount' => 'blocked',
+			'blocked' => 'blocked',
+			'blockedInvites' => 'Blocked Invites',
+			'noBlockedInvites' => 'No blocked invites',
+			'members' => 'members',
+			'notSet' => 'Not set',
+			'currentRoom' => 'Current Room',
+			'editProfile' => 'Edit Profile',
+			'noBlockedUsers' => 'No blocked users',
+			'createRoom' => 'Create Room',
+			'chat' => 'Chat',
+			'noOneOnline' => 'No one online',
+			'show' => 'Show',
+			'hide' => 'Hide',
 			'serverBlacklist' => 'Server Blacklist',
 			'userKey' => 'User Key',
 			'adminKey' => 'Admin Key',
@@ -3680,12 +4307,12 @@ extension on Translations {
 			'areYouSureYouWantToDeleteR' => ({required Object r}) => 'Are you sure you want to delete ${r}? This cannot be undone.',
 			'membersList' => 'Members',
 			'onlineUsersList' => 'Online Users',
+			'noUsersOnline' => 'No users online',
 			'room' => 'Room',
 			'noPasswordSet' => 'No password set',
 			'passwordProtected' => 'Password protected',
 			'imageLabel' => 'Image',
 			'stickersLabel' => 'Stickers',
-			'roomId' => 'Room ID',
 			'pokedYou' => 'poked you',
 			'kickedFromServerByP' => ({required Object p}) => 'Kicked from server by ${p}',
 			'kickedFromRoomByP' => ({required Object p}) => 'Kicked from room by ${p}',
@@ -3702,6 +4329,7 @@ extension on Translations {
 			'noUsersAvailableToInvite' => 'No users available to invite',
 			'inviteToRoom' => 'Invite to Room',
 			'invite' => 'Invite',
+			'invited' => 'invited',
 			'roomInvite' => 'Room Invite',
 			'invitedYouTo' => 'invited you to',
 			'acceptInvite' => 'Accept',
@@ -3709,7 +4337,6 @@ extension on Translations {
 			'declinedYourInvite' => 'declined your invite',
 			'blockedYourInvites' => 'blocked your invites',
 			'blockedInvitesList' => 'Blocked Invites',
-			'noBlockedInvites' => 'No blocked invites',
 			'allowMemberInvites' => 'Allow Member Invites',
 			'letAllMembersInviteOthers' => 'Let all members invite others',
 			'declineAndBlock' => 'Decline & Block',
@@ -3718,6 +4345,7 @@ extension on Translations {
 			'networkInfo' => 'Network Info',
 			'hubInfo' => 'Hub Info',
 			'statsInfo' => 'Stats Info',
+			'ratingDetails' => 'Rating Details',
 			'sourceInfo' => 'Source Info',
 			'playerInfo' => 'Player Info',
 			'hideLabel' => 'Hide',
@@ -3735,6 +4363,14 @@ extension on Translations {
 			'imported' => 'Imported',
 			'invalidClipboardFormat' => 'Invalid clipboard format',
 			'cannotModifySystemPreset' => 'Cannot modify system preset',
+			'animeCardUseBlur' => '番剧卡片使用模糊背景',
+			'calendarFetchEpisodes' => '每日番剧表启动时搜寻集信息',
+			'addKeyword' => 'Add keyword',
+			'keyword' => 'Keyword',
+			'keywordAlreadyExists' => 'Keyword already exists',
+			'folderNameCannotBeEmpty' => 'Folder name cannot be empty',
+			'folderNameTooLong' => 'Folder name is too long',
+			'folderAlreadyExists' => 'Folder already exists',
 			'configKeyAlreadyExists' => 'Config Key already exists. Please change it.',
 			'requiredField' => 'Required',
 			'configKey' => 'Config Key',
@@ -3758,8 +4394,138 @@ extension on Translations {
 			'fullYear' => 'Full Year',
 			'quickSelect' => 'Quick Select',
 			'selectDateRange' => 'Select Date Range',
+			'subject' => 'Subject',
+			'character' => 'Character',
+			'person' => 'Person',
 			'manualSelect' => 'Manual Select',
 			'qrAndClipboard' => 'QR & Clipboard',
+			'go' => 'Go',
+			'clipboard' => 'Clipboard',
+			'recognizeFromGallery' => 'Recognize from Gallery',
+			'scanQrCode' => 'Scan QR Code',
+			'scanToJump' => 'Scan to Jump',
+			'qrCode' => 'QR Code',
+			'shareMethodDescription' => 'Share method: In anime/Bangumi page, click share → generate token or QR code',
+			'shareQrCode' => 'Share QR Code',
+			'exporting' => 'Exporting...',
+			'tokenCopiedToClipboard' => 'Token copied to clipboard',
+			'generateQrCodeShare' => 'Generate QR Code to Share',
+			'aiSettings' => 'AI Settings',
+			'aiConfigMissing' => 'AI Config Missing',
+			'generating' => 'Generating...',
+			'generatedTags' => 'Generated Tags',
+			'exportScreenshot' => 'Export Screenshot',
+			'copyAll' => 'Copy all',
+			'timeRange' => 'Time Range',
+			'thisWeek' => 'This Week',
+			'thisMonth' => 'This Month',
+			'generateSummary' => 'Generate Summary',
+			'generateTag' => 'Generate Tag',
+			'summaryReport' => 'Summary Report',
+			'noActivityInTimeRange' => 'No activity in this time range',
+			'weeklySummary' => 'Weekly Summary',
+			'monthlySummary' => 'Monthly Summary',
+			'tagCopied' => 'Tag copied',
+			'aiServiceConfig' => 'AI Service Configuration',
+			'connectionDisconnected' => 'Connection to server disconnected',
+			'enterServerAddress' => 'Please enter server address',
+			'tapToShare' => 'Tap to share',
+			_ => null,
+		} ?? switch (path) {
+			'noConfigurationsFound' => 'No configurations found',
+			'noData' => 'No data',
+			'loginWithPasswordIsDisabled' => 'Login with password is disabled',
+			'cannotBeEmpty' => 'Cannot be empty',
+			'invalidCookies' => 'Invalid cookies',
+			'webviewIsNotAvailable' => 'Webview is not available',
+			'sources' => 'Sources',
+			'translationFailedPleaseTryAgainLater' => 'Translation failed, please try again later',
+			'writeYourReview' => 'Write your review',
+			'draft' => 'Draft',
+			'content' => 'Content',
+			'toggle' => 'Toggle',
+			'roomBan' => 'Room Ban',
+			'pinnedMessages' => 'Pinned Messages',
+			'announcement' => 'Announcement',
+			'image' => 'Image',
+			'enterToSendCtrlEnterForNewline' => 'Enter to send  ·  Ctrl+Enter for newline',
+			'message' => 'Message...',
+			'stickers' => 'Stickers',
+			'noStickersYet' => 'No stickers yet',
+			'removeSticker' => 'Remove sticker',
+			'noSearchSources' => 'No search sources',
+			'pleaseAddSomeSources' => 'Please add some sources',
+			'manage' => 'Manage',
+			'importPersona' => 'Import Persona',
+			'newPersona' => 'New Persona',
+			'notConfigured' => 'Not configured',
+			'enabled' => 'Enabled',
+			'required' => 'Required',
+			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
+			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
+			'linkFormatErrorCannotParseBangumiId' => 'Link format error, cannot parse Bangumi ID',
+			'fetchingBangumiInfo' => 'Fetching Bangumi info...',
+			'bangumiEntryNotFound' => 'Bangumi entry not found',
+			'failedToFetchBangumiInfo' => 'Failed to fetch Bangumi info',
+			'linkFormatErrorCannotParseCharacterId' => 'Link format error, cannot parse character ID',
+			'verifyingCharacterInfo' => 'Verifying character info...',
+			'characterNotFound' => 'Character not found',
+			'failedToFetchCharacterInfo' => 'Failed to fetch character info',
+			'linkFormatErrorCannotParsePersonId' => 'Link format error, cannot parse person ID',
+			'verifyingPersonInfo' => 'Verifying person info...',
+			'personNotFound' => 'Person not found',
+			'failedToFetchPersonInfo' => 'Failed to fetch person info',
+			'unrecognizedLink' => 'Unrecognized link',
+			'noKostoriLinkFoundInClipboard' => 'No Kostori link found in clipboard',
+			'qrCodeFeatureOnlyOnMobile' => 'QR code feature only available on mobile',
+			'unrecognizedKostoriProtocol' => 'Unrecognized Kostori protocol',
+			'pleaseDragImageFile' => 'Please drag in image file',
+			'imageDownloadFailed' => 'Image download failed',
+			'failedToFetchNetworkImage' => 'Failed to fetch network image',
+			'imageDecodeFailed' => 'Image decode failed',
+			'noQrCodeFoundInImage' => 'No QR code found in image',
+			'copiedToClipboard' => 'Copied to clipboard',
+			'likeSuccess' => 'Like success',
+			'unlikeSuccess' => 'Unlike success',
+			'operationSuccess' => 'Operation success',
+			'saveSuccess' => 'Save success',
+			'saveFailed' => 'Save failed',
+			'saveFailedWithError' => ({required Object e}) => 'Save failed: ${e}',
+			'loadSuccess' => 'Load success',
+			'addressAlreadyExists' => 'Address already exists',
+			'pleaseEnableAtLeastOneAddress' => 'Please enable at least one address',
+			'requestFailed' => 'Request failed',
+			'allCopiedSuccess' => 'All copied success',
+			'bindBangumiIdSuccess' => 'Bangumi ID bound successfully',
+			'applySuccess' => 'Apply success',
+			'noChanges' => 'No changes',
+			'applyFailed' => 'Apply failed',
+			'noResultsTryOtherKeywords' => 'No results found, please try other keywords',
+			'jumping' => 'Jumping...',
+			'queryFailed' => 'Query failed',
+			'screenshotSuccess' => 'Screenshot success',
+			'screenshotFailed' => 'Screenshot failed',
+			'noRecordForMonth' => ({required Object month}) => 'No record for ${month}',
+			'screenshotFailedPleaseRetry' => 'Screenshot failed, please retry',
+			'shareFailed' => 'Share failed',
+			'connectionFailed' => 'Connection failed',
+			'copySuccess' => 'Copy success',
+			'addToFavoritesSuccess' => 'Add to favorites success',
+			'deleteFailed' => 'Delete failed',
+			'savingImage' => 'Saving image...',
+			'saveFailedPermission' => 'Save failed: permission or directory error',
+			'bangumiDataUpdateFailed' => 'Bangumi data update failed...',
+			'bangumiDataResetFailed' => 'Bangumi data reset failed...',
+			'playingNextEpisode' => 'Playing next episode',
+			'failedToLoadEpisode' => 'Failed to load episode',
+			'noMoreEpisodes' => 'No more episodes to play',
+			'routeNotFound' => 'Route not found',
+			'loadingDuplicateEpisode' => 'Loading duplicate episode',
+			'getVideoUrlFailed' => 'Failed to get video URL',
+			'startSearch' => 'Start search',
+			'dlnaError' => 'DLNA error',
+			'pleaseEnterEpisodeNumber' => 'Please enter episode number',
+			'pleaseEnterValidEpisodeNumber' => 'Please enter a valid episode number between 1-999',
 			_ => null,
 		};
 	}

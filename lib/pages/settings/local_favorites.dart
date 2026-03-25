@@ -20,32 +20,30 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("Local Favorites".tl)),
+        SliverAppbar(title: Text(t.localFavorites)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
                 SelectSetting(
-                  title: "Add new favorite to".tl,
+                  title: t.addNewFavoriteTo,
                   settingKey: "newFavoriteAddTo",
-                  optionTranslation: {"start": "Start".tl, "end": "End".tl},
+                  optionTranslation: {"start": t.start, "end": t.end},
                 ),
                 SelectSetting(
-                  title: "Quick Favorite".tl,
+                  title: t.quickFavorite,
                   settingKey: "quickFavorite",
-                  help:
-                      "Long press on the favorite button to quickly add to this folder"
-                          .tl,
+                  help: t.longPressOnTheFavoriteButtonToQuicklyAddToThisFolder,
                   optionTranslation: {
                     for (var e in LocalFavoritesManager().folderNames)
                       if (e != 'default') e: e,
                   },
                 ),
                 SelectSetting(
-                  title: "Favorite Type".tl + "Wish".tl,
+                  title: t.favoriteType + t.wishStatus,
                   settingKey: "FavoriteTypeWish",
-                  help: "Mark the selected favorites as".tl + "Wish".tl,
+                  help: t.markTheSelectedFavoritesAs + t.wishStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
@@ -55,9 +53,9 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   },
                 ),
                 SelectSetting(
-                  title: "Favorite Type".tl + "Doing".tl,
+                  title: t.favoriteType + t.doingStatus,
                   settingKey: "FavoriteTypeDoing",
-                  help: "Mark the selected favorites as".tl + "Doing".tl,
+                  help: t.markTheSelectedFavoritesAs + t.doingStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
@@ -67,9 +65,9 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   },
                 ),
                 SelectSetting(
-                  title: "Favorite Type".tl + "Collect".tl,
+                  title: t.favoriteType + t.collectStatus,
                   settingKey: "FavoriteTypeCollect",
-                  help: "Mark the selected favorites as".tl + "Collect".tl,
+                  help: t.markTheSelectedFavoritesAs + t.collectStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
@@ -79,9 +77,9 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   },
                 ),
                 SelectSetting(
-                  title: "Favorite Type".tl + "On Hold".tl,
+                  title: t.favoriteType + t.onHoldStatus,
                   settingKey: "FavoriteTypeOnHold",
-                  help: "Mark the selected favorites as".tl + "On Hold".tl,
+                  help: t.markTheSelectedFavoritesAs + t.onHoldStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
@@ -91,9 +89,9 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                   },
                 ),
                 SelectSetting(
-                  title: "Favorite Type".tl + "Dropped".tl,
+                  title: t.favoriteType + t.droppedStatus,
                   settingKey: "FavoriteTypeDropped",
-                  help: "Mark the selected favorites as".tl + "Dropped".tl,
+                  help: t.markTheSelectedFavoritesAs + t.droppedStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)

@@ -138,7 +138,7 @@ dependencies:
   drift_flutter: ^0.3.0
   pasteboard: ^0.5.0
   mobile_scanner: ^7.2.0
-  qr_flutter: ^4.1.0
+  pretty_qr_code: ^3.6.0
   zxing2: ^0.2.4
   slang: ^4.14.0
   slang_flutter: ^4.14.0

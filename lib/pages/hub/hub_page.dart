@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/widget_utils.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/pages/hub/hub_create_room_dialog.dart';
 import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
 
 void showHubDialog(BuildContext context) {
   showPopUpWidget(context, const HubPage());
@@ -64,14 +64,14 @@ class _HubPageState extends ConsumerState<HubPage>
             tabs: [
               Tab(
                 icon: const Icon(Icons.meeting_room_outlined, size: 18),
-                text: 'Rooms'.tl,
+                text: t.rooms,
               ),
               Tab(
                 icon: const Icon(Icons.people, size: 18),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Members'.tl),
+                    Text(t.members),
                     if (totalUnread > 0) ...[
                       const SizedBox(width: 4),
                       Container(
@@ -135,7 +135,7 @@ class _RoomsTab extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: OutlinedButton.icon(
               icon: const Icon(Icons.add, size: 16),
-              label: Text('Create Room'.tl),
+              label: Text(t.createRoom),
               onPressed: () => _showCreateRoomDialog(context, client),
             ),
           );
@@ -186,7 +186,7 @@ class _RoomsTab extends ConsumerWidget {
             ],
           ),
           title: Text(
-            isLobby ? 'Lobby'.tl : room.roomName,
+            isLobby ? t.lobby : room.roomName,
             style: TextStyle(
               fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
             ),
@@ -195,7 +195,7 @@ class _RoomsTab extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${room.participantCount} ${"members".tl}',
+                '${room.participantCount} ${t.members}',
                 style: TextStyle(
                   fontSize: 11,
                   color: cs.onSurface.toOpacity(0.5),
@@ -223,7 +223,7 @@ class _RoomsTab extends ConsumerWidget {
                 ),
               if (!isCurrent)
                 TextButton(
-                  child: Text('Join'.tl),
+                  child: Text(t.join),
                   onPressed: () async {
                     if (room.isLocked) {
                       final pwd = await _showPasswordDialog(context);
@@ -236,11 +236,11 @@ class _RoomsTab extends ConsumerWidget {
                 )
               else
                 TextButton(
-                  child: Text('Chat'.tl, style: TextStyle(color: cs.primary)),
+                  child: Text(t.chat, style: TextStyle(color: cs.primary)),
                   onPressed: () => _openChat(
                     context,
                     roomId: room.roomId,
-                    roomName: isLobby ? 'Lobby'.tl : room.roomName,
+                    roomName: isLobby ? t.lobby : room.roomName,
                   ),
                 ),
             ],
@@ -249,7 +249,7 @@ class _RoomsTab extends ConsumerWidget {
               ? () => _openChat(
                   context,
                   roomId: room.roomId,
-                  roomName: isLobby ? 'Lobby'.tl : room.roomName,
+                  roomName: isLobby ? t.lobby : room.roomName,
                 )
               : null,
         );
@@ -270,17 +270,17 @@ class _RoomsTab extends ConsumerWidget {
     return showDialog<String>(
       context: context,
       builder: (ctx) => ContentDialog(
-        title: 'Room Password'.tl,
+        title: t.roomPassword,
         content: TextField(
           controller: ctrl,
           obscureText: true,
           autofocus: true,
-          decoration: InputDecoration(labelText: 'Password'.tl),
+          decoration: InputDecoration(labelText: t.password),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, ctrl.text),
-            child: Text('OK'.tl),
+            child: Text(t.ok),
           ),
         ],
       ),
@@ -317,7 +317,7 @@ class _PeopleTab extends ConsumerWidget {
     if (people.isEmpty) {
       return Center(
         child: Text(
-          'No one online'.tl,
+          t.noOneOnline,
           style: TextStyle(color: cs.onSurface.toOpacity(0.4)),
         ),
       );
@@ -336,7 +336,7 @@ class _PeopleTab extends ConsumerWidget {
         final roomLabel = room == null
             ? ''
             : (room.roomId == hubState.lobbyRoomId
-                  ? 'Lobby'.tl
+                  ? t.lobby
                   : room.roomName);
         final client = ref.read(hubClientProvider);
         final unread = client.dmUnread[c.userId] ?? 0;
@@ -420,7 +420,7 @@ class _PeopleTab extends ConsumerWidget {
             style: TextStyle(fontSize: 11, color: cs.onSurface.toOpacity(0.45)),
           ),
           trailing: isMe
-              ? Text('Me'.tl, style: TextStyle(fontSize: 12, color: cs.primary))
+              ? Text(t.me, style: TextStyle(fontSize: 12, color: cs.primary))
               : _PeopleActions(client: c, hubState: hubState),
           onTap: isMe
               ? null
@@ -479,7 +479,7 @@ class _PeopleActions extends ConsumerWidget {
       children: [
         IconButton(
           icon: const Icon(Icons.chat_bubble_outline, size: 18),
-          tooltip: 'Direct Message'.tl,
+          tooltip: t.directMessage,
           onPressed: () => showPopUpWidget(
             context,
             HubChatPage(
@@ -494,7 +494,7 @@ class _PeopleActions extends ConsumerWidget {
             size: 18,
             color: isBlocked ? cs.error : null,
           ),
-          tooltip: isBlocked ? 'Unblock'.tl : 'Block'.tl,
+          tooltip: isBlocked ? t.unblock : t.block,
           onPressed: () {
             isBlocked
                 ? hub.unblockUser(client.userId)
@@ -527,7 +527,7 @@ class _PeopleActions extends ConsumerWidget {
                 client.isMuted ? Icons.mic : Icons.mic_off_outlined,
                 color: client.isMuted ? cs.error : null,
               ),
-              title: Text(client.isMuted ? 'Unmute'.tl : 'Mute'.tl),
+              title: Text(client.isMuted ? t.unmute : t.mute),
               onTap: () {
                 Navigator.pop(ctx);
                 if (client.isMuted) {
@@ -540,7 +540,7 @@ class _PeopleActions extends ConsumerWidget {
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: const Icon(Icons.logout),
-              title: Text('Kick'.tl),
+              title: Text(t.kick),
               onTap: () {
                 Navigator.pop(ctx);
                 hub.kickFromRoom(client.userId);
@@ -549,7 +549,7 @@ class _PeopleActions extends ConsumerWidget {
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
               leading: Icon(Icons.block_outlined, color: cs.error),
-              title: Text('Room Bans'.tl, style: TextStyle(color: cs.error)),
+              title: Text(t.roomBans, style: TextStyle(color: cs.error)),
               onTap: () {
                 Navigator.pop(ctx);
                 hub.roomBan(client.userId);
@@ -566,8 +566,8 @@ class _PeopleActions extends ConsumerWidget {
                 ),
                 title: Text(
                   hubState.serverBannedIds.contains(client.userId)
-                      ? 'Remove from Blacklist'.tl
-                      : 'Add to Blacklist'.tl,
+                      ? t.removeFromBlacklist
+                      : t.addToBlacklist,
                   style: TextStyle(color: cs.error),
                 ),
                 onTap: () {
@@ -596,7 +596,7 @@ class _PeopleActions extends ConsumerWidget {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (_) => Sheet(
-        title: 'Mute Duration'.tl,
+        title: t.muteDuration,
         icon: Icons.mic_off_outlined,
         initialSize: 0.35,
         builder: (ctx, sc) => Padding(

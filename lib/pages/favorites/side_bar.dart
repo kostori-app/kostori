@@ -87,7 +87,7 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
                   const SizedBox(width: 8),
                   const CloseButton(),
                   const SizedBox(width: 8),
-                  Text("Folders".tl, style: ts.s18),
+                  Text(t.folders, style: ts.s18),
                 ],
               ),
             ).paddingTop(context.padding.top),
@@ -160,7 +160,7 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
           const SizedBox(width: 16),
           Icon(Icons.star, color: context.colorScheme.secondary),
           const SizedBox(width: 12),
-          Text("Local".tl),
+          Text(t.local),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.add),
@@ -199,7 +199,7 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
           if (nameAvatar.isEmpty) ...[
             Icon(Icons.star, color: context.colorScheme.secondary),
             const SizedBox(width: 12),
-            Text("番组计划".tl),
+            Text(t.bangumiPlan),
           ],
           if (nameAvatar.isNotEmpty) ...[
             CircleAvatar(
@@ -218,8 +218,8 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
             onPressed: () {
               showInputDialog(
                 context: App.rootContext,
-                title: "切换收藏人".tl,
-                hintText: "New Name".tl,
+                title: t.switchFavoriteUser,
+                hintText: t.newFolder,
                 onConfirm: (value) {
                   if (value.isEmpty) {
                     favoritesController.bangumiUserName = '';
@@ -251,7 +251,7 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
           const SizedBox(width: 16),
           Icon(Icons.star, color: context.colorScheme.secondary),
           const SizedBox(width: 12),
-          Text("Local Favorite Binding".tl),
+          Text(t.localFavoriteBinding),
           const Spacer(),
           const SizedBox(width: 16),
         ],
@@ -299,7 +299,7 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
         padding: const EdgeInsets.only(left: 16),
         child: Row(
           children: [
-            Expanded(child: Text(name == 'default' ? 'default'.tl : name)),
+            Expanded(child: Text(name == 'default' ? t.kDefault : name)),
             Container(
               margin: EdgeInsets.only(right: 8),
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),

@@ -13,8 +13,8 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:path_provider/path_provider.dart';
 
 part 'render_dialogue_compose_page.dart';
@@ -313,8 +313,8 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
       slivers: [
         SliverAppbar(
           title: multiSelect
-              ? Text('@s selected'.tlParams({"s": selectedIndexes.length}))
-              : Text('Image Operations (@i)'.tlParams({"i": images.length})),
+              ? Text(t.sSelected(s: selectedIndexes.length))
+              : Text(t.imageOperationsI(i: images.length)),
           actions: [
             if (multiSelect) ...[
               IconButton(
@@ -324,7 +324,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
                   );
                   ref.read(selectedIndexesProvider.notifier).state = allIndexes;
                 },
-                tooltip: 'Select All'.tl,
+                tooltip: t.selectAll,
                 icon: const Icon(Icons.select_all),
               ),
 
@@ -342,7 +342,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
                   }
                   ref.read(selectedIndexesProvider.notifier).state = toggled;
                 },
-                tooltip: 'Invert Selection'.tl,
+                tooltip: t.invertSelection,
                 icon: const Icon(Icons.flip),
               ),
 
@@ -351,20 +351,20 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
                   ref.read(multiSelectModeProvider.notifier).state = false;
                   ref.read(selectedIndexesProvider.notifier).state = {};
                 },
-                tooltip: 'Deselect'.tl,
+                tooltip: t.deselect,
                 icon: const Icon(Icons.deselect),
               ),
               IconButton(
                 onPressed: () {
                   showConfirmDialog(
                     context: App.rootContext,
-                    title: "Delete".tl,
+                    title: t.delete,
                     content: '删除${selectedIndexes.length}张图片',
                     btnColor: context.colorScheme.error,
                     onConfirm: _deleteSelected,
                   );
                 },
-                tooltip: 'Delete'.tl,
+                tooltip: t.delete,
                 icon: const Icon(Icons.delete, color: Colors.red),
               ),
             ],
@@ -373,7 +373,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
         SliverToBoxAdapter(
           child: _buildCard(
             icon: Icons.photo,
-            title: 'Stitch Long Image'.tl,
+            title: t.stitchLongImage,
             onTap: () {
               context.to(
                 () => SelectImagesPage(
@@ -389,7 +389,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
         SliverToBoxAdapter(
           child: _buildCard(
             icon: Icons.image,
-            title: 'Stitch Horizontal Image'.tl,
+            title: t.stitchHorizontalImage,
             onTap: () {
               context.to(
                 () => SelectImagesPage(
@@ -407,7 +407,7 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
         SliverToBoxAdapter(
           child: _buildCard(
             icon: Icons.extension,
-            title: 'Stitch Subtitles'.tl,
+            title: t.stitchSubtitles,
             onTap: () {
               context.to(
                 () => SelectImagesPage(
@@ -606,7 +606,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Border Settings'.tl,
+              t.borderSettings,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
 
@@ -614,7 +614,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
 
             /// 外边框设置
             SwitchListTile(
-              title: Text("Show Outer Border".tl),
+              title: Text(t.showOuterBorder),
               value: showOuterBorder,
               onChanged: (v) =>
                   ref.read(showOuterBorderProvider.notifier).state = v,
@@ -626,7 +626,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
                   ? Column(
                       children: [
                         _buildColorPicker(
-                          "Outer Border Color".tl,
+                          t.outerBorderColor,
                           outerBorderColor,
                           (c) =>
                               ref
@@ -635,7 +635,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
                                   c,
                         ),
                         _buildSlider(
-                          "Outer Border Width".tl,
+                          t.outerBorderWidth,
                           outerBorderWidth,
                           0,
                           120,
@@ -646,7 +646,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
                                   v,
                         ),
                         _buildSlider(
-                          "Outer Border Radius".tl,
+                          t.outerBorderRadius,
                           outerBorderRadius,
                           0,
                           120,
@@ -664,7 +664,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
 
             /// 内边框设置
             SwitchListTile(
-              title: Text("Show Image Borders".tl),
+              title: Text(t.showImageBorders),
               value: showInnerBorders,
               onChanged: (v) =>
                   ref.read(showInnerBordersProvider.notifier).state = v,
@@ -676,7 +676,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
                   ? Column(
                       children: [
                         _buildColorPicker(
-                          "Inner Border Color".tl,
+                          t.innerBorderColor,
                           innerBorderColor,
                           (c) =>
                               ref
@@ -685,7 +685,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
                                   c,
                         ),
                         _buildSlider(
-                          "Inner Border Width".tl,
+                          t.innerBorderWidth,
                           innerBorderWidth,
                           0,
                           120,
@@ -707,7 +707,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
               alignment: Alignment.centerRight,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text('Apply'.tl),
+                child: Text(t.apply),
               ),
             ),
           ],
@@ -777,7 +777,7 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
             TextField(
               controller: controller,
               decoration: InputDecoration(
-                labelText: 'Enter hex color code, e.g. #FF000000'.tl,
+                labelText: t.enterHexColorCode,
                 border: const OutlineInputBorder(),
               ),
               maxLength: 9,

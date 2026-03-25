@@ -5,9 +5,9 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 公共入口（合并了原 showHubRoomSettingsSheet 和 AdminPanelSheet）
@@ -151,7 +151,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _isGlobal ? 'Admin Panel'.tl : _room.roomName,
+                        _isGlobal ? t.adminPanel : _room.roomName,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -164,13 +164,12 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                           size: 18,
                           color: cs.error,
                         ),
-                        tooltip: 'Delete Room'.tl,
+                        tooltip: t.deleteRoom,
                         onPressed: () => ContentDialog.show(
                           context: context,
-                          title: 'Delete Room'.tl,
+                          title: t.deleteRoom,
                           content: Text(
-                            'Are you sure you want to delete @r? This cannot be undone.'
-                                .tlParams({'r': _room.roomName}),
+                            t.areYouSureYouWantToDeleteR(r: _room.roomName),
                           ),
                           actions: [
                             OutlinedButton.icon(
@@ -186,7 +185,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                                 Navigator.of(App.rootContext).pop();
                                 Navigator.pop(context);
                               },
-                              label: Text('Delete'.tl),
+                              label: Text(t.delete),
                             ),
                           ],
                         ),
@@ -215,7 +214,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                       children: [
                         const Icon(Icons.meeting_room_outlined, size: 15),
                         const SizedBox(width: 6),
-                        Text('Room'.tl),
+                        Text(t.room),
                       ],
                     ),
                   ),
@@ -225,7 +224,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                       children: [
                         const Icon(Icons.people_outline, size: 15),
                         const SizedBox(width: 6),
-                        Text('Members'.tl),
+                        Text(t.membersList),
                       ],
                     ),
                   ),
@@ -236,7 +235,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                         children: [
                           const Icon(Icons.dns_outlined, size: 15),
                           const SizedBox(width: 6),
-                          Text('Server'.tl),
+                          Text(t.server),
                         ],
                       ),
                     ),
@@ -264,20 +263,20 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
     return ListView(
       padding: const EdgeInsets.only(bottom: 32),
       children: [
-        HubSettingSection(icon: Icons.home_max_outlined, title: 'Room'.tl),
+        HubSettingSection(icon: Icons.home_max_outlined, title: t.room),
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
           leading: Icon(Icons.tag, size: 20, color: cs.primary),
-          title: Text('Room Name'.tl, style: const TextStyle(fontSize: 12)),
+          title: Text(t.roomName, style: const TextStyle(fontSize: 12)),
           subtitle: Text(
-            _room.roomId == _hs.lobbyRoomId ? 'Lobby'.tl : _room.roomName,
+            _room.roomId == _hs.lobbyRoomId ? t.lobby : _room.roomName,
             style: TextStyle(fontSize: 14, color: cs.onSurface),
           ),
         ),
         ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 20),
           leading: Icon(Icons.numbers, size: 20, color: cs.primary),
-          title: Text('Room ID'.tl, style: const TextStyle(fontSize: 12)),
+          title: Text(t.roomId, style: const TextStyle(fontSize: 12)),
           subtitle: Text(
             _room.roomId,
             style: TextStyle(
@@ -288,19 +287,19 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
           ),
           trailing: IconButton(
             icon: const Icon(Icons.copy_outlined, size: 16),
-            tooltip: 'Copy'.tl,
+            tooltip: t.copy,
             onPressed: () {
               Clipboard.setData(ClipboardData(text: _room.roomId));
-              App.rootContext.showMessage(message: '复制成功');
+              App.rootContext.showMessage(message: t.copySuccess);
             },
           ),
         ),
         HubSettingSection(
           icon: Icons.campaign_outlined,
-          title: 'Announcements'.tl,
+          title: t.announcements,
         ),
         if (_room.announcements.isEmpty)
-          HubEmptyHint('No announcements yet'.tl)
+          HubEmptyHint(t.noAnnouncementsYet)
         else
           ..._room.announcements.asMap().entries.map(
             (e) => _AnnouncementTile(
@@ -319,13 +318,13 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
           ),
         if (_canEdit)
           _AddTile(
-            label: 'Add Announcement'.tl,
+            label: t.addAnnouncement,
             onTap: () => _showAddAnnouncementDialog(context),
           ),
 
         HubSettingSection(
           icon: Icons.waving_hand_outlined,
-          title: 'Welcome Message'.tl,
+          title: t.welcomeMessage,
         ),
         if (!_editingWelcome)
           ListTile(
@@ -333,7 +332,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
             title: Text(
               _welcomeCtrl.text.isNotEmpty
                   ? _welcomeCtrl.text
-                  : 'No welcome message'.tl,
+                  : t.noWelcomeMessage,
               style: TextStyle(
                 fontSize: 13,
                 color: _welcomeCtrl.text.isNotEmpty
@@ -350,7 +349,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit_outlined, size: 18),
-                        tooltip: 'Edit'.tl,
+                        tooltip: t.edit,
                         onPressed: () => setState(() => _editingWelcome = true),
                       ),
                       if (_welcomeCtrl.text.isNotEmpty)
@@ -360,7 +359,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                             size: 18,
                             color: cs.error,
                           ),
-                          tooltip: 'Remove'.tl,
+                          tooltip: t.remove,
                           onPressed: () {
                             _client.setWelcomeMessage(null);
                             setState(() => _welcomeCtrl.clear());
@@ -374,7 +373,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
         else
           _InlineEditField(
             controller: _welcomeCtrl,
-            hint: 'Enter welcome message shown to users who join...'.tl,
+            hint: t.enterWelcomeMessage,
             maxLines: 3,
             onCancel: () => setState(() => _editingWelcome = false),
             onSave: () {
@@ -388,7 +387,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
           ),
 
         if (_cantEditLobby) ...[
-          HubSettingSection(icon: Icons.lock_outline, title: 'Security'.tl),
+          HubSettingSection(icon: Icons.lock_outline, title: t.security),
           if (!_editingPassword)
             ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -400,7 +399,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                     : cs.onSurface.toOpacity(0.4),
               ),
               title: Text(
-                _room.isLocked ? 'Password protected'.tl : 'No password set'.tl,
+                _room.isLocked ? t.passwordProtected : t.noPasswordSet,
                 style: const TextStyle(fontSize: 13),
               ),
               trailing: Row(
@@ -408,7 +407,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                 children: [
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 18),
-                    tooltip: _room.isLocked ? 'Change'.tl : 'Set password'.tl,
+                    tooltip: _room.isLocked ? t.changePassword : t.setPassword,
                     onPressed: () => setState(() {
                       _editingPassword = true;
                       _passwordCtrl.clear();
@@ -421,7 +420,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                         size: 18,
                         color: cs.error,
                       ),
-                      tooltip: 'Remove password'.tl,
+                      tooltip: t.removePassword,
                       onPressed: () {
                         _client.setRoomPassword(null);
                         _patchRoom(_room.copyWith(isLocked: false));
@@ -433,7 +432,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
           else
             _InlineEditField(
               controller: _passwordCtrl,
-              hint: 'New password (empty to remove)'.tl,
+              hint: 'New password (empty to remove)',
               obscureText: true,
               onCancel: () => setState(() => _editingPassword = false),
               onSave: () {
@@ -450,7 +449,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: OutlinedButton.icon(
               icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
-              label: Text('Delete Room'.tl, style: TextStyle(color: cs.error)),
+              label: Text(t.deleteRoom, style: TextStyle(color: cs.error)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: cs.error.toOpacity(0.4)),
               ),
@@ -472,10 +471,10 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
         if (_isGlobal) ...[
           HubSettingSection(
             icon: Icons.manage_accounts_outlined,
-            title: 'Room Admins'.tl,
+            title: t.roomAdmins,
           ),
           if (_room.moderatorIds.isEmpty)
-            HubEmptyHint('No admins yet'.tl)
+            HubEmptyHint(t.noAdminsYet)
           else
             ..._room.moderatorIds.map((id) {
               final c = _hs.onlineClients.firstWhereOrNull(
@@ -487,7 +486,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                 userId: id,
                 trailing: IconButton(
                   icon: const Icon(Icons.remove_circle_outline, size: 18),
-                  tooltip: 'Remove Admin'.tl,
+                  tooltip: t.removeAdmin,
                   onPressed: () {
                     _client.setRoomAdmin(id, value: false);
                     _patchRoom(
@@ -500,15 +499,15 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
               );
             }),
           _AddTile(
-            label: 'Add Room Admin'.tl,
+            label: t.addRoomAdmin,
             onTap: () => _showPickMemberDialog(context, isAdminPicker: true),
           ),
         ],
 
         if (_cantEditLobby) ...[
-          HubSettingSection(icon: Icons.block_outlined, title: 'Room Bans'.tl),
+          HubSettingSection(icon: Icons.block_outlined, title: t.roomBans),
           if (_room.bannedUserIds.isEmpty)
-            HubEmptyHint('No banned members'.tl)
+            HubEmptyHint(t.noBannedMembers)
           else
             ..._room.bannedUserIds.map((id) {
               final c = _hs.onlineClients.firstWhereOrNull(
@@ -520,7 +519,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                 userId: id,
                 trailing: IconButton(
                   icon: const Icon(Icons.lock_open_outlined, size: 18),
-                  tooltip: 'Unban'.tl,
+                  tooltip: t.unban,
                   onPressed: () {
                     _client.roomUnban(id);
                     _patchRoom(
@@ -534,7 +533,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
               );
             }),
           _AddTile(
-            label: 'Ban Member'.tl,
+            label: t.banMember,
             icon: Icons.person_off_outlined,
             onTap: () => _showPickMemberDialog(context, isAdminPicker: false),
           ),
@@ -542,16 +541,16 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
         if (_cantEditLobby) ...[
           HubSettingSection(
             icon: Icons.person_add_outlined,
-            title: 'Invite'.tl,
+            title: t.invite,
           ),
           SwitchListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             title: Text(
-              'Allow Member Invites'.tl,
+              t.allowMemberInvites,
               style: const TextStyle(fontSize: 13),
             ),
             subtitle: Text(
-              'Let all members invite others'.tl,
+              t.letAllMembersInviteOthers,
               style: const TextStyle(fontSize: 11),
             ),
             value: _room.allowMemberInvite,
@@ -566,7 +565,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
         if (_canEdit) ...[
           HubSettingSection(
             icon: Icons.person_add_outlined,
-            title: 'Invite to Room'.tl,
+            title: t.inviteToRoom,
           ),
           ...() {
             final inRoom = _room.participants.map((p) => p.userId).toSet();
@@ -574,7 +573,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                 .where((c) => !inRoom.contains(c.userId))
                 .toList();
             if (available.isEmpty) {
-              return [HubEmptyHint('No users available to invite'.tl)];
+              return [HubEmptyHint(t.noUsersAvailableToInvite)];
             }
             return available
                 .map(
@@ -584,11 +583,11 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                     userId: c.userId,
                     trailing: IconButton(
                       icon: const Icon(Icons.person_add_outlined, size: 18),
-                      tooltip: 'Invite'.tl,
+                      tooltip: t.invite,
                       onPressed: () {
                         _client.inviteToRoom(c.userId, _room.roomId);
                         App.rootContext.showMessage(
-                          message: '${c.displayName} ${"invited".tl}',
+                          message: '${c.displayName} ${t.invited}',
                         );
                       },
                     ),
@@ -599,10 +598,10 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
         ],
         HubSettingSection(
           icon: Icons.people_outline,
-          title: '${'Online Users'.tl} (${_room.participants.length})',
+          title: '${t.onlineUsersList} (${_room.participants.length})',
         ),
         if (_room.participants.isEmpty)
-          HubEmptyHint('No users online'.tl)
+          HubEmptyHint(t.noUsersOnline)
         else
           ..._room.participants.map(
             (c) => _AdminUserTile(
@@ -639,14 +638,14 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                 _StatChip(
                   icon: Icons.people_outline,
                   label: '$onlineCount',
-                  sub: 'online'.tl,
+                  sub: t.online,
                   color: cs.primary,
                 ),
                 const SizedBox(width: 20),
                 _StatChip(
                   icon: Icons.meeting_room_outlined,
                   label: '$roomCount',
-                  sub: 'rooms'.tl,
+                  sub: t.rooms,
                   color: cs.tertiary,
                 ),
                 const Spacer(),
@@ -654,7 +653,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Managing'.tl,
+                      t.managing,
                       style: TextStyle(
                         fontSize: 11,
                         color: cs.onSurface.toOpacity(0.45),
@@ -662,7 +661,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                     ),
                     Text(
                       _room.roomId == hs.lobbyRoomId
-                          ? 'Lobby'.tl
+                          ? t.lobby
                           : _room.roomName,
                       style: TextStyle(
                         fontSize: 13,
@@ -679,10 +678,10 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
 
         HubSettingSection(
           icon: Icons.gpp_bad_outlined,
-          title: 'Server Blacklist'.tl,
+          title: t.serverBlacklist,
         ),
         if (hs.serverBannedIds.isEmpty)
-          HubEmptyHint('No banned users'.tl)
+          HubEmptyHint(t.noBannedUsers)
         else
           ...hs.serverBannedIds.map(
             (id) => HubClientTile(
@@ -690,7 +689,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
               userId: id,
               trailing: IconButton(
                 icon: const Icon(Icons.lock_open_outlined, size: 18),
-                tooltip: 'Unban'.tl,
+                tooltip: t.unban,
                 onPressed: () {
                   _client.serverUnban(id);
                   setState(() {});
@@ -699,9 +698,9 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
             ),
           ),
 
-        HubSettingSection(icon: Icons.people_outline, title: 'Online Users'.tl),
+        HubSettingSection(icon: Icons.people_outline, title: t.onlineUsersList),
         if (hs.onlineClients.isEmpty)
-          HubEmptyHint('No users online'.tl)
+          HubEmptyHint(t.noUsersOnline)
         else
           ...hs.onlineClients.map(
             (c) => _AdminUserTile(
@@ -720,10 +719,10 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
     showDialog(
       context: context,
       builder: (_) => _HubInputDialog(
-        title: 'Add Announcement'.tl,
-        hint: 'Enter announcement text...'.tl,
+        title: t.addAnnouncement,
+        hint: t.enterAnnouncementText,
         maxLines: 3,
-        confirmLabel: 'Add'.tl,
+        confirmLabel: t.add,
         onConfirm: (text) {
           if (text.isEmpty) return;
           _client.setAnnouncement(text);
@@ -752,10 +751,10 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
     showDialog(
       context: context,
       builder: (_) => ContentDialog(
-        title: isAdminPicker ? 'Add Room Admin'.tl : 'Ban Member'.tl,
+        title: isAdminPicker ? t.addRoomAdmin : t.banMember,
         displayButton: false,
         content: available.isEmpty
-            ? Text('No members available'.tl)
+            ? Text(t.noMembersAvailable)
             : SizedBox(
                 width: 320,
                 child: ListView(
@@ -894,7 +893,7 @@ class _HubInputDialogState extends State<_HubInputDialog> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final label = widget.confirmLabel.isEmpty ? 'Save'.tl : widget.confirmLabel;
+    final label = widget.confirmLabel.isEmpty ? t.save : widget.confirmLabel;
 
     return ContentDialog(
       title: widget.title,
@@ -1147,14 +1146,14 @@ class _InlineEditFieldState extends State<_InlineEditField> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
+            Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton(onPressed: widget.onCancel, child: Text('Cancel'.tl)),
+              TextButton(onPressed: widget.onCancel, child: Text(t.cancel)),
               const SizedBox(width: 8),
               FilledButton.tonal(
                 onPressed: widget.onSave,
-                child: Text('Save'.tl),
+                child: Text(t.save),
               ),
             ],
           ),
@@ -1249,7 +1248,7 @@ class _AdminUserTileState extends State<_AdminUserTile> {
         ],
       ),
       subtitle: Text(
-        isMe ? 'You'.tl : (isBanned ? 'Banned'.tl : ''),
+        isMe ? t.youLabel : (isBanned ? t.banned : ''),
         style: TextStyle(
           fontSize: 11,
           color: isBanned ? cs.error : cs.onSurface.toOpacity(0.4),
@@ -1267,7 +1266,7 @@ class _AdminUserTileState extends State<_AdminUserTile> {
                     size: 18,
                     color: _pokeCooling ? cs.onSurface.toOpacity(0.3) : null,
                   ),
-                  tooltip: 'Poke'.tl,
+                  tooltip: t.poke,
                   onPressed: _pokeCooling ? null : _poke,
                 ),
                 if (canEdit && !client.isGlobalAdmin)
@@ -1277,7 +1276,7 @@ class _AdminUserTileState extends State<_AdminUserTile> {
                       size: 18,
                       color: client.isMuted ? cs.error : null,
                     ),
-                    tooltip: client.isMuted ? 'Unmute'.tl : 'Mute'.tl,
+                    tooltip: client.isMuted ? t.unmute : t.mute,
                     onPressed: () {
                       if (client.isMuted) {
                         hubClient.unmute(client.userId);
@@ -1290,7 +1289,7 @@ class _AdminUserTileState extends State<_AdminUserTile> {
                 if (canEdit && !client.isGlobalAdmin)
                   IconButton(
                     icon: const Icon(Icons.logout, size: 18),
-                    tooltip: 'Kick'.tl,
+                    tooltip: t.kick,
                     onPressed: () {
                       hubClient.kickFromRoom(client.userId);
                       widget.onChanged();
@@ -1306,8 +1305,8 @@ class _AdminUserTileState extends State<_AdminUserTile> {
                       color: isBanned ? cs.primary : cs.error.toOpacity(0.7),
                     ),
                     tooltip: isBanned
-                        ? 'Remove from Blacklist'.tl
-                        : 'Add to Blacklist'.tl,
+                        ? t.removeFromBlacklist
+                        : t.addToBlacklist,
                     onPressed: () {
                       isBanned
                           ? hubClient.serverUnban(client.userId)

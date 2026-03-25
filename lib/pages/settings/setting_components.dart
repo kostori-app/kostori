@@ -257,14 +257,14 @@ class _DoubleLineSelectSettingsState extends State<_DoubleLineSelectSettings> {
                   context: context,
                   builder: (context) {
                     return ContentDialog(
-                      title: "Help".tl,
+                      title: t.help,
                       content: Text(
                         widget.help!,
                       ).paddingHorizontal(16).fixWidth(double.infinity),
                       actions: [
                         Button.filled(
                           onPressed: context.pop,
-                          child: Text("OK".tl),
+                          child: Text(t.ok),
                         ),
                       ],
                     );
@@ -358,14 +358,14 @@ class _EndSelectorSelectSettingState extends State<_EndSelectorSelectSetting> {
                   context: context,
                   builder: (context) {
                     return ContentDialog(
-                      title: "Help".tl,
+                      title: t.help,
                       content: Text(
                         widget.help!,
                       ).paddingHorizontal(16).fixWidth(double.infinity),
                       actions: [
                         Button.filled(
                           onPressed: context.pop,
-                          child: Text("OK".tl),
+                          child: Text(t.ok),
                         ),
                       ],
                     );
@@ -598,8 +598,8 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
     showDialog(
       context: context,
       builder: (context) {
-        return ContentDialog(
-          title: "Add".tl,
+          return ContentDialog(
+          title: t.add,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: canAdd.entries

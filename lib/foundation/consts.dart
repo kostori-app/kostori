@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/translation/sort.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 
 const changePoint = 600;
@@ -20,16 +20,16 @@ Map<String, String> bangumiHTTPHeader = {
 };
 
 Map<int, String> ratingLabels = {
-  1: 'Awful'.tl,
-  2: 'Terrible'.tl,
-  3: 'Bad'.tl,
-  4: 'Poor'.tl,
-  5: 'Okay'.tl,
-  6: 'Fine'.tl,
-  7: 'Good'.tl,
-  8: 'Great'.tl,
-  9: 'Master'.tl,
-  10: 'Epic'.tl,
+  1: t.awful,
+  2: t.terrible,
+  3: t.bad,
+  4: t.poor,
+  5: t.okay,
+  6: t.fine,
+  7: t.good,
+  8: t.great,
+  9: t.master,
+  10: t.epic,
 };
 
 // 超分辨率滤镜

@@ -35,7 +35,7 @@ class NetworkError extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  "Error".tl,
+                  t.error,
                   style: ts.withColor(context.colorScheme.error).s16,
                 ),
               ],
@@ -43,7 +43,7 @@ class NetworkError extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            cfe == null ? message : "Cloudflare verification required".tl,
+            cfe == null ? message : "Cloudflare verification required",
             textAlign: TextAlign.center,
             maxLines: 3,
           ),
@@ -55,12 +55,12 @@ class NetworkError extends StatelessWidget {
                   CloudflareException.fromString(message)!,
                   retry!,
                 ),
-                child: Text('Verify'.tl),
+                child: Text(t.check),
               )
             else
               FilledButton(
                 onPressed: retry,
-                child: Text(buttonText ?? 'Retry'.tl),
+                child: Text(buttonText ?? t.retry),
               ),
         ],
       ),

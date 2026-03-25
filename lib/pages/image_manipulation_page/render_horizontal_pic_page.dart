@@ -123,7 +123,7 @@ class _RenderHorizontalPicPageState
   }
 
   Future<void> _captureAndSaveLongImage(BuildContext context) async {
-    App.rootContext.showMessage(message: 'Saving'.tl);
+    App.rootContext.showMessage(message: t.saving);
     try {
       final outerBorderColor = ref.read(outerBorderColorProvider);
       final outerBorderWidth = ref.read(outerBorderWidthProvider);
@@ -208,11 +208,11 @@ class _RenderHorizontalPicPageState
         );
         final notifier = ref.read(imagesProvider.notifier);
         await notifier.loadImages();
-        App.rootContext.showMessage(message: 'Save Successful'.tl);
+        App.rootContext.showMessage(message: t.saveSuccessful);
       }
     } catch (e) {
       App.rootContext.showMessage(
-        message: 'Save Failed: @e'.tlParams({'e': e}),
+        message: t.saveFailedE(e: e),
       );
     }
   }
@@ -253,7 +253,7 @@ class _RenderHorizontalPicPageState
         if (snapshot.hasError ||
             snapshot.data == null ||
             snapshot.data!.isEmpty) {
-          return Center(child: Text('Failed to load images or no images'.tl));
+          return Center(child: Text(t.failedToLoadImagesOrNoImages));
         }
 
         final images = snapshot.data!;
@@ -337,12 +337,12 @@ class _RenderHorizontalPicPageState
                 children: [
                   ElevatedButton(
                     onPressed: _showBorderSettings,
-                    child: Text('Border Color'.tl),
+                    child: Text(t.borderColor),
                   ),
                   const SizedBox(width: 20),
                   ElevatedButton(
                     onPressed: () => _captureAndSaveLongImage(context),
-                    child: Text('Save Long Image'.tl),
+                    child: Text(t.saveLongImage),
                   ),
                 ],
               ),
@@ -357,7 +357,7 @@ class _RenderHorizontalPicPageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: Text('Stitch Horizontal Image'.tl),
+        title: Text(t.stitchHorizontalImage),
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),

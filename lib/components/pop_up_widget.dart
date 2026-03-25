@@ -200,7 +200,7 @@ class _PopUpWidgetScaffoldState extends State<PopUpWidgetScaffold> {
               children: [
                 const SizedBox(width: 8),
                 Tooltip(
-                  message: "Back".tl,
+                  message: t.back,
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new),
                     onPressed: () =>

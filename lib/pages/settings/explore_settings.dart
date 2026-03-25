@@ -12,7 +12,7 @@ class _ExploreSettingsState extends State<ExploreSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("Explore".tl)),
+        SliverAppbar(title: Text(t.explore)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
@@ -21,38 +21,38 @@ class _ExploreSettingsState extends State<ExploreSettings> {
               child: _SettingCard(
                 children: [
                   SelectSetting(
-                    title: "Display mode of anime tile".tl,
+                    title: t.displayModeOfAnimeTile,
                     settingKey: "animeDisplayMode",
                     optionTranslation: {
-                      "detailed": "Detailed".tl,
-                      "brief": "Brief".tl,
+                      "detailed": t.detailed,
+                      "brief": t.brief,
                     },
                   ),
                   _SliderSetting(
-                    title: "Size of anime tile".tl,
+                    title: t.sizeOfAnimeTile,
                     settingsIndex: "animeTileScale",
                     interval: 0.05,
                     min: 0.75,
                     max: 1.25,
                   ),
                   _PopupWindowSetting(
-                    title: "Explore Pages".tl,
+                    title: t.explorePages,
                     builder: setExplorePagesWidget,
                   ),
                   _SwitchSetting(
-                    title: "Show favorite status on anime tile".tl,
+                    title: t.showFavoriteStatusOnAnimeTile,
                     settingKey: "showFavoriteStatusOnTile",
                   ),
                   _SwitchSetting(
-                    title: "Show history on anime tile".tl,
+                    title: t.showHistoryOnAnimeTile,
                     settingKey: "showHistoryStatusOnTile",
                   ),
 
                   SelectSetting(
-                    title: "Default Search Target".tl,
+                    title: t.defaultSearchTarget,
                     settingKey: "defaultSearchTarget",
                     optionTranslation: {
-                      '_aggregated_': "Aggregated".tl,
+                      '_aggregated_': t.aggregated,
                       ...(() {
                         var map = <String, String>{};
                         for (var c in AnimeSource.all()) {
@@ -63,14 +63,14 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                     },
                   ),
                   SelectSetting(
-                    title: "Initial Page".tl,
+                    title: t.initialPage,
                     settingKey: "initialPage",
                     optionTranslation: {
-                      '0': "Me".tl,
-                      '1': "Bangumi".tl,
-                      '2': "Following".tl,
-                      '3': "History".tl,
-                      '4': "Explore".tl,
+                      '0': t.me,
+                      '1': t.bangumi,
+                      '2': t.following,
+                      '3': t.history,
+                      '4': t.explore,
                     },
                   ),
                 ],
@@ -96,11 +96,11 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
   Widget build(BuildContext context) {
     assert(appdata.settings["blockedWords"] is List);
     return PopUpWidgetScaffold(
-      title: "Keyword blocking".tl,
+      title: t.keywordBlocking,
       tailing: [
         TextButton.icon(
           icon: const Icon(Icons.add),
-          label: Text("Add".tl),
+          label: Text(t.add),
           onPressed: add,
         ),
       ],
@@ -132,12 +132,12 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
         return StatefulBuilder(
           builder: (context, setState) {
             return ContentDialog(
-              title: "Add keyword".tl,
+              title: t.addKeyword,
               content: TextField(
                 controller: controller,
                 decoration: InputDecoration(
                   border: const OutlineInputBorder(),
-                  label: Text("Keyword".tl),
+                  label: Text(t.keyword),
                   errorText: error,
                 ),
                 onChanged: (s) {
@@ -155,7 +155,7 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
                       controller.text,
                     )) {
                       setState(() {
-                        error = "Keyword already exists".tl;
+                        error = t.keywordAlreadyExists;
                       });
                       return;
                     }
@@ -164,7 +164,7 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
                     this.setState(() {});
                     context.pop();
                   },
-                  child: Text("Add".tl),
+                  child: Text(t.add),
                 ),
               ],
             );
@@ -183,7 +183,7 @@ Widget setExplorePagesWidget() {
     }
   }
   return _MultiPagesFilter(
-    title: "Explore Pages".tl,
+    title: t.explorePages,
     settingsIndex: "explore_pages",
     pages: pages,
   );
@@ -197,7 +197,7 @@ Widget setCategoryPagesWidget() {
     }
   }
   return _MultiPagesFilter(
-    title: "Category Pages".tl,
+    title: t.categoryPages,
     settingsIndex: "categories",
     pages: pages,
   );
@@ -211,7 +211,7 @@ Widget setSearchSourcesWidget() {
     }
   }
   return _MultiPagesFilter(
-    title: "Search Sources".tl,
+    title: t.searchSources,
     settingsIndex: "searchSources",
     pages: pages,
   );

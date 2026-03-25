@@ -16,11 +16,11 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 
 Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
@@ -219,15 +219,6 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
   TabController? controller;
   List<List<BangumiItem>> bangumiCalendar = [];
   bool _isLoading = true;
-  static const _weekdays = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
   BangumiManager get manager => ref.watch(bangumiManagerProvider);
 
   @override
@@ -257,7 +248,16 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
         Duration(days: i - currentDate.weekday + 1),
       );
       final formattedDate = '${weekday.month}月${weekday.day}日';
-      final dayOfWeek = _weekdays[weekday.weekday - 1].tl;
+      final dayOfWeek = switch (weekday.weekday) {
+        1 => t.monday,
+        2 => t.tuesday,
+        3 => t.wednesday,
+        4 => t.thursday,
+        5 => t.friday,
+        6 => t.saturday,
+        7 => t.sunday,
+        _ => '',
+      };
 
       return Tab(
         child: Column(
@@ -409,7 +409,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
             ).copyWith(scrollbars: false),
             child: Scaffold(
               appBar: Appbar(
-                title: Text('Timetable'.tl),
+                title: Text(t.timetable),
                 actions: [
                   IconButton(
                     onPressed: () {
@@ -570,10 +570,7 @@ class _CardInfo extends StatelessWidget {
         ),
         if (appdata.settings['calendarFetchEpisodes'] ?? false)
           Text(
-            'Episode @e: @n'.tlParams({
-              'e': bangumiItem.extraInfo?.episodeEp?.toCleanString() ?? 0,
-              'n': _episodeName,
-            }),
+            '${t.episodeEp(ep: bangumiItem.extraInfo?.episodeEp?.toCleanString() ?? 0)}: $_episodeName',
             style: TextStyle(fontSize: imageWidth * 0.12),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -603,10 +600,7 @@ class _ScoreRow extends StatelessWidget {
           itemSize: imageWidth * 0.14,
         ),
         Text(
-          '@t reviews | #@r'.tlParams({
-            'r': bangumiItem.rank,
-            't': bangumiItem.total,
-          }),
+          t.tReviewsR(t: bangumiItem.total, r: bangumiItem.rank),
           style: TextStyle(fontSize: imageWidth * 0.1),
         ),
       ],
@@ -891,7 +885,7 @@ Future<void> captureBangumiCalendarScreenshot(
 
     if (bytes == null) {
       if (context.mounted) {
-        ImageSaver.showResult(success: false, message: '截图失败');
+        ImageSaver.showResult(success: false, message: t.screenshotFailed);
       }
       return;
     }
@@ -908,7 +902,7 @@ Future<void> captureBangumiCalendarScreenshot(
   } catch (e) {
     removeLoading();
     if (context.mounted) {
-      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
     }
     Log.error('截图失败', '$e');
   }

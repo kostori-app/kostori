@@ -22,12 +22,12 @@ import 'package:kostori/foundation/audio_service/taskbar_manager.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -685,7 +685,7 @@ abstract class _PlayerController with Store {
                         Align(
                           alignment: Alignment.bottomCenter,
                           child: Text(
-                            '点击分享'.tl,
+                            t.tapToShare,
                             style: TextStyle(fontSize: 12),
                           ),
                         ),
@@ -699,7 +699,7 @@ abstract class _PlayerController with Store {
                     context.to(() => ImageManipulationPage());
                   },
                   child: Center(
-                    child: SizedBox(height: 20, child: Text('编辑'.tl)),
+                    child: SizedBox(height: 20, child: Text(t.editing)),
                   ),
                 ),
               ],
@@ -787,7 +787,7 @@ abstract class _PlayerController with Store {
 
   Future<void> captureAndSaveScreenshot({required BuildContext context}) async {
     saveAddress = '';
-    App.rootContext.showMessage(message: '正在截图中...'.tl);
+    App.rootContext.showMessage(message: t.screenshotInProgress);
 
     try {
       final Uint8List? screenData = await playerController.player.screenshot();
@@ -809,7 +809,7 @@ abstract class _PlayerController with Store {
 
       saveAddress = file.path;
       showScreenshotPopup(context, saveAddress, filename);
-      ImageSaver.showResult(success: true, message: '截图成功');
+      ImageSaver.showResult(success: true, message: t.screenshotSuccess);
       Log.info('保存文件成功', file.path);
 
       if (App.isAndroid) {
@@ -817,7 +817,7 @@ abstract class _PlayerController with Store {
         await platform.invokeMethod('scanFolder', {'path': file.parent.path});
       }
     } catch (e) {
-      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
       Log.error('截图失败', '$e');
     }
   }
@@ -908,7 +908,7 @@ class ParamCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onLongPress: () {
           Clipboard.setData(ClipboardData(text: allText));
-          App.rootContext.showMessage(message: '复制成功');
+          App.rootContext.showMessage(message: t.copySuccess);
         },
         child: Container(
           width: 300,
@@ -975,91 +975,91 @@ class MediaInfoWidget extends StatelessWidget {
     // ==== Video Card ====
     if (videoParams != null) {
       final Map<String, Object?> videoMap = {
-        'Pixel Format'.tl: videoParams!.pixelformat,
-        'HW Pixel Format'.tl: videoParams!.hwPixelformat,
-        'Resolution'.tl: '${videoParams!.w}x${videoParams!.h}',
-        'Display Width'.tl: videoParams!.dw,
-        'Display Height'.tl: videoParams!.dh,
-        'Aspect'.tl: videoParams!.aspect,
-        'Pixel Aspect Ratio'.tl: videoParams!.par,
-        'Colormatrix'.tl: videoParams!.colormatrix,
-        'Color Levels'.tl: videoParams!.colorlevels,
-        'Primaries'.tl: videoParams!.primaries,
-        'Gamma'.tl: videoParams!.gamma,
-        'Signal Peak'.tl: videoParams!.sigPeak,
-        'Lights'.tl: videoParams!.light,
-        'Chroma Location'.tl: videoParams!.chromaLocation,
-        'Rotate'.tl: videoParams!.rotate,
-        'Stereo In'.tl: videoParams!.stereoIn,
-        'Average Bpp'.tl: videoParams!.averageBpp,
-        'Alpha'.tl: videoParams!.alpha,
+        t.pixelFormat: videoParams!.pixelformat,
+        t.hwPixelFormat: videoParams!.hwPixelformat,
+        t.resolution: '${videoParams!.w}x${videoParams!.h}',
+        t.displayWidth: videoParams!.dw,
+        t.displayHeight: videoParams!.dh,
+        t.aspect: videoParams!.aspect,
+        t.pixelAspectRatio: videoParams!.par,
+        t.colormatrix: videoParams!.colormatrix,
+        t.colorLevels: videoParams!.colorlevels,
+        t.primaries: videoParams!.primaries,
+        t.gamma: videoParams!.gamma,
+        t.signalPeak: videoParams!.sigPeak,
+        t.lights: videoParams!.light,
+        t.chromaLocation: videoParams!.chromaLocation,
+        t.rotate: videoParams!.rotate,
+        t.stereoIn: videoParams!.stereoIn,
+        t.averageBpp: videoParams!.averageBpp,
+        t.alpha: videoParams!.alpha,
       };
 
       // 合并 VideoTrack 信息
       if (videoTrack != null) {
         videoMap.addAll({
-          'Track ID'.tl: videoTrack!.id,
-          'Track Title'.tl: videoTrack!.title,
-          'Track Language'.tl: videoTrack!.language,
-          'Track Image'.tl: videoTrack!.image,
-          'Track Album Art'.tl: videoTrack!.albumart,
-          'Track Codec'.tl: videoTrack!.codec,
-          'Track Decoder'.tl: videoTrack!.decoder,
-          'Track Width'.tl: videoTrack!.w,
-          'Track Height'.tl: videoTrack!.h,
-          'Track Channels Count'.tl: videoTrack!.channelscount,
-          'Track Channels'.tl: videoTrack!.channels,
-          'Track Sample Rate'.tl: videoTrack!.samplerate,
-          'Track FPS'.tl: videoTrack!.fps,
-          'Track Bitrate'.tl: videoTrack!.bitrate,
-          'Track Rotate'.tl: videoTrack!.rotate,
-          'Track PAR'.tl: videoTrack!.par,
-          'Track Audio Channels'.tl: videoTrack!.audiochannels,
+          t.trackId: videoTrack!.id,
+          t.trackTitle: videoTrack!.title,
+          t.trackLanguage: videoTrack!.language,
+          t.trackImage: videoTrack!.image,
+          t.trackAlbumArt: videoTrack!.albumart,
+          t.trackCodec: videoTrack!.codec,
+          t.trackDecoder: videoTrack!.decoder,
+          t.trackWidth: videoTrack!.w,
+          t.trackHeight: videoTrack!.h,
+          t.trackChannelsCount: videoTrack!.channelscount,
+          t.trackChannels: videoTrack!.channels,
+          t.trackSampleRate: videoTrack!.samplerate,
+          t.trackFps: videoTrack!.fps,
+          t.trackBitrate: videoTrack!.bitrate,
+          t.trackRotate: videoTrack!.rotate,
+          t.trackPar: videoTrack!.par,
+          t.trackAudioChannels: videoTrack!.audiochannels,
         });
       }
 
-      cards.add(ParamCard(title: 'Video'.tl, params: videoMap));
+      cards.add(ParamCard(title: t.video, params: videoMap));
     }
 
     // ==== Audio Card ====
     if (audioParams != null) {
       final Map<String, Object?> audioMap = {
-        'Format'.tl: audioParams!.format,
-        'Sample Rate'.tl: audioParams!.sampleRate,
-        'Channels'.tl: audioParams!.channels,
-        'Channel Count'.tl: audioParams!.channelCount,
-        'HR Channels'.tl: audioParams!.hrChannels,
+        t.format: audioParams!.format,
+        t.sampleRate: audioParams!.sampleRate,
+        t.channels: audioParams!.channels,
+        t.channelCount: audioParams!.channelCount,
+        t.hrChannels: audioParams!.hrChannels,
       };
 
       // 合并 AudioTrack 信息
       if (audioTrack != null) {
         audioMap.addAll({
-          'Track ID'.tl: audioTrack!.id,
-          'Track Title'.tl: audioTrack!.title,
-          'Track Language'.tl: audioTrack!.language,
-          'URI Track'.tl: audioTrack!.uri,
-          'Track Image'.tl: audioTrack!.image,
-          'Track Album Art'.tl: audioTrack!.albumart,
-          'Track Codec'.tl: audioTrack!.codec,
-          'Track Decoder'.tl: audioTrack!.decoder,
-          'Track Width'.tl: audioTrack!.w,
-          'Track Height'.tl: audioTrack!.h,
-          'Channels Count'.tl: audioTrack!.channelscount,
-          'Channels'.tl: audioTrack!.channels,
-          'Track Sample Rate'.tl: audioTrack!.samplerate,
-          'FPS'.tl: audioTrack!.fps,
-          'Bitrate'.tl: audioTrack!.bitrate,
-          'Rotate'.tl: audioTrack!.rotate,
-          'PAR'.tl: audioTrack!.par,
-          'Audio Channels'.tl: audioTrack!.audiochannels,
+          t.trackId: audioTrack!.id,
+          t.trackTitle: audioTrack!.title,
+          t.trackLanguage: audioTrack!.language,
+          t.uriTrack: audioTrack!.uri,
+          t.trackImage: audioTrack!.image,
+          t.trackAlbumArt: audioTrack!.albumart,
+          t.trackCodec: audioTrack!.codec,
+          t.trackDecoder: audioTrack!.decoder,
+          t.trackWidth: audioTrack!.w,
+          t.trackHeight: audioTrack!.h,
+          t.channelsCount: audioTrack!.channelscount,
+          t.channels: audioTrack!.channels,
+          t.trackSampleRate: audioTrack!.samplerate,
+          t.fps: audioTrack!.fps,
+          t.bitrate: audioTrack!.bitrate,
+          t.rotate: audioTrack!.rotate,
+          t.par: audioTrack!.par,
+          t.audioChannels: audioTrack!.audiochannels,
         });
       }
 
       if (audioBitrate != null) {
-        audioMap.addAll({'AudioBitrate'.tl: audioBitrate});
+        audioMap.addAll({t.audioBitrate: audioBitrate});
       }
 
-      cards.add(ParamCard(title: 'Audio'.tl, params: audioMap));
+      cards.add(ParamCard(title: t.audio, params: audioMap));
     }
 
     return SingleChildScrollView(
@@ -1095,7 +1095,7 @@ class MediaWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         onLongPress: () {
           Clipboard.setData(ClipboardData(text: allText));
-          App.rootContext.showMessage(message: '复制成功');
+          App.rootContext.showMessage(message: t.copySuccess);
         },
         child: Container(
           width: double.infinity,
@@ -1104,7 +1104,7 @@ class MediaWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Media'.tl,
+                t.media,
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -1160,8 +1160,8 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
           ExtendedTabBar(
             controller: _tabControllerZero,
             tabs: [
-              Tab(text: 'Status'.tl),
-              Tab(text: 'Log'.tl),
+              Tab(text: t.status),
+              Tab(text: t.log),
             ],
             indicatorSize: TabBarIndicatorSize.tab,
           ),
@@ -1198,7 +1198,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                     Clipboard.setData(
                       ClipboardData(text: widget.playerController.videoUrl),
                     );
-                    App.rootContext.showMessage(message: '复制成功');
+                    App.rootContext.showMessage(message: t.copySuccess);
                   },
                   child: Container(
                     width: double.infinity,
@@ -1207,7 +1207,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SelectableText(
-                          'Source'.tl,
+                          t.source,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                           scrollPhysics: const NeverScrollableScrollPhysics(),
@@ -1360,9 +1360,11 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
                           child: TextButton(
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: log.text));
-                              App.rootContext.showMessage(message: '复制成功');
+                              App.rootContext.showMessage(
+                                message: t.copySuccess,
+                              );
                             },
-                            child: Text("Copy".tl),
+                            child: Text(t.copy),
                           ),
                         ),
                       ],
@@ -1384,7 +1386,7 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               )
               .join('\n');
           Clipboard.setData(ClipboardData(text: allText));
-          App.rootContext.showMessage(message: '复制成功');
+          App.rootContext.showMessage(message: t.copySuccess);
         },
       ),
     );

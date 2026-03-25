@@ -28,8 +28,8 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/cache_manager.dart';
 import 'package:kostori/foundation/translation_service.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/translation/sort.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/database/favorites.dart';
@@ -49,6 +49,7 @@ import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
+import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -109,19 +110,19 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   bool get enableTwoViews => context.width > 720;
 
   final categories = <String>[
-    "Explore",
-    "Bangumi",
-    "Fanyuan",
-    "Player",
-    "Translation",
-    "Appearance",
-    "Local Favorites",
-    "APP",
-    "Network",
-    "Ai",
-    "Service",
-    "Log",
-    "About",
+    t.explore,
+    t.bangumi,
+    t.fanyuan,
+    t.player,
+    t.translation,
+    t.appearance,
+    t.localFavorites,
+    t.app,
+    t.network,
+    t.ai,
+    t.service,
+    t.log,
+    t.about,
   ];
 
   final icons = <IconData>[
@@ -394,14 +395,14 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
                   children: [
                     const SizedBox(width: 8),
                     Tooltip(
-                      message: "Back".tl,
+                      message: t.back,
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back_ios_new),
                         onPressed: context.pop,
                       ),
                     ),
                     const SizedBox(width: 24),
-                    Text("Settings".tl, style: ts.s20),
+                    Text(t.settings, style: ts.s20),
                   ],
                 ),
               ),
@@ -483,7 +484,8 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     return ListView.builder(
       padding: EdgeInsets.zero,
       itemCount: categories.length,
-      itemBuilder: (context, index) => buildItem(categories[index].tl, index),
+      itemBuilder: (context, index) =>
+          buildItem(t[categories[index]] ?? categories[index], index),
     );
   }
 
@@ -584,7 +586,7 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
 
   Future<void> _translate() async {
     if (_inputController.text.isEmpty) {
-      App.rootContext.showMessage(message: 'Please enter text to translate'.tl);
+      App.rootContext.showMessage(message: t.pleaseEnterTextToTranslate);
       return;
     }
     poweredName = TranslationService.getPoweredName();
@@ -599,7 +601,7 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
       context: context,
       builder: (BuildContext context) {
         return ContentDialog(
-          title: '选择翻译语言'.tl,
+          title: t.selectTranslationLanguage,
           displayButton: false,
           content: ConstrainedBox(
             constraints: BoxConstraints(
@@ -649,10 +651,7 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
   Widget build(BuildContext context) {
     return _SettingCard(
       children: [
-        _SettingPartTitle(
-          title: 'Manual Translation'.tl,
-          icon: Icons.translate,
-        ),
+        _SettingPartTitle(title: t.manualTranslation, icon: Icons.translate),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: ListenableBuilder(
@@ -720,7 +719,7 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
                                     100,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'Enter text to translate'.tl,
+                                hintText: t.enterTextToTranslate,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -747,7 +746,7 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
                                         const Icon(Icons.translate, size: 14),
                                         const SizedBox(width: 4),
                                         Text(
-                                          'Translation result'.tl,
+                                          t.translationResult,
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Theme.of(

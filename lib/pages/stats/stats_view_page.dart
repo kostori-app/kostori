@@ -106,7 +106,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
               children: [
                 Icon(Icons.query_stats_outlined, color: cs.primary, size: 20),
                 const SizedBox(width: 8),
-                Center(child: Text(context.t.statsInfo, style: ts.s16)),
+                Center(child: Text(t.statsInfo, style: ts.s16)),
                 const Spacer(),
                 IconButton(
                   icon: Icon(
@@ -116,7 +116,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
                   onPressed: () {
                     context.to(() => _StatsCalendarPage());
                   },
-                  tooltip: 'Stats Calendar'.tl,
+                  tooltip: t.statsCalendar,
                 ),
                 IconButton(
                   icon: Icon(
@@ -126,7 +126,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
                   onPressed: () {
                     context.to(() => _WordCloud());
                   },
-                  tooltip: 'Word Cloud'.tl,
+                  tooltip: t.wordCloud,
                 ),
               ],
             ),
@@ -266,7 +266,7 @@ class _StatsCalendarPage extends StatelessWidget {
     Widget widget = SmoothCustomScrollView(
       controller: scrollController,
       slivers: [
-        SliverAppbar(title: Text("Stats Calendar".tl)),
+        SliverAppbar(title: Text(t.statsCalendar)),
         SliverToBoxAdapter(child: StatsCalendarPage(controller: controller)),
       ],
     );
@@ -426,7 +426,7 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
     return Column(
       children: [
         Appbar(
-          title: Text("Word Cloud".tl),
+          title: Text(t.wordCloud),
           backgroundColor: Colors.transparent,
           actions: [
             IconButton(
@@ -532,7 +532,7 @@ class _RatingDetailPageState extends State<_RatingDetailPage>
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: '评分详情'.tl,
+      title: t.ratingDetails,
       body: Column(
         children: [
           TabBar(

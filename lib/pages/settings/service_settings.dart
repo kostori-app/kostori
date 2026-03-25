@@ -67,7 +67,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
     _hubClient.onDisconnected = () {
       if (mounted) setState(() {});
       if (_hubClient.shouldReconnect) {
-        App.rootContext.showMessage(message: '与服务端的连接已断开'.tl);
+        App.rootContext.showMessage(message: t.connectionDisconnected);
       }
     };
 
@@ -102,7 +102,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
     if (value) {
       final savedAddress = _hubClient.savedAddress ?? '';
       if (savedAddress.isEmpty) {
-        App.rootContext.showMessage(message: '请输入服务端地址'.tl);
+        App.rootContext.showMessage(message: t.enterServerAddress);
         return;
       }
       try {
@@ -114,7 +114,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
       } catch (e) {
         if (mounted) {
           App.rootContext.showMessage(
-            message: '连接失败：$e',
+            message: t.connectionFailed,
             level: LogLevel.warning,
           );
         }
@@ -137,13 +137,13 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
       backgroundColor: Colors.transparent,
       body: SmoothCustomScrollView(
         slivers: [
-          SliverAppbar(title: Text("Service Settings".tl)),
+          SliverAppbar(title: Text(t.serviceSettings)),
           // ── API Key ──────────────────────────────────────────────────────
           _BuildSectionPadding(
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "API Key".tl,
+                  title: t.apiKey,
                   icon: Icons.key_outlined,
                 ),
 
@@ -168,10 +168,10 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
 
                 // ── 统一固定 Key 开关 ───────────────
                 _SettingRow(
-                  title: "Use Fixed Key".tl,
+                  title: t.useFixedKey,
                   subtitle: _keyManager.isUsingFixed
-                      ? "Keep the same keys after restart".tl
-                      : "Regenerated on every startup".tl,
+                      ? t.keepTheSameKeysAfterRestart
+                      : t.regeneratedOnEveryStartup,
                   trailing: CustomSwitch(
                     value: _keyManager.isUsingFixed,
                     onChanged: (val) async {
@@ -202,24 +202,22 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Service".tl,
+                  title: t.service,
                   icon: Icons.miscellaneous_services_outlined,
                 ),
                 _SettingRow(
-                  title: "Enable Service".tl,
+                  title: t.enableService,
                   subtitle: _serviceEnabled
-                      ? "${"Running on".tl} ${_service.boundAddresses.join(' | ')}"
-                      : "Service is stopped".tl,
+                      ? "${t.runningOn} ${_service.boundAddresses.join(' | ')}"
+                      : t.serviceIsStopped,
                   trailing: CustomSwitch(
                     value: _serviceEnabled,
                     onChanged: _toggleService,
                   ),
                 ),
                 _SettingRow(
-                  title: "Port & Bind Mode".tl,
-                  subtitle: "Default: @p".tlParams({
-                    "p": "9000  (1024 - 65535)",
-                  }),
+                  title: t.portAndBindMode,
+                  subtitle: t.defaultP(p: "9000  (1024 - 65535)"),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -248,25 +246,25 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Hub Server".tl,
+                  title: t.hubServer,
                   icon: Icons.hub_outlined,
                 ),
                 _SettingRow(
-                  title: "Enable Hub".tl,
+                  title: t.enableHub,
                   subtitle: _hubEnabled
-                      ? "${"Running on".tl} ${_hub.boundAddresses.join(' | ')}  "
-                            "(${_hub.clientCount} ${"clients".tl})"
-                      : "Hub server is stopped".tl,
+                      ? "${t.runningOn} ${_hub.boundAddresses.join(' | ')}  "
+                            "(${_hub.clientCount} ${t.clientsCount})"
+                      : t.hubServerIsStopped,
                   trailing: CustomSwitch(
                     value: _hubEnabled,
                     onChanged: _toggleHub,
                   ),
                 ),
                 _SettingRow(
-                  title: "No Key Required".tl,
+                  title: t.noKeyRequired,
                   subtitle: _hub.hubNoAuth
-                      ? "Anyone can connect without API key".tl
-                      : "Clients must provide a valid API key".tl,
+                      ? t.anyoneCanConnectWithoutApiKey
+                      : t.clientsMustProvideAValidApiKey,
                   trailing: CustomSwitch(
                     value: _hub.hubNoAuth,
                     onChanged: (val) {
@@ -276,10 +274,8 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                   ),
                 ),
                 _SettingRow(
-                  title: "Port & Bind Mode".tl,
-                  subtitle: "Default: @p".tlParams({
-                    "p": "9100  (1024 - 65535)",
-                  }),
+                  title: t.portAndBindMode,
+                  subtitle: t.defaultP(p: "9100  (1024 - 65535)"),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -301,8 +297,8 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                   ),
                 ),
                 _SettingRow(
-                  title: "Ping Interval".tl,
-                  subtitle: "Default: @p".tlParams({"p": "30000ms"}),
+                  title: t.pingInterval,
+                  subtitle: t.defaultP(p: "30000ms"),
                   trailing: _NumberInput(
                     controller: _pingIntervalController,
                     enabled: !_hubEnabled,
@@ -315,7 +311,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                 ),
                 if (_hubEnabled)
                   _PopupWindowSetting(
-                    title: "Hub Management".tl,
+                    title: t.hubManagement,
                     builder: () => _HubManagementPage(),
                   ),
                 _UploadConfigSetting(hub: _hub, serverRunning: _hubEnabled),
@@ -327,21 +323,21 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Hub Client".tl,
+                  title: t.hubClient,
                   icon: Icons.devices_outlined,
                 ),
                 _SettingRow(
-                  title: "Connect to Hub".tl,
+                  title: t.connectToHub,
                   subtitle: hubClientEnabled
-                      ? "${"Connected".tl}  ID: ${hubState.myId ?? '-'}"
-                      : "Not connected".tl,
+                      ? "${t.connected}  ID: ${hubState.myId ?? '-'}"
+                      : t.notConnected,
                   trailing: CustomSwitch(
                     value: hubClientEnabled,
                     onChanged: _toggleHubClient,
                   ),
                 ),
                 _SettingRow(
-                  title: 'Auto Reconnect'.tl,
+                  title: t.autoReconnect,
                   trailing: CustomSwitch(
                     value: _hubClient.autoReconnect,
                     onChanged: (v) {
@@ -350,13 +346,13 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                   ),
                 ),
                 _PopupWindowSetting(
-                  title: "Hub Details".tl,
+                  title: t.hubDetails,
                   builder: () => const _HubClientDetailPage(),
                 ),
                 if (hubClientEnabled)
                   _SettingRow(
-                    title: "Chat Room".tl,
-                    subtitle: "Open chat dialog".tl,
+                    title: t.chatRoom,
+                    subtitle: t.openChatDialog,
                     trailing: IconButton(
                       icon: const Icon(Icons.chat_bubble_outline, size: 18),
                       onPressed: () =>

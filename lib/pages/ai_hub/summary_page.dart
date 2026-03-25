@@ -38,7 +38,7 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
       }).toList();
 
       if (activeStats.isEmpty) {
-        App.rootContext.showMessage(message: '该时间段内暂无活动记录'.tl);
+        App.rootContext.showMessage(message: t.noActivityInTimeRange);
         return;
       }
 
@@ -79,7 +79,7 @@ Generate a $rangeLabel anime watch report based on the following data:
         _summaryConfigKey,
       );
       if (cfg == null) {
-        App.rootContext.showMessage(message: 'AI配置缺失'.tl);
+        App.rootContext.showMessage(message: t.aiConfigMissing);
         return;
       }
 
@@ -132,7 +132,7 @@ Generate a $rangeLabel anime watch report based on the following data:
       final filename = 'summary_${DateTime.now().millisecondsSinceEpoch}.png';
       await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
     } catch (e) {
-      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();
     }
@@ -142,7 +142,7 @@ Generate a $rangeLabel anime watch report based on the following data:
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: Text('周月总结'.tl),
+        title: Text(t.summary),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -164,7 +164,7 @@ Generate a $rangeLabel anime watch report based on the following data:
             // ── 服务商 + 模型选择 ──────────────────
             _AiCard(
               icon: Icons.psychology,
-              title: 'AI 设置'.tl,
+              title: t.aiSettings,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -181,12 +181,12 @@ Generate a $rangeLabel anime watch report based on the following data:
             const SizedBox(height: 8),
             _AiCard(
               icon: Icons.date_range,
-              title: '时间范围'.tl,
+              title: t.timeRange,
               child: Row(
                 children: [
                   Expanded(
                     child: _RangeChip(
-                      label: '本周'.tl,
+                      label: t.thisWeek,
                       selected: _range == _SummaryRange.week,
                       onTap: () => setState(() => _range = _SummaryRange.week),
                     ),
@@ -194,7 +194,7 @@ Generate a $rangeLabel anime watch report based on the following data:
                   const SizedBox(width: 8),
                   Expanded(
                     child: _RangeChip(
-                      label: '本月'.tl,
+                      label: t.thisMonth,
                       selected: _range == _SummaryRange.month,
                       onTap: () => setState(() => _range = _SummaryRange.month),
                     ),
@@ -214,17 +214,17 @@ Generate a $rangeLabel anime watch report based on the following data:
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.summarize),
-                label: Text(_isLoading ? 'Generating...'.tl : '生成总结'.tl),
+                label: Text(_isLoading ? t.generating : t.generateSummary),
               ),
             ),
             if (_result != null) ...[
               const SizedBox(height: 8),
               _AiCard(
                 icon: Icons.article_outlined,
-                title: '总结报告'.tl,
+                title: t.summaryReport,
                 trailing: IconButton(
                   icon: const Icon(Icons.download_outlined, size: 18),
-                  tooltip: '导出截图'.tl,
+                  tooltip: t.exportScreenshot,
                   onPressed: _exportScreenshot,
                 ),
                 child: Column(

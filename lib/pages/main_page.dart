@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/bangumi/bangumi_page.dart';
 import 'package:kostori/pages/categories_page.dart';
 import 'package:kostori/pages/explore_Page.dart';
@@ -11,7 +12,6 @@ import 'package:kostori/pages/history_page.dart';
 import 'package:kostori/pages/me_page.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
-import 'package:kostori/utils/translations.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -64,27 +64,27 @@ class _MainPageState extends State<MainPage> {
       navigatorKey: _navigatorKey!,
       paneItems: [
         PaneItemEntry(
-          label: 'Me'.tl,
+          label: t.me,
           icon: Icons.person_outline,
           activeIcon: Icons.person,
         ),
         PaneItemEntry(
-          label: 'Bangumi'.tl,
+          label: t.bangumi,
           icon: Icons.account_balance_outlined,
           activeIcon: Icons.account_balance,
         ),
         PaneItemEntry(
-          label: 'Following'.tl,
+          label: t.following,
           icon: Icons.star_border,
           activeIcon: Icons.star,
         ),
         PaneItemEntry(
-          label: 'History'.tl,
+          label: t.history,
           icon: Icons.history_toggle_off,
           activeIcon: Icons.history,
         ),
         PaneItemEntry(
-          label: 'Explore'.tl,
+          label: t.explore,
           icon: Icons.explore_outlined,
           activeIcon: Icons.explore_rounded,
         ),
@@ -92,21 +92,21 @@ class _MainPageState extends State<MainPage> {
       paneActions: [
         PaneActionEntry(
           icon: Icons.search,
-          label: "Search".tl,
+          label: t.search,
           onTap: () {
             to(() => const SearchPage(), preventDuplicate: true);
           },
         ),
         PaneActionEntry(
           icon: Icons.category,
-          label: 'Categories'.tl,
+          label: t.categories,
           onTap: () {
             to(() => const CategoriesPage(), preventDuplicate: true);
           },
         ),
         PaneActionEntry(
           icon: Icons.settings,
-          label: "Settings".tl,
+          label: t.settings,
           onTap: () {
             to(() => const SettingsPage(), preventDuplicate: true);
           },

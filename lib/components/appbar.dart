@@ -98,7 +98,7 @@ class _AppbarState extends State<Appbar> {
                 const SizedBox(width: 8),
                 widget.leading ??
                     Tooltip(
-                      message: "Back".tl,
+                        message: t.back,
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back_ios_new),
                         onPressed: () => Navigator.maybePop(context),
@@ -224,7 +224,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             leading ??
                 (Navigator.of(context).canPop()
                     ? Tooltip(
-                        message: "Back".tl,
+                      message: t.back,
                         child: IconButton(
                           icon: const Icon(Icons.arrow_back_ios_new),
                           onPressed: () => Navigator.maybePop(context),
@@ -909,7 +909,7 @@ class _SliverSearchBarDelegate extends SliverPersistentHeaderDelegate {
                 focusNode: focusNode,
                 controller: editingController,
                 decoration: InputDecoration(
-                  hintText: "Search".tl,
+                  hintText: t.search,
                   border: InputBorder.none,
                 ),
                 onSubmitted: (text) {
@@ -1017,7 +1017,7 @@ class _SearchBarState extends State<AppSearchBar> with _SearchBarMixin {
               child: TextField(
                 controller: _editingController,
                 decoration: InputDecoration(
-                  hintText: "Search".tl,
+                  hintText: t.search,
                   border: InputBorder.none,
                 ),
                 onSubmitted: (text) {

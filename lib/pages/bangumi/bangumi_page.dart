@@ -9,12 +9,12 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_subject_tab_page.dart';
-import 'package:kostori/utils/translations.dart';
 
 class BangumiPage extends ConsumerStatefulWidget {
   const BangumiPage({super.key});
@@ -121,7 +121,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('Popularity Ranking'.tl, style: ts.s18),
+                Text(t.popularityRanking, style: ts.s18),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   padding: const EdgeInsets.symmetric(
@@ -319,7 +319,7 @@ class _SearchBar extends StatelessWidget {
                 const SizedBox(width: 16),
                 const Icon(Icons.search),
                 const SizedBox(width: 8),
-                Text('Search'.tl, style: ts.s16),
+                Text(t.search, style: ts.s16),
                 const Spacer(),
               ],
             ),
@@ -370,13 +370,13 @@ class _TimetableState extends State<_Timetable> {
 
   String getWeekdayString(int weekday) {
     var weekdays = [
-      'Monday Schedule'.tl,
-      'Tuesday Schedule'.tl,
-      'Wednesday Schedule'.tl,
-      'Thursday Schedule'.tl,
-      'Friday Schedule'.tl,
-      'Saturday Schedule'.tl,
-      'Sunday Schedule'.tl,
+      t.mondaySchedule,
+      t.tuesdaySchedule,
+      t.wednesdaySchedule,
+      t.thursdaySchedule,
+      t.fridaySchedule,
+      t.saturdaySchedule,
+      t.sundaySchedule,
     ];
     return weekdays[weekday - 1];
   }
@@ -429,7 +429,7 @@ class _TimetableState extends State<_Timetable> {
                     const Spacer(),
                     const Icon(Icons.calendar_month),
                     SizedBox(width: 10),
-                    Text('Timetable'.tl),
+                    Text(t.timetable),
                   ],
                 ),
               ).paddingHorizontal(16),

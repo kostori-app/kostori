@@ -122,7 +122,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
           child: ListTile(
             title: Row(
               children: [
-                Text("Playlist".tl),
+                Text(t.playlist),
                 const SizedBox(width: 5),
                 MenuAnchor(
                   consumeOutsideTap: true,
@@ -172,7 +172,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
               ],
             ),
             trailing: Tooltip(
-              message: "Order".tl,
+              message: t.order,
               child: IconButton(
                 icon: Icon(
                   reverse
@@ -317,7 +317,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                     showAll = true;
                   });
                 },
-                label: Text("${"Show all".tl} (${currentEps.length})"),
+                label: Text("${t.showAll} (${currentEps.length})"),
               ).paddingTop(12),
             ),
           ),

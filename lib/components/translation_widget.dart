@@ -7,8 +7,8 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/foundation/translation_service.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class TranslatedContent extends StatefulWidget {
@@ -65,7 +65,7 @@ class _TranslatedContentState extends State<TranslatedContent> {
               const Icon(Icons.translate, size: 14),
               const SizedBox(width: 4),
               Text(
-                '翻译结果'.tl,
+                t.translationResult,
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -153,7 +153,7 @@ class _TranslationWidgetState extends State<TranslationWidget> {
       context: context,
       builder: (BuildContext context) {
         return ContentDialog(
-          title: '选择翻译语言'.tl,
+          title: t.selectTranslationLanguage,
           displayButton: false,
           titleActions: [
             IconButton(

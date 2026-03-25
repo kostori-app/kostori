@@ -86,7 +86,7 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
       }
     } catch (e) {
       App.rootContext.showMessage(
-        message: '${"Failed to pick image".tl}: $e',
+        message: '${t.failedToPickImage}: $e',
         level: LogLevel.warning,
       );
     }
@@ -203,8 +203,8 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
       final sizeMb = (toSend.length / 1024 / 1024).toStringAsFixed(1);
       App.rootContext.showMessage(
         message:
-            '${'Image too large to send'.tl} (${sizeMb}MB). '
-            '${'Please configure server upload or client OSS.'.tl}',
+            '${t.imageTooLargeToSend} (${sizeMb}MB). '
+            '${t.pleaseConfigureServerUploadOrClientOss}',
         level: LogLevel.warning,
       );
       return null;

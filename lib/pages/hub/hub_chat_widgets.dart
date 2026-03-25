@@ -8,13 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/hub/hub_chat_page.dart';
 import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
 
 // ── 颜色工具 ──────────────────────────────────────────────────────────────────
 
@@ -140,27 +140,20 @@ class HubSystemRow extends ConsumerWidget {
       HubPayloadClientJoined() => '',
       HubPayloadClientLeft() => '',
       HubPayloadClientJoinedRoom() =>
-        '${payload.displayName} ${"joined the room".tl}',
-      HubPayloadClientLeftRoom() =>
-        '${payload.clientName} ${"left the room".tl}',
+        '${payload.displayName} ${t.joinedTheRoom}',
+      HubPayloadClientLeftRoom() => '${payload.clientName} ${t.leftTheRoom}',
       HubPayloadRoomWelcome() => payload.message,
-      HubPayloadClientKickedFromRoom() => '@p was kicked by @o'.tlParams({
-        'p': payload.clientName,
-        'o': payload.operatorName,
-      }),
-      HubPayloadPoked() => '${payload.fromName} ${"poked you".tl} 👉',
+      HubPayloadClientKickedFromRoom() => t.pWasKickedByO(
+        p: payload.clientName,
+        o: payload.operatorName,
+      ),
+      HubPayloadPoked() => '${payload.fromName} ${t.pokedYou} 👉',
       HubPayloadMessageRecalled() =>
-        '${payload.recalledBy} ${"recalled a message".tl}',
+        '${payload.recalledBy} ${t.recalledAMessage}',
       HubPayloadReacted() =>
         payload.added
-            ? '@p reacted with @o'.tlParams({
-                'p': payload.fromName,
-                'o': payload.emojiId,
-              })
-            : '@p removed reaction @o'.tlParams({
-                'p': payload.fromName,
-                'o': payload.emojiId,
-              }),
+            ? t.pReactedWithO(p: payload.fromName, o: payload.emojiId)
+            : t.pRemovedReactionO(p: payload.fromName, o: payload.emojiId),
     };
 
     return Padding(
@@ -335,7 +328,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                     Expanded(
                                       child: _TrayBtn(
                                         icon: Icons.copy_outlined,
-                                        label: 'Copy'.tl,
+                                        label: t.copy,
                                         onTap: () {
                                           _dismissActiveOverlay();
                                           Clipboard.setData(
@@ -350,7 +343,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                     Expanded(
                                       child: _TrayBtn(
                                         icon: Icons.mood_outlined,
-                                        label: 'Memes'.tl,
+                                        label: t.memes,
                                         onTap: () {
                                           _dismissActiveOverlay();
                                           for (final seg
@@ -361,7 +354,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                             );
                                           }
                                           App.rootContext.showMessage(
-                                            message: 'Meme saved'.tl,
+                                            message: t.memeSaved,
                                             level: LogLevel.info,
                                           );
                                         },
@@ -370,7 +363,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                   Expanded(
                                     child: _TrayBtn(
                                       icon: Icons.reply_outlined,
-                                      label: 'Reply'.tl,
+                                      label: t.reply,
                                       onTap: () {
                                         _dismissActiveOverlay();
                                         widget.onReply(widget.entry.messageId);
@@ -381,7 +374,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                                     Expanded(
                                       child: _TrayBtn(
                                         icon: Icons.undo_outlined,
-                                        label: 'Recall'.tl,
+                                        label: t.recall,
                                         color: cs.error,
                                         onTap: () {
                                           _dismissActiveOverlay();
@@ -498,7 +491,7 @@ class _HubBubbleRowState extends State<HubBubbleRow> {
                 ),
                 const SizedBox(width: 3),
                 Text(
-                  'Image'.tl,
+                  t.image,
                   style: TextStyle(
                     fontSize: 12,
                     color: widget.isMe
@@ -1175,8 +1168,8 @@ class HubInputBar extends ConsumerWidget {
                     decoration: InputDecoration(
                       isDense: true,
                       hintText: isDesktop
-                          ? 'Enter to send  ·  Ctrl+Enter for newline'.tl
-                          : 'Message...'.tl,
+                          ? t.enterToSendCtrlEnterForNewline
+                          : t.message,
                       hintStyle: TextStyle(
                         fontSize: 13,
                         color: cs.onSurface.toOpacity(0.35),
@@ -1248,7 +1241,7 @@ class HubInputBar extends ConsumerWidget {
                           color: cs.onSurface.toOpacity(0.5),
                         ),
                   onPressed: uploading ? null : onPickImage,
-                  tooltip: 'Image'.tl,
+                  tooltip: t.image,
                   style: IconButton.styleFrom(
                     minimumSize: const Size(32, 32),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1261,7 +1254,7 @@ class HubInputBar extends ConsumerWidget {
                     color: cs.onSurface.toOpacity(0.5),
                   ),
                   onPressed: onOpenStickers,
-                  tooltip: 'Memes'.tl,
+                  tooltip: t.memes,
                   style: IconButton.styleFrom(
                     minimumSize: const Size(32, 32),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1276,7 +1269,7 @@ class HubInputBar extends ConsumerWidget {
                       size: 20,
                       color: cs.onSurface.toOpacity(0.5),
                     ),
-                    tooltip: 'Room Settings'.tl,
+                    tooltip: t.roomSettings,
                     style: IconButton.styleFrom(
                       minimumSize: const Size(32, 32),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1332,13 +1325,10 @@ class _HubStickerPanelState extends State<HubStickerPanel> {
               children: [
                 const Icon(Icons.emoji_emotions_outlined, size: 16),
                 const SizedBox(width: 6),
-                Text(
-                  'Stickers'.tl,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
+                Text(t.stickers, style: Theme.of(context).textTheme.titleSmall),
                 const Spacer(),
                 Text(
-                  'Long press image to save'.tl,
+                  t.longPressImageToSave,
                   style: TextStyle(
                     fontSize: 10,
                     color: cs.onSurface.toOpacity(0.4),
@@ -1353,7 +1343,7 @@ class _HubStickerPanelState extends State<HubStickerPanel> {
             child: _stickers.isEmpty
                 ? Center(
                     child: Text(
-                      'No stickers yet'.tl,
+                      t.noStickersYet,
                       style: TextStyle(
                         fontSize: 13,
                         color: cs.onSurface.toOpacity(0.4),
@@ -1422,7 +1412,7 @@ class _HubStickerPanelState extends State<HubStickerPanel> {
                 color: Theme.of(context).colorScheme.error,
               ),
               title: Text(
-                'Remove sticker'.tl,
+                t.removeSticker,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               onTap: () {

@@ -128,16 +128,16 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
         builder: (context, setSS) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SheetHeader(title: "Blacklist".tl, icon: Icons.block_outlined),
+            _SheetHeader(title: t.blacklist, icon: Icons.block_outlined),
             if (_hub.blacklist.isEmpty)
-              _EmptyHint("No banned users".tl)
+              _EmptyHint(t.noBannedUsers)
             else
               ..._hub.blacklist.map(
                 (id) => _ClientTile(
                   name: id,
                   trailing: IconButton(
                     icon: const Icon(Icons.remove_circle_outline, size: 18),
-                    tooltip: "Remove from Blacklist".tl,
+                    tooltip: t.removeFromBlacklist,
                     onPressed: () {
                       _hub.removeFromBlacklist(id);
                       setSS(() {});
@@ -162,11 +162,11 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSS) => Sheet(
-          title: "Rooms".tl,
+          title: t.rooms,
           icon: Icons.meeting_room_outlined,
           headerTrailing: TextButton.icon(
             icon: const Icon(Icons.add, size: 16),
-            label: Text("Create".tl),
+            label: Text(t.create),
             onPressed: () async {
               await _showCreateRoomDialog(context);
               setSS(() {});
@@ -185,7 +185,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                 ),
                 title: Text(room.roomName),
                 subtitle: Text(
-                  '${room.participantCount} ${"members".tl}'
+                  '${room.participantCount} ${t.members}'
                   '${room.announcements.isNotEmpty ? "  ·  ${room.announcements.first}" : ""}',
                 ),
                 trailing: Row(
@@ -196,13 +196,13 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                         Icons.manage_accounts_outlined,
                         size: 18,
                       ),
-                      tooltip: "Room Admins".tl,
+                      tooltip: t.roomAdmins,
                       onPressed: () =>
                           _showRoomAdminSheet(context, room, setSS),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 18),
-                      tooltip: "Delete Room".tl,
+                      tooltip: t.deleteRoom,
                       onPressed: () async {
                         await _hub.deleteRoom(room.roomId);
                         setSS(() {});
@@ -243,7 +243,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _SheetHeader(
-              title: "${"Room Admins".tl} · ${room.roomName}",
+              title: "${t.roomAdmins} · ${room.roomName}",
               icon: Icons.manage_accounts_outlined,
             ),
             Expanded(
@@ -280,18 +280,18 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: "Hub Management".tl,
+      title: t.hubManagement,
       body: CustomScrollView(
         slivers: [
           _BuildSectionPadding(
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Rooms".tl,
+                  title: t.rooms,
                   icon: Icons.meeting_room_outlined,
                 ),
                 _SettingRow(
-                  title: "${_hub.rooms.length} ${"rooms".tl}",
+                  title: "${_hub.rooms.length} rooms",
                   trailing: IconButton(
                     icon: const Icon(Icons.open_in_new, size: 18),
                     onPressed: () => _showRoomsSheet(context),
@@ -305,7 +305,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: "Event Log".tl,
+                    title: t.eventLog,
                     icon: Icons.history_outlined,
                   ),
                   SizedBox(
@@ -338,7 +338,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
                       icon: const Icon(Icons.delete_outline, size: 16),
-                      label: Text("Clear".tl),
+                      label: Text(t.clear),
                       onPressed: () {
                         _hub.eventLog.clear();
                         setState(() {});
@@ -352,11 +352,11 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
             _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Blacklist".tl,
+                  title: t.blacklist,
                   icon: Icons.block_outlined,
                 ),
                 _SettingRow(
-                  title: "${_hub.blacklistCount} ${"banned".tl}",
+                  title: "${_hub.blacklistCount} banned",
                   trailing: IconButton(
                     icon: const Icon(Icons.open_in_new, size: 18),
                     onPressed: () => _showBlacklistSheet(context),
@@ -370,7 +370,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
               _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: "Online Clients".tl,
+                    title: t.onlineClients,
                     icon: Icons.people_outline,
                   ),
                   ..._hub.clients.map(
@@ -521,7 +521,7 @@ class _OnlineClientTile extends StatelessWidget {
             : client.onlineStatus.name,
       ),
       trailing: isMe
-          ? Text("Me".tl, style: TextStyle(color: cs.primary, fontSize: 12))
+          ? Text(t.me, style: TextStyle(color: cs.primary, fontSize: 12))
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -532,7 +532,7 @@ class _OnlineClientTile extends StatelessWidget {
                       size: 18,
                       color: isBlocked ? cs.error : null,
                     ),
-                    tooltip: isBlocked ? "Unblock".tl : "Block".tl,
+                    tooltip: isBlocked ? t.unblock : t.block,
                     onPressed: onBlock,
                   ),
                 if (canManage && !client.isGlobalAdmin) ...[
@@ -542,13 +542,13 @@ class _OnlineClientTile extends StatelessWidget {
                       size: 18,
                       color: isMuted ? cs.error : null,
                     ),
-                    tooltip: isMuted ? "Unmute".tl : "Mute".tl,
+                    tooltip: isMuted ? t.unmute : t.mute,
                     onPressed: () => _showMuteSheet(context),
                   ),
                   if (!client.isGlobalAdmin)
                     IconButton(
                       icon: const Icon(Icons.logout, size: 18),
-                      tooltip: "Kick".tl,
+                      tooltip: t.kick,
                       onPressed: onKick,
                     ),
                 ],
@@ -560,8 +560,8 @@ class _OnlineClientTile extends StatelessWidget {
                       color: isAdmin == true ? cs.primary : null,
                     ),
                     tooltip: isAdmin == true
-                        ? "Remove Global Admin".tl
-                        : "Set Global Admin".tl,
+                        ? t.removeGlobalAdmin
+                        : t.setGlobalAdmin,
                     onPressed: onSetAdmin,
                   ),
                 if (onBlacklist != null && !client.isGlobalAdmin)
@@ -574,8 +574,8 @@ class _OnlineClientTile extends StatelessWidget {
                       color: isBlacklisted == true ? cs.error : null,
                     ),
                     tooltip: isBlacklisted == true
-                        ? "Remove from Blacklist".tl
-                        : "Add to Blacklist".tl,
+                        ? t.removeFromBlacklist
+                        : t.addToBlacklist,
                     onPressed: onBlacklist,
                   ),
               ],
@@ -634,7 +634,7 @@ class _MuteSheetState extends State<_MuteSheet> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${"Mute".tl}  ${widget.clientName}',
+                    '${t.mute}  ${widget.clientName}',
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ),
@@ -664,7 +664,7 @@ class _MuteSheetState extends State<_MuteSheet> {
                     size: 16,
                     color: cs.primary,
                   ),
-                  label: Text("Custom".tl, style: TextStyle(color: cs.primary)),
+                  label: Text(t.custom, style: TextStyle(color: cs.primary)),
                   onPressed: () => setState(() => _showCustom = !_showCustom),
                 ),
               ],
@@ -682,7 +682,7 @@ class _MuteSheetState extends State<_MuteSheet> {
                       autofocus: true,
                       decoration: InputDecoration(
                         isDense: true,
-                        hintText: "Seconds".tl,
+                        hintText: t.secondsLabel,
                         suffixText: "s",
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -700,7 +700,7 @@ class _MuteSheetState extends State<_MuteSheet> {
                       final s = int.tryParse(_controller.text);
                       if (s != null && s > 0) widget.onMute(s);
                     },
-                    child: Text("Confirm".tl),
+                    child: Text(t.confirm),
                   ),
                 ],
               ),
@@ -810,7 +810,7 @@ class _ApiKeyTileState extends State<_ApiKeyTile> {
       ? widget.keyManager.adminActiveKey
       : widget.keyManager.activeKey;
 
-  String get _label => widget.isAdmin ? "Admin Key".tl : "User Key".tl;
+  String get _label => widget.isAdmin ? t.adminKey : t.userKey;
 
   @override
   Widget build(BuildContext context) {
@@ -830,20 +830,20 @@ class _ApiKeyTileState extends State<_ApiKeyTile> {
               _obscured ? Icons.visibility_off : Icons.visibility,
               size: 18,
             ),
-            tooltip: _obscured ? "Show".tl : "Hide".tl,
+            tooltip: _obscured ? t.show : t.hide,
             onPressed: () => setState(() => _obscured = !_obscured),
           ),
           IconButton(
             icon: const Icon(Icons.copy, size: 18),
-            tooltip: "Copy".tl,
+            tooltip: t.copy,
             onPressed: () {
               Clipboard.setData(ClipboardData(text: _activeKey));
-              App.rootContext.showMessage(message: "Copied".tl);
+              App.rootContext.showMessage(message: t.copied);
             },
           ),
           IconButton(
             icon: const Icon(Icons.refresh, size: 18),
-            tooltip: "Regenerate".tl,
+            tooltip: t.regenerate,
             onPressed: widget.onRegenerate,
           ),
         ],
@@ -877,7 +877,7 @@ class _HubTokenInputState extends State<_HubTokenInput> {
         enabled: widget.enabled,
         decoration: InputDecoration(
           isDense: true,
-          hintText: 'Paste hub server token'.tl,
+          hintText: t.pasteHubServerToken,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 8,
             vertical: 8,
@@ -891,7 +891,7 @@ class _HubTokenInputState extends State<_HubTokenInput> {
                     if (widget.controller.text.isEmpty)
                       IconButton(
                         icon: const Icon(Icons.content_paste, size: 16),
-                        tooltip: "Paste".tl,
+                        tooltip: t.paste,
                         onPressed: () async {
                           final data = await Clipboard.getData(
                             Clipboard.kTextPlain,
@@ -907,7 +907,7 @@ class _HubTokenInputState extends State<_HubTokenInput> {
                     if (widget.controller.text.isNotEmpty)
                       IconButton(
                         icon: const Icon(Icons.clear, size: 16),
-                        tooltip: "Clear".tl,
+                        tooltip: t.clear,
                         onPressed: () {
                           widget.controller.clear();
                           widget.onChanged('');

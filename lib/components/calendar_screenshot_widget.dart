@@ -5,7 +5,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 class CalendarScreenshotWidget extends StatelessWidget {
   const CalendarScreenshotWidget({
@@ -17,15 +17,26 @@ class CalendarScreenshotWidget extends StatelessWidget {
   final List<List<BangumiItem>> bangumiCalendar;
   final DateTime captureTime;
 
-  static const _weekdays = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
+  String _getWeekdayTranslation(int weekdayIndex) {
+    switch (weekdayIndex) {
+      case 0:
+        return t.monday;
+      case 1:
+        return t.tuesday;
+      case 2:
+        return t.wednesday;
+      case 3:
+        return t.thursday;
+      case 4:
+        return t.friday;
+      case 5:
+        return t.saturday;
+      case 6:
+        return t.sunday;
+      default:
+        return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +61,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
               const Icon(Icons.calendar_month, size: 28),
               const SizedBox(width: 12),
               Text(
-                isToday ? 'Today'.tl : 'Timetable'.tl,
+                isToday ? t.today : t.timetable,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -98,7 +109,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
               ] else
                 _StatCard(
                   label: DateFormat('MM月dd日').format(captureTime),
-                  value: _weekdays[captureTime.weekday - 1].tl,
+                  value: _getWeekdayTranslation(captureTime.weekday - 1),
                   icon: Icons.today,
                 ),
             ],
@@ -160,7 +171,7 @@ class CalendarScreenshotWidget extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _weekdays[weekdayIndex].tl,
+                        _getWeekdayTranslation(weekdayIndex),
                         style: TextStyle(
                           color: isToday
                               ? Theme.of(context).colorScheme.onPrimaryContainer
@@ -412,7 +423,7 @@ class _ScreenshotBangumiRow extends StatelessWidget {
               itemSize: 14,
             ),
             Text(
-              '@t reviews'.tlParams({'t': bangumiItem.total}),
+              t.tReviews(t: bangumiItem.total),
               style: TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.bold,

@@ -21,6 +21,7 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
@@ -28,7 +29,6 @@ import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:word_cloud/word_cloud_data.dart';
@@ -36,9 +36,7 @@ import 'package:word_cloud/word_cloud_exporter.dart';
 import 'package:word_cloud/word_cloud_view.dart';
 
 part 'stat_item_card.dart';
-
 part 'stats_overview.dart';
-
 part 'stats_view_page.dart';
 
 class StatsCalendarPage extends ConsumerStatefulWidget {
@@ -143,7 +141,7 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Center(child: Text('统计日历'.tl, style: ts.s18)),
+                    Center(child: Text(t.statsCalendar, style: ts.s18)),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       padding: const EdgeInsets.symmetric(
@@ -331,13 +329,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                       ),
                       dowTextFormatter: (date, locale) {
                         var weekDays = [
-                          'Sunday'.tl,
-                          'Monday'.tl,
-                          'Tuesday'.tl,
-                          'Wednesday'.tl,
-                          'Thursday'.tl,
-                          'Friday'.tl,
-                          'Saturday'.tl,
+                          t.sunday,
+                          t.monday,
+                          t.tuesday,
+                          t.wednesday,
+                          t.thursday,
+                          t.friday,
+                          t.saturday,
                         ];
                         return weekDays[date.weekday % 7];
                       },
@@ -347,18 +345,18 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                       titleCentered: true,
                       titleTextFormatter: (date, locale) {
                         var months = [
-                          'January'.tl,
-                          'February'.tl,
-                          'March'.tl,
-                          'April'.tl,
-                          'May'.tl,
-                          'June'.tl,
-                          'July'.tl,
-                          'August'.tl,
-                          'September'.tl,
-                          'October'.tl,
-                          'November'.tl,
-                          'December'.tl,
+                          t.january,
+                          t.february,
+                          t.march,
+                          t.april,
+                          t.may,
+                          t.june,
+                          t.july,
+                          t.august,
+                          t.september,
+                          t.october,
+                          t.november,
+                          t.december,
                         ];
                         return '${months[date.month - 1]} ${date.year}';
                       },
@@ -484,7 +482,9 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Center(child: Text('当天的记录'.tl, style: ts.s18)),
+                                Center(
+                                  child: Text(t.todaysRecords, style: ts.s18),
+                                ),
                                 Container(
                                   margin: const EdgeInsets.symmetric(
                                     horizontal: 8,
@@ -508,7 +508,7 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                                 ),
                                 const Spacer(),
                                 IconButton(
-                                  tooltip: '天统计'.tl,
+                                  tooltip: t.dailyStats,
                                   icon: const Icon(Icons.today),
                                   onPressed: () async {
                                     showStats(
@@ -522,7 +522,7 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                                 ),
                                 if (groupedEntries.length > 9)
                                   IconButton(
-                                    tooltip: '查看全部'.tl,
+                                    tooltip: t.viewAll,
                                     icon: const Icon(
                                       Icons.format_list_bulleted,
                                     ),
@@ -778,7 +778,7 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
         desktopSuccessMessage: '已复制到剪贴板',
       );
     } catch (e) {
-      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
       Log.error('截图失败', '$e');
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();
@@ -835,7 +835,9 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
   void _showMonthStats(BuildContext context, int month) {
     final stats = _getMonthStats(month);
     if (stats.isEmpty) {
-      context.showMessage(message: '${_monthNames[month - 1]}暂无记录');
+      context.showMessage(
+        message: t.noRecordForMonth(month: _monthNames[month - 1]),
+      );
       return;
     }
     showPopUpWidget(

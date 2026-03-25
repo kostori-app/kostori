@@ -129,7 +129,7 @@ class _BodyState extends State<_Body> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text('Anime Source'.tl), style: AppbarStyle.shadow),
+        SliverAppbar(title: Text(t.animeSource), style: AppbarStyle.shadow),
         buildCard(context),
         for (var source in AnimeSource.all())
           _SliverAnimeSource(
@@ -149,8 +149,8 @@ class _BodyState extends State<_Body> {
   void delete(AnimeSource source) {
     showConfirmDialog(
       context: App.rootContext,
-      title: "Delete".tl,
-      content: "Delete anime source '@n' ?".tlParams({"n": source.name}),
+      title: t.delete,
+      content: t.deleteAnimeSourceN(n: source.name),
       btnColor: context.colorScheme.error,
       onConfirm: () {
         var file = File(source.filePath);
@@ -169,19 +169,19 @@ class _BodyState extends State<_Body> {
         await showDialog(
           context: App.rootContext,
           builder: (context) => AlertDialog(
-            title: Text("Reload Configs".tl),
+            title: Text(t.reloadConfigs),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text("Cancel".tl),
+                child: Text(t.cancel),
               ),
               TextButton(
                 onPressed: () async {
                   await AnimeSourceManager().reload();
                   App.forceRebuild();
-                  App.rootContext.showMessage(message: '加载成功');
+                  App.rootContext.showMessage(message: t.loadSuccess);
                 },
-                child: Text("Continue".tl),
+                child: Text(t.kContinue),
               ),
             ],
           ),
@@ -215,7 +215,7 @@ class _BodyState extends State<_Body> {
       _SettingCard(
         children: [
           _SettingPartTitle(
-            title: "Add anime source".tl,
+            title: t.addAnimeSource,
             icon: Icons.dashboard_customize,
           ),
           TextField(
@@ -234,9 +234,9 @@ class _BodyState extends State<_Body> {
             onSubmitted: handleAddSource,
           ).paddingHorizontal(16).paddingBottom(8),
           ListTile(
-            title: Text("Anime Source list".tl),
+            title: Text(t.animeSourceList),
             trailing: buildButton(
-              child: Text("View".tl),
+              child: Text(t.view),
               onPressed: () {
                 showPopUpWidget(
                   App.rootContext,
@@ -246,31 +246,31 @@ class _BodyState extends State<_Body> {
             ),
           ),
           ListTile(
-            title: Text("检测番剧源host延迟".tl),
+            title: Text(t.checkUpdates),
             trailing: buildButton(
-              child: Text("View".tl),
+              child: Text(t.view),
               onPressed: () {
                 showPopUpWidget(App.rootContext, _PingTestPage());
               },
             ),
           ),
           ListTile(
-            title: Text("Use a config file".tl),
+            title: Text(t.useAConfigFile),
             trailing: buildButton(
               onPressed: _selectFile,
-              child: Text("Select".tl),
+              child: Text(t.select),
             ),
           ),
           ListTile(
-            title: Text("Help".tl),
-            trailing: buildButton(onPressed: help, child: Text("Open".tl)),
+            title: Text(t.help),
+            trailing: buildButton(onPressed: help, child: Text(t.open)),
           ),
           ListTile(
-            title: Text("Check updates".tl),
+            title: Text(t.checkUpdates),
             trailing: _CheckUpdatesButton(),
           ),
           ListTile(
-            title: Text("Git Mirror".tl),
+            title: Text(t.gitMirror),
             trailing: CustomSwitch(
               value: appdata.settings["gitMirror"],
               onChanged: (value) {
@@ -382,7 +382,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         res = await dio.get<String>(appdata.settings['animeSourceListUrl']);
       }
       if (res.statusCode != 200) {
-        context.showMessage(message: "Network error".tl);
+        context.showMessage(message: t.error);
         return;
       }
       if (mounted) {
@@ -392,7 +392,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         });
       }
     } catch (e) {
-      context.showMessage(message: "Network error".tl);
+      context.showMessage(message: t.error);
       if (mounted) {
         setState(() {
           json = [];
@@ -420,14 +420,14 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: "Anime Source".tl,
+      title: t.animeSource,
       tailing: [
         IconButton(
           icon: Icon(Icons.settings),
           onPressed: () async {
             await showInputDialog(
               context: context,
-              title: "Set source list url".tl,
+              title: t.setSourceListUrl,
               initialValue: appdata.settings['animeSourceListUrl'],
               onConfirm: (value) {
                 appdata.settings['animeSourceListUrl'] = value;
@@ -467,7 +467,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
               children: [
                 ListTile(
                   leading: Icon(Icons.source_outlined),
-                  title: Text("Source URL".tl),
+                  title: Text(t.sourceUrl),
                 ),
                 TextField(
                   controller: controller,
@@ -481,10 +481,10 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
                   },
                 ).paddingHorizontal(16).paddingBottom(8),
                 Text(
-                  "The URL should point to a 'index.json' file".tl,
+                  t.theUrlShouldPointToAIndexJsonFile,
                 ).paddingLeft(16),
                 Text(
-                  "Do not report any issues related to sources to App repo.".tl,
+                  t.doNotReportAnyIssuesRelatedToSourcesToAppRepo,
                 ).paddingLeft(16),
                 const SizedBox(height: 8),
                 Row(
@@ -495,11 +495,11 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
                         controller.text = Api.kostoriConfig;
                         changed = true;
                       },
-                      child: Text("Reset".tl),
+                      child: Text(t.reset),
                     ),
                     FilledButton.tonal(
                       onPressed: load,
-                      child: Text("Refresh".tl),
+                      child: Text(t.refresh),
                     ),
                     const SizedBox(width: 16),
                   ],
@@ -520,7 +520,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
         var action = currentKey.contains(key)
             ? const Icon(Icons.check, size: 20).paddingRight(8)
             : Button.filled(
-                child: Text("Add".tl),
+                child: Text(t.add),
                 onPressed: () async {
                   var fileName = json![index]["fileName"];
                   var url = json![index]["url"];
@@ -648,7 +648,7 @@ class __EditFilePageState extends State<_EditFilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: Appbar(title: Text("Edit".tl)),
+      appBar: Appbar(title: Text(t.edit)),
       body: Column(
         children: [
           Container(height: 0.6, color: context.colorScheme.outlineVariant),
@@ -680,9 +680,9 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
     });
     var count = await AnimeSourceSettings.checkAnimeSourceUpdate();
     if (count == -1) {
-      context.showMessage(message: "Network error".tl);
+      context.showMessage(message: t.error);
     } else if (count == 0) {
-      context.showMessage(message: "No updates".tl);
+      context.showMessage(message: t.noUpdates);
     } else {
       showUpdateDialog();
     }
@@ -701,7 +701,7 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
       context: App.rootContext,
       builder: (context) {
         return ContentDialog(
-          title: "Updates".tl,
+          title: t.updatesAvailable,
           content: Text(text).paddingHorizontal(16),
           actions: [
             FilledButton(
@@ -709,7 +709,7 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
                 doUpdate = true;
                 context.pop();
               },
-              child: Text("Update".tl),
+              child: Text(t.update),
             ),
           ],
         );
@@ -718,7 +718,7 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
     if (doUpdate) {
       var loadingController = showLoadingDialog(
         context,
-        message: "Updating".tl,
+        message: t.updating,
         withProgress: true,
       );
       int current = 0;
@@ -753,7 +753,7 @@ class _CheckUpdatesButtonState extends State<_CheckUpdatesButton> {
     return Button.normal(
       onPressed: check,
       isLoading: isLoading,
-      child: Text("Check".tl),
+      child: Text(t.check),
     ).fixHeight(32);
   }
 }
@@ -821,7 +821,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        "New Version".tl,
+                        t.newVersion,
                         style: const TextStyle(fontSize: 13),
                       ),
                     ),
@@ -832,21 +832,21 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Tooltip(
-                  message: "Edit".tl,
+                  message: t.edit,
                   child: IconButton(
                     onPressed: () => widget.edit(source),
                     icon: const Icon(Icons.edit_note),
                   ),
                 ),
                 Tooltip(
-                  message: "Update".tl,
+                  message: t.update,
                   child: IconButton(
                     onPressed: () => widget.update(source),
                     icon: const Icon(Icons.update),
                   ),
                 ),
                 Tooltip(
-                  message: "Delete".tl,
+                  message: t.delete,
                   child: IconButton(
                     onPressed: () => widget.delete(source),
                     icon: const Icon(Icons.delete),
@@ -993,7 +993,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
     final bool logged = source.isLogged;
     if (!logged) {
       yield ListTile(
-        title: Text("Log in".tl),
+        title: Text(t.logIn),
         trailing: const Icon(Icons.arrow_right),
         onTap: () async {
           await context.to(
@@ -1010,7 +1010,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
           yield item.builder!(context);
         } else {
           yield ListTile(
-            title: Text(item.title.tl),
+            title: Text(item.title),
             subtitle: item.data == null ? null : Text(item.data!()),
             onTap: item.onTap,
           );
@@ -1019,11 +1019,11 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
       if (source.data["account"] is List) {
         bool loading = _reLogin[source.key] == true;
         yield ListTile(
-          title: Text("Re-login".tl),
-          subtitle: Text("Click if login expired".tl),
+          title: Text(t.reLogin),
+          subtitle: Text(t.clickIfLoginExpired),
           onTap: () async {
             if (source.data["account"] == null) {
-              context.showMessage(message: "No data".tl);
+              context.showMessage(message: t.noData);
               return;
             }
             setState(() {
@@ -1034,7 +1034,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
             if (res.error) {
               context.showMessage(message: res.errorMessage!);
             } else {
-              context.showMessage(message: "Success".tl);
+              context.showMessage(message: t.saved);
             }
             setState(() {
               _reLogin[source.key] = false;
@@ -1049,7 +1049,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
         );
       }
       yield ListTile(
-        title: Text("Log out".tl),
+        title: Text(t.logOut),
         onTap: () {
           source.data["account"] = null;
           source.account?.logout();
@@ -1093,12 +1093,12 @@ class _LoginPageState extends State<_LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text("Login".tl, style: const TextStyle(fontSize: 24)),
+                Text(t.login, style: const TextStyle(fontSize: 24)),
                 const SizedBox(height: 32),
                 if (widget.config.cookieFields == null)
                   TextField(
                     decoration: InputDecoration(
-                      labelText: "Username".tl,
+                      labelText: t.username,
                       border: const OutlineInputBorder(),
                     ),
                     enabled: widget.config.login != null,
@@ -1110,7 +1110,7 @@ class _LoginPageState extends State<_LoginPage> {
                 if (widget.config.cookieFields == null)
                   TextField(
                     decoration: InputDecoration(
-                      labelText: "Password".tl,
+                      labelText: t.password,
                       border: const OutlineInputBorder(),
                     ),
                     obscureText: true,
@@ -1140,14 +1140,14 @@ class _LoginPageState extends State<_LoginPage> {
                     children: [
                       const Icon(Icons.error_outline),
                       const SizedBox(width: 8),
-                      Text("Login with password is disabled".tl),
+                      Text(t.loginWithPasswordIsDisabled),
                     ],
                   )
                 else
                   Button.filled(
                     isLoading: loading,
                     onPressed: login,
-                    child: Text("Continue".tl),
+                    child: Text(t['continue']),
                   ),
                 const SizedBox(height: 24),
                 if (widget.config.loginWebsite != null)
@@ -1159,7 +1159,7 @@ class _LoginPageState extends State<_LoginPage> {
                         loginWithWebview();
                       }
                     },
-                    child: Text("Login with webview".tl),
+                    child: Text(t.loginWithWebview),
                   ),
                 const SizedBox(height: 8),
                 if (widget.config.registerWebsite != null)
@@ -1171,7 +1171,7 @@ class _LoginPageState extends State<_LoginPage> {
                       children: [
                         const Icon(Icons.link),
                         const SizedBox(width: 8),
-                        Text("Create Account".tl),
+                        Text(t.createAccount),
                       ],
                     ),
                   ),
@@ -1187,7 +1187,7 @@ class _LoginPageState extends State<_LoginPage> {
     if (widget.config.login != null) {
       if (username.isEmpty || password.isEmpty) {
         ToastManager.show(
-          message: "Cannot be empty".tl,
+          message: t.cannotBeEmpty,
           icon: const Icon(Icons.error_outline),
           context: context,
         );
@@ -1221,7 +1221,7 @@ class _LoginPageState extends State<_LoginPage> {
           widget.source.saveData();
           context.pop();
         } else {
-          context.showMessage(message: "Invalid cookies".tl);
+          context.showMessage(message: t.invalidCookies);
           setState(() {
             loading = false;
           });
@@ -1282,7 +1282,7 @@ class _LoginPageState extends State<_LoginPage> {
   // for linux
   void loginWithWebview2() async {
     if (!await DesktopWebview.isAvailable()) {
-      context.showMessage(message: "Webview is not available".tl);
+      context.showMessage(message: t.webviewIsNotAvailable);
     }
 
     var url = widget.config.loginWebsite!;
@@ -1370,7 +1370,7 @@ class _PingTestPageState extends State<_PingTestPage> {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
     if (customControllers.any((c) => c.text == text)) {
-      context.showMessage(message: '地址已存在');
+      context.showMessage(message: t.addressAlreadyExists);
       return;
     }
     setState(() {
@@ -1500,7 +1500,7 @@ class _PingTestPageState extends State<_PingTestPage> {
 
   Future<void> _runAllTests() async {
     if (_activeEndpoints.isEmpty) {
-      context.showMessage(message: '请先开启至少一个地址');
+      context.showMessage(message: t.pleaseEnableAtLeastOneAddress);
       return;
     }
     setState(() => testing = true);
@@ -1512,7 +1512,7 @@ class _PingTestPageState extends State<_PingTestPage> {
 
   void _startContinuousPing() {
     if (_activeEndpoints.isEmpty) {
-      context.showMessage(message: '请先开启至少一个地址');
+      context.showMessage(message: t.pleaseEnableAtLeastOneAddress);
       return;
     }
     setState(() => continuousPing = true);
@@ -1532,7 +1532,7 @@ class _PingTestPageState extends State<_PingTestPage> {
   @override
   Widget build(BuildContext context) {
     return PopUpWidgetScaffold(
-      title: 'Ping Test'.tl,
+      title: t.pingTest,
       body: ListView(
         children: [
           // 自定义输入区域
@@ -1550,7 +1550,7 @@ class _PingTestPageState extends State<_PingTestPage> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.network_ping),
-                  title: Text('Custom Endpoint'.tl),
+                  title: Text(t.customEndpoint),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -1586,8 +1586,8 @@ class _PingTestPageState extends State<_PingTestPage> {
                             : null,
                       ),
                       tooltip: continuousPing
-                          ? 'Stop'.tl
-                          : 'Continuous Ping'.tl,
+                          ? t.close
+                          : t.continuousPing,
                       onPressed: testing
                           ? null
                           : continuousPing
@@ -1598,7 +1598,7 @@ class _PingTestPageState extends State<_PingTestPage> {
                       onPressed: (testing || continuousPing)
                           ? null
                           : _runAllTests,
-                      child: Text('Test All'.tl),
+                      child: Text(t.testAll),
                     ),
                     const SizedBox(width: 16),
                   ],
@@ -1613,7 +1613,7 @@ class _PingTestPageState extends State<_PingTestPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Text(
-                'Custom'.tl,
+                t.custom,
                 style: TextStyle(
                   fontSize: 12,
                   color: Theme.of(context).colorScheme.outline,
@@ -1663,7 +1663,7 @@ class _PingTestPageState extends State<_PingTestPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
-              'Sources'.tl,
+              t.sources,
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(context).colorScheme.outline,

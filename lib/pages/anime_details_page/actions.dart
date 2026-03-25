@@ -115,7 +115,7 @@ abstract mixin class _AnimePageActions {
     LocalFavoritesManager().addAnime(folder, _toFavoriteItem());
     isAddToLocalFav = true;
     update();
-    App.rootContext.showMessage(message: "Added".tl);
+    App.rootContext.showMessage(message: t.added);
   }
 
   Future<void> bangumiBottomInfo(BuildContext context) async {
@@ -345,10 +345,10 @@ abstract mixin class _AnimePageActions {
                                           itemSize: 20.0,
                                         ),
                                         Text(
-                                          '@t reviews | #@r'.tlParams({
-                                            'r': item.rank,
-                                            't': item.total,
-                                          }),
+                                          t.tReviewsR(
+                                            r: item.rank,
+                                            t: item.total,
+                                          ),
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ],
@@ -377,7 +377,7 @@ abstract mixin class _AnimePageActions {
       context: context,
       builder: (context) {
         return ContentDialog(
-          title: 'Determine the binding: @a ?'.tlParams({"a": item.name}),
+          title: t.determineTheBindingA(a: item.name),
           content: Text(item.airDate),
           actions: [
             TextButton(
@@ -401,10 +401,10 @@ abstract mixin class _AnimePageActions {
                 } catch (e) {
                   Log.error("绑定bangumiId", "$e");
                 }
-                App.rootContext.showMessage(message: '绑定bangumiId成功');
+                App.rootContext.showMessage(message: t.bindBangumiIdSuccess);
                 Navigator.pop(context);
               },
-              child: Text('OK'.tl),
+              child: Text(t.ok),
             ),
           ],
         );
@@ -613,12 +613,12 @@ class _RatingDialogState extends State<RatingDialog> {
 
       if (targetStats.commentRecord.comment != newComment ||
           targetStats.ratingRecord.rating != newRating) {
-        App.rootContext.showMessage(message: '应用成功');
+        App.rootContext.showMessage(message: t.applySuccess);
       } else {
-        App.rootContext.showMessage(message: '无改动');
+        App.rootContext.showMessage(message: t.noChanges);
       }
     } catch (e, s) {
-      App.rootContext.showMessage(message: '应用失败', level: LogLevel.error);
+      App.rootContext.showMessage(message: t.applyFailed, level: LogLevel.error);
       Log.error('save statsDataImpl', '$e \n $s');
     } finally {
       Navigator.pop(context);
@@ -637,7 +637,7 @@ class _RatingDialogState extends State<RatingDialog> {
       return const Center(child: CircularProgressIndicator());
     }
     return ContentDialog(
-      title: "Rating".tl,
+      title: t.rating,
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
@@ -697,7 +697,7 @@ class _RatingDialogState extends State<RatingDialog> {
                                 _commentController.text;
                           }),
                           decoration: InputDecoration(
-                            hintText: '写下你的评价...'.tl,
+                            hintText: t.writeYourReview,
                             border: const OutlineInputBorder(),
                           ),
                         ),
@@ -709,9 +709,9 @@ class _RatingDialogState extends State<RatingDialog> {
                     alignment: Alignment.centerLeft,
                     child: Row(
                       children: [
-                        Text(_showingDraft ? '草稿'.tl : '正文'.tl),
+                        Text(_showingDraft ? t.draft : t.content),
                         const SizedBox(width: 4),
-                        Text("${_commentController.text.length} 字".tl),
+                        Text('${_commentController.text.length} ${t.characters}'),
                       ],
                     ),
                   ),
@@ -722,9 +722,9 @@ class _RatingDialogState extends State<RatingDialog> {
         ),
       ),
       actions: [
-        ElevatedButton(onPressed: _toggleDraftSaved, child: Text('切换'.tl)),
+        ElevatedButton(onPressed: _toggleDraftSaved, child: Text(t.toggle)),
         const SizedBox(width: 8),
-        ElevatedButton(onPressed: _updateStats, child: Text('Update'.tl)),
+        ElevatedButton(onPressed: _updateStats, child: Text(t.update)),
       ],
     );
   }
@@ -779,7 +779,7 @@ class _BangumiSearchSheetState extends ConsumerState<_BangumiSearchSheet> {
           fps: 120,
           autostart: Autostart.once,
         ),
-        message: '未找到相关结果，请尝试其他关键字',
+        message: t.noResultsTryOtherKeywords,
         context: context,
       );
     }
@@ -811,7 +811,7 @@ class _BangumiSearchSheetState extends ConsumerState<_BangumiSearchSheet> {
                 style: const TextStyle(fontSize: 16),
                 decoration: InputDecoration(
                   labelText: widget.initialQuery,
-                  hintText: 'Enter keywords...'.tl,
+                  hintText: t.enterKeywords,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16.0),
                     borderSide: BorderSide.none,

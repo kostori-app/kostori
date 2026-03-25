@@ -12,30 +12,30 @@ class _PlayerSettingsState extends State<PlayerSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("Player".tl)),
+        SliverAppbar(title: Text(t.player)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
             child: _SettingCard(
               children: [
                 _SettingPartTitle(
-                  title: "Player".tl,
+                  title: t.player,
                   icon: Icons.radio_button_unchecked_outlined,
                 ),
                 _SwitchSetting(
-                  title: "Audio Option".tl,
+                  title: t.audioOption,
                   settingKey: "audioOutType",
                 ),
                 _SwitchSetting(
-                  title: "Hardware Decoding".tl,
+                  title: t.hardwareDecoding,
                   settingKey: "hAenable",
                 ),
                 _CallbackSetting(
-                  title: "Hardware decoder".tl,
-                  actionTitle: 'Set'.tl,
+                  title: t.hardwareDecoder,
+                  actionTitle: t.set,
                   callback: () async {
                     showSelection(
-                      title: "Hardware decoder".tl,
+                      title: t.hardwareDecoder,
                       options: hardwareDecodersList,
                       currentValue: appdata.settings['hardwareDecoder'],
                       onChanged: (result) {
@@ -46,11 +46,11 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   },
                 ),
                 _CallbackSetting(
-                  title: "Video renderer".tl,
-                  actionTitle: 'Set'.tl,
+                  title: t.videoRenderer,
+                  actionTitle: t.set,
                   callback: () async {
                     showSelection(
-                      title: "Video renderer".tl,
+                      title: t.videoRenderer,
                       options: androidVideoRenderersList,
                       currentValue: appdata.settings['androidVideoRenderer'],
                       onChanged: (result) {
@@ -61,11 +61,11 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                   },
                 ),
                 _CallbackSetting(
-                  title: "Video synchronization mode".tl,
-                  actionTitle: 'Set'.tl,
+                  title: t.videoSynchronizationMode,
+                  actionTitle: t.set,
                   callback: () async {
                     showSelection(
-                      title: "Video synchronization mode".tl,
+                      title: t.videoSynchronizationMode,
                       options: videoSynchronizationModeList,
                       currentValue:
                           appdata.settings['videoSynchronizationMode'],

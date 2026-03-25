@@ -11,8 +11,8 @@ import 'package:kostori/foundation/res.dart';
 import 'package:kostori/foundation/translation/sort.dart';
 import 'package:kostori/foundation/translation/translation_models.dart';
 import 'package:kostori/foundation/translation/translation_source.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
-import 'package:kostori/utils/translations.dart';
 
 class TranslationService {
   static final TranslationService _instance = TranslationService._internal();
@@ -422,7 +422,7 @@ class TranslationController extends ChangeNotifier {
     } else {
       Log.error('TranslationController', '翻译失败: ${result.errorMessage}');
       _setState(() {
-        _rawTranslatedText = 'translate failed please try again later'.tl;
+        _rawTranslatedText = t.translationFailedPleaseTryAgainLater;
         _translatedText = _rawTranslatedText;
         _isTranslating = false;
         _isTranslationComplete = true;

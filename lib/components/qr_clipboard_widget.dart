@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,6 @@ import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/pages/qr_scanner_page.dart';
 import 'package:kostori/utils/clipboard_provider.dart';
 import 'package:kostori/utils/protocol_parser.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:zxing2/qrcode.dart';
 
 final clipboardNotifierProvider = ChangeNotifierProvider<ClipboardProvider>(
@@ -48,7 +48,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         // payload 格式：{id}|{sourceKey}
         final parts = parsed.payload.split('|');
         if (parts.length < 2) {
-          App.rootContext.showMessage(message: '链接格式错误，无法解析番剧信息');
+          App.rootContext.showMessage(message: t.linkFormatErrorCannotParseAnimeInfo);
           return;
         }
         final animeId = parts[0];
@@ -56,7 +56,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
 
         final validKeys = AnimeSource.all().map((s) => s.key).toSet();
         if (!validKeys.contains(sourceKey)) {
-          App.rootContext.showMessage(message: '未找到番剧源「$sourceKey」，请确认已安装该源');
+          App.rootContext.showMessage(message: t.sourceNotFoundPleaseConfirmSourceInstalled);
           return;
         }
 
@@ -64,61 +64,61 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
       } else if (parsed.type == KostoriRouteType.bangumi) {
         final id = int.tryParse(parsed.payload);
         if (id == null) {
-          App.rootContext.showMessage(message: '链接格式错误，无法解析 Bangumi ID');
+          App.rootContext.showMessage(message: t.linkFormatErrorCannotParseBangumiId);
           return;
         }
 
-        App.rootContext.showMessage(message: '正在获取 Bangumi 信息...');
+        App.rootContext.showMessage(message: t.fetchingBangumiInfo);
 
         try {
           final item = await Bangumi.instance.getBangumiInfoByID(id);
           if (item == null) {
-            App.rootContext.showMessage(message: '未找到 Bangumi 条目（id=$id）');
+            App.rootContext.showMessage(message: t.bangumiEntryNotFound);
             return;
           }
           if (!mounted) return;
           context.to(() => BangumiInfoPage(bangumiItem: item));
         } catch (e) {
-          App.rootContext.showMessage(message: '获取 Bangumi 信息失败：$e');
+          App.rootContext.showMessage(message: t.failedToFetchBangumiInfo);
         }
       } else if (parsed.type == KostoriRouteType.character) {
         final id = int.tryParse(parsed.payload);
         if (id == null) {
-          App.rootContext.showMessage(message: '链接格式错误，无法解析角色 ID');
+          App.rootContext.showMessage(message: t.linkFormatErrorCannotParseCharacterId);
           return;
         }
-        App.rootContext.showMessage(message: '正在验证角色信息...');
+        App.rootContext.showMessage(message: t.verifyingCharacterInfo);
         try {
           final result = await Bangumi.instance.getCharacterByCharacterID(id);
           if (result.id == 0) {
-            App.rootContext.showMessage(message: '未找到角色（id=$id）');
+            App.rootContext.showMessage(message: t.characterNotFound);
             return;
           }
           if (!mounted) return;
           BangumiWidget.showBottomPage(context, CharacterPage(characterID: id));
         } catch (e) {
-          App.rootContext.showMessage(message: '获取角色信息失败：$e');
+          App.rootContext.showMessage(message: t.failedToFetchCharacterInfo);
         }
       } else if (parsed.type == KostoriRouteType.person) {
         final id = int.tryParse(parsed.payload);
         if (id == null) {
-          App.rootContext.showMessage(message: '链接格式错误，无法解析人物 ID');
+          App.rootContext.showMessage(message: t.linkFormatErrorCannotParsePersonId);
           return;
         }
-        App.rootContext.showMessage(message: '正在验证人物信息...');
+        App.rootContext.showMessage(message: t.verifyingPersonInfo);
         try {
           final result = await Bangumi.instance.getPersonByPersonID(id);
           if (result.id == 0) {
-            App.rootContext.showMessage(message: '未找到人物（id=$id）');
+            App.rootContext.showMessage(message: t.personNotFound);
             return;
           }
           if (!mounted) return;
           BangumiWidget.showBottomPage(context, PersonPage(personID: id));
         } catch (e) {
-          App.rootContext.showMessage(message: '获取人物信息失败：$e');
+          App.rootContext.showMessage(message: t.failedToFetchPersonInfo);
         }
       } else {
-        App.rootContext.showMessage(message: '无法识别的链接：${parsed.rawInput}');
+        App.rootContext.showMessage(message: t.unrecognizedLink);
       }
     } finally {
       _isNavigating = false;
@@ -132,7 +132,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
     if (!mounted) return;
 
     if (cp.parsed == null) {
-      App.rootContext.showMessage(message: '剪贴板中未发现 Kostori 链接');
+      App.rootContext.showMessage(message: t.noKostoriLinkFoundInClipboard);
     }
   }
 
@@ -164,7 +164,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
 
   Future<void> _scanWithCamera(BuildContext context) async {
     if (!App.isMobile) {
-      App.rootContext.showMessage(message: '扫码功能仅支持移动端');
+      App.rootContext.showMessage(message: t.qrCodeFeatureOnlyOnMobile);
       return;
     }
     final result = await QrScannerPage.push(context);
@@ -177,7 +177,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
     if (parsed != null) {
       _showFoundDialog(context, parsed);
     } else {
-      App.rootContext.showMessage(message: '未识别到 Kostori 协议：$raw');
+      App.rootContext.showMessage(message: t.unrecognizedKostoriProtocol);
     }
   }
 
@@ -211,7 +211,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
             ref.read(clipboardNotifierProvider).consume();
             await _navigate(context, parsed);
           },
-          child: Text('前往'.tl),
+          child: Text(t.go),
         ),
       ],
     );
@@ -226,7 +226,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
 
     final ext = file.name.split('.').last.toLowerCase();
     if (!['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(ext)) {
-      App.rootContext.showMessage(message: '请拖入图片文件');
+      App.rootContext.showMessage(message: t.pleaseDragImageFile);
       return;
     }
 
@@ -249,12 +249,12 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         options: Options(method: 'GET', responseType: ResponseType.bytes),
       );
       if (response.data == null) {
-        App.rootContext.showMessage(message: '图片下载失败');
+        App.rootContext.showMessage(message: t.imageDownloadFailed);
         return;
       }
       await _decodeQrFromBytes(context, response.data!);
     } catch (e) {
-      App.rootContext.showMessage(message: '网络图片获取失败：$e');
+      App.rootContext.showMessage(message: t.failedToFetchNetworkImage);
     } finally {
       if (mounted) setState(() => _isAnalyzing = false);
     }
@@ -269,7 +269,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
       format: ui.ImageByteFormat.rawRgba,
     );
     if (byteData == null) {
-      App.rootContext.showMessage(message: '图片解码失败');
+      App.rootContext.showMessage(message: t.imageDecodeFailed);
       return;
     }
 
@@ -285,7 +285,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
       if (!mounted) return;
       _handleRaw(result.text);
     } catch (_) {
-      App.rootContext.showMessage(message: '未在图片中识别到二维码');
+      App.rootContext.showMessage(message: t.noQrCodeFoundInImage);
     }
   }
 
@@ -336,7 +336,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
                   children: [
                     Icon(Icons.qr_code_scanner, color: cs.primary, size: 20),
                     const SizedBox(width: 8),
-                    Text('QR & Clipboard'.tl, style: ts.s16),
+                    Text(t.qrAndClipboard, style: ts.s16),
                     const Spacer(),
                     if (busy)
                       SizedBox(
@@ -361,7 +361,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
                   children: [
                     _ActionTile(
                       icon: Icons.content_paste_search_outlined,
-                      label: '剪贴板'.tl,
+                      label: t.clipboard,
                       onTap: busy
                           ? null
                           : () {
@@ -371,7 +371,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
                     const SizedBox(width: 8),
                     _ActionTile(
                       icon: Icons.photo_library_outlined,
-                      label: '相册识别'.tl,
+                      label: t.recognizeFromGallery,
                       onTap: () {
                         _pickFromGallery(context);
                       },
@@ -380,7 +380,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
                       const SizedBox(width: 8),
                       _ActionTile(
                         icon: Icons.camera_alt_outlined,
-                        label: '扫码'.tl,
+                        label: t.scanQrCode,
                         onTap: (busy || !App.isMobile)
                             ? null
                             : () {
@@ -458,7 +458,7 @@ class _HintRow extends StatelessWidget {
           const SizedBox(width: 4),
           Expanded(
             child: Text(
-              '分享方式：在番剧/Bangumi 页面点击分享 → 生成口令或二维码'.tl,
+              t.shareMethodDescription,
               style: ts.s12.copyWith(color: cs.outline),
               maxLines: 2,
             ),

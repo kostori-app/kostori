@@ -5,6 +5,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/protocol_parser.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:zxing2/qrcode.dart' hide BarcodeFormat;
@@ -116,7 +117,7 @@ class _QrScannerPageState extends State<QrScannerPage>
         format: ui.ImageByteFormat.rawRgba,
       );
       if (byteData == null) {
-        App.rootContext.showMessage(message: '图片解码失败');
+        App.rootContext.showMessage(message: t.imageDecodeFailed);
         return;
       }
 
@@ -132,7 +133,7 @@ class _QrScannerPageState extends State<QrScannerPage>
         if (!mounted) return;
         _returnResult(result.text);
       } catch (_) {
-        App.rootContext.showMessage(message: '未在图片中识别到二维码');
+        App.rootContext.showMessage(message: t.noQrCodeFoundInImage);
       }
     } finally {
       if (mounted) setState(() => _isAnalyzing = false);

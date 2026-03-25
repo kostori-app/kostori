@@ -14,7 +14,7 @@ import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:mobx/mobx.dart';
 
@@ -32,12 +32,12 @@ abstract class _InfoController with Store {
   EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
 
   final List<String> tabs = <String>[
-    'Overview'.tl,
-    'Comments'.tl,
-    'Topics'.tl,
-    'Log'.tl,
-    'Characters'.tl,
-    'StaffList'.tl,
+    t.overview,
+    t.comments,
+    t.topics,
+    t.log,
+    t.characters,
+    t.staffList,
   ];
 
   List<History> bangumiHistory = [];

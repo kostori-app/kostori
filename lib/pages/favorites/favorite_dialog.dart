@@ -87,7 +87,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
     }
 
     return ContentDialog(
-      title: "Favorite".tl,
+      title: t.favorite,
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
         child: Column(
@@ -96,18 +96,18 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
             Expanded(child: buildLocalContent()),
             const Divider(height: 1),
             // 添加操作统计信息
-            if (selectedLocalFolders.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  "@a to add • @b to remove • @c to move".tlParams({
-                    "a": foldersToAdd,
-                    "b": foldersToRemove,
-                    "c": foldersToMove,
-                  }),
-                  style: Theme.of(context).textTheme.bodySmall,
+              if (selectedLocalFolders.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    t.aToAddBToRemoveCToMove(
+                      a: foldersToAdd.toString(),
+                      b: foldersToRemove.toString(),
+                      c: foldersToMove.toString(),
+                    ),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ),
-              ),
           ],
         ),
       ),
@@ -180,7 +180,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                         color: Theme.of(context).colorScheme.primary,
                         autostart: Autostart.once,
                       ),
-                      message: '操作成功',
+                      message: t.operationSuccess,
                       context: context,
                     );
                   }
@@ -188,7 +188,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     Navigator.of(context).pop(hasChanged);
                   }
                 },
-          child: Text('OK'.tl),
+          child: Text(t.ok),
         ),
       ],
     );
@@ -225,7 +225,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
           },
           title: Row(
             children: [
-              Text(folder.tl),
+              Text(folder),
               const SizedBox(width: 8),
               if (isAdded)
                 Container(
@@ -238,7 +238,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Added".tl,
+                    t.added,
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                 ),
@@ -278,7 +278,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
             children: [
               const Icon(Icons.add, size: 20),
               const SizedBox(width: 4),
-              Text("New Folder".tl),
+              Text(t.newFolder),
             ],
           ),
         ),

@@ -16,6 +16,7 @@ import 'package:gif/gif.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/utils/ext.dart';
@@ -529,14 +530,17 @@ class ImageSaver {
     try {
       final file = await writeFile(bytes: bytes, filename: filename);
       if (file == null) return;
-      showResult(success: true, message: '保存成功');
+      showResult(success: true, message: t.saveSuccess);
       if (App.isAndroid) {
         const platform = MethodChannel('kostori/media');
         await platform.invokeMethod('scanFolder', {'path': file.parent.path});
       }
       Log.info('保存文件成功', file.path);
     } catch (e) {
-      showResult(success: false, message: '保存失败: $e');
+      showResult(
+        success: false,
+        message: t.saveFailedWithError(e: e.toString()),
+      );
       Log.error('保存失败', '$e');
     } finally {
       await ref?.read(imagesProvider.notifier).loadImages();
@@ -562,7 +566,10 @@ class ImageSaver {
         Log.error('保存失败：权限或目录异常', '');
       }
     } catch (e, s) {
-      showResult(success: false, message: '保存失败: $e');
+      showResult(
+        success: false,
+        message: t.saveFailedWithError(e: e.toString()),
+      );
       Log.error('saveImageToGallery', '$e\n$s');
     }
   }

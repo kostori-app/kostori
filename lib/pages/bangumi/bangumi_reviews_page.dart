@@ -9,8 +9,8 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/bangumi.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -218,7 +218,7 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                               const SizedBox(height: 16),
                               if (bangumiReviewsSubjects.isNotEmpty) ...[
                                 Text(
-                                  'Linked Items'.tl,
+                                  t.linkedItems,
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,

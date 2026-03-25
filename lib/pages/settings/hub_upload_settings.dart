@@ -65,26 +65,26 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
           !uri.hasScheme ||
           uri.host.isEmpty ||
           (uri.scheme != 'http' && uri.scheme != 'https')) {
-        _err('Endpoint must be a valid http(s) URL'.tl);
+        _err(t.endpointMustBeAValidUrl);
         return;
       }
       if (_bucketCtrl.text.trim().isEmpty) {
-        _err('Bucket cannot be empty'.tl);
+        _err(t.bucketCannotBeEmpty);
         return;
       }
       if (_keyIdCtrl.text.trim().isEmpty) {
-        _err('Access Key ID cannot be empty'.tl);
+        _err(t.accessKeyIdCannotBeEmpty);
         return;
       }
       if (_secretCtrl.text.trim().isEmpty) {
-        _err('Access Key Secret cannot be empty'.tl);
+        _err(t.accessKeySecretCannotBeEmpty);
         return;
       }
       final cdn = _cdnCtrl.text.trim();
       if (cdn.isNotEmpty) {
         final cu = Uri.tryParse(cdn);
         if (cu == null || !cu.hasScheme || cu.host.isEmpty) {
-          _err('CDN Domain must be a valid URL'.tl);
+          _err(t.cdnDomainMustBeAValidUrl);
           return;
         }
       }
@@ -92,7 +92,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
 
     final maxMb = int.tryParse(_maxSizeCtrl.text.trim());
     if (maxMb == null || maxMb < 1 || maxMb > 100) {
-      _err('Max size must be 1–100 MB'.tl);
+      _err(t.maxSizeMustBe1to100Mb);
       return;
     }
 
@@ -119,7 +119,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
 
     widget.hub.uploadConfig = newCfg;
     setState(() => _cfg = newCfg);
-    App.rootContext.showMessage(message: 'Saved'.tl);
+    App.rootContext.showMessage(message: t.saved);
   }
 
   @override
@@ -132,7 +132,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SettingPartTitle(
-          title: 'Image Upload'.tl,
+          title: t.imageUpload,
           icon: Icons.cloud_upload_outlined,
         ),
 
@@ -149,7 +149,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  'Stop the server to change upload mode'.tl,
+                  t.stopTheServerToChangeUploadMode,
                   style: TextStyle(
                     fontSize: 11,
                     color: cs.onSurface.toOpacity(0.4),
@@ -170,17 +170,17 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
                 segments: [
                   ButtonSegment(
                     value: HubUploadMode.serverLocal,
-                    label: Text('Local'.tl),
+                    label: Text(t.local),
                     icon: const Icon(Icons.storage_outlined, size: 15),
                   ),
                   ButtonSegment(
                     value: HubUploadMode.serverOss,
-                    label: Text('Server OSS'.tl),
+                    label: Text(t.serverOss),
                     icon: const Icon(Icons.cloud_outlined, size: 15),
                   ),
                   ButtonSegment(
                     value: HubUploadMode.clientOss,
-                    label: Text('Client OSS'.tl),
+                    label: Text(t.clientOss),
                     icon: const Icon(Icons.upload_outlined, size: 15),
                   ),
                 ],
@@ -202,13 +202,11 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
           child: Text(
             switch (_cfg.mode) {
               HubUploadMode.serverLocal =>
-                'Images stored on server disk, served via /hub/files/'.tl,
+                t.imagesStoredOnServerDisk,
               HubUploadMode.serverOss =>
-                'Server receives and proxies image to OSS. Keys stay on server.'
-                    .tl,
+                t.serverReceivesAndProxiesImageToOss,
               HubUploadMode.clientOss =>
-                'Client uploads directly to OSS. Server only gets the final URL.'
-                    .tl,
+                t.clientUploadsDirectlyToOss,
             },
             style: TextStyle(
               fontSize: 11,
@@ -220,8 +218,8 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
 
         if (_cfg.mode != HubUploadMode.clientOss)
           _SettingRow(
-            title: 'Max Size (MB)'.tl,
-            subtitle: 'Default: @p'.tlParams({'p': '5'}),
+            title: t.maxSizeMb,
+            subtitle: 'Default: 5',
             trailing: _NumberInput(
               controller: _maxSizeCtrl,
               enabled: true,
@@ -231,8 +229,8 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
 
         if (_cfg.mode == HubUploadMode.serverLocal)
           _SettingRow(
-            title: 'Store Path'.tl,
-            subtitle: 'Leave empty for default'.tl,
+            title: t.storePath,
+            subtitle: t.leaveEmptyForDefault,
             trailing: _HubTextField(
               controller: _localPathCtrl,
               hint: '/data/hub_uploads',
@@ -253,7 +251,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
 
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: FilledButton.tonal(onPressed: _save, child: Text('Save'.tl)),
+          child: FilledButton.tonal(onPressed: _save, child: Text(t.save)),
         ),
       ],
     );
@@ -342,26 +340,26 @@ class _ClientUploadConfigSettingState
         !uri.hasScheme ||
         uri.host.isEmpty ||
         (uri.scheme != 'http' && uri.scheme != 'https')) {
-      _err('Endpoint must be a valid http(s) URL'.tl);
+      _err(t.endpointMustBeAValidUrl);
       return;
     }
     if (_bucketCtrl.text.trim().isEmpty) {
-      _err('Bucket cannot be empty'.tl);
+      _err(t.bucketCannotBeEmpty);
       return;
     }
     if (_keyIdCtrl.text.trim().isEmpty) {
-      _err('Access Key ID cannot be empty'.tl);
+      _err(t.accessKeyIdCannotBeEmpty);
       return;
     }
     if (_secretCtrl.text.trim().isEmpty) {
-      _err('Access Key Secret cannot be empty'.tl);
+      _err(t.accessKeySecretCannotBeEmpty);
       return;
     }
     final cdn = _cdnCtrl.text.trim();
     if (cdn.isNotEmpty) {
       final cu = Uri.tryParse(cdn);
       if (cu == null || !cu.hasScheme || cu.host.isEmpty) {
-        _err('CDN Domain must be a valid URL'.tl);
+        _err(t.cdnDomainMustBeAValidUrl);
         return;
       }
     }
@@ -380,7 +378,7 @@ class _ClientUploadConfigSettingState
     appdata.implicitData[_cfgKey] = newCfg.toJson();
     appdata.writeImplicitData();
     setState(() => _cfg = newCfg);
-    App.rootContext.showMessage(message: 'Saved'.tl);
+    App.rootContext.showMessage(message: t.saved);
   }
 
   void _clear() {
@@ -395,7 +393,7 @@ class _ClientUploadConfigSettingState
       _secretCtrl.clear();
       _cdnCtrl.clear();
     });
-    App.rootContext.showMessage(message: 'Cleared'.tl);
+    App.rootContext.showMessage(message: t.cleared);
   }
 
   @override
@@ -407,14 +405,14 @@ class _ClientUploadConfigSettingState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SettingPartTitle(
-          title: 'Client Image Upload'.tl,
+          title: t.clientImageUpload,
           icon: Icons.cloud_upload_outlined,
         ),
 
         // ── 总开关 ────────────────────────────────────────────────────────
         _SettingRow(
-          title: 'Enable Client OSS'.tl,
-          subtitle: 'Upload images directly from client to OSS'.tl,
+          title: t.enableClientOss,
+          subtitle: t.uploadImagesDirectlyFromClientToOss,
           trailing: CustomSwitch(value: _enabled, onChanged: _setEnabled),
         ),
 
@@ -442,7 +440,7 @@ class _ClientUploadConfigSettingState
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        hasOss ? _cfg.ossConfig!.host : 'OSS not configured'.tl,
+                        hasOss ? _cfg.ossConfig!.host : t.ossNotConfigured,
                         style: TextStyle(
                           fontSize: 12,
                           color: hasOss
@@ -469,14 +467,14 @@ class _ClientUploadConfigSettingState
                   children: [
                     FilledButton.tonal(
                       onPressed: _save,
-                      child: Text('Save'.tl),
+                      child: Text(t.save),
                     ),
                     if (hasOss) ...[
                       const SizedBox(width: 10),
                       TextButton(
                         onPressed: _clear,
                         child: Text(
-                          'Clear'.tl,
+                          t.clear,
                           style: TextStyle(color: cs.error),
                         ),
                       ),

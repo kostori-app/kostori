@@ -16,20 +16,21 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/database/favorites.dart';
+import 'package:kostori/database/history.dart';
+import 'package:kostori/database/search_history.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/app_page_route.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
-import 'package:kostori/database/favorites.dart';
-import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/image_loader/history_image_provider.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/database/search_history.dart';
-import 'package:kostori/database/stats.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/cloudflare.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
@@ -37,9 +38,8 @@ import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.da
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/protocol_parser.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:marquee/marquee.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:pretty_qr_code/pretty_qr_code.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:syntax_highlight/syntax_highlight.dart';
 
@@ -77,6 +77,6 @@ part 'scroll.dart';
 
 part 'select.dart';
 
-part 'side_bar.dart';
-
 part 'sheet.dart';
+
+part 'side_bar.dart';

@@ -112,7 +112,7 @@ class AnimeTile extends ConsumerWidget {
       if (!LocalFavoritesManager().isExist(anime.id, _animeType)) {
         defaultFavorite(anime);
         ref.read(favoritesVersion.notifier).state++;
-        App.rootContext.showMessage(message: '收藏成功');
+        App.rootContext.showMessage(message: t.addToFavoritesSuccess);
       } else {
         var renderBox = context.findRenderObject() as RenderBox;
         var size = renderBox.size;
@@ -143,15 +143,15 @@ class AnimeTile extends ConsumerWidget {
     showMenuX(App.rootContext, location, [
       MenuEntry(
         icon: Icons.copy,
-        text: 'Copy Title'.tl,
+        text: t.copyTitle,
         onClick: () {
           Clipboard.setData(ClipboardData(text: anime.title));
-          App.rootContext.showMessage(message: 'Title copied'.tl);
+          App.rootContext.showMessage(message: t.titleCopied);
         },
       ),
       MenuEntry(
         icon: Icons.stars_outlined,
-        text: 'Add to favorites'.tl,
+        text: t.addToFavorites,
         onClick: () {
           addFavorite(anime);
           ref.read(favoritesVersion.notifier).state++;
@@ -545,7 +545,7 @@ class AnimeTile extends ConsumerWidget {
         return StatefulBuilder(
           builder: (context, setState) {
             return ContentDialog(
-              title: 'Block'.tl,
+              title: t.block,
               content: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxHeight: math.min(400, context.height - 136),
@@ -581,12 +581,12 @@ class AnimeTile extends ConsumerWidget {
                       appdata.settings['blockedWords'].add(word);
                     }
                     appdata.saveData();
-                    context.showMessage(message: 'Blocked'.tl);
+                    context.showMessage(message: t.blocked);
                     animeTileContext
                         .findAncestorStateOfType<_SliverGridAnimesState>()!
                         .update();
                   },
-                  child: Text('Block'.tl),
+                  child: Text(t.block),
                 ),
               ],
             );

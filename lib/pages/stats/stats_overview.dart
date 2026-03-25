@@ -51,7 +51,7 @@ class _StatsOverviewScreenState extends ConsumerState<StatsOverviewScreen> {
       final filename = 'stats_${DateTime.now().millisecondsSinceEpoch}.png';
       await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
     } catch (e) {
-      ImageSaver.showResult(success: false, message: '截图失败: $e');
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
       Log.error('截图失败', '$e');
     } finally {
       await ref.read(imagesProvider.notifier).loadImages();

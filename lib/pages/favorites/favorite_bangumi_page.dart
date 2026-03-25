@@ -80,7 +80,7 @@ class _FavoriteBangumiPageState extends State<FavoriteBangumiPage> {
               ? AppbarStyle.shadow
               : AppbarStyle.blur,
           leading: Tooltip(
-            message: "Folders".tl,
+            message: t.folders,
             child: context.width <= _kTwoPanelChangeWidth
                 ? IconButton(
                     icon: const Icon(Icons.menu),

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 enum KostoriRouteType {
   anime('a', '番剧'),
@@ -66,7 +66,7 @@ void showKostoriShareSheet(
     context: context,
     backgroundColor: Colors.transparent,
     builder: (_) => Sheet(
-      title: 'Share'.tl,
+      title: t.share,
       icon: Icons.share_outlined,
       initialSize: 0.3,
       builder: (ctx, sc) => Column(
@@ -81,12 +81,12 @@ void showKostoriShareSheet(
                 payload,
               );
               Clipboard.setData(ClipboardData(text: token));
-              App.rootContext.showMessage(message: '口令已复制到剪贴板'.tl);
+              App.rootContext.showMessage(message: t.tokenCopiedToClipboard);
             },
           ),
           ListTile(
             leading: const Icon(Icons.qr_code_outlined),
-            title: Text('生成二维码分享'.tl),
+            title: Text(t.generateQrCodeShare),
             onTap: () {
               Navigator.pop(ctx);
               showQrShareSheet(

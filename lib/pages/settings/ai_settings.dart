@@ -16,13 +16,13 @@ class _AiSettingsState extends State<AiSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text('AI Settings'.tl)),
+        SliverAppbar(title: Text(t.aiSettings)),
 
         // ── API Key 配置 ──────────────────────────
         _BuildSectionPadding(
           _SettingCard(
             children: [
-              _SettingPartTitle(title: 'AI 服务配置'.tl, icon: Icons.key_outlined),
+              _SettingPartTitle(title: t.aiServiceConfig, icon: Icons.key_outlined),
               for (final (source, name, defaultModel, _) in _providers)
                 _ApiKeyTileWidget(
                   source: source,
@@ -38,7 +38,7 @@ class _AiSettingsState extends State<AiSettings> {
           _SettingCard(
             children: [
               _SettingPartTitle(
-                title: 'Persona Management'.tl,
+                title: t.personaManagement,
                 icon: Icons.tune_outlined,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -52,7 +52,7 @@ class _AiSettingsState extends State<AiSettings> {
                             App.rootContext,
                             _PromptEditor(
                               configKey: '',
-                              title: 'Import Persona'.tl,
+                              title: t.importPersona,
                               defaultPrompt: '',
                               isCreateNew: true,
                               initialImport: true,
@@ -67,7 +67,7 @@ class _AiSettingsState extends State<AiSettings> {
                             _PromptEditor(
                               configKey:
                                   'custom_${DateTime.now().millisecondsSinceEpoch}',
-                              title: 'New Persona'.tl,
+                              title: t.newPersona,
                               defaultPrompt: '',
                               isCreateNew: true,
                             ),
@@ -85,7 +85,7 @@ class _AiSettingsState extends State<AiSettings> {
                   if (configs.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Text('No configurations found'.tl, style: ts.s12),
+                      child: Text(t.noConfigurationsFound, style: ts.s12),
                     );
                   }
 
@@ -149,8 +149,8 @@ class _ApiKeyTileWidgetState extends State<_ApiKeyTileWidget> {
 
   String get _statusText {
     if (!_loaded) return '...';
-    if (_row == null || _row!.apiKey.isEmpty) return '未配置'.tl;
-    return _row!.isEnabled ? '已启用'.tl : '已禁用'.tl;
+    if (_row == null || _row!.apiKey.isEmpty) return t.notConfigured;
+    return _row!.isEnabled ? t.enabled : t.disabled;
   }
 
   Color _statusColor(BuildContext context) {
@@ -279,7 +279,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
       ),
     );
     if (mounted) {
-      App.rootContext.showMessage(message: 'Saved'.tl);
+      App.rootContext.showMessage(message: t.saved);
       App.rootContext.pop(context);
     }
   }
@@ -295,14 +295,14 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
     await showDialog(
       context: context,
       builder: (ctx) => ContentDialog(
-        title: 'Add Model'.tl,
+        title: t.addModel,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: ctrl,
               decoration: InputDecoration(
-                labelText: 'Model ID'.tl,
+                labelText: t.modelId,
                 hintText: 'e.g. gpt-4o',
                 border: const OutlineInputBorder(),
               ),
@@ -311,7 +311,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
             TextField(
               controller: labelCtrl,
               decoration: InputDecoration(
-                labelText: 'Display Name'.tl,
+                labelText: t.displayName,
                 hintText: 'e.g. GPT-4o',
                 border: const OutlineInputBorder(),
               ),
@@ -334,7 +334,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
               Navigator.pop(ctx);
               await _loadModels();
             },
-            child: Text('Add'.tl),
+            child: Text(t.add),
           ),
         ],
       ),
@@ -385,7 +385,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
                     child: _SettingCard(
                       children: [
                         _SettingPartTitle(
-                          title: 'API Configuration'.tl,
+                          title: t.apiConfiguration,
                           icon: Icons.key_outlined,
                         ),
 
@@ -396,7 +396,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
                             controller: _keyCtrl,
                             obscureText: _obscure,
                             decoration: InputDecoration(
-                              labelText: 'API Key'.tl,
+                              labelText: t.apiKey,
                               prefixIcon: const Icon(Icons.key, size: 20),
                               border: const OutlineInputBorder(),
                               suffixIcon: IconButton(
@@ -418,8 +418,8 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
                           child: TextFormField(
                             controller: _urlCtrl,
                             decoration: InputDecoration(
-                              labelText: 'Base URL'.tl,
-                              helperText: 'Optional'.tl,
+                              labelText: t.baseUrl,
+                              helperText: t.optionalField,
                               prefixIcon: const Icon(
                                 Icons.home_filled,
                                 size: 20,
@@ -436,7 +436,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
                             children: [
                               const Icon(Icons.toggle_on_outlined, size: 20),
                               const SizedBox(width: 12),
-                              Expanded(child: Text('Enable'.tl)),
+                              Expanded(child: Text(t.enable)),
                               CustomSwitch(
                                 value: _enabled,
                                 onChanged: (v) => setState(() => _enabled = v),
@@ -455,14 +455,14 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
                               const Icon(Icons.model_training, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                'Model'.tl,
+                                t.model,
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                               const Spacer(),
                               // 添加模型按钮
                               IconButton.filledTonal(
                                 icon: const Icon(Icons.add, size: 18),
-                                tooltip: 'Add Model'.tl,
+                                tooltip: t.addModel,
                                 visualDensity: VisualDensity.compact,
                                 onPressed: _addModel,
                               ),
@@ -475,7 +475,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
                           Padding(
                             padding: const EdgeInsets.all(16),
                             child: Text(
-                              'No models. Add one above.'.tl,
+                              t.noModelsAddOneAbove,
                               style: TextStyle(
                                 color: scheme.onSurface.withValues(alpha: 0.5),
                                 fontSize: 13,
@@ -515,7 +515,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
               bottom: 16,
               child: FloatingActionButton.extended(
                 onPressed: _save,
-                label: Text('Apply'.tl),
+                label: Text(t.apply),
                 icon: const Icon(Icons.check),
               ),
             ),
@@ -607,7 +607,7 @@ class _ModelChip extends StatelessWidget {
       [
         MenuEntry(
           icon: Icons.delete_outline,
-          text: 'Delete'.tl,
+          text: t.delete,
           color: Theme.of(context).colorScheme.error,
           onClick: onDelete,
         ),
@@ -672,7 +672,7 @@ class _PromptTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                'System'.tl,
+                t.system,
                 style: TextStyle(
                   fontSize: 10,
                   color: context.colorScheme.onSecondaryContainer,
@@ -778,7 +778,7 @@ class _PromptEditorState extends State<_PromptEditor> {
       ),
     );
     if (mounted) {
-      App.rootContext.showMessage(message: 'Config copied to clipboard'.tl);
+      App.rootContext.showMessage(message: t.configCopiedToClipboard);
     }
   }
 
@@ -800,12 +800,12 @@ class _PromptEditorState extends State<_PromptEditor> {
       });
       App.rootContext.showMessage(
         message: widget.isCreateNew
-            ? 'Imported as new config'.tl
-            : 'Imported'.tl,
+            ? t.importedAsNewConfig
+            : t.imported,
       );
     } catch (_) {
       App.rootContext.showMessage(
-        message: 'Invalid clipboard format'.tl,
+        message: t.invalidClipboardFormat,
         level: LogLevel.warning,
       );
     }
@@ -815,7 +815,7 @@ class _PromptEditorState extends State<_PromptEditor> {
     if (!_formKey.currentState!.validate()) return;
     if (_isReadOnly) {
       App.rootContext.showMessage(
-        message: 'Cannot modify system preset'.tl,
+        message: t.cannotModifySystemPreset,
         level: LogLevel.warning,
       );
       return;
@@ -832,13 +832,13 @@ class _PromptEditorState extends State<_PromptEditor> {
         ),
       );
       if (mounted) {
-        App.rootContext.showMessage(message: 'Saved'.tl);
+        App.rootContext.showMessage(message: t.saved);
         App.rootContext.pop();
       }
     } catch (e) {
       App.rootContext.showMessage(
         message: e.toString().contains('UNIQUE constraint failed')
-            ? 'Config Key already exists. Please change it.'.tl
+            ? t.configKeyAlreadyExists
             : 'Error: $e',
         level: LogLevel.warning,
       );
@@ -869,9 +869,9 @@ class _PromptEditorState extends State<_PromptEditor> {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (ctx) => ContentDialog(
-                  title: 'Delete Config'.tl,
+                  title: t.deleteConfig,
                   content: Text(
-                    'Are you sure you want to delete "${widget.configKey}"?'.tl,
+                    '${t.areYouSureYouWantToDeleteGeneric} "${widget.configKey}"?',
                   ),
                   actions: [
                     FilledButton(
@@ -879,7 +879,7 @@ class _PromptEditorState extends State<_PromptEditor> {
                         backgroundColor: Theme.of(context).colorScheme.error,
                       ),
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: Text('Delete'.tl),
+                      child: Text(t.delete),
                     ),
                   ],
                 ),
@@ -910,7 +910,7 @@ class _PromptEditorState extends State<_PromptEditor> {
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Text(
-                            'Read-only System Preset'.tl,
+                            t.readOnlySystemPreset,
                             style: TextStyle(
                               color: Theme.of(context).colorScheme.error,
                             ),
@@ -934,7 +934,7 @@ class _PromptEditorState extends State<_PromptEditor> {
                         _tempCtrl,
                         enabled: !_isReadOnly,
                         isTemperature: true,
-                        helperText: 'Value: 0.0 - 1.0'.tl,
+                        helperText: t.valueRange,
                       ),
                       _buildPromptEditor(enabled: !_isReadOnly),
                     ],
@@ -947,7 +947,7 @@ class _PromptEditorState extends State<_PromptEditor> {
                   bottom: 16,
                   child: FloatingActionButton.extended(
                     onPressed: _save,
-                    label: Text('Apply'.tl),
+                    label: Text(t.apply),
                     icon: const Icon(Icons.check),
                   ),
                 ),
@@ -978,16 +978,16 @@ class _PromptEditorState extends State<_PromptEditor> {
             ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))]
             : null,
         decoration: InputDecoration(
-          labelText: label.tl,
+          labelText: label,
           prefixIcon: Icon(icon, size: 20),
           helperText: helperText,
           border: const OutlineInputBorder(),
         ),
         validator: (v) {
-          if (v == null || v.isEmpty) return 'Required'.tl;
+          if (v == null || v.isEmpty) return t.required;
           if (isTemperature) {
             final n = double.tryParse(v);
-            if (n == null || n < 0 || n > 1) return '0.0 - 1.0'.tl;
+            if (n == null || n < 0 || n > 1) return t.valueRange;
           }
           return null;
         },
@@ -1003,7 +1003,7 @@ class _PromptEditorState extends State<_PromptEditor> {
         maxLines: 10,
         enabled: enabled,
         decoration: InputDecoration(
-          labelText: 'System Prompt'.tl,
+          labelText: t.systemPrompt,
           alignLabelWithHint: true,
           border: const OutlineInputBorder(),
         ),

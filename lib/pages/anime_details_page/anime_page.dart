@@ -30,6 +30,7 @@ import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
@@ -318,9 +319,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   indicatorColor: Theme.of(context).colorScheme.primary,
                   tabAlignment: TabAlignment.center,
                   tabs: [
-                    Tab(text: '基本信息'.tl),
-                    Tab(text: '全部剧集'.tl),
-                    Tab(text: '关联条目'.tl),
+                    Tab(text: t.basicInfo),
+                    Tab(text: t.allEpisodes),
+                    Tab(text: t.relatedEntries),
                   ],
                 ).toSliver(),
               ];
@@ -401,7 +402,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           children: [
             const SizedBox(width: 8),
             Tooltip(
-              message: "Back".tl,
+              message: t.back,
               child: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new),
                 onPressed: () => Navigator.maybePop(context),
@@ -529,7 +530,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     ClipboardData(text: anime.title),
                                   );
                                   App.rootContext.showMessage(
-                                    message: '已复制到剪贴板.',
+                                    message: t.copiedToClipboard,
                                   );
                                 },
                                 child: Text(
@@ -634,10 +635,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                             itemSize: 20.0,
                                           ),
                                           Text(
-                                            '@t reviews | #@r'.tlParams({
-                                              'r': bangumiItem.rank,
-                                              't': bangumiItem.total,
-                                            }),
+                                            t.tReviewsR(
+                                              t: bangumiItem.total,
+                                              r: bangumiItem.rank,
+                                            ),
                                             style: const TextStyle(
                                               fontSize: 12,
                                             ),
@@ -693,7 +694,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             icon: const Icon(Icons.star_border_rounded),
             activeIcon: const Icon(Icons.star_rounded),
             isActive: isFavorite || isAddToLocalFav,
-            text: 'Favorite'.tl,
+            text: t.favorite,
             onPressed: openFavPanel,
             onLongPressed: quickFavorite,
             iconColor: context.useTextColor(Colors.purple),
@@ -701,7 +702,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         if (isZero)
           _ActionButton(
             icon: const Icon(Icons.share),
-            text: 'Share'.tl,
+            text: t.share,
             onPressed: share,
             onLongPressed: () => showKostoriShareSheet(
               context,
@@ -719,16 +720,16 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             icon: const Icon(Icons.favorite_border),
             activeIcon: const Icon(Icons.favorite),
             isActive: isLiked,
-            text: 'Liked'.tl,
+            text: t.liked,
             onPressed: () {
               liked();
               setState(() {
                 isLiked = !isLiked;
               });
               if (isLiked) {
-                App.rootContext.showMessage(message: '点赞成功');
+                App.rootContext.showMessage(message: t.likeSuccess);
               } else {
-                App.rootContext.showMessage(message: '取消点赞');
+                App.rootContext.showMessage(message: t.unlikeSuccess);
               }
             },
             iconColor: Colors.redAccent,
@@ -750,7 +751,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                     ],
                   )
                 : const Icon(Icons.comment),
-            text: (ratingValue == 0) ? 'Rating'.tl : '',
+            text: (ratingValue == 0) ? t.rating : '',
             onPressed: () async {
               await showRatingDialog(statsDataImpl!).then((_) {
                 setState(() {});
@@ -770,7 +771,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                 ),
               ),
             ),
-            text: 'Bangumi'.tl,
+            text: t.bangumi,
             onPressed: () async {
               bangumiBottomInfo(context);
             },
@@ -779,7 +780,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         if (anime.url != null && !isZero)
           _ActionButton(
             icon: const Icon(Icons.open_in_browser),
-            text: 'Open in Browser'.tl,
+            text: t.openInBrowser,
             onPressed: () => launchUrlString(anime.url!),
             iconColor: Theme.of(context).colorScheme.secondary,
           ),
@@ -806,7 +807,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             ),
           ),
           const SizedBox(height: 16),
-          ListTile(title: Text("我的评价".tl)),
+          ListTile(title: Text(t.myRating)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SelectableText(
@@ -840,7 +841,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           const SizedBox(height: 16),
           TranslationWidget(
             data: anime.description!,
-            title: ListTile(title: Text("Description".tl)),
+            title: ListTile(title: Text(t.description)),
           ),
           const SizedBox(height: 16),
           Center(
@@ -908,21 +909,21 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             onTap: onTap,
             onLongPress: () {
               Clipboard.setData(ClipboardData(text: text));
-              context.showMessage(message: "Copied".tl);
+              context.showMessage(message: t.copied);
             },
             onSecondaryTapDown: (details) {
               showMenuX(context, details.globalPosition, [
                 MenuEntry(
                   icon: Icons.remove_red_eye,
-                  text: "View".tl,
+                  text: t.view,
                   onClick: onTap,
                 ),
                 MenuEntry(
                   icon: Icons.copy,
-                  text: "Copy".tl,
+                  text: t.copy,
                   onClick: () {
                     Clipboard.setData(ClipboardData(text: text));
-                    context.showMessage(message: "Copied".tl);
+                    context.showMessage(message: t.copied);
                   },
                 ),
               ]);
@@ -950,7 +951,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(title: Text("Information".tl)),
+          ListTile(title: Text(t.information)),
           if (anime.stars != null)
             Row(
               children: [
@@ -975,21 +976,21 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
           if (anime.uploader != null)
             buildWrap(
               children: [
-                buildTag(text: 'Uploader'.tl, isTitle: true),
+                buildTag(text: t.uploader, isTitle: true),
                 buildTag(text: anime.uploader!),
               ],
             ),
           if (anime.uploadTime != null)
             buildWrap(
               children: [
-                buildTag(text: 'Upload Time'.tl, isTitle: true),
+                buildTag(text: t.uploadTime, isTitle: true),
                 buildTag(text: anime.uploadTime!),
               ],
             ),
           if (anime.updateTime != null)
             buildWrap(
               children: [
-                buildTag(text: 'Update Time'.tl, isTitle: true),
+                buildTag(text: t.updateTime, isTitle: true),
                 buildTag(text: anime.updateTime!),
               ],
             ),
@@ -1023,7 +1024,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
     return SliverMainAxisGroup(
       slivers: [
-        SliverToBoxAdapter(child: ListTile(title: Text("Related".tl))),
+        SliverToBoxAdapter(child: ListTile(title: Text(t.related))),
         SliverGridAnimes(animes: anime.recommend!, isRecommend: true),
       ],
     );

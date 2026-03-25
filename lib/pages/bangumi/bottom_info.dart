@@ -19,13 +19,13 @@ import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/translation_service.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart'
     show BangumiSearchPage;
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 
@@ -456,10 +456,10 @@ class BottomInfoState extends State<BottomInfo>
                                             itemSize: 18.0,
                                           ),
                                           Text(
-                                            '@t reviews | #@r'.tlParams({
-                                              'r': bangumiItem.rank,
-                                              't': bangumiItem.total,
-                                            }),
+                                            t.tReviewsR(
+                                              t: bangumiItem.total,
+                                              r: bangumiItem.rank,
+                                            ),
                                             style: TextStyle(fontSize: 12),
                                           ),
                                         ],
@@ -512,7 +512,7 @@ class BottomInfoState extends State<BottomInfo>
                           Row(
                             children: <Widget>[
                               Text(
-                                'Introduction'.tl,
+                                t.introduction,
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.bold,
@@ -586,7 +586,7 @@ class BottomInfoState extends State<BottomInfo>
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
-                        'Tags'.tl,
+                        t.tags,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -648,7 +648,7 @@ class BottomInfoState extends State<BottomInfo>
                 child: Row(
                   children: [
                     Text(
-                      'Linked Items'.tl,
+                      t.linkedItems,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -810,7 +810,7 @@ class BottomInfoState extends State<BottomInfo>
                   Row(
                     children: [
                       Text(
-                        'Rating Chart'.tl,
+                        t.ratingChart,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -844,8 +844,8 @@ class BottomInfoState extends State<BottomInfo>
                         ),
                         label: Text(
                           infoController.showLineChart
-                              ? 'Line Chart'.tl
-                              : 'Bar Chart'.tl,
+                              ? t.lineChart
+                              : t.barChart,
                         ),
                       ),
                       Text('${bangumiItem.total} votes'),
@@ -860,9 +860,9 @@ class BottomInfoState extends State<BottomInfo>
               child: Row(
                 children: [
                   Text(
-                    'Standard Deviation: @s'.tlParams({
-                      's': standardDeviation.toStringAsFixed(2),
-                    }),
+                    t.standardDeviationS(
+                      s: standardDeviation.toStringAsFixed(2),
+                    ),
                     style: TextStyle(fontSize: 12),
                   ),
                   const SizedBox(width: 8),
@@ -971,7 +971,7 @@ class BottomInfoState extends State<BottomInfo>
                   if (commentsQueryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
+                        errMsg: t.nobodysPostedAnythingYet,
                         actions: [
                           GeneralErrorButton(
                             onPressed: () {
@@ -979,7 +979,7 @@ class BottomInfoState extends State<BottomInfo>
                                 offset: infoController.commentsList.length,
                               );
                             },
-                            text: 'Reload'.tl,
+                            text: t.reload,
                           ),
                         ],
                       ),
@@ -1068,13 +1068,13 @@ class BottomInfoState extends State<BottomInfo>
                   if (topicsQueryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
+                        errMsg: t.nobodysPostedAnythingYet,
                         actions: [
                           GeneralErrorButton(
                             onPressed: () {
                               loadMoreTopics();
                             },
-                            text: 'Reload'.tl,
+                            text: t.reload,
                           ),
                         ],
                       ),
@@ -1157,13 +1157,13 @@ class BottomInfoState extends State<BottomInfo>
                   if (reviewsQueryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
+                        errMsg: t.nobodysPostedAnythingYet,
                         actions: [
                           GeneralErrorButton(
                             onPressed: () {
                               loadMoreReviews();
                             },
-                            text: 'Reload'.tl,
+                            text: t.reload,
                           ),
                         ],
                       ),
@@ -1232,13 +1232,13 @@ class BottomInfoState extends State<BottomInfo>
                 if (charactersQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: 'Failed to load, please try again.'.tl,
+                      errMsg: t.failedToLoadPleaseTryAgain,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadCharacters();
                           },
-                          text: 'Reload'.tl,
+                          text: t.reload,
                         ),
                       ],
                     ),
@@ -1298,13 +1298,13 @@ class BottomInfoState extends State<BottomInfo>
                 if (staffQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: 'Failed to load, please try again.'.tl,
+                      errMsg: t.failedToLoadPleaseTryAgain,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             loadStaff();
                           },
-                          text: 'Reload'.tl,
+                          text: t.reload,
                         ),
                       ],
                     ),
@@ -1346,13 +1346,13 @@ class BottomInfoState extends State<BottomInfo>
                 child: TabBar(
                   controller: infoTabController,
                   tabs: [
-                    Tab(text: 'Details'.tl),
-                    Tab(text: 'Comments'.tl),
-                    Tab(text: 'Comment'.tl),
-                    Tab(text: 'Topics'.tl),
-                    Tab(text: 'Reviews'.tl),
-                    Tab(text: 'Characters'.tl),
-                    Tab(text: 'StaffList'.tl),
+                    Tab(text: t.details),
+                    Tab(text: t.comments),
+                    Tab(text: t.comment),
+                    Tab(text: t.topics),
+                    Tab(text: t.reviews),
+                    Tab(text: t.characters),
+                    Tab(text: t.staffList),
                   ],
                 ),
               ),

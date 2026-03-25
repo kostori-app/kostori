@@ -18,13 +18,13 @@ import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/bangumi/bangumi_all_episode_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/line_chart_page.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:marquee/marquee.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -123,7 +123,7 @@ class _InfoTabViewState extends State<InfoTabView>
               TranslationWidget(
                 data: widget.bangumiItem.summary,
                 title: Text(
-                  'Introduction'.tl,
+                  t.introduction,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -142,7 +142,7 @@ class _InfoTabViewState extends State<InfoTabView>
               Row(
                 children: [
                   Text(
-                    'Tags'.tl,
+                    t.tags,
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   Container(
@@ -191,7 +191,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 Row(
                   children: [
                     Text(
-                      'All Episodes'.tl,
+                      t.allEpisodes,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -222,7 +222,7 @@ class _InfoTabViewState extends State<InfoTabView>
                           ),
                         );
                       },
-                      child: Text('more'.tl),
+                      child: Text(t.more),
                     ),
                   ],
                 ),
@@ -294,17 +294,15 @@ class _InfoTabViewState extends State<InfoTabView>
                                                   Row(
                                                     children: [
                                                       Text(
-                                                        "Broadcast Time: @a"
-                                                            .tlParams({
-                                                              'a': episode
-                                                                  .airDate,
-                                                            }),
+                                                        t.broadcastTimeA(
+                                                          a: episode.airDate,
+                                                        ),
                                                       ),
                                                       const SizedBox(width: 8),
                                                       Text(
-                                                        "Time: @s".tlParams({
-                                                          's': episode.duration,
-                                                        }),
+                                                        t.timeS(
+                                                          s: episode.duration,
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
@@ -392,7 +390,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 Row(
                   children: [
                     Text(
-                      'Linked Items'.tl,
+                      t.linkedItems,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -568,7 +566,7 @@ class _InfoTabViewState extends State<InfoTabView>
                 Row(
                   children: [
                     Text(
-                      'Rating Chart'.tl,
+                      t.ratingChart,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -600,8 +598,8 @@ class _InfoTabViewState extends State<InfoTabView>
                       ),
                       label: Text(
                         infoController.showLineChart
-                            ? 'Line Chart'.tl
-                            : 'Bar Chart'.tl,
+                            ? t.lineChart
+                            : t.barChart,
                       ),
                     ),
                   ],
@@ -615,9 +613,9 @@ class _InfoTabViewState extends State<InfoTabView>
                   child: Row(
                     children: [
                       Text(
-                        'Standard Deviation: @s'.tlParams({
-                          's': standardDeviation.toStringAsFixed(2),
-                        }),
+                        t.standardDeviationS(
+                          s: standardDeviation.toStringAsFixed(2),
+                        ),
                         style: TextStyle(fontSize: 12),
                       ),
                       const SizedBox(width: 8),
@@ -691,7 +689,7 @@ class _InfoTabViewState extends State<InfoTabView>
           },
           child: CustomScrollView(
             scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('Comments'.tl),
+            key: PageStorageKey<String>(t.comments),
             slivers: <Widget>[
               SliverOverlapInjector(
                 handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
@@ -755,7 +753,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   if (widget.commentsQueryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
+                        errMsg: t.nobodysPostedAnythingYet,
                         actions: [
                           GeneralErrorButton(
                             onPressed: () {
@@ -763,7 +761,7 @@ class _InfoTabViewState extends State<InfoTabView>
                                 offset: widget.commentsList.length,
                               );
                             },
-                            text: 'Reload'.tl,
+                            text: t.reload,
                           ),
                         ],
                       ),
@@ -822,7 +820,7 @@ class _InfoTabViewState extends State<InfoTabView>
           },
           child: CustomScrollView(
             scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('Discussion'.tl),
+            key: PageStorageKey<String>(t.discussion),
             slivers: <Widget>[
               SliverOverlapInjector(
                 handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
@@ -854,13 +852,13 @@ class _InfoTabViewState extends State<InfoTabView>
                   if (widget.topicsQueryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
+                        errMsg: t.nobodysPostedAnythingYet,
                         actions: [
                           GeneralErrorButton(
                             onPressed: () {
                               widget.loadMoreTopics();
                             },
-                            text: 'Reload'.tl,
+                            text: t.reload,
                           ),
                         ],
                       ),
@@ -913,7 +911,7 @@ class _InfoTabViewState extends State<InfoTabView>
           },
           child: CustomScrollView(
             scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('Log'.tl),
+            key: PageStorageKey<String>(t.log),
             slivers: <Widget>[
               SliverOverlapInjector(
                 handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
@@ -947,13 +945,13 @@ class _InfoTabViewState extends State<InfoTabView>
                   if (widget.reviewsQueryTimeout) {
                     return SliverFillRemaining(
                       child: GeneralErrorWidget(
-                        errMsg: "Nobody's posted anything yet...".tl,
+                        errMsg: t.nobodysPostedAnythingYet,
                         actions: [
                           GeneralErrorButton(
                             onPressed: () {
                               widget.loadMoreReviews();
                             },
-                            text: 'Reload'.tl,
+                            text: t.reload,
                           ),
                         ],
                       ),
@@ -994,7 +992,7 @@ class _InfoTabViewState extends State<InfoTabView>
       builder: (BuildContext context) {
         return CustomScrollView(
           scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-          key: PageStorageKey<String>('Characters'.tl),
+            key: PageStorageKey<String>(t.characters),
           slivers: <Widget>[
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
@@ -1024,13 +1022,13 @@ class _InfoTabViewState extends State<InfoTabView>
                 if (widget.charactersQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: 'Failed to load, please try again.'.tl,
+                      errMsg: t.failedToLoadPleaseTryAgain,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             widget.loadCharacters();
                           },
-                          text: 'Reload'.tl,
+                          text: t.reload,
                         ),
                       ],
                     ),
@@ -1063,7 +1061,7 @@ class _InfoTabViewState extends State<InfoTabView>
       builder: (BuildContext context) {
         return CustomScrollView(
           scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-          key: PageStorageKey<String>('StaffList'.tl),
+            key: PageStorageKey<String>(t.staffList),
           slivers: <Widget>[
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
@@ -1093,13 +1091,13 @@ class _InfoTabViewState extends State<InfoTabView>
                 if (widget.staffQueryTimeout) {
                   return SliverFillRemaining(
                     child: GeneralErrorWidget(
-                      errMsg: 'Failed to load, please try again.'.tl,
+                      errMsg: t.failedToLoadPleaseTryAgain,
                       actions: [
                         GeneralErrorButton(
                           onPressed: () {
                             widget.loadStaff();
                           },
-                          text: 'Reload'.tl,
+                          text: t.reload,
                         ),
                       ],
                     ),
@@ -1145,7 +1143,7 @@ class _InfoTabViewState extends State<InfoTabView>
               // The PageStorageKey should be unique to this ScrollView;
               // it allows the list to remember its scroll position when
               // the tab view is not on the screen.
-              key: PageStorageKey<String>('Overview'.tl),
+              key: PageStorageKey<String>(t.overview),
               slivers: <Widget>[
                 SliverOverlapInjector(
                   handle: NestedScrollView.sliverOverlapAbsorberHandleFor(

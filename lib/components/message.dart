@@ -147,7 +147,7 @@ void showDialogMessage(BuildContext context, String title, String message) {
     builder: (context) => ContentDialog(
       title: title,
       content: Text(message).paddingHorizontal(16),
-      actions: [FilledButton(onPressed: context.pop, child: Text("OK".tl))],
+      actions: [FilledButton(onPressed: context.pop, child: Text(t.ok))],
     ),
   );
 }
@@ -172,7 +172,7 @@ Future<void> showConfirmDialog({
             onConfirm();
           },
           style: FilledButton.styleFrom(backgroundColor: btnColor),
-          child: Text(confirmText.tl),
+          child: Text(t[confirmText] ?? confirmText),
         ),
       ],
     ),
@@ -265,7 +265,7 @@ LoadingDialogController showLoadingDialog(
                         onCancel?.call();
                       }
                     : null,
-                child: Text(cancelButtonText.tl),
+                child: Text(cancelButtonText),
               ),
             ],
           );
@@ -393,7 +393,7 @@ class ContentDialog extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    'Cancel'.tl,
+                    t.cancel,
                     style: const TextStyle(fontSize: 14),
                   ),
                 ),
@@ -541,7 +541,7 @@ Future<void> showInputDialog({
                     setState(() => error = result.toString());
                   }
                 },
-                child: Text(confirmText.tl),
+          child: Text(confirmText),
               ),
             ],
           );
@@ -564,7 +564,7 @@ void showInfoDialog({
         title: title,
         content: Text(content).paddingHorizontal(16).paddingVertical(8),
         actions: [
-          Button.filled(onPressed: context.pop, child: Text(confirmText.tl)),
+          Button.filled(onPressed: context.pop, child: Text(t[confirmText] ?? confirmText)),
         ],
       );
     },
@@ -609,11 +609,11 @@ Future<int?> showSelectDialog({
                   current = null;
                   context.pop();
                 },
-                child: Text('Cancel'.tl),
+                child: Text(t.cancel),
               ),
               FilledButton(
                 onPressed: current == null ? null : context.pop,
-                child: Text('Confirm'.tl),
+                child: Text(t.confirm),
               ),
             ],
           );

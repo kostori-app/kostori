@@ -336,7 +336,7 @@ extension HubServiceActions on HubService {
       return;
     }
     if (newRoomName.toLowerCase() == 'lobby' ||
-        newRoomName.toLowerCase() == 'Lobby'.tl.toLowerCase()) {
+        newRoomName.toLowerCase() == t.lobby.toLowerCase()) {
       client?.send({'type': 'error', 'message': '该名称已被保留，请换一个'});
       return;
     }

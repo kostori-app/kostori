@@ -373,7 +373,7 @@ class _MenuButtonState extends State<MenuButton> {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: (widget.message == null) ? 'More'.tl : '${widget.message}'.tl,
+      message: (widget.message == null) ? t.more : '${widget.message}',
       child: Button.icon(
         icon: (widget.icon == null)
             ? Icon(Icons.more_horiz)

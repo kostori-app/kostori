@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/bangumi/bangumi_episode_info_page.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -69,7 +69,7 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
             slivers: [
               // SliverAppBar 全宽显示，不受 maxWidth 限制
               SliverAppBar(
-                title: Text('All Episodes'.tl),
+                title: Text(t.allEpisodes),
                 backgroundColor: Colors.transparent,
                 flexibleSpace: ClipRect(
                   child: BackdropFilter(

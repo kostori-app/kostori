@@ -12,7 +12,7 @@ class _BangumiSettingsState extends State<BangumiSettings> {
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
       slivers: [
-        SliverAppbar(title: Text("Bangumi".tl)),
+        SliverAppbar(title: Text(t.bangumi)),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           sliver: SliverToBoxAdapter(
@@ -21,16 +21,16 @@ class _BangumiSettingsState extends State<BangumiSettings> {
               child: _SettingCard(
                 children: [
                   _SettingPartTitle(
-                    title: "Bangumi".tl,
+                    title: t.bangumi,
                     icon: Icons.radio_button_unchecked_outlined,
                   ),
                   _SwitchSetting(
-                    title: "番剧卡片使用模糊背景".tl,
+                    title: t.animeCardUseBlur,
                     settingKey: "animeCardUseBlur",
                     dataSource: SwitchDataSource.implicit,
                   ),
                   _SwitchSetting(
-                    title: "每日番剧表启动时搜寻集信息".tl,
+                    title: t.calendarFetchEpisodes,
                     settingKey: "calendarFetchEpisodes",
                   ),
                 ],

@@ -27,9 +27,9 @@ import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.da
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/protocol_parser.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:pretty_qr_code/pretty_qr_code.dart';
 
 final GlobalKey repaintKey = GlobalKey();
 
@@ -44,7 +44,7 @@ Future<void> captureAndSave(BuildContext context) async {
     final filename = 'popup_${DateTime.now().millisecondsSinceEpoch}.png';
     await ImageSaver.saveOrShareImage(bytes: bytes, filename: filename);
   } catch (e) {
-    ImageSaver.showResult(success: false, message: '截图失败: $e');
+    ImageSaver.showResult(success: false, message: t.screenshotFailed);
     Log.error('截图失败', '$e');
   } finally {
     await providerContainer.read(imagesProvider.notifier).loadImages();
@@ -197,10 +197,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     itemSize: 12.0,
                   ),
                   Text(
-                    '@t reviews | #@r'.tlParams({
-                      'r': bangumiItem.rank,
-                      't': bangumiItem.total,
-                    }),
+                    t.tReviewsR(t: bangumiItem.total, r: bangumiItem.rank),
                     style: TextStyle(fontSize: 8),
                   ),
                 ],
@@ -384,7 +381,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     ],
                   ),
                 ),
-                Text('Introduction'.tl, style: ts.s18),
+                Text(t.introduction, style: ts.s18),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 16,
@@ -587,7 +584,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Introduction'.tl,
+                        t.introduction,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -625,7 +622,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       Text(
-                        'Tags'.tl,
+                        t.tags,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -700,7 +697,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     child: Row(
                       children: [
                         Text(
-                          'Linked Items'.tl,
+                          t.linkedItems,
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -779,7 +776,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                         Row(
                           children: [
                             Text(
-                              'Rating Chart'.tl,
+                              t.ratingChart,
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -814,9 +811,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                                     : Icons.bar_chart,
                               ),
                               label: Text(
-                                showLineChart
-                                    ? 'Line Chart'.tl
-                                    : 'Bar Chart'.tl,
+                                showLineChart ? t.lineChart : t.barChart,
                               ),
                             ),
                             Text('${bangumiItem.total} votes'),
@@ -834,9 +829,9 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     child: Row(
                       children: [
                         Text(
-                          'Standard Deviation: @s'.tlParams({
-                            's': standardDeviation.toStringAsFixed(2),
-                          }),
+                          t.standardDeviationS(
+                            s: standardDeviation.toStringAsFixed(2),
+                          ),
                           style: TextStyle(fontSize: 12),
                         ),
                         const SizedBox(width: 8),
@@ -879,7 +874,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     child: Row(
                       children: [
                         Text(
-                          '最新评论'.tl,
+                          t.latestComments,
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -942,7 +937,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     child: Row(
                       children: [
                         Text(
-                          '我的评价'.tl,
+                          t.myRating,
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -1374,7 +1369,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     horizontal: 16,
                   ),
                   child: Text(
-                    'Profile Information'.tl,
+                    t.profileInformation,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -1399,7 +1394,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     horizontal: 16,
                   ),
                   child: Text(
-                    'Character Introduction'.tl,
+                    t.characterIntroduction,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -1450,13 +1445,13 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   Widget build(BuildContext context) {
     if (isLoding) {
       return PopUpWidgetScaffold(
-        title: 'Screenshot Share'.tl,
+        title: t.screenshotShare,
         body: Center(child: KostoriRefreshIndicator()),
       );
     }
 
     return PopUpWidgetScaffold(
-      title: 'Screenshot Share'.tl,
+      title: t.screenshotShare,
       body: Stack(
         children: [
           Positioned.fill(child: SingleChildScrollView(child: _buildBody())),
@@ -1590,7 +1585,7 @@ class BangumiGridCard extends StatelessWidget {
                 itemSize: App.isAndroid ? 12 : 14,
               ),
               Text(
-                '@t reviews'.tlParams({'t': bangumiItem.total}),
+                t.tReviews(t: bangumiItem.total),
                 style: TextStyle(
                   fontSize: App.isAndroid ? 7 : 9,
                   fontWeight: FontWeight.bold,
@@ -1859,7 +1854,7 @@ class ShareQrCode extends StatefulWidget {
   final KostoriRouteType type;
   final String payload;
 
-  /// false 时只显示底部标签，不含二维码和开关
+  /// false 时只显示底部标签，不含开关
   final bool showQrCode;
 
   @override
@@ -1903,20 +1898,26 @@ class _ShareQrCodeState extends State<ShareQrCode> {
                         width: 0.8,
                       ),
                     ),
-                    child: QrImageView(
-                      data: content,
-                      version: QrVersions.auto,
-                      size: 96,
-                      backgroundColor: qrBg,
-                      eyeStyle: QrEyeStyle(
-                        eyeShape: QrEyeShape.square,
-                        color: qrColor,
+                    child: SizedBox(
+                      width: 96,
+                      height: 96,
+                      child: PrettyQrView.data(
+                        data: content,
+                        errorCorrectLevel: QrErrorCorrectLevel.H,
+
+                        decoration: PrettyQrDecoration(
+                          background: qrBg,
+                          shape: PrettyQrSmoothSymbol(
+                            color: qrColor,
+                            roundFactor: 0.8,
+                          ),
+                          image: const PrettyQrDecorationImage(
+                            image: AssetImage('images/app_icon.png'),
+                            scale: 0.2,
+                            position: PrettyQrDecorationImagePosition.embedded,
+                          ),
+                        ),
                       ),
-                      dataModuleStyle: QrDataModuleStyle(
-                        dataModuleShape: QrDataModuleShape.square,
-                        color: qrColor,
-                      ),
-                      errorCorrectionLevel: QrErrorCorrectLevel.H,
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -1927,7 +1928,7 @@ class _ShareQrCodeState extends State<ShareQrCode> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          '扫码跳转',
+                          t.scanToJump,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -1972,7 +1973,6 @@ class _ShareQrCodeState extends State<ShareQrCode> {
             const SizedBox(height: 12),
           ],
           if (widget.showQrCode && !_expanded) ...[
-            // ── 分割线 ──
             Divider(thickness: 0.5, color: Colors.grey.toOpacity(0.3)),
             const SizedBox(height: 8),
             Row(
@@ -2014,7 +2014,7 @@ class _ShareQrCodeState extends State<ShareQrCode> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '二维码',
+                          t.qrCode,
                           style: TextStyle(
                             fontSize: 11,
                             color: Colors.grey.toOpacity(0.6),

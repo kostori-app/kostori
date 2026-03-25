@@ -11,9 +11,9 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
     with TickerProviderStateMixin {
   late TabController _tabController;
   final themeModes = {
-    "system": "System".tl,
-    "light": "Light".tl,
-    "dark": "Dark".tl,
+    " system": t.system,
+    "light": t.light,
+    "dark": t.dark,
   };
   int themeMode = 0;
 
@@ -60,7 +60,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
     return SmoothCustomScrollView(
       slivers: [
         SliverAppbar(
-          title: Text("Appearance".tl),
+          title: Text(t.appearance),
           bottom: TabBar(
             controller: _tabController,
             tabs: themeModes.values.map((label) => Tab(text: label)).toList(),
@@ -73,14 +73,14 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
             child: _SettingCard(
               children: [
                 _SwitchSetting(
-                  title: "AMOLED".tl,
+                  title: "AMOLED",
                   settingKey: "AMOLED",
                   onChanged: () {
                     App.forceRebuild();
                   },
                 ),
                 _SwitchSetting(
-                  title: "Dynamic color".tl,
+                  title: t.dynamicColor,
                   settingKey: "dynamicColor",
                   onChanged: () async {
                     await App.init();
@@ -170,7 +170,7 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
                 width: 160,
                 child: Center(
                   child: Text(
-                    "${appdata.settings["color"]}".tl,
+                    "${appdata.settings["color"]}",
                     style: const TextStyle(fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -222,7 +222,7 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
                   width: 160,
                   child: Center(
                     child: Text(
-                      name.tl,
+                      name,
                       style: const TextStyle(fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -283,7 +283,7 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
           width: 160,
           child: Center(
             child: Text(
-              "Custom".tl,
+              t.custom,
               style: TextStyle(fontSize: 12),
               overflow: TextOverflow.ellipsis,
             ),
@@ -372,10 +372,10 @@ class ThemePreviewCard extends StatelessWidget {
           onLongPress: onLongPress,
           child: Column(
             children: [
-              _colorTile("Primary", scheme.primary),
-              _colorTile("Secondary", scheme.secondary),
-              _colorTile("Tertiary", scheme.tertiary),
-              _colorTile("Surface", scheme.surface),
+              _colorTile(t.primary, scheme.primary),
+              _colorTile(t.secondary, scheme.secondary),
+              _colorTile(t.tertiary, scheme.tertiary),
+              _colorTile(t.surface, scheme.surface),
             ],
           ),
         ),
@@ -389,7 +389,7 @@ class ThemePreviewCard extends StatelessWidget {
         color: color,
         alignment: Alignment.center,
         child: Text(
-          label.tl,
+          label,
           style: TextStyle(
             color:
                 ThemeData.estimateBrightnessForColor(color) == Brightness.dark
@@ -440,7 +440,7 @@ class _ColorPickPageState extends State<ColorPickPage> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Select Color'.tl),
+      title: Text(t.selectColor),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -458,10 +458,10 @@ class _ColorPickPageState extends State<ColorPickPage> {
                 // ColorPickerType.custom: false,
               },
               pickerTypeLabels: <ColorPickerType, String>{
-                ColorPickerType.wheel: "Color Wheel".tl,
-                ColorPickerType.primary: "Primary".tl,
-                ColorPickerType.accent: 'Accent'.tl,
-                ColorPickerType.custom: 'Custom'.tl,
+                ColorPickerType.wheel: t.colorWheel,
+                ColorPickerType.primary: t.primary,
+                ColorPickerType.accent: t.accent,
+                ColorPickerType.custom: t.custom,
               },
               copyPasteBehavior: const ColorPickerCopyPasteBehavior(
                 copyButton: true,
@@ -482,7 +482,7 @@ class _ColorPickPageState extends State<ColorPickPage> {
             TextField(
               controller: controller,
               decoration: InputDecoration(
-                labelText: 'Enter hex color code, e.g. #FF000000'.tl,
+                labelText: t.enterHexColorCode,
                 border: OutlineInputBorder(),
               ),
               maxLength: 9,
@@ -497,11 +497,11 @@ class _ColorPickPageState extends State<ColorPickPage> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel'.tl),
+          child: Text(t.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(pickerColor),
-          child: Text('Apply'.tl),
+          child: Text(t.apply),
         ),
       ],
     );
