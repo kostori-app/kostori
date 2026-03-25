@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/protocol_parser.dart';
+import 'package:kostori/utils/qr_analysis_service.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:zxing2/qrcode.dart' hide BarcodeFormat;
 
 class QrScanResult {
   final String rawValue;
@@ -36,6 +35,8 @@ class QrScannerPage extends StatefulWidget {
 class _QrScannerPageState extends State<QrScannerPage>
     with SingleTickerProviderStateMixin {
   late final MobileScannerController _controller;
+  double _baseZoom = 0.0;
+  double _currentZoom = 0.0;
   bool _isScanning = true;
   bool _isAnalyzing = false;
   String? _errorMessage;
@@ -47,16 +48,8 @@ class _QrScannerPageState extends State<QrScannerPage>
   void initState() {
     super.initState();
     _controller = MobileScannerController(
-      formats: [
-        BarcodeFormat.qrCode,
-        BarcodeFormat.aztec,
-        BarcodeFormat.dataMatrix,
-        BarcodeFormat.pdf417,
-        BarcodeFormat.code128,
-        BarcodeFormat.code39,
-      ],
-      detectionSpeed: DetectionSpeed.noDuplicates,
       autoStart: true,
+      detectionSpeed: DetectionSpeed.noDuplicates,
     );
 
     _lineAnim = AnimationController(
@@ -79,12 +72,49 @@ class _QrScannerPageState extends State<QrScannerPage>
 
   void _onDetect(BarcodeCapture capture) {
     if (!_isScanning) return;
-    final raw = capture.barcodes.firstOrNull?.rawValue;
-    if (raw == null || raw.isEmpty) return;
+
+    final barcode = capture.barcodes.firstOrNull;
+    if (barcode == null) return;
+
+    // 如果捕获到条码对象但无法解析内容，说明可能太小了
+    if (barcode.rawValue == null || barcode.rawValue!.isEmpty) {
+      _autoZoomIn();
+      return;
+    }
 
     _isScanning = false;
     _controller.stop();
-    _returnResult(raw);
+    _returnResult(barcode.rawValue!);
+  }
+
+  void _autoZoomIn() {
+    if (_currentZoom < 0.8) {
+      setState(() {
+        _currentZoom = (_currentZoom + 0.15).clamp(0.0, 1.0);
+        _controller.setZoomScale(_currentZoom); // 使用正确的 setZoomScale 方法
+      });
+    }
+  }
+
+  // 2. 手势缩放逻辑
+  void _handleScaleStart(ScaleStartDetails details) {
+    _baseZoom = _currentZoom;
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    setState(() {
+      // details.scale 是手指张开的比例，1.0 代表不发生变化
+      _currentZoom = (_baseZoom + (details.scale - 1) * 0.5).clamp(0.0, 1.0);
+      _controller.setZoomScale(_currentZoom);
+    });
+  }
+
+  // 3. 双击切换缩放
+  void _handleDoubleTap() {
+    setState(() {
+      _currentZoom = _currentZoom > 0 ? 0.0 : 0.5;
+      _controller.setZoomScale(_currentZoom);
+    });
   }
 
   Future<void> _pickFromGallery() async {
@@ -109,30 +139,11 @@ class _QrScannerPageState extends State<QrScannerPage>
         bytes = await result.readAsBytes();
       }
 
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-      final uiImage = frame.image;
+      final result = await QrAnalysisService.decodeQrFromBytes(bytes);
 
-      final byteData = await uiImage.toByteData(
-        format: ui.ImageByteFormat.rawRgba,
-      );
-      if (byteData == null) {
-        App.rootContext.showMessage(message: t.imageDecodeFailed);
-        return;
-      }
-
-      final source = RGBLuminanceSource(
-        uiImage.width,
-        uiImage.height,
-        byteData.buffer.asInt32List(),
-      );
-      final bitmap = BinaryBitmap(GlobalHistogramBinarizer(source));
-
-      try {
-        final result = QRCodeReader().decode(bitmap);
-        if (!mounted) return;
-        _returnResult(result.text);
-      } catch (_) {
+      if (result != null && mounted) {
+        _returnResult(result);
+      } else {
         App.rootContext.showMessage(message: t.noQrCodeFoundInImage);
       }
     } finally {
@@ -153,14 +164,21 @@ class _QrScannerPageState extends State<QrScannerPage>
         fit: StackFit.expand,
         children: [
           Positioned.fill(
-            child: MobileScanner(
-              controller: _controller,
-              onDetect: _onDetect,
-              fit: BoxFit.cover,
+            child: GestureDetector(
+              onScaleStart: _handleScaleStart,
+              onScaleUpdate: _handleScaleUpdate,
+              onDoubleTap: _handleDoubleTap,
+              child: MobileScanner(
+                controller: _controller,
+                onDetect: _onDetect,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
 
-          Positioned.fill(child: _ScanOverlay(lineAnim: _linePosition)),
+          Positioned.fill(
+            child: IgnorePointer(child: _ScanOverlay(lineAnim: _linePosition)),
+          ),
 
           Positioned(
             top: 0,

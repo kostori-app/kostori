@@ -2308,6 +2308,16 @@ class TranslationsZhTw extends Translations
 
   @override String get webviewIsNotAvailable => 'Webview 不可用';
 
+  @override String get imageTitle => '標題';
+
+  @override String get imageSubtitle => '副標題';
+
+  @override String get selectBackground => '選擇背景';
+
+  @override String get changeBackground => '更換背景';
+
+  @override String get clearBackground => '清除背景';
+
   @override String get noQrCodeFoundInImage => '未在圖片中識別到二維碼';
 }
 
@@ -3442,6 +3452,11 @@ extension on TranslationsZhTw {
       'unlikeSuccess' => '取消按讚成功',
       'usage' => '使用情況',
       'webviewIsNotAvailable' => 'Webview 不可用',
+      'imageTitle' => '標題',
+      'imageSubtitle' => '副標題',
+      'selectBackground' => '選擇背景',
+      'changeBackground' => '更換背景',
+      'clearBackground' => '清除背景',
       'noQrCodeFoundInImage' => '未在圖片中識別到二維碼',
       _ => null,
     };

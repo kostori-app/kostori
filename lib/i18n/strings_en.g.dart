@@ -3394,6 +3394,21 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Please enter a valid episode number between 1-999'
 	String get pleaseEnterValidEpisodeNumber => 'Please enter a valid episode number between 1-999';
+
+	/// en: 'Title'
+	String get imageTitle => 'Title';
+
+	/// en: 'Subtitle'
+	String get imageSubtitle => 'Subtitle';
+
+	/// en: 'Select Background'
+	String get selectBackground => 'Select Background';
+
+	/// en: 'Change Background'
+	String get changeBackground => 'Change Background';
+
+	/// en: 'Clear Background'
+	String get clearBackground => 'Clear Background';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -4526,6 +4541,11 @@ extension on Translations {
 			'dlnaError' => 'DLNA error',
 			'pleaseEnterEpisodeNumber' => 'Please enter episode number',
 			'pleaseEnterValidEpisodeNumber' => 'Please enter a valid episode number between 1-999',
+			'imageTitle' => 'Title',
+			'imageSubtitle' => 'Subtitle',
+			'selectBackground' => 'Select Background',
+			'changeBackground' => 'Change Background',
+			'clearBackground' => 'Clear Background',
 			_ => null,
 		};
 	}

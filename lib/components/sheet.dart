@@ -255,39 +255,45 @@ class _QrShareSheetState extends ConsumerState<QrShareSheet> {
     return Sheet(
       title: t.shareQrCode,
       icon: Icons.qr_code_outlined,
-      initialSize: 0.75,
+      initialSize: 0.65,
       footer: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        child: Row(
           children: [
             _Chip(
-              label: '标题',
+              label: t.imageTitle,
               icon: Icons.title_outlined,
               selected: _config.showTitle,
               onSelected: (v) =>
                   setState(() => _config = _config.copyWith(showTitle: v)),
+              useTooltip: true,
             ),
+            const SizedBox(width: 8),
             _Chip(
-              label: '副标题',
+              label: t.imageSubtitle,
               icon: Icons.subtitles_outlined,
               selected: _config.showSubtitle,
               onSelected: (v) =>
                   setState(() => _config = _config.copyWith(showSubtitle: v)),
+              useTooltip: true,
             ),
+            const SizedBox(width: 8),
             _Chip(
-              label: hasBackground ? '更换背景' : '选择背景',
+              label: hasBackground ? t.changeBackground : t.selectBackground,
               icon: Icons.image_outlined,
               onTap: _pickBackground,
+              useTooltip: true,
             ),
-            if (hasBackground)
+            if (hasBackground) ...[
+              const SizedBox(width: 8),
               _Chip(
-                label: '清除背景',
+                label: t.clearBackground,
                 icon: Icons.hide_image_outlined,
                 onTap: _clearBackground,
+                useTooltip: true,
               ),
+            ],
+            const Spacer(),
             FilledButton.icon(
               onPressed: _isExporting ? null : _share,
               icon: _isExporting
@@ -369,8 +375,18 @@ class _QrCard extends StatelessWidget {
                           errorCorrectLevel: QrErrorCorrectLevel.H,
                           decoration: PrettyQrDecoration(
                             background: config.qrBackground,
-                            shape: PrettyQrSquaresSymbol(
-                              color: config.qrForeground,
+                            shape: const PrettyQrSmoothSymbol(
+                              color: PrettyQrBrush.gradient(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF80D8DA),
+                                    Color(0xFFF1919B),
+                                  ],
+                                ),
+                              ),
+                              roundFactor: 1.0,
                             ),
                             image: const PrettyQrDecorationImage(
                               image: AssetImage('images/app_icon.png'),
@@ -479,6 +495,7 @@ class _Chip extends StatelessWidget {
     this.selected,
     this.onTap,
     this.onSelected,
+    this.useTooltip = false,
   });
 
   final String label;
@@ -486,30 +503,30 @@ class _Chip extends StatelessWidget {
   final bool? selected;
   final VoidCallback? onTap;
   final ValueChanged<bool>? onSelected;
+  final bool useTooltip;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isOn = selected ?? false;
 
-    return GestureDetector(
-      onTap: selected != null ? () => onSelected!(!isOn) : onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isOn ? cs.primary : cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isOn ? cs.onPrimary : cs.onSurfaceVariant,
-            ),
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeInOut,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isOn ? cs.primary : cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: isOn ? cs.onPrimary : cs.onSurfaceVariant,
+          ),
+          if (!useTooltip) ...[
             const SizedBox(width: 6),
             Text(
               label,
@@ -519,8 +536,23 @@ class _Chip extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        ],
       ),
+    );
+
+    if (useTooltip) {
+      return Tooltip(
+        message: label,
+        child: GestureDetector(
+          onTap: selected != null ? () => onSelected!(!isOn) : onTap,
+          child: content,
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: selected != null ? () => onSelected!(!isOn) : onTap,
+      child: content,
     );
   }
 }

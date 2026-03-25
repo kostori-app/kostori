@@ -622,8 +622,8 @@ class ImageSaver {
     String mobileSuccessMessage = '截图成功',
   }) async {
     if (App.isDesktop) {
-      await writeFile(bytes: bytes, filename: filename);
       await Pasteboard.writeImage(bytes);
+      await writeFile(bytes: bytes, filename: filename);
       showResult(success: true, message: desktopSuccessMessage);
     } else {
       final file = await writeFile(bytes: bytes, filename: filename);

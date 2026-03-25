@@ -21,13 +21,13 @@ import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/protocol_parser.dart';
-import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:pretty_qr_code/pretty_qr_code.dart';
 
@@ -1459,42 +1459,35 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
           Positioned(
             bottom: 10,
             right: 10,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        captureAndSave(context);
-                        App.rootContext.pop();
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Icon(
-                          Icons.share,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onPrimaryContainer,
-                        ),
-                      ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    captureAndSave(context);
+                    App.rootContext.pop();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Icon(
+                      Icons.share,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -1868,7 +1861,6 @@ class _ShareQrCodeState extends State<ShareQrCode> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final qrColor = isDark ? cs.onSurface : Colors.black;
     final qrBg = isDark ? cs.surfaceContainerHighest : cs.surface;
     final content = widget.showQrCode
         ? ProtocolParser.encodeWithBase64Payload(widget.type, widget.payload)
@@ -1907,9 +1899,15 @@ class _ShareQrCodeState extends State<ShareQrCode> {
 
                         decoration: PrettyQrDecoration(
                           background: qrBg,
-                          shape: PrettyQrSmoothSymbol(
-                            color: qrColor,
-                            roundFactor: 0.8,
+                          shape: const PrettyQrSmoothSymbol(
+                            color: PrettyQrBrush.gradient(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF80D8DA), Color(0xFFF1919B)],
+                              ),
+                            ),
+                            roundFactor: 1.0,
                           ),
                           image: const PrettyQrDecorationImage(
                             image: AssetImage('images/app_icon.png'),

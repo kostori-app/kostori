@@ -1,8 +1,6 @@
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:kostori/i18n/strings.g.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +10,7 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
@@ -21,7 +20,7 @@ import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/pages/qr_scanner_page.dart';
 import 'package:kostori/utils/clipboard_provider.dart';
 import 'package:kostori/utils/protocol_parser.dart';
-import 'package:zxing2/qrcode.dart';
+import 'package:kostori/utils/qr_analysis_service.dart';
 
 final clipboardNotifierProvider = ChangeNotifierProvider<ClipboardProvider>(
   (ref) => ClipboardProvider(autoCheckOnInit: false),
@@ -48,7 +47,9 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         // payload 格式：{id}|{sourceKey}
         final parts = parsed.payload.split('|');
         if (parts.length < 2) {
-          App.rootContext.showMessage(message: t.linkFormatErrorCannotParseAnimeInfo);
+          App.rootContext.showMessage(
+            message: t.linkFormatErrorCannotParseAnimeInfo,
+          );
           return;
         }
         final animeId = parts[0];
@@ -56,7 +57,9 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
 
         final validKeys = AnimeSource.all().map((s) => s.key).toSet();
         if (!validKeys.contains(sourceKey)) {
-          App.rootContext.showMessage(message: t.sourceNotFoundPleaseConfirmSourceInstalled);
+          App.rootContext.showMessage(
+            message: t.sourceNotFoundPleaseConfirmSourceInstalled,
+          );
           return;
         }
 
@@ -64,7 +67,9 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
       } else if (parsed.type == KostoriRouteType.bangumi) {
         final id = int.tryParse(parsed.payload);
         if (id == null) {
-          App.rootContext.showMessage(message: t.linkFormatErrorCannotParseBangumiId);
+          App.rootContext.showMessage(
+            message: t.linkFormatErrorCannotParseBangumiId,
+          );
           return;
         }
 
@@ -84,7 +89,9 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
       } else if (parsed.type == KostoriRouteType.character) {
         final id = int.tryParse(parsed.payload);
         if (id == null) {
-          App.rootContext.showMessage(message: t.linkFormatErrorCannotParseCharacterId);
+          App.rootContext.showMessage(
+            message: t.linkFormatErrorCannotParseCharacterId,
+          );
           return;
         }
         App.rootContext.showMessage(message: t.verifyingCharacterInfo);
@@ -102,7 +109,9 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
       } else if (parsed.type == KostoriRouteType.person) {
         final id = int.tryParse(parsed.payload);
         if (id == null) {
-          App.rootContext.showMessage(message: t.linkFormatErrorCannotParsePersonId);
+          App.rootContext.showMessage(
+            message: t.linkFormatErrorCannotParsePersonId,
+          );
           return;
         }
         App.rootContext.showMessage(message: t.verifyingPersonInfo);
@@ -261,30 +270,11 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
   }
 
   Future<void> _decodeQrFromBytes(BuildContext context, Uint8List bytes) async {
-    final codec = await ui.instantiateImageCodec(bytes);
-    final frame = await codec.getNextFrame();
-    final uiImage = frame.image;
+    final result = await QrAnalysisService.decodeQrFromBytes(bytes);
 
-    final byteData = await uiImage.toByteData(
-      format: ui.ImageByteFormat.rawRgba,
-    );
-    if (byteData == null) {
-      App.rootContext.showMessage(message: t.imageDecodeFailed);
-      return;
-    }
-
-    final source = RGBLuminanceSource(
-      uiImage.width,
-      uiImage.height,
-      byteData.buffer.asInt32List(),
-    );
-    final bitmap = BinaryBitmap(GlobalHistogramBinarizer(source));
-
-    try {
-      final result = QRCodeReader().decode(bitmap);
-      if (!mounted) return;
-      _handleRaw(result.text);
-    } catch (_) {
+    if (result != null && mounted) {
+      _handleRaw(result);
+    } else {
       App.rootContext.showMessage(message: t.noQrCodeFoundInImage);
     }
   }
@@ -376,7 +366,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
                         _pickFromGallery(context);
                       },
                     ),
-                    if (busy || App.isMobile) ...[
+                    if (App.isMobile) ...[
                       const SizedBox(width: 8),
                       _ActionTile(
                         icon: Icons.camera_alt_outlined,
