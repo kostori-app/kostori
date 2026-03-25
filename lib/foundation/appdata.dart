@@ -202,6 +202,7 @@ class Settings with ChangeNotifier {
     "enableSourceLog": true,
     'enablePlayerLog': true,
     'deepleKey': '',
+    'explore_sources_order': [],
   };
 
   dynamic operator [](String key) {

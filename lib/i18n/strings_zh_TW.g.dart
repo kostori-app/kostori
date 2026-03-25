@@ -8,2317 +8,1137 @@
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:slang/generated.dart';
-
 import 'strings.g.dart';
 
 // Path: <root>
-class TranslationsZhTw extends Translations
-    with BaseTranslations<AppLocale, Translations> {
-  /// You can call this constructor and build your own translation instance of this locale.
-  /// Constructing via the enum [AppLocale.build] is preferred.
-  TranslationsZhTw({Map<String,
-      Node>? overrides, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver, TranslationMetadata<
-      AppLocale,
-      Translations>? meta})
-      : assert(overrides ==
-      null, 'Set "translation_overrides: true" in order to enable this feature.'),
-        $meta = meta ?? TranslationMetadata(
-          locale: AppLocale.zhTw,
-          overrides: overrides ?? {},
-          cardinalResolver: cardinalResolver,
-          ordinalResolver: ordinalResolver,
-        ),
-        super(cardinalResolver: cardinalResolver,
-          ordinalResolver: ordinalResolver) {
-    super.$meta.setFlatMapFunction(
-        $meta.getTranslation); // copy base translations to super.$meta
-    $meta.setFlatMapFunction(_flatMapFunction);
-  }
-
-  /// Metadata for the translations of <zh-TW>.
-  @override final TranslationMetadata<AppLocale, Translations> $meta;
-
-  /// Access flat map
-  @override dynamic operator [](String key) =>
-      $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
-
-  late final TranslationsZhTw _root = this; // ignore: unused_field
-
-  @override
-  TranslationsZhTw $copyWith(
-      {TranslationMetadata<AppLocale, Translations>? meta}) =>
-      TranslationsZhTw(meta: meta ?? this.$meta);
-
-  // Translations
-  @override String aToAddBToRemoveCToMove(
-      {required Object a, required Object b, required Object c}) =>
-      '${a} 新增 • ${b} 移除 • ${c} 移動';
-
-  @override String aToAddBToRemove({required Object a, required Object b}) =>
-      '${a} 新增 • ${b} 移除';
-
-  @override String cUpdates({required Object c}) => '${c} 個更新';
-
-  @override String get aNewVersionIsAvailableDoYouWantToUpdateNow =>
-      '發現新版本，是否立即更新？';
-
-  @override String get app => '應用';
-
-  @override String get about => '關於';
-
-  @override String get accounts => '帳號';
-
-  @override String get addAAnimeSourceInHomePage => '在首頁新增動漫源';
-
-  @override String get addAnimeSource => '新增動漫源';
-
-  @override String get addNewFavoriteTo => '新增收藏至';
-
-  @override String get addToFavorites => '加入收藏';
-
-  @override String get add => '新增';
-
-  @override String addedCountAnimesToDownloadQueue({required Object count}) =>
-      '已將 ${count} 部動漫加入下載隊列';
-
-  @override String get added => '已新增';
-
-  @override String get aggregatedSearch => '聚合搜尋';
-
-  @override String get aggregated => '聚合';
-
-  @override String get aiSource => 'AI 數據源';
-
-  @override String get ai => 'AI';
-
-  @override String get allEpisodes => '全部劇集';
-
-  @override String get alsoRemoveFilesOnDisk => '同時刪除本地檔案';
-
-  @override String get animeSourceList => '動漫源列表';
-
-  @override String get animeSource => '動漫源';
-
-  @override String get appearance => '外觀';
-
-  @override String get soulProfile => '靈魂画像';
-
-  @override String get imageTag => 'AI 圖片標籤';
-
-  @override String get aiChat => 'AI 聊天';
-
-  @override String get summary => '總結';
-
-  @override String get soulProfilerDescription =>
-      '根據你的觀看歷史，分析你的動漫人格';
-
-  @override String get imageTagDescription =>
-      '根據你的偏好生成 AI 繪畫風格標籤';
-
-  @override String get aiChatDescription => '多輪對話，AI 具有上下文記憶';
-
-  @override String get summaryDescription => '自動生成你的動漫觀看週報/月報';
-
-  @override String get areYouSureYouWantToClearYourHistory =>
-      '確定要清除歷史記錄嗎？';
-
-  @override String get areYouSureYouWantToClearYourProgress =>
-      '確定要清除全部進度嗎？';
-
-  @override String get authorizationRequired => '需要身分驗證';
-
-  @override String get autoPageTurning => '自動翻頁';
-
-  @override String get back => '返回';
-
-  @override String get bangumi => '番組計劃';
-
-  @override String get block => '封鎖';
-
-  @override String get blue => '藍色';
-
-  @override String get brief => '簡介';
-
-  @override String get cacheLimit => '快取限制';
-
-  @override String get cacheSize => '快取大小';
-
-  @override String get cacheCleared => '快取已清除';
-
-  @override String get cancel => '取消';
-
-  @override String get categories => '分類';
-
-  @override String get categoryPages => '分類頁面';
-
-  @override String get characters => '角色';
-
-  @override String get checkForUpdatesOnStartup => '啟動時檢查更新';
-
-  @override String get checkForUpdates => '檢查更新';
-
-  @override String get checkUpdates => '檢查更新';
-
-  @override String get check => '檢查';
-
-  @override String get clearCache => '清除快取';
-
-  @override String get clearHistory => '清除歷史記錄';
-
-  @override String get clearProgress => '清除進度';
-
-  @override String get clearSearchHistory => '清除搜尋歷史';
-
-  @override String get clearUnfavorited => '清除未收藏';
-
-  @override String get clear => '清除';
-
-  @override String get clickIfLoginExpired => '如果登入過期請點擊';
-
-  @override String get close => '關閉';
-
-  @override String get comment => '吐槽';
-
-  @override String get comments => '吐槽箱';
-
-  @override String get confirm => '確定';
-
-  @override String get kContinue => '繼續';
-
-  @override String get copied => '已複製';
-
-  @override String get analyze => '分析';
-
-  @override String get analyzing => '分析中...';
-
-  @override String get analysisResult => '分析結果';
-
-  @override String get yourQuestion => '您的提問';
-
-  @override String get pleaseEnterAPrompt => '請輸入提示詞';
-
-  @override String get egWhatKindOfAnimeDoILike => '例如：我喜歡什麼樣的動漫？';
-
-  @override String get aiSourceNotAvailable => 'AI 數據源不可用';
-
-  @override String get copyId => '複製 ID';
-
-  @override String get copyTitle => '複製標題';
-
-  @override String get copyUrl => '複製連結';
-
-  @override String get copyToFolder => '複製到資料夾';
-
-  @override String get copy => '複製';
-
-  @override String get createAccount => '建立帳號';
-
-  @override String get createFolder => '建立資料夾';
-
-  @override String get create => '建立';
-
-  @override String currentlySeenEp({required Object ep}) => '目前看到 ${ep}';
-
-  @override String get dnsOverrides => 'DNS 覆寫';
-
-  @override String get dark => '深色';
-
-  @override String get dataSync => '數據同步';
-
-  @override String get data => '數據';
-
-  @override String get dateDesc => '按日期降序';
-
-  @override String get date => '日期';
-
-  @override String get defaultSearchTarget => '預設搜尋目標';
-
-  @override String deleteCAnimes({required Object c}) => '刪除 ${c} 部動漫嗎？';
-
-  @override String get deleteAnime => '刪除動漫';
-
-  @override String get deleteFolder => '刪除資料夾';
-
-  @override String deleteAnimeSourceN({required Object n}) =>
-      '確定刪除動漫源 \'${n}\' 嗎？';
-
-  @override String deleteFolderF({required Object f}) =>
-      '確定刪除資料夾 \'${f}\' 嗎？';
-
-  @override String get deleteFolderPrompt => '刪除資料夾？';
-
-  @override String get delete => '刪除';
-
-  @override String get deleteRoom => '刪除房間';
-
-  @override String get description => '描述';
-
-  @override String get deselect => '取消選擇';
-
-  @override String get detailed => '詳細';
-
-  @override String get details => '詳情';
-
-  @override String determineTheBindingA({required Object a}) =>
-      '確定綁定：${a} ?';
-
-  @override String get disable => '停用';
-
-  @override String get disabled => '已停用';
-
-  @override String discoverTheNewVersionV({required Object v}) =>
-      '發現新版本 ${v}';
-
-  @override String get displayModeOfAnimeTile => '動漫卡片顯示模式';
-
-  @override String get displayTimeAndBatteryInfoInReader =>
-      '閱讀器內顯示時間及電量';
-
-  @override String get doNotReportAnyIssuesRelatedToSourcesToAppRepo =>
-      '請勿向主儲存庫報告任何與源有關的問題。';
-
-  @override String get downloadAll => '下載全部';
-
-  @override String get downloadSelected => '下載選中';
-
-  @override String get downloadThreads => '下載執行緒';
-
-  @override String get download => '下載';
-
-  @override String get downloading => '下載中';
-
-  @override String get edit => '編輯';
-
-  @override String get enableDnsOverrides => '啟用 DNS 覆寫';
-
-  @override String get enable => '啟用';
-
-  @override String get end => '結束';
-
-  @override String episodeEp({required Object ep}) => '第 ${ep} 話';
-
-  @override String get error => '錯誤';
-
-  @override String get exitMultiSelect => '退出多選';
-
-  @override String get exit => '退出';
-
-  @override String get explorePages => '發現頁面';
-
-  @override String get explore => '發現';
-
-  @override String get exportAppData => '匯出應用數據';
-
-  @override String get export => '匯出';
-
-  @override String get failedToImport => '匯入失敗';
-
-  @override String get fanyuan => '番源';
-
-  @override String get favoriteActions => '收藏夾操作';
-
-  @override String get favorite => '收藏';
-
-  @override String get favorites => '收藏夾';
-
-  @override String get finished => '已完成';
-
-  @override String get folderName => '資料夾名稱';
-
-  @override String get folder => '資料夾';
-
-  @override String get folders => '資料夾';
-
-  @override String get following => '追蹤中';
-
-  @override String get fullScreen => '全螢幕';
-
-  @override String get fullscreen => '全螢幕';
-
-  @override String get gitMirror => 'Git 鏡像';
-
-  @override String get green => '綠色';
-
-  @override String get help => '幫助';
-
-  @override String get history => '歷史';
-
-  @override String get home => '首頁';
-
-  @override String get iconProducer => '圖示製作';
-
-  @override String get ignoreCertificateErrors => '忽略憑證錯誤';
-
-  @override String get importAnimes => '匯入動漫';
-
-  @override String get importAppData => '匯入應用數據';
-
-  @override String get importFromFile => '從檔案匯入';
-
-  @override String get import => '匯入';
-
-  @override String importedAAnimes({required Object a}) => '已匯入 ${a} 部動漫';
-
-  @override String get information => '資訊';
-
-  @override String get initialPage => '初始頁面';
-
-  @override String get invertSelection => '反選';
-
-  @override String get keywordBlocking => '關鍵字封鎖';
-
-  @override String get kostoriIsAFreeAndOpenSourceAppForAnimeWatching =>
-      'Kostori 是一款免費開源的追番應用。';
-
-  @override String get language => '語言';
-
-  @override String get later => '稍後';
-
-  @override String get light => '淺色';
-
-  @override String get limitImageWidth => '限制圖片寬度';
-
-  @override String get localFavorites => '本地收藏';
-
-  @override String get local => '本地';
-
-  @override String get logIn => '登入';
-
-  @override String get logOut => '登出';
-
-  @override String get log => '日誌';
-
-  @override String get manualTranslation => '手動翻譯';
-
-  @override String get enterTextToTranslate => '輸入需要翻譯的內容';
-
-  @override String get translate => '翻譯';
-
-  @override String get translating => '翻譯中...';
-
-  @override String get translationResult => '翻譯結果';
-
-  @override String get selectTranslationLanguage => '選擇翻譯語言';
-
-  @override String get pleaseEnterTextToTranslate => '請輸入需要翻譯的內容';
-
-  @override String get loginWithWebview => '透過 Webview 登入';
-
-  @override String get login => '登入';
-
-  @override String get longPressAndDragToReorder => '長按並拖曳以排序。';
-
-  @override String get longPressOnTheFavoriteButtonToQuicklyAddToThisFolder =>
-      '長按收藏按鈕可快速新增至此資料夾';
-
-  @override String get longPressToZoom => '長按縮放';
-
-  @override String get me => '我';
-
-  @override String get moveToFirst => '移至首位';
-
-  @override String get moveFavoriteAfterReading => '看畢後移動收藏';
-
-  @override String get moveToFolder => '移動到資料夾';
-
-  @override String get move => '移動';
-
-  @override String get multiSelect => '多選';
-
-  @override String get multipleAnimes => '多部動漫';
-
-  @override String get name => '名稱';
-
-  @override String get networkFavoritePages => '網路收藏頁面';
-
-  @override String get network => '網路';
-
-  @override String get newFolder => '新資料夾';
-
-  @override String get newVersion => '新版本';
-
-  @override String get newVersionAvailable => '有新版本可用';
-
-  @override String get next => '下一步';
-
-  @override String get noExplorePages => '暫無發現頁面';
-
-  @override String get noNewVersionAvailable => '目前已是最新版本';
-
-  @override String get noSearchResultsFound => '未找到搜尋結果';
-
-  @override String get noLikedAnimeFound => '未找到喜歡的動漫';
-
-  @override String get noUpdates => '暫無更新';
-
-  @override String get ok => '確定';
-
-  @override String get onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer =>
-      '一旦操作成功，應用將自動與伺服器同步數據。';
-
-  @override String get openLog => '開啟日誌';
-
-  @override String get openAnime => '開啟動漫';
-
-  @override String get openHelp => '查看幫助';
-
-  @override String get openInBrowser => '在瀏覽器中開啟';
-
-  @override String get openLink => '開啟連結';
-
-  @override String get open => '開啟';
-
-  @override String get operation => '操作';
-
-  @override String get orange => '橙色';
-
-  @override String get order => '排序';
-
-  @override String get password => '密碼';
-
-  @override String get pause => '暫停';
-
-  @override String get paused => '已暫停';
-
-  @override String get pink => '粉色';
-
-  @override String get playlist => '播放列表';
-
-  @override String get pleaseCheckYourSettings => '請檢查您的設定';
-
-  @override String get preview => '預覽';
-
-  @override String get proxy => '代理';
-
-  @override String get purple => '紫色';
-
-  @override String get quickFavorite => '快速收藏';
-
-  @override String get ranking => '排行榜';
-
-  @override String get reLogin => '重新登入';
-
-  @override String get read => '閱讀';
-
-  @override String get reading => '閱讀中';
-
-  @override String get red => '紅色';
-
-  @override String get refresh => '重新整理';
-
-  @override String get related => '相關';
-
-  @override String get removeAnimeFromFavorite => '確定從收藏中移除該動漫嗎？';
-
-  @override String get remove => '移除';
-
-  @override String get rename => '重新命名';
-
-  @override String get reorder => '重新排序';
-
-  @override String get resetBangumiData => '重置 Bangumi 數據';
-
-  @override String get reset => '重置';
-
-  @override String get retry => '重試';
-
-  @override String get reviews => '評論';
-
-  @override String get saveImage => '儲存圖片';
-
-  @override String get savedFailed => '儲存失敗';
-
-  @override String get saved => '已儲存';
-
-  @override String get searchAll => '搜尋全部';
-
-  @override String get searchHistory => '搜尋歷史';
-
-  @override String get searchIn => '搜尋自';
-
-  @override String get search => '搜尋';
-
-  @override String get selectAll => '全選';
-
-  @override String get selectADirectoryWhichContainsTheAnimeFiles =>
-      '選擇包含動漫檔案的目錄。';
-
-  @override String get selectAFolder => '選擇一個資料夾';
-
-  @override String get selectAnImageOnScreen => '選擇螢幕上的圖像';
-
-  @override String get selectFile => '選擇檔案';
-
-  @override String get selectInRange => '範圍選擇';
-
-  @override String get select => '選擇';
-
-  @override String selectedAAnimes({required Object a}) => '已選取 ${a} 部動漫';
-
-  @override String get setCacheLimit => '設定快取限制';
-
-  @override String get setNewStoragePath => '設定新儲存路徑';
-
-  @override String get setSourceListUrl => '設定源列表 URL';
-
-  @override String get set => '設定';
-
-  @override String get settings => '設定';
-
-  @override String get share => '分享';
-
-  @override String get showAll => '顯示全部';
-
-  @override String get showFavoriteStatusOnAnimeTile => '在卡片上顯示收藏狀態';
-
-  @override String get showHistoryOnAnimeTile => '在卡片上顯示歷史記錄';
-
-  @override String get singleAnime => '單部動漫';
-
-  @override String get sizeInMb => '大小 (MB)';
-
-  @override String get sizeOfAnimeTile => '動漫卡片尺寸';
-
-  @override String get sort => '排序';
-
-  @override String get sourceFolder => '源資料夾';
-
-  @override String get sourceUrl => '源 URL';
-
-  @override String get staffList => '製作人員';
-
-  @override String get start => '開始';
-
-  @override String get storagePathForLocalAnimes => '本地動漫儲存路徑';
-
-  @override String get submit => '提交';
-
-  @override String get suggestions => '建議';
-
-  @override String get syncData => '同步數據';
-
-  @override String get sync => '同步';
-
-  @override String get syncingData => '正在同步數據';
-
-  @override String get system => '系統';
-
-  @override String get tapToTurnPages => '點擊翻頁';
-
-  @override String get theUrlShouldPointToAIndexJsonFile =>
-      'URL 應指向一個 \'index.json\' 檔案';
-
-  @override String theFolderIsLinkedToSource({required Object source}) =>
-      '該資料夾已關聯至 ${source}';
-
-  @override String get themeColor => '主題色';
-
-  @override String get themeMode => '主題模式';
-
-  @override String get timetable => '每日放送';
-
-  @override String get topics => '討論';
-
-  @override String get topicsLatest => '最新討論';
-
-  @override String get topicsTrending => '熱門討論';
-
-  @override String get turnPageByVolumeKeys => '使用音量鍵翻頁';
-
-  @override String get unselected => '未選取';
-
-  @override String get updateAnimesInfo => '更新動漫資訊';
-
-  @override String get updateTime => '更新時間';
-
-  @override String get update => '更新';
-
-  @override String get updatesAvailable => '有更新可用';
-
-  @override String get updating => '正在更新';
-
-  @override String get uploadTime => '上傳時間';
-
-  @override String get upload => '上傳';
-
-  @override String get uploader => '上傳者';
-
-  @override String get useAConfigFile => '使用設定檔';
-
-  @override String get user => '使用者';
-
-  @override String get username => '使用者名稱';
-
-  @override String get userProfileAnalysis => '使用者畫像分析';
-
-  @override String get viewList => '查看列表';
-
-  @override String get viewMore => '查看更多';
-
-  @override String get view => '查看';
-
-  @override String get webDavAutoSync => 'WebDAV 自動同步';
-
-  @override String get kDefault => '預設';
-
-  @override String lastWatchTimeTime({required Object time}) =>
-      '上次觀看時間 ${time}';
-
-  @override String minAppVersionRequired({required Object version}) =>
-      '需要最低應用版本 ${version}';
-
-  @override String get more => '更多';
-
-  @override String get notYetAiring => '尚未開播';
-
-  @override String fullBEpisodesReleased({required Object b}) =>
-      '全 ${b} 話已發佈';
-
-  @override String upToEpSTotalEpsPlanned(
-      {required Object s, required Object t}) => '更新至 ${s} 話 • 全 ${t} 話';
-
-  @override String upToEpETotalEpsPlanned(
-      {required Object e, required Object s, required Object t}) =>
-      '更新至 ${e} (${s}) 話 • 全 ${t} 話';
-
-  @override String tReviewsR({required Object t, required Object r}) =>
-      '${t} 條評論 | #${r}';
-
-  @override String tReviews({required Object t}) => '${t} 條評論';
-
-  @override String get showMore => '展開 +';
-
-  @override String get showLess => '收起 -';
-
-  @override String get tags => '標籤';
-
-  @override String get clearTags => '清除標籤';
-
-  @override String showingLResults({required Object l}) => '顯示 ${l} 個結果';
-
-  @override String get selectTime => '選擇時間';
-
-  @override String get switchLayout => '切換佈局';
-
-  @override String get enterKeywords => '輸入關鍵詞...';
-
-  @override String get ratingChart => '評分圖表';
-
-  @override String get lineChart => '折線圖';
-
-  @override String get barChart => '柱狀圖';
-
-  @override String standardDeviationS({required Object s}) => '標準差：${s}';
-
-  @override String get nobodysPostedAnythingYet => '目前還沒有人發佈內容...';
-
-  @override String get reload => '重新載入';
-
-  @override String get failedToLoadPleaseTryAgain => '載入失敗，請重試。';
-
-  @override String get doing => '在看';
-
-  @override String get collect => '看過';
-
-  @override String get wish => '想看';
-
-  @override String get onHold => '擱置';
-
-  @override String get dropped => '拋棄';
-
-  @override String get todayRecommendation => '今日推薦';
-
-  @override String tTotalCount({required Object t}) => '${t} 條總計';
-
-  @override String get introduction => '內容簡介';
-
-  @override String get linkedItems => '關聯條目';
-
-  @override String timeS({required Object s}) => '時間：${s}';
-
-  @override String broadcastTimeA({required Object a}) => '播出時間：${a}';
-
-  @override String get profileInformation => '個人資訊';
-
-  @override String get characterIntroduction => '角色簡介';
-
-  @override String voiceActorC({required Object c}) => '聲優：${c}';
-
-  @override String episodeEN({required Object e, required Object n}) =>
-      '第 ${e} 話：${n}';
-
-  @override String get hotspot => '熱點';
-
-  @override String get completed => '已完結';
-
-  @override String get mainCharacter => '主角';
-
-  @override String get supportingCharacter => '配角';
-
-  @override String get cameo => '客串';
-
-  @override String get idleCorner => '閒暇角落';
-
-  @override String get unknown => '未知';
-
-  @override String get debugInfo => '調試資訊';
-
-  @override String get install => '安裝';
-
-  @override String get viewOnGithub => '在 GitHub 上查看';
-
-  @override String get noProxyOverrides => '無代理覆寫';
-
-  @override String get save => '儲存';
-
-  @override String get mirror => '鏡像';
-
-  @override String get result => '結果';
-
-  @override String get all => '全部';
-
-  @override String get reloadConfigs => '重載配置';
-
-  @override String get invalidUrlConfig => '無效的 URL 設定';
-
-  @override String get inconsistentVersions => '版本不一致';
-
-  @override String noUpdateAvailableForThisArchitectureA({required Object a}) =>
-      '該架構 (${a}) 暫無可用更新';
-
-  @override String get checkUpdateFailed => '檢查更新失敗...';
-
-  @override String get downloadFailed => '下載失敗';
-
-  @override String get failedToCheckTheHashValuePleaseTryAgain =>
-      '檢查雜湊值失敗，請重試';
-
-  @override String get english => '英語';
-
-  @override String get dynamicColor => '動態顏色';
-
-  @override String get mondaySchedule => '週一放送';
-
-  @override String get tuesdaySchedule => '週二放送';
-
-  @override String get wednesdaySchedule => '週三放送';
-
-  @override String get thursdaySchedule => '週四放送';
-
-  @override String get fridaySchedule => '週五放送';
-
-  @override String get saturdaySchedule => '週六放送';
-
-  @override String get sundaySchedule => '週日放送';
-
-  @override String get popularityRanking => '人氣排行';
-
-  @override String get imageOperations => '圖片操作';
-
-  @override String get saveToAlbum => '儲存到相簿';
-
-  @override String get stitchLongImage => '拼長圖';
-
-  @override String get stitchHorizontalImage => '橫向拼圖';
-
-  @override String get stitchSubtitles => '台詞拼接';
-
-  @override String get saveLongImage => '儲存長圖';
-
-  @override String get borderColor => '邊框顏色';
-
-  @override String get conversationTitle => '對話標題';
-
-  @override String get aiConversation => 'AI 對話';
-
-  @override String get topicList => '話題列表';
-
-  @override String get startConversationWithAI => '開始與 AI 對話吧';
-
-  @override String get newConversation => '新建對話';
-
-  @override String get inputMessage => '輸入訊息...';
-
-  @override String get noTopicsYet => '暫無話題';
-
-  @override String get selectAiPersonality => '選擇 AI 人格';
-
-  @override String get apply => '應用';
-
-  @override String get heightPx => '高度(px)';
-
-  @override String get setUniformHeight => '設定統一高度';
-
-  @override String get uniformHeight => '統一高度';
-
-  @override String get cropImage => '裁剪圖片';
-
-  @override String get finishCropping => '完成裁剪';
-
-  @override String get sortImages => '圖片排序';
-
-  @override String get finishSorting => '完成排序';
-
-  @override String get noImages => '暫無圖片';
-
-  @override String cropHeightCPx({required Object c}) => '裁剪高度：${c} px';
-
-  @override String get enterHexColorCode =>
-      '輸入十六進位顏色代碼，例如 #FF000000';
-
-  @override String get showImageBorders => '顯示圖片邊框';
-
-  @override String get outerBorderRadius => '外邊框圓角';
-
-  @override String get outerBorderWidth => '外邊框寬度';
-
-  @override String get outerBorderColor => '外邊框顏色';
-
-  @override String get showOuterBorder => '顯示外邊框';
-
-  @override String get innerBorderWidth => '內邊框寬度';
-
-  @override String get innerBorderColor => '內邊框顏色';
-
-  @override String get borderSettings => '邊框設定';
-
-  @override String get saving => '正在儲存';
-
-  @override String get saveSuccessful => '儲存成功';
-
-  @override String saveFailedE({required Object e}) => '儲存失敗：${e}';
-
-  @override String get failedToLoadImagesOrNoImages => '載入圖片失敗或無圖片';
-
-  @override String get monday => '週一';
-
-  @override String get tuesday => '週二';
-
-  @override String get wednesday => '週三';
-
-  @override String get thursday => '週四';
-
-  @override String get friday => '週五';
-
-  @override String get saturday => '週六';
-
-  @override String get sunday => '週日';
-
-  @override String get defaultOrder => '預設排序';
-
-  @override String get byTime => '按時間';
-
-  @override String get byName => '按名稱';
-
-  @override String get recentlyWatched => '最近觀看';
-
-  @override String get localFavoriteBinding => '本地收藏綁定';
-
-  @override String get awful => '不忍直視';
-
-  @override String get terrible => '非常差';
-
-  @override String get bad => '差';
-
-  @override String get poor => '較差';
-
-  @override String get okay => '不過不失';
-
-  @override String get fine => '還行';
-
-  @override String get good => '推薦';
-
-  @override String get great => '力薦';
-
-  @override String get master => '神作';
-
-  @override String get epic => '超神作';
-
-  @override String get overview => '總覽';
-
-  @override String get discussion => '討論';
-
-  @override String get logs => '日誌';
-
-  @override String get playerDetails => '播放器詳情';
-
-  @override String get status => '狀態';
-
-  @override String get audioOptionLowLatency => '音訊選項：\n 低延遲';
-
-  @override String get audioOptionCompatibility => '音訊選項：\n 相容性';
-
-  @override String get switchSuccessful => '切換成功';
-
-  @override String get switchFailed => '切換失敗';
-
-  @override String get remoteCast => '遠端投屏';
-
-  @override String get copyLink => '複製連結';
-
-  @override String get aValidWebDavDirectoryUrl => '有效的 WebDAV 目錄 URL';
-
-  @override String get autoSyncData => '自動同步數據';
-
-  @override String get screenshotShare => '截圖分享';
-
-  @override String get bestMatch => '最佳匹配';
-
-  @override String get topRank => '排名靠前';
-
-  @override String get mostFavorited => '最多收藏';
-
-  @override String get highestRating => '最高評分';
-
-  @override String get selectColor => '選擇顏色';
-
-  @override String get colorWheel => '色輪';
-
-  @override String get primary => '主要';
-
-  @override String get accent => '強調';
-
-  @override String get custom => '自定義';
-
-  @override String confirmC({required Object c}) => '確定 (${c})';
-
-  @override String selectC({required Object c}) => '選擇 ${c}';
-
-  @override String get selectDate => '選擇日期';
-
-  @override String get startDate => '開始日期';
-
-  @override String get endDate => '結束日期';
-
-  @override String get clearDate => '清除日期';
-
-  @override String get pleaseSelectADate => '請選擇日期';
-
-  @override String get endDateCannotBeEarlierThanStartDate =>
-      '結束日期不能早於開始日期';
-
-  @override String get type => '類型';
-
-  @override String get background => '背景';
-
-  @override String get emotion => '情感';
-
-  @override String get source => '來源';
-
-  @override String get audience => '受眾';
-
-  @override String get category => '分類';
-
-  @override String imageOperationsI({required Object i}) => '圖片操作 (${i})';
-
-  @override String sSelected({required Object s}) => '已選取 ${s}';
-
-  @override String get simplifiedChinese => '簡體中文';
-
-  @override String get traditionalChinese => '繁體中文';
-
-  @override String get teal => '青色';
-
-  @override String get deepPurple => '深紫色';
-
-  @override String get yellow => '黃色';
-
-  @override String get cyan => '青藍色';
-
-  @override String get m3Default => 'M3 預設';
-
-  @override String get deepOrange => '深橘色';
-
-  @override String get indigo => '靛藍色';
-
-  @override String get cloudyBlue => '雲藍色';
-
-  @override String get darkPastelGreen => '暗粉綠色';
-
-  @override String get dust => '塵埃色';
-
-  @override String get electricLime => '電光酸橙色';
-
-  @override String get freshGreen => '鮮綠色';
-
-  @override String get lightEggplant => '淺茄紫色';
-
-  @override String get nastyGreen => '髒綠色';
-
-  @override String get reallyLightBlue => '極淺藍色';
-
-  @override String get tea => '茶綠色';
-
-  @override String get warmPurple => '暖紫色';
-
-  @override String get yellowishTan => '黃棕色';
-
-  @override String get cement => '水泥色';
-
-  @override String get darkGrassGreen => '暗草綠色';
-
-  @override String get dustyTeal => '粉青色';
-
-  @override String get greyTeal => '灰青色';
-
-  @override String get macaroniAndCheese => '起司通心粉色';
-
-  @override String get pinkishTan => '粉棕色';
-
-  @override String get spruce => '杉綠色';
-
-  @override String get strongBlue => '強藍色';
-
-  @override String get toxicGreen => '毒液綠色';
-
-  @override String get windowsBlue => '視窗藍色';
-
-  @override String get blueBlue => '純藍色';
-
-  @override String get blueWithAHintOfPurple => '略帶紫色的藍色';
-
-  @override String get booger => '鼻涕綠色';
-
-  @override String get brightSeaGreen => '亮海綠色';
-
-  @override String get greenTeal => '綠青色';
-
-  @override String get brownish => '棕色調';
-
-  @override String get offGreen => '淡綠色';
-
-  @override String get tangerine => '橘黃色';
-
-  @override String get uglyGreen => '醜綠色';
-
-  @override String get secondary => '次要';
-
-  @override String get tertiary => '三級';
-
-  @override String get surface => '表面';
-
-  @override String get jumpToPage => '跳轉到頁';
-
-  @override String get page => '頁碼';
-
-  @override String pagePM({required Object p, required Object m}) =>
-      '第 ${p} / ${m} 頁';
-
-  @override String get first => '第一頁';
-
-  @override String get last => '最後一頁';
-
-  @override String get disableLengthLimitation => '停用長度限制';
-
-  @override String get updateLog => '更新日誌';
-
-  @override String get liked => '喜歡';
-
-  @override String get rating => '評分';
-
-  @override String get pixelFormat => '像素格式';
-
-  @override String get hwPixelFormat => '硬體像素格式';
-
-  @override String get resolution => '解析度';
-
-  @override String get displayWidth => '顯示寬度';
-
-  @override String get displayHeight => '顯示高度';
-
-  @override String get aspect => '比例';
-
-  @override String get pixelAspectRatio => '像素寬高比';
-
-  @override String get colormatrix => '色彩矩陣';
-
-  @override String get colorLevels => '色彩範圍';
-
-  @override String get primaries => '原色';
-
-  @override String get gamma => '伽馬值';
-
-  @override String get signalPeak => '信號峰值';
-
-  @override String get lights => '亮度';
-
-  @override String get chromaLocation => '色度位置';
-
-  @override String get rotate => '旋轉';
-
-  @override String get stereoIn => '立體聲輸入';
-
-  @override String get averageBpp => '平均 Bpp';
-
-  @override String get alpha => '透明度';
-
-  @override String get trackId => '軌道 ID';
-
-  @override String get trackTitle => '軌道標題';
-
-  @override String get trackLanguage => '軌道語言';
-
-  @override String get trackImage => '軌道圖像';
-
-  @override String get trackAlbumArt => '軌道專輯封面';
-
-  @override String get trackCodec => '軌道編解碼器';
-
-  @override String get trackDecoder => '軌道解碼器';
-
-  @override String get trackWidth => '軌道寬度';
-
-  @override String get trackHeight => '軌道高度';
-
-  @override String get trackChannelsCount => '軌道聲道數';
-
-  @override String get trackChannels => '軌道聲道佈局';
-
-  @override String get trackSampleRate => '軌道採樣率';
-
-  @override String get trackFps => '軌道幀率';
-
-  @override String get trackBitrate => '軌道位元率';
-
-  @override String get trackRotate => '軌道旋轉';
-
-  @override String get trackPar => '軌道 PAR';
-
-  @override String get trackAudioChannels => '軌道音訊聲道';
-
-  @override String get format => '格式';
-
-  @override String get sampleRate => '採樣率';
-
-  @override String get channelCount => '聲道數';
-
-  @override String get hrChannels => 'HR 聲道';
-
-  @override String get uriTrack => 'URI 軌道';
-
-  @override String get channelsCount => '聲道總數';
-
-  @override String get channels => '聲道';
-
-  @override String get fps => '幀率';
-
-  @override String get bitrate => '位元率';
-
-  @override String get par => 'PAR';
-
-  @override String get audioChannels => '音訊聲道';
-
-  @override String get audioBitrate => '音訊位元率';
-
-  @override String get audio => '音訊';
-
-  @override String get video => '影片';
-
-  @override String get media => '媒體';
-
-  @override String noLogsForL({required Object l}) => '暫無 ${l} 的日誌';
-
-  @override String get onlyValidForThisRun => '僅在本次執行時有效';
-
-  @override String get nameField => '名稱';
-
-  @override String get brandField => '品牌';
-
-  @override String get modelField => '型號';
-
-  @override String get deviceField => '設備';
-
-  @override String get productField => '產品';
-
-  @override String get manufacturerField => '製造商';
-
-  @override String get versionReleaseField => '版本發佈';
-
-  @override String get versionSdkIntField => 'SDK 版本';
-
-  @override String get displayField => '顯示';
-
-  @override String get hardwareField => '硬體';
-
-  @override String get physicalRamSizeField => '實體記憶體大小';
-
-  @override String get availableRamSizeField => '可用記憶體大小';
-
-  @override String get freeDiskSizeField => '剩餘磁碟空間';
-
-  @override String get totalDiskSizeField => '總磁碟空間';
-
-  @override String get isPhysicalDeviceField => '是否為實體機';
-
-  @override String get systemNameField => '系統名稱';
-
-  @override String get systemVersionField => '系統版本';
-
-  @override String get modelNameField => '型號名稱';
-
-  @override String get identifierForVendorField => '供應商識別碼';
-
-  @override String get sysnameField => '核心名稱';
-
-  @override String get nodenameField => '節點名稱';
-
-  @override String get releaseField => '核心發佈';
-
-  @override String get versionField => '核心版本';
-
-  @override String get machineField => '機器架構';
-
-  @override String get computerNameField => '電腦名稱';
-
-  @override String get numberOfCoresField => '核心數';
-
-  @override String get systemMemoryInMegabytesField => '系統記憶體 (MB)';
-
-  @override String get userNameField => '使用者名稱';
-
-  @override String get majorVersionField => '主版本號';
-
-  @override String get minorVersionField => '次版本號';
-
-  @override String get buildNumberField => '編譯號';
-
-  @override String get displayVersionField => '顯示版本';
-
-  @override String get productNameField => '產品名稱';
-
-  @override String get registeredOwnerField => '註冊所有者';
-
-  @override String get releaseIdField => '發佈 ID';
-
-  @override String get packageNameField => '包名';
-
-  @override String get appNameField => '應用名稱';
-
-  @override String get buildSignatureField => '編譯簽名';
-
-  @override String get installerStoreField => '安裝通路';
-
-  @override String get installTimeField => '安裝時間';
-
-  @override String get updateTimeField => '更新時間';
-
-  @override String get january => '一月';
-
-  @override String get february => '二月';
-
-  @override String get march => '三月';
-
-  @override String get april => '四月';
-
-  @override String get may => '五月';
-
-  @override String get june => '六月';
-
-  @override String get july => '七月';
-
-  @override String get august => '八月';
-
-  @override String get september => '九月';
-
-  @override String get october => '十月';
-
-  @override String get november => '十一月';
-
-  @override String get december => '十二月';
-
-  @override String get today => '今天';
-
-  @override String get yesterday => '昨天';
-
-  @override String get last3Days => '最近 3 天';
-
-  @override String get last7Days => '最近 7 天';
-
-  @override String get last30Days => '最近 30 天';
-
-  @override String get last3Months => '最近 3 個月';
-
-  @override String get last6Months => '最近 6 個月';
-
-  @override String get thisYear => '今年';
-
-  @override String get older => '更早';
-
-  @override String get markTheSelectedFavoritesAs => '將所選收藏標記為';
-
-  @override String get favoriteType => '收藏類型';
-
-  @override String get doingStatus => '在看';
-
-  @override String get wishStatus => '想看';
-
-  @override String get collectStatus => '看過';
-
-  @override String get onHoldStatus => '擱置';
-
-  @override String get droppedStatus => '拋棄';
-
-  @override String get player => '播放器';
-
-  @override String get audioOption => '音訊選項';
-
-  @override String get hardwareDecoding => '硬體解碼';
-
-  @override String get hardwareDecoder => '硬體解碼器';
-
-  @override String get videoRenderer => '影片渲染器';
-
-  @override String get videoSynchronizationMode => '影片同步模式';
-
-  @override String get enableNoProxyOverrides => '啟用無代理覆寫';
-
-  @override String get actor => '角色';
-
-  @override String get dub => '配音';
-
-  @override String get chineseDub => '中配';
-
-  @override String get japaneseDub => '日配';
-
-  @override String get englishDub => '英配';
-
-  @override String get koreanDub => '韓配';
-
-  @override String selectedACharacter({required Object a}) =>
-      '已選取 ${a} 個角色';
-
-  @override String get searchOptions => '搜尋選項';
-
-  @override String get searchSources => '搜尋源';
-
-  @override String get translation => '翻譯';
-
-  @override String get apiKeyCannotBeEmpty => 'API Key 不能為空';
-
-  @override String pleaseEnterTranslationPrompt({required Object a}) =>
-      '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符';
-
-  @override String thePromptMustContainAPlaceholderForTarget(
-      {required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符';
-
-  @override String get thisFieldCannotBeEmpty => '此欄位不能為空';
-
-  @override String thePromptMustContainAPlaceholder({required Object a}) =>
-      '提示詞必須包含 ${a} 佔位符';
-
-  @override String get translationPrompt => '翻譯提示詞';
-
-  @override String get modelName => '模型名稱';
-
-  @override String get apiConfiguration => 'API 設定';
-
-  @override String get wordCloud => '詞雲';
-
-  @override String get statsCalendar => '統計日曆';
-
-  @override String get todaysRecords => '當天的記錄';
-
-  @override String get dailyStats => '天統計';
-
-  @override String get viewAll => '查看全部';
-
-  @override String get kostoriChangelog => 'Kostori 更新日誌';
-
-  @override String get copyPath => '複製路徑';
-
-  @override String get properties => '屬性';
-
-  @override String get noEndpoint => '無端點';
-
-  @override String get testAll => '全部測試';
-
-  @override String get customEndpoint => '自定義端點';
-
-  @override String get pingTest => '延遲測試';
-
-  @override String get continuousPing => '持續測試';
-
-  @override String get service => '服務';
-
-  @override String get serviceSettings => '服務設定';
-
-  @override String get enableService => '啟用服務';
-
-  @override String get serviceIsStopped => '服務已停止';
-
-  @override String runningOnH({required Object h}) => '執行於 ${h}';
-
-  @override String get apiKey => 'API Key';
-
-  @override String get activeKey => '目前金鑰';
-
-  @override String get usingFixedKey => '使用固定金鑰';
-
-  @override String get usingRandomKeyRegeneratedOnStartup =>
-      '使用隨機金鑰 (啟動時重新產生)';
-
-  @override String get useFixedKey => '使用固定金鑰';
-
-  @override String get keepTheSameKeyAfterRestart => '重啟後保持相同金鑰';
-
-  @override String get fixedKey => '固定金鑰';
-
-  @override String get leaveEmptyToAutoGenerate => '留空則自動產生';
-
-  @override String get enterFixedKey => '輸入固定金鑰';
-
-  @override String get regenerateRandomKey => '重新產生隨機金鑰';
-
-  @override String get generateANewRandomKeyImmediately =>
-      '立即產生一個新的隨機金鑰';
-
-  @override String get regenerate => '重新產生';
-
-  @override String get port => '連接埠';
-
-  @override String defaultP({required Object p}) => '預設：${p}';
-
-  @override String get bindMode => '綁定模式';
-
-  @override String get chooseIpVersionToListenOn => '選擇要監聽的 IP 版本';
-
-  @override String get hubServer => 'Hub 服務端';
-
-  @override String get enableHub => '啟用 Hub';
-
-  @override String get hubServerIsStopped => 'Hub 服務端已停止';
-
-  @override String get clientsCount => '個用戶端';
-
-  @override String get hubPort => 'Hub 連接埠';
-
-  @override String get onlineClients => '線上用戶端';
-
-  @override String get connectedAt => '連接於';
-
-  @override String get messageHistory => '訊息歷史';
-
-  @override String get hubClient => 'Hub 用戶端';
-
-  @override String get connectToHub => '連接到 Hub';
-
-  @override String get connected => '已連接';
-
-  @override String get notConnected => '未連接';
-
-  @override String get hubAddress => 'Hub 地址';
-
-  @override String get clientName => '用戶端名稱';
-
-  @override String get displayNameInHub => 'Hub 中的顯示名稱';
-
-  @override String get myDevice => '我的設備';
-
-  @override String get hubToken => 'Hub 令牌';
-
-  @override String get tokenFromTheHubServer => '來自 Hub 服務端的令牌';
-
-  @override String get pasteHubServerToken => '貼上 Hub 服務端令牌';
-
-  @override String get runningOn => '執行於';
-
-  @override String get online => '線上';
-
-  @override String get rooms => '個房間';
-
-  @override String get managing => '管理中';
-
-  @override String get lobby => '大廳';
-
-  @override String get noRooms => '暫無房間';
-
-  @override String get current => '當前';
-
-  @override String get join => '加入';
-
-  @override String get leaveRoom => '離開房間';
-
-  @override String get roomPassword => '房間密碼';
-
-  @override String get blacklist => '黑名單';
-
-  @override String get bannedCount => '個已封鎖';
-
-  @override String get noBannedUsers => '暫無封鎖使用者';
-
-  @override String get removeFromBlacklist => '從黑名單中移除';
-
-  @override String get addToBlacklist => '加入黑名單';
-
-  @override String get mute5min => '禁言 5 分鐘';
-
-  @override String get unmute => '取消禁言';
-
-  @override String get removeGlobalAdmin => '取消全域管理員';
-
-  @override String get setGlobalAdmin => '設為全域管理員';
-
-  @override String get kick => '踢出';
-
-  @override String get poke => '戳一下';
-
-  @override String get banned => '已封鎖';
-
-  @override String get joinedEvent => '加入了';
-
-  @override String get leftEvent => '離開了';
-
-  @override String get newRoom => '新房間';
-
-  @override String get portAndBindMode => '連接埠與綁定模式';
-
-  @override String get hubManagement => 'Hub 管理';
-
-  @override String get chatRoom => '聊天室';
-
-  @override String get openChatDialog => '開啟聊天對話框';
-
-  @override String get hubDetails => 'Hub 詳情';
-
-  @override String get connectionSettings => '連接設定';
-
-  @override String get serverAddress => '伺服器地址';
-
-  @override String get host => '主機';
-
-  @override String get authentication => '身分驗證';
-
-  @override String get paste => '貼上';
-
-  @override String get unblock => '取消封鎖';
-
-  @override String get profileAndRoom => '資料與房間';
-
-  @override String get roomSettings => '房間設定';
-
-  @override String get roomName => '房間名稱';
-
-  @override String get roomId => '房間 ID';
-
-  @override String get announcements => '公告';
-
-  @override String get roomAdmins => '房間管理員';
-
-  @override String get noAnnouncement => '暫無公告';
-
-  @override String get setAnnouncement => '設置公告';
-
-  @override String get enterAnnouncementPrompt => '輸入公告內容...';
-
-  @override String get removeAdmin => '取消管理員';
-
-  @override String get addRoomAdmin => '添加房間管理員';
-
-  @override String get roomBans => '房間封鎖';
-
-  @override String get banMember => '封鎖成員';
-
-  @override String get unban => '取消封鎖';
-
-  @override String get server => '伺服器';
-
-  @override String get mute => '禁言';
-
-  @override String get secondsLabel => '秒';
-
-  @override String get serverShutdown => '伺服器關閉';
-
-  @override String get youAreNowAGlobalAdmin => '你現在是全域管理員';
-
-  @override String get yourGlobalAdminHasBeenRevoked =>
-      '你的全域管理員權限已被撤銷';
-
-  @override String get youAreNowARoomAdmin => '你現在是房間管理員';
-
-  @override String get yourRoomAdminHasBeenRevoked =>
-      '你的房間管理員權限已被撤銷';
-
-  @override String get youAreMutedFor => '你被禁言了';
-
-  @override String get secondsUnit => '秒';
-
-  @override String get youHaveBeenUnmuted => '你已解除禁言';
-
-  @override String get youAreBannedFromRoom => '你已被房間封鎖';
-
-  @override String get youCanNowRejoinRoom => '你現在可以重新加入房間';
-
-  @override String get youHaveBeenKickedFromTheRoom => '你已被踢出房間';
-
-  @override String get roomDeletedMovedToLobby => '房間已刪除，已移動到大廳';
-
-  @override String get eventLog => '事件日誌';
-
-  @override String get pingInterval => 'Ping 間隔';
-
-  @override String get onlineStatus => '線上';
-
-  @override String get noMessagesYet => '暫無訊息';
-
-  @override String get newMessages => '新訊息';
-
-  @override String get reply => '回覆';
-
-  @override String get recall => '撤回';
-
-  @override String get enterToSend => 'Enter 發送  ·  Ctrl+Enter 換行';
-
-  @override String get messagePlaceholder => '發送訊息...';
-
-  @override String get connectionTimedOut => '連接逾時';
-
-  @override String get blockedUsers => '已封鎖使用者';
-
-  @override String get blockedCount => '個已封鎖';
-
-  @override String get serverBlacklist => '伺服器黑名單';
-
-  @override String get userKey => '使用者 Key';
-
-  @override String get adminKey => '管理員 Key';
-
-  @override String get keepTheSameKeysAfterRestart => '重啟後保持相同金鑰';
-
-  @override String get regeneratedOnEveryStartup => '每次啟動時重新產生';
-
-  @override String get noKeyRequired => '無需金鑰';
-
-  @override String get anyoneCanConnectWithoutApiKey =>
-      '任何人無需 API Key 即可連接';
-
-  @override String get clientsMustProvideAValidApiKey =>
-      '用戶端必須提供有效的 API Key';
-
-  @override String get endpointMustBeAValidUrl =>
-      '端點必須是有效的 http(s) URL';
-
-  @override String get bucketCannotBeEmpty => '儲存桶不能為空';
-
-  @override String get accessKeyIdCannotBeEmpty => 'Access Key ID 不能為空';
-
-  @override String get accessKeySecretCannotBeEmpty =>
-      'Access Key Secret 不能為空';
-
-  @override String get cdnDomainMustBeAValidUrl => 'CDN 網域必須是有效的 URL';
-
-  @override String get maxSizeMustBe1to100Mb => '最大限制必須為 1–100 MB';
-
-  @override String get cleared => '已清空';
-
-  @override String get imageUpload => '圖片上傳';
-
-  @override String get clientImageUpload => '用戶端圖片上傳';
-
-  @override String get serverOss => '伺服器 OSS';
-
-  @override String get clientOss => '用戶端 OSS';
-
-  @override String get imagesStoredOnServerDisk =>
-      '圖片儲存在伺服器磁碟，透過 /hub/files/ 提供服務';
-
-  @override String get serverReceivesAndProxiesImageToOss =>
-      '伺服器接收圖片並代理上傳到 OSS。金鑰保留在伺服器上。';
-
-  @override String get clientUploadsDirectlyToOss =>
-      '用戶端直接上傳到 OSS。伺服器僅獲取最終 URL。';
-
-  @override String get maxSizeMb => '最大限制 (MB)';
-
-  @override String get storePath => '儲存路徑';
-
-  @override String get leaveEmptyForDefault => '留空則使用預設值';
-
-  @override String get notConfiguredWillUseServerOrBase64 =>
-      '未配置 · 將使用伺服器或 Base64';
-
-  @override String get imageTooLargeToSend => '圖片太大，無法發送';
-
-  @override String get pleaseConfigureServerUploadOrClientOss =>
-      '請設定伺服器上傳或用戶端 OSS。';
-
-  @override String get stopTheServerToChangeUploadMode =>
-      '停止伺服器以更改上傳模式';
-
-  @override String get enableClientOss => '啟用用戶端 OSS';
-
-  @override String get uploadImagesDirectlyFromClientToOss =>
-      '直接從用戶端上傳圖片到 OSS';
-
-  @override String get ossNotConfigured => 'OSS 未設定';
-
-  @override String get dropToSendImage => '拖放以發送圖片';
-
-  @override String get longPressImageToSave => '長按圖片儲存';
-
-  @override String get pleaseEnterAValidUrl =>
-      '請輸入以 http:// 或 https:// 開頭的有效 URL';
-
-  @override String get setRoomPassword => '設定房間密碼';
-
-  @override String get adminPanel => '管理面板';
-
-  @override String get enterRoomName => '輸入房間名稱';
-
-  @override String get roomAnnouncement => '房間公告';
-
-  @override String get leaveEmptyForPublicRoom => '留空則設為公開房間';
-
-  @override String get maxParticipants => '最大人數';
-
-  @override String get upTo => '最多';
-
-  @override String get peopleLabel => '人';
-
-  @override String get noLimit => '無限制';
-
-  @override String get optional => '選填';
-
-  @override String get enterDisplayName => '輸入顯示名稱';
-
-  @override String get enterBio => '輸入個人簡介';
-
-  @override String get autoReconnect => '自動重連';
-
-  @override String get directMessage => '私聊訊息';
-
-  @override String get noAnnouncementsYet => '暫無公告';
-
-  @override String get enterAnnouncementText => '輸入公告內容...';
-
-  @override String get welcomeMessage => '歡迎訊息';
-
-  @override String get noWelcomeMessage => '暫無歡迎訊息';
-
-  @override String get enterWelcomeMessage =>
-      '輸入向加入使用者顯示的歡迎訊息...';
-
-  @override String get security => '安全';
-
-  @override String get changePassword => '修改密碼';
-
-  @override String get setPassword => '設定密碼';
-
-  @override String get protectedStatus => '受保護';
-
-  @override String get removePassword => '移除密碼';
-
-  @override String get enterPasswordToChange => '輸入密碼 (留空則移除)';
-
-  @override String get noAdminsYet => '暫無管理員';
-
-  @override String get noBannedMembers => '暫無封鎖成員';
-
-  @override String get noMembersAvailable => '暫無可用成員';
-
-  @override String get accessControl => '存取控制';
-
-  @override String get broadcast => '廣播';
-
-  @override String get addAnnouncement => '添加公告';
-
-  @override String areYouSureYouWantToDeleteR({required Object r}) =>
-      '確定要刪除 ${r} 嗎？此操作無法撤銷。';
-
-  @override String get membersList => '成員列表';
-
-  @override String get onlineUsersList => '線上使用者';
-
-  @override String get noUsersOnline => '無線上使用者';
-
-  @override String get room => '房間';
-
-  @override String get noPasswordSet => '未設定密碼';
-
-  @override String get passwordProtected => '密碼保護';
-
-  @override String get imageLabel => '圖片';
-
-  @override String get stickersLabel => '貼紙';
-
-  @override String get pokedYou => '戳了你';
-
-  @override String kickedFromServerByP({required Object p}) =>
-      '被 ${p} 踢出了伺服器';
-
-  @override String kickedFromRoomByP({required Object p}) =>
-      '被 ${p} 踢出了房間';
-
-  @override String get leftTheRoom => '離開了房間';
-
-  @override String get joinedTheRoom => '加入了房間';
-
-  @override String pWasKickedByO({required Object p, required Object o}) =>
-      '${p} 被 ${o} 踢出了房間';
-
-  @override String get youLabel => '你';
-
-  @override String get leftTheServer => '離開了伺服器';
-
-  @override String get joinedTheServer => '加入了伺服器';
-
-  @override String get updatedTheAnnouncement => '更新了公告';
-
-  @override String get recalledAMessage => '撤回了一條訊息';
-
-  @override String pReactedWithO({required Object p, required Object o}) =>
-      '${p} 對訊息回應了 ${o}';
-
-  @override String pRemovedReactionO({required Object p, required Object o}) =>
-      '${p} 移除了回應 ${o}';
-
-  @override String get noUsersAvailableToInvite => '暫無可用邀請使用者';
-
-  @override String get inviteToRoom => '邀請加入房間';
-
-  @override String get invite => '邀請';
-
-  @override String get invited => '已邀請';
-
-  @override String get roomInvite => '房間邀請';
-
-  @override String get invitedYouTo => '邀請你加入';
-
-  @override String get acceptInvite => '接受';
-
-  @override String get acceptedYourInvite => '接受了你的邀請';
-
-  @override String get declinedYourInvite => '拒絕了你的邀請';
-
-  @override String get blockedYourInvites => '封鎖了你的邀請';
-
-  @override String get blockedInvitesList => '邀請封鎖列表';
-
-  @override String get noBlockedInvites => '暫無封鎖的邀請者';
-
-  @override String get allowMemberInvites => '允許成員邀請';
-
-  @override String get letAllMembersInviteOthers =>
-      '允許所有成員邀請其他人加入房間';
-
-  @override String get declineAndBlock => '拒絕並封鎖';
-
-  @override String get memes => '表情包';
-
-  @override String get memeSaved => '已儲存到表情包';
-
-  @override String get networkInfo => '網路資訊';
-
-  @override String get hubInfo => 'Hub 資訊';
-
-  @override String get statsInfo => '統計資訊';
-
-  @override String get sourceInfo => '源資訊';
-
-  @override String get playerInfo => '播放資訊';
-
-  @override String get hideLabel => '隱藏';
-
-  @override String get showLabel => '顯示';
-
-  @override String get personaManagement => '角色管理';
-
-  @override String get promptConfiguration => '提示設定';
-
-  @override String get systemPrompt => '系統提示';
-
-  @override String get temperature => '溫度 (Temperature)';
-
-  @override String get promptSaved => '提示詞已儲存';
-
-  @override String get editSystemPrompt => '編輯系統提示詞';
-
-  @override String get noHistoryYet => '暫無歷史';
-
-  @override String get clearAll => '全部清除';
-
-  @override String get configCopiedToClipboard => '設定已複製到剪貼簿';
-
-  @override String get importedAsNewConfig => '已作為新設定導入';
-
-  @override String get imported => '已導入';
-
-  @override String get invalidClipboardFormat => '無效的剪貼簿格式';
-
-  @override String get cannotModifySystemPreset => '無法修改系統預設';
-
-  @override String get configKeyAlreadyExists => '設定 Key 已存在，請更換';
-
-  @override String get requiredField => '必填';
-
-  @override String get configKey => '設定 Key';
-
-  @override String get memoField => '備註';
-
-  @override String get valueRange => '數值: 0.0 - 1.0';
-
-  @override String get readOnlySystemPreset => '唯讀系統預設';
-
-  @override String get deleteConfig => '刪除設定';
-
-  @override String get areYouSureYouWantToDeleteGeneric => '確定要刪除嗎';
-
-  @override String get baseUrl => '基礎 URL';
-
-  @override String get optionalField => '選填';
-
-  @override String get model => '模型';
-
-  @override String get addModel => '添加模型';
-
-  @override String get modelId => '模型 ID';
-
-  @override String get displayName => '顯示名稱';
-
-  @override String get noModelsAddOneAbove => '暫無模型，請在上方添加。';
-
-  @override String placeholdersDescription(
-      {required Object animeCount, required Object animeNames, required Object topTags}) =>
-      '佔位符：${animeCount} ${animeNames} ${topTags}';
-
-  @override String get aiHub => 'AI 工坊';
-
-  @override String get selectYearAndMonth => '選擇年月';
-
-  @override String get enterYear => '輸入年份';
-
-  @override String get selectDay => '選擇日期';
-
-  @override String get fullYear => '全年';
-
-  @override String get quickSelect => '快速選擇';
-
-  @override String get selectDateRange => '選擇日期範圍';
-
-  @override String get manualSelect => '手動選擇';
-
-  @override String get qrAndClipboard => '二維碼與剪貼簿';
-
-  @override String get aiSettings => 'AI 設置';
-
-  @override String get aiConfigMissing => 'AI配置缺失';
-
-  @override String get generating => '生成中...';
-
-  @override String get generatedTags => '已生成 Tags';
-
-  @override String get exportScreenshot => '導出截圖';
-
-  @override String get copyAll => '複製全部';
-
-  @override String get timeRange => '時間範圍';
-
-  @override String get thisWeek => '本週';
-
-  @override String get thisMonth => '本月';
-
-  @override String get generateSummary => '生成總結';
-
-  @override String get generateTag => '生成 Tag';
-
-  @override String get summaryReport => '總結報告';
-
-  @override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
-
-  @override String get weeklySummary => '本週總結';
-
-  @override String get monthlySummary => '本月總結';
-
-  @override String get tagCopied => 'Tag 已複製';
-
-  @override String get aiServiceConfig => 'AI 服務配置';
-
-  @override String get notConfigured => '未配置';
-
-  @override String get enabled => '已啟用';
-
-  @override String get writeYourReview => '寫下你的評價';
-
-  @override String get draft => '草稿';
-
-  @override String get mainContent => '正文';
-
-  @override String get switchh => '切換';
-
-  @override String get translationFailedPleaseTryAgainLater =>
-      '翻譯失敗，請稍後重試';
-
-  @override String get required => '必填';
-
-  @override String get importPersona => '導入角色配置';
-
-  @override String get newPersona => '新建角色配置';
-
-  @override String get noConfigurationsFound => '未找到配置';
-
-  @override String get animeCardUseBlur => '動漫卡片使用模糊背景';
-
-  @override String get calendarFetchEpisodes => '每日動畫表啟動時搜尋集資訊';
-
-  @override String get addKeyword => '新增關鍵字';
-
-  @override String get keyword => '關鍵字';
-
-  @override String get keywordAlreadyExists => '關鍵字已存在';
-
-  @override String get folderNameCannotBeEmpty => '資料夾名稱不能為空';
-
-  @override String get folderNameTooLong => '資料夾名稱過長';
-
-  @override String get folderAlreadyExists => '資料夾已存在';
-
-  @override String get addToFavoritesSuccess => '添加收藏成功';
-
-  @override String get addressAlreadyExists => '地址已存在';
-
-  @override String get allCopiedSuccess => '全部複製成功';
-
-  @override String get announcement => '公告';
-
-  @override String get applyFailed => '應用失敗';
-
-  @override String get applySuccess => '應用成功';
-
-  @override String get bangumiDataResetFailed => 'Bangumi資料重置失敗';
-
-  @override String get bangumiDataUpdateFailed => 'Bangumi資料更新失敗';
-
-  @override String get bangumiPlan => 'Bangumi 計畫';
-
-  @override String get basicInfo => '基本資訊';
-
-  @override String get bindBangumiIdSuccess => '綁定Bangumi ID成功';
-
-  @override String get blocked => '已阻擋';
-
-  @override String get blockedInvites => '阻擋的邀請';
-
-  @override String get cannotBeEmpty => '不能為空';
-
-  @override String get character => '角色';
-
-  @override String get chat => '聊天';
-
-  @override String get clipboard => '剪貼簿';
-
-  @override String get confirmDeleteImage => '確認刪除圖片？';
-
-  @override String get connectionDisconnected => '連線已斷開';
-
-  @override String get connectionFailed => '連線失敗';
-
-  @override String get content => '內容';
-
-  @override String get copiedToClipboard => '已複製到剪貼簿';
-
-  @override String get copySuccess => '複製成功';
-
-  @override String get createRoom => '建立房間';
-
-  @override String get currentRoom => '目前房間';
-
-  @override String get deleteFailed => '刪除失敗';
-
-  @override String get dlnaError => 'DLNA 異常';
-
-  @override String get editProfile => '編輯資料';
-
-  @override String get editing => '編輯中';
-
-  @override String get enterServerAddress => '輸入伺服器位址';
-
-  @override String get enterToSendCtrlEnterForNewline =>
-      ' Enter 發送，Ctrl+Enter 換行';
-
-  @override String get exporting => '匯出中';
-
-  @override String get failedToLoadEpisode => '載入集數失敗';
-
-  @override String get failedToPickImage => '選擇圖片失敗';
-
-  @override String get fileName => '檔案名稱';
-
-  @override String get fileSize => '檔案大小';
-
-  @override String get generateQrCodeShare => '產生二維碼分享';
-
-  @override String get getVideoUrlFailed => '取得影片連結異常';
-
-  @override String get go => '前往';
-
-  @override String get hide => '隱藏';
-
-  @override String get image => '圖片';
-
-  @override String get imageFormat => '格式';
-
-  @override String get imageProperties => '圖片屬性';
-
-  @override String get invalidCookies => '無效的 Cookies';
-
-  @override String get jumping => '正在跳轉...';
-
-  @override String get latestComments => '最新評論';
-
-  @override String get likeSuccess => '按讚成功';
-
-  @override String get loadSuccess => '載入成功';
-
-  @override String get loadingDuplicateEpisode => '載入重複集數';
-
-  @override String get loginWithPasswordIsDisabled => '密碼登入已停用';
-
-  @override String get manage => '管理';
-
-  @override String get members => '成員';
-
-  @override String get message => '訊息';
-
-  @override String get modifiedTime => '修改時間';
-
-  @override String get moveOperationTargetUnknown => '移動操作目標未知';
-
-  @override String get muteDuration => '禁言時長';
-
-  @override String get myRating => '我的評分';
-
-  @override String get newName => '新名稱';
-
-  @override String get noBlockedUsers => '沒有阻擋的使用者';
-
-  @override String get noChanges => '沒有更改';
-
-  @override String get noData => '沒有資料';
-
-  @override String get noMoreEpisodes => '沒有更多集數可播放';
-
-  @override String get noOneOnline => '沒有人在線';
-
-  @override String noRecordForMonth({required Object month}) =>
-      '${month}暫無記錄';
-
-  @override String get noResultsTryOtherKeywords => '沒有結果，請嘗試其他關鍵詞';
-
-  @override String get noSearchSources => '沒有搜尋源';
-
-  @override String get noStickersYet => '還沒有貼紙';
-
-  @override String get notSet => '未設定';
-
-  @override String get operationSuccess => '操作成功';
-
-  @override String get operationUnknown => '操作未知';
-
-  @override String get path => '路徑';
-
-  @override String get person => '人物';
-
-  @override String get pinnedMessages => '置頂訊息';
-
-  @override String get playingNextEpisode => '正在播放下一集';
-
-  @override String get pleaseAddSomeSources => '請新增一些資料源';
-
-  @override String get pleaseConfigureApiKeyInAiSettingsFirst =>
-      '請先在AI設定中設定API金鑰';
-
-  @override String get pleaseEnableAtLeastOneAddress => '請先啟用至少一個位址';
-
-  @override String get pleaseEnterEpisodeNumber => '請輸入集數';
-
-  @override String get pleaseEnterValidEpisodeNumber =>
-      '請輸入1-999之間的有效集數';
-
-  @override String get queryFailed => '查詢失敗';
-
-  @override String get ratingDetails => '評分詳情';
-
-  @override String get recognizeFromGallery => '從相簿識別';
-
-  @override String get relatedEntries => '相關條目';
-
-  @override String get removeSticker => '移除貼紙';
-
-  @override String get requestFailed => '請求失敗';
-
-  @override String get roomBan => '房間封禁';
-
-  @override String get routeNotFound => '線路不存在';
-
-  @override String get saveFailed => '儲存失敗';
-
-  @override String get saveFailedPermission => '儲存失敗：權限或目錄異常';
-
-  @override String saveFailedWithError({required Object e}) => '儲存失敗：${e}';
-
-  @override String get saveSuccess => '儲存成功';
-
-  @override String get savingImage => '正在儲存圖片...';
-
-  @override String get scanQrCode => '掃碼';
-
-  @override String get scanToJump => '掃碼跳轉';
-
-  @override String get qrCode => '二維碼';
-
-  @override String get screenshotFailed => '擷圖失敗';
-
-  @override String get screenshotFailedPleaseRetry => '擷圖失敗，請重試';
-
-  @override String get screenshotInProgress => '正在擷圖...';
-
-  @override String get screenshotSuccess => '擷圖成功';
-
-  @override String get shareFailed => '分享失敗';
-
-  @override String get shareMethodDescription =>
-      '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码';
-
-  @override String get shareQrCode => '分享二維碼';
-
-  @override String get show => '顯示';
-
-  @override String get sources => '資料源';
-
-  @override String get startSearch => '開始搜尋';
-
-  @override String get stickers => '貼紙';
-
-  @override String get subject => '主題';
-
-  @override String get switchFavoriteUser => '切換收藏使用者';
-
-  @override String get tapToShare => '點擊分享';
-
-  @override String get titleCopied => '標題已複製';
-
-  @override String get toggle => '切換';
-
-  @override String get tokenCopiedToClipboard => 'Token已複製到剪貼簿';
-
-  @override String get translationService => '翻譯服務';
-
-  @override String get unlikeSuccess => '取消按讚成功';
-
-  @override String get usage => '使用情況';
-
-  @override String get webviewIsNotAvailable => 'Webview 不可用';
-
-  @override String get imageTitle => '標題';
-
-  @override String get imageSubtitle => '副標題';
-
-  @override String get selectBackground => '選擇背景';
-
-  @override String get changeBackground => '更換背景';
-
-  @override String get clearBackground => '清除背景';
-
-  @override String get noQrCodeFoundInImage => '未在圖片中識別到二維碼';
+class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Translations> {
+	/// You can call this constructor and build your own translation instance of this locale.
+	/// Constructing via the enum [AppLocale.build] is preferred.
+	TranslationsZhTw({Map<String, Node>? overrides, PluralResolver? cardinalResolver, PluralResolver? ordinalResolver, TranslationMetadata<AppLocale, Translations>? meta})
+		: assert(overrides == null, 'Set "translation_overrides: true" in order to enable this feature.'),
+		  $meta = meta ?? TranslationMetadata(
+		    locale: AppLocale.zhTw,
+		    overrides: overrides ?? {},
+		    cardinalResolver: cardinalResolver,
+		    ordinalResolver: ordinalResolver,
+		  ),
+		  super(cardinalResolver: cardinalResolver, ordinalResolver: ordinalResolver) {
+		super.$meta.setFlatMapFunction($meta.getTranslation); // copy base translations to super.$meta
+		$meta.setFlatMapFunction(_flatMapFunction);
+	}
+
+	/// Metadata for the translations of <zh-TW>.
+	@override final TranslationMetadata<AppLocale, Translations> $meta;
+
+	/// Access flat map
+	@override dynamic operator[](String key) => $meta.getTranslation(key) ?? super.$meta.getTranslation(key);
+
+	late final TranslationsZhTw _root = this; // ignore: unused_field
+
+	@override 
+	TranslationsZhTw $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => TranslationsZhTw(meta: meta ?? this.$meta);
+
+	// Translations
+	@override String aToAddBToRemoveCToMove({required Object a, required Object b, required Object c}) => '${a} 新增 • ${b} 移除 • ${c} 移動';
+	@override String aToAddBToRemove({required Object a, required Object b}) => '${a} 新增 • ${b} 移除';
+	@override String cUpdates({required Object c}) => '${c} 個更新';
+	@override String get aNewVersionIsAvailableDoYouWantToUpdateNow => '發現新版本，是否立即更新？';
+	@override String get app => '應用';
+	@override String get about => '關於';
+	@override String get accounts => '帳號';
+	@override String get addAAnimeSourceInHomePage => '在首頁新增動漫源';
+	@override String get addAnimeSource => '新增動漫源';
+	@override String get addNewFavoriteTo => '新增收藏至';
+	@override String get addToFavorites => '加入收藏';
+	@override String get add => '新增';
+	@override String addedCountAnimesToDownloadQueue({required Object count}) => '已將 ${count} 部動漫加入下載隊列';
+	@override String get added => '已新增';
+	@override String get aggregatedSearch => '聚合搜尋';
+	@override String get aggregated => '聚合';
+	@override String get aiSource => 'AI 數據源';
+	@override String get ai => 'AI';
+	@override String get allEpisodes => '全部劇集';
+	@override String get alsoRemoveFilesOnDisk => '同時刪除本地檔案';
+	@override String get animeSourceList => '動漫源列表';
+	@override String get animeSource => '動漫源';
+	@override String get appearance => '外觀';
+	@override String get soulProfile => '靈魂画像';
+	@override String get imageTag => 'AI 圖片標籤';
+	@override String get aiChat => 'AI 聊天';
+	@override String get summary => '總結';
+	@override String get soulProfilerDescription => '根據你的觀看歷史，分析你的動漫人格';
+	@override String get imageTagDescription => '根據你的偏好生成 AI 繪畫風格標籤';
+	@override String get aiChatDescription => '多輪對話，AI 具有上下文記憶';
+	@override String get summaryDescription => '自動生成你的動漫觀看週報/月報';
+	@override String get areYouSureYouWantToClearYourHistory => '確定要清除歷史記錄嗎？';
+	@override String get areYouSureYouWantToClearYourProgress => '確定要清除全部進度嗎？';
+	@override String get authorizationRequired => '需要身分驗證';
+	@override String get autoPageTurning => '自動翻頁';
+	@override String get back => '返回';
+	@override String get bangumi => '番組計劃';
+	@override String get block => '封鎖';
+	@override String get blue => '藍色';
+	@override String get brief => '簡介';
+	@override String get cacheLimit => '快取限制';
+	@override String get cacheSize => '快取大小';
+	@override String get cacheCleared => '快取已清除';
+	@override String get cancel => '取消';
+	@override String get categories => '分類';
+	@override String get categoryPages => '分類頁面';
+	@override String get characters => '角色';
+	@override String get checkForUpdatesOnStartup => '啟動時檢查更新';
+	@override String get checkForUpdates => '檢查更新';
+	@override String get checkUpdates => '檢查更新';
+	@override String get check => '檢查';
+	@override String get clearCache => '清除快取';
+	@override String get clearHistory => '清除歷史記錄';
+	@override String get clearProgress => '清除進度';
+	@override String get clearSearchHistory => '清除搜尋歷史';
+	@override String get clearUnfavorited => '清除未收藏';
+	@override String get clear => '清除';
+	@override String get clickIfLoginExpired => '如果登入過期請點擊';
+	@override String get close => '關閉';
+	@override String get comment => '吐槽';
+	@override String get comments => '吐槽箱';
+	@override String get confirm => '確定';
+	@override String get kContinue => '繼續';
+	@override String get copied => '已複製';
+	@override String get analyze => '分析';
+	@override String get analyzing => '分析中...';
+	@override String get analysisResult => '分析結果';
+	@override String get yourQuestion => '您的提問';
+	@override String get pleaseEnterAPrompt => '請輸入提示詞';
+	@override String get egWhatKindOfAnimeDoILike => '例如：我喜歡什麼樣的動漫？';
+	@override String get aiSourceNotAvailable => 'AI 數據源不可用';
+	@override String get copyId => '複製 ID';
+	@override String get copyTitle => '複製標題';
+	@override String get copyUrl => '複製連結';
+	@override String get copyToFolder => '複製到資料夾';
+	@override String get copy => '複製';
+	@override String get createAccount => '建立帳號';
+	@override String get createFolder => '建立資料夾';
+	@override String get create => '建立';
+	@override String currentlySeenEp({required Object ep}) => '目前看到 ${ep}';
+	@override String get dnsOverrides => 'DNS 覆寫';
+	@override String get dark => '深色';
+	@override String get dataSync => '數據同步';
+	@override String get data => '數據';
+	@override String get dateDesc => '按日期降序';
+	@override String get date => '日期';
+	@override String get defaultSearchTarget => '預設搜尋目標';
+	@override String deleteCAnimes({required Object c}) => '刪除 ${c} 部動漫嗎？';
+	@override String get deleteAnime => '刪除動漫';
+	@override String get deleteFolder => '刪除資料夾';
+	@override String deleteAnimeSourceN({required Object n}) => '確定刪除動漫源 \'${n}\' 嗎？';
+	@override String deleteFolderF({required Object f}) => '確定刪除資料夾 \'${f}\' 嗎？';
+	@override String get deleteFolderPrompt => '刪除資料夾？';
+	@override String get delete => '刪除';
+	@override String get deleteRoom => '刪除房間';
+	@override String get description => '描述';
+	@override String get deselect => '取消選擇';
+	@override String get detailed => '詳細';
+	@override String get details => '詳情';
+	@override String determineTheBindingA({required Object a}) => '確定綁定：${a} ?';
+	@override String get disable => '停用';
+	@override String get disabled => '已停用';
+	@override String discoverTheNewVersionV({required Object v}) => '發現新版本 ${v}';
+	@override String get displayModeOfAnimeTile => '動漫卡片顯示模式';
+	@override String get displayTimeAndBatteryInfoInReader => '閱讀器內顯示時間及電量';
+	@override String get doNotReportAnyIssuesRelatedToSourcesToAppRepo => '請勿向主儲存庫報告任何與源有關的問題。';
+	@override String get downloadAll => '下載全部';
+	@override String get downloadSelected => '下載選中';
+	@override String get downloadThreads => '下載執行緒';
+	@override String get download => '下載';
+	@override String get downloading => '下載中';
+	@override String get edit => '編輯';
+	@override String get enableDnsOverrides => '啟用 DNS 覆寫';
+	@override String get enable => '啟用';
+	@override String get end => '結束';
+	@override String episodeEp({required Object ep}) => '第 ${ep} 話';
+	@override String get error => '錯誤';
+	@override String get exitMultiSelect => '退出多選';
+	@override String get exit => '退出';
+	@override String get explorePages => '發現頁面';
+	@override String get explore => '發現';
+	@override String get exportAppData => '匯出應用數據';
+	@override String get export => '匯出';
+	@override String get failedToImport => '匯入失敗';
+	@override String get fanyuan => '番源';
+	@override String get favoriteActions => '收藏夾操作';
+	@override String get favorite => '收藏';
+	@override String get favorites => '收藏夾';
+	@override String get finished => '已完成';
+	@override String get folderName => '資料夾名稱';
+	@override String get folder => '資料夾';
+	@override String get folders => '資料夾';
+	@override String get following => '追蹤中';
+	@override String get fullScreen => '全螢幕';
+	@override String get fullscreen => '全螢幕';
+	@override String get gitMirror => 'Git 鏡像';
+	@override String get green => '綠色';
+	@override String get help => '幫助';
+	@override String get history => '歷史';
+	@override String get home => '首頁';
+	@override String get iconProducer => '圖示製作';
+	@override String get ignoreCertificateErrors => '忽略憑證錯誤';
+	@override String get importAnimes => '匯入動漫';
+	@override String get importAppData => '匯入應用數據';
+	@override String get importFromFile => '從檔案匯入';
+	@override String get import => '匯入';
+	@override String importedAAnimes({required Object a}) => '已匯入 ${a} 部動漫';
+	@override String get information => '資訊';
+	@override String get initialPage => '初始頁面';
+	@override String get invertSelection => '反選';
+	@override String get keywordBlocking => '關鍵字封鎖';
+	@override String get kostoriIsAFreeAndOpenSourceAppForAnimeWatching => 'Kostori 是一款免費開源的追番應用。';
+	@override String get language => '語言';
+	@override String get later => '稍後';
+	@override String get light => '淺色';
+	@override String get limitImageWidth => '限制圖片寬度';
+	@override String get localFavorites => '本地收藏';
+	@override String get local => '本地';
+	@override String get logIn => '登入';
+	@override String get logOut => '登出';
+	@override String get log => '日誌';
+	@override String get manualTranslation => '手動翻譯';
+	@override String get enterTextToTranslate => '輸入需要翻譯的內容';
+	@override String get translate => '翻譯';
+	@override String get translating => '翻譯中...';
+	@override String get translationResult => '翻譯結果';
+	@override String get selectTranslationLanguage => '選擇翻譯語言';
+	@override String get pleaseEnterTextToTranslate => '請輸入需要翻譯的內容';
+	@override String get loginWithWebview => '透過 Webview 登入';
+	@override String get login => '登入';
+	@override String get longPressAndDragToReorder => '長按並拖曳以排序。';
+	@override String get longPressOnTheFavoriteButtonToQuicklyAddToThisFolder => '長按收藏按鈕可快速新增至此資料夾';
+	@override String get longPressToZoom => '長按縮放';
+	@override String get me => '个人';
+	@override String get moveToFirst => '移至首位';
+	@override String get moveFavoriteAfterReading => '看畢後移動收藏';
+	@override String get moveToFolder => '移動到資料夾';
+	@override String get move => '移動';
+	@override String get multiSelect => '多選';
+	@override String get multipleAnimes => '多部動漫';
+	@override String get name => '名稱';
+	@override String get networkFavoritePages => '網路收藏頁面';
+	@override String get network => '網路';
+	@override String get newFolder => '新資料夾';
+	@override String get newVersion => '新版本';
+	@override String get newVersionAvailable => '有新版本可用';
+	@override String get next => '下一步';
+	@override String get noExplorePages => '暫無發現頁面';
+	@override String get noNewVersionAvailable => '目前已是最新版本';
+	@override String get noSearchResultsFound => '未找到搜尋結果';
+	@override String get noLikedAnimeFound => '未找到喜歡的動漫';
+	@override String get noUpdates => '暫無更新';
+	@override String get ok => '確定';
+	@override String get onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer => '一旦操作成功，應用將自動與伺服器同步數據。';
+	@override String get openLog => '開啟日誌';
+	@override String get openAnime => '開啟動漫';
+	@override String get openHelp => '查看幫助';
+	@override String get openInBrowser => '在瀏覽器中開啟';
+	@override String get openLink => '開啟連結';
+	@override String get open => '開啟';
+	@override String get operation => '操作';
+	@override String get orange => '橙色';
+	@override String get order => '排序';
+	@override String get password => '密碼';
+	@override String get pause => '暫停';
+	@override String get paused => '已暫停';
+	@override String get pink => '粉色';
+	@override String get playlist => '播放列表';
+	@override String get pleaseCheckYourSettings => '請檢查您的設定';
+	@override String get preview => '預覽';
+	@override String get proxy => '代理';
+	@override String get purple => '紫色';
+	@override String get quickFavorite => '快速收藏';
+	@override String get ranking => '排行榜';
+	@override String get reLogin => '重新登入';
+	@override String get read => '閱讀';
+	@override String get reading => '閱讀中';
+	@override String get red => '紅色';
+	@override String get refresh => '重新整理';
+	@override String get related => '相關';
+	@override String get removeAnimeFromFavorite => '確定從收藏中移除該動漫嗎？';
+	@override String get remove => '移除';
+	@override String get rename => '重新命名';
+	@override String get reorder => '重新排序';
+	@override String get resetBangumiData => '重置 Bangumi 數據';
+	@override String get reset => '重置';
+	@override String get retry => '重試';
+	@override String get reviews => '評論';
+	@override String get saveImage => '儲存圖片';
+	@override String get savedFailed => '儲存失敗';
+	@override String get saved => '已儲存';
+	@override String get searchAll => '搜尋全部';
+	@override String get searchHistory => '搜尋歷史';
+	@override String get searchIn => '搜尋自';
+	@override String get search => '搜尋';
+	@override String get selectAll => '全選';
+	@override String get selectADirectoryWhichContainsTheAnimeFiles => '選擇包含動漫檔案的目錄。';
+	@override String get selectAFolder => '選擇一個資料夾';
+	@override String get selectAnImageOnScreen => '選擇螢幕上的圖像';
+	@override String get selectFile => '選擇檔案';
+	@override String get selectInRange => '範圍選擇';
+	@override String get select => '選擇';
+	@override String selectedAAnimes({required Object a}) => '已選取 ${a} 部動漫';
+	@override String get setCacheLimit => '設定快取限制';
+	@override String get setNewStoragePath => '設定新儲存路徑';
+	@override String get setSourceListUrl => '設定源列表 URL';
+	@override String get set => '設定';
+	@override String get settings => '設定';
+	@override String get share => '分享';
+	@override String get showAll => '顯示全部';
+	@override String get showFavoriteStatusOnAnimeTile => '在卡片上顯示收藏狀態';
+	@override String get showHistoryOnAnimeTile => '在卡片上顯示歷史記錄';
+	@override String get singleAnime => '單部動漫';
+	@override String get sizeInMb => '大小 (MB)';
+	@override String get sizeOfAnimeTile => '動漫卡片尺寸';
+	@override String get sort => '排序';
+	@override String get sourceFolder => '源資料夾';
+	@override String get sourceUrl => '源 URL';
+	@override String get staffList => '製作人員';
+	@override String get start => '開始';
+	@override String get storagePathForLocalAnimes => '本地動漫儲存路徑';
+	@override String get submit => '提交';
+	@override String get suggestions => '建議';
+	@override String get syncData => '同步數據';
+	@override String get sync => '同步';
+	@override String get syncingData => '正在同步數據';
+	@override String get system => '系統';
+	@override String get tapToTurnPages => '點擊翻頁';
+	@override String get theUrlShouldPointToAIndexJsonFile => 'URL 應指向一個 \'index.json\' 檔案';
+	@override String theFolderIsLinkedToSource({required Object source}) => '該資料夾已關聯至 ${source}';
+	@override String get themeColor => '主題色';
+	@override String get themeMode => '主題模式';
+	@override String get timetable => '每日放送';
+	@override String get topics => '討論';
+	@override String get topicsLatest => '最新討論';
+	@override String get topicsTrending => '熱門討論';
+	@override String get turnPageByVolumeKeys => '使用音量鍵翻頁';
+	@override String get unselected => '未選取';
+	@override String get updateAnimesInfo => '更新動漫資訊';
+	@override String get updateTime => '更新時間';
+	@override String get update => '更新';
+	@override String get updatesAvailable => '有更新可用';
+	@override String get updating => '正在更新';
+	@override String get uploadTime => '上傳時間';
+	@override String get upload => '上傳';
+	@override String get uploader => '上傳者';
+	@override String get useAConfigFile => '使用設定檔';
+	@override String get user => '使用者';
+	@override String get username => '使用者名稱';
+	@override String get userProfileAnalysis => '使用者畫像分析';
+	@override String get viewList => '查看列表';
+	@override String get viewMore => '查看更多';
+	@override String get view => '查看';
+	@override String get webDavAutoSync => 'WebDAV 自動同步';
+	@override String get kDefault => '預設';
+	@override String lastWatchTimeTime({required Object time}) => '上次觀看時間 ${time}';
+	@override String minAppVersionRequired({required Object version}) => '需要最低應用版本 ${version}';
+	@override String get more => '更多';
+	@override String get notYetAiring => '尚未開播';
+	@override String fullBEpisodesReleased({required Object b}) => '全 ${b} 話已發佈';
+	@override String upToEpSTotalEpsPlanned({required Object s, required Object t}) => '更新至 ${s} 話 • 全 ${t} 話';
+	@override String upToEpETotalEpsPlanned({required Object e, required Object s, required Object t}) => '更新至 ${e} (${s}) 話 • 全 ${t} 話';
+	@override String tReviewsR({required Object t, required Object r}) => '${t} 條評論 | #${r}';
+	@override String tReviews({required Object t}) => '${t} 條評論';
+	@override String get showMore => '展開 +';
+	@override String get showLess => '收起 -';
+	@override String get tags => '標籤';
+	@override String get clearTags => '清除標籤';
+	@override String showingLResults({required Object l}) => '顯示 ${l} 個結果';
+	@override String get selectTime => '選擇時間';
+	@override String get switchLayout => '切換佈局';
+	@override String get enterKeywords => '輸入關鍵詞...';
+	@override String get ratingChart => '評分圖表';
+	@override String get lineChart => '折線圖';
+	@override String get barChart => '柱狀圖';
+	@override String standardDeviationS({required Object s}) => '標準差：${s}';
+	@override String get nobodysPostedAnythingYet => '目前還沒有人發佈內容...';
+	@override String get reload => '重新載入';
+	@override String get failedToLoadPleaseTryAgain => '載入失敗，請重試。';
+	@override String get doing => '在看';
+	@override String get collect => '看過';
+	@override String get wish => '想看';
+	@override String get onHold => '擱置';
+	@override String get dropped => '拋棄';
+	@override String get todayRecommendation => '今日推薦';
+	@override String tTotalCount({required Object t}) => '${t} 條總計';
+	@override String get introduction => '內容簡介';
+	@override String get linkedItems => '關聯條目';
+	@override String timeS({required Object s}) => '時間：${s}';
+	@override String broadcastTimeA({required Object a}) => '播出時間：${a}';
+	@override String get profileInformation => '個人資訊';
+	@override String get characterIntroduction => '角色簡介';
+	@override String voiceActorC({required Object c}) => '聲優：${c}';
+	@override String episodeEN({required Object e, required Object n}) => '第 ${e} 話：${n}';
+	@override String get hotspot => '熱點';
+	@override String get completed => '已完結';
+	@override String get mainCharacter => '主角';
+	@override String get supportingCharacter => '配角';
+	@override String get cameo => '客串';
+	@override String get idleCorner => '閒暇角落';
+	@override String get unknown => '未知';
+	@override String get debugInfo => '調試資訊';
+	@override String get install => '安裝';
+	@override String get viewOnGithub => '在 GitHub 上查看';
+	@override String get noProxyOverrides => '無代理覆寫';
+	@override String get save => '儲存';
+	@override String get mirror => '鏡像';
+	@override String get result => '結果';
+	@override String get all => '全部';
+	@override String get reloadConfigs => '重載配置';
+	@override String get invalidUrlConfig => '無效的 URL 設定';
+	@override String get inconsistentVersions => '版本不一致';
+	@override String noUpdateAvailableForThisArchitectureA({required Object a}) => '該架構 (${a}) 暫無可用更新';
+	@override String get checkUpdateFailed => '檢查更新失敗...';
+	@override String get downloadFailed => '下載失敗';
+	@override String get failedToCheckTheHashValuePleaseTryAgain => '檢查雜湊值失敗，請重試';
+	@override String get english => '英語';
+	@override String get dynamicColor => '動態顏色';
+	@override String get mondaySchedule => '週一放送';
+	@override String get tuesdaySchedule => '週二放送';
+	@override String get wednesdaySchedule => '週三放送';
+	@override String get thursdaySchedule => '週四放送';
+	@override String get fridaySchedule => '週五放送';
+	@override String get saturdaySchedule => '週六放送';
+	@override String get sundaySchedule => '週日放送';
+	@override String get popularityRanking => '人氣排行';
+	@override String get imageOperations => '圖片操作';
+	@override String get saveToAlbum => '儲存到相簿';
+	@override String get stitchLongImage => '拼長圖';
+	@override String get stitchHorizontalImage => '橫向拼圖';
+	@override String get stitchSubtitles => '台詞拼接';
+	@override String get saveLongImage => '儲存長圖';
+	@override String get borderColor => '邊框顏色';
+	@override String get conversationTitle => '對話標題';
+	@override String get aiConversation => 'AI 對話';
+	@override String get topicList => '話題列表';
+	@override String get startConversationWithAI => '開始與 AI 對話吧';
+	@override String get newConversation => '新建對話';
+	@override String get inputMessage => '輸入訊息...';
+	@override String get noTopicsYet => '暫無話題';
+	@override String get selectAiPersonality => '選擇 AI 人格';
+	@override String get apply => '應用';
+	@override String get heightPx => '高度(px)';
+	@override String get setUniformHeight => '設定統一高度';
+	@override String get uniformHeight => '統一高度';
+	@override String get cropImage => '裁剪圖片';
+	@override String get finishCropping => '完成裁剪';
+	@override String get sortImages => '圖片排序';
+	@override String get finishSorting => '完成排序';
+	@override String get noImages => '暫無圖片';
+	@override String cropHeightCPx({required Object c}) => '裁剪高度：${c} px';
+	@override String get enterHexColorCode => '輸入十六進位顏色代碼，例如 #FF000000';
+	@override String get showImageBorders => '顯示圖片邊框';
+	@override String get outerBorderRadius => '外邊框圓角';
+	@override String get outerBorderWidth => '外邊框寬度';
+	@override String get outerBorderColor => '外邊框顏色';
+	@override String get showOuterBorder => '顯示外邊框';
+	@override String get innerBorderWidth => '內邊框寬度';
+	@override String get innerBorderColor => '內邊框顏色';
+	@override String get borderSettings => '邊框設定';
+	@override String get saving => '正在儲存';
+	@override String get saveSuccessful => '儲存成功';
+	@override String saveFailedE({required Object e}) => '儲存失敗：${e}';
+	@override String get failedToLoadImagesOrNoImages => '載入圖片失敗或無圖片';
+	@override String get monday => '週一';
+	@override String get tuesday => '週二';
+	@override String get wednesday => '週三';
+	@override String get thursday => '週四';
+	@override String get friday => '週五';
+	@override String get saturday => '週六';
+	@override String get sunday => '週日';
+	@override String get defaultOrder => '預設排序';
+	@override String get byTime => '按時間';
+	@override String get byName => '按名稱';
+	@override String get recentlyWatched => '最近觀看';
+	@override String get localFavoriteBinding => '本地收藏綁定';
+	@override String get awful => '不忍直視';
+	@override String get terrible => '非常差';
+	@override String get bad => '差';
+	@override String get poor => '較差';
+	@override String get okay => '不過不失';
+	@override String get fine => '還行';
+	@override String get good => '推薦';
+	@override String get great => '力薦';
+	@override String get master => '神作';
+	@override String get epic => '超神作';
+	@override String get overview => '總覽';
+	@override String get discussion => '討論';
+	@override String get logs => '日誌';
+	@override String get playerDetails => '播放器詳情';
+	@override String get status => '狀態';
+	@override String get audioOptionLowLatency => '音訊選項：\n 低延遲';
+	@override String get audioOptionCompatibility => '音訊選項：\n 相容性';
+	@override String get switchSuccessful => '切換成功';
+	@override String get switchFailed => '切換失敗';
+	@override String get remoteCast => '遠端投屏';
+	@override String get copyLink => '複製連結';
+	@override String get aValidWebDavDirectoryUrl => '有效的 WebDAV 目錄 URL';
+	@override String get autoSyncData => '自動同步數據';
+	@override String get screenshotShare => '截圖分享';
+	@override String get bestMatch => '最佳匹配';
+	@override String get topRank => '排名靠前';
+	@override String get mostFavorited => '最多收藏';
+	@override String get highestRating => '最高評分';
+	@override String get selectColor => '選擇顏色';
+	@override String get colorWheel => '色輪';
+	@override String get primary => '主要';
+	@override String get accent => '強調';
+	@override String get custom => '自定義';
+	@override String confirmC({required Object c}) => '確定 (${c})';
+	@override String selectC({required Object c}) => '選擇 ${c}';
+	@override String get selectDate => '選擇日期';
+	@override String get startDate => '開始日期';
+	@override String get endDate => '結束日期';
+	@override String get clearDate => '清除日期';
+	@override String get pleaseSelectADate => '請選擇日期';
+	@override String get endDateCannotBeEarlierThanStartDate => '結束日期不能早於開始日期';
+	@override String get type => '類型';
+	@override String get background => '背景';
+	@override String get emotion => '情感';
+	@override String get source => '來源';
+	@override String get audience => '受眾';
+	@override String get category => '分類';
+	@override String imageOperationsI({required Object i}) => '圖片操作 (${i})';
+	@override String sSelected({required Object s}) => '已選取 ${s}';
+	@override String get simplifiedChinese => '簡體中文';
+	@override String get traditionalChinese => '繁體中文';
+	@override String get teal => '青色';
+	@override String get deepPurple => '深紫色';
+	@override String get yellow => '黃色';
+	@override String get cyan => '青藍色';
+	@override String get m3Default => 'M3 預設';
+	@override String get deepOrange => '深橘色';
+	@override String get indigo => '靛藍色';
+	@override String get cloudyBlue => '雲藍色';
+	@override String get darkPastelGreen => '暗粉綠色';
+	@override String get dust => '塵埃色';
+	@override String get electricLime => '電光酸橙色';
+	@override String get freshGreen => '鮮綠色';
+	@override String get lightEggplant => '淺茄紫色';
+	@override String get nastyGreen => '髒綠色';
+	@override String get reallyLightBlue => '極淺藍色';
+	@override String get tea => '茶綠色';
+	@override String get warmPurple => '暖紫色';
+	@override String get yellowishTan => '黃棕色';
+	@override String get cement => '水泥色';
+	@override String get darkGrassGreen => '暗草綠色';
+	@override String get dustyTeal => '粉青色';
+	@override String get greyTeal => '灰青色';
+	@override String get macaroniAndCheese => '起司通心粉色';
+	@override String get pinkishTan => '粉棕色';
+	@override String get spruce => '杉綠色';
+	@override String get strongBlue => '強藍色';
+	@override String get toxicGreen => '毒液綠色';
+	@override String get windowsBlue => '視窗藍色';
+	@override String get blueBlue => '純藍色';
+	@override String get blueWithAHintOfPurple => '略帶紫色的藍色';
+	@override String get booger => '鼻涕綠色';
+	@override String get brightSeaGreen => '亮海綠色';
+	@override String get greenTeal => '綠青色';
+	@override String get brownish => '棕色調';
+	@override String get offGreen => '淡綠色';
+	@override String get tangerine => '橘黃色';
+	@override String get uglyGreen => '醜綠色';
+	@override String get secondary => '次要';
+	@override String get tertiary => '三級';
+	@override String get surface => '表面';
+	@override String get jumpToPage => '跳轉到頁';
+	@override String get page => '頁碼';
+	@override String pagePM({required Object p, required Object m}) => '第 ${p} / ${m} 頁';
+	@override String get first => '第一頁';
+	@override String get last => '最後一頁';
+	@override String get disableLengthLimitation => '停用長度限制';
+	@override String get updateLog => '更新日誌';
+	@override String get liked => '喜歡';
+	@override String get rating => '評分';
+	@override String get pixelFormat => '像素格式';
+	@override String get hwPixelFormat => '硬體像素格式';
+	@override String get resolution => '解析度';
+	@override String get displayWidth => '顯示寬度';
+	@override String get displayHeight => '顯示高度';
+	@override String get aspect => '比例';
+	@override String get pixelAspectRatio => '像素寬高比';
+	@override String get colormatrix => '色彩矩陣';
+	@override String get colorLevels => '色彩範圍';
+	@override String get primaries => '原色';
+	@override String get gamma => '伽馬值';
+	@override String get signalPeak => '信號峰值';
+	@override String get lights => '亮度';
+	@override String get chromaLocation => '色度位置';
+	@override String get rotate => '旋轉';
+	@override String get stereoIn => '立體聲輸入';
+	@override String get averageBpp => '平均 Bpp';
+	@override String get alpha => '透明度';
+	@override String get trackId => '軌道 ID';
+	@override String get trackTitle => '軌道標題';
+	@override String get trackLanguage => '軌道語言';
+	@override String get trackImage => '軌道圖像';
+	@override String get trackAlbumArt => '軌道專輯封面';
+	@override String get trackCodec => '軌道編解碼器';
+	@override String get trackDecoder => '軌道解碼器';
+	@override String get trackWidth => '軌道寬度';
+	@override String get trackHeight => '軌道高度';
+	@override String get trackChannelsCount => '軌道聲道數';
+	@override String get trackChannels => '軌道聲道佈局';
+	@override String get trackSampleRate => '軌道採樣率';
+	@override String get trackFps => '軌道幀率';
+	@override String get trackBitrate => '軌道位元率';
+	@override String get trackRotate => '軌道旋轉';
+	@override String get trackPar => '軌道 PAR';
+	@override String get trackAudioChannels => '軌道音訊聲道';
+	@override String get format => '格式';
+	@override String get sampleRate => '採樣率';
+	@override String get channelCount => '聲道數';
+	@override String get hrChannels => 'HR 聲道';
+	@override String get uriTrack => 'URI 軌道';
+	@override String get channelsCount => '聲道總數';
+	@override String get channels => '聲道';
+	@override String get fps => '幀率';
+	@override String get bitrate => '位元率';
+	@override String get par => 'PAR';
+	@override String get audioChannels => '音訊聲道';
+	@override String get audioBitrate => '音訊位元率';
+	@override String get audio => '音訊';
+	@override String get video => '影片';
+	@override String get media => '媒體';
+	@override String noLogsForL({required Object l}) => '暫無 ${l} 的日誌';
+	@override String get onlyValidForThisRun => '僅在本次執行時有效';
+	@override String get nameField => '名稱';
+	@override String get brandField => '品牌';
+	@override String get modelField => '型號';
+	@override String get deviceField => '設備';
+	@override String get productField => '產品';
+	@override String get manufacturerField => '製造商';
+	@override String get versionReleaseField => '版本發佈';
+	@override String get versionSdkIntField => 'SDK 版本';
+	@override String get displayField => '顯示';
+	@override String get hardwareField => '硬體';
+	@override String get physicalRamSizeField => '實體記憶體大小';
+	@override String get availableRamSizeField => '可用記憶體大小';
+	@override String get freeDiskSizeField => '剩餘磁碟空間';
+	@override String get totalDiskSizeField => '總磁碟空間';
+	@override String get isPhysicalDeviceField => '是否為實體機';
+	@override String get systemNameField => '系統名稱';
+	@override String get systemVersionField => '系統版本';
+	@override String get modelNameField => '型號名稱';
+	@override String get identifierForVendorField => '供應商識別碼';
+	@override String get sysnameField => '核心名稱';
+	@override String get nodenameField => '節點名稱';
+	@override String get releaseField => '核心發佈';
+	@override String get versionField => '核心版本';
+	@override String get machineField => '機器架構';
+	@override String get computerNameField => '電腦名稱';
+	@override String get numberOfCoresField => '核心數';
+	@override String get systemMemoryInMegabytesField => '系統記憶體 (MB)';
+	@override String get userNameField => '使用者名稱';
+	@override String get majorVersionField => '主版本號';
+	@override String get minorVersionField => '次版本號';
+	@override String get buildNumberField => '編譯號';
+	@override String get displayVersionField => '顯示版本';
+	@override String get productNameField => '產品名稱';
+	@override String get registeredOwnerField => '註冊所有者';
+	@override String get releaseIdField => '發佈 ID';
+	@override String get packageNameField => '包名';
+	@override String get appNameField => '應用名稱';
+	@override String get buildSignatureField => '編譯簽名';
+	@override String get installerStoreField => '安裝通路';
+	@override String get installTimeField => '安裝時間';
+	@override String get updateTimeField => '更新時間';
+	@override String get january => '一月';
+	@override String get february => '二月';
+	@override String get march => '三月';
+	@override String get april => '四月';
+	@override String get may => '五月';
+	@override String get june => '六月';
+	@override String get july => '七月';
+	@override String get august => '八月';
+	@override String get september => '九月';
+	@override String get october => '十月';
+	@override String get november => '十一月';
+	@override String get december => '十二月';
+	@override String get today => '今天';
+	@override String get yesterday => '昨天';
+	@override String get last3Days => '最近 3 天';
+	@override String get last7Days => '最近 7 天';
+	@override String get last30Days => '最近 30 天';
+	@override String get last3Months => '最近 3 個月';
+	@override String get last6Months => '最近 6 個月';
+	@override String get thisYear => '今年';
+	@override String get older => '更早';
+	@override String get markTheSelectedFavoritesAs => '將所選收藏標記為';
+	@override String get favoriteType => '收藏類型';
+	@override String get doingStatus => '在看';
+	@override String get wishStatus => '想看';
+	@override String get collectStatus => '看過';
+	@override String get onHoldStatus => '擱置';
+	@override String get droppedStatus => '拋棄';
+	@override String get player => '播放器';
+	@override String get audioOption => '音訊選項';
+	@override String get hardwareDecoding => '硬體解碼';
+	@override String get hardwareDecoder => '硬體解碼器';
+	@override String get videoRenderer => '影片渲染器';
+	@override String get videoSynchronizationMode => '影片同步模式';
+	@override String get enableNoProxyOverrides => '啟用無代理覆寫';
+	@override String get actor => '角色';
+	@override String get dub => '配音';
+	@override String get chineseDub => '中配';
+	@override String get japaneseDub => '日配';
+	@override String get englishDub => '英配';
+	@override String get koreanDub => '韓配';
+	@override String selectedACharacter({required Object a}) => '已選取 ${a} 個角色';
+	@override String get searchOptions => '搜尋選項';
+	@override String get searchSources => '搜尋源';
+	@override String get translation => '翻譯';
+	@override String get apiKeyCannotBeEmpty => 'API Key 不能為空';
+	@override String pleaseEnterTranslationPrompt({required Object a}) => '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符';
+	@override String thePromptMustContainAPlaceholderForTarget({required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符';
+	@override String get thisFieldCannotBeEmpty => '此欄位不能為空';
+	@override String thePromptMustContainAPlaceholder({required Object a}) => '提示詞必須包含 ${a} 佔位符';
+	@override String get translationPrompt => '翻譯提示詞';
+	@override String get modelName => '模型名稱';
+	@override String get apiConfiguration => 'API 設定';
+	@override String get wordCloud => '詞雲';
+	@override String get statsCalendar => '統計日曆';
+	@override String get todaysRecords => '當天的記錄';
+	@override String get dailyStats => '天統計';
+	@override String get viewAll => '查看全部';
+	@override String get kostoriChangelog => 'Kostori 更新日誌';
+	@override String get copyPath => '複製路徑';
+	@override String get properties => '屬性';
+	@override String get noEndpoint => '無端點';
+	@override String get testAll => '全部測試';
+	@override String get customEndpoint => '自定義端點';
+	@override String get pingTest => '延遲測試';
+	@override String get continuousPing => '持續測試';
+	@override String get service => '服務';
+	@override String get serviceSettings => '服務設定';
+	@override String get enableService => '啟用服務';
+	@override String get serviceIsStopped => '服務已停止';
+	@override String runningOnH({required Object h}) => '執行於 ${h}';
+	@override String get apiKey => 'API Key';
+	@override String get activeKey => '目前金鑰';
+	@override String get usingFixedKey => '使用固定金鑰';
+	@override String get usingRandomKeyRegeneratedOnStartup => '使用隨機金鑰 (啟動時重新產生)';
+	@override String get useFixedKey => '使用固定金鑰';
+	@override String get keepTheSameKeyAfterRestart => '重啟後保持相同金鑰';
+	@override String get fixedKey => '固定金鑰';
+	@override String get leaveEmptyToAutoGenerate => '留空則自動產生';
+	@override String get enterFixedKey => '輸入固定金鑰';
+	@override String get regenerateRandomKey => '重新產生隨機金鑰';
+	@override String get generateANewRandomKeyImmediately => '立即產生一個新的隨機金鑰';
+	@override String get regenerate => '重新產生';
+	@override String get port => '連接埠';
+	@override String defaultP({required Object p}) => '預設：${p}';
+	@override String get bindMode => '綁定模式';
+	@override String get chooseIpVersionToListenOn => '選擇要監聽的 IP 版本';
+	@override String get hubServer => 'Hub 服務端';
+	@override String get enableHub => '啟用 Hub';
+	@override String get hubServerIsStopped => 'Hub 服務端已停止';
+	@override String get clientsCount => '個用戶端';
+	@override String get hubPort => 'Hub 連接埠';
+	@override String get onlineClients => '線上用戶端';
+	@override String get connectedAt => '連接於';
+	@override String get messageHistory => '訊息歷史';
+	@override String get hubClient => 'Hub 用戶端';
+	@override String get connectToHub => '連接到 Hub';
+	@override String get connected => '已連接';
+	@override String get notConnected => '未連接';
+	@override String get hubAddress => 'Hub 地址';
+	@override String get clientName => '用戶端名稱';
+	@override String get displayNameInHub => 'Hub 中的顯示名稱';
+	@override String get myDevice => '我的設備';
+	@override String get hubToken => 'Hub 令牌';
+	@override String get tokenFromTheHubServer => '來自 Hub 服務端的令牌';
+	@override String get pasteHubServerToken => '貼上 Hub 服務端令牌';
+	@override String get runningOn => '執行於';
+	@override String get online => '線上';
+	@override String get rooms => '個房間';
+	@override String get managing => '管理中';
+	@override String get lobby => '大廳';
+	@override String get noRooms => '暫無房間';
+	@override String get current => '當前';
+	@override String get join => '加入';
+	@override String get leaveRoom => '離開房間';
+	@override String get roomPassword => '房間密碼';
+	@override String get blacklist => '黑名單';
+	@override String get bannedCount => '個已封鎖';
+	@override String get noBannedUsers => '暫無封鎖使用者';
+	@override String get removeFromBlacklist => '從黑名單中移除';
+	@override String get addToBlacklist => '加入黑名單';
+	@override String get mute5min => '禁言 5 分鐘';
+	@override String get unmute => '取消禁言';
+	@override String get removeGlobalAdmin => '取消全域管理員';
+	@override String get setGlobalAdmin => '設為全域管理員';
+	@override String get kick => '踢出';
+	@override String get poke => '戳一下';
+	@override String get banned => '已封鎖';
+	@override String get joinedEvent => '加入了';
+	@override String get leftEvent => '離開了';
+	@override String get newRoom => '新房間';
+	@override String get portAndBindMode => '連接埠與綁定模式';
+	@override String get hubManagement => 'Hub 管理';
+	@override String get chatRoom => '聊天室';
+	@override String get openChatDialog => '開啟聊天對話框';
+	@override String get hubDetails => 'Hub 詳情';
+	@override String get connectionSettings => '連接設定';
+	@override String get serverAddress => '伺服器地址';
+	@override String get host => '主機';
+	@override String get authentication => '身分驗證';
+	@override String get paste => '貼上';
+	@override String get unblock => '取消封鎖';
+	@override String get profileAndRoom => '資料與房間';
+	@override String get roomSettings => '房間設定';
+	@override String get roomName => '房間名稱';
+	@override String get roomId => '房間 ID';
+	@override String get announcements => '公告';
+	@override String get roomAdmins => '房間管理員';
+	@override String get noAnnouncement => '暫無公告';
+	@override String get setAnnouncement => '設置公告';
+	@override String get enterAnnouncementPrompt => '輸入公告內容...';
+	@override String get removeAdmin => '取消管理員';
+	@override String get addRoomAdmin => '添加房間管理員';
+	@override String get roomBans => '房間封鎖';
+	@override String get banMember => '封鎖成員';
+	@override String get unban => '取消封鎖';
+	@override String get server => '伺服器';
+	@override String get mute => '禁言';
+	@override String get secondsLabel => '秒';
+	@override String get serverShutdown => '伺服器關閉';
+	@override String get youAreNowAGlobalAdmin => '你現在是全域管理員';
+	@override String get yourGlobalAdminHasBeenRevoked => '你的全域管理員權限已被撤銷';
+	@override String get youAreNowARoomAdmin => '你現在是房間管理員';
+	@override String get yourRoomAdminHasBeenRevoked => '你的房間管理員權限已被撤銷';
+	@override String get youAreMutedFor => '你被禁言了';
+	@override String get secondsUnit => '秒';
+	@override String get youHaveBeenUnmuted => '你已解除禁言';
+	@override String get youAreBannedFromRoom => '你已被房間封鎖';
+	@override String get youCanNowRejoinRoom => '你現在可以重新加入房間';
+	@override String get youHaveBeenKickedFromTheRoom => '你已被踢出房間';
+	@override String get roomDeletedMovedToLobby => '房間已刪除，已移動到大廳';
+	@override String get eventLog => '事件日誌';
+	@override String get pingInterval => 'Ping 間隔';
+	@override String get onlineStatus => '線上';
+	@override String get noMessagesYet => '暫無訊息';
+	@override String get newMessages => '新訊息';
+	@override String get reply => '回覆';
+	@override String get recall => '撤回';
+	@override String get enterToSend => 'Enter 發送  ·  Ctrl+Enter 換行';
+	@override String get messagePlaceholder => '發送訊息...';
+	@override String get connectionTimedOut => '連接逾時';
+	@override String get blockedUsers => '已封鎖使用者';
+	@override String get blockedCount => '個已封鎖';
+	@override String get serverBlacklist => '伺服器黑名單';
+	@override String get userKey => '使用者 Key';
+	@override String get adminKey => '管理員 Key';
+	@override String get keepTheSameKeysAfterRestart => '重啟後保持相同金鑰';
+	@override String get regeneratedOnEveryStartup => '每次啟動時重新產生';
+	@override String get noKeyRequired => '無需金鑰';
+	@override String get anyoneCanConnectWithoutApiKey => '任何人無需 API Key 即可連接';
+	@override String get clientsMustProvideAValidApiKey => '用戶端必須提供有效的 API Key';
+	@override String get endpointMustBeAValidUrl => '端點必須是有效的 http(s) URL';
+	@override String get bucketCannotBeEmpty => '儲存桶不能為空';
+	@override String get accessKeyIdCannotBeEmpty => 'Access Key ID 不能為空';
+	@override String get accessKeySecretCannotBeEmpty => 'Access Key Secret 不能為空';
+	@override String get cdnDomainMustBeAValidUrl => 'CDN 網域必須是有效的 URL';
+	@override String get maxSizeMustBe1to100Mb => '最大限制必須為 1–100 MB';
+	@override String get cleared => '已清空';
+	@override String get imageUpload => '圖片上傳';
+	@override String get clientImageUpload => '用戶端圖片上傳';
+	@override String get serverOss => '伺服器 OSS';
+	@override String get clientOss => '用戶端 OSS';
+	@override String get imagesStoredOnServerDisk => '圖片儲存在伺服器磁碟，透過 /hub/files/ 提供服務';
+	@override String get serverReceivesAndProxiesImageToOss => '伺服器接收圖片並代理上傳到 OSS。金鑰保留在伺服器上。';
+	@override String get clientUploadsDirectlyToOss => '用戶端直接上傳到 OSS。伺服器僅獲取最終 URL。';
+	@override String get maxSizeMb => '最大限制 (MB)';
+	@override String get storePath => '儲存路徑';
+	@override String get leaveEmptyForDefault => '留空則使用預設值';
+	@override String get notConfiguredWillUseServerOrBase64 => '未配置 · 將使用伺服器或 Base64';
+	@override String get imageTooLargeToSend => '圖片太大，無法發送';
+	@override String get pleaseConfigureServerUploadOrClientOss => '請設定伺服器上傳或用戶端 OSS。';
+	@override String get stopTheServerToChangeUploadMode => '停止伺服器以更改上傳模式';
+	@override String get enableClientOss => '啟用用戶端 OSS';
+	@override String get uploadImagesDirectlyFromClientToOss => '直接從用戶端上傳圖片到 OSS';
+	@override String get ossNotConfigured => 'OSS 未設定';
+	@override String get dropToSendImage => '拖放以發送圖片';
+	@override String get longPressImageToSave => '長按圖片儲存';
+	@override String get pleaseEnterAValidUrl => '請輸入以 http:// 或 https:// 開頭的有效 URL';
+	@override String get setRoomPassword => '設定房間密碼';
+	@override String get adminPanel => '管理面板';
+	@override String get enterRoomName => '輸入房間名稱';
+	@override String get roomAnnouncement => '房間公告';
+	@override String get leaveEmptyForPublicRoom => '留空則設為公開房間';
+	@override String get maxParticipants => '最大人數';
+	@override String get upTo => '最多';
+	@override String get peopleLabel => '人';
+	@override String get noLimit => '無限制';
+	@override String get optional => '選填';
+	@override String get enterDisplayName => '輸入顯示名稱';
+	@override String get enterBio => '輸入個人簡介';
+	@override String get autoReconnect => '自動重連';
+	@override String get directMessage => '私聊訊息';
+	@override String get noAnnouncementsYet => '暫無公告';
+	@override String get enterAnnouncementText => '輸入公告內容...';
+	@override String get welcomeMessage => '歡迎訊息';
+	@override String get noWelcomeMessage => '暫無歡迎訊息';
+	@override String get enterWelcomeMessage => '輸入向加入使用者顯示的歡迎訊息...';
+	@override String get security => '安全';
+	@override String get changePassword => '修改密碼';
+	@override String get setPassword => '設定密碼';
+	@override String get protectedStatus => '受保護';
+	@override String get removePassword => '移除密碼';
+	@override String get enterPasswordToChange => '輸入密碼 (留空則移除)';
+	@override String get noAdminsYet => '暫無管理員';
+	@override String get noBannedMembers => '暫無封鎖成員';
+	@override String get noMembersAvailable => '暫無可用成員';
+	@override String get accessControl => '存取控制';
+	@override String get broadcast => '廣播';
+	@override String get addAnnouncement => '添加公告';
+	@override String areYouSureYouWantToDeleteR({required Object r}) => '確定要刪除 ${r} 嗎？此操作無法撤銷。';
+	@override String get membersList => '成員列表';
+	@override String get onlineUsersList => '線上使用者';
+	@override String get noUsersOnline => '無線上使用者';
+	@override String get room => '房間';
+	@override String get noPasswordSet => '未設定密碼';
+	@override String get passwordProtected => '密碼保護';
+	@override String get imageLabel => '圖片';
+	@override String get stickersLabel => '貼紙';
+	@override String get pokedYou => '戳了你';
+	@override String kickedFromServerByP({required Object p}) => '被 ${p} 踢出了伺服器';
+	@override String kickedFromRoomByP({required Object p}) => '被 ${p} 踢出了房間';
+	@override String get leftTheRoom => '離開了房間';
+	@override String get joinedTheRoom => '加入了房間';
+	@override String pWasKickedByO({required Object p, required Object o}) => '${p} 被 ${o} 踢出了房間';
+	@override String get youLabel => '你';
+	@override String get leftTheServer => '離開了伺服器';
+	@override String get joinedTheServer => '加入了伺服器';
+	@override String get updatedTheAnnouncement => '更新了公告';
+	@override String get recalledAMessage => '撤回了一條訊息';
+	@override String pReactedWithO({required Object p, required Object o}) => '${p} 對訊息回應了 ${o}';
+	@override String pRemovedReactionO({required Object p, required Object o}) => '${p} 移除了回應 ${o}';
+	@override String get noUsersAvailableToInvite => '暫無可用邀請使用者';
+	@override String get inviteToRoom => '邀請加入房間';
+	@override String get invite => '邀請';
+	@override String get invited => '已邀請';
+	@override String get roomInvite => '房間邀請';
+	@override String get invitedYouTo => '邀請你加入';
+	@override String get acceptInvite => '接受';
+	@override String get acceptedYourInvite => '接受了你的邀請';
+	@override String get declinedYourInvite => '拒絕了你的邀請';
+	@override String get blockedYourInvites => '封鎖了你的邀請';
+	@override String get blockedInvitesList => '邀請封鎖列表';
+	@override String get noBlockedInvites => '暫無封鎖的邀請者';
+	@override String get allowMemberInvites => '允許成員邀請';
+	@override String get letAllMembersInviteOthers => '允許所有成員邀請其他人加入房間';
+	@override String get declineAndBlock => '拒絕並封鎖';
+	@override String get memes => '表情包';
+	@override String get memeSaved => '已儲存到表情包';
+	@override String get networkInfo => '網路資訊';
+	@override String get hubInfo => 'Hub 資訊';
+	@override String get statsInfo => '統計資訊';
+	@override String get sourceInfo => '源資訊';
+	@override String get playerInfo => '播放資訊';
+	@override String get hideLabel => '隱藏';
+	@override String get showLabel => '顯示';
+	@override String get personaManagement => '角色管理';
+	@override String get promptConfiguration => '提示設定';
+	@override String get systemPrompt => '系統提示';
+	@override String get temperature => '溫度 (Temperature)';
+	@override String get promptSaved => '提示詞已儲存';
+	@override String get editSystemPrompt => '編輯系統提示詞';
+	@override String get noHistoryYet => '暫無歷史';
+	@override String get clearAll => '全部清除';
+	@override String get configCopiedToClipboard => '設定已複製到剪貼簿';
+	@override String get importedAsNewConfig => '已作為新設定導入';
+	@override String get imported => '已導入';
+	@override String get invalidClipboardFormat => '無效的剪貼簿格式';
+	@override String get cannotModifySystemPreset => '無法修改系統預設';
+	@override String get configKeyAlreadyExists => '設定 Key 已存在，請更換';
+	@override String get requiredField => '必填';
+	@override String get configKey => '設定 Key';
+	@override String get memoField => '備註';
+	@override String get valueRange => '數值: 0.0 - 1.0';
+	@override String get readOnlySystemPreset => '唯讀系統預設';
+	@override String get deleteConfig => '刪除設定';
+	@override String get areYouSureYouWantToDeleteGeneric => '確定要刪除嗎';
+	@override String get baseUrl => '基礎 URL';
+	@override String get optionalField => '選填';
+	@override String get model => '模型';
+	@override String get addModel => '添加模型';
+	@override String get modelId => '模型 ID';
+	@override String get displayName => '顯示名稱';
+	@override String get noModelsAddOneAbove => '暫無模型，請在上方添加。';
+	@override String placeholdersDescription({required Object animeCount, required Object animeNames, required Object topTags}) => '佔位符：${animeCount} ${animeNames} ${topTags}';
+	@override String get aiHub => 'AI 工坊';
+	@override String get selectYearAndMonth => '選擇年月';
+	@override String get enterYear => '輸入年份';
+	@override String get selectDay => '選擇日期';
+	@override String get fullYear => '全年';
+	@override String get quickSelect => '快速選擇';
+	@override String get selectDateRange => '選擇日期範圍';
+	@override String get manualSelect => '手動選擇';
+	@override String get qrAndClipboard => '二維碼與剪貼簿';
+	@override String get aiSettings => 'AI 設置';
+	@override String get aiConfigMissing => 'AI配置缺失';
+	@override String get generating => '生成中...';
+	@override String get generatedTags => '已生成 Tags';
+	@override String get exportScreenshot => '導出截圖';
+	@override String get copyAll => '複製全部';
+	@override String get timeRange => '時間範圍';
+	@override String get thisWeek => '本週';
+	@override String get thisMonth => '本月';
+	@override String get generateSummary => '生成總結';
+	@override String get generateTag => '生成 Tag';
+	@override String get summaryReport => '總結報告';
+	@override String get noActivityInTimeRange => '該時間段內暫無活動記錄';
+	@override String get weeklySummary => '本週總結';
+	@override String get monthlySummary => '本月總結';
+	@override String get tagCopied => 'Tag 已複製';
+	@override String get aiServiceConfig => 'AI 服務配置';
+	@override String get notConfigured => '未配置';
+	@override String get enabled => '已啟用';
+	@override String get writeYourReview => '寫下你的評價';
+	@override String get draft => '草稿';
+	@override String get mainContent => '正文';
+	@override String get switchh => '切換';
+	@override String get translationFailedPleaseTryAgainLater => '翻譯失敗，請稍後重試';
+	@override String get required => '必填';
+	@override String get importPersona => '導入角色配置';
+	@override String get newPersona => '新建角色配置';
+	@override String get noConfigurationsFound => '未找到配置';
+	@override String get animeCardUseBlur => '動漫卡片使用模糊背景';
+	@override String get calendarFetchEpisodes => '每日動畫表啟動時搜尋集資訊';
+	@override String get addKeyword => '新增關鍵字';
+	@override String get keyword => '關鍵字';
+	@override String get keywordAlreadyExists => '關鍵字已存在';
+	@override String get folderNameCannotBeEmpty => '資料夾名稱不能為空';
+	@override String get folderNameTooLong => '資料夾名稱過長';
+	@override String get folderAlreadyExists => '資料夾已存在';
+	@override String get addToFavoritesSuccess => '添加收藏成功';
+	@override String get addressAlreadyExists => '地址已存在';
+	@override String get allCopiedSuccess => '全部複製成功';
+	@override String get announcement => '公告';
+	@override String get applyFailed => '應用失敗';
+	@override String get applySuccess => '應用成功';
+	@override String get bangumiDataResetFailed => 'Bangumi資料重置失敗';
+	@override String get bangumiDataUpdateFailed => 'Bangumi資料更新失敗';
+	@override String get bangumiPlan => 'Bangumi 計畫';
+	@override String get basicInfo => '基本資訊';
+	@override String get bindBangumiIdSuccess => '綁定Bangumi ID成功';
+	@override String get blocked => '已阻擋';
+	@override String get blockedInvites => '阻擋的邀請';
+	@override String get cannotBeEmpty => '不能為空';
+	@override String get character => '角色';
+	@override String get chat => '聊天';
+	@override String get clipboard => '剪貼簿';
+	@override String get confirmDeleteImage => '確認刪除圖片？';
+	@override String get connectionDisconnected => '連線已斷開';
+	@override String get connectionFailed => '連線失敗';
+	@override String get content => '內容';
+	@override String get copiedToClipboard => '已複製到剪貼簿';
+	@override String get copySuccess => '複製成功';
+	@override String get createRoom => '建立房間';
+	@override String get currentRoom => '目前房間';
+	@override String get deleteFailed => '刪除失敗';
+	@override String get dlnaError => 'DLNA 異常';
+	@override String get editProfile => '編輯資料';
+	@override String get editing => '編輯中';
+	@override String get enterServerAddress => '輸入伺服器位址';
+	@override String get enterToSendCtrlEnterForNewline => ' Enter 發送，Ctrl+Enter 換行';
+	@override String get exporting => '匯出中';
+	@override String get failedToLoadEpisode => '載入集數失敗';
+	@override String get failedToPickImage => '選擇圖片失敗';
+	@override String get fileName => '檔案名稱';
+	@override String get fileSize => '檔案大小';
+	@override String get generateQrCodeShare => '產生二維碼分享';
+	@override String get getVideoUrlFailed => '取得影片連結異常';
+	@override String get go => '前往';
+	@override String get hide => '隱藏';
+	@override String get image => '圖片';
+	@override String get imageFormat => '格式';
+	@override String get imageProperties => '圖片屬性';
+	@override String get invalidCookies => '無效的 Cookies';
+	@override String get jumping => '正在跳轉...';
+	@override String get latestComments => '最新評論';
+	@override String get likeSuccess => '按讚成功';
+	@override String get loadSuccess => '載入成功';
+	@override String get loadingDuplicateEpisode => '載入重複集數';
+	@override String get loginWithPasswordIsDisabled => '密碼登入已停用';
+	@override String get manage => '管理';
+	@override String get members => '成員';
+	@override String get message => '訊息';
+	@override String get modifiedTime => '修改時間';
+	@override String get moveOperationTargetUnknown => '移動操作目標未知';
+	@override String get muteDuration => '禁言時長';
+	@override String get myRating => '我的評分';
+	@override String get newName => '新名稱';
+	@override String get noBlockedUsers => '沒有阻擋的使用者';
+	@override String get noChanges => '沒有更改';
+	@override String get noData => '沒有資料';
+	@override String get noMoreEpisodes => '沒有更多集數可播放';
+	@override String get noOneOnline => '沒有人在線';
+	@override String noRecordForMonth({required Object month}) => '${month}暫無記錄';
+	@override String get noResultsTryOtherKeywords => '沒有結果，請嘗試其他關鍵詞';
+	@override String get noSearchSources => '沒有搜尋源';
+	@override String get noStickersYet => '還沒有貼紙';
+	@override String get notSet => '未設定';
+	@override String get operationSuccess => '操作成功';
+	@override String get operationUnknown => '操作未知';
+	@override String get path => '路徑';
+	@override String get person => '人物';
+	@override String get pinnedMessages => '置頂訊息';
+	@override String get playingNextEpisode => '正在播放下一集';
+	@override String get pleaseAddSomeSources => '請新增一些資料源';
+	@override String get pleaseConfigureApiKeyInAiSettingsFirst => '請先在AI設定中設定API金鑰';
+	@override String get pleaseEnableAtLeastOneAddress => '請先啟用至少一個位址';
+	@override String get pleaseEnterEpisodeNumber => '請輸入集數';
+	@override String get pleaseEnterValidEpisodeNumber => '請輸入1-999之間的有效集數';
+	@override String get queryFailed => '查詢失敗';
+	@override String get ratingDetails => '評分詳情';
+	@override String get recognizeFromGallery => '從相簿識別';
+	@override String get relatedEntries => '相關條目';
+	@override String get removeSticker => '移除貼紙';
+	@override String get requestFailed => '請求失敗';
+	@override String get roomBan => '房間封禁';
+	@override String get routeNotFound => '線路不存在';
+	@override String get saveFailed => '儲存失敗';
+	@override String get saveFailedPermission => '儲存失敗：權限或目錄異常';
+	@override String saveFailedWithError({required Object e}) => '儲存失敗：${e}';
+	@override String get saveSuccess => '儲存成功';
+	@override String get savingImage => '正在儲存圖片...';
+	@override String get scanQrCode => '掃碼';
+	@override String get scanToJump => '掃碼跳轉';
+	@override String get qrCode => '二維碼';
+	@override String get screenshotFailed => '擷圖失敗';
+	@override String get screenshotFailedPleaseRetry => '擷圖失敗，請重試';
+	@override String get screenshotInProgress => '正在擷圖...';
+	@override String get screenshotSuccess => '擷圖成功';
+	@override String get shareFailed => '分享失敗';
+	@override String get shareMethodDescription => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码';
+	@override String get shareQrCode => '分享二維碼';
+	@override String get show => '顯示';
+	@override String get sources => '資料源';
+	@override String get startSearch => '開始搜尋';
+	@override String get stickers => '貼紙';
+	@override String get subject => '主題';
+	@override String get switchFavoriteUser => '切換收藏使用者';
+	@override String get tapToShare => '點擊分享';
+	@override String get titleCopied => '標題已複製';
+	@override String get toggle => '切換';
+	@override String get tokenCopiedToClipboard => 'Token已複製到剪貼簿';
+	@override String get translationService => '翻譯服務';
+	@override String get unlikeSuccess => '取消按讚成功';
+	@override String get usage => '使用情況';
+	@override String get webviewIsNotAvailable => 'Webview 不可用';
+	@override String get imageTitle => '標題';
+	@override String get imageSubtitle => '副標題';
+	@override String get selectBackground => '選擇背景';
+	@override String get changeBackground => '更換背景';
+	@override String get clearBackground => '清除背景';
+	@override String get noQrCodeFoundInImage => '未在圖片中識別到二維碼';
 }
 
 /// The flat map containing all translations for locale <zh-TW>.
@@ -2327,1138 +1147,1113 @@ class TranslationsZhTw extends Translations
 /// The Dart AOT compiler has issues with very large switch statements,
 /// so the map is split into smaller functions (512 entries each).
 extension on TranslationsZhTw {
-  dynamic _flatMapFunction(String path) {
-    return switch (path) {
-      'aToAddBToRemoveCToMove' =>
-          (
-          {required Object a, required Object b, required Object c}) => '${a} 新增 • ${b} 移除 • ${c} 移動',
-      'aToAddBToRemove' =>
-          ({required Object a, required Object b}) => '${a} 新增 • ${b} 移除',
-      'cUpdates' => ({required Object c}) => '${c} 個更新',
-      'aNewVersionIsAvailableDoYouWantToUpdateNow' => '發現新版本，是否立即更新？',
-      'app' => '應用',
-      'about' => '關於',
-      'accounts' => '帳號',
-      'addAAnimeSourceInHomePage' => '在首頁新增動漫源',
-      'addAnimeSource' => '新增動漫源',
-      'addNewFavoriteTo' => '新增收藏至',
-      'addToFavorites' => '加入收藏',
-      'add' => '新增',
-      'addedCountAnimesToDownloadQueue' =>
-          ({required Object count}) => '已將 ${count} 部動漫加入下載隊列',
-      'added' => '已新增',
-      'aggregatedSearch' => '聚合搜尋',
-      'aggregated' => '聚合',
-      'aiSource' => 'AI 數據源',
-      'ai' => 'AI',
-      'allEpisodes' => '全部劇集',
-      'alsoRemoveFilesOnDisk' => '同時刪除本地檔案',
-      'animeSourceList' => '動漫源列表',
-      'animeSource' => '動漫源',
-      'appearance' => '外觀',
-      'soulProfile' => '靈魂画像',
-      'imageTag' => 'AI 圖片標籤',
-      'aiChat' => 'AI 聊天',
-      'summary' => '總結',
-      'soulProfilerDescription' => '根據你的觀看歷史，分析你的動漫人格',
-      'imageTagDescription' => '根據你的偏好生成 AI 繪畫風格標籤',
-      'aiChatDescription' => '多輪對話，AI 具有上下文記憶',
-      'summaryDescription' => '自動生成你的動漫觀看週報/月報',
-      'areYouSureYouWantToClearYourHistory' => '確定要清除歷史記錄嗎？',
-      'areYouSureYouWantToClearYourProgress' => '確定要清除全部進度嗎？',
-      'authorizationRequired' => '需要身分驗證',
-      'autoPageTurning' => '自動翻頁',
-      'back' => '返回',
-      'bangumi' => '番組計劃',
-      'block' => '封鎖',
-      'blue' => '藍色',
-      'brief' => '簡介',
-      'cacheLimit' => '快取限制',
-      'cacheSize' => '快取大小',
-      'cacheCleared' => '快取已清除',
-      'cancel' => '取消',
-      'categories' => '分類',
-      'categoryPages' => '分類頁面',
-      'characters' => '角色',
-      'checkForUpdatesOnStartup' => '啟動時檢查更新',
-      'checkForUpdates' => '檢查更新',
-      'checkUpdates' => '檢查更新',
-      'check' => '檢查',
-      'clearCache' => '清除快取',
-      'clearHistory' => '清除歷史記錄',
-      'clearProgress' => '清除進度',
-      'clearSearchHistory' => '清除搜尋歷史',
-      'clearUnfavorited' => '清除未收藏',
-      'clear' => '清除',
-      'clickIfLoginExpired' => '如果登入過期請點擊',
-      'close' => '關閉',
-      'comment' => '吐槽',
-      'comments' => '吐槽箱',
-      'confirm' => '確定',
-      'kContinue' => '繼續',
-      'copied' => '已複製',
-      'analyze' => '分析',
-      'analyzing' => '分析中...',
-      'analysisResult' => '分析結果',
-      'yourQuestion' => '您的提問',
-      'pleaseEnterAPrompt' => '請輸入提示詞',
-      'egWhatKindOfAnimeDoILike' => '例如：我喜歡什麼樣的動漫？',
-      'aiSourceNotAvailable' => 'AI 數據源不可用',
-      'copyId' => '複製 ID',
-      'copyTitle' => '複製標題',
-      'copyUrl' => '複製連結',
-      'copyToFolder' => '複製到資料夾',
-      'copy' => '複製',
-      'createAccount' => '建立帳號',
-      'createFolder' => '建立資料夾',
-      'create' => '建立',
-      'currentlySeenEp' => ({required Object ep}) => '目前看到 ${ep}',
-      'dnsOverrides' => 'DNS 覆寫',
-      'dark' => '深色',
-      'dataSync' => '數據同步',
-      'data' => '數據',
-      'dateDesc' => '按日期降序',
-      'date' => '日期',
-      'defaultSearchTarget' => '預設搜尋目標',
-      'deleteCAnimes' => ({required Object c}) => '刪除 ${c} 部動漫嗎？',
-      'deleteAnime' => '刪除動漫',
-      'deleteFolder' => '刪除資料夾',
-      'deleteAnimeSourceN' =>
-          ({required Object n}) => '確定刪除動漫源 \'${n}\' 嗎？',
-      'deleteFolderF' => ({required Object f}) => '確定刪除資料夾 \'${f}\' 嗎？',
-      'deleteFolderPrompt' => '刪除資料夾？',
-      'delete' => '刪除',
-      'deleteRoom' => '刪除房間',
-      'description' => '描述',
-      'deselect' => '取消選擇',
-      'detailed' => '詳細',
-      'details' => '詳情',
-      'determineTheBindingA' => ({required Object a}) => '確定綁定：${a} ?',
-      'disable' => '停用',
-      'disabled' => '已停用',
-      'discoverTheNewVersionV' => ({required Object v}) => '發現新版本 ${v}',
-      'displayModeOfAnimeTile' => '動漫卡片顯示模式',
-      'displayTimeAndBatteryInfoInReader' => '閱讀器內顯示時間及電量',
-      'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => '請勿向主儲存庫報告任何與源有關的問題。',
-      'downloadAll' => '下載全部',
-      'downloadSelected' => '下載選中',
-      'downloadThreads' => '下載執行緒',
-      'download' => '下載',
-      'downloading' => '下載中',
-      'edit' => '編輯',
-      'enableDnsOverrides' => '啟用 DNS 覆寫',
-      'enable' => '啟用',
-      'end' => '結束',
-      'episodeEp' => ({required Object ep}) => '第 ${ep} 話',
-      'error' => '錯誤',
-      'exitMultiSelect' => '退出多選',
-      'exit' => '退出',
-      'explorePages' => '發現頁面',
-      'explore' => '發現',
-      'exportAppData' => '匯出應用數據',
-      'export' => '匯出',
-      'failedToImport' => '匯入失敗',
-      'fanyuan' => '番源',
-      'favoriteActions' => '收藏夾操作',
-      'favorite' => '收藏',
-      'favorites' => '收藏夾',
-      'finished' => '已完成',
-      'folderName' => '資料夾名稱',
-      'folder' => '資料夾',
-      'folders' => '資料夾',
-      'following' => '追蹤中',
-      'fullScreen' => '全螢幕',
-      'fullscreen' => '全螢幕',
-      'gitMirror' => 'Git 鏡像',
-      'green' => '綠色',
-      'help' => '幫助',
-      'history' => '歷史',
-      'home' => '首頁',
-      'iconProducer' => '圖示製作',
-      'ignoreCertificateErrors' => '忽略憑證錯誤',
-      'importAnimes' => '匯入動漫',
-      'importAppData' => '匯入應用數據',
-      'importFromFile' => '從檔案匯入',
-      'import' => '匯入',
-      'importedAAnimes' => ({required Object a}) => '已匯入 ${a} 部動漫',
-      'information' => '資訊',
-      'initialPage' => '初始頁面',
-      'invertSelection' => '反選',
-      'keywordBlocking' => '關鍵字封鎖',
-      'kostoriIsAFreeAndOpenSourceAppForAnimeWatching' => 'Kostori 是一款免費開源的追番應用。',
-      'language' => '語言',
-      'later' => '稍後',
-      'light' => '淺色',
-      'limitImageWidth' => '限制圖片寬度',
-      'localFavorites' => '本地收藏',
-      'local' => '本地',
-      'logIn' => '登入',
-      'logOut' => '登出',
-      'log' => '日誌',
-      'manualTranslation' => '手動翻譯',
-      'enterTextToTranslate' => '輸入需要翻譯的內容',
-      'translate' => '翻譯',
-      'translating' => '翻譯中...',
-      'translationResult' => '翻譯結果',
-      'selectTranslationLanguage' => '選擇翻譯語言',
-      'pleaseEnterTextToTranslate' => '請輸入需要翻譯的內容',
-      'loginWithWebview' => '透過 Webview 登入',
-      'login' => '登入',
-      'longPressAndDragToReorder' => '長按並拖曳以排序。',
-      'longPressOnTheFavoriteButtonToQuicklyAddToThisFolder' => '長按收藏按鈕可快速新增至此資料夾',
-      'longPressToZoom' => '長按縮放',
-      'me' => '我',
-      'moveToFirst' => '移至首位',
-      'moveFavoriteAfterReading' => '看畢後移動收藏',
-      'moveToFolder' => '移動到資料夾',
-      'move' => '移動',
-      'multiSelect' => '多選',
-      'multipleAnimes' => '多部動漫',
-      'name' => '名稱',
-      'networkFavoritePages' => '網路收藏頁面',
-      'network' => '網路',
-      'newFolder' => '新資料夾',
-      'newVersion' => '新版本',
-      'newVersionAvailable' => '有新版本可用',
-      'next' => '下一步',
-      'noExplorePages' => '暫無發現頁面',
-      'noNewVersionAvailable' => '目前已是最新版本',
-      'noSearchResultsFound' => '未找到搜尋結果',
-      'noLikedAnimeFound' => '未找到喜歡的動漫',
-      'noUpdates' => '暫無更新',
-      'ok' => '確定',
-      'onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer' => '一旦操作成功，應用將自動與伺服器同步數據。',
-      'openLog' => '開啟日誌',
-      'openAnime' => '開啟動漫',
-      'openHelp' => '查看幫助',
-      'openInBrowser' => '在瀏覽器中開啟',
-      'openLink' => '開啟連結',
-      'open' => '開啟',
-      'operation' => '操作',
-      'orange' => '橙色',
-      'order' => '排序',
-      'password' => '密碼',
-      'pause' => '暫停',
-      'paused' => '已暫停',
-      'pink' => '粉色',
-      'playlist' => '播放列表',
-      'pleaseCheckYourSettings' => '請檢查您的設定',
-      'preview' => '預覽',
-      'proxy' => '代理',
-      'purple' => '紫色',
-      'quickFavorite' => '快速收藏',
-      'ranking' => '排行榜',
-      'reLogin' => '重新登入',
-      'read' => '閱讀',
-      'reading' => '閱讀中',
-      'red' => '紅色',
-      'refresh' => '重新整理',
-      'related' => '相關',
-      'removeAnimeFromFavorite' => '確定從收藏中移除該動漫嗎？',
-      'remove' => '移除',
-      'rename' => '重新命名',
-      'reorder' => '重新排序',
-      'resetBangumiData' => '重置 Bangumi 數據',
-      'reset' => '重置',
-      'retry' => '重試',
-      'reviews' => '評論',
-      'saveImage' => '儲存圖片',
-      'savedFailed' => '儲存失敗',
-      'saved' => '已儲存',
-      'searchAll' => '搜尋全部',
-      'searchHistory' => '搜尋歷史',
-      'searchIn' => '搜尋自',
-      'search' => '搜尋',
-      'selectAll' => '全選',
-      'selectADirectoryWhichContainsTheAnimeFiles' => '選擇包含動漫檔案的目錄。',
-      'selectAFolder' => '選擇一個資料夾',
-      'selectAnImageOnScreen' => '選擇螢幕上的圖像',
-      'selectFile' => '選擇檔案',
-      'selectInRange' => '範圍選擇',
-      'select' => '選擇',
-      'selectedAAnimes' => ({required Object a}) => '已選取 ${a} 部動漫',
-      'setCacheLimit' => '設定快取限制',
-      'setNewStoragePath' => '設定新儲存路徑',
-      'setSourceListUrl' => '設定源列表 URL',
-      'set' => '設定',
-      'settings' => '設定',
-      'share' => '分享',
-      'showAll' => '顯示全部',
-      'showFavoriteStatusOnAnimeTile' => '在卡片上顯示收藏狀態',
-      'showHistoryOnAnimeTile' => '在卡片上顯示歷史記錄',
-      'singleAnime' => '單部動漫',
-      'sizeInMb' => '大小 (MB)',
-      'sizeOfAnimeTile' => '動漫卡片尺寸',
-      'sort' => '排序',
-      'sourceFolder' => '源資料夾',
-      'sourceUrl' => '源 URL',
-      'staffList' => '製作人員',
-      'start' => '開始',
-      'storagePathForLocalAnimes' => '本地動漫儲存路徑',
-      'submit' => '提交',
-      'suggestions' => '建議',
-      'syncData' => '同步數據',
-      'sync' => '同步',
-      'syncingData' => '正在同步數據',
-      'system' => '系統',
-      'tapToTurnPages' => '點擊翻頁',
-      'theUrlShouldPointToAIndexJsonFile' => 'URL 應指向一個 \'index.json\' 檔案',
-      'theFolderIsLinkedToSource' =>
-          ({required Object source}) => '該資料夾已關聯至 ${source}',
-      'themeColor' => '主題色',
-      'themeMode' => '主題模式',
-      'timetable' => '每日放送',
-      'topics' => '討論',
-      'topicsLatest' => '最新討論',
-      'topicsTrending' => '熱門討論',
-      'turnPageByVolumeKeys' => '使用音量鍵翻頁',
-      'unselected' => '未選取',
-      'updateAnimesInfo' => '更新動漫資訊',
-      'updateTime' => '更新時間',
-      'update' => '更新',
-      'updatesAvailable' => '有更新可用',
-      'updating' => '正在更新',
-      'uploadTime' => '上傳時間',
-      'upload' => '上傳',
-      'uploader' => '上傳者',
-      'useAConfigFile' => '使用設定檔',
-      'user' => '使用者',
-      'username' => '使用者名稱',
-      'userProfileAnalysis' => '使用者畫像分析',
-      'viewList' => '查看列表',
-      'viewMore' => '查看更多',
-      'view' => '查看',
-      'webDavAutoSync' => 'WebDAV 自動同步',
-      'kDefault' => '預設',
-      'lastWatchTimeTime' => ({required Object time}) => '上次觀看時間 ${time}',
-      'minAppVersionRequired' =>
-          ({required Object version}) => '需要最低應用版本 ${version}',
-      'more' => '更多',
-      'notYetAiring' => '尚未開播',
-      'fullBEpisodesReleased' => ({required Object b}) => '全 ${b} 話已發佈',
-      'upToEpSTotalEpsPlanned' =>
-          (
-          {required Object s, required Object t}) => '更新至 ${s} 話 • 全 ${t} 話',
-      'upToEpETotalEpsPlanned' =>
-          (
-          {required Object e, required Object s, required Object t}) => '更新至 ${e} (${s}) 話 • 全 ${t} 話',
-      'tReviewsR' =>
-          ({required Object t, required Object r}) => '${t} 條評論 | #${r}',
-      'tReviews' => ({required Object t}) => '${t} 條評論',
-      'showMore' => '展開 +',
-      'showLess' => '收起 -',
-      'tags' => '標籤',
-      'clearTags' => '清除標籤',
-      'showingLResults' => ({required Object l}) => '顯示 ${l} 個結果',
-      'selectTime' => '選擇時間',
-      'switchLayout' => '切換佈局',
-      'enterKeywords' => '輸入關鍵詞...',
-      'ratingChart' => '評分圖表',
-      'lineChart' => '折線圖',
-      'barChart' => '柱狀圖',
-      'standardDeviationS' => ({required Object s}) => '標準差：${s}',
-      'nobodysPostedAnythingYet' => '目前還沒有人發佈內容...',
-      'reload' => '重新載入',
-      'failedToLoadPleaseTryAgain' => '載入失敗，請重試。',
-      'doing' => '在看',
-      'collect' => '看過',
-      'wish' => '想看',
-      'onHold' => '擱置',
-      'dropped' => '拋棄',
-      'todayRecommendation' => '今日推薦',
-      'tTotalCount' => ({required Object t}) => '${t} 條總計',
-      'introduction' => '內容簡介',
-      'linkedItems' => '關聯條目',
-      'timeS' => ({required Object s}) => '時間：${s}',
-      'broadcastTimeA' => ({required Object a}) => '播出時間：${a}',
-      'profileInformation' => '個人資訊',
-      'characterIntroduction' => '角色簡介',
-      'voiceActorC' => ({required Object c}) => '聲優：${c}',
-      'episodeEN' =>
-          ({required Object e, required Object n}) => '第 ${e} 話：${n}',
-      'hotspot' => '熱點',
-      'completed' => '已完結',
-      'mainCharacter' => '主角',
-      'supportingCharacter' => '配角',
-      'cameo' => '客串',
-      'idleCorner' => '閒暇角落',
-      'unknown' => '未知',
-      'debugInfo' => '調試資訊',
-      'install' => '安裝',
-      'viewOnGithub' => '在 GitHub 上查看',
-      'noProxyOverrides' => '無代理覆寫',
-      'save' => '儲存',
-      'mirror' => '鏡像',
-      'result' => '結果',
-      'all' => '全部',
-      'reloadConfigs' => '重載配置',
-      'invalidUrlConfig' => '無效的 URL 設定',
-      'inconsistentVersions' => '版本不一致',
-      'noUpdateAvailableForThisArchitectureA' =>
-          ({required Object a}) => '該架構 (${a}) 暫無可用更新',
-      'checkUpdateFailed' => '檢查更新失敗...',
-      'downloadFailed' => '下載失敗',
-      'failedToCheckTheHashValuePleaseTryAgain' => '檢查雜湊值失敗，請重試',
-      'english' => '英語',
-      'dynamicColor' => '動態顏色',
-      'mondaySchedule' => '週一放送',
-      'tuesdaySchedule' => '週二放送',
-      'wednesdaySchedule' => '週三放送',
-      'thursdaySchedule' => '週四放送',
-      'fridaySchedule' => '週五放送',
-      'saturdaySchedule' => '週六放送',
-      'sundaySchedule' => '週日放送',
-      'popularityRanking' => '人氣排行',
-      'imageOperations' => '圖片操作',
-      'saveToAlbum' => '儲存到相簿',
-      'stitchLongImage' => '拼長圖',
-      'stitchHorizontalImage' => '橫向拼圖',
-      'stitchSubtitles' => '台詞拼接',
-      'saveLongImage' => '儲存長圖',
-      'borderColor' => '邊框顏色',
-      'conversationTitle' => '對話標題',
-      'aiConversation' => 'AI 對話',
-      'topicList' => '話題列表',
-      'startConversationWithAI' => '開始與 AI 對話吧',
-      'newConversation' => '新建對話',
-      'inputMessage' => '輸入訊息...',
-      'noTopicsYet' => '暫無話題',
-      'selectAiPersonality' => '選擇 AI 人格',
-      'apply' => '應用',
-      'heightPx' => '高度(px)',
-      'setUniformHeight' => '設定統一高度',
-      'uniformHeight' => '統一高度',
-      'cropImage' => '裁剪圖片',
-      'finishCropping' => '完成裁剪',
-      'sortImages' => '圖片排序',
-      'finishSorting' => '完成排序',
-      'noImages' => '暫無圖片',
-      'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
-      'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
-      'showImageBorders' => '顯示圖片邊框',
-      'outerBorderRadius' => '外邊框圓角',
-      'outerBorderWidth' => '外邊框寬度',
-      'outerBorderColor' => '外邊框顏色',
-      'showOuterBorder' => '顯示外邊框',
-      'innerBorderWidth' => '內邊框寬度',
-      'innerBorderColor' => '內邊框顏色',
-      'borderSettings' => '邊框設定',
-      'saving' => '正在儲存',
-      'saveSuccessful' => '儲存成功',
-      'saveFailedE' => ({required Object e}) => '儲存失敗：${e}',
-      'failedToLoadImagesOrNoImages' => '載入圖片失敗或無圖片',
-      'monday' => '週一',
-      'tuesday' => '週二',
-      'wednesday' => '週三',
-      'thursday' => '週四',
-      'friday' => '週五',
-      'saturday' => '週六',
-      'sunday' => '週日',
-      'defaultOrder' => '預設排序',
-      'byTime' => '按時間',
-      'byName' => '按名稱',
-      'recentlyWatched' => '最近觀看',
-      'localFavoriteBinding' => '本地收藏綁定',
-      'awful' => '不忍直視',
-      'terrible' => '非常差',
-      'bad' => '差',
-      'poor' => '較差',
-      'okay' => '不過不失',
-      'fine' => '還行',
-      'good' => '推薦',
-      'great' => '力薦',
-      'master' => '神作',
-      'epic' => '超神作',
-      'overview' => '總覽',
-      'discussion' => '討論',
-      'logs' => '日誌',
-      'playerDetails' => '播放器詳情',
-      'status' => '狀態',
-      'audioOptionLowLatency' => '音訊選項：\n 低延遲',
-      'audioOptionCompatibility' => '音訊選項：\n 相容性',
-      'switchSuccessful' => '切換成功',
-      'switchFailed' => '切換失敗',
-      'remoteCast' => '遠端投屏',
-      'copyLink' => '複製連結',
-      'aValidWebDavDirectoryUrl' => '有效的 WebDAV 目錄 URL',
-      'autoSyncData' => '自動同步數據',
-      'screenshotShare' => '截圖分享',
-      'bestMatch' => '最佳匹配',
-      'topRank' => '排名靠前',
-      'mostFavorited' => '最多收藏',
-      'highestRating' => '最高評分',
-      'selectColor' => '選擇顏色',
-      'colorWheel' => '色輪',
-      'primary' => '主要',
-      'accent' => '強調',
-      'custom' => '自定義',
-      'confirmC' => ({required Object c}) => '確定 (${c})',
-      'selectC' => ({required Object c}) => '選擇 ${c}',
-      'selectDate' => '選擇日期',
-      'startDate' => '開始日期',
-      'endDate' => '結束日期',
-      'clearDate' => '清除日期',
-      'pleaseSelectADate' => '請選擇日期',
-      'endDateCannotBeEarlierThanStartDate' => '結束日期不能早於開始日期',
-      'type' => '類型',
-      'background' => '背景',
-      'emotion' => '情感',
-      'source' => '來源',
-      'audience' => '受眾',
-      'category' => '分類',
-      'imageOperationsI' => ({required Object i}) => '圖片操作 (${i})',
-      'sSelected' => ({required Object s}) => '已選取 ${s}',
-      'simplifiedChinese' => '簡體中文',
-      'traditionalChinese' => '繁體中文',
-      'teal' => '青色',
-      'deepPurple' => '深紫色',
-      'yellow' => '黃色',
-      'cyan' => '青藍色',
-      'm3Default' => 'M3 預設',
-      'deepOrange' => '深橘色',
-      'indigo' => '靛藍色',
-      'cloudyBlue' => '雲藍色',
-      'darkPastelGreen' => '暗粉綠色',
-      'dust' => '塵埃色',
-      'electricLime' => '電光酸橙色',
-      'freshGreen' => '鮮綠色',
-      'lightEggplant' => '淺茄紫色',
-      'nastyGreen' => '髒綠色',
-      'reallyLightBlue' => '極淺藍色',
-      'tea' => '茶綠色',
-      'warmPurple' => '暖紫色',
-      'yellowishTan' => '黃棕色',
-      'cement' => '水泥色',
-      'darkGrassGreen' => '暗草綠色',
-      'dustyTeal' => '粉青色',
-      'greyTeal' => '灰青色',
-      'macaroniAndCheese' => '起司通心粉色',
-      'pinkishTan' => '粉棕色',
-      'spruce' => '杉綠色',
-      'strongBlue' => '強藍色',
-      'toxicGreen' => '毒液綠色',
-      'windowsBlue' => '視窗藍色',
-      'blueBlue' => '純藍色',
-      'blueWithAHintOfPurple' => '略帶紫色的藍色',
-      'booger' => '鼻涕綠色',
-      'brightSeaGreen' => '亮海綠色',
-      'greenTeal' => '綠青色',
-      'brownish' => '棕色調',
-      'offGreen' => '淡綠色',
-      'tangerine' => '橘黃色',
-      'uglyGreen' => '醜綠色',
-      'secondary' => '次要',
-      'tertiary' => '三級',
-      'surface' => '表面',
-      'jumpToPage' => '跳轉到頁',
-      'page' => '頁碼',
-      'pagePM' =>
-          ({required Object p, required Object m}) => '第 ${p} / ${m} 頁',
-      'first' => '第一頁',
-      'last' => '最後一頁',
-      _ => null,
-    } ?? switch (path) {
-      'disableLengthLimitation' => '停用長度限制',
-      'updateLog' => '更新日誌',
-      'liked' => '喜歡',
-      'rating' => '評分',
-      'pixelFormat' => '像素格式',
-      'hwPixelFormat' => '硬體像素格式',
-      'resolution' => '解析度',
-      'displayWidth' => '顯示寬度',
-      'displayHeight' => '顯示高度',
-      'aspect' => '比例',
-      'pixelAspectRatio' => '像素寬高比',
-      'colormatrix' => '色彩矩陣',
-      'colorLevels' => '色彩範圍',
-      'primaries' => '原色',
-      'gamma' => '伽馬值',
-      'signalPeak' => '信號峰值',
-      'lights' => '亮度',
-      'chromaLocation' => '色度位置',
-      'rotate' => '旋轉',
-      'stereoIn' => '立體聲輸入',
-      'averageBpp' => '平均 Bpp',
-      'alpha' => '透明度',
-      'trackId' => '軌道 ID',
-      'trackTitle' => '軌道標題',
-      'trackLanguage' => '軌道語言',
-      'trackImage' => '軌道圖像',
-      'trackAlbumArt' => '軌道專輯封面',
-      'trackCodec' => '軌道編解碼器',
-      'trackDecoder' => '軌道解碼器',
-      'trackWidth' => '軌道寬度',
-      'trackHeight' => '軌道高度',
-      'trackChannelsCount' => '軌道聲道數',
-      'trackChannels' => '軌道聲道佈局',
-      'trackSampleRate' => '軌道採樣率',
-      'trackFps' => '軌道幀率',
-      'trackBitrate' => '軌道位元率',
-      'trackRotate' => '軌道旋轉',
-      'trackPar' => '軌道 PAR',
-      'trackAudioChannels' => '軌道音訊聲道',
-      'format' => '格式',
-      'sampleRate' => '採樣率',
-      'channelCount' => '聲道數',
-      'hrChannels' => 'HR 聲道',
-      'uriTrack' => 'URI 軌道',
-      'channelsCount' => '聲道總數',
-      'channels' => '聲道',
-      'fps' => '幀率',
-      'bitrate' => '位元率',
-      'par' => 'PAR',
-      'audioChannels' => '音訊聲道',
-      'audioBitrate' => '音訊位元率',
-      'audio' => '音訊',
-      'video' => '影片',
-      'media' => '媒體',
-      'noLogsForL' => ({required Object l}) => '暫無 ${l} 的日誌',
-      'onlyValidForThisRun' => '僅在本次執行時有效',
-      'nameField' => '名稱',
-      'brandField' => '品牌',
-      'modelField' => '型號',
-      'deviceField' => '設備',
-      'productField' => '產品',
-      'manufacturerField' => '製造商',
-      'versionReleaseField' => '版本發佈',
-      'versionSdkIntField' => 'SDK 版本',
-      'displayField' => '顯示',
-      'hardwareField' => '硬體',
-      'physicalRamSizeField' => '實體記憶體大小',
-      'availableRamSizeField' => '可用記憶體大小',
-      'freeDiskSizeField' => '剩餘磁碟空間',
-      'totalDiskSizeField' => '總磁碟空間',
-      'isPhysicalDeviceField' => '是否為實體機',
-      'systemNameField' => '系統名稱',
-      'systemVersionField' => '系統版本',
-      'modelNameField' => '型號名稱',
-      'identifierForVendorField' => '供應商識別碼',
-      'sysnameField' => '核心名稱',
-      'nodenameField' => '節點名稱',
-      'releaseField' => '核心發佈',
-      'versionField' => '核心版本',
-      'machineField' => '機器架構',
-      'computerNameField' => '電腦名稱',
-      'numberOfCoresField' => '核心數',
-      'systemMemoryInMegabytesField' => '系統記憶體 (MB)',
-      'userNameField' => '使用者名稱',
-      'majorVersionField' => '主版本號',
-      'minorVersionField' => '次版本號',
-      'buildNumberField' => '編譯號',
-      'displayVersionField' => '顯示版本',
-      'productNameField' => '產品名稱',
-      'registeredOwnerField' => '註冊所有者',
-      'releaseIdField' => '發佈 ID',
-      'packageNameField' => '包名',
-      'appNameField' => '應用名稱',
-      'buildSignatureField' => '編譯簽名',
-      'installerStoreField' => '安裝通路',
-      'installTimeField' => '安裝時間',
-      'updateTimeField' => '更新時間',
-      'january' => '一月',
-      'february' => '二月',
-      'march' => '三月',
-      'april' => '四月',
-      'may' => '五月',
-      'june' => '六月',
-      'july' => '七月',
-      'august' => '八月',
-      'september' => '九月',
-      'october' => '十月',
-      'november' => '十一月',
-      'december' => '十二月',
-      'today' => '今天',
-      'yesterday' => '昨天',
-      'last3Days' => '最近 3 天',
-      'last7Days' => '最近 7 天',
-      'last30Days' => '最近 30 天',
-      'last3Months' => '最近 3 個月',
-      'last6Months' => '最近 6 個月',
-      'thisYear' => '今年',
-      'older' => '更早',
-      'markTheSelectedFavoritesAs' => '將所選收藏標記為',
-      'favoriteType' => '收藏類型',
-      'doingStatus' => '在看',
-      'wishStatus' => '想看',
-      'collectStatus' => '看過',
-      'onHoldStatus' => '擱置',
-      'droppedStatus' => '拋棄',
-      'player' => '播放器',
-      'audioOption' => '音訊選項',
-      'hardwareDecoding' => '硬體解碼',
-      'hardwareDecoder' => '硬體解碼器',
-      'videoRenderer' => '影片渲染器',
-      'videoSynchronizationMode' => '影片同步模式',
-      'enableNoProxyOverrides' => '啟用無代理覆寫',
-      'actor' => '角色',
-      'dub' => '配音',
-      'chineseDub' => '中配',
-      'japaneseDub' => '日配',
-      'englishDub' => '英配',
-      'koreanDub' => '韓配',
-      'selectedACharacter' => ({required Object a}) => '已選取 ${a} 個角色',
-      'searchOptions' => '搜尋選項',
-      'searchSources' => '搜尋源',
-      'translation' => '翻譯',
-      'apiKeyCannotBeEmpty' => 'API Key 不能為空',
-      'pleaseEnterTranslationPrompt' =>
-          (
-          {required Object a}) => '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符',
-      'thePromptMustContainAPlaceholderForTarget' =>
-          ({required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符',
-      'thisFieldCannotBeEmpty' => '此欄位不能為空',
-      'thePromptMustContainAPlaceholder' =>
-          ({required Object a}) => '提示詞必須包含 ${a} 佔位符',
-      'translationPrompt' => '翻譯提示詞',
-      'modelName' => '模型名稱',
-      'apiConfiguration' => 'API 設定',
-      'wordCloud' => '詞雲',
-      'statsCalendar' => '統計日曆',
-      'todaysRecords' => '當天的記錄',
-      'dailyStats' => '天統計',
-      'viewAll' => '查看全部',
-      'kostoriChangelog' => 'Kostori 更新日誌',
-      'copyPath' => '複製路徑',
-      'properties' => '屬性',
-      'noEndpoint' => '無端點',
-      'testAll' => '全部測試',
-      'customEndpoint' => '自定義端點',
-      'pingTest' => '延遲測試',
-      'continuousPing' => '持續測試',
-      'service' => '服務',
-      'serviceSettings' => '服務設定',
-      'enableService' => '啟用服務',
-      'serviceIsStopped' => '服務已停止',
-      'runningOnH' => ({required Object h}) => '執行於 ${h}',
-      'apiKey' => 'API Key',
-      'activeKey' => '目前金鑰',
-      'usingFixedKey' => '使用固定金鑰',
-      'usingRandomKeyRegeneratedOnStartup' => '使用隨機金鑰 (啟動時重新產生)',
-      'useFixedKey' => '使用固定金鑰',
-      'keepTheSameKeyAfterRestart' => '重啟後保持相同金鑰',
-      'fixedKey' => '固定金鑰',
-      'leaveEmptyToAutoGenerate' => '留空則自動產生',
-      'enterFixedKey' => '輸入固定金鑰',
-      'regenerateRandomKey' => '重新產生隨機金鑰',
-      'generateANewRandomKeyImmediately' => '立即產生一個新的隨機金鑰',
-      'regenerate' => '重新產生',
-      'port' => '連接埠',
-      'defaultP' => ({required Object p}) => '預設：${p}',
-      'bindMode' => '綁定模式',
-      'chooseIpVersionToListenOn' => '選擇要監聽的 IP 版本',
-      'hubServer' => 'Hub 服務端',
-      'enableHub' => '啟用 Hub',
-      'hubServerIsStopped' => 'Hub 服務端已停止',
-      'clientsCount' => '個用戶端',
-      'hubPort' => 'Hub 連接埠',
-      'onlineClients' => '線上用戶端',
-      'connectedAt' => '連接於',
-      'messageHistory' => '訊息歷史',
-      'hubClient' => 'Hub 用戶端',
-      'connectToHub' => '連接到 Hub',
-      'connected' => '已連接',
-      'notConnected' => '未連接',
-      'hubAddress' => 'Hub 地址',
-      'clientName' => '用戶端名稱',
-      'displayNameInHub' => 'Hub 中的顯示名稱',
-      'myDevice' => '我的設備',
-      'hubToken' => 'Hub 令牌',
-      'tokenFromTheHubServer' => '來自 Hub 服務端的令牌',
-      'pasteHubServerToken' => '貼上 Hub 服務端令牌',
-      'runningOn' => '執行於',
-      'online' => '線上',
-      'rooms' => '個房間',
-      'managing' => '管理中',
-      'lobby' => '大廳',
-      'noRooms' => '暫無房間',
-      'current' => '當前',
-      'join' => '加入',
-      'leaveRoom' => '離開房間',
-      'roomPassword' => '房間密碼',
-      'blacklist' => '黑名單',
-      'bannedCount' => '個已封鎖',
-      'noBannedUsers' => '暫無封鎖使用者',
-      'removeFromBlacklist' => '從黑名單中移除',
-      'addToBlacklist' => '加入黑名單',
-      'mute5min' => '禁言 5 分鐘',
-      'unmute' => '取消禁言',
-      'removeGlobalAdmin' => '取消全域管理員',
-      'setGlobalAdmin' => '設為全域管理員',
-      'kick' => '踢出',
-      'poke' => '戳一下',
-      'banned' => '已封鎖',
-      'joinedEvent' => '加入了',
-      'leftEvent' => '離開了',
-      'newRoom' => '新房間',
-      'portAndBindMode' => '連接埠與綁定模式',
-      'hubManagement' => 'Hub 管理',
-      'chatRoom' => '聊天室',
-      'openChatDialog' => '開啟聊天對話框',
-      'hubDetails' => 'Hub 詳情',
-      'connectionSettings' => '連接設定',
-      'serverAddress' => '伺服器地址',
-      'host' => '主機',
-      'authentication' => '身分驗證',
-      'paste' => '貼上',
-      'unblock' => '取消封鎖',
-      'profileAndRoom' => '資料與房間',
-      'roomSettings' => '房間設定',
-      'roomName' => '房間名稱',
-      'roomId' => '房間 ID',
-      'announcements' => '公告',
-      'roomAdmins' => '房間管理員',
-      'noAnnouncement' => '暫無公告',
-      'setAnnouncement' => '設置公告',
-      'enterAnnouncementPrompt' => '輸入公告內容...',
-      'removeAdmin' => '取消管理員',
-      'addRoomAdmin' => '添加房間管理員',
-      'roomBans' => '房間封鎖',
-      'banMember' => '封鎖成員',
-      'unban' => '取消封鎖',
-      'server' => '伺服器',
-      'mute' => '禁言',
-      'secondsLabel' => '秒',
-      'serverShutdown' => '伺服器關閉',
-      'youAreNowAGlobalAdmin' => '你現在是全域管理員',
-      'yourGlobalAdminHasBeenRevoked' => '你的全域管理員權限已被撤銷',
-      'youAreNowARoomAdmin' => '你現在是房間管理員',
-      'yourRoomAdminHasBeenRevoked' => '你的房間管理員權限已被撤銷',
-      'youAreMutedFor' => '你被禁言了',
-      'secondsUnit' => '秒',
-      'youHaveBeenUnmuted' => '你已解除禁言',
-      'youAreBannedFromRoom' => '你已被房間封鎖',
-      'youCanNowRejoinRoom' => '你現在可以重新加入房間',
-      'youHaveBeenKickedFromTheRoom' => '你已被踢出房間',
-      'roomDeletedMovedToLobby' => '房間已刪除，已移動到大廳',
-      'eventLog' => '事件日誌',
-      'pingInterval' => 'Ping 間隔',
-      'onlineStatus' => '線上',
-      'noMessagesYet' => '暫無訊息',
-      'newMessages' => '新訊息',
-      'reply' => '回覆',
-      'recall' => '撤回',
-      'enterToSend' => 'Enter 發送  ·  Ctrl+Enter 換行',
-      'messagePlaceholder' => '發送訊息...',
-      'connectionTimedOut' => '連接逾時',
-      'blockedUsers' => '已封鎖使用者',
-      'blockedCount' => '個已封鎖',
-      'serverBlacklist' => '伺服器黑名單',
-      'userKey' => '使用者 Key',
-      'adminKey' => '管理員 Key',
-      'keepTheSameKeysAfterRestart' => '重啟後保持相同金鑰',
-      'regeneratedOnEveryStartup' => '每次啟動時重新產生',
-      'noKeyRequired' => '無需金鑰',
-      'anyoneCanConnectWithoutApiKey' => '任何人無需 API Key 即可連接',
-      'clientsMustProvideAValidApiKey' => '用戶端必須提供有效的 API Key',
-      'endpointMustBeAValidUrl' => '端點必須是有效的 http(s) URL',
-      'bucketCannotBeEmpty' => '儲存桶不能為空',
-      'accessKeyIdCannotBeEmpty' => 'Access Key ID 不能為空',
-      'accessKeySecretCannotBeEmpty' => 'Access Key Secret 不能為空',
-      'cdnDomainMustBeAValidUrl' => 'CDN 網域必須是有效的 URL',
-      'maxSizeMustBe1to100Mb' => '最大限制必須為 1–100 MB',
-      'cleared' => '已清空',
-      'imageUpload' => '圖片上傳',
-      'clientImageUpload' => '用戶端圖片上傳',
-      'serverOss' => '伺服器 OSS',
-      'clientOss' => '用戶端 OSS',
-      'imagesStoredOnServerDisk' => '圖片儲存在伺服器磁碟，透過 /hub/files/ 提供服務',
-      'serverReceivesAndProxiesImageToOss' => '伺服器接收圖片並代理上傳到 OSS。金鑰保留在伺服器上。',
-      'clientUploadsDirectlyToOss' => '用戶端直接上傳到 OSS。伺服器僅獲取最終 URL。',
-      'maxSizeMb' => '最大限制 (MB)',
-      'storePath' => '儲存路徑',
-      'leaveEmptyForDefault' => '留空則使用預設值',
-      'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
-      'imageTooLargeToSend' => '圖片太大，無法發送',
-      'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
-      'stopTheServerToChangeUploadMode' => '停止伺服器以更改上傳模式',
-      'enableClientOss' => '啟用用戶端 OSS',
-      'uploadImagesDirectlyFromClientToOss' => '直接從用戶端上傳圖片到 OSS',
-      'ossNotConfigured' => 'OSS 未設定',
-      'dropToSendImage' => '拖放以發送圖片',
-      'longPressImageToSave' => '長按圖片儲存',
-      'pleaseEnterAValidUrl' => '請輸入以 http:// 或 https:// 開頭的有效 URL',
-      'setRoomPassword' => '設定房間密碼',
-      'adminPanel' => '管理面板',
-      'enterRoomName' => '輸入房間名稱',
-      'roomAnnouncement' => '房間公告',
-      'leaveEmptyForPublicRoom' => '留空則設為公開房間',
-      'maxParticipants' => '最大人數',
-      'upTo' => '最多',
-      'peopleLabel' => '人',
-      'noLimit' => '無限制',
-      'optional' => '選填',
-      'enterDisplayName' => '輸入顯示名稱',
-      'enterBio' => '輸入個人簡介',
-      'autoReconnect' => '自動重連',
-      'directMessage' => '私聊訊息',
-      'noAnnouncementsYet' => '暫無公告',
-      'enterAnnouncementText' => '輸入公告內容...',
-      'welcomeMessage' => '歡迎訊息',
-      'noWelcomeMessage' => '暫無歡迎訊息',
-      'enterWelcomeMessage' => '輸入向加入使用者顯示的歡迎訊息...',
-      'security' => '安全',
-      'changePassword' => '修改密碼',
-      'setPassword' => '設定密碼',
-      'protectedStatus' => '受保護',
-      'removePassword' => '移除密碼',
-      'enterPasswordToChange' => '輸入密碼 (留空則移除)',
-      'noAdminsYet' => '暫無管理員',
-      'noBannedMembers' => '暫無封鎖成員',
-      'noMembersAvailable' => '暫無可用成員',
-      'accessControl' => '存取控制',
-      'broadcast' => '廣播',
-      'addAnnouncement' => '添加公告',
-      'areYouSureYouWantToDeleteR' =>
-          ({required Object r}) => '確定要刪除 ${r} 嗎？此操作無法撤銷。',
-      'membersList' => '成員列表',
-      'onlineUsersList' => '線上使用者',
-      'noUsersOnline' => '無線上使用者',
-      'room' => '房間',
-      'noPasswordSet' => '未設定密碼',
-      'passwordProtected' => '密碼保護',
-      'imageLabel' => '圖片',
-      'stickersLabel' => '貼紙',
-      'pokedYou' => '戳了你',
-      'kickedFromServerByP' => ({required Object p}) => '被 ${p} 踢出了伺服器',
-      'kickedFromRoomByP' => ({required Object p}) => '被 ${p} 踢出了房間',
-      'leftTheRoom' => '離開了房間',
-      'joinedTheRoom' => '加入了房間',
-      'pWasKickedByO' =>
-          ({required Object p, required Object o}) => '${p} 被 ${o} 踢出了房間',
-      'youLabel' => '你',
-      'leftTheServer' => '離開了伺服器',
-      'joinedTheServer' => '加入了伺服器',
-      'updatedTheAnnouncement' => '更新了公告',
-      'recalledAMessage' => '撤回了一條訊息',
-      'pReactedWithO' =>
-          ({required Object p, required Object o}) => '${p} 對訊息回應了 ${o}',
-      'pRemovedReactionO' =>
-          ({required Object p, required Object o}) => '${p} 移除了回應 ${o}',
-      'noUsersAvailableToInvite' => '暫無可用邀請使用者',
-      'inviteToRoom' => '邀請加入房間',
-      'invite' => '邀請',
-      'invited' => '已邀請',
-      'roomInvite' => '房間邀請',
-      'invitedYouTo' => '邀請你加入',
-      'acceptInvite' => '接受',
-      'acceptedYourInvite' => '接受了你的邀請',
-      'declinedYourInvite' => '拒絕了你的邀請',
-      'blockedYourInvites' => '封鎖了你的邀請',
-      'blockedInvitesList' => '邀請封鎖列表',
-      'noBlockedInvites' => '暫無封鎖的邀請者',
-      'allowMemberInvites' => '允許成員邀請',
-      'letAllMembersInviteOthers' => '允許所有成員邀請其他人加入房間',
-      'declineAndBlock' => '拒絕並封鎖',
-      'memes' => '表情包',
-      'memeSaved' => '已儲存到表情包',
-      'networkInfo' => '網路資訊',
-      'hubInfo' => 'Hub 資訊',
-      'statsInfo' => '統計資訊',
-      'sourceInfo' => '源資訊',
-      'playerInfo' => '播放資訊',
-      'hideLabel' => '隱藏',
-      'showLabel' => '顯示',
-      'personaManagement' => '角色管理',
-      'promptConfiguration' => '提示設定',
-      'systemPrompt' => '系統提示',
-      'temperature' => '溫度 (Temperature)',
-      'promptSaved' => '提示詞已儲存',
-      'editSystemPrompt' => '編輯系統提示詞',
-      'noHistoryYet' => '暫無歷史',
-      'clearAll' => '全部清除',
-      'configCopiedToClipboard' => '設定已複製到剪貼簿',
-      'importedAsNewConfig' => '已作為新設定導入',
-      'imported' => '已導入',
-      'invalidClipboardFormat' => '無效的剪貼簿格式',
-      'cannotModifySystemPreset' => '無法修改系統預設',
-      'configKeyAlreadyExists' => '設定 Key 已存在，請更換',
-      'requiredField' => '必填',
-      'configKey' => '設定 Key',
-      'memoField' => '備註',
-      'valueRange' => '數值: 0.0 - 1.0',
-      'readOnlySystemPreset' => '唯讀系統預設',
-      'deleteConfig' => '刪除設定',
-      'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
-      'baseUrl' => '基礎 URL',
-      'optionalField' => '選填',
-      'model' => '模型',
-      'addModel' => '添加模型',
-      'modelId' => '模型 ID',
-      'displayName' => '顯示名稱',
-      'noModelsAddOneAbove' => '暫無模型，請在上方添加。',
-      'placeholdersDescription' =>
-          (
-          {required Object animeCount, required Object animeNames, required Object topTags}) => '佔位符：${animeCount} ${animeNames} ${topTags}',
-      'aiHub' => 'AI 工坊',
-      'selectYearAndMonth' => '選擇年月',
-      'enterYear' => '輸入年份',
-      'selectDay' => '選擇日期',
-      'fullYear' => '全年',
-      'quickSelect' => '快速選擇',
-      'selectDateRange' => '選擇日期範圍',
-      'manualSelect' => '手動選擇',
-      'qrAndClipboard' => '二維碼與剪貼簿',
-      'aiSettings' => 'AI 設置',
-      'aiConfigMissing' => 'AI配置缺失',
-      'generating' => '生成中...',
-      'generatedTags' => '已生成 Tags',
-      'exportScreenshot' => '導出截圖',
-      'copyAll' => '複製全部',
-      'timeRange' => '時間範圍',
-      'thisWeek' => '本週',
-      'thisMonth' => '本月',
-      'generateSummary' => '生成總結',
-      'generateTag' => '生成 Tag',
-      'summaryReport' => '總結報告',
-      'noActivityInTimeRange' => '該時間段內暫無活動記錄',
-      'weeklySummary' => '本週總結',
-      'monthlySummary' => '本月總結',
-      'tagCopied' => 'Tag 已複製',
-      'aiServiceConfig' => 'AI 服務配置',
-      'notConfigured' => '未配置',
-      'enabled' => '已啟用',
-      'writeYourReview' => '寫下你的評價',
-      'draft' => '草稿',
-      'mainContent' => '正文',
-      'switchh' => '切換',
-      'translationFailedPleaseTryAgainLater' => '翻譯失敗，請稍後重試',
-      'required' => '必填',
-      'importPersona' => '導入角色配置',
-      'newPersona' => '新建角色配置',
-      'noConfigurationsFound' => '未找到配置',
-      'animeCardUseBlur' => '動漫卡片使用模糊背景',
-      'calendarFetchEpisodes' => '每日動畫表啟動時搜尋集資訊',
-      'addKeyword' => '新增關鍵字',
-      'keyword' => '關鍵字',
-      'keywordAlreadyExists' => '關鍵字已存在',
-      'folderNameCannotBeEmpty' => '資料夾名稱不能為空',
-      'folderNameTooLong' => '資料夾名稱過長',
-      'folderAlreadyExists' => '資料夾已存在',
-      'addToFavoritesSuccess' => '添加收藏成功',
-      'addressAlreadyExists' => '地址已存在',
-      'allCopiedSuccess' => '全部複製成功',
-      'announcement' => '公告',
-      'applyFailed' => '應用失敗',
-      'applySuccess' => '應用成功',
-      'bangumiDataResetFailed' => 'Bangumi資料重置失敗',
-      'bangumiDataUpdateFailed' => 'Bangumi資料更新失敗',
-      'bangumiPlan' => 'Bangumi 計畫',
-      'basicInfo' => '基本資訊',
-      'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
-      'blocked' => '已阻擋',
-      'blockedInvites' => '阻擋的邀請',
-      'cannotBeEmpty' => '不能為空',
-      'character' => '角色',
-      'chat' => '聊天',
-      'clipboard' => '剪貼簿',
-      'confirmDeleteImage' => '確認刪除圖片？',
-      'connectionDisconnected' => '連線已斷開',
-      'connectionFailed' => '連線失敗',
-      'content' => '內容',
-      'copiedToClipboard' => '已複製到剪貼簿',
-      'copySuccess' => '複製成功',
-      'createRoom' => '建立房間',
-      'currentRoom' => '目前房間',
-      'deleteFailed' => '刪除失敗',
-      'dlnaError' => 'DLNA 異常',
-      'editProfile' => '編輯資料',
-      'editing' => '編輯中',
-      'enterServerAddress' => '輸入伺服器位址',
-      'enterToSendCtrlEnterForNewline' => ' Enter 發送，Ctrl+Enter 換行',
-      'exporting' => '匯出中',
-      'failedToLoadEpisode' => '載入集數失敗',
-      'failedToPickImage' => '選擇圖片失敗',
-      'fileName' => '檔案名稱',
-      'fileSize' => '檔案大小',
-      'generateQrCodeShare' => '產生二維碼分享',
-      'getVideoUrlFailed' => '取得影片連結異常',
-      'go' => '前往',
-      'hide' => '隱藏',
-      'image' => '圖片',
-      'imageFormat' => '格式',
-      'imageProperties' => '圖片屬性',
-      'invalidCookies' => '無效的 Cookies',
-      'jumping' => '正在跳轉...',
-      'latestComments' => '最新評論',
-      _ => null,
-    } ?? switch (path) {
-      'likeSuccess' => '按讚成功',
-      'loadSuccess' => '載入成功',
-      'loadingDuplicateEpisode' => '載入重複集數',
-      'loginWithPasswordIsDisabled' => '密碼登入已停用',
-      'manage' => '管理',
-      'members' => '成員',
-      'message' => '訊息',
-      'modifiedTime' => '修改時間',
-      'moveOperationTargetUnknown' => '移動操作目標未知',
-      'muteDuration' => '禁言時長',
-      'myRating' => '我的評分',
-      'newName' => '新名稱',
-      'noBlockedUsers' => '沒有阻擋的使用者',
-      'noChanges' => '沒有更改',
-      'noData' => '沒有資料',
-      'noMoreEpisodes' => '沒有更多集數可播放',
-      'noOneOnline' => '沒有人在線',
-      'noRecordForMonth' => ({required Object month}) => '${month}暫無記錄',
-      'noResultsTryOtherKeywords' => '沒有結果，請嘗試其他關鍵詞',
-      'noSearchSources' => '沒有搜尋源',
-      'noStickersYet' => '還沒有貼紙',
-      'notSet' => '未設定',
-      'operationSuccess' => '操作成功',
-      'operationUnknown' => '操作未知',
-      'path' => '路徑',
-      'person' => '人物',
-      'pinnedMessages' => '置頂訊息',
-      'playingNextEpisode' => '正在播放下一集',
-      'pleaseAddSomeSources' => '請新增一些資料源',
-      'pleaseConfigureApiKeyInAiSettingsFirst' => '請先在AI設定中設定API金鑰',
-      'pleaseEnableAtLeastOneAddress' => '請先啟用至少一個位址',
-      'pleaseEnterEpisodeNumber' => '請輸入集數',
-      'pleaseEnterValidEpisodeNumber' => '請輸入1-999之間的有效集數',
-      'queryFailed' => '查詢失敗',
-      'ratingDetails' => '評分詳情',
-      'recognizeFromGallery' => '從相簿識別',
-      'relatedEntries' => '相關條目',
-      'removeSticker' => '移除貼紙',
-      'requestFailed' => '請求失敗',
-      'roomBan' => '房間封禁',
-      'routeNotFound' => '線路不存在',
-      'saveFailed' => '儲存失敗',
-      'saveFailedPermission' => '儲存失敗：權限或目錄異常',
-      'saveFailedWithError' => ({required Object e}) => '儲存失敗：${e}',
-      'saveSuccess' => '儲存成功',
-      'savingImage' => '正在儲存圖片...',
-      'scanQrCode' => '掃碼',
-      'scanToJump' => '掃碼跳轉',
-      'qrCode' => '二維碼',
-      'screenshotFailed' => '擷圖失敗',
-      'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
-      'screenshotInProgress' => '正在擷圖...',
-      'screenshotSuccess' => '擷圖成功',
-      'shareFailed' => '分享失敗',
-      'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
-      'shareQrCode' => '分享二維碼',
-      'show' => '顯示',
-      'sources' => '資料源',
-      'startSearch' => '開始搜尋',
-      'stickers' => '貼紙',
-      'subject' => '主題',
-      'switchFavoriteUser' => '切換收藏使用者',
-      'tapToShare' => '點擊分享',
-      'titleCopied' => '標題已複製',
-      'toggle' => '切換',
-      'tokenCopiedToClipboard' => 'Token已複製到剪貼簿',
-      'translationService' => '翻譯服務',
-      'unlikeSuccess' => '取消按讚成功',
-      'usage' => '使用情況',
-      'webviewIsNotAvailable' => 'Webview 不可用',
-      'imageTitle' => '標題',
-      'imageSubtitle' => '副標題',
-      'selectBackground' => '選擇背景',
-      'changeBackground' => '更換背景',
-      'clearBackground' => '清除背景',
-      'noQrCodeFoundInImage' => '未在圖片中識別到二維碼',
-      _ => null,
-    };
-  }
+	dynamic _flatMapFunction(String path) {
+		return switch (path) {
+			'aToAddBToRemoveCToMove' => ({required Object a, required Object b, required Object c}) => '${a} 新增 • ${b} 移除 • ${c} 移動',
+			'aToAddBToRemove' => ({required Object a, required Object b}) => '${a} 新增 • ${b} 移除',
+			'cUpdates' => ({required Object c}) => '${c} 個更新',
+			'aNewVersionIsAvailableDoYouWantToUpdateNow' => '發現新版本，是否立即更新？',
+			'app' => '應用',
+			'about' => '關於',
+			'accounts' => '帳號',
+			'addAAnimeSourceInHomePage' => '在首頁新增動漫源',
+			'addAnimeSource' => '新增動漫源',
+			'addNewFavoriteTo' => '新增收藏至',
+			'addToFavorites' => '加入收藏',
+			'add' => '新增',
+			'addedCountAnimesToDownloadQueue' => ({required Object count}) => '已將 ${count} 部動漫加入下載隊列',
+			'added' => '已新增',
+			'aggregatedSearch' => '聚合搜尋',
+			'aggregated' => '聚合',
+			'aiSource' => 'AI 數據源',
+			'ai' => 'AI',
+			'allEpisodes' => '全部劇集',
+			'alsoRemoveFilesOnDisk' => '同時刪除本地檔案',
+			'animeSourceList' => '動漫源列表',
+			'animeSource' => '動漫源',
+			'appearance' => '外觀',
+			'soulProfile' => '靈魂画像',
+			'imageTag' => 'AI 圖片標籤',
+			'aiChat' => 'AI 聊天',
+			'summary' => '總結',
+			'soulProfilerDescription' => '根據你的觀看歷史，分析你的動漫人格',
+			'imageTagDescription' => '根據你的偏好生成 AI 繪畫風格標籤',
+			'aiChatDescription' => '多輪對話，AI 具有上下文記憶',
+			'summaryDescription' => '自動生成你的動漫觀看週報/月報',
+			'areYouSureYouWantToClearYourHistory' => '確定要清除歷史記錄嗎？',
+			'areYouSureYouWantToClearYourProgress' => '確定要清除全部進度嗎？',
+			'authorizationRequired' => '需要身分驗證',
+			'autoPageTurning' => '自動翻頁',
+			'back' => '返回',
+			'bangumi' => '番組計劃',
+			'block' => '封鎖',
+			'blue' => '藍色',
+			'brief' => '簡介',
+			'cacheLimit' => '快取限制',
+			'cacheSize' => '快取大小',
+			'cacheCleared' => '快取已清除',
+			'cancel' => '取消',
+			'categories' => '分類',
+			'categoryPages' => '分類頁面',
+			'characters' => '角色',
+			'checkForUpdatesOnStartup' => '啟動時檢查更新',
+			'checkForUpdates' => '檢查更新',
+			'checkUpdates' => '檢查更新',
+			'check' => '檢查',
+			'clearCache' => '清除快取',
+			'clearHistory' => '清除歷史記錄',
+			'clearProgress' => '清除進度',
+			'clearSearchHistory' => '清除搜尋歷史',
+			'clearUnfavorited' => '清除未收藏',
+			'clear' => '清除',
+			'clickIfLoginExpired' => '如果登入過期請點擊',
+			'close' => '關閉',
+			'comment' => '吐槽',
+			'comments' => '吐槽箱',
+			'confirm' => '確定',
+			'kContinue' => '繼續',
+			'copied' => '已複製',
+			'analyze' => '分析',
+			'analyzing' => '分析中...',
+			'analysisResult' => '分析結果',
+			'yourQuestion' => '您的提問',
+			'pleaseEnterAPrompt' => '請輸入提示詞',
+			'egWhatKindOfAnimeDoILike' => '例如：我喜歡什麼樣的動漫？',
+			'aiSourceNotAvailable' => 'AI 數據源不可用',
+			'copyId' => '複製 ID',
+			'copyTitle' => '複製標題',
+			'copyUrl' => '複製連結',
+			'copyToFolder' => '複製到資料夾',
+			'copy' => '複製',
+			'createAccount' => '建立帳號',
+			'createFolder' => '建立資料夾',
+			'create' => '建立',
+			'currentlySeenEp' => ({required Object ep}) => '目前看到 ${ep}',
+			'dnsOverrides' => 'DNS 覆寫',
+			'dark' => '深色',
+			'dataSync' => '數據同步',
+			'data' => '數據',
+			'dateDesc' => '按日期降序',
+			'date' => '日期',
+			'defaultSearchTarget' => '預設搜尋目標',
+			'deleteCAnimes' => ({required Object c}) => '刪除 ${c} 部動漫嗎？',
+			'deleteAnime' => '刪除動漫',
+			'deleteFolder' => '刪除資料夾',
+			'deleteAnimeSourceN' => ({required Object n}) => '確定刪除動漫源 \'${n}\' 嗎？',
+			'deleteFolderF' => ({required Object f}) => '確定刪除資料夾 \'${f}\' 嗎？',
+			'deleteFolderPrompt' => '刪除資料夾？',
+			'delete' => '刪除',
+			'deleteRoom' => '刪除房間',
+			'description' => '描述',
+			'deselect' => '取消選擇',
+			'detailed' => '詳細',
+			'details' => '詳情',
+			'determineTheBindingA' => ({required Object a}) => '確定綁定：${a} ?',
+			'disable' => '停用',
+			'disabled' => '已停用',
+			'discoverTheNewVersionV' => ({required Object v}) => '發現新版本 ${v}',
+			'displayModeOfAnimeTile' => '動漫卡片顯示模式',
+			'displayTimeAndBatteryInfoInReader' => '閱讀器內顯示時間及電量',
+			'doNotReportAnyIssuesRelatedToSourcesToAppRepo' => '請勿向主儲存庫報告任何與源有關的問題。',
+			'downloadAll' => '下載全部',
+			'downloadSelected' => '下載選中',
+			'downloadThreads' => '下載執行緒',
+			'download' => '下載',
+			'downloading' => '下載中',
+			'edit' => '編輯',
+			'enableDnsOverrides' => '啟用 DNS 覆寫',
+			'enable' => '啟用',
+			'end' => '結束',
+			'episodeEp' => ({required Object ep}) => '第 ${ep} 話',
+			'error' => '錯誤',
+			'exitMultiSelect' => '退出多選',
+			'exit' => '退出',
+			'explorePages' => '發現頁面',
+			'explore' => '發現',
+			'exportAppData' => '匯出應用數據',
+			'export' => '匯出',
+			'failedToImport' => '匯入失敗',
+			'fanyuan' => '番源',
+			'favoriteActions' => '收藏夾操作',
+			'favorite' => '收藏',
+			'favorites' => '收藏夾',
+			'finished' => '已完成',
+			'folderName' => '資料夾名稱',
+			'folder' => '資料夾',
+			'folders' => '資料夾',
+			'following' => '追蹤中',
+			'fullScreen' => '全螢幕',
+			'fullscreen' => '全螢幕',
+			'gitMirror' => 'Git 鏡像',
+			'green' => '綠色',
+			'help' => '幫助',
+			'history' => '歷史',
+			'home' => '首頁',
+			'iconProducer' => '圖示製作',
+			'ignoreCertificateErrors' => '忽略憑證錯誤',
+			'importAnimes' => '匯入動漫',
+			'importAppData' => '匯入應用數據',
+			'importFromFile' => '從檔案匯入',
+			'import' => '匯入',
+			'importedAAnimes' => ({required Object a}) => '已匯入 ${a} 部動漫',
+			'information' => '資訊',
+			'initialPage' => '初始頁面',
+			'invertSelection' => '反選',
+			'keywordBlocking' => '關鍵字封鎖',
+			'kostoriIsAFreeAndOpenSourceAppForAnimeWatching' => 'Kostori 是一款免費開源的追番應用。',
+			'language' => '語言',
+			'later' => '稍後',
+			'light' => '淺色',
+			'limitImageWidth' => '限制圖片寬度',
+			'localFavorites' => '本地收藏',
+			'local' => '本地',
+			'logIn' => '登入',
+			'logOut' => '登出',
+			'log' => '日誌',
+			'manualTranslation' => '手動翻譯',
+			'enterTextToTranslate' => '輸入需要翻譯的內容',
+			'translate' => '翻譯',
+			'translating' => '翻譯中...',
+			'translationResult' => '翻譯結果',
+			'selectTranslationLanguage' => '選擇翻譯語言',
+			'pleaseEnterTextToTranslate' => '請輸入需要翻譯的內容',
+			'loginWithWebview' => '透過 Webview 登入',
+			'login' => '登入',
+			'longPressAndDragToReorder' => '長按並拖曳以排序。',
+			'longPressOnTheFavoriteButtonToQuicklyAddToThisFolder' => '長按收藏按鈕可快速新增至此資料夾',
+			'longPressToZoom' => '長按縮放',
+			'me' => '个人',
+			'moveToFirst' => '移至首位',
+			'moveFavoriteAfterReading' => '看畢後移動收藏',
+			'moveToFolder' => '移動到資料夾',
+			'move' => '移動',
+			'multiSelect' => '多選',
+			'multipleAnimes' => '多部動漫',
+			'name' => '名稱',
+			'networkFavoritePages' => '網路收藏頁面',
+			'network' => '網路',
+			'newFolder' => '新資料夾',
+			'newVersion' => '新版本',
+			'newVersionAvailable' => '有新版本可用',
+			'next' => '下一步',
+			'noExplorePages' => '暫無發現頁面',
+			'noNewVersionAvailable' => '目前已是最新版本',
+			'noSearchResultsFound' => '未找到搜尋結果',
+			'noLikedAnimeFound' => '未找到喜歡的動漫',
+			'noUpdates' => '暫無更新',
+			'ok' => '確定',
+			'onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer' => '一旦操作成功，應用將自動與伺服器同步數據。',
+			'openLog' => '開啟日誌',
+			'openAnime' => '開啟動漫',
+			'openHelp' => '查看幫助',
+			'openInBrowser' => '在瀏覽器中開啟',
+			'openLink' => '開啟連結',
+			'open' => '開啟',
+			'operation' => '操作',
+			'orange' => '橙色',
+			'order' => '排序',
+			'password' => '密碼',
+			'pause' => '暫停',
+			'paused' => '已暫停',
+			'pink' => '粉色',
+			'playlist' => '播放列表',
+			'pleaseCheckYourSettings' => '請檢查您的設定',
+			'preview' => '預覽',
+			'proxy' => '代理',
+			'purple' => '紫色',
+			'quickFavorite' => '快速收藏',
+			'ranking' => '排行榜',
+			'reLogin' => '重新登入',
+			'read' => '閱讀',
+			'reading' => '閱讀中',
+			'red' => '紅色',
+			'refresh' => '重新整理',
+			'related' => '相關',
+			'removeAnimeFromFavorite' => '確定從收藏中移除該動漫嗎？',
+			'remove' => '移除',
+			'rename' => '重新命名',
+			'reorder' => '重新排序',
+			'resetBangumiData' => '重置 Bangumi 數據',
+			'reset' => '重置',
+			'retry' => '重試',
+			'reviews' => '評論',
+			'saveImage' => '儲存圖片',
+			'savedFailed' => '儲存失敗',
+			'saved' => '已儲存',
+			'searchAll' => '搜尋全部',
+			'searchHistory' => '搜尋歷史',
+			'searchIn' => '搜尋自',
+			'search' => '搜尋',
+			'selectAll' => '全選',
+			'selectADirectoryWhichContainsTheAnimeFiles' => '選擇包含動漫檔案的目錄。',
+			'selectAFolder' => '選擇一個資料夾',
+			'selectAnImageOnScreen' => '選擇螢幕上的圖像',
+			'selectFile' => '選擇檔案',
+			'selectInRange' => '範圍選擇',
+			'select' => '選擇',
+			'selectedAAnimes' => ({required Object a}) => '已選取 ${a} 部動漫',
+			'setCacheLimit' => '設定快取限制',
+			'setNewStoragePath' => '設定新儲存路徑',
+			'setSourceListUrl' => '設定源列表 URL',
+			'set' => '設定',
+			'settings' => '設定',
+			'share' => '分享',
+			'showAll' => '顯示全部',
+			'showFavoriteStatusOnAnimeTile' => '在卡片上顯示收藏狀態',
+			'showHistoryOnAnimeTile' => '在卡片上顯示歷史記錄',
+			'singleAnime' => '單部動漫',
+			'sizeInMb' => '大小 (MB)',
+			'sizeOfAnimeTile' => '動漫卡片尺寸',
+			'sort' => '排序',
+			'sourceFolder' => '源資料夾',
+			'sourceUrl' => '源 URL',
+			'staffList' => '製作人員',
+			'start' => '開始',
+			'storagePathForLocalAnimes' => '本地動漫儲存路徑',
+			'submit' => '提交',
+			'suggestions' => '建議',
+			'syncData' => '同步數據',
+			'sync' => '同步',
+			'syncingData' => '正在同步數據',
+			'system' => '系統',
+			'tapToTurnPages' => '點擊翻頁',
+			'theUrlShouldPointToAIndexJsonFile' => 'URL 應指向一個 \'index.json\' 檔案',
+			'theFolderIsLinkedToSource' => ({required Object source}) => '該資料夾已關聯至 ${source}',
+			'themeColor' => '主題色',
+			'themeMode' => '主題模式',
+			'timetable' => '每日放送',
+			'topics' => '討論',
+			'topicsLatest' => '最新討論',
+			'topicsTrending' => '熱門討論',
+			'turnPageByVolumeKeys' => '使用音量鍵翻頁',
+			'unselected' => '未選取',
+			'updateAnimesInfo' => '更新動漫資訊',
+			'updateTime' => '更新時間',
+			'update' => '更新',
+			'updatesAvailable' => '有更新可用',
+			'updating' => '正在更新',
+			'uploadTime' => '上傳時間',
+			'upload' => '上傳',
+			'uploader' => '上傳者',
+			'useAConfigFile' => '使用設定檔',
+			'user' => '使用者',
+			'username' => '使用者名稱',
+			'userProfileAnalysis' => '使用者畫像分析',
+			'viewList' => '查看列表',
+			'viewMore' => '查看更多',
+			'view' => '查看',
+			'webDavAutoSync' => 'WebDAV 自動同步',
+			'kDefault' => '預設',
+			'lastWatchTimeTime' => ({required Object time}) => '上次觀看時間 ${time}',
+			'minAppVersionRequired' => ({required Object version}) => '需要最低應用版本 ${version}',
+			'more' => '更多',
+			'notYetAiring' => '尚未開播',
+			'fullBEpisodesReleased' => ({required Object b}) => '全 ${b} 話已發佈',
+			'upToEpSTotalEpsPlanned' => ({required Object s, required Object t}) => '更新至 ${s} 話 • 全 ${t} 話',
+			'upToEpETotalEpsPlanned' => ({required Object e, required Object s, required Object t}) => '更新至 ${e} (${s}) 話 • 全 ${t} 話',
+			'tReviewsR' => ({required Object t, required Object r}) => '${t} 條評論 | #${r}',
+			'tReviews' => ({required Object t}) => '${t} 條評論',
+			'showMore' => '展開 +',
+			'showLess' => '收起 -',
+			'tags' => '標籤',
+			'clearTags' => '清除標籤',
+			'showingLResults' => ({required Object l}) => '顯示 ${l} 個結果',
+			'selectTime' => '選擇時間',
+			'switchLayout' => '切換佈局',
+			'enterKeywords' => '輸入關鍵詞...',
+			'ratingChart' => '評分圖表',
+			'lineChart' => '折線圖',
+			'barChart' => '柱狀圖',
+			'standardDeviationS' => ({required Object s}) => '標準差：${s}',
+			'nobodysPostedAnythingYet' => '目前還沒有人發佈內容...',
+			'reload' => '重新載入',
+			'failedToLoadPleaseTryAgain' => '載入失敗，請重試。',
+			'doing' => '在看',
+			'collect' => '看過',
+			'wish' => '想看',
+			'onHold' => '擱置',
+			'dropped' => '拋棄',
+			'todayRecommendation' => '今日推薦',
+			'tTotalCount' => ({required Object t}) => '${t} 條總計',
+			'introduction' => '內容簡介',
+			'linkedItems' => '關聯條目',
+			'timeS' => ({required Object s}) => '時間：${s}',
+			'broadcastTimeA' => ({required Object a}) => '播出時間：${a}',
+			'profileInformation' => '個人資訊',
+			'characterIntroduction' => '角色簡介',
+			'voiceActorC' => ({required Object c}) => '聲優：${c}',
+			'episodeEN' => ({required Object e, required Object n}) => '第 ${e} 話：${n}',
+			'hotspot' => '熱點',
+			'completed' => '已完結',
+			'mainCharacter' => '主角',
+			'supportingCharacter' => '配角',
+			'cameo' => '客串',
+			'idleCorner' => '閒暇角落',
+			'unknown' => '未知',
+			'debugInfo' => '調試資訊',
+			'install' => '安裝',
+			'viewOnGithub' => '在 GitHub 上查看',
+			'noProxyOverrides' => '無代理覆寫',
+			'save' => '儲存',
+			'mirror' => '鏡像',
+			'result' => '結果',
+			'all' => '全部',
+			'reloadConfigs' => '重載配置',
+			'invalidUrlConfig' => '無效的 URL 設定',
+			'inconsistentVersions' => '版本不一致',
+			'noUpdateAvailableForThisArchitectureA' => ({required Object a}) => '該架構 (${a}) 暫無可用更新',
+			'checkUpdateFailed' => '檢查更新失敗...',
+			'downloadFailed' => '下載失敗',
+			'failedToCheckTheHashValuePleaseTryAgain' => '檢查雜湊值失敗，請重試',
+			'english' => '英語',
+			'dynamicColor' => '動態顏色',
+			'mondaySchedule' => '週一放送',
+			'tuesdaySchedule' => '週二放送',
+			'wednesdaySchedule' => '週三放送',
+			'thursdaySchedule' => '週四放送',
+			'fridaySchedule' => '週五放送',
+			'saturdaySchedule' => '週六放送',
+			'sundaySchedule' => '週日放送',
+			'popularityRanking' => '人氣排行',
+			'imageOperations' => '圖片操作',
+			'saveToAlbum' => '儲存到相簿',
+			'stitchLongImage' => '拼長圖',
+			'stitchHorizontalImage' => '橫向拼圖',
+			'stitchSubtitles' => '台詞拼接',
+			'saveLongImage' => '儲存長圖',
+			'borderColor' => '邊框顏色',
+			'conversationTitle' => '對話標題',
+			'aiConversation' => 'AI 對話',
+			'topicList' => '話題列表',
+			'startConversationWithAI' => '開始與 AI 對話吧',
+			'newConversation' => '新建對話',
+			'inputMessage' => '輸入訊息...',
+			'noTopicsYet' => '暫無話題',
+			'selectAiPersonality' => '選擇 AI 人格',
+			'apply' => '應用',
+			'heightPx' => '高度(px)',
+			'setUniformHeight' => '設定統一高度',
+			'uniformHeight' => '統一高度',
+			'cropImage' => '裁剪圖片',
+			'finishCropping' => '完成裁剪',
+			'sortImages' => '圖片排序',
+			'finishSorting' => '完成排序',
+			'noImages' => '暫無圖片',
+			'cropHeightCPx' => ({required Object c}) => '裁剪高度：${c} px',
+			'enterHexColorCode' => '輸入十六進位顏色代碼，例如 #FF000000',
+			'showImageBorders' => '顯示圖片邊框',
+			'outerBorderRadius' => '外邊框圓角',
+			'outerBorderWidth' => '外邊框寬度',
+			'outerBorderColor' => '外邊框顏色',
+			'showOuterBorder' => '顯示外邊框',
+			'innerBorderWidth' => '內邊框寬度',
+			'innerBorderColor' => '內邊框顏色',
+			'borderSettings' => '邊框設定',
+			'saving' => '正在儲存',
+			'saveSuccessful' => '儲存成功',
+			'saveFailedE' => ({required Object e}) => '儲存失敗：${e}',
+			'failedToLoadImagesOrNoImages' => '載入圖片失敗或無圖片',
+			'monday' => '週一',
+			'tuesday' => '週二',
+			'wednesday' => '週三',
+			'thursday' => '週四',
+			'friday' => '週五',
+			'saturday' => '週六',
+			'sunday' => '週日',
+			'defaultOrder' => '預設排序',
+			'byTime' => '按時間',
+			'byName' => '按名稱',
+			'recentlyWatched' => '最近觀看',
+			'localFavoriteBinding' => '本地收藏綁定',
+			'awful' => '不忍直視',
+			'terrible' => '非常差',
+			'bad' => '差',
+			'poor' => '較差',
+			'okay' => '不過不失',
+			'fine' => '還行',
+			'good' => '推薦',
+			'great' => '力薦',
+			'master' => '神作',
+			'epic' => '超神作',
+			'overview' => '總覽',
+			'discussion' => '討論',
+			'logs' => '日誌',
+			'playerDetails' => '播放器詳情',
+			'status' => '狀態',
+			'audioOptionLowLatency' => '音訊選項：\n 低延遲',
+			'audioOptionCompatibility' => '音訊選項：\n 相容性',
+			'switchSuccessful' => '切換成功',
+			'switchFailed' => '切換失敗',
+			'remoteCast' => '遠端投屏',
+			'copyLink' => '複製連結',
+			'aValidWebDavDirectoryUrl' => '有效的 WebDAV 目錄 URL',
+			'autoSyncData' => '自動同步數據',
+			'screenshotShare' => '截圖分享',
+			'bestMatch' => '最佳匹配',
+			'topRank' => '排名靠前',
+			'mostFavorited' => '最多收藏',
+			'highestRating' => '最高評分',
+			'selectColor' => '選擇顏色',
+			'colorWheel' => '色輪',
+			'primary' => '主要',
+			'accent' => '強調',
+			'custom' => '自定義',
+			'confirmC' => ({required Object c}) => '確定 (${c})',
+			'selectC' => ({required Object c}) => '選擇 ${c}',
+			'selectDate' => '選擇日期',
+			'startDate' => '開始日期',
+			'endDate' => '結束日期',
+			'clearDate' => '清除日期',
+			'pleaseSelectADate' => '請選擇日期',
+			'endDateCannotBeEarlierThanStartDate' => '結束日期不能早於開始日期',
+			'type' => '類型',
+			'background' => '背景',
+			'emotion' => '情感',
+			'source' => '來源',
+			'audience' => '受眾',
+			'category' => '分類',
+			'imageOperationsI' => ({required Object i}) => '圖片操作 (${i})',
+			'sSelected' => ({required Object s}) => '已選取 ${s}',
+			'simplifiedChinese' => '簡體中文',
+			'traditionalChinese' => '繁體中文',
+			'teal' => '青色',
+			'deepPurple' => '深紫色',
+			'yellow' => '黃色',
+			'cyan' => '青藍色',
+			'm3Default' => 'M3 預設',
+			'deepOrange' => '深橘色',
+			'indigo' => '靛藍色',
+			'cloudyBlue' => '雲藍色',
+			'darkPastelGreen' => '暗粉綠色',
+			'dust' => '塵埃色',
+			'electricLime' => '電光酸橙色',
+			'freshGreen' => '鮮綠色',
+			'lightEggplant' => '淺茄紫色',
+			'nastyGreen' => '髒綠色',
+			'reallyLightBlue' => '極淺藍色',
+			'tea' => '茶綠色',
+			'warmPurple' => '暖紫色',
+			'yellowishTan' => '黃棕色',
+			'cement' => '水泥色',
+			'darkGrassGreen' => '暗草綠色',
+			'dustyTeal' => '粉青色',
+			'greyTeal' => '灰青色',
+			'macaroniAndCheese' => '起司通心粉色',
+			'pinkishTan' => '粉棕色',
+			'spruce' => '杉綠色',
+			'strongBlue' => '強藍色',
+			'toxicGreen' => '毒液綠色',
+			'windowsBlue' => '視窗藍色',
+			'blueBlue' => '純藍色',
+			'blueWithAHintOfPurple' => '略帶紫色的藍色',
+			'booger' => '鼻涕綠色',
+			'brightSeaGreen' => '亮海綠色',
+			'greenTeal' => '綠青色',
+			'brownish' => '棕色調',
+			'offGreen' => '淡綠色',
+			'tangerine' => '橘黃色',
+			'uglyGreen' => '醜綠色',
+			'secondary' => '次要',
+			'tertiary' => '三級',
+			'surface' => '表面',
+			'jumpToPage' => '跳轉到頁',
+			'page' => '頁碼',
+			'pagePM' => ({required Object p, required Object m}) => '第 ${p} / ${m} 頁',
+			'first' => '第一頁',
+			'last' => '最後一頁',
+			_ => null,
+		} ?? switch (path) {
+			'disableLengthLimitation' => '停用長度限制',
+			'updateLog' => '更新日誌',
+			'liked' => '喜歡',
+			'rating' => '評分',
+			'pixelFormat' => '像素格式',
+			'hwPixelFormat' => '硬體像素格式',
+			'resolution' => '解析度',
+			'displayWidth' => '顯示寬度',
+			'displayHeight' => '顯示高度',
+			'aspect' => '比例',
+			'pixelAspectRatio' => '像素寬高比',
+			'colormatrix' => '色彩矩陣',
+			'colorLevels' => '色彩範圍',
+			'primaries' => '原色',
+			'gamma' => '伽馬值',
+			'signalPeak' => '信號峰值',
+			'lights' => '亮度',
+			'chromaLocation' => '色度位置',
+			'rotate' => '旋轉',
+			'stereoIn' => '立體聲輸入',
+			'averageBpp' => '平均 Bpp',
+			'alpha' => '透明度',
+			'trackId' => '軌道 ID',
+			'trackTitle' => '軌道標題',
+			'trackLanguage' => '軌道語言',
+			'trackImage' => '軌道圖像',
+			'trackAlbumArt' => '軌道專輯封面',
+			'trackCodec' => '軌道編解碼器',
+			'trackDecoder' => '軌道解碼器',
+			'trackWidth' => '軌道寬度',
+			'trackHeight' => '軌道高度',
+			'trackChannelsCount' => '軌道聲道數',
+			'trackChannels' => '軌道聲道佈局',
+			'trackSampleRate' => '軌道採樣率',
+			'trackFps' => '軌道幀率',
+			'trackBitrate' => '軌道位元率',
+			'trackRotate' => '軌道旋轉',
+			'trackPar' => '軌道 PAR',
+			'trackAudioChannels' => '軌道音訊聲道',
+			'format' => '格式',
+			'sampleRate' => '採樣率',
+			'channelCount' => '聲道數',
+			'hrChannels' => 'HR 聲道',
+			'uriTrack' => 'URI 軌道',
+			'channelsCount' => '聲道總數',
+			'channels' => '聲道',
+			'fps' => '幀率',
+			'bitrate' => '位元率',
+			'par' => 'PAR',
+			'audioChannels' => '音訊聲道',
+			'audioBitrate' => '音訊位元率',
+			'audio' => '音訊',
+			'video' => '影片',
+			'media' => '媒體',
+			'noLogsForL' => ({required Object l}) => '暫無 ${l} 的日誌',
+			'onlyValidForThisRun' => '僅在本次執行時有效',
+			'nameField' => '名稱',
+			'brandField' => '品牌',
+			'modelField' => '型號',
+			'deviceField' => '設備',
+			'productField' => '產品',
+			'manufacturerField' => '製造商',
+			'versionReleaseField' => '版本發佈',
+			'versionSdkIntField' => 'SDK 版本',
+			'displayField' => '顯示',
+			'hardwareField' => '硬體',
+			'physicalRamSizeField' => '實體記憶體大小',
+			'availableRamSizeField' => '可用記憶體大小',
+			'freeDiskSizeField' => '剩餘磁碟空間',
+			'totalDiskSizeField' => '總磁碟空間',
+			'isPhysicalDeviceField' => '是否為實體機',
+			'systemNameField' => '系統名稱',
+			'systemVersionField' => '系統版本',
+			'modelNameField' => '型號名稱',
+			'identifierForVendorField' => '供應商識別碼',
+			'sysnameField' => '核心名稱',
+			'nodenameField' => '節點名稱',
+			'releaseField' => '核心發佈',
+			'versionField' => '核心版本',
+			'machineField' => '機器架構',
+			'computerNameField' => '電腦名稱',
+			'numberOfCoresField' => '核心數',
+			'systemMemoryInMegabytesField' => '系統記憶體 (MB)',
+			'userNameField' => '使用者名稱',
+			'majorVersionField' => '主版本號',
+			'minorVersionField' => '次版本號',
+			'buildNumberField' => '編譯號',
+			'displayVersionField' => '顯示版本',
+			'productNameField' => '產品名稱',
+			'registeredOwnerField' => '註冊所有者',
+			'releaseIdField' => '發佈 ID',
+			'packageNameField' => '包名',
+			'appNameField' => '應用名稱',
+			'buildSignatureField' => '編譯簽名',
+			'installerStoreField' => '安裝通路',
+			'installTimeField' => '安裝時間',
+			'updateTimeField' => '更新時間',
+			'january' => '一月',
+			'february' => '二月',
+			'march' => '三月',
+			'april' => '四月',
+			'may' => '五月',
+			'june' => '六月',
+			'july' => '七月',
+			'august' => '八月',
+			'september' => '九月',
+			'october' => '十月',
+			'november' => '十一月',
+			'december' => '十二月',
+			'today' => '今天',
+			'yesterday' => '昨天',
+			'last3Days' => '最近 3 天',
+			'last7Days' => '最近 7 天',
+			'last30Days' => '最近 30 天',
+			'last3Months' => '最近 3 個月',
+			'last6Months' => '最近 6 個月',
+			'thisYear' => '今年',
+			'older' => '更早',
+			'markTheSelectedFavoritesAs' => '將所選收藏標記為',
+			'favoriteType' => '收藏類型',
+			'doingStatus' => '在看',
+			'wishStatus' => '想看',
+			'collectStatus' => '看過',
+			'onHoldStatus' => '擱置',
+			'droppedStatus' => '拋棄',
+			'player' => '播放器',
+			'audioOption' => '音訊選項',
+			'hardwareDecoding' => '硬體解碼',
+			'hardwareDecoder' => '硬體解碼器',
+			'videoRenderer' => '影片渲染器',
+			'videoSynchronizationMode' => '影片同步模式',
+			'enableNoProxyOverrides' => '啟用無代理覆寫',
+			'actor' => '角色',
+			'dub' => '配音',
+			'chineseDub' => '中配',
+			'japaneseDub' => '日配',
+			'englishDub' => '英配',
+			'koreanDub' => '韓配',
+			'selectedACharacter' => ({required Object a}) => '已選取 ${a} 個角色',
+			'searchOptions' => '搜尋選項',
+			'searchSources' => '搜尋源',
+			'translation' => '翻譯',
+			'apiKeyCannotBeEmpty' => 'API Key 不能為空',
+			'pleaseEnterTranslationPrompt' => ({required Object a}) => '請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符',
+			'thePromptMustContainAPlaceholderForTarget' => ({required Object a}) => '提示詞必須包含 ${a} 作為目標語言的佔位符',
+			'thisFieldCannotBeEmpty' => '此欄位不能為空',
+			'thePromptMustContainAPlaceholder' => ({required Object a}) => '提示詞必須包含 ${a} 佔位符',
+			'translationPrompt' => '翻譯提示詞',
+			'modelName' => '模型名稱',
+			'apiConfiguration' => 'API 設定',
+			'wordCloud' => '詞雲',
+			'statsCalendar' => '統計日曆',
+			'todaysRecords' => '當天的記錄',
+			'dailyStats' => '天統計',
+			'viewAll' => '查看全部',
+			'kostoriChangelog' => 'Kostori 更新日誌',
+			'copyPath' => '複製路徑',
+			'properties' => '屬性',
+			'noEndpoint' => '無端點',
+			'testAll' => '全部測試',
+			'customEndpoint' => '自定義端點',
+			'pingTest' => '延遲測試',
+			'continuousPing' => '持續測試',
+			'service' => '服務',
+			'serviceSettings' => '服務設定',
+			'enableService' => '啟用服務',
+			'serviceIsStopped' => '服務已停止',
+			'runningOnH' => ({required Object h}) => '執行於 ${h}',
+			'apiKey' => 'API Key',
+			'activeKey' => '目前金鑰',
+			'usingFixedKey' => '使用固定金鑰',
+			'usingRandomKeyRegeneratedOnStartup' => '使用隨機金鑰 (啟動時重新產生)',
+			'useFixedKey' => '使用固定金鑰',
+			'keepTheSameKeyAfterRestart' => '重啟後保持相同金鑰',
+			'fixedKey' => '固定金鑰',
+			'leaveEmptyToAutoGenerate' => '留空則自動產生',
+			'enterFixedKey' => '輸入固定金鑰',
+			'regenerateRandomKey' => '重新產生隨機金鑰',
+			'generateANewRandomKeyImmediately' => '立即產生一個新的隨機金鑰',
+			'regenerate' => '重新產生',
+			'port' => '連接埠',
+			'defaultP' => ({required Object p}) => '預設：${p}',
+			'bindMode' => '綁定模式',
+			'chooseIpVersionToListenOn' => '選擇要監聽的 IP 版本',
+			'hubServer' => 'Hub 服務端',
+			'enableHub' => '啟用 Hub',
+			'hubServerIsStopped' => 'Hub 服務端已停止',
+			'clientsCount' => '個用戶端',
+			'hubPort' => 'Hub 連接埠',
+			'onlineClients' => '線上用戶端',
+			'connectedAt' => '連接於',
+			'messageHistory' => '訊息歷史',
+			'hubClient' => 'Hub 用戶端',
+			'connectToHub' => '連接到 Hub',
+			'connected' => '已連接',
+			'notConnected' => '未連接',
+			'hubAddress' => 'Hub 地址',
+			'clientName' => '用戶端名稱',
+			'displayNameInHub' => 'Hub 中的顯示名稱',
+			'myDevice' => '我的設備',
+			'hubToken' => 'Hub 令牌',
+			'tokenFromTheHubServer' => '來自 Hub 服務端的令牌',
+			'pasteHubServerToken' => '貼上 Hub 服務端令牌',
+			'runningOn' => '執行於',
+			'online' => '線上',
+			'rooms' => '個房間',
+			'managing' => '管理中',
+			'lobby' => '大廳',
+			'noRooms' => '暫無房間',
+			'current' => '當前',
+			'join' => '加入',
+			'leaveRoom' => '離開房間',
+			'roomPassword' => '房間密碼',
+			'blacklist' => '黑名單',
+			'bannedCount' => '個已封鎖',
+			'noBannedUsers' => '暫無封鎖使用者',
+			'removeFromBlacklist' => '從黑名單中移除',
+			'addToBlacklist' => '加入黑名單',
+			'mute5min' => '禁言 5 分鐘',
+			'unmute' => '取消禁言',
+			'removeGlobalAdmin' => '取消全域管理員',
+			'setGlobalAdmin' => '設為全域管理員',
+			'kick' => '踢出',
+			'poke' => '戳一下',
+			'banned' => '已封鎖',
+			'joinedEvent' => '加入了',
+			'leftEvent' => '離開了',
+			'newRoom' => '新房間',
+			'portAndBindMode' => '連接埠與綁定模式',
+			'hubManagement' => 'Hub 管理',
+			'chatRoom' => '聊天室',
+			'openChatDialog' => '開啟聊天對話框',
+			'hubDetails' => 'Hub 詳情',
+			'connectionSettings' => '連接設定',
+			'serverAddress' => '伺服器地址',
+			'host' => '主機',
+			'authentication' => '身分驗證',
+			'paste' => '貼上',
+			'unblock' => '取消封鎖',
+			'profileAndRoom' => '資料與房間',
+			'roomSettings' => '房間設定',
+			'roomName' => '房間名稱',
+			'roomId' => '房間 ID',
+			'announcements' => '公告',
+			'roomAdmins' => '房間管理員',
+			'noAnnouncement' => '暫無公告',
+			'setAnnouncement' => '設置公告',
+			'enterAnnouncementPrompt' => '輸入公告內容...',
+			'removeAdmin' => '取消管理員',
+			'addRoomAdmin' => '添加房間管理員',
+			'roomBans' => '房間封鎖',
+			'banMember' => '封鎖成員',
+			'unban' => '取消封鎖',
+			'server' => '伺服器',
+			'mute' => '禁言',
+			'secondsLabel' => '秒',
+			'serverShutdown' => '伺服器關閉',
+			'youAreNowAGlobalAdmin' => '你現在是全域管理員',
+			'yourGlobalAdminHasBeenRevoked' => '你的全域管理員權限已被撤銷',
+			'youAreNowARoomAdmin' => '你現在是房間管理員',
+			'yourRoomAdminHasBeenRevoked' => '你的房間管理員權限已被撤銷',
+			'youAreMutedFor' => '你被禁言了',
+			'secondsUnit' => '秒',
+			'youHaveBeenUnmuted' => '你已解除禁言',
+			'youAreBannedFromRoom' => '你已被房間封鎖',
+			'youCanNowRejoinRoom' => '你現在可以重新加入房間',
+			'youHaveBeenKickedFromTheRoom' => '你已被踢出房間',
+			'roomDeletedMovedToLobby' => '房間已刪除，已移動到大廳',
+			'eventLog' => '事件日誌',
+			'pingInterval' => 'Ping 間隔',
+			'onlineStatus' => '線上',
+			'noMessagesYet' => '暫無訊息',
+			'newMessages' => '新訊息',
+			'reply' => '回覆',
+			'recall' => '撤回',
+			'enterToSend' => 'Enter 發送  ·  Ctrl+Enter 換行',
+			'messagePlaceholder' => '發送訊息...',
+			'connectionTimedOut' => '連接逾時',
+			'blockedUsers' => '已封鎖使用者',
+			'blockedCount' => '個已封鎖',
+			'serverBlacklist' => '伺服器黑名單',
+			'userKey' => '使用者 Key',
+			'adminKey' => '管理員 Key',
+			'keepTheSameKeysAfterRestart' => '重啟後保持相同金鑰',
+			'regeneratedOnEveryStartup' => '每次啟動時重新產生',
+			'noKeyRequired' => '無需金鑰',
+			'anyoneCanConnectWithoutApiKey' => '任何人無需 API Key 即可連接',
+			'clientsMustProvideAValidApiKey' => '用戶端必須提供有效的 API Key',
+			'endpointMustBeAValidUrl' => '端點必須是有效的 http(s) URL',
+			'bucketCannotBeEmpty' => '儲存桶不能為空',
+			'accessKeyIdCannotBeEmpty' => 'Access Key ID 不能為空',
+			'accessKeySecretCannotBeEmpty' => 'Access Key Secret 不能為空',
+			'cdnDomainMustBeAValidUrl' => 'CDN 網域必須是有效的 URL',
+			'maxSizeMustBe1to100Mb' => '最大限制必須為 1–100 MB',
+			'cleared' => '已清空',
+			'imageUpload' => '圖片上傳',
+			'clientImageUpload' => '用戶端圖片上傳',
+			'serverOss' => '伺服器 OSS',
+			'clientOss' => '用戶端 OSS',
+			'imagesStoredOnServerDisk' => '圖片儲存在伺服器磁碟，透過 /hub/files/ 提供服務',
+			'serverReceivesAndProxiesImageToOss' => '伺服器接收圖片並代理上傳到 OSS。金鑰保留在伺服器上。',
+			'clientUploadsDirectlyToOss' => '用戶端直接上傳到 OSS。伺服器僅獲取最終 URL。',
+			'maxSizeMb' => '最大限制 (MB)',
+			'storePath' => '儲存路徑',
+			'leaveEmptyForDefault' => '留空則使用預設值',
+			'notConfiguredWillUseServerOrBase64' => '未配置 · 將使用伺服器或 Base64',
+			'imageTooLargeToSend' => '圖片太大，無法發送',
+			'pleaseConfigureServerUploadOrClientOss' => '請設定伺服器上傳或用戶端 OSS。',
+			'stopTheServerToChangeUploadMode' => '停止伺服器以更改上傳模式',
+			'enableClientOss' => '啟用用戶端 OSS',
+			'uploadImagesDirectlyFromClientToOss' => '直接從用戶端上傳圖片到 OSS',
+			'ossNotConfigured' => 'OSS 未設定',
+			'dropToSendImage' => '拖放以發送圖片',
+			'longPressImageToSave' => '長按圖片儲存',
+			'pleaseEnterAValidUrl' => '請輸入以 http:// 或 https:// 開頭的有效 URL',
+			'setRoomPassword' => '設定房間密碼',
+			'adminPanel' => '管理面板',
+			'enterRoomName' => '輸入房間名稱',
+			'roomAnnouncement' => '房間公告',
+			'leaveEmptyForPublicRoom' => '留空則設為公開房間',
+			'maxParticipants' => '最大人數',
+			'upTo' => '最多',
+			'peopleLabel' => '人',
+			'noLimit' => '無限制',
+			'optional' => '選填',
+			'enterDisplayName' => '輸入顯示名稱',
+			'enterBio' => '輸入個人簡介',
+			'autoReconnect' => '自動重連',
+			'directMessage' => '私聊訊息',
+			'noAnnouncementsYet' => '暫無公告',
+			'enterAnnouncementText' => '輸入公告內容...',
+			'welcomeMessage' => '歡迎訊息',
+			'noWelcomeMessage' => '暫無歡迎訊息',
+			'enterWelcomeMessage' => '輸入向加入使用者顯示的歡迎訊息...',
+			'security' => '安全',
+			'changePassword' => '修改密碼',
+			'setPassword' => '設定密碼',
+			'protectedStatus' => '受保護',
+			'removePassword' => '移除密碼',
+			'enterPasswordToChange' => '輸入密碼 (留空則移除)',
+			'noAdminsYet' => '暫無管理員',
+			'noBannedMembers' => '暫無封鎖成員',
+			'noMembersAvailable' => '暫無可用成員',
+			'accessControl' => '存取控制',
+			'broadcast' => '廣播',
+			'addAnnouncement' => '添加公告',
+			'areYouSureYouWantToDeleteR' => ({required Object r}) => '確定要刪除 ${r} 嗎？此操作無法撤銷。',
+			'membersList' => '成員列表',
+			'onlineUsersList' => '線上使用者',
+			'noUsersOnline' => '無線上使用者',
+			'room' => '房間',
+			'noPasswordSet' => '未設定密碼',
+			'passwordProtected' => '密碼保護',
+			'imageLabel' => '圖片',
+			'stickersLabel' => '貼紙',
+			'pokedYou' => '戳了你',
+			'kickedFromServerByP' => ({required Object p}) => '被 ${p} 踢出了伺服器',
+			'kickedFromRoomByP' => ({required Object p}) => '被 ${p} 踢出了房間',
+			'leftTheRoom' => '離開了房間',
+			'joinedTheRoom' => '加入了房間',
+			'pWasKickedByO' => ({required Object p, required Object o}) => '${p} 被 ${o} 踢出了房間',
+			'youLabel' => '你',
+			'leftTheServer' => '離開了伺服器',
+			'joinedTheServer' => '加入了伺服器',
+			'updatedTheAnnouncement' => '更新了公告',
+			'recalledAMessage' => '撤回了一條訊息',
+			'pReactedWithO' => ({required Object p, required Object o}) => '${p} 對訊息回應了 ${o}',
+			'pRemovedReactionO' => ({required Object p, required Object o}) => '${p} 移除了回應 ${o}',
+			'noUsersAvailableToInvite' => '暫無可用邀請使用者',
+			'inviteToRoom' => '邀請加入房間',
+			'invite' => '邀請',
+			'invited' => '已邀請',
+			'roomInvite' => '房間邀請',
+			'invitedYouTo' => '邀請你加入',
+			'acceptInvite' => '接受',
+			'acceptedYourInvite' => '接受了你的邀請',
+			'declinedYourInvite' => '拒絕了你的邀請',
+			'blockedYourInvites' => '封鎖了你的邀請',
+			'blockedInvitesList' => '邀請封鎖列表',
+			'noBlockedInvites' => '暫無封鎖的邀請者',
+			'allowMemberInvites' => '允許成員邀請',
+			'letAllMembersInviteOthers' => '允許所有成員邀請其他人加入房間',
+			'declineAndBlock' => '拒絕並封鎖',
+			'memes' => '表情包',
+			'memeSaved' => '已儲存到表情包',
+			'networkInfo' => '網路資訊',
+			'hubInfo' => 'Hub 資訊',
+			'statsInfo' => '統計資訊',
+			'sourceInfo' => '源資訊',
+			'playerInfo' => '播放資訊',
+			'hideLabel' => '隱藏',
+			'showLabel' => '顯示',
+			'personaManagement' => '角色管理',
+			'promptConfiguration' => '提示設定',
+			'systemPrompt' => '系統提示',
+			'temperature' => '溫度 (Temperature)',
+			'promptSaved' => '提示詞已儲存',
+			'editSystemPrompt' => '編輯系統提示詞',
+			'noHistoryYet' => '暫無歷史',
+			'clearAll' => '全部清除',
+			'configCopiedToClipboard' => '設定已複製到剪貼簿',
+			'importedAsNewConfig' => '已作為新設定導入',
+			'imported' => '已導入',
+			'invalidClipboardFormat' => '無效的剪貼簿格式',
+			'cannotModifySystemPreset' => '無法修改系統預設',
+			'configKeyAlreadyExists' => '設定 Key 已存在，請更換',
+			'requiredField' => '必填',
+			'configKey' => '設定 Key',
+			'memoField' => '備註',
+			'valueRange' => '數值: 0.0 - 1.0',
+			'readOnlySystemPreset' => '唯讀系統預設',
+			'deleteConfig' => '刪除設定',
+			'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
+			'baseUrl' => '基礎 URL',
+			'optionalField' => '選填',
+			'model' => '模型',
+			'addModel' => '添加模型',
+			'modelId' => '模型 ID',
+			'displayName' => '顯示名稱',
+			'noModelsAddOneAbove' => '暫無模型，請在上方添加。',
+			'placeholdersDescription' => ({required Object animeCount, required Object animeNames, required Object topTags}) => '佔位符：${animeCount} ${animeNames} ${topTags}',
+			'aiHub' => 'AI 工坊',
+			'selectYearAndMonth' => '選擇年月',
+			'enterYear' => '輸入年份',
+			'selectDay' => '選擇日期',
+			'fullYear' => '全年',
+			'quickSelect' => '快速選擇',
+			'selectDateRange' => '選擇日期範圍',
+			'manualSelect' => '手動選擇',
+			'qrAndClipboard' => '二維碼與剪貼簿',
+			'aiSettings' => 'AI 設置',
+			'aiConfigMissing' => 'AI配置缺失',
+			'generating' => '生成中...',
+			'generatedTags' => '已生成 Tags',
+			'exportScreenshot' => '導出截圖',
+			'copyAll' => '複製全部',
+			'timeRange' => '時間範圍',
+			'thisWeek' => '本週',
+			'thisMonth' => '本月',
+			'generateSummary' => '生成總結',
+			'generateTag' => '生成 Tag',
+			'summaryReport' => '總結報告',
+			'noActivityInTimeRange' => '該時間段內暫無活動記錄',
+			'weeklySummary' => '本週總結',
+			'monthlySummary' => '本月總結',
+			'tagCopied' => 'Tag 已複製',
+			'aiServiceConfig' => 'AI 服務配置',
+			'notConfigured' => '未配置',
+			'enabled' => '已啟用',
+			'writeYourReview' => '寫下你的評價',
+			'draft' => '草稿',
+			'mainContent' => '正文',
+			'switchh' => '切換',
+			'translationFailedPleaseTryAgainLater' => '翻譯失敗，請稍後重試',
+			'required' => '必填',
+			'importPersona' => '導入角色配置',
+			'newPersona' => '新建角色配置',
+			'noConfigurationsFound' => '未找到配置',
+			'animeCardUseBlur' => '動漫卡片使用模糊背景',
+			'calendarFetchEpisodes' => '每日動畫表啟動時搜尋集資訊',
+			'addKeyword' => '新增關鍵字',
+			'keyword' => '關鍵字',
+			'keywordAlreadyExists' => '關鍵字已存在',
+			'folderNameCannotBeEmpty' => '資料夾名稱不能為空',
+			'folderNameTooLong' => '資料夾名稱過長',
+			'folderAlreadyExists' => '資料夾已存在',
+			'addToFavoritesSuccess' => '添加收藏成功',
+			'addressAlreadyExists' => '地址已存在',
+			'allCopiedSuccess' => '全部複製成功',
+			'announcement' => '公告',
+			'applyFailed' => '應用失敗',
+			'applySuccess' => '應用成功',
+			'bangumiDataResetFailed' => 'Bangumi資料重置失敗',
+			'bangumiDataUpdateFailed' => 'Bangumi資料更新失敗',
+			'bangumiPlan' => 'Bangumi 計畫',
+			'basicInfo' => '基本資訊',
+			'bindBangumiIdSuccess' => '綁定Bangumi ID成功',
+			'blocked' => '已阻擋',
+			'blockedInvites' => '阻擋的邀請',
+			'cannotBeEmpty' => '不能為空',
+			'character' => '角色',
+			'chat' => '聊天',
+			'clipboard' => '剪貼簿',
+			'confirmDeleteImage' => '確認刪除圖片？',
+			'connectionDisconnected' => '連線已斷開',
+			'connectionFailed' => '連線失敗',
+			'content' => '內容',
+			'copiedToClipboard' => '已複製到剪貼簿',
+			'copySuccess' => '複製成功',
+			'createRoom' => '建立房間',
+			'currentRoom' => '目前房間',
+			'deleteFailed' => '刪除失敗',
+			'dlnaError' => 'DLNA 異常',
+			'editProfile' => '編輯資料',
+			'editing' => '編輯中',
+			'enterServerAddress' => '輸入伺服器位址',
+			'enterToSendCtrlEnterForNewline' => ' Enter 發送，Ctrl+Enter 換行',
+			'exporting' => '匯出中',
+			'failedToLoadEpisode' => '載入集數失敗',
+			'failedToPickImage' => '選擇圖片失敗',
+			'fileName' => '檔案名稱',
+			'fileSize' => '檔案大小',
+			'generateQrCodeShare' => '產生二維碼分享',
+			'getVideoUrlFailed' => '取得影片連結異常',
+			'go' => '前往',
+			'hide' => '隱藏',
+			'image' => '圖片',
+			'imageFormat' => '格式',
+			'imageProperties' => '圖片屬性',
+			'invalidCookies' => '無效的 Cookies',
+			'jumping' => '正在跳轉...',
+			'latestComments' => '最新評論',
+			_ => null,
+		} ?? switch (path) {
+			'likeSuccess' => '按讚成功',
+			'loadSuccess' => '載入成功',
+			'loadingDuplicateEpisode' => '載入重複集數',
+			'loginWithPasswordIsDisabled' => '密碼登入已停用',
+			'manage' => '管理',
+			'members' => '成員',
+			'message' => '訊息',
+			'modifiedTime' => '修改時間',
+			'moveOperationTargetUnknown' => '移動操作目標未知',
+			'muteDuration' => '禁言時長',
+			'myRating' => '我的評分',
+			'newName' => '新名稱',
+			'noBlockedUsers' => '沒有阻擋的使用者',
+			'noChanges' => '沒有更改',
+			'noData' => '沒有資料',
+			'noMoreEpisodes' => '沒有更多集數可播放',
+			'noOneOnline' => '沒有人在線',
+			'noRecordForMonth' => ({required Object month}) => '${month}暫無記錄',
+			'noResultsTryOtherKeywords' => '沒有結果，請嘗試其他關鍵詞',
+			'noSearchSources' => '沒有搜尋源',
+			'noStickersYet' => '還沒有貼紙',
+			'notSet' => '未設定',
+			'operationSuccess' => '操作成功',
+			'operationUnknown' => '操作未知',
+			'path' => '路徑',
+			'person' => '人物',
+			'pinnedMessages' => '置頂訊息',
+			'playingNextEpisode' => '正在播放下一集',
+			'pleaseAddSomeSources' => '請新增一些資料源',
+			'pleaseConfigureApiKeyInAiSettingsFirst' => '請先在AI設定中設定API金鑰',
+			'pleaseEnableAtLeastOneAddress' => '請先啟用至少一個位址',
+			'pleaseEnterEpisodeNumber' => '請輸入集數',
+			'pleaseEnterValidEpisodeNumber' => '請輸入1-999之間的有效集數',
+			'queryFailed' => '查詢失敗',
+			'ratingDetails' => '評分詳情',
+			'recognizeFromGallery' => '從相簿識別',
+			'relatedEntries' => '相關條目',
+			'removeSticker' => '移除貼紙',
+			'requestFailed' => '請求失敗',
+			'roomBan' => '房間封禁',
+			'routeNotFound' => '線路不存在',
+			'saveFailed' => '儲存失敗',
+			'saveFailedPermission' => '儲存失敗：權限或目錄異常',
+			'saveFailedWithError' => ({required Object e}) => '儲存失敗：${e}',
+			'saveSuccess' => '儲存成功',
+			'savingImage' => '正在儲存圖片...',
+			'scanQrCode' => '掃碼',
+			'scanToJump' => '掃碼跳轉',
+			'qrCode' => '二維碼',
+			'screenshotFailed' => '擷圖失敗',
+			'screenshotFailedPleaseRetry' => '擷圖失敗，請重試',
+			'screenshotInProgress' => '正在擷圖...',
+			'screenshotSuccess' => '擷圖成功',
+			'shareFailed' => '分享失敗',
+			'shareMethodDescription' => '分享方式：在番剧详情页，点击“分享” → 生成口令或二维码',
+			'shareQrCode' => '分享二維碼',
+			'show' => '顯示',
+			'sources' => '資料源',
+			'startSearch' => '開始搜尋',
+			'stickers' => '貼紙',
+			'subject' => '主題',
+			'switchFavoriteUser' => '切換收藏使用者',
+			'tapToShare' => '點擊分享',
+			'titleCopied' => '標題已複製',
+			'toggle' => '切換',
+			'tokenCopiedToClipboard' => 'Token已複製到剪貼簿',
+			'translationService' => '翻譯服務',
+			'unlikeSuccess' => '取消按讚成功',
+			'usage' => '使用情況',
+			'webviewIsNotAvailable' => 'Webview 不可用',
+			'imageTitle' => '標題',
+			'imageSubtitle' => '副標題',
+			'selectBackground' => '選擇背景',
+			'changeBackground' => '更換背景',
+			'clearBackground' => '清除背景',
+			'noQrCodeFoundInImage' => '未在圖片中識別到二維碼',
+			_ => null,
+		};
+	}
 }

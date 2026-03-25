@@ -1,5 +1,6 @@
 // ignore_for_file: file_names
 
+import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/anime_list.dart';
@@ -13,7 +14,6 @@ import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/pages/explore_controller.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
-import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
 
 class ExplorePage extends StatefulWidget {
@@ -25,34 +25,81 @@ class ExplorePage extends StatefulWidget {
 
 class _ExplorePageState extends State<ExplorePage>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin<ExplorePage> {
-  late TabController controller;
+  late TabController sourceController;
+  late Map<String, TabController> pageControllers = {};
 
   late final ExploreController exploreController;
 
   bool get showFB => exploreController.showFB;
   double location = 0;
 
-  late List<String> pages;
+  late List<String> sources;
+  late Map<String, List<String>> sourcePages;
 
   void onSettingsChanged() {
     var explorePages = List<String>.from(appdata.settings["explore_pages"]);
-    var all = AnimeSource.all()
-        .map((e) => e.explorePages)
-        .expand((e) => e.map((e) => e.title))
-        .toList();
-    explorePages = explorePages.where((e) => all.contains(e)).toList();
-    if (!pages.isEqualTo(explorePages)) {
-      setState(() {
-        pages = explorePages;
-        controller = TabController(length: pages.length, vsync: this);
-      });
+    var savedOrder = List<String>.from(
+      appdata.settings["explore_sources_order"] ?? [],
+    );
+    var allSources = AnimeSource.all();
+    var newSourcePages = <String, List<String>>{};
+    var newSources = <String>[];
+
+    // 按保存的顺序加载
+    for (var key in savedOrder) {
+      var source = AnimeSource.find(key);
+      if (source == null) continue;
+      var pagesForSource = source.explorePages
+          .map((e) => e.title)
+          .where((e) => explorePages.contains(e))
+          .toList();
+      if (pagesForSource.isNotEmpty) {
+        newSources.add(key);
+        newSourcePages[key] = pagesForSource;
+      }
+    }
+
+    // 添加新出现的源
+    for (var source in allSources) {
+      if (!newSources.contains(source.key)) {
+        var pagesForSource = source.explorePages
+            .map((e) => e.title)
+            .where((e) => explorePages.contains(e))
+            .toList();
+        if (pagesForSource.isNotEmpty) {
+          newSources.add(source.key);
+          newSourcePages[source.key] = pagesForSource;
+        }
+      }
+    }
+
+    setState(() {
+      sources = newSources;
+      sourcePages = newSourcePages;
+      _rebuildPageControllers();
+      sourceController = TabController(length: sources.length, vsync: this);
+    });
+  }
+
+  void _rebuildPageControllers() {
+    for (var source in sourcePages.keys) {
+      var pages = sourcePages[source] ?? [];
+      if (!pageControllers.containsKey(source) ||
+          pageControllers[source]?.length != pages.length) {
+        pageControllers[source]?.dispose();
+        pageControllers[source] = TabController(
+          length: pages.length,
+          vsync: this,
+        );
+      }
     }
   }
 
   void onNaviItemTapped(int index) {
     if (index == 4) {
-      int page = controller.index;
-      String currentPageId = pages[page];
+      String currentSource = sources[sourceController.index];
+      int pageIndex = pageControllers[currentSource]?.index ?? 0;
+      String currentPageId = sourcePages[currentSource]![pageIndex];
       GlobalState.find<_SingleExplorePageState>(currentPageId).toTop();
     }
   }
@@ -66,17 +113,51 @@ class _ExplorePageState extends State<ExplorePage>
   @override
   void initState() {
     exploreController = ExploreController();
-    pages = List<String>.from(appdata.settings["explore_pages"]);
-    var all = AnimeSource.all()
-        .map((e) => e.explorePages)
-        .expand((e) => e.map((e) => e.title))
-        .toList();
-    pages = pages.where((e) => all.contains(e)).toList();
-    controller = TabController(length: pages.length, vsync: this);
+    _initSourcesAndPages();
+    sourceController = TabController(length: sources.length, vsync: this);
+    _rebuildPageControllers();
     appdata.settings.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
     exploreController.initController(this);
     super.initState();
+  }
+
+  void _initSourcesAndPages() {
+    var explorePages = List<String>.from(appdata.settings["explore_pages"]);
+    var savedOrder = List<String>.from(
+      appdata.settings["explore_sources_order"] ?? [],
+    );
+    var allSources = AnimeSource.all();
+    sourcePages = {};
+    sources = [];
+
+    // 按保存的顺序加载
+    for (var key in savedOrder) {
+      var source = AnimeSource.find(key);
+      if (source == null) continue;
+      var pagesForSource = source.explorePages
+          .map((e) => e.title)
+          .where((e) => explorePages.contains(e))
+          .toList();
+      if (pagesForSource.isNotEmpty) {
+        sources.add(key);
+        sourcePages[key] = pagesForSource;
+      }
+    }
+
+    // 添加新出现的源
+    for (var source in allSources) {
+      if (!sources.contains(source.key)) {
+        var pagesForSource = source.explorePages
+            .map((e) => e.title)
+            .where((e) => explorePages.contains(e))
+            .toList();
+        if (pagesForSource.isNotEmpty) {
+          sources.add(source.key);
+          sourcePages[source.key] = pagesForSource;
+        }
+      }
+    }
   }
 
   @override
@@ -87,7 +168,10 @@ class _ExplorePageState extends State<ExplorePage>
 
   @override
   void dispose() {
-    controller.dispose();
+    sourceController.dispose();
+    for (var c in pageControllers.values) {
+      c.dispose();
+    }
     appdata.settings.removeListener(onSettingsChanged);
     naviPane?.removeNaviItemTapListener(onNaviItemTapped);
     exploreController.dispose();
@@ -95,16 +179,19 @@ class _ExplorePageState extends State<ExplorePage>
   }
 
   void refresh() {
-    int page = controller.index;
-    String currentPageId = pages[page];
+    String currentSource = sources[sourceController.index];
+    int pageIndex = pageControllers[currentSource]?.index ?? 0;
+    String currentPageId = sourcePages[currentSource]![pageIndex];
     GlobalState.find<_SingleExplorePageState>(currentPageId).refresh();
   }
 
-  Tab buildTab(String i) {
-    var animeSource = AnimeSource.all().firstWhere(
-      (e) => e.explorePages.any((e) => e.title == i),
-    );
-    return Tab(text: i.ts(animeSource.key), key: Key(i));
+  Tab buildSourceTab(String sourceKey) {
+    var source = AnimeSource.find(sourceKey);
+    return Tab(text: source?.name ?? sourceKey, key: Key(sourceKey));
+  }
+
+  Tab buildPageTab(String title, String sourceKey) {
+    return Tab(text: title.ts(sourceKey), key: Key(title));
   }
 
   Widget buildBody(String i) => Material(
@@ -139,15 +226,15 @@ class _ExplorePageState extends State<ExplorePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (pages.isEmpty) {
+    if (sources.isEmpty) {
       return buildEmpty();
     }
 
-    Widget tabBar = Material(
+    Widget sourceTabBar = Material(
       child: AppTabBar(
-        key: PageStorageKey(pages.toString()),
-        tabs: pages.map((e) => buildTab(e)).toList(),
-        controller: controller,
+        key: PageStorageKey(sources.toString()),
+        tabs: sources.map((e) => buildSourceTab(e)).toList(),
+        controller: sourceController,
         actionButton: TabActionButton(
           icon: const Icon(Icons.add),
           text: "Add".tl,
@@ -161,14 +248,23 @@ class _ExplorePageState extends State<ExplorePage>
         Positioned.fill(
           child: Column(
             children: [
-              tabBar,
+              sourceTabBar,
               Expanded(
                 child: MediaQuery.removePadding(
                   context: context,
                   removeTop: true,
-                  child: TabBarView(
-                    controller: controller,
-                    children: pages.map((e) => buildBody(e)).toList(),
+                  child: ExtendedTabBarView(
+                    controller: sourceController,
+                    children: sources
+                        .map(
+                          (sourceKey) => _SourceExplorePage(
+                            sourceKey: sourceKey,
+                            pages: sourcePages[sourceKey] ?? [],
+                            pageController: pageControllers[sourceKey]!,
+                            exploreController: exploreController,
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
               ),
@@ -216,10 +312,17 @@ class _ExplorePageState extends State<ExplorePage>
                           foregroundColor: Theme.of(
                             context,
                           ).colorScheme.onPrimaryContainer,
-                          onTap: () =>
-                              GlobalState.find<_SingleExplorePageState>(
-                                pages[controller.index],
-                              ).toTop(),
+                          onTap: () {
+                            String currentSource =
+                                sources[sourceController.index];
+                            int pageIndex =
+                                pageControllers[currentSource]?.index ?? 0;
+                            String currentPageId =
+                                sourcePages[currentSource]![pageIndex];
+                            GlobalState.find<_SingleExplorePageState>(
+                              currentPageId,
+                            ).toTop();
+                          },
                         ),
                       ],
                       [
@@ -651,4 +754,69 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
       yield* _buildExplorePagePart(part, widget.animeSourceKey);
     }
   }
+}
+
+class _SourceExplorePage extends StatefulWidget {
+  const _SourceExplorePage({
+    required this.sourceKey,
+    required this.pages,
+    required this.pageController,
+    required this.exploreController,
+  });
+
+  final String sourceKey;
+  final List<String> pages;
+  final TabController pageController;
+  final ExploreController exploreController;
+
+  @override
+  State<_SourceExplorePage> createState() => _SourceExplorePageState();
+}
+
+class _SourceExplorePageState extends State<_SourceExplorePage>
+    with AutomaticKeepAliveClientMixin<_SourceExplorePage> {
+  Tab buildPageTab(String title) {
+    return Tab(text: title.ts(widget.sourceKey), key: Key(title));
+  }
+
+  Widget buildBody(String pageTitle) => Material(
+    child: _SingleExplorePage(
+      pageTitle,
+      key: PageStorageKey("${widget.sourceKey}_$pageTitle"),
+      exploreController: widget.exploreController,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+
+    return Column(
+      children: [
+        Material(
+          child: TabBar(
+            tabs: widget.pages.map((e) => buildPageTab(e)).toList(),
+            controller: widget.pageController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.center,
+            labelColor: Theme.of(context).colorScheme.primary,
+            unselectedLabelColor: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            dividerColor: Colors.transparent,
+          ),
+        ),
+        Expanded(
+          child: ExtendedTabBarView(
+            controller: widget.pageController,
+            children: widget.pages.map((e) => buildBody(e)).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get wantKeepAlive => true;
 }

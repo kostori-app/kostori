@@ -176,17 +176,279 @@ class _ManageBlockingWordViewState extends State<_ManageBlockingWordView> {
 }
 
 Widget setExplorePagesWidget() {
-  var pages = <String, String>{};
-  for (var c in AnimeSource.all()) {
-    for (var page in c.explorePages) {
-      pages[page.title] = page.title.ts(c.key);
+  return _ExplorePagesFilter();
+}
+
+class _ExplorePagesFilter extends StatefulWidget {
+  const _ExplorePagesFilter();
+
+  @override
+  State<_ExplorePagesFilter> createState() => _ExplorePagesFilterState();
+}
+
+enum _ItemType { source, page }
+
+class _ListItem {
+  _ListItem({
+    required this.id,
+    required this.type,
+    this.sourceKey,
+    this.title,
+    this.pageTitle,
+    this.pageIndex,
+    this.sourceIndex,
+    this.hasAdd = false,
+  });
+
+  final String id;
+  final _ItemType type;
+  final String? sourceKey;
+  final String? title;
+  final String? pageTitle;
+  final int? pageIndex;
+  final int? sourceIndex;
+  final bool hasAdd;
+}
+
+class _ExplorePagesFilterState extends State<_ExplorePagesFilter> {
+  late List<String> sourceKeys;
+  late Map<String, List<String>> sourcePages;
+  late Map<String, bool> sourceExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  void _loadData() {
+    var selectedPages = List<String>.from(appdata.settings["explore_pages"]);
+    var savedOrder = List<String>.from(
+      appdata.settings["explore_sources_order"] ?? [],
+    );
+    sourcePages = {};
+    sourceExpanded = {};
+    sourceKeys = [];
+
+    // 按保存的顺序加载
+    for (var key in savedOrder) {
+      var source = AnimeSource.find(key);
+      if (source == null) continue;
+      var pagesForSource = source.explorePages.map((e) => e.title).toList();
+      var selectedForSource = pagesForSource
+          .where((p) => selectedPages.contains(p))
+          .toList();
+      if (pagesForSource.isNotEmpty) {
+        sourceKeys.add(key);
+        sourcePages[key] = selectedForSource;
+        sourceExpanded[key] = selectedForSource.isNotEmpty;
+      }
+    }
+
+    // 添加新出现的源（未保存顺序的）
+    for (var source in AnimeSource.all()) {
+      if (!sourceKeys.contains(source.key)) {
+        var pagesForSource = source.explorePages.map((e) => e.title).toList();
+        var selectedForSource = pagesForSource
+            .where((p) => selectedPages.contains(p))
+            .toList();
+        if (pagesForSource.isNotEmpty) {
+          sourceKeys.add(source.key);
+          sourcePages[source.key] = selectedForSource;
+          sourceExpanded[source.key] = selectedForSource.isNotEmpty;
+        }
+      }
     }
   }
-  return _MultiPagesFilter(
-    title: t.explorePages,
-    settingsIndex: "explore_pages",
-    pages: pages,
-  );
+
+  void _saveData() {
+    var allSelected = <String>[];
+    for (var key in sourceKeys) {
+      allSelected.addAll(sourcePages[key] ?? []);
+    }
+    appdata.settings["explore_pages"] = allSelected;
+    appdata.settings["explore_sources_order"] = List<String>.from(sourceKeys);
+    appdata.saveData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: t.explorePages,
+      body: _buildReorderableList(),
+    );
+  }
+
+  Widget _buildReorderableList() {
+    var items = <_ListItem>[];
+
+    for (var i = 0; i < sourceKeys.length; i++) {
+      var sourceKey = sourceKeys[i];
+      var source = AnimeSource.find(sourceKey);
+      var sourceName = source?.name ?? sourceKey;
+      var selectedPages = sourcePages[sourceKey] ?? [];
+      var allPages = source?.explorePages.map((e) => e.title).toList() ?? [];
+
+      // 源项
+      items.add(
+        _ListItem(
+          id: "source_$sourceKey",
+          type: _ItemType.source,
+          sourceKey: sourceKey,
+          title: sourceName,
+          hasAdd: selectedPages.length < allPages.length,
+          sourceIndex: i,
+        ),
+      );
+
+      // 如果展开，显示页面项
+      if (sourceExpanded[sourceKey] ?? false) {
+        for (var j = 0; j < selectedPages.length; j++) {
+          items.add(
+            _ListItem(
+              id: "page_${sourceKey}_${selectedPages[j]}",
+              type: _ItemType.page,
+              sourceKey: sourceKey,
+              title: selectedPages[j].ts(sourceKey),
+              pageTitle: selectedPages[j],
+              pageIndex: j,
+            ),
+          );
+        }
+      }
+    }
+
+    return ReorderableListView.builder(
+      itemCount: items.length,
+      onReorder: (oldIndex, newIndex) {
+        setState(() {
+          var oldItem = items[oldIndex];
+          var newItem = items[newIndex];
+
+          // 只能在同类型间排序
+          if (oldItem.type != newItem.type) return;
+
+          if (oldItem.type == _ItemType.source) {
+            var oldSourceIdx = sourceKeys.indexOf(oldItem.sourceKey!);
+            var newSourceIdx = sourceKeys.indexOf(newItem.sourceKey!);
+            if (oldSourceIdx >= 0 && newSourceIdx >= 0) {
+              var key = sourceKeys.removeAt(oldSourceIdx);
+              var insertIdx = newSourceIdx > oldSourceIdx
+                  ? newSourceIdx - 1
+                  : newSourceIdx;
+              sourceKeys.insert(insertIdx, key);
+            }
+          } else if (oldItem.type == _ItemType.page) {
+            var sourceKey = oldItem.sourceKey!;
+            var pages = sourcePages[sourceKey] ?? [];
+            var oldPageIdx = pages.indexOf(oldItem.pageTitle!);
+            var newPageIdx = pages.indexOf(newItem.pageTitle!);
+            if (oldPageIdx >= 0 && newPageIdx >= 0) {
+              var page = pages.removeAt(oldPageIdx);
+              var insertIdx = newPageIdx > oldPageIdx
+                  ? newPageIdx - 1
+                  : newPageIdx;
+              pages.insert(insertIdx, page);
+              sourcePages[sourceKey] = pages;
+            }
+          }
+        });
+        _saveData();
+      },
+      itemBuilder: (context, index) {
+        var item = items[index];
+        if (item.type == _ItemType.source) {
+          return ListTile(
+            key: Key(item.id),
+            leading: const Icon(Icons.drag_handle),
+            title: Row(
+              children: [
+                Expanded(child: Text(item.title ?? '')),
+                if (item.hasAdd)
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () {
+                      var allPages =
+                          AnimeSource.find(
+                            item.sourceKey!,
+                          )?.explorePages.map((e) => e.title).toList() ??
+                          [];
+                      _showAddDialog(
+                        item.sourceKey!,
+                        allPages,
+                        sourcePages[item.sourceKey] ?? [],
+                      );
+                    },
+                  ),
+                IconButton(
+                  icon: Icon(
+                    sourceExpanded[item.sourceKey] ?? false
+                        ? Icons.expand_less
+                        : Icons.expand_more,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      sourceExpanded[item.sourceKey!] =
+                          !(sourceExpanded[item.sourceKey] ?? false);
+                    });
+                    _saveData();
+                  },
+                ),
+              ],
+            ),
+          );
+        } else {
+          return ListTile(
+            key: Key(item.id),
+            leading: const Icon(Icons.drag_handle),
+            title: Text(item.title ?? ''),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                setState(() {
+                  sourcePages[item.sourceKey!]?.remove(item.pageTitle);
+                });
+                _saveData();
+              },
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  void _showAddDialog(
+    String sourceKey,
+    List<String> allPages,
+    List<String> selectedPages,
+  ) {
+    var canAdd = allPages.where((p) => !selectedPages.contains(p)).toList();
+    var source = AnimeSource.find(sourceKey);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return ContentDialog(
+          title: "Add ${source?.name ?? sourceKey} Page",
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: canAdd.map((page) {
+              return ListTile(
+                title: Text(page.ts(sourceKey)),
+                onTap: () {
+                  context.pop();
+                  setState(() {
+                    sourcePages[sourceKey]!.add(page);
+                  });
+                  _saveData();
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
 }
 
 Widget setCategoryPagesWidget() {

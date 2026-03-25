@@ -416,7 +416,7 @@ class TranslationsZhCn extends Translations
 
   @override String get longPressToZoom => '长按缩放';
 
-  @override String get me => '我';
+  @override String get me => '个人';
 
   @override String get moveToFirst => '移至首位';
 
@@ -2565,7 +2565,7 @@ extension on TranslationsZhCn {
       'longPressAndDragToReorder' => '长按并拖动以重新排序。',
       'longPressOnTheFavoriteButtonToQuicklyAddToThisFolder' => '长按收藏按钮可快速添加到此文件夹',
       'longPressToZoom' => '长按缩放',
-      'me' => '我',
+      'me' => '个人',
       'moveToFirst' => '移至首位',
       'moveFavoriteAfterReading' => '观看完毕后移动收藏',
       'moveToFolder' => '移动到文件夹',
