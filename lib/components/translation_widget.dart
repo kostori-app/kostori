@@ -264,7 +264,7 @@ class _TranslationWidgetState extends State<TranslationWidget> {
               ],
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ExpandableText(
                 text: widget.data,
                 translationController: translationController,

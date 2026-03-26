@@ -13,7 +13,6 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
   late _AnimePageState state;
   late History? history;
 
-  // 当前播放列表的索引，默认为0
   int playList = 0;
   Map<String, String> currentEps = {};
   int length = 0;
@@ -102,24 +101,35 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
 
   @override
   Widget build(BuildContext context) {
-    // 获取所有播放列表（例如，ep1, ep2, ep3...）
-    // state.anime.episode?.keys.toList();
     final episodeValues = state.anime.episode?.values.elementAt(playList);
 
     currentEps = episodeValues!;
     length = currentEps.length;
 
     if (!showAll) {
-      length = math.min(length, 24); // 限制显示的集数
+      length = math.min(length, 24);
     }
 
-    int currentLength = length;
-
-    return SliverMainAxisGroup(
-      slivers: [
-        // 显示标题和切换顺序的按钮
-        SliverToBoxAdapter(
-          child: ListTile(
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: Container(
+                width: 120,
+                height: 2,
+                decoration: BoxDecoration(
+                  color: Colors.grey.toOpacity(0.4),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ListTile(
             title: Row(
               children: [
                 Text(t.playlist),
@@ -168,7 +178,6 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                     ),
                   ),
                 ),
-                Spacer(),
               ],
             ),
             trailing: Tooltip(
@@ -181,166 +190,145 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
                 ),
                 onPressed: () {
                   setState(() {
-                    reverse = !reverse; // 切换顺序
+                    reverse = !reverse;
                   });
                 },
               ),
             ),
           ),
-        ),
 
-        // 显示播放列表内容的网格
-        SliverGrid(
-          key: ValueKey(playList),
-          delegate: SliverChildBuilderDelegate(
-            childCount: currentLength, // 使用更新后的 length
-            (context, i) {
-              if (i >= currentEps.length) {
-                return Container(); // 防止越界
-              }
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: GridView.builder(
+              key: ValueKey(playList),
+              gridDelegate: const SliverGridDelegateWithFixedHeight(
+                maxCrossAxisExtent: 200,
+                itemHeight: 84,
+              ),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: length,
+              itemBuilder: (context, i) {
+                int index = i;
+                if (reverse) {
+                  index = length - i - 1;
+                }
 
-              if (reverse) {
-                i = currentEps.length - i - 1; // 反向排序
-              }
+                var key = currentEps.keys.elementAt(index);
+                var value = currentEps[key]!;
+                bool visited = (history?.watchEpisode ?? const {}).contains(
+                  index + 1,
+                );
 
-              var key = currentEps.keys.elementAt(i);
-              var value = currentEps[key]!;
-              bool visited = (history?.watchEpisode ?? const {}).contains(
-                i + 1,
-              );
-
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
-                child: Material(
-                  color: !visited
-                      ? context.colorScheme.surfaceContainer
-                      : Theme.of(context).colorScheme.primary.toOpacity(0.3),
-                  borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  child: InkWell(
-                    onTap: () async => await WatcherState.currentState!
-                        .loadInfo(i + 1, playList)
-                        .then((_) {
-                          if (mounted) {
-                            setState(() {});
-                          }
-                        }),
-                    onLongPress: () {
-                      showEp(ep: i, road: playList);
-                    },
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  child: Material(
+                    color: !visited
+                        ? context.colorScheme.surfaceContainer
+                        : Theme.of(context).colorScheme.primary.toOpacity(0.3),
                     borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Observer(
-                            builder: (context) {
-                              final isCurrent =
-                                  playList ==
-                                      state.playerController.currentRoad &&
-                                  i ==
-                                      state.playerController.currentEpisoded -
-                                          1;
+                    child: InkWell(
+                      onTap: () async => await WatcherState.currentState!
+                          .loadInfo(index + 1, playList)
+                          .then((_) {
+                            if (mounted) {
+                              setState(() {});
+                            }
+                          }),
+                      onLongPress: () {
+                        showEp(ep: index, road: playList);
+                      },
+                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        child: Row(
+                          children: [
+                            Observer(
+                              builder: (context) {
+                                final isCurrent =
+                                    playList ==
+                                        state.playerController.currentRoad &&
+                                    index ==
+                                        state.playerController.currentEpisoded -
+                                            1;
 
-                              if (!isCurrent) return const SizedBox.shrink();
+                                if (!isCurrent) {
+                                  return const SizedBox.shrink();
+                                }
 
-                              return Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  state.playerController.playing
-                                      ? Image.asset(
-                                          'assets/img/playing.gif',
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          height: 16,
-                                        )
-                                      : Icon(
-                                          Icons.pause,
-                                          size: 16,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                  const SizedBox(width: 6),
-                                ],
-                              );
-                            },
-                          ),
-                          Expanded(
-                            child: Text(
-                              value,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: visited
-                                    ? (playList ==
-                                                  state
-                                                      .playerController
-                                                      .currentRoad &&
-                                              i ==
-                                                  state
-                                                          .playerController
-                                                          .currentEpisoded -
-                                                      1)
-                                          ? null
-                                          : context.colorScheme.outline
-                                    : null,
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    state.playerController.playing
+                                        ? Image.asset(
+                                            'assets/img/playing.gif',
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                            height: 16,
+                                          )
+                                        : Icon(
+                                            Icons.pause,
+                                            size: 16,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                          ),
+                                    const SizedBox(width: 6),
+                                  ],
+                                );
+                              },
+                            ),
+                            Expanded(
+                              child: Text(
+                                value,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: visited
+                                      ? (playList ==
+                                                    state
+                                                        .playerController
+                                                        .currentRoad &&
+                                                i ==
+                                                    state
+                                                            .playerController
+                                                            .currentEpisoded -
+                                                        1)
+                                            ? null
+                                            : context.colorScheme.outline
+                                      : null,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
-          ),
-          gridDelegate: const SliverGridDelegateWithFixedHeight(
-            maxCrossAxisExtent: 200,
-            itemHeight: 84,
-          ),
-        ),
-
-        // 显示更多按钮
-        if (currentEps.length > 24 && !showAll)
-          SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.center,
-              child: TextButton.icon(
-                icon: const Icon(Icons.arrow_drop_down),
-                onPressed: () {
-                  setState(() {
-                    showAll = true;
-                  });
-                },
-                label: Text("${t.showAll} (${currentEps.length})"),
-              ).paddingTop(12),
+                );
+              },
             ),
           ),
 
-        SliverToBoxAdapter(
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ), // 添加分割线
-      ],
+          if (currentEps.length > 24 && !showAll)
+            TextButton.icon(
+              icon: const Icon(Icons.arrow_drop_down),
+              onPressed: () {
+                setState(() {
+                  showAll = true;
+                });
+              },
+              label: Text("${t.showAll} (${currentEps.length})"),
+            ).paddingTop(12),
+        ],
+      ),
     );
   }
 }

@@ -756,6 +756,7 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
     this.enableHistory,
     this.isRecommend,
     this.asSliver = true,
+    this.shrinkWrap = false,
   });
 
   final List<Anime> animes;
@@ -779,6 +780,8 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
   final bool? isRecommend;
 
   final bool asSliver;
+
+  final bool shrinkWrap;
 
   @override
   ConsumerState<SliverGridAnimes> createState() => _SliverGridAnimesState();
@@ -855,6 +858,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
       enableHistory: widget.enableHistory,
       isRecommend: widget.isRecommend,
       asSliver: widget.asSliver,
+      shrinkWrap: widget.shrinkWrap,
     );
   }
 }
@@ -873,6 +877,7 @@ class _SliverGridAnimes extends StatelessWidget {
     this.enableHistory,
     this.isRecommend,
     this.asSliver = true,
+    this.shrinkWrap = false,
   });
 
   final List<Anime> animes;
@@ -898,6 +903,8 @@ class _SliverGridAnimes extends StatelessWidget {
   final bool? isRecommend;
 
   final bool asSliver;
+
+  final bool shrinkWrap;
 
   @override
   Widget build(BuildContext context) {
@@ -948,9 +955,9 @@ class _SliverGridAnimes extends StatelessWidget {
       return GridView.builder(
         padding: EdgeInsets.zero,
         physics: const ClampingScrollPhysics(),
-        // shrinkWrap: true,
         itemCount: animes.length,
         gridDelegate: SliverGridDelegateWithAnimes(),
+        shrinkWrap: shrinkWrap,
         itemBuilder: (context, index) {
           if (index == animes.length - 1) {
             onLastItemBuild?.call();

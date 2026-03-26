@@ -407,7 +407,8 @@ class WatcherState extends State<Watcher>
 
   @override
   Widget build(BuildContext context) {
-    return SliverToBoxAdapter(
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
       child: App.isDesktop
           ? Padding(
               padding: const EdgeInsets.only(top: 8, left: 16, right: 16),

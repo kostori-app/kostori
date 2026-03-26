@@ -3409,6 +3409,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Clear Background'
 	String get clearBackground => 'Clear Background';
+
+	/// en: '${count} chars'
+	String charCount({required Object count}) => '${count} chars';
 }
 
 /// The flat map containing all translations for locale <en>.
@@ -4546,6 +4549,7 @@ extension on Translations {
 			'selectBackground' => 'Select Background',
 			'changeBackground' => 'Change Background',
 			'clearBackground' => 'Clear Background',
+			'charCount' => ({required Object count}) => '${count} chars',
 			_ => null,
 		};
 	}

@@ -187,7 +187,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         .addListener(updateBangumiBind);
     StatsManager().addListener(updateStats);
     tabController = TabController(length: 3, vsync: this);
-    tabController.addListener(() => setState(() {}));
+    tabController.addListener(() {
+      if (!tabController.indexIsChanging) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -300,54 +304,49 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   Widget buildContent(BuildContext context, AnimeDetails data) {
-    Widget widget = Stack(
-      children: [
-        Positioned.fill(
-          child: NestedScrollView(
-            controller: scrollController,
-            physics: const BouncingScrollPhysics(),
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                SliverPadding(padding: EdgeInsets.only(top: 28)),
-                Watcher(
-                  playerController: playerController,
-                  watcherController: watcherController,
-                ),
-                TabBar(
-                  controller: tabController,
-                  isScrollable: true,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
-                  tabAlignment: TabAlignment.center,
-                  tabs: [
-                    Tab(text: t.basicInfo),
-                    Tab(text: t.allEpisodes),
-                    Tab(text: t.relatedEntries),
-                  ],
-                ).toSliver(),
-              ];
-            },
-            body: animeTab(),
-          ),
-        ),
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 300),
-          top: showAppbarTitle ? 0 : -(40 + context.padding.top),
-          left: 0,
-          right: 0,
-          height: 40 + context.padding.top,
-          child: buildTop(),
-        ),
-      ],
-    );
-    widget = AppScrollBar(
-      topPadding: MediaQuery.of(context).padding.top,
+    final screenWidth = MediaQuery.of(context).size.width;
+    final topPadding = MediaQuery.of(context).padding.top;
+    final isDesktop = screenWidth > 800;
+    final playerHeight = isDesktop ? screenWidth * 0.45 : screenWidth * 0.6;
+
+    Widget widget = NestedScrollView(
       controller: scrollController,
-      isNested: true,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: widget,
-      ),
+      physics: const BouncingScrollPhysics(),
+      headerSliverBuilder: (context, innerBoxIsScrolled) {
+        return [
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _VideoPlayerDelegate(
+              playerHeight: playerHeight,
+              topPadding: topPadding,
+              watcher: Watcher(
+                playerController: playerController,
+                watcherController: watcherController,
+              ),
+            ),
+          ),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _SliverTabBarDelegate(
+              TabBar(
+                controller: tabController,
+                isScrollable: true,
+                indicatorColor: Theme.of(context).colorScheme.primary,
+                tabAlignment: TabAlignment.center,
+                tabs: [
+                  Tab(text: t.basicInfo),
+                  Tab(text: t.allEpisodes),
+                  Tab(text: t.relatedEntries),
+                ],
+              ),
+              Theme.of(context).colorScheme.surface,
+            ),
+          ),
+        ];
+      },
+      body: animeTab(),
     );
+
     return widget;
   }
 
@@ -382,45 +381,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             buildInfo(),
           ],
         ),
-        CustomScrollView(slivers: [buildEpisodes()]),
-        CustomScrollView(slivers: [buildRecommend()]),
+        buildEpisodes(),
+        buildRecommend(),
       ],
-    );
-  }
-
-  Widget buildTop() {
-    return BlurEffect(
-      child: Container(
-        padding: EdgeInsets.only(top: context.padding.top),
-        decoration: BoxDecoration(
-          color: context.colorScheme.surface.toOpacity(0.82),
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.toOpacity(0.5), width: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 8),
-            Tooltip(
-              message: t.back,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new),
-                onPressed: () => Navigator.maybePop(context),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                anime.title,
-                style: ts.s18,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-      ),
     );
   }
 
@@ -428,9 +391,8 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     yield const SliverPadding(padding: EdgeInsets.only(top: 8));
 
     yield SliverLazyToBoxAdapter(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 550, maxHeight: 345 + 16),
-        margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final bindAll = ref
@@ -451,216 +413,253 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
             return SizedBox(
               width: constraints.maxWidth,
-              height: imageHeight + 45 + 16,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(width: 16),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(8),
-                          onTap: () {
-                            (history?.bangumiId == null || bangumiItem == null)
-                                ? BangumiWidget.showImagePreview(
-                                    context: context,
-                                    url: widget.cover ?? anime.cover,
-                                    title: anime.title,
-                                    heroTag: "cover${widget.heroID}",
-                                  )
-                                : BangumiWidget.showImagePreview(
-                                    context: context,
-                                    url: bangumiItem.images['large']!,
-                                    title: bangumiItem.nameCn,
-                                    heroTag: "cover${widget.heroID}",
-                                  );
-                          },
-                          child: Hero(
-                            tag: "cover${widget.heroID}",
-                            child: Container(
-                              width: imageWidth,
-                              height: imageHeight,
-                              decoration: BoxDecoration(
-                                color: context.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: context.colorScheme.outlineVariant,
-                                    blurRadius: 1,
-                                    offset: const Offset(0, 1),
-                                  ),
-                                ],
-                              ),
-                              clipBehavior: Clip.antiAlias,
-                              child: AnimatedImage(
-                                image: CachedImageProvider(
-                                  widget.cover ?? anime.cover,
-                                  sourceKey: anime.sourceKey,
-                                  aid: anime.id,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Container(
+                        width: 120,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.toOpacity(0.4),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      top: 16,
+                      right: 16,
+                      left: 16,
+                      bottom: 0,
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () {
+                              (history?.bangumiId == null ||
+                                      bangumiItem == null)
+                                  ? BangumiWidget.showImagePreview(
+                                      context: context,
+                                      url: widget.cover ?? anime.cover,
+                                      title: anime.title,
+                                      heroTag: "cover${widget.heroID}",
+                                    )
+                                  : BangumiWidget.showImagePreview(
+                                      context: context,
+                                      url: bangumiItem.images['large']!,
+                                      title: bangumiItem.nameCn,
+                                      heroTag: "cover${widget.heroID}",
+                                    );
+                            },
+                            child: Hero(
+                              tag: "cover${widget.heroID}",
+                              flightShuttleBuilder:
+                                  (
+                                    flightContext,
+                                    animation,
+                                    direction,
+                                    fromContext,
+                                    toContext,
+                                  ) {
+                                    return direction == HeroFlightDirection.pop
+                                        ? (fromContext.widget as Hero).child
+                                        : (toContext.widget as Hero).child;
+                                  },
+                              child: Container(
+                                width: imageWidth,
+                                height: imageHeight,
+                                decoration: BoxDecoration(
+                                  color: context.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(8),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: context.colorScheme.outlineVariant,
+                                      blurRadius: 1,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
                                 ),
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: double.infinity,
+                                clipBehavior: Clip.antiAlias,
+                                child: AnimatedImage(
+                                  image: CachedImageProvider(
+                                    widget.cover ?? anime.cover,
+                                    sourceKey: anime.sourceKey,
+                                    aid: anime.id,
+                                  ),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: SizedBox(
-                          height: imageHeight,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  var context =
-                                      App.mainNavigatorKey!.currentContext!;
-                                  context.to(
-                                    () => AggregatedSearchPage(
-                                      keyword: anime.title,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: SizedBox(
+                            height: imageHeight,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    var context =
+                                        App.mainNavigatorKey!.currentContext!;
+                                    context.to(
+                                      () => AggregatedSearchPage(
+                                        keyword: anime.title,
+                                      ),
+                                    );
+                                  },
+                                  onLongPress: () {
+                                    Clipboard.setData(
+                                      ClipboardData(text: anime.title),
+                                    );
+                                    App.rootContext.showMessage(
+                                      message: t.copiedToClipboard,
+                                    );
+                                  },
+                                  child: Text(
+                                    anime.title,
+                                    style: ts.s18,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (anime.subTitle != null)
+                                  SelectableText(
+                                    anime.subTitle!,
+                                    style: ts.s14,
+                                    maxLines: 2,
+                                    scrollPhysics:
+                                        const NeverScrollableScrollPhysics(),
+                                  ).paddingVertical(4),
+                                Text(
+                                  AnimeSource.find(anime.sourceKey)?.name ?? '',
+                                  style: ts.s12,
+                                ),
+                                const Spacer(),
+                                if (bangumiItem != null)
+                                  Align(
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          '${bangumiItem.collection?['doing']} 在看',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                          ),
+                                        ),
+                                        const Text(' / '),
+                                        Text(
+                                          '${bangumiItem.collection?['collect']} 看过',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.error,
+                                          ),
+                                        ),
+                                        const Text(' / '),
+                                        Text(
+                                          '${bangumiItem.collection?['dropped']} 抛弃',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                },
-                                onLongPress: () {
-                                  Clipboard.setData(
-                                    ClipboardData(text: anime.title),
-                                  );
-                                  App.rootContext.showMessage(
-                                    message: t.copiedToClipboard,
-                                  );
-                                },
-                                child: Text(
-                                  anime.title,
-                                  style: ts.s18,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (anime.subTitle != null)
-                                SelectableText(
-                                  anime.subTitle!,
-                                  style: ts.s14,
-                                  maxLines: 2,
-                                  scrollPhysics:
-                                      const NeverScrollableScrollPhysics(),
-                                ).paddingVertical(4),
-                              Text(
-                                AnimeSource.find(anime.sourceKey)?.name ?? '',
-                                style: ts.s12,
-                              ),
-                              const Spacer(),
-                              if (bangumiItem != null)
-                                Align(
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        '${bangumiItem.collection?['doing']} 在看',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ),
-                                      const Text(' / '),
-                                      Text(
-                                        '${bangumiItem.collection?['collect']} 看过',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.error,
-                                        ),
-                                      ),
-                                      const Text(' / '),
-                                      Text(
-                                        '${bangumiItem.collection?['dropped']} 抛弃',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
                                   ),
-                                ),
-                              if (bangumiItem != null)
-                                Align(
-                                  alignment: Alignment.topLeft,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        '${bangumiItem.score}',
-                                        style: ts.s24,
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Container(
-                                        padding: const EdgeInsets.all(2.0),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .secondaryContainer
-                                                .toOpacity(0.72),
-                                            width: 2.0,
-                                          ),
+                                if (bangumiItem != null)
+                                  Align(
+                                    alignment: Alignment.topLeft,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          '${bangumiItem.score}',
+                                          style: ts.s24,
                                         ),
-                                        child: Text(
-                                          Utils.getRatingLabel(
-                                            bangumiItem.score,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          RatingBarIndicator(
-                                            itemCount: 5,
-                                            rating:
-                                                bangumiItem.score.toDouble() /
-                                                2,
-                                            itemBuilder: (context, index) =>
-                                                const Icon(Icons.star_rounded),
-                                            itemSize: 20.0,
-                                          ),
-                                          Text(
-                                            t.tReviewsR(
-                                              t: bangumiItem.total,
-                                              r: bangumiItem.rank,
+                                        const SizedBox(width: 5),
+                                        Container(
+                                          padding: const EdgeInsets.all(2.0),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
                                             ),
-                                            style: const TextStyle(
-                                              fontSize: 12,
+                                            border: Border.all(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .secondaryContainer
+                                                  .toOpacity(0.72),
+                                              width: 2.0,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ],
+                                          child: Text(
+                                            Utils.getRatingLabel(
+                                              bangumiItem.score,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            RatingBarIndicator(
+                                              itemCount: 5,
+                                              rating:
+                                                  bangumiItem.score.toDouble() /
+                                                  2,
+                                              itemBuilder: (context, index) =>
+                                                  const Icon(
+                                                    Icons.star_rounded,
+                                                  ),
+                                              itemSize: 20.0,
+                                            ),
+                                            Text(
+                                              t.tReviewsR(
+                                                t: bangumiItem.total,
+                                                r: bangumiItem.rank,
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                SizedBox(
+                                  height: 45,
+                                  child: _buildActionButtons(
+                                    context,
+                                    anime,
+                                    true,
                                   ),
                                 ),
-                              SizedBox(
-                                height: 45,
-                                child: _buildActionButtons(
-                                  context,
-                                  anime,
-                                  true,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -793,29 +792,33 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       return const SliverPadding(padding: EdgeInsets.zero);
     }
     return SliverToBoxAdapter(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              width: 120,
-              height: 2,
-              decoration: BoxDecoration(
-                color: Colors.grey.toOpacity(0.4),
-                borderRadius: BorderRadius.circular(4),
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ListTile(title: Text(t.myRating)),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SelectableText(
-              commentRecord!.comment!,
-              scrollPhysics: const NeverScrollableScrollPhysics(),
-            ).fixWidth(double.infinity),
-          ),
-        ],
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(title: Text(t.myRating)),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SelectableText(
+                commentRecord!.comment!,
+              ).fixWidth(double.infinity),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -825,37 +828,30 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       return const SliverPadding(padding: EdgeInsets.zero);
     }
     return SliverToBoxAdapter(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              width: 120,
-              height: 2,
-              decoration: BoxDecoration(
-                color: Colors.grey.toOpacity(0.4),
-                borderRadius: BorderRadius.circular(4),
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TranslationWidget(
-            data: anime.description!,
-            title: ListTile(title: Text(t.description)),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              width: 120,
-              height: 2,
-              decoration: BoxDecoration(
-                color: Colors.grey.toOpacity(0.4),
-                borderRadius: BorderRadius.circular(4),
-              ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            TranslationWidget(
+              data: anime.description!,
+              title: ListTile(title: Text(t.description)),
             ),
-          ),
-          const SizedBox(height: 16),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -948,84 +944,134 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
 
     return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(title: Text(t.information)),
-          if (anime.stars != null)
-            Row(
-              children: [
-                StarRating(
-                  value: anime.stars!,
-                  size: 24,
-                  // onTap: starRating,
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Container(
+                  width: 120,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.toOpacity(0.4),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Text(anime.stars!.toStringAsFixed(2)),
-              ],
-            ).paddingLeft(16).paddingVertical(8),
-          for (var e in anime.tags.entries)
-            buildWrap(
-              children: [
-                if (e.value.isNotEmpty)
-                  buildTag(text: e.key.ts(animeSource.key), isTitle: true),
-                for (var tag in e.value)
-                  buildTag(text: tag, onTap: () => onTapTag(tag, e.key)),
-              ],
-            ),
-          if (anime.uploader != null)
-            buildWrap(
-              children: [
-                buildTag(text: t.uploader, isTitle: true),
-                buildTag(text: anime.uploader!),
-              ],
-            ),
-          if (anime.uploadTime != null)
-            buildWrap(
-              children: [
-                buildTag(text: t.uploadTime, isTitle: true),
-                buildTag(text: anime.uploadTime!),
-              ],
-            ),
-          if (anime.updateTime != null)
-            buildWrap(
-              children: [
-                buildTag(text: t.updateTime, isTitle: true),
-                buildTag(text: anime.updateTime!),
-              ],
-            ),
-          const SizedBox(height: 16),
-          Center(
-            child: Container(
-              width: 120,
-              height: 2,
-              decoration: BoxDecoration(
-                color: Colors.grey.toOpacity(0.4),
-                borderRadius: BorderRadius.circular(4),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-        ],
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(title: Text(t.information)),
+            if (anime.stars != null)
+              Row(
+                children: [
+                  StarRating(
+                    value: anime.stars!,
+                    size: 24,
+                    // onTap: starRating,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(anime.stars!.toStringAsFixed(2)),
+                ],
+              ).paddingLeft(16).paddingVertical(8),
+            for (var e in anime.tags.entries)
+              buildWrap(
+                children: [
+                  if (e.value.isNotEmpty)
+                    buildTag(text: e.key.ts(animeSource.key), isTitle: true),
+                  for (var tag in e.value)
+                    buildTag(text: tag, onTap: () => onTapTag(tag, e.key)),
+                ],
+              ),
+            if (anime.uploader != null)
+              buildWrap(
+                children: [
+                  buildTag(text: t.uploader, isTitle: true),
+                  buildTag(text: anime.uploader!),
+                ],
+              ),
+            if (anime.uploadTime != null)
+              buildWrap(
+                children: [
+                  buildTag(text: t.uploadTime, isTitle: true),
+                  buildTag(text: anime.uploadTime!),
+                ],
+              ),
+            if (anime.updateTime != null)
+              buildWrap(
+                children: [
+                  buildTag(text: t.updateTime, isTitle: true),
+                  buildTag(text: anime.updateTime!),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
 
   Widget buildEpisodes() {
     if (anime.episode == null) {
-      return const SliverPadding(padding: EdgeInsets.zero);
+      return const SizedBox.shrink();
     }
-    return _AnimeEpisodes(history: history);
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        _AnimeEpisodes(history: history),
+        // 如果下方需要留白，可以在这里加 Spacer
+      ],
+    );
   }
 
   Widget buildRecommend() {
     if (anime.recommend == null || anime.recommend!.isEmpty) {
-      return const SliverPadding(padding: EdgeInsets.zero);
+      return const SizedBox.shrink();
     }
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverToBoxAdapter(child: ListTile(title: Text(t.related))),
-        SliverGridAnimes(animes: anime.recommend!, isRecommend: true),
+    return ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Container(
+                      width: 120,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.toOpacity(0.4),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(title: Text(t.related)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: SliverGridAnimes(
+                    animes: anime.recommend!,
+                    isRecommend: true,
+                    asSliver: false,
+                    shrinkWrap: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1070,31 +1116,32 @@ class _ActionButton extends StatelessWidget {
           width: 0.6,
         ),
       ),
-      child: InkWell(
-        onTap: () {
-          if (!(isLoading ?? false)) {
-            onPressed();
-          }
-        },
-        onLongPress: onLongPressed,
-        borderRadius: BorderRadius.circular(18),
-        child: IconTheme.merge(
-          data: IconThemeData(size: 20, color: iconColor),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isLoading ?? false)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 1.8),
-                )
-              else
-                (isActive ?? false) ? (activeIcon ?? icon) : icon,
-              const SizedBox(width: 8),
-              Text(text),
-            ],
-          ).paddingHorizontal(16),
+      child: Tooltip(
+        message: text,
+        child: InkWell(
+          onTap: () {
+            if (!(isLoading ?? false)) {
+              onPressed();
+            }
+          },
+          onLongPress: onLongPressed,
+          borderRadius: BorderRadius.circular(18),
+          child: IconTheme.merge(
+            data: IconThemeData(size: 20, color: iconColor),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isLoading ?? false)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 1.8),
+                  )
+                else
+                  (isActive ?? false) ? (activeIcon ?? icon) : icon,
+              ],
+            ).paddingHorizontal(16),
+          ),
         ),
       ),
     );
@@ -1248,5 +1295,77 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
         child: child,
       ),
     );
+  }
+}
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _SliverTabBarDelegate(this._tabBar, this._backgroundColor);
+
+  final TabBar _tabBar;
+  final Color _backgroundColor;
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: _backgroundColor, child: _tabBar);
+  }
+
+  @override
+  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
+    return false;
+  }
+}
+
+class _VideoPlayerDelegate extends SliverPersistentHeaderDelegate {
+  _VideoPlayerDelegate({
+    required this.playerHeight,
+    required this.topPadding,
+    required this.watcher,
+  });
+
+  final double playerHeight;
+  final double topPadding;
+  final Widget watcher;
+
+  @override
+  double get minExtent => topPadding + playerHeight;
+
+  @override
+  double get maxExtent => minExtent;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return SizedBox(
+      height: topPadding + playerHeight,
+      child: Column(
+        children: [
+          Container(
+            height: topPadding,
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          Expanded(child: watcher),
+        ],
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_VideoPlayerDelegate oldDelegate) {
+    return playerHeight != oldDelegate.playerHeight ||
+        topPadding != oldDelegate.topPadding ||
+        watcher != oldDelegate.watcher;
   }
 }

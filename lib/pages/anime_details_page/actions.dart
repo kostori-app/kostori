@@ -618,7 +618,10 @@ class _RatingDialogState extends State<RatingDialog> {
         App.rootContext.showMessage(message: t.noChanges);
       }
     } catch (e, s) {
-      App.rootContext.showMessage(message: t.applyFailed, level: LogLevel.error);
+      App.rootContext.showMessage(
+        message: t.applyFailed,
+        level: LogLevel.error,
+      );
       Log.error('save statsDataImpl', '$e \n $s');
     } finally {
       Navigator.pop(context);
@@ -659,7 +662,7 @@ class _RatingDialogState extends State<RatingDialog> {
                     });
                   },
                   child: Text(
-                    '清除',
+                    t.clear,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -707,12 +710,8 @@ class _RatingDialogState extends State<RatingDialog> {
                   const SizedBox(height: 4),
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Row(
-                      children: [
-                        Text(_showingDraft ? t.draft : t.content),
-                        const SizedBox(width: 4),
-                        Text('${_commentController.text.length} ${t.characters}'),
-                      ],
+                    child: Text(
+                      '${_showingDraft ? t.draft : t.content} • ${t.charCount(count: _commentController.text.length)}',
                     ),
                   ),
                 ],
