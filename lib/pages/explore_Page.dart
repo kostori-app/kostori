@@ -49,9 +49,9 @@ class _ExplorePageState extends State<ExplorePage>
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
-      var pagesForSource = source.explorePages
-          .map((e) => e.title)
-          .where((e) => explorePages.contains(e))
+      var allPagesForSource = source.explorePages.map((e) => e.title).toList();
+      var pagesForSource = explorePages
+          .where((p) => allPagesForSource.contains(p))
           .toList();
       if (pagesForSource.isNotEmpty) {
         newSources.add(key);
@@ -62,9 +62,11 @@ class _ExplorePageState extends State<ExplorePage>
     // 添加新出现的源
     for (var source in allSources) {
       if (!newSources.contains(source.key)) {
-        var pagesForSource = source.explorePages
+        var allPagesForSource = source.explorePages
             .map((e) => e.title)
-            .where((e) => explorePages.contains(e))
+            .toList();
+        var pagesForSource = explorePages
+            .where((p) => allPagesForSource.contains(p))
             .toList();
         if (pagesForSource.isNotEmpty) {
           newSources.add(source.key);
@@ -135,9 +137,9 @@ class _ExplorePageState extends State<ExplorePage>
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
-      var pagesForSource = source.explorePages
-          .map((e) => e.title)
-          .where((e) => explorePages.contains(e))
+      var allPagesForSource = source.explorePages.map((e) => e.title).toList();
+      var pagesForSource = explorePages
+          .where((p) => allPagesForSource.contains(p))
           .toList();
       if (pagesForSource.isNotEmpty) {
         sources.add(key);
@@ -148,9 +150,11 @@ class _ExplorePageState extends State<ExplorePage>
     // 添加新出现的源
     for (var source in allSources) {
       if (!sources.contains(source.key)) {
-        var pagesForSource = source.explorePages
+        var allPagesForSource = source.explorePages
             .map((e) => e.title)
-            .where((e) => explorePages.contains(e))
+            .toList();
+        var pagesForSource = explorePages
+            .where((p) => allPagesForSource.contains(p))
             .toList();
         if (pagesForSource.isNotEmpty) {
           sources.add(source.key);

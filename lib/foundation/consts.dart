@@ -193,6 +193,58 @@ Map<Color, String> standardColorMap = {
       "Custom",
 };
 
+String getTranslatedColor(String? colorName) {
+  if (colorName == null) return "Unknown";
+
+  return switch (colorName) {
+    'Teal' => t.colors.teal,
+    'Deep Purple' => t.colors.deepPurple,
+    'Orange' => t.colors.orange,
+    'Blue' => t.colors.blue,
+    'Pink' => t.colors.pink,
+    'Green' => t.colors.green,
+    'Red' => t.colors.red,
+    'Purple' => t.colors.purple,
+    'Yellow' => t.colors.yellow,
+    'Cyan' => t.colors.cyan,
+    'M3 Default' => t.colors.m3Default,
+    'Deep Orange' => t.colors.deepOrange,
+    'Indigo' => t.colors.indigo,
+    'Cloudy Blue' => t.colors.cloudyBlue,
+    'Dark Pastel Green' => t.colors.darkPastelGreen,
+    'Dust' => t.colors.dust,
+    'Electric Lime' => t.colors.electricLime,
+    'Fresh Green' => t.colors.freshGreen,
+    'Light Eggplant' => t.colors.lightEggplant,
+    'Nasty Green' => t.colors.nastyGreen,
+    'Really Light Blue' => t.colors.reallyLightBlue,
+    'Tea' => t.colors.tea,
+    'Warm Purple' => t.colors.warmPurple,
+    'Yellowish Tan' => t.colors.yellowishTan,
+    'Cement' => t.colors.cement,
+    'Dark Grass Green' => t.colors.darkGrassGreen,
+    'Dusty Teal' => t.colors.dustyTeal,
+    'Grey Teal' => t.colors.greyTeal,
+    'Macaroni And Cheese' => t.colors.macaroniAndCheese,
+    'Pinkish Tan' => t.colors.pinkishTan,
+    'Spruce' => t.colors.spruce,
+    'Strong Blue' => t.colors.strongBlue,
+    'Toxic Green' => t.colors.toxicGreen,
+    'Windows Blue' => t.colors.windowsBlue,
+    'Blue Blue' => t.colors.blueBlue,
+    'Blue With A Hint Of Purple' => t.colors.blueWithAHintOfPurple,
+    'Booger' => t.colors.booger,
+    'Bright Sea Green' => t.colors.brightSeaGreen,
+    'Green Teal' => t.colors.greenTeal,
+    'Brownish' => t.colors.brownish,
+    'Off Green' => t.colors.offGreen,
+    'Tangerine' => t.colors.tangerine,
+    'Ugly Green' => t.colors.uglyGreen,
+    'Custom' => t.custom,
+    _ => colorName,
+  };
+}
+
 /// 可选硬件解码器
 const Map<String, String> hardwareDecodersList = {
   'auto': '启用任意可用解码器',

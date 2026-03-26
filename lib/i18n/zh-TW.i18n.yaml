@@ -1,1112 +1,1135 @@
-# lib/i18n/zh-TW.i18n.yaml
-
-# 基礎操作與回饋
-aToAddBToRemoveCToMove: "${a} 新增 • ${b} 移除 • ${c} 移動"
-aToAddBToRemove: "${a} 新增 • ${b} 移除"
-cUpdates: "${c} 個更新"
-aNewVersionIsAvailableDoYouWantToUpdateNow: "發現新版本，是否立即更新？"
-app: "應用"
-about: "關於"
-accounts: "帳號"
-addAAnimeSourceInHomePage: "在首頁新增動漫源"
-addAnimeSource: "新增動漫源"
-addNewFavoriteTo: "新增收藏至"
-addToFavorites: "加入收藏"
-add: "新增"
-addedCountAnimesToDownloadQueue: "已將 ${count} 部動漫加入下載隊列"
-added: "已新增"
-aggregatedSearch: "聚合搜尋"
-aggregated: "聚合"
-aiSource: "AI 數據源"
-ai: "AI"
-allEpisodes: "全部劇集"
-alsoRemoveFilesOnDisk: "同時刪除本地檔案"
-animeSourceList: "動漫源列表"
-animeSource: "動漫源"
-appearance: "外觀"
-soulProfile: "靈魂画像"
-imageTag: "AI 圖片標籤"
-aiChat: "AI 聊天"
-summary: "總結"
-soulProfilerDescription: "根據你的觀看歷史，分析你的動漫人格"
-imageTagDescription: "根據你的偏好生成 AI 繪畫風格標籤"
-aiChatDescription: "多輪對話，AI 具有上下文記憶"
-summaryDescription: "自動生成你的動漫觀看週報/月報"
-areYouSureYouWantToClearYourHistory: "確定要清除歷史記錄嗎？"
-areYouSureYouWantToClearYourProgress: "確定要清除全部進度嗎？"
-authorizationRequired: "需要身分驗證"
-autoPageTurning: "自動翻頁"
-back: "返回"
-bangumi: "番組計劃"
-block: "封鎖"
-blue: "藍色"
-brief: "簡介"
-cacheLimit: "快取限制"
-cacheSize: "快取大小"
-cacheCleared: "快取已清除"
-cancel: "取消"
-categories: "分類"
-categoryPages: "分類頁面"
-characters: "角色"
-checkForUpdatesOnStartup: "啟動時檢查更新"
-checkForUpdates: "檢查更新"
-checkUpdates: "檢查更新"
-check: "檢查"
-clearCache: "清除快取"
-clearHistory: "清除歷史記錄"
-clearProgress: "清除進度"
-clearSearchHistory: "清除搜尋歷史"
-clearUnfavorited: "清除未收藏"
-clear: "清除"
-clickIfLoginExpired: "如果登入過期請點擊"
-close: "關閉"
-comment: "吐槽"
-comments: "吐槽箱"
-confirm: "確定"
-continue: "繼續"
-copied: "已複製"
-
-# AI 與 分析
-analyze: "分析"
-analyzing: "分析中..."
-analysisResult: "分析結果"
-yourQuestion: "您的提問"
-pleaseEnterAPrompt: "請輸入提示詞"
-egWhatKindOfAnimeDoILike: "例如：我喜歡什麼樣的動漫？"
-aiSourceNotAvailable: "AI 數據源不可用"
-
-# 複製與刪除
-copyId: "複製 ID"
-copyTitle: "複製標題"
-copyUrl: "複製連結"
-copyToFolder: "複製到資料夾"
-copy: "複製"
-createAccount: "建立帳號"
-createFolder: "建立資料夾"
-create: "建立"
-currentlySeenEp: "目前看到 ${ep}"
-dnsOverrides: "DNS 覆寫"
-dark: "深色"
-dataSync: "數據同步"
-data: "數據"
-dateDesc: "按日期降序"
-date: "日期"
-defaultSearchTarget: "預設搜尋目標"
-deleteCAnimes: "刪除 ${c} 部動漫嗎？"
-deleteAnime: "刪除動漫"
-deleteFolder: "刪除資料夾"
-deleteAnimeSourceN: "確定刪除動漫源 '${n}' 嗎？"
-deleteFolderF: "確定刪除資料夾 '${f}' 嗎？"
-deleteFolderPrompt: "刪除資料夾？"
-delete: "刪除"
-deleteRoom: "刪除房間"
-description: "描述"
-deselect: "取消選擇"
-detailed: "詳細"
-details: "詳情"
-determineTheBindingA: "確定綁定：${a} ?"
-disable: "停用"
-disabled: "已停用"
-discoverTheNewVersionV: "發現新版本 ${v}"
-displayModeOfAnimeTile: "動漫卡片顯示模式"
-displayTimeAndBatteryInfoInReader: "閱讀器內顯示時間及電量"
-doNotReportAnyIssuesRelatedToSourcesToAppRepo: "請勿向主儲存庫報告任何與源有關的問題。"
-downloadAll: "下載全部"
-downloadSelected: "下載選中"
-downloadThreads: "下載執行緒"
-download: "下載"
-downloading: "下載中"
-edit: "編輯"
-enableDnsOverrides: "啟用 DNS 覆寫"
-enable: "啟用"
-end: "結束"
-episodeEp: "第 ${ep} 話"
-error: "錯誤"
-exitMultiSelect: "退出多選"
-exit: "退出"
-explorePages: "發現頁面"
-explore: "發現"
-exportAppData: "匯出應用數據"
-export: "匯出"
-failedToImport: "匯入失敗"
-fanyuan: "番源"
-favoriteActions: "收藏夾操作"
-favorite: "收藏"
-favorites: "收藏夾"
-finished: "已完成"
-folderName: "資料夾名稱"
-folder: "資料夾"
-folders: "資料夾"
-following: "追蹤中"
-fullScreen: "全螢幕"
-fullscreen: "全螢幕"
-gitMirror: "Git 鏡像"
-green: "綠色"
-help: "幫助"
-history: "歷史"
-home: "首頁"
-iconProducer: "圖示製作"
-ignoreCertificateErrors: "忽略憑證錯誤"
-importAnimes: "匯入動漫"
-importAppData: "匯入應用數據"
-importFromFile: "從檔案匯入"
-import: "匯入"
-importedAAnimes: "已匯入 ${a} 部動漫"
-information: "資訊"
-initialPage: "初始頁面"
-invertSelection: "反選"
-keywordBlocking: "關鍵字封鎖"
-kostoriIsAFreeAndOpenSourceAppForAnimeWatching: "Kostori 是一款免費開源的追番應用。"
-language: "語言"
-later: "稍後"
-light: "淺色"
-limitImageWidth: "限制圖片寬度"
-localFavorites: "本地收藏"
-local: "本地"
-logIn: "登入"
-logOut: "登出"
-log: "日誌"
-
-# 翻譯功能
-manualTranslation: "手動翻譯"
-enterTextToTranslate: "輸入需要翻譯的內容"
-translate: "翻譯"
-translating: "翻譯中..."
-translationResult: "翻譯結果"
-selectTranslationLanguage: "選擇翻譯語言"
-pleaseEnterTextToTranslate: "請輸入需要翻譯的內容"
-loginWithWebview: "透過 Webview 登入"
-login: "登入"
-longPressAndDragToReorder: "長按並拖曳以排序。"
-longPressOnTheFavoriteButtonToQuicklyAddToThisFolder: "長按收藏按鈕可快速新增至此資料夾"
-longPressToZoom: "長按縮放"
-me: "个人"
-moveToFirst: "移至首位"
-moveFavoriteAfterReading: "看畢後移動收藏"
-moveToFolder: "移動到資料夾"
-move: "移動"
-multiSelect: "多選"
-multipleAnimes: "多部動漫"
-name: "名稱"
-networkFavoritePages: "網路收藏頁面"
-network: "網路"
-newFolder: "新資料夾"
-newVersion: "新版本"
-newVersionAvailable: "有新版本可用"
-next: "下一步"
-noExplorePages: "暫無發現頁面"
-noNewVersionAvailable: "目前已是最新版本"
-noSearchResultsFound: "未找到搜尋結果"
-noLikedAnimeFound: "未找到喜歡的動漫"
-noUpdates: "暫無更新"
-ok: "確定"
-onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer: "一旦操作成功，應用將自動與伺服器同步數據。"
-openLog: "開啟日誌"
-openAnime: "開啟動漫"
-openHelp: "查看幫助"
-openInBrowser: "在瀏覽器中開啟"
-openLink: "開啟連結"
-open: "開啟"
-operation: "操作"
-orange: "橙色"
-order: "排序"
-password: "密碼"
-pause: "暫停"
-paused: "已暫停"
-pink: "粉色"
-playlist: "播放列表"
-pleaseCheckYourSettings: "請檢查您的設定"
-preview: "預覽"
-proxy: "代理"
-purple: "紫色"
-quickFavorite: "快速收藏"
-ranking: "排行榜"
-reLogin: "重新登入"
-read: "閱讀"
-reading: "閱讀中"
-red: "紅色"
-refresh: "重新整理"
-related: "相關"
-removeAnimeFromFavorite: "確定從收藏中移除該動漫嗎？"
-remove: "移除"
-rename: "重新命名"
-reorder: "重新排序"
-resetBangumiData: "重置 Bangumi 數據"
-reset: "重置"
-retry: "重試"
-reviews: "評論"
-saveImage: "儲存圖片"
-savedFailed: "儲存失敗"
-saved: "已儲存"
-searchAll: "搜尋全部"
-searchHistory: "搜尋歷史"
-searchIn: "搜尋自"
-search: "搜尋"
-selectAll: "全選"
-selectADirectoryWhichContainsTheAnimeFiles: "選擇包含動漫檔案的目錄。"
-selectAFolder: "選擇一個資料夾"
-selectAnImageOnScreen: "選擇螢幕上的圖像"
-selectFile: "選擇檔案"
-selectInRange: "範圍選擇"
-select: "選擇"
-selectedAAnimes: "已選取 ${a} 部動漫"
-setCacheLimit: "設定快取限制"
-setNewStoragePath: "設定新儲存路徑"
-setSourceListUrl: "設定源列表 URL"
-set: "設定"
-settings: "設定"
-share: "分享"
-showAll: "顯示全部"
-showFavoriteStatusOnAnimeTile: "在卡片上顯示收藏狀態"
-showHistoryOnAnimeTile: "在卡片上顯示歷史記錄"
-singleAnime: "單部動漫"
-sizeInMb: "大小 (MB)"
-sizeOfAnimeTile: "動漫卡片尺寸"
-sort: "排序"
-sourceFolder: "源資料夾"
-sourceUrl: "源 URL"
-staffList: "製作人員"
-start: "開始"
-storagePathForLocalAnimes: "本地動漫儲存路徑"
-submit: "提交"
-suggestions: "建議"
-syncData: "同步數據"
-sync: "同步"
-syncingData: "正在同步數據"
-system: "系統"
-tapToTurnPages: "點擊翻頁"
-theUrlShouldPointToAIndexJsonFile: "URL 應指向一個 'index.json' 檔案"
-theFolderIsLinkedToSource: "該資料夾已關聯至 ${source}"
-themeColor: "主題色"
-themeMode: "主題模式"
-timetable: "每日放送"
-topics: "討論"
-topicsLatest: "最新討論"
-topicsTrending: "熱門討論"
-turnPageByVolumeKeys: "使用音量鍵翻頁"
-unselected: "未選取"
-updateAnimesInfo: "更新動漫資訊"
-updateTime: "更新時間"
-update: "更新"
-updatesAvailable: "有更新可用"
-updating: "正在更新"
-uploadTime: "上傳時間"
-upload: "上傳"
-uploader: "上傳者"
-useAConfigFile: "使用設定檔"
-user: "使用者"
-username: "使用者名稱"
-userProfileAnalysis: "使用者畫像分析"
-viewList: "查看列表"
-viewMore: "查看更多"
-view: "查看"
-webDavAutoSync: "WebDAV 自動同步"
-default: "預設"
-lastWatchTimeTime: "上次觀看時間 ${time}"
-minAppVersionRequired: "需要最低應用版本 ${version}"
-more: "更多"
-notYetAiring: "尚未開播"
-fullBEpisodesReleased: "全 ${b} 話已發佈"
-upToEpSTotalEpsPlanned: "更新至 ${s} 話 • 全 ${t} 話"
-upToEpETotalEpsPlanned: "更新至 ${e} (${s}) 話 • 全 ${t} 話"
+aToAddBToRemoveCToMove: ${a} 新增 • ${b} 移除 • ${c} 移動
+aToAddBToRemove: ${a} 新增 • ${b} 移除
+cUpdates: ${c} 個更新
+aNewVersionIsAvailableDoYouWantToUpdateNow: 發現新版本，是否立即更新？
+app: 應用
+about: 關於
+accounts: 帳號
+addAAnimeSourceInHomePage: 在首頁新增動漫源
+addAnimeSource: 新增動漫源
+addNewFavoriteTo: 新增收藏至
+addToFavorites: 加入收藏
+imageProperties: 圖片屬性
+fileName: 檔案名稱
+fileSize: 檔案大小
+modifiedTime: 修改時間
+path: 路徑
+titleCopied: 標題已複製
+imageFormat: 格式
+confirmDeleteImage: 確認刪除圖片？
+bangumiPlan: Bangumi 計畫
+switchFavoriteUser: 切換收藏使用者
+add: 新增
+addedCountAnimesToDownloadQueue: 已將 ${count} 部動漫加入下載隊列
+added: 已新增
+aggregatedSearch: 聚合搜尋
+aggregated: 聚合
+aiSource: AI 數據源
+ai: AI
+soulProfile: 靈魂画像
+soulProfilerDescription: 根據你的觀看歷史，分析你的動漫人格
+imageTag: AI 圖片標籤
+imageTagDescription: 根據你的偏好生成 AI 繪畫風格標籤
+aiChat: AI 聊天
+aiChatDescription: 多輪對話，AI 具有上下文記憶
+summary: 總結
+summaryDescription: 自動生成你的動漫觀看週報/月報
+basicInfo: 基本資訊
+allEpisodes: 全部劇集
+relatedEntries: 相關條目
+alsoRemoveFilesOnDisk: 同時刪除本地檔案
+animeSourceList: 動漫源列表
+animeSource: 動漫源
+appearance: 外觀
+areYouSureYouWantToClearYourHistory: 確定要清除歷史記錄嗎？
+areYouSureYouWantToClearYourProgress: 確定要清除全部進度嗎？
+authorizationRequired: 需要身分驗證
+autoPageTurning: 自動翻頁
+back: 返回
+bangumi: 番組計劃
+block: 封鎖
+blue: 藍色
+brief: 簡介
+cacheLimit: 快取限制
+cacheSize: 快取大小
+cacheCleared: 快取已清除
+cancel: 取消
+categories: 分類
+categoryPages: 分類頁面
+characters: 角色
+checkForUpdatesOnStartup: 啟動時檢查更新
+checkForUpdates: 檢查更新
+checkUpdates: 檢查更新
+check: 檢查
+clearCache: 清除快取
+clearHistory: 清除歷史記錄
+clearProgress: 清除進度
+clearSearchHistory: 清除搜尋歷史
+clearUnfavorited: 清除未收藏
+clear: 清除
+clickIfLoginExpired: 如果登入過期請點擊
+close: 關閉
+comment: 吐槽
+comments: 吐槽箱
+confirm: 確定
+continue: 繼續
+copied: 已複製
+analyze: 分析
+analyzing: 分析中...
+analysisResult: 分析結果
+yourQuestion: 您的提問
+pleaseEnterAPrompt: 請輸入提示詞
+egWhatKindOfAnimeDoILike: 例如：我喜歡什麼樣的動漫？
+aiSourceNotAvailable: AI 數據源不可用
+copyId: 複製 ID
+copyTitle: 複製標題
+copyUrl: 複製連結
+copyToFolder: 複製到資料夾
+copy: 複製
+createAccount: 建立帳號
+createFolder: 建立資料夾
+create: 建立
+currentlySeenEp: 目前看到 ${ep}
+dnsOverrides: DNS 覆寫
+dark: 深色
+dataSync: 數據同步
+data: 數據
+dateDesc: 按日期降序
+date: 日期
+defaultSearchTarget: 預設搜尋目標
+deleteCAnimes: 刪除 ${c} 部動漫嗎？
+deleteAnime: 刪除動漫
+deleteFolder: 刪除資料夾
+deleteAnimeSourceN: 確定刪除動漫源 '${n}' 嗎？
+deleteFolderF: 確定刪除資料夾 '${f}' 嗎？
+deleteFolderPrompt: 刪除資料夾？
+delete: 刪除
+deleteRoom: 刪除房間
+description: 描述
+deselect: 取消選擇
+detailed: 詳細
+details: 詳情
+determineTheBindingA: 確定綁定：${a} ?
+disable: 停用
+disabled: 已停用
+discoverTheNewVersionV: 發現新版本 ${v}
+displayModeOfAnimeTile: 動漫卡片顯示模式
+displayTimeAndBatteryInfoInReader: 閱讀器內顯示時間及電量
+doNotReportAnyIssuesRelatedToSourcesToAppRepo: 請勿向主儲存庫報告任何與源有關的問題。
+downloadAll: 下載全部
+downloadSelected: 下載選中
+downloadThreads: 下載執行緒
+download: 下載
+downloading: 下載中
+edit: 編輯
+enableDnsOverrides: 啟用 DNS 覆寫
+enable: 啟用
+end: 結束
+episodeEp: 第 ${ep} 話
+error: 錯誤
+exitMultiSelect: 退出多選
+exit: 退出
+explorePages: 發現頁面
+explore: 發現
+exportAppData: 匯出應用數據
+export: 匯出
+failedToImport: 匯入失敗
+fanyuan: 番源
+favoriteActions: 收藏夾操作
+favorite: 收藏
+favorites: 收藏夾
+finished: 已完成
+folderName: 資料夾名稱
+folder: 資料夾
+folders: 資料夾
+following: 追蹤中
+fullScreen: 全螢幕
+fullscreen: 全螢幕
+gitMirror: Git 鏡像
+green: 綠色
+help: 幫助
+history: 歷史
+historySource: History Source
+home: 首頁
+iconProducer: 圖示製作
+ignoreCertificateErrors: 忽略憑證錯誤
+importAnimes: 匯入動漫
+importAppData: 匯入應用數據
+importFromFile: 從檔案匯入
+import: 匯入
+importedAAnimes: 已匯入 ${a} 部動漫
+information: 資訊
+myRating: 我的評分
+initialPage: 初始頁面
+invertSelection: 反選
+keywordBlocking: 關鍵字封鎖
+kostoriIsAFreeAndOpenSourceAppForAnimeWatching: Kostori 是一款免費開源的追番應用。
+language: 語言
+later: 稍後
+light: 淺色
+limitImageWidth: 限制圖片寬度
+localFavorites: 本地收藏
+local: 本地
+logIn: 登入
+logOut: 登出
+log: 日誌
+manualTranslation: 手動翻譯
+enterTextToTranslate: 輸入需要翻譯的內容
+translate: 翻譯
+translating: 翻譯中...
+translationResult: 翻譯結果
+selectTranslationLanguage: 選擇翻譯語言
+pleaseEnterTextToTranslate: 請輸入需要翻譯的內容
+loginWithWebview: 透過 Webview 登入
+login: 登入
+longPressAndDragToReorder: 長按並拖曳以排序。
+longPressOnTheFavoriteButtonToQuicklyAddToThisFolder: 長按收藏按鈕可快速新增至此資料夾
+longPressToZoom: 長按縮放
+me: 个人
+moveToFirst: 移至首位
+moveFavoriteAfterReading: 看畢後移動收藏
+moveToFolder: 移動到資料夾
+move: 移動
+multiSelect: 多選
+multipleAnimes: 多部動漫
+name: 名稱
+networkFavoritePages: 網路收藏頁面
+network: 網路
+newFolder: 新資料夾
+newVersion: 新版本
+newVersionAvailable: 有新版本可用
+next: 下一步
+noExplorePages: 暫無發現頁面
+noNewVersionAvailable: 目前已是最新版本
+noSearchResultsFound: 未找到搜尋結果
+noLikedAnimeFound: 未找到喜歡的動漫
+noUpdates: 暫無更新
+ok: 確定
+onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer: 一旦操作成功，應用將自動與伺服器同步數據。
+openLog: 開啟日誌
+openAnime: 開啟動漫
+openHelp: 查看幫助
+openInBrowser: 在瀏覽器中開啟
+openLink: 開啟連結
+open: 開啟
+operation: 操作
+orange: 橙色
+order: 排序
+password: 密碼
+pause: 暫停
+paused: 已暫停
+pink: 粉色
+playlist: 播放列表
+pleaseCheckYourSettings: 請檢查您的設定
+preview: 預覽
+proxy: 代理
+purple: 紫色
+quickFavorite: 快速收藏
+ranking: 排行榜
+reLogin: 重新登入
+read: 閱讀
+reading: 閱讀中
+red: 紅色
+refresh: 重新整理
+related: 相關
+removeAnimeFromFavorite: 確定從收藏中移除該動漫嗎？
+remove: 移除
+rename: 重新命名
+reorder: 重新排序
+resetBangumiData: 重置 Bangumi 數據
+reset: 重置
+retry: 重試
+reviews: 評論
+saveImage: 儲存圖片
+savedFailed: 儲存失敗
+saved: 已儲存
+searchAll: 搜尋全部
+searchHistory: 搜尋歷史
+searchIn: 搜尋自
+search: 搜尋
+selectAll: 全選
+selectADirectoryWhichContainsTheAnimeFiles: 選擇包含動漫檔案的目錄。
+selectAFolder: 選擇一個資料夾
+selectAnImageOnScreen: 選擇螢幕上的圖像
+selectFile: 選擇檔案
+selectInRange: 範圍選擇
+select: 選擇
+selectedAAnimes: 已選取 ${a} 部動漫
+newName: 新名稱
+setCacheLimit: 設定快取限制
+setNewStoragePath: 設定新儲存路徑
+setSourceListUrl: 設定源列表 URL
+set: 設定
+settings: 設定
+share: 分享
+showAll: 顯示全部
+showFavoriteStatusOnAnimeTile: 在卡片上顯示收藏狀態
+showHistoryOnAnimeTile: 在卡片上顯示歷史記錄
+singleAnime: 單部動漫
+sizeInMb: 大小 (MB)
+sizeOfAnimeTile: 動漫卡片尺寸
+sort: 排序
+sourceFolder: 源資料夾
+sourceUrl: 源 URL
+staffList: 製作人員
+start: 開始
+storagePathForLocalAnimes: 本地動漫儲存路徑
+submit: 提交
+suggestions: 建議
+syncData: 同步數據
+sync: 同步
+syncingData: 正在同步數據
+system: 系統
+tapToTurnPages: 點擊翻頁
+theUrlShouldPointToAIndexJsonFile: URL 應指向一個 'index.json' 檔案
+theFolderIsLinkedToSource: 該資料夾已關聯至 ${source}
+themeColor: 主題色
+themeMode: 主題模式
+timetable: 每日放送
+topics: 討論
+topicsLatest: 最新討論
+topicsTrending: 熱門討論
+turnPageByVolumeKeys: 使用音量鍵翻頁
+unselected: 未選取
+updateAnimesInfo: 更新動漫資訊
+updateTime: 更新時間
+update: 更新
+updatesAvailable: 有更新可用
+updating: 正在更新
+uploadTime: 上傳時間
+upload: 上傳
+uploader: 上傳者
+useAConfigFile: 使用設定檔
+user: 使用者
+username: 使用者名稱
+userProfileAnalysis: 使用者畫像分析
+viewList: 查看列表
+viewMore: 查看更多
+view: 查看
+webDavAutoSync: WebDAV 自動同步
+default: 預設
+lastWatchTimeTime: 上次觀看時間 ${time}
+minAppVersionRequired: 需要最低應用版本 ${version}
+more: 更多
+notYetAiring: 尚未開播
+fullBEpisodesReleased: 全 ${b} 話已發佈
+upToEpSTotalEpsPlanned: 更新至 ${s} 話 • 全 ${t} 話
+upToEpETotalEpsPlanned: 更新至 ${e} (${s}) 話 • 全 ${t} 話
 tReviewsR: "${t} 條評論 | #${r}"
-tReviews: "${t} 條評論"
-showMore: "展開 +"
-showLess: "收起 -"
-tags: "標籤"
-clearTags: "清除標籤"
-showingLResults: "顯示 ${l} 個結果"
-selectTime: "選擇時間"
-switchLayout: "切換佈局"
-enterKeywords: "輸入關鍵詞..."
-ratingChart: "評分圖表"
-lineChart: "折線圖"
-barChart: "柱狀圖"
-standardDeviationS: "標準差：${s}"
-nobodysPostedAnythingYet: "目前還沒有人發佈內容..."
-reload: "重新載入"
-failedToLoadPleaseTryAgain: "載入失敗，請重試。"
-doing: "在看"
-collect: "看過"
-wish: "想看"
-onHold: "擱置"
-dropped: "拋棄"
-todayRecommendation: "今日推薦"
-tTotalCount: "${t} 條總計"
-introduction: "內容簡介"
-linkedItems: "關聯條目"
-timeS: "時間：${s}"
-broadcastTimeA: "播出時間：${a}"
-profileInformation: "個人資訊"
-characterIntroduction: "角色簡介"
-voiceActorC: "聲優：${c}"
-episodeEN: "第 ${e} 話：${n}"
-hotspot: "熱點"
-completed: "已完結"
-mainCharacter: "主角"
-supportingCharacter: "配角"
-cameo: "客串"
-idleCorner: "閒暇角落"
-unknown: "未知"
-debugInfo: "調試資訊"
-install: "安裝"
-viewOnGithub: "在 GitHub 上查看"
-noProxyOverrides: "無代理覆寫"
-save: "儲存"
-mirror: "鏡像"
-result: "結果"
-all: "全部"
-reloadConfigs: "重載配置"
-invalidUrlConfig: "無效的 URL 設定"
-inconsistentVersions: "版本不一致"
-noUpdateAvailableForThisArchitectureA: "該架構 (${a}) 暫無可用更新"
-checkUpdateFailed: "檢查更新失敗..."
-downloadFailed: "下載失敗"
-failedToCheckTheHashValuePleaseTryAgain: "檢查雜湊值失敗，請重試"
-english: "英語"
-dynamicColor: "動態顏色"
-mondaySchedule: "週一放送"
-tuesdaySchedule: "週二放送"
-wednesdaySchedule: "週三放送"
-thursdaySchedule: "週四放送"
-fridaySchedule: "週五放送"
-saturdaySchedule: "週六放送"
-sundaySchedule: "週日放送"
-popularityRanking: "人氣排行"
-imageOperations: "圖片操作"
-saveToAlbum: "儲存到相簿"
-stitchLongImage: "拼長圖"
-stitchHorizontalImage: "橫向拼圖"
-stitchSubtitles: "台詞拼接"
-saveLongImage: "儲存長圖"
-borderColor: "邊框顏色"
-conversationTitle: "對話標題"
-aiConversation: "AI 對話"
-topicList: "話題列表"
-startConversationWithAI: "開始與 AI 對話吧"
-newConversation: "新建對話"
-inputMessage: "輸入訊息..."
-noTopicsYet: "暫無話題"
-selectAiPersonality: "選擇 AI 人格"
-apply: "應用"
-heightPx: "高度(px)"
-setUniformHeight: "設定統一高度"
-uniformHeight: "統一高度"
-cropImage: "裁剪圖片"
-finishCropping: "完成裁剪"
-sortImages: "圖片排序"
-finishSorting: "完成排序"
-noImages: "暫無圖片"
-cropHeightCPx: "裁剪高度：${c} px"
+tReviews: ${t} 條評論
+showMore: 展開 +
+showLess: 收起 -
+tags: 標籤
+clearTags: 清除標籤
+showingLResults: 顯示 ${l} 個結果
+selectTime: 選擇時間
+switchLayout: 切換佈局
+enterKeywords: 輸入關鍵詞...
+ratingChart: 評分圖表
+lineChart: 折線圖
+barChart: 柱狀圖
+standardDeviationS: 標準差：${s}
+nobodysPostedAnythingYet: 目前還沒有人發佈內容...
+reload: 重新載入
+mainContent: 正文
+switchh: 切換
+failedToLoadPleaseTryAgain: 載入失敗，請重試。
+doing: 在看
+collect: 看過
+wish: 想看
+onHold: 擱置
+dropped: 拋棄
+todayRecommendation: 今日推薦
+tTotalCount: ${t} 條總計
+introduction: 內容簡介
+latestComments: 最新評論
+linkedItems: 關聯條目
+timeS: 時間：${s}
+broadcastTimeA: 播出時間：${a}
+profileInformation: 個人資訊
+characterIntroduction: 角色簡介
+voiceActorC: 聲優：${c}
+episodeEN: 第 ${e} 話：${n}
+hotspot: 熱點
+completed: 已完結
+mainCharacter: 主角
+supportingCharacter: 配角
+cameo: 客串
+idleCorner: 閒暇角落
+unknown: 未知
+debugInfo: 調試資訊
+install: 安裝
+viewOnGithub: 在 GitHub 上查看
+noProxyOverrides: 無代理覆寫
+save: 儲存
+mirror: 鏡像
+result: 結果
+all: 全部
+reloadConfigs: 重載配置
+invalidUrlConfig: 無效的 URL 設定
+inconsistentVersions: 版本不一致
+noUpdateAvailableForThisArchitectureA: 該架構 (${a}) 暫無可用更新
+checkUpdateFailed: 檢查更新失敗...
+downloadFailed: 下載失敗
+failedToCheckTheHashValuePleaseTryAgain: 檢查雜湊值失敗，請重試
+english: 英語
+dynamicColor: 動態顏色
+mondaySchedule: 週一放送
+tuesdaySchedule: 週二放送
+wednesdaySchedule: 週三放送
+thursdaySchedule: 週四放送
+fridaySchedule: 週五放送
+saturdaySchedule: 週六放送
+sundaySchedule: 週日放送
+popularityRanking: 人氣排行
+imageOperations: 圖片操作
+saveToAlbum: 儲存到相簿
+stitchLongImage: 拼長圖
+stitchHorizontalImage: 橫向拼圖
+stitchSubtitles: 台詞拼接
+saveLongImage: 儲存長圖
+borderColor: 邊框顏色
+conversationTitle: 對話標題
+aiConversation: AI 對話
+topicList: 話題列表
+startConversationWithAI: 開始與 AI 對話吧
+newConversation: 新建對話
+inputMessage: 輸入訊息...
+noTopicsYet: 暫無話題
+selectAiPersonality: 選擇 AI 人格
+apply: 應用
+heightPx: 高度(px)
+setUniformHeight: 設定統一高度
+uniformHeight: 統一高度
+cropImage: 裁剪圖片
+finishCropping: 完成裁剪
+sortImages: 圖片排序
+finishSorting: 完成排序
+noImages: 暫無圖片
+cropHeightCPx: 裁剪高度：${c} px
 enterHexColorCode: "輸入十六進位顏色代碼，例如 #FF000000"
-showImageBorders: "顯示圖片邊框"
-outerBorderRadius: "外邊框圓角"
-outerBorderWidth: "外邊框寬度"
-outerBorderColor: "外邊框顏色"
-showOuterBorder: "顯示外邊框"
-innerBorderWidth: "內邊框寬度"
-innerBorderColor: "內邊框顏色"
-borderSettings: "邊框設定"
-saving: "正在儲存"
-saveSuccessful: "儲存成功"
-saveFailedE: "儲存失敗：${e}"
-failedToLoadImagesOrNoImages: "載入圖片失敗或無圖片"
-monday: "週一"
-tuesday: "週二"
-wednesday: "週三"
-thursday: "週四"
-friday: "週五"
-saturday: "週六"
-sunday: "週日"
-defaultOrder: "預設排序"
-byTime: "按時間"
-byName: "按名稱"
-recentlyWatched: "最近觀看"
-localFavoriteBinding: "本地收藏綁定"
-awful: "不忍直視"
-terrible: "非常差"
-bad: "差"
-poor: "較差"
-okay: "不過不失"
-fine: "還行"
-good: "推薦"
-great: "力薦"
-master: "神作"
-epic: "超神作"
-overview: "總覽"
-discussion: "討論"
-logs: "日誌"
-playerDetails: "播放器詳情"
-status: "狀態"
-audioOptionLowLatency: "音訊選項：\n 低延遲"
-audioOptionCompatibility: "音訊選項：\n 相容性"
-switchSuccessful: "切換成功"
-switchFailed: "切換失敗"
-remoteCast: "遠端投屏"
-copyLink: "複製連結"
-aValidWebDavDirectoryUrl: "有效的 WebDAV 目錄 URL"
-autoSyncData: "自動同步數據"
-screenshotShare: "截圖分享"
-bestMatch: "最佳匹配"
-topRank: "排名靠前"
-mostFavorited: "最多收藏"
-highestRating: "最高評分"
-selectColor: "選擇顏色"
-colorWheel: "色輪"
-primary: "主要"
-accent: "強調"
-custom: "自定義"
-confirmC: "確定 (${c})"
-selectC: "選擇 ${c}"
-selectDate: "選擇日期"
-startDate: "開始日期"
-endDate: "結束日期"
-clearDate: "清除日期"
-pleaseSelectADate: "請選擇日期"
-endDateCannotBeEarlierThanStartDate: "結束日期不能早於開始日期"
-type: "類型"
-background: "背景"
-emotion: "情感"
-source: "來源"
-audience: "受眾"
-category: "分類"
-imageOperationsI: "圖片操作 (${i})"
-sSelected: "已選取 ${s}"
-simplifiedChinese: "簡體中文"
-traditionalChinese: "繁體中文"
-teal: "青色"
-deepPurple: "深紫色"
-yellow: "黃色"
-cyan: "青藍色"
-m3Default: "M3 預設"
-deepOrange: "深橘色"
-indigo: "靛藍色"
-cloudyBlue: "雲藍色"
-darkPastelGreen: "暗粉綠色"
-dust: "塵埃色"
-electricLime: "電光酸橙色"
-freshGreen: "鮮綠色"
-lightEggplant: "淺茄紫色"
-nastyGreen: "髒綠色"
-reallyLightBlue: "極淺藍色"
-tea: "茶綠色"
-warmPurple: "暖紫色"
-yellowishTan: "黃棕色"
-cement: "水泥色"
-darkGrassGreen: "暗草綠色"
-dustyTeal: "粉青色"
-greyTeal: "灰青色"
-macaroniAndCheese: "起司通心粉色"
-pinkishTan: "粉棕色"
-spruce: "杉綠色"
-strongBlue: "強藍色"
-toxicGreen: "毒液綠色"
-windowsBlue: "視窗藍色"
-blueBlue: "純藍色"
-blueWithAHintOfPurple: "略帶紫色的藍色"
-booger: "鼻涕綠色"
-brightSeaGreen: "亮海綠色"
-greenTeal: "綠青色"
-brownish: "棕色調"
-offGreen: "淡綠色"
-tangerine: "橘黃色"
-uglyGreen: "醜綠色"
-secondary: "次要"
-tertiary: "三級"
-surface: "表面"
-jumpToPage: "跳轉到頁"
-page: "頁碼"
-pagePM: "第 ${p} / ${m} 頁"
-first: "第一頁"
-last: "最後一頁"
-disableLengthLimitation: "停用長度限制"
-updateLog: "更新日誌"
-liked: "喜歡"
-rating: "評分"
-pixelFormat: "像素格式"
-hwPixelFormat: "硬體像素格式"
-resolution: "解析度"
-displayWidth: "顯示寬度"
-displayHeight: "顯示高度"
-aspect: "比例"
-pixelAspectRatio: "像素寬高比"
-colormatrix: "色彩矩陣"
-colorLevels: "色彩範圍"
-primaries: "原色"
-gamma: "伽馬值"
-signalPeak: "信號峰值"
-lights: "亮度"
-chromaLocation: "色度位置"
-rotate: "旋轉"
-stereoIn: "立體聲輸入"
-averageBpp: "平均 Bpp"
-alpha: "透明度"
-trackId: "軌道 ID"
-trackTitle: "軌道標題"
-trackLanguage: "軌道語言"
-trackImage: "軌道圖像"
-trackAlbumArt: "軌道專輯封面"
-trackCodec: "軌道編解碼器"
-trackDecoder: "軌道解碼器"
-trackWidth: "軌道寬度"
-trackHeight: "軌道高度"
-trackChannelsCount: "軌道聲道數"
-trackChannels: "軌道聲道佈局"
-trackSampleRate: "軌道採樣率"
-trackFps: "軌道幀率"
-trackBitrate: "軌道位元率"
-trackRotate: "軌道旋轉"
-trackPar: "軌道 PAR"
-trackAudioChannels: "軌道音訊聲道"
-format: "格式"
-sampleRate: "採樣率"
-channelCount: "聲道數"
-hrChannels: "HR 聲道"
-uriTrack: "URI 軌道"
-channelsCount: "聲道總數"
-channels: "聲道"
-fps: "幀率"
-bitrate: "位元率"
-par: "PAR"
-audioChannels: "音訊聲道"
-audioBitrate: "音訊位元率"
-audio: "音訊"
-video: "影片"
-media: "媒體"
-noLogsForL: "暫無 ${l} 的日誌"
-onlyValidForThisRun: "僅在本次執行時有效"
-nameField: "名稱"
-brandField: "品牌"
-modelField: "型號"
-deviceField: "設備"
-productField: "產品"
-manufacturerField: "製造商"
-versionReleaseField: "版本發佈"
-versionSdkIntField: "SDK 版本"
-displayField: "顯示"
-hardwareField: "硬體"
-physicalRamSizeField: "實體記憶體大小"
-availableRamSizeField: "可用記憶體大小"
-freeDiskSizeField: "剩餘磁碟空間"
-totalDiskSizeField: "總磁碟空間"
-isPhysicalDeviceField: "是否為實體機"
-systemNameField: "系統名稱"
-systemVersionField: "系統版本"
-modelNameField: "型號名稱"
-identifierForVendorField: "供應商識別碼"
-sysnameField: "核心名稱"
-nodenameField: "節點名稱"
-releaseField: "核心發佈"
-versionField: "核心版本"
-machineField: "機器架構"
-computerNameField: "電腦名稱"
-numberOfCoresField: "核心數"
-systemMemoryInMegabytesField: "系統記憶體 (MB)"
-userNameField: "使用者名稱"
-majorVersionField: "主版本號"
-minorVersionField: "次版本號"
-buildNumberField: "編譯號"
-displayVersionField: "顯示版本"
-productNameField: "產品名稱"
-registeredOwnerField: "註冊所有者"
-releaseIdField: "發佈 ID"
-packageNameField: "包名"
-appNameField: "應用名稱"
-buildSignatureField: "編譯簽名"
-installerStoreField: "安裝通路"
-installTimeField: "安裝時間"
-updateTimeField: "更新時間"
-january: "一月"
-february: "二月"
-march: "三月"
-april: "四月"
-may: "五月"
-june: "六月"
-july: "七月"
-august: "八月"
-september: "九月"
-october: "十月"
-november: "十一月"
-december: "十二月"
-today: "今天"
-yesterday: "昨天"
-last3Days: "最近 3 天"
-last7Days: "最近 7 天"
-last30Days: "最近 30 天"
-last3Months: "最近 3 個月"
-last6Months: "最近 6 個月"
-thisYear: "今年"
-older: "更早"
-markTheSelectedFavoritesAs: "將所選收藏標記為"
-favoriteType: "收藏類型"
-doingStatus: "在看"
-wishStatus: "想看"
-collectStatus: "看過"
-onHoldStatus: "擱置"
-droppedStatus: "拋棄"
-player: "播放器"
-audioOption: "音訊選項"
-hardwareDecoding: "硬體解碼"
-hardwareDecoder: "硬體解碼器"
-videoRenderer: "影片渲染器"
-videoSynchronizationMode: "影片同步模式"
-enableNoProxyOverrides: "啟用無代理覆寫"
-actor: "角色"
-dub: "配音"
-chineseDub: "中配"
-japaneseDub: "日配"
-englishDub: "英配"
-koreanDub: "韓配"
-selectedACharacter: "已選取 ${a} 個角色"
-searchOptions: "搜尋選項"
-searchSources: "搜尋源"
-translation: "翻譯"
-apiKeyCannotBeEmpty: "API Key 不能為空"
-pleaseEnterTranslationPrompt: "請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符"
-thePromptMustContainAPlaceholderForTarget: "提示詞必須包含 ${a} 作為目標語言的佔位符"
-thisFieldCannotBeEmpty: "此欄位不能為空"
-thePromptMustContainAPlaceholder: "提示詞必須包含 ${a} 佔位符"
-translationPrompt: "翻譯提示詞"
-modelName: "模型名稱"
-apiConfiguration: "API 設定"
-wordCloud: "詞雲"
-statsCalendar: "統計日曆"
-todaysRecords: "當天的記錄"
-dailyStats: "天統計"
-viewAll: "查看全部"
-kostoriChangelog: "Kostori 更新日誌"
-copyPath: "複製路徑"
-properties: "屬性"
-noEndpoint: "無端點"
-testAll: "全部測試"
-customEndpoint: "自定義端點"
-pingTest: "延遲測試"
-continuousPing: "持續測試"
-service: "服務"
-serviceSettings: "服務設定"
-enableService: "啟用服務"
-serviceIsStopped: "服務已停止"
-runningOnH: "執行於 ${h}"
-apiKey: "API Key"
-activeKey: "目前金鑰"
-usingFixedKey: "使用固定金鑰"
-usingRandomKeyRegeneratedOnStartup: "使用隨機金鑰 (啟動時重新產生)"
-useFixedKey: "使用固定金鑰"
-keepTheSameKeyAfterRestart: "重啟後保持相同金鑰"
-fixedKey: "固定金鑰"
-leaveEmptyToAutoGenerate: "留空則自動產生"
-enterFixedKey: "輸入固定金鑰"
-regenerateRandomKey: "重新產生隨機金鑰"
-generateANewRandomKeyImmediately: "立即產生一個新的隨機金鑰"
-regenerate: "重新產生"
-port: "連接埠"
-defaultP: "預設：${p}"
-bindMode: "綁定模式"
-chooseIpVersionToListenOn: "選擇要監聽的 IP 版本"
-hubServer: "Hub 服務端"
-enableHub: "啟用 Hub"
-hubServerIsStopped: "Hub 服務端已停止"
-clientsCount: "個用戶端"
-hubPort: "Hub 連接埠"
-onlineClients: "線上用戶端"
-connectedAt: "連接於"
-messageHistory: "訊息歷史"
-hubClient: "Hub 用戶端"
-connectToHub: "連接到 Hub"
-connected: "已連接"
-notConnected: "未連接"
-hubAddress: "Hub 地址"
-clientName: "用戶端名稱"
-displayNameInHub: "Hub 中的顯示名稱"
-myDevice: "我的設備"
-hubToken: "Hub 令牌"
-tokenFromTheHubServer: "來自 Hub 服務端的令牌"
-pasteHubServerToken: "貼上 Hub 服務端令牌"
-runningOn: "執行於"
-online: "線上"
-rooms: "個房間"
-managing: "管理中"
-lobby: "大廳"
-noRooms: "暫無房間"
-current: "當前"
-join: "加入"
-leaveRoom: "離開房間"
-roomPassword: "房間密碼"
-blacklist: "黑名單"
-bannedCount: "個已封鎖"
-noBannedUsers: "暫無封鎖使用者"
-removeFromBlacklist: "從黑名單中移除"
-addToBlacklist: "加入黑名單"
-mute5min: "禁言 5 分鐘"
-unmute: "取消禁言"
-removeGlobalAdmin: "取消全域管理員"
-setGlobalAdmin: "設為全域管理員"
-kick: "踢出"
-poke: "戳一下"
-banned: "已封鎖"
-joinedEvent: "加入了"
-leftEvent: "離開了"
-newRoom: "新房間"
-portAndBindMode: "連接埠與綁定模式"
-hubManagement: "Hub 管理"
-chatRoom: "聊天室"
-openChatDialog: "開啟聊天對話框"
-hubDetails: "Hub 詳情"
-connectionSettings: "連接設定"
-serverAddress: "伺服器地址"
-host: "主機"
-authentication: "身分驗證"
-paste: "貼上"
-unblock: "取消封鎖"
-profileAndRoom: "資料與房間"
-roomSettings: "房間設定"
-roomName: "房間名稱"
-roomId: "房間 ID"
-announcements: "公告"
-roomAdmins: "房間管理員"
-noAnnouncement: "暫無公告"
-setAnnouncement: "設置公告"
-enterAnnouncementPrompt: "輸入公告內容..."
-removeAdmin: "取消管理員"
-addRoomAdmin: "添加房間管理員"
-roomBans: "房間封鎖"
-banMember: "封鎖成員"
-unban: "取消封鎖"
-server: "伺服器"
-mute: "禁言"
-secondsLabel: "秒"
-serverShutdown: "伺服器關閉"
-youAreNowAGlobalAdmin: "你現在是全域管理員"
-yourGlobalAdminHasBeenRevoked: "你的全域管理員權限已被撤銷"
-youAreNowARoomAdmin: "你現在是房間管理員"
-yourRoomAdminHasBeenRevoked: "你的房間管理員權限已被撤銷"
-youAreMutedFor: "你被禁言了"
-secondsUnit: "秒"
-youHaveBeenUnmuted: "你已解除禁言"
-youAreBannedFromRoom: "你已被房間封鎖"
-youCanNowRejoinRoom: "你現在可以重新加入房間"
-youHaveBeenKickedFromTheRoom: "你已被踢出房間"
-roomDeletedMovedToLobby: "房間已刪除，已移動到大廳"
-eventLog: "事件日誌"
-pingInterval: "Ping 間隔"
-onlineStatus: "線上"
-noMessagesYet: "暫無訊息"
-newMessages: "新訊息"
-reply: "回覆"
-recall: "撤回"
-enterToSend: "Enter 發送  ·  Ctrl+Enter 換行"
-messagePlaceholder: "發送訊息..."
-connectionTimedOut: "連接逾時"
-blockedUsers: "已封鎖使用者"
-blockedCount: "個已封鎖"
-serverBlacklist: "伺服器黑名單"
-userKey: "使用者 Key"
-adminKey: "管理員 Key"
-keepTheSameKeysAfterRestart: "重啟後保持相同金鑰"
-regeneratedOnEveryStartup: "每次啟動時重新產生"
-noKeyRequired: "無需金鑰"
-anyoneCanConnectWithoutApiKey: "任何人無需 API Key 即可連接"
-clientsMustProvideAValidApiKey: "用戶端必須提供有效的 API Key"
-endpointMustBeAValidUrl: "端點必須是有效的 http(s) URL"
-bucketCannotBeEmpty: "儲存桶不能為空"
-accessKeyIdCannotBeEmpty: "Access Key ID 不能為空"
-accessKeySecretCannotBeEmpty: "Access Key Secret 不能為空"
-cdnDomainMustBeAValidUrl: "CDN 網域必須是有效的 URL"
-maxSizeMustBe1to100Mb: "最大限制必須為 1–100 MB"
-cleared: "已清空"
-imageUpload: "圖片上傳"
-clientImageUpload: "用戶端圖片上傳"
-serverOss: "伺服器 OSS"
-clientOss: "用戶端 OSS"
-imagesStoredOnServerDisk: "圖片儲存在伺服器磁碟，透過 /hub/files/ 提供服務"
-serverReceivesAndProxiesImageToOss: "伺服器接收圖片並代理上傳到 OSS。金鑰保留在伺服器上。"
-clientUploadsDirectlyToOss: "用戶端直接上傳到 OSS。伺服器僅獲取最終 URL。"
-maxSizeMb: "最大限制 (MB)"
-storePath: "儲存路徑"
-leaveEmptyForDefault: "留空則使用預設值"
-notConfiguredWillUseServerOrBase64: "未配置 · 將使用伺服器或 Base64"
-imageTooLargeToSend: "圖片太大，無法發送"
-pleaseConfigureServerUploadOrClientOss: "請設定伺服器上傳或用戶端 OSS。"
-stopTheServerToChangeUploadMode: "停止伺服器以更改上傳模式"
-enableClientOss: "啟用用戶端 OSS"
-uploadImagesDirectlyFromClientToOss: "直接從用戶端上傳圖片到 OSS"
-ossNotConfigured: "OSS 未設定"
-dropToSendImage: "拖放以發送圖片"
-longPressImageToSave: "長按圖片儲存"
+showImageBorders: 顯示圖片邊框
+outerBorderRadius: 外邊框圓角
+outerBorderWidth: 外邊框寬度
+outerBorderColor: 外邊框顏色
+showOuterBorder: 顯示外邊框
+innerBorderWidth: 內邊框寬度
+innerBorderColor: 內邊框顏色
+borderSettings: 邊框設定
+saving: 正在儲存
+saveSuccessful: 儲存成功
+saveFailedE: 儲存失敗：${e}
+failedToLoadImagesOrNoImages: 載入圖片失敗或無圖片
+failedToPickImage: 選擇圖片失敗
+monday: 週一
+tuesday: 週二
+wednesday: 週三
+thursday: 週四
+friday: 週五
+saturday: 週六
+sunday: 週日
+defaultOrder: 預設排序
+byTime: 按時間
+byName: 按名稱
+recentlyWatched: 最近觀看
+localFavoriteBinding: 本地收藏綁定
+awful: 不忍直視
+terrible: 非常差
+bad: 差
+poor: 較差
+okay: 不過不失
+fine: 還行
+good: 推薦
+great: 力薦
+master: 神作
+epic: 超神作
+overview: 總覽
+discussion: 討論
+logs: 日誌
+playerDetails: 播放器詳情
+status: 狀態
+audioOptionLowLatency: |-
+  音訊選項：
+   低延遲
+audioOptionCompatibility: |-
+  音訊選項：
+   相容性
+switchSuccessful: 切換成功
+switchFailed: 切換失敗
+remoteCast: 遠端投屏
+copyLink: 複製連結
+aValidWebDavDirectoryUrl: 有效的 WebDAV 目錄 URL
+autoSyncData: 自動同步數據
+screenshotShare: 截圖分享
+bestMatch: 最佳匹配
+topRank: 排名靠前
+mostFavorited: 最多收藏
+highestRating: 最高評分
+selectColor: 選擇顏色
+colorWheel: 色輪
+primary: 主要
+accent: 強調
+custom: 自定義
+confirmC: 確定 (${c})
+selectC: 選擇 ${c}
+selectDate: 選擇日期
+startDate: 開始日期
+endDate: 結束日期
+clearDate: 清除日期
+pleaseSelectADate: 請選擇日期
+endDateCannotBeEarlierThanStartDate: 結束日期不能早於開始日期
+type: 類型
+background: 背景
+emotion: 情感
+source: 來源
+audience: 受眾
+category: 分類
+imageOperationsI: 圖片操作 (${i})
+sSelected: 已選取 ${s}
+simplifiedChinese: 簡體中文
+traditionalChinese: 繁體中文
+colors:
+  teal: 青色
+  deepPurple: 深紫色
+  yellow: 黃色
+  cyan: 青藍色
+  m3Default: M3 預設
+  deepOrange: 深橘色
+  indigo: 靛藍色
+  cloudyBlue: 雲藍色
+  darkPastelGreen: 暗粉綠色
+  dust: 塵埃色
+  electricLime: 電光酸橙色
+  freshGreen: 鮮綠色
+  lightEggplant: 淺茄紫色
+  nastyGreen: 髒綠色
+  reallyLightBlue: 極淺藍色
+  tea: 茶綠色
+  warmPurple: 暖紫色
+  yellowishTan: 黃棕色
+  cement: 水泥色
+  darkGrassGreen: 暗草綠色
+  dustyTeal: 粉青色
+  greyTeal: 灰青色
+  macaroniAndCheese: 起司通心粉色
+  pinkishTan: 粉棕色
+  spruce: 杉綠色
+  strongBlue: 強藍色
+  toxicGreen: 毒液綠色
+  windowsBlue: 視窗藍色
+  blueBlue: 純藍色
+  blueWithAHintOfPurple: 略帶紫色的藍色
+  booger: 鼻涕綠色
+  brightSeaGreen: 亮海綠色
+  greenTeal: 綠青色
+  brownish: 棕色調
+  offGreen: 淡綠色
+  tangerine: 橘黃色
+  uglyGreen: 醜綠色
+  orange: 橘色
+  blue: 藍色
+  pink: 粉紅色
+  green: 綠色
+  red: 紅色
+  purple: 紫色
+secondary: 次要
+tertiary: 三級
+surface: 表面
+jumpToPage: 跳轉到頁
+page: 頁碼
+pagePM: 第 ${p} / ${m} 頁
+first: 第一頁
+last: 最後一頁
+disableLengthLimitation: 停用長度限制
+updateLog: 更新日誌
+liked: 喜歡
+rating: 評分
+pixelFormat: 像素格式
+hwPixelFormat: 硬體像素格式
+resolution: 解析度
+displayWidth: 顯示寬度
+displayHeight: 顯示高度
+aspect: 比例
+pixelAspectRatio: 像素寬高比
+colormatrix: 色彩矩陣
+colorLevels: 色彩範圍
+primaries: 原色
+gamma: 伽馬值
+signalPeak: 信號峰值
+lights: 亮度
+chromaLocation: 色度位置
+rotate: 旋轉
+stereoIn: 立體聲輸入
+averageBpp: 平均 Bpp
+alpha: 透明度
+trackId: 軌道 ID
+trackTitle: 軌道標題
+trackLanguage: 軌道語言
+trackImage: 軌道圖像
+trackAlbumArt: 軌道專輯封面
+trackCodec: 軌道編解碼器
+trackDecoder: 軌道解碼器
+trackWidth: 軌道寬度
+trackHeight: 軌道高度
+trackChannelsCount: 軌道聲道數
+trackChannels: 軌道聲道佈局
+trackSampleRate: 軌道採樣率
+trackFps: 軌道幀率
+trackBitrate: 軌道位元率
+trackRotate: 軌道旋轉
+trackPar: 軌道 PAR
+trackAudioChannels: 軌道音訊聲道
+format: 格式
+sampleRate: 採樣率
+channelCount: 聲道數
+hrChannels: HR 聲道
+uriTrack: URI 軌道
+channelsCount: 聲道總數
+channels: 聲道
+fps: 幀率
+bitrate: 位元率
+par: PAR
+audioChannels: 音訊聲道
+audioBitrate: 音訊位元率
+audio: 音訊
+video: 影片
+media: 媒體
+noLogsForL: 暫無 ${l} 的日誌
+onlyValidForThisRun: 僅在本次執行時有效
+nameField: 名稱
+brandField: 品牌
+modelField: 型號
+deviceField: 設備
+productField: 產品
+manufacturerField: 製造商
+versionReleaseField: 版本發佈
+versionSdkIntField: SDK 版本
+displayField: 顯示
+hardwareField: 硬體
+physicalRamSizeField: 實體記憶體大小
+availableRamSizeField: 可用記憶體大小
+freeDiskSizeField: 剩餘磁碟空間
+totalDiskSizeField: 總磁碟空間
+isPhysicalDeviceField: 是否為實體機
+systemNameField: 系統名稱
+systemVersionField: 系統版本
+modelNameField: 型號名稱
+identifierForVendorField: 供應商識別碼
+sysnameField: 核心名稱
+nodenameField: 節點名稱
+releaseField: 核心發佈
+versionField: 核心版本
+machineField: 機器架構
+computerNameField: 電腦名稱
+numberOfCoresField: 核心數
+systemMemoryInMegabytesField: 系統記憶體 (MB)
+userNameField: 使用者名稱
+majorVersionField: 主版本號
+minorVersionField: 次版本號
+buildNumberField: 編譯號
+displayVersionField: 顯示版本
+productNameField: 產品名稱
+registeredOwnerField: 註冊所有者
+releaseIdField: 發佈 ID
+packageNameField: 包名
+appNameField: 應用名稱
+buildSignatureField: 編譯簽名
+installerStoreField: 安裝通路
+installTimeField: 安裝時間
+updateTimeField: 更新時間
+january: 一月
+february: 二月
+march: 三月
+april: 四月
+may: 五月
+june: 六月
+july: 七月
+august: 八月
+september: 九月
+october: 十月
+november: 十一月
+december: 十二月
+today: 今天
+yesterday: 昨天
+last3Days: 最近 3 天
+last7Days: 最近 7 天
+last30Days: 最近 30 天
+last3Months: 最近 3 個月
+last6Months: 最近 6 個月
+thisYear: 今年
+older: 更早
+markTheSelectedFavoritesAs: 將所選收藏標記為
+favoriteType: 收藏類型
+doingStatus: 在看
+wishStatus: 想看
+collectStatus: 看過
+onHoldStatus: 擱置
+droppedStatus: 拋棄
+player: 播放器
+audioOption: 音訊選項
+hardwareDecoding: 硬體解碼
+hardwareDecoder: 硬體解碼器
+videoRenderer: 影片渲染器
+videoSynchronizationMode: 影片同步模式
+enableNoProxyOverrides: 啟用無代理覆寫
+actor: 角色
+dub: 配音
+chineseDub: 中配
+japaneseDub: 日配
+englishDub: 英配
+koreanDub: 韓配
+selectedACharacter: 已選取 ${a} 個角色
+searchOptions: 搜尋選項
+searchSources: 搜尋源
+translation: 翻譯
+translationService: 翻譯服務
+apiKeyCannotBeEmpty: API Key 不能為空
+pleaseConfigureApiKeyInAiSettingsFirst: 請先在AI設定中設定API金鑰
+usage: 使用情況
+editing: 編輯中
+screenshotInProgress: 正在擷圖...
+moveOperationTargetUnknown: 移動操作目標未知
+operationUnknown: 操作未知
+pleaseEnterTranslationPrompt: 請輸入翻譯提示詞，使用 ${a} 作為目標語言的佔位符
+thePromptMustContainAPlaceholderForTarget: 提示詞必須包含 ${a} 作為目標語言的佔位符
+thisFieldCannotBeEmpty: 此欄位不能為空
+thePromptMustContainAPlaceholder: 提示詞必須包含 ${a} 佔位符
+translationPrompt: 翻譯提示詞
+modelName: 模型名稱
+apiConfiguration: API 設定
+wordCloud: 詞雲
+statsCalendar: 統計日曆
+todaysRecords: 當天的記錄
+dailyStats: 天統計
+viewAll: 查看全部
+kostoriChangelog: Kostori 更新日誌
+copyPath: 複製路徑
+properties: 屬性
+noEndpoint: 無端點
+testAll: 全部測試
+customEndpoint: 自定義端點
+pingTest: 延遲測試
+continuousPing: 持續測試
+service: 服務
+serviceSettings: 服務設定
+enableService: 啟用服務
+serviceIsStopped: 服務已停止
+runningOnH: 執行於 ${h}
+apiKey: API Key
+activeKey: 目前金鑰
+usingFixedKey: 使用固定金鑰
+usingRandomKeyRegeneratedOnStartup: 使用隨機金鑰 (啟動時重新產生)
+useFixedKey: 使用固定金鑰
+keepTheSameKeyAfterRestart: 重啟後保持相同金鑰
+fixedKey: 固定金鑰
+leaveEmptyToAutoGenerate: 留空則自動產生
+enterFixedKey: 輸入固定金鑰
+regenerateRandomKey: 重新產生隨機金鑰
+generateANewRandomKeyImmediately: 立即產生一個新的隨機金鑰
+regenerate: 重新產生
+port: 連接埠
+defaultP: 預設：${p}
+bindMode: 綁定模式
+chooseIpVersionToListenOn: 選擇要監聽的 IP 版本
+hubServer: Hub 服務端
+enableHub: 啟用 Hub
+hubServerIsStopped: Hub 服務端已停止
+clientsCount: 個用戶端
+hubPort: Hub 連接埠
+onlineClients: 線上用戶端
+connectedAt: 連接於
+messageHistory: 訊息歷史
+hubClient: Hub 用戶端
+connectToHub: 連接到 Hub
+connected: 已連接
+notConnected: 未連接
+hubAddress: Hub 地址
+clientName: 用戶端名稱
+displayNameInHub: Hub 中的顯示名稱
+myDevice: 我的設備
+hubToken: Hub 令牌
+tokenFromTheHubServer: 來自 Hub 服務端的令牌
+pasteHubServerToken: 貼上 Hub 服務端令牌
+runningOn: 執行於
+online: 線上
+rooms: 個房間
+managing: 管理中
+lobby: 大廳
+noRooms: 暫無房間
+current: 當前
+join: 加入
+leaveRoom: 離開房間
+roomPassword: 房間密碼
+blacklist: 黑名單
+bannedCount: 個已封鎖
+noBannedUsers: 暫無封鎖使用者
+removeFromBlacklist: 從黑名單中移除
+addToBlacklist: 加入黑名單
+mute5min: 禁言 5 分鐘
+unmute: 取消禁言
+removeGlobalAdmin: 取消全域管理員
+setGlobalAdmin: 設為全域管理員
+kick: 踢出
+poke: 戳一下
+banned: 已封鎖
+joinedEvent: 加入了
+leftEvent: 離開了
+newRoom: 新房間
+portAndBindMode: 連接埠與綁定模式
+hubManagement: Hub 管理
+chatRoom: 聊天室
+openChatDialog: 開啟聊天對話框
+hubDetails: Hub 詳情
+connectionSettings: 連接設定
+serverAddress: 伺服器地址
+host: 主機
+authentication: 身分驗證
+paste: 貼上
+unblock: 取消封鎖
+profileAndRoom: 資料與房間
+roomSettings: 房間設定
+roomName: 房間名稱
+roomId: 房間 ID
+announcements: 公告
+roomAdmins: 房間管理員
+noAnnouncement: 暫無公告
+setAnnouncement: 設置公告
+enterAnnouncementPrompt: 輸入公告內容...
+removeAdmin: 取消管理員
+addRoomAdmin: 添加房間管理員
+roomBans: 房間封鎖
+banMember: 封鎖成員
+unban: 取消封鎖
+server: 伺服器
+mute: 禁言
+muteDuration: 禁言時長
+secondsLabel: 秒
+serverShutdown: 伺服器關閉
+youAreNowAGlobalAdmin: 你現在是全域管理員
+yourGlobalAdminHasBeenRevoked: 你的全域管理員權限已被撤銷
+youAreNowARoomAdmin: 你現在是房間管理員
+yourRoomAdminHasBeenRevoked: 你的房間管理員權限已被撤銷
+youAreMutedFor: 你被禁言了
+secondsUnit: 秒
+youHaveBeenUnmuted: 你已解除禁言
+youAreBannedFromRoom: 你已被房間封鎖
+youCanNowRejoinRoom: 你現在可以重新加入房間
+youHaveBeenKickedFromTheRoom: 你已被踢出房間
+roomDeletedMovedToLobby: 房間已刪除，已移動到大廳
+eventLog: 事件日誌
+pingInterval: Ping 間隔
+onlineStatus: 線上
+noMessagesYet: 暫無訊息
+newMessages: 新訊息
+reply: 回覆
+recall: 撤回
+enterToSend: Enter 發送  ·  Ctrl+Enter 換行
+messagePlaceholder: 發送訊息...
+connectionTimedOut: 連接逾時
+blockedUsers: 已封鎖使用者
+blockedCount: 個已封鎖
+blocked: 已阻擋
+blockedInvites: 阻擋的邀請
+noBlockedInvites: 暫無封鎖的邀請者
+members: 成員
+notSet: 未設定
+currentRoom: 目前房間
+editProfile: 編輯資料
+noBlockedUsers: 沒有阻擋的使用者
+createRoom: 建立房間
+chat: 聊天
+noOneOnline: 沒有人在線
+show: 顯示
+hide: 隱藏
+serverBlacklist: 伺服器黑名單
+userKey: 使用者 Key
+adminKey: 管理員 Key
+keepTheSameKeysAfterRestart: 重啟後保持相同金鑰
+regeneratedOnEveryStartup: 每次啟動時重新產生
+noKeyRequired: 無需金鑰
+anyoneCanConnectWithoutApiKey: 任何人無需 API Key 即可連接
+clientsMustProvideAValidApiKey: 用戶端必須提供有效的 API Key
+endpointMustBeAValidUrl: 端點必須是有效的 http(s) URL
+bucketCannotBeEmpty: 儲存桶不能為空
+accessKeyIdCannotBeEmpty: Access Key ID 不能為空
+accessKeySecretCannotBeEmpty: Access Key Secret 不能為空
+cdnDomainMustBeAValidUrl: CDN 網域必須是有效的 URL
+maxSizeMustBe1to100Mb: 最大限制必須為 1–100 MB
+cleared: 已清空
+imageUpload: 圖片上傳
+clientImageUpload: 用戶端圖片上傳
+serverOss: 伺服器 OSS
+clientOss: 用戶端 OSS
+imagesStoredOnServerDisk: 圖片儲存在伺服器磁碟，透過 /hub/files/ 提供服務
+serverReceivesAndProxiesImageToOss: 伺服器接收圖片並代理上傳到 OSS。金鑰保留在伺服器上。
+clientUploadsDirectlyToOss: 用戶端直接上傳到 OSS。伺服器僅獲取最終 URL。
+maxSizeMb: 最大限制 (MB)
+storePath: 儲存路徑
+leaveEmptyForDefault: 留空則使用預設值
+notConfiguredWillUseServerOrBase64: 未配置 · 將使用伺服器或 Base64
+imageTooLargeToSend: 圖片太大，無法發送
+pleaseConfigureServerUploadOrClientOss: 請設定伺服器上傳或用戶端 OSS。
+stopTheServerToChangeUploadMode: 停止伺服器以更改上傳模式
+enableClientOss: 啟用用戶端 OSS
+uploadImagesDirectlyFromClientToOss: 直接從用戶端上傳圖片到 OSS
+ossNotConfigured: OSS 未設定
+dropToSendImage: 拖放以發送圖片
+longPressImageToSave: 長按圖片儲存
 pleaseEnterAValidUrl: "請輸入以 http:// 或 https:// 開頭的有效 URL"
-setRoomPassword: "設定房間密碼"
-adminPanel: "管理面板"
-enterRoomName: "輸入房間名稱"
-roomAnnouncement: "房間公告"
-leaveEmptyForPublicRoom: "留空則設為公開房間"
-maxParticipants: "最大人數"
-upTo: "最多"
-peopleLabel: "人"
-noLimit: "無限制"
-optional: "選填"
-enterDisplayName: "輸入顯示名稱"
-enterBio: "輸入個人簡介"
-autoReconnect: "自動重連"
-directMessage: "私聊訊息"
-noAnnouncementsYet: "暫無公告"
-enterAnnouncementText: "輸入公告內容..."
-welcomeMessage: "歡迎訊息"
-noWelcomeMessage: "暫無歡迎訊息"
-enterWelcomeMessage: "輸入向加入使用者顯示的歡迎訊息..."
-security: "安全"
-changePassword: "修改密碼"
-setPassword: "設定密碼"
-protectedStatus: "受保護"
-removePassword: "移除密碼"
-enterPasswordToChange: "輸入密碼 (留空則移除)"
-noAdminsYet: "暫無管理員"
-noBannedMembers: "暫無封鎖成員"
-noMembersAvailable: "暫無可用成員"
-accessControl: "存取控制"
-broadcast: "廣播"
-addAnnouncement: "添加公告"
-areYouSureYouWantToDeleteR: "確定要刪除 ${r} 嗎？此操作無法撤銷。"
-membersList: "成員列表"
-onlineUsersList: "線上使用者"
-noUsersOnline: "無線上使用者"
-room: "房間"
-noPasswordSet: "未設定密碼"
-passwordProtected: "密碼保護"
-imageLabel: "圖片"
-stickersLabel: "貼紙"
-pokedYou: "戳了你"
-kickedFromServerByP: "被 ${p} 踢出了伺服器"
-kickedFromRoomByP: "被 ${p} 踢出了房間"
-leftTheRoom: "離開了房間"
-joinedTheRoom: "加入了房間"
-pWasKickedByO: "${p} 被 ${o} 踢出了房間"
-youLabel: "你"
-leftTheServer: "離開了伺服器"
-joinedTheServer: "加入了伺服器"
-updatedTheAnnouncement: "更新了公告"
-recalledAMessage: "撤回了一條訊息"
-pReactedWithO: "${p} 對訊息回應了 ${o}"
-pRemovedReactionO: "${p} 移除了回應 ${o}"
-noUsersAvailableToInvite: "暫無可用邀請使用者"
-inviteToRoom: "邀請加入房間"
-invite: "邀請"
-invited: "已邀請"
-roomInvite: "房間邀請"
-invitedYouTo: "邀請你加入"
-acceptInvite: "接受"
-acceptedYourInvite: "接受了你的邀請"
-declinedYourInvite: "拒絕了你的邀請"
-blockedYourInvites: "封鎖了你的邀請"
-blockedInvitesList: "邀請封鎖列表"
-noBlockedInvites: "暫無封鎖的邀請者"
-allowMemberInvites: "允許成員邀請"
-letAllMembersInviteOthers: "允許所有成員邀請其他人加入房間"
-declineAndBlock: "拒絕並封鎖"
-memes: "表情包"
-memeSaved: "已儲存到表情包"
-networkInfo: "網路資訊"
-hubInfo: "Hub 資訊"
-statsInfo: "統計資訊"
-sourceInfo: "源資訊"
-playerInfo: "播放資訊"
-hideLabel: "隱藏"
-showLabel: "顯示"
-personaManagement: "角色管理"
-promptConfiguration: "提示設定"
-systemPrompt: "系統提示"
-temperature: "溫度 (Temperature)"
-promptSaved: "提示詞已儲存"
-editSystemPrompt: "編輯系統提示詞"
-noHistoryYet: "暫無歷史"
-clearAll: "全部清除"
-configCopiedToClipboard: "設定已複製到剪貼簿"
-importedAsNewConfig: "已作為新設定導入"
-imported: "已導入"
-invalidClipboardFormat: "無效的剪貼簿格式"
-cannotModifySystemPreset: "無法修改系統預設"
-configKeyAlreadyExists: "設定 Key 已存在，請更換"
-requiredField: "必填"
-configKey: "設定 Key"
-memoField: "備註"
+setRoomPassword: 設定房間密碼
+adminPanel: 管理面板
+enterRoomName: 輸入房間名稱
+roomAnnouncement: 房間公告
+leaveEmptyForPublicRoom: 留空則設為公開房間
+maxParticipants: 最大人數
+upTo: 最多
+peopleLabel: 人
+noLimit: 無限制
+optional: 選填
+enterDisplayName: 輸入顯示名稱
+enterBio: 輸入個人簡介
+autoReconnect: 自動重連
+directMessage: 私聊訊息
+noAnnouncementsYet: 暫無公告
+enterAnnouncementText: 輸入公告內容...
+welcomeMessage: 歡迎訊息
+noWelcomeMessage: 暫無歡迎訊息
+enterWelcomeMessage: 輸入向加入使用者顯示的歡迎訊息...
+security: 安全
+changePassword: 修改密碼
+setPassword: 設定密碼
+protectedStatus: 受保護
+removePassword: 移除密碼
+enterPasswordToChange: 輸入密碼 (留空則移除)
+noAdminsYet: 暫無管理員
+noBannedMembers: 暫無封鎖成員
+noMembersAvailable: 暫無可用成員
+accessControl: 存取控制
+broadcast: 廣播
+addAnnouncement: 添加公告
+areYouSureYouWantToDeleteR: 確定要刪除 ${r} 嗎？此操作無法撤銷。
+membersList: 成員列表
+onlineUsersList: 線上使用者
+noUsersOnline: 無線上使用者
+room: 房間
+noPasswordSet: 未設定密碼
+passwordProtected: 密碼保護
+imageLabel: 圖片
+stickersLabel: 貼紙
+pokedYou: 戳了你
+kickedFromServerByP: 被 ${p} 踢出了伺服器
+kickedFromRoomByP: 被 ${p} 踢出了房間
+leftTheRoom: 離開了房間
+joinedTheRoom: 加入了房間
+pWasKickedByO: ${p} 被 ${o} 踢出了房間
+youLabel: 你
+leftTheServer: 離開了伺服器
+joinedTheServer: 加入了伺服器
+updatedTheAnnouncement: 更新了公告
+recalledAMessage: 撤回了一條訊息
+pReactedWithO: ${p} 對訊息回應了 ${o}
+pRemovedReactionO: ${p} 移除了回應 ${o}
+noUsersAvailableToInvite: 暫無可用邀請使用者
+inviteToRoom: 邀請加入房間
+invite: 邀請
+invited: 已邀請
+roomInvite: 房間邀請
+invitedYouTo: 邀請你加入
+acceptInvite: 接受
+acceptedYourInvite: 接受了你的邀請
+declinedYourInvite: 拒絕了你的邀請
+blockedYourInvites: 封鎖了你的邀請
+blockedInvitesList: 邀請封鎖列表
+allowMemberInvites: 允許成員邀請
+letAllMembersInviteOthers: 允許所有成員邀請其他人加入房間
+declineAndBlock: 拒絕並封鎖
+memes: 表情包
+memeSaved: 已儲存到表情包
+networkInfo: 網路資訊
+hubInfo: Hub 資訊
+statsInfo: 統計資訊
+ratingDetails: 評分詳情
+sourceInfo: 源資訊
+playerInfo: 播放資訊
+hideLabel: 隱藏
+showLabel: 顯示
+personaManagement: 角色管理
+promptConfiguration: 提示設定
+systemPrompt: 系統提示
+temperature: 溫度 (Temperature)
+promptSaved: 提示詞已儲存
+editSystemPrompt: 編輯系統提示詞
+noHistoryYet: 暫無歷史
+clearAll: 全部清除
+configCopiedToClipboard: 設定已複製到剪貼簿
+importedAsNewConfig: 已作為新設定導入
+imported: 已導入
+invalidClipboardFormat: 無效的剪貼簿格式
+cannotModifySystemPreset: 無法修改系統預設
+animeCardUseBlur: 動漫卡片使用模糊背景
+calendarFetchEpisodes: 每日動畫表啟動時搜尋集資訊
+addKeyword: 新增關鍵字
+keyword: 關鍵字
+keywordAlreadyExists: 關鍵字已存在
+folderNameCannotBeEmpty: 資料夾名稱不能為空
+folderNameTooLong: 資料夾名稱過長
+folderAlreadyExists: 資料夾已存在
+configKeyAlreadyExists: 設定 Key 已存在，請更換
+requiredField: 必填
+configKey: 設定 Key
+memoField: 備註
 valueRange: "數值: 0.0 - 1.0"
-readOnlySystemPreset: "唯讀系統預設"
-deleteConfig: "刪除設定"
-areYouSureYouWantToDeleteGeneric: "確定要刪除嗎"
-baseUrl: "基礎 URL"
-optionalField: "選填"
-model: "模型"
-addModel: "添加模型"
-modelId: "模型 ID"
-displayName: "顯示名稱"
-noModelsAddOneAbove: "暫無模型，請在上方添加。"
-placeholdersDescription: "佔位符：${animeCount} ${animeNames} ${topTags}"
-aiHub: "AI 工坊"
-selectYearAndMonth: "選擇年月"
-enterYear: "輸入年份"
-selectDay: "選擇日期"
-fullYear: "全年"
-quickSelect: "快速選擇"
-selectDateRange: "選擇日期範圍"
-manualSelect: "手動選擇"
-qrAndClipboard: "二維碼與剪貼簿"
-aiSettings: "AI 設置"
-aiConfigMissing: "AI配置缺失"
-generating: "生成中..."
-generatedTags: "已生成 Tags"
-exportScreenshot: "導出截圖"
-copyAll: "複製全部"
-timeRange: "時間範圍"
-thisWeek: "本週"
-thisMonth: "本月"
-generateSummary: "生成總結"
-generateTag: "生成 Tag"
-summaryReport: "總結報告"
-noActivityInTimeRange: "該時間段內暫無活動記錄"
-weeklySummary: "本週總結"
-monthlySummary: "本月總結"
-tagCopied: "Tag 已複製"
-
-# 新增的 key
-aiServiceConfig: "AI 服務配置"
-notConfigured: "未配置"
-enabled: "已啟用"
-writeYourReview: "寫下你的評價"
-draft: "草稿"
-mainContent: "正文"
-switchh: "切換"
-translationFailedPleaseTryAgainLater: "翻譯失敗，請稍後重試"
-required: "必填"
-importPersona: "導入角色配置"
-newPersona: "新建角色配置"
-noConfigurationsFound: "未找到配置"
-animeCardUseBlur: "動漫卡片使用模糊背景"
-calendarFetchEpisodes: "每日動畫表啟動時搜尋集資訊"
-addKeyword: "新增關鍵字"
-keyword: "關鍵字"
-keywordAlreadyExists: "關鍵字已存在"
-folderNameCannotBeEmpty: "資料夾名稱不能為空"
-folderNameTooLong: "資料夾名稱過長"
-folderAlreadyExists: "資料夾已存在"
-addToFavoritesSuccess: "添加收藏成功"
-addressAlreadyExists: "地址已存在"
-allCopiedSuccess: "全部複製成功"
-announcement: "公告"
-applyFailed: "應用失敗"
-applySuccess: "應用成功"
-bangumiDataResetFailed: "Bangumi資料重置失敗"
-bangumiDataUpdateFailed: "Bangumi資料更新失敗"
-bangumiPlan: "Bangumi 計畫"
-basicInfo: "基本資訊"
-bindBangumiIdSuccess: "綁定Bangumi ID成功"
-blocked: "已阻擋"
-blockedInvites: "阻擋的邀請"
-cannotBeEmpty: "不能為空"
-character: "角色"
-chat: "聊天"
-clipboard: "剪貼簿"
-confirmDeleteImage: "確認刪除圖片？"
-connectionDisconnected: "連線已斷開"
-connectionFailed: "連線失敗"
-content: "內容"
-copiedToClipboard: "已複製到剪貼簿"
-copySuccess: "複製成功"
-createRoom: "建立房間"
-currentRoom: "目前房間"
-deleteFailed: "刪除失敗"
-dlnaError: "DLNA 異常"
-editProfile: "編輯資料"
-editing: "編輯中"
-enterServerAddress: "輸入伺服器位址"
+readOnlySystemPreset: 唯讀系統預設
+deleteConfig: 刪除設定
+areYouSureYouWantToDeleteGeneric: 確定要刪除嗎
+baseUrl: 基礎 URL
+optionalField: 選填
+model: 模型
+addModel: 添加模型
+modelId: 模型 ID
+displayName: 顯示名稱
+noModelsAddOneAbove: 暫無模型，請在上方添加。
+placeholdersDescription: 佔位符：${animeCount} ${animeNames} ${topTags}
+aiHub: AI 工坊
+selectYearAndMonth: 選擇年月
+enterYear: 輸入年份
+selectDay: 選擇日期
+fullYear: 全年
+quickSelect: 快速選擇
+selectDateRange: 選擇日期範圍
+subject: 主題
+character: 角色
+person: 人物
+manualSelect: 手動選擇
+qrAndClipboard: 二維碼與剪貼簿
+go: 前往
+clipboard: 剪貼簿
+recognizeFromGallery: 從相簿識別
+scanQrCode: 掃碼
+scanToJump: 掃碼跳轉
+qrCode: 二維碼
+shareMethodDescription: 分享方式：在番剧详情页，点击“分享” → 生成口令或二维码
+shareQrCode: 分享二維碼
+exporting: 匯出中
+tokenCopiedToClipboard: Token已複製到剪貼簿
+generateQrCodeShare: 產生二維碼分享
+aiSettings: AI 設置
+aiConfigMissing: AI配置缺失
+generating: 生成中...
+generatedTags: 已生成 Tags
+exportScreenshot: 導出截圖
+copyAll: 複製全部
+timeRange: 時間範圍
+thisWeek: 本週
+thisMonth: 本月
+generateSummary: 生成總結
+generateTag: 生成 Tag
+summaryReport: 總結報告
+noActivityInTimeRange: 該時間段內暫無活動記錄
+weeklySummary: 本週總結
+monthlySummary: 本月總結
+tagCopied: Tag 已複製
+aiServiceConfig: AI 服務配置
+connectionDisconnected: 連線已斷開
+enterServerAddress: 輸入伺服器位址
+tapToShare: 點擊分享
+noConfigurationsFound: 未找到配置
+noData: 沒有資料
+loginWithPasswordIsDisabled: 密碼登入已停用
+cannotBeEmpty: 不能為空
+invalidCookies: 無效的 Cookies
+webviewIsNotAvailable: Webview 不可用
+sources: 資料源
+translationFailedPleaseTryAgainLater: 翻譯失敗，請稍後重試
+writeYourReview: 寫下你的評價
+draft: 草稿
+content: 內容
+toggle: 切換
+roomBan: 房間封禁
+pinnedMessages: 置頂訊息
+announcement: 公告
+image: 圖片
 enterToSendCtrlEnterForNewline: " Enter 發送，Ctrl+Enter 換行"
-exporting: "匯出中"
-failedToLoadEpisode: "載入集數失敗"
-failedToPickImage: "選擇圖片失敗"
-fileName: "檔案名稱"
-fileSize: "檔案大小"
-generateQrCodeShare: "產生二維碼分享"
-getVideoUrlFailed: "取得影片連結異常"
-go: "前往"
-hide: "隱藏"
-image: "圖片"
-imageFormat: "格式"
-imageProperties: "圖片屬性"
-invalidCookies: "無效的 Cookies"
-jumping: "正在跳轉..."
-latestComments: "最新評論"
-likeSuccess: "按讚成功"
-loadSuccess: "載入成功"
-loadingDuplicateEpisode: "載入重複集數"
-loginWithPasswordIsDisabled: "密碼登入已停用"
-manage: "管理"
-members: "成員"
-message: "訊息"
-modifiedTime: "修改時間"
-moveOperationTargetUnknown: "移動操作目標未知"
-muteDuration: "禁言時長"
-myRating: "我的評分"
-newName: "新名稱"
-noBlockedUsers: "沒有阻擋的使用者"
-noChanges: "沒有更改"
-noData: "沒有資料"
-noMoreEpisodes: "沒有更多集數可播放"
-noOneOnline: "沒有人在線"
-noRecordForMonth: "${month}暫無記錄"
-noResultsTryOtherKeywords: "沒有結果，請嘗試其他關鍵詞"
-noSearchSources: "沒有搜尋源"
-noStickersYet: "還沒有貼紙"
-notSet: "未設定"
-operationSuccess: "操作成功"
-operationUnknown: "操作未知"
-path: "路徑"
-person: "人物"
-pinnedMessages: "置頂訊息"
-playingNextEpisode: "正在播放下一集"
-pleaseAddSomeSources: "請新增一些資料源"
-pleaseConfigureApiKeyInAiSettingsFirst: "請先在AI設定中設定API金鑰"
-pleaseEnableAtLeastOneAddress: "請先啟用至少一個位址"
-pleaseEnterEpisodeNumber: "請輸入集數"
-pleaseEnterValidEpisodeNumber: "請輸入1-999之間的有效集數"
-queryFailed: "查詢失敗"
-ratingDetails: "評分詳情"
-recognizeFromGallery: "從相簿識別"
-relatedEntries: "相關條目"
-removeSticker: "移除貼紙"
-requestFailed: "請求失敗"
-roomBan: "房間封禁"
-routeNotFound: "線路不存在"
-saveFailed: "儲存失敗"
-saveFailedPermission: "儲存失敗：權限或目錄異常"
-saveFailedWithError: "儲存失敗：${e}"
-saveSuccess: "儲存成功"
-savingImage: "正在儲存圖片..."
-scanQrCode: "掃碼"
-scanToJump: "掃碼跳轉"
-qrCode: "二維碼"
-screenshotFailed: "擷圖失敗"
-screenshotFailedPleaseRetry: "擷圖失敗，請重試"
-screenshotInProgress: "正在擷圖..."
-screenshotSuccess: "擷圖成功"
-shareFailed: "分享失敗"
-shareMethodDescription: "分享方式：在番剧详情页，点击“分享” → 生成口令或二维码"
-shareQrCode: "分享二維碼"
-show: "顯示"
-sources: "資料源"
-startSearch: "開始搜尋"
-stickers: "貼紙"
-subject: "主題"
-switchFavoriteUser: "切換收藏使用者"
-tapToShare: "點擊分享"
-titleCopied: "標題已複製"
-toggle: "切換"
-tokenCopiedToClipboard: "Token已複製到剪貼簿"
-translationService: "翻譯服務"
-unlikeSuccess: "取消按讚成功"
-usage: "使用情況"
-webviewIsNotAvailable: "Webview 不可用"
-imageTitle: "標題"
-imageSubtitle: "副標題"
-selectBackground: "選擇背景"
-changeBackground: "更換背景"
-clearBackground: "清除背景"
-noQrCodeFoundInImage: "未在圖片中識別到二維碼"
-charCount: "${count} 字"
+message: 訊息
+stickers: 貼紙
+noStickersYet: 還沒有貼紙
+removeSticker: 移除貼紙
+noSearchSources: 沒有搜尋源
+pleaseAddSomeSources: 請新增一些資料源
+manage: 管理
+importPersona: 導入角色配置
+newPersona: 新建角色配置
+notConfigured: 未配置
+enabled: 已啟用
+required: 必填
+linkFormatErrorCannotParseAnimeInfo: Link format error, cannot parse anime info
+sourceNotFoundPleaseConfirmSourceInstalled: Source not found, please confirm source is installed
+linkFormatErrorCannotParseBangumiId: Link format error, cannot parse Bangumi ID
+fetchingBangumiInfo: Fetching Bangumi info...
+bangumiEntryNotFound: Bangumi entry not found
+failedToFetchBangumiInfo: Failed to fetch Bangumi info
+linkFormatErrorCannotParseCharacterId: Link format error, cannot parse character ID
+verifyingCharacterInfo: Verifying character info...
+characterNotFound: Character not found
+failedToFetchCharacterInfo: Failed to fetch character info
+linkFormatErrorCannotParsePersonId: Link format error, cannot parse person ID
+verifyingPersonInfo: Verifying person info...
+personNotFound: Person not found
+failedToFetchPersonInfo: Failed to fetch person info
+unrecognizedLink: Unrecognized link
+noKostoriLinkFoundInClipboard: No Kostori link found in clipboard
+qrCodeFeatureOnlyOnMobile: QR code feature only available on mobile
+unrecognizedKostoriProtocol: Unrecognized Kostori protocol
+pleaseDragImageFile: Please drag in image file
+imageDownloadFailed: Image download failed
+failedToFetchNetworkImage: Failed to fetch network image
+imageDecodeFailed: Image decode failed
+noQrCodeFoundInImage: 未在圖片中識別到二維碼
+copiedToClipboard: 已複製到剪貼簿
+likeSuccess: 按讚成功
+unlikeSuccess: 取消按讚成功
+operationSuccess: 操作成功
+saveSuccess: 儲存成功
+saveFailed: 儲存失敗
+saveFailedWithError: 儲存失敗：${e}
+loadSuccess: 載入成功
+addressAlreadyExists: 地址已存在
+pleaseEnableAtLeastOneAddress: 請先啟用至少一個位址
+requestFailed: 請求失敗
+allCopiedSuccess: 全部複製成功
+bindBangumiIdSuccess: 綁定Bangumi ID成功
+applySuccess: 應用成功
+noChanges: 沒有更改
+applyFailed: 應用失敗
+noResultsTryOtherKeywords: 沒有結果，請嘗試其他關鍵詞
+jumping: 正在跳轉...
+queryFailed: 查詢失敗
+screenshotSuccess: 擷圖成功
+screenshotFailed: 擷圖失敗
+noRecordForMonth: ${month}暫無記錄
+screenshotFailedPleaseRetry: 擷圖失敗，請重試
+shareFailed: 分享失敗
+connectionFailed: 連線失敗
+copySuccess: 複製成功
+addToFavoritesSuccess: 添加收藏成功
+deleteFailed: 刪除失敗
+savingImage: 正在儲存圖片...
+saveFailedPermission: 儲存失敗：權限或目錄異常
+bangumiDataUpdateFailed: Bangumi資料更新失敗
+bangumiDataResetFailed: Bangumi資料重置失敗
+playingNextEpisode: 正在播放下一集
+failedToLoadEpisode: 載入集數失敗
+noMoreEpisodes: 沒有更多集數可播放
+routeNotFound: 線路不存在
+loadingDuplicateEpisode: 載入重複集數
+getVideoUrlFailed: 取得影片連結異常
+startSearch: 開始搜尋
+dlnaError: DLNA 異常
+pleaseEnterEpisodeNumber: 請輸入集數
+pleaseEnterValidEpisodeNumber: 請輸入1-999之間的有效集數
+imageTitle: 標題
+imageSubtitle: 副標題
+selectBackground: 選擇背景
+changeBackground: 更換背景
+clearBackground: 清除背景
+charCount: ${count} 字

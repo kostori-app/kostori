@@ -179,41 +179,23 @@ Widget setExplorePagesWidget() {
   return _ExplorePagesFilter();
 }
 
-class _ExplorePagesFilter extends StatefulWidget {
+class _ExplorePagesFilter extends StatelessWidget {
   const _ExplorePagesFilter();
 
   @override
-  State<_ExplorePagesFilter> createState() => _ExplorePagesFilterState();
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(title: t.explorePages, body: _SourcesList());
+  }
 }
 
-enum _ItemType { source, page }
-
-class _ListItem {
-  _ListItem({
-    required this.id,
-    required this.type,
-    this.sourceKey,
-    this.title,
-    this.pageTitle,
-    this.pageIndex,
-    this.sourceIndex,
-    this.hasAdd = false,
-  });
-
-  final String id;
-  final _ItemType type;
-  final String? sourceKey;
-  final String? title;
-  final String? pageTitle;
-  final int? pageIndex;
-  final int? sourceIndex;
-  final bool hasAdd;
+class _SourcesList extends StatefulWidget {
+  @override
+  State<_SourcesList> createState() => _SourcesListState();
 }
 
-class _ExplorePagesFilterState extends State<_ExplorePagesFilter> {
+class _SourcesListState extends State<_SourcesList> {
   late List<String> sourceKeys;
   late Map<String, List<String>> sourcePages;
-  late Map<String, bool> sourceExpanded;
 
   @override
   void initState() {
@@ -227,37 +209,37 @@ class _ExplorePagesFilterState extends State<_ExplorePagesFilter> {
       appdata.settings["explore_sources_order"] ?? [],
     );
     sourcePages = {};
-    sourceExpanded = {};
     sourceKeys = [];
 
-    // 按保存的顺序加载
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
-      var pagesForSource = source.explorePages.map((e) => e.title).toList();
-      var selectedForSource = pagesForSource
-          .where((p) => selectedPages.contains(p))
+      var allPagesForSource = source.explorePages.map((e) => e.title).toList();
+      var selectedForSource = selectedPages
+          .where((p) => allPagesForSource.contains(p))
           .toList();
-      if (pagesForSource.isNotEmpty) {
+      if (allPagesForSource.isNotEmpty) {
         sourceKeys.add(key);
         sourcePages[key] = selectedForSource;
-        sourceExpanded[key] = selectedForSource.isNotEmpty;
       }
     }
 
-    // 添加新出现的源（未保存顺序的）
     for (var source in AnimeSource.all()) {
       if (!sourceKeys.contains(source.key)) {
-        var pagesForSource = source.explorePages.map((e) => e.title).toList();
-        var selectedForSource = pagesForSource
-            .where((p) => selectedPages.contains(p))
+        var allPagesForSource = source.explorePages
+            .map((e) => e.title)
             .toList();
-        if (pagesForSource.isNotEmpty) {
+        var selectedForSource = selectedPages
+            .where((p) => allPagesForSource.contains(p))
+            .toList();
+        if (allPagesForSource.isNotEmpty) {
           sourceKeys.add(source.key);
           sourcePages[source.key] = selectedForSource;
-          sourceExpanded[source.key] = selectedForSource.isNotEmpty;
         }
       }
+    }
+    for (var key in sourceKeys) {
+      debugPrint('[LOAD]   $key pages: ${sourcePages[key]}');
     }
   }
 
@@ -273,172 +255,184 @@ class _ExplorePagesFilterState extends State<_ExplorePagesFilter> {
 
   @override
   Widget build(BuildContext context) {
-    return PopUpWidgetScaffold(
-      title: t.explorePages,
-      body: _buildReorderableList(),
-    );
-  }
-
-  Widget _buildReorderableList() {
-    var items = <_ListItem>[];
-
-    for (var i = 0; i < sourceKeys.length; i++) {
-      var sourceKey = sourceKeys[i];
-      var source = AnimeSource.find(sourceKey);
-      var sourceName = source?.name ?? sourceKey;
-      var selectedPages = sourcePages[sourceKey] ?? [];
-      var allPages = source?.explorePages.map((e) => e.title).toList() ?? [];
-
-      // 源项
-      items.add(
-        _ListItem(
-          id: "source_$sourceKey",
-          type: _ItemType.source,
-          sourceKey: sourceKey,
-          title: sourceName,
-          hasAdd: selectedPages.length < allPages.length,
-          sourceIndex: i,
-        ),
-      );
-
-      // 如果展开，显示页面项
-      if (sourceExpanded[sourceKey] ?? false) {
-        for (var j = 0; j < selectedPages.length; j++) {
-          items.add(
-            _ListItem(
-              id: "page_${sourceKey}_${selectedPages[j]}",
-              type: _ItemType.page,
-              sourceKey: sourceKey,
-              title: selectedPages[j].ts(sourceKey),
-              pageTitle: selectedPages[j],
-              pageIndex: j,
-            ),
-          );
-        }
-      }
-    }
-
-    return ReorderableListView.builder(
-      itemCount: items.length,
+    return _SourceReorderableList(
+      sourceKeys: sourceKeys,
+      sourcePages: sourcePages,
       onReorder: (oldIndex, newIndex) {
         setState(() {
-          var oldItem = items[oldIndex];
-          var newItem = items[newIndex];
-
-          // 只能在同类型间排序
-          if (oldItem.type != newItem.type) return;
-
-          if (oldItem.type == _ItemType.source) {
-            var oldSourceIdx = sourceKeys.indexOf(oldItem.sourceKey!);
-            var newSourceIdx = sourceKeys.indexOf(newItem.sourceKey!);
-            if (oldSourceIdx >= 0 && newSourceIdx >= 0) {
-              var key = sourceKeys.removeAt(oldSourceIdx);
-              var insertIdx = newSourceIdx > oldSourceIdx
-                  ? newSourceIdx - 1
-                  : newSourceIdx;
-              sourceKeys.insert(insertIdx, key);
-            }
-          } else if (oldItem.type == _ItemType.page) {
-            var sourceKey = oldItem.sourceKey!;
-            var pages = sourcePages[sourceKey] ?? [];
-            var oldPageIdx = pages.indexOf(oldItem.pageTitle!);
-            var newPageIdx = pages.indexOf(newItem.pageTitle!);
-            if (oldPageIdx >= 0 && newPageIdx >= 0) {
-              var page = pages.removeAt(oldPageIdx);
-              var insertIdx = newPageIdx > oldPageIdx
-                  ? newPageIdx - 1
-                  : newPageIdx;
-              pages.insert(insertIdx, page);
-              sourcePages[sourceKey] = pages;
-            }
-          }
+          var key = sourceKeys.removeAt(oldIndex);
+          var insertIdx = newIndex > oldIndex ? newIndex - 1 : newIndex;
+          sourceKeys.insert(insertIdx, key);
         });
         _saveData();
       },
-      itemBuilder: (context, index) {
-        var item = items[index];
-        if (item.type == _ItemType.source) {
-          return ListTile(
-            key: Key(item.id),
-            leading: const Icon(Icons.drag_handle),
-            title: Row(
-              children: [
-                Expanded(child: Text(item.title ?? '')),
-                if (item.hasAdd)
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () {
-                      var allPages =
-                          AnimeSource.find(
-                            item.sourceKey!,
-                          )?.explorePages.map((e) => e.title).toList() ??
-                          [];
-                      _showAddDialog(
-                        item.sourceKey!,
-                        allPages,
-                        sourcePages[item.sourceKey] ?? [],
-                      );
-                    },
-                  ),
-                IconButton(
-                  icon: Icon(
-                    sourceExpanded[item.sourceKey] ?? false
-                        ? Icons.expand_less
-                        : Icons.expand_more,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      sourceExpanded[item.sourceKey!] =
-                          !(sourceExpanded[item.sourceKey] ?? false);
-                    });
-                    _saveData();
-                  },
-                ),
-              ],
-            ),
-          );
-        } else {
-          return ListTile(
-            key: Key(item.id),
-            leading: const Icon(Icons.drag_handle),
-            title: Text(item.title ?? ''),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
+      onSourceTap: (sourceKey) {
+        var source = AnimeSource.find(sourceKey);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => _SourcePagesList(
+              sourceKey: sourceKey,
+              sourceName: source?.name ?? sourceKey,
+              pages: sourcePages[sourceKey] ?? [],
+              onPagesChanged: (newPages) {
                 setState(() {
-                  sourcePages[item.sourceKey!]?.remove(item.pageTitle);
+                  sourcePages[sourceKey] = newPages;
                 });
                 _saveData();
               },
             ),
-          );
-        }
+          ),
+        );
       },
     );
   }
+}
 
-  void _showAddDialog(
-    String sourceKey,
-    List<String> allPages,
-    List<String> selectedPages,
-  ) {
-    var canAdd = allPages.where((p) => !selectedPages.contains(p)).toList();
-    var source = AnimeSource.find(sourceKey);
+class _SourceReorderableList extends StatelessWidget {
+  final List<String> sourceKeys;
+  final Map<String, List<String>> sourcePages;
+  final void Function(int oldIndex, int newIndex) onReorder;
+  final void Function(String sourceKey) onSourceTap;
+
+  const _SourceReorderableList({
+    required this.sourceKeys,
+    required this.sourcePages,
+    required this.onReorder,
+    required this.onSourceTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ReorderableListView.builder(
+      itemCount: sourceKeys.length,
+      onReorder: onReorder,
+      itemBuilder: (context, index) {
+        var sourceKey = sourceKeys[index];
+        var source = AnimeSource.find(sourceKey);
+        var sourceName = source?.name ?? sourceKey;
+        var pageCount = sourcePages[sourceKey]?.length ?? 0;
+
+        return ListTile(
+          key: ValueKey(sourceKey),
+          leading: const Icon(Icons.drag_handle),
+          title: Text(sourceName),
+          subtitle: Text('$pageCount pages'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => onSourceTap(sourceKey),
+        );
+      },
+    );
+  }
+}
+
+class _SourcePagesList extends StatefulWidget {
+  final String sourceKey;
+  final String sourceName;
+  final List<String> pages;
+  final void Function(List<String> newPages) onPagesChanged;
+
+  const _SourcePagesList({
+    required this.sourceKey,
+    required this.sourceName,
+    required this.pages,
+    required this.onPagesChanged,
+  });
+
+  @override
+  State<_SourcePagesList> createState() => _SourcePagesListState();
+}
+
+class _SourcePagesListState extends State<_SourcePagesList> {
+  late List<String> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = List<String>.from(widget.pages);
+  }
+
+  @override
+  void didUpdateWidget(_SourcePagesList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.pages != oldWidget.pages) {
+      _pages = List<String>.from(widget.pages);
+    }
+  }
+
+  void _saveData() {
+    widget.onPagesChanged(_pages);
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    var item = _pages.removeAt(oldIndex);
+    _pages.insert(newIndex, item);
+    setState(() {});
+    _saveData();
+  }
+
+  void _onDelete(int index) {
+    _pages.removeAt(index);
+    setState(() {});
+    _saveData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: widget.sourceName,
+      tailing: [
+        TextButton.icon(
+          icon: const Icon(Icons.add),
+          label: Text(t.add),
+          onPressed: _showAddDialog,
+        ),
+      ],
+      body: ReorderableListView.builder(
+        itemCount: _pages.length,
+        onReorder: _onReorder,
+        itemBuilder: (context, index) {
+          var page = _pages[index];
+          return ListTile(
+            key: ValueKey(page),
+            leading: const Icon(Icons.drag_handle),
+            title: Text(page.ts(widget.sourceKey)),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () => _onDelete(index),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddDialog() {
+    var allPages =
+        AnimeSource.find(
+          widget.sourceKey,
+        )?.explorePages.map((e) => e.title).toList() ??
+        [];
+    var canAdd = allPages.where((p) => !_pages.contains(p)).toList();
+    var source = AnimeSource.find(widget.sourceKey);
 
     showDialog(
       context: context,
       builder: (context) {
         return ContentDialog(
-          title: "Add ${source?.name ?? sourceKey} Page",
+          title: "Add ${source?.name ?? widget.sourceKey} Page",
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: canAdd.map((page) {
               return ListTile(
-                title: Text(page.ts(sourceKey)),
+                title: Text(page.ts(widget.sourceKey)),
                 onTap: () {
                   context.pop();
                   setState(() {
-                    sourcePages[sourceKey]!.add(page);
+                    _pages.add(page);
                   });
                   _saveData();
                 },

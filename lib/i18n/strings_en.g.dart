@@ -1499,116 +1499,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Traditional Chinese'
 	String get traditionalChinese => 'Traditional Chinese';
 
-	/// en: 'Teal'
-	String get teal => 'Teal';
-
-	/// en: 'Deep Purple'
-	String get deepPurple => 'Deep Purple';
-
-	/// en: 'Yellow'
-	String get yellow => 'Yellow';
-
-	/// en: 'Cyan'
-	String get cyan => 'Cyan';
-
-	/// en: 'M3 Default'
-	String get m3Default => 'M3 Default';
-
-	/// en: 'Deep Orange'
-	String get deepOrange => 'Deep Orange';
-
-	/// en: 'Indigo'
-	String get indigo => 'Indigo';
-
-	/// en: 'Cloudy Blue'
-	String get cloudyBlue => 'Cloudy Blue';
-
-	/// en: 'Dark Pastel Green'
-	String get darkPastelGreen => 'Dark Pastel Green';
-
-	/// en: 'Dust'
-	String get dust => 'Dust';
-
-	/// en: 'Electric Lime'
-	String get electricLime => 'Electric Lime';
-
-	/// en: 'Fresh Green'
-	String get freshGreen => 'Fresh Green';
-
-	/// en: 'Light Eggplant'
-	String get lightEggplant => 'Light Eggplant';
-
-	/// en: 'Nasty Green'
-	String get nastyGreen => 'Nasty Green';
-
-	/// en: 'Really Light Blue'
-	String get reallyLightBlue => 'Really Light Blue';
-
-	/// en: 'Tea'
-	String get tea => 'Tea';
-
-	/// en: 'Warm Purple'
-	String get warmPurple => 'Warm Purple';
-
-	/// en: 'Yellowish Tan'
-	String get yellowishTan => 'Yellowish Tan';
-
-	/// en: 'Cement'
-	String get cement => 'Cement';
-
-	/// en: 'Dark Grass Green'
-	String get darkGrassGreen => 'Dark Grass Green';
-
-	/// en: 'Dusty Teal'
-	String get dustyTeal => 'Dusty Teal';
-
-	/// en: 'Grey Teal'
-	String get greyTeal => 'Grey Teal';
-
-	/// en: 'Macaroni And Cheese'
-	String get macaroniAndCheese => 'Macaroni And Cheese';
-
-	/// en: 'Pinkish Tan'
-	String get pinkishTan => 'Pinkish Tan';
-
-	/// en: 'Spruce'
-	String get spruce => 'Spruce';
-
-	/// en: 'Strong Blue'
-	String get strongBlue => 'Strong Blue';
-
-	/// en: 'Toxic Green'
-	String get toxicGreen => 'Toxic Green';
-
-	/// en: 'Windows Blue'
-	String get windowsBlue => 'Windows Blue';
-
-	/// en: 'Blue Blue'
-	String get blueBlue => 'Blue Blue';
-
-	/// en: 'Blue With A Hint Of Purple'
-	String get blueWithAHintOfPurple => 'Blue With A Hint Of Purple';
-
-	/// en: 'Booger'
-	String get booger => 'Booger';
-
-	/// en: 'Bright Sea Green'
-	String get brightSeaGreen => 'Bright Sea Green';
-
-	/// en: 'Green Teal'
-	String get greenTeal => 'Green Teal';
-
-	/// en: 'Brownish'
-	String get brownish => 'Brownish';
-
-	/// en: 'Off Green'
-	String get offGreen => 'Off Green';
-
-	/// en: 'Tangerine'
-	String get tangerine => 'Tangerine';
-
-	/// en: 'Ugly Green'
-	String get uglyGreen => 'Ugly Green';
+	late final TranslationsColorsEn colors = TranslationsColorsEn.internal(_root);
 
 	/// en: 'Secondary'
 	String get secondary => 'Secondary';
@@ -3414,6 +3305,144 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	String charCount({required Object count}) => '${count} chars';
 }
 
+// Path: colors
+class TranslationsColorsEn {
+	TranslationsColorsEn.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Teal'
+	String get teal => 'Teal';
+
+	/// en: 'Deep Purple'
+	String get deepPurple => 'Deep Purple';
+
+	/// en: 'Yellow'
+	String get yellow => 'Yellow';
+
+	/// en: 'Cyan'
+	String get cyan => 'Cyan';
+
+	/// en: 'M3 Default'
+	String get m3Default => 'M3 Default';
+
+	/// en: 'Deep Orange'
+	String get deepOrange => 'Deep Orange';
+
+	/// en: 'Indigo'
+	String get indigo => 'Indigo';
+
+	/// en: 'Cloudy Blue'
+	String get cloudyBlue => 'Cloudy Blue';
+
+	/// en: 'Dark Pastel Green'
+	String get darkPastelGreen => 'Dark Pastel Green';
+
+	/// en: 'Dust'
+	String get dust => 'Dust';
+
+	/// en: 'Electric Lime'
+	String get electricLime => 'Electric Lime';
+
+	/// en: 'Fresh Green'
+	String get freshGreen => 'Fresh Green';
+
+	/// en: 'Light Eggplant'
+	String get lightEggplant => 'Light Eggplant';
+
+	/// en: 'Nasty Green'
+	String get nastyGreen => 'Nasty Green';
+
+	/// en: 'Really Light Blue'
+	String get reallyLightBlue => 'Really Light Blue';
+
+	/// en: 'Tea'
+	String get tea => 'Tea';
+
+	/// en: 'Warm Purple'
+	String get warmPurple => 'Warm Purple';
+
+	/// en: 'Yellowish Tan'
+	String get yellowishTan => 'Yellowish Tan';
+
+	/// en: 'Cement'
+	String get cement => 'Cement';
+
+	/// en: 'Dark Grass Green'
+	String get darkGrassGreen => 'Dark Grass Green';
+
+	/// en: 'Dusty Teal'
+	String get dustyTeal => 'Dusty Teal';
+
+	/// en: 'Grey Teal'
+	String get greyTeal => 'Grey Teal';
+
+	/// en: 'Macaroni And Cheese'
+	String get macaroniAndCheese => 'Macaroni And Cheese';
+
+	/// en: 'Pinkish Tan'
+	String get pinkishTan => 'Pinkish Tan';
+
+	/// en: 'Spruce'
+	String get spruce => 'Spruce';
+
+	/// en: 'Strong Blue'
+	String get strongBlue => 'Strong Blue';
+
+	/// en: 'Toxic Green'
+	String get toxicGreen => 'Toxic Green';
+
+	/// en: 'Windows Blue'
+	String get windowsBlue => 'Windows Blue';
+
+	/// en: 'Blue Blue'
+	String get blueBlue => 'Blue Blue';
+
+	/// en: 'Blue With A Hint Of Purple'
+	String get blueWithAHintOfPurple => 'Blue With A Hint Of Purple';
+
+	/// en: 'Booger'
+	String get booger => 'Booger';
+
+	/// en: 'Bright Sea Green'
+	String get brightSeaGreen => 'Bright Sea Green';
+
+	/// en: 'Green Teal'
+	String get greenTeal => 'Green Teal';
+
+	/// en: 'Brownish'
+	String get brownish => 'Brownish';
+
+	/// en: 'Off Green'
+	String get offGreen => 'Off Green';
+
+	/// en: 'Tangerine'
+	String get tangerine => 'Tangerine';
+
+	/// en: 'Ugly Green'
+	String get uglyGreen => 'Ugly Green';
+
+	/// en: 'Orange'
+	String get orange => 'Orange';
+
+	/// en: 'Blue'
+	String get blue => 'Blue';
+
+	/// en: 'Pink'
+	String get pink => 'Pink';
+
+	/// en: 'Green'
+	String get green => 'Green';
+
+	/// en: 'Red'
+	String get red => 'Red';
+
+	/// en: 'Purple'
+	String get purple => 'Purple';
+}
+
 /// The flat map containing all translations for locale <en>.
 /// Only for edge cases! For simple maps, use the map function of this library.
 ///
@@ -3908,45 +3937,51 @@ extension on Translations {
 			'sSelected' => ({required Object s}) => '${s} selected',
 			'simplifiedChinese' => 'Simplified Chinese',
 			'traditionalChinese' => 'Traditional Chinese',
-			'teal' => 'Teal',
-			'deepPurple' => 'Deep Purple',
-			'yellow' => 'Yellow',
-			'cyan' => 'Cyan',
-			'm3Default' => 'M3 Default',
-			'deepOrange' => 'Deep Orange',
-			'indigo' => 'Indigo',
-			'cloudyBlue' => 'Cloudy Blue',
-			'darkPastelGreen' => 'Dark Pastel Green',
-			'dust' => 'Dust',
-			'electricLime' => 'Electric Lime',
-			'freshGreen' => 'Fresh Green',
-			'lightEggplant' => 'Light Eggplant',
-			'nastyGreen' => 'Nasty Green',
-			'reallyLightBlue' => 'Really Light Blue',
-			'tea' => 'Tea',
-			'warmPurple' => 'Warm Purple',
-			'yellowishTan' => 'Yellowish Tan',
-			'cement' => 'Cement',
-			'darkGrassGreen' => 'Dark Grass Green',
-			'dustyTeal' => 'Dusty Teal',
-			'greyTeal' => 'Grey Teal',
-			'macaroniAndCheese' => 'Macaroni And Cheese',
-			'pinkishTan' => 'Pinkish Tan',
-			'spruce' => 'Spruce',
-			'strongBlue' => 'Strong Blue',
+			'colors.teal' => 'Teal',
+			'colors.deepPurple' => 'Deep Purple',
+			'colors.yellow' => 'Yellow',
+			'colors.cyan' => 'Cyan',
+			'colors.m3Default' => 'M3 Default',
+			'colors.deepOrange' => 'Deep Orange',
+			'colors.indigo' => 'Indigo',
+			'colors.cloudyBlue' => 'Cloudy Blue',
+			'colors.darkPastelGreen' => 'Dark Pastel Green',
+			'colors.dust' => 'Dust',
+			'colors.electricLime' => 'Electric Lime',
+			'colors.freshGreen' => 'Fresh Green',
+			'colors.lightEggplant' => 'Light Eggplant',
+			'colors.nastyGreen' => 'Nasty Green',
+			'colors.reallyLightBlue' => 'Really Light Blue',
+			'colors.tea' => 'Tea',
+			'colors.warmPurple' => 'Warm Purple',
+			'colors.yellowishTan' => 'Yellowish Tan',
+			'colors.cement' => 'Cement',
+			'colors.darkGrassGreen' => 'Dark Grass Green',
+			'colors.dustyTeal' => 'Dusty Teal',
+			'colors.greyTeal' => 'Grey Teal',
+			'colors.macaroniAndCheese' => 'Macaroni And Cheese',
+			'colors.pinkishTan' => 'Pinkish Tan',
+			'colors.spruce' => 'Spruce',
+			'colors.strongBlue' => 'Strong Blue',
 			_ => null,
 		} ?? switch (path) {
-			'toxicGreen' => 'Toxic Green',
-			'windowsBlue' => 'Windows Blue',
-			'blueBlue' => 'Blue Blue',
-			'blueWithAHintOfPurple' => 'Blue With A Hint Of Purple',
-			'booger' => 'Booger',
-			'brightSeaGreen' => 'Bright Sea Green',
-			'greenTeal' => 'Green Teal',
-			'brownish' => 'Brownish',
-			'offGreen' => 'Off Green',
-			'tangerine' => 'Tangerine',
-			'uglyGreen' => 'Ugly Green',
+			'colors.toxicGreen' => 'Toxic Green',
+			'colors.windowsBlue' => 'Windows Blue',
+			'colors.blueBlue' => 'Blue Blue',
+			'colors.blueWithAHintOfPurple' => 'Blue With A Hint Of Purple',
+			'colors.booger' => 'Booger',
+			'colors.brightSeaGreen' => 'Bright Sea Green',
+			'colors.greenTeal' => 'Green Teal',
+			'colors.brownish' => 'Brownish',
+			'colors.offGreen' => 'Off Green',
+			'colors.tangerine' => 'Tangerine',
+			'colors.uglyGreen' => 'Ugly Green',
+			'colors.orange' => 'Orange',
+			'colors.blue' => 'Blue',
+			'colors.pink' => 'Pink',
+			'colors.green' => 'Green',
+			'colors.red' => 'Red',
+			'colors.purple' => 'Purple',
 			'secondary' => 'Secondary',
 			'tertiary' => 'Tertiary',
 			'surface' => 'Surface',
@@ -4442,14 +4477,14 @@ extension on Translations {
 			'summaryReport' => 'Summary Report',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
+			_ => null,
+		} ?? switch (path) {
 			'monthlySummary' => 'Monthly Summary',
 			'tagCopied' => 'Tag copied',
 			'aiServiceConfig' => 'AI Service Configuration',
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
-			_ => null,
-		} ?? switch (path) {
 			'noConfigurationsFound' => 'No configurations found',
 			'noData' => 'No data',
 			'loginWithPasswordIsDisabled' => 'Login with password is disabled',

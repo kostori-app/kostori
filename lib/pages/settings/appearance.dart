@@ -10,11 +10,7 @@ class AppearanceSettings extends StatefulWidget {
 class _AppearanceSettingsState extends State<AppearanceSettings>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  final themeModes = {
-    " system": t.system,
-    "light": t.light,
-    "dark": t.dark,
-  };
+  final themeModes = {" system": t.system, "light": t.light, "dark": t.dark};
   int themeMode = 0;
 
   @override
@@ -154,7 +150,6 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
 
     final brightness = MediaQuery.of(context).platformBrightness;
 
-    // 选中的色卡Widget
     final selectedWidget = selectedScheme == null
         ? const SizedBox()
         : Column(
@@ -170,7 +165,7 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
                 width: 160,
                 child: Center(
                   child: Text(
-                    "${appdata.settings["color"]}",
+                    getTranslatedColor(appdata.settings["color"]),
                     style: const TextStyle(fontSize: 12),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -222,7 +217,7 @@ class _ThemePreviewScrollerState extends State<ThemePreviewScroller> {
                   width: 160,
                   child: Center(
                     child: Text(
-                      name,
+                      getTranslatedColor(name),
                       style: const TextStyle(fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),

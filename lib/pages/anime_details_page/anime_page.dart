@@ -1018,10 +1018,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
     return ListView(
       padding: EdgeInsets.zero,
-      children: [
-        _AnimeEpisodes(history: history),
-        // 如果下方需要留白，可以在这里加 Spacer
-      ],
+      children: [_AnimeEpisodes(history: history)],
     );
   }
 
