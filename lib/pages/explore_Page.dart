@@ -114,6 +114,7 @@ class _ExplorePageState extends State<ExplorePage>
 
   @override
   void initState() {
+    super.initState();
     exploreController = ExploreController();
     _initSourcesAndPages();
     sourceController = TabController(length: sources.length, vsync: this);
@@ -121,7 +122,6 @@ class _ExplorePageState extends State<ExplorePage>
     appdata.settings.addListener(onSettingsChanged);
     NaviPane.of(context).addNaviItemTapListener(onNaviItemTapped);
     exploreController.initController(this);
-    super.initState();
   }
 
   void _initSourcesAndPages() {
@@ -262,6 +262,7 @@ class _ExplorePageState extends State<ExplorePage>
                     children: sources
                         .map(
                           (sourceKey) => _SourceExplorePage(
+                            key: ValueKey(sourceKey),
                             sourceKey: sourceKey,
                             pages: sourcePages[sourceKey] ?? [],
                             pageController: pageControllers[sourceKey]!,
@@ -762,6 +763,7 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
 
 class _SourceExplorePage extends StatefulWidget {
   const _SourceExplorePage({
+    super.key,
     required this.sourceKey,
     required this.pages,
     required this.pageController,
@@ -813,6 +815,7 @@ class _SourceExplorePageState extends State<_SourceExplorePage>
         ),
         Expanded(
           child: ExtendedTabBarView(
+            key: PageStorageKey('tab_view_${widget.sourceKey}'),
             controller: widget.pageController,
             children: widget.pages.map((e) => buildBody(e)).toList(),
           ),
