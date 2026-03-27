@@ -1957,6 +1957,12 @@ class TranslationsZhTw extends Translations
 
   @override String get animeCardUseBlur => '動漫卡片使用模糊背景';
 
+  @override String get tileTitleMarquee => '卡片標題滾動';
+
+  @override String get bangumiCardPerRow => '動漫卡片每行數量';
+
+  @override String get bangumiCardPerRowAuto => '自動';
+
   @override String get calendarFetchEpisodes => '每日動畫表啟動時搜尋集資訊';
 
   @override String get addKeyword => '新增關鍵字';
@@ -3401,6 +3407,9 @@ extension on TranslationsZhTw {
       'invalidClipboardFormat' => '無效的剪貼簿格式',
       'cannotModifySystemPreset' => '無法修改系統預設',
       'animeCardUseBlur' => '動漫卡片使用模糊背景',
+      'tileTitleMarquee' => '卡片標題滾動',
+      'bangumiCardPerRow' => '動漫卡片每行數量',
+      'bangumiCardPerRowAuto' => '自動',
       'calendarFetchEpisodes' => '每日動畫表啟動時搜尋集資訊',
       'addKeyword' => '新增關鍵字',
       'keyword' => '關鍵字',
@@ -3460,11 +3469,11 @@ extension on TranslationsZhTw {
       'thisMonth' => '本月',
       'generateSummary' => '生成總結',
       'generateTag' => '生成 Tag',
+      _ => null,
+    } ?? switch (path) {
       'summaryReport' => '總結報告',
       'noActivityInTimeRange' => '該時間段內暫無活動記錄',
       'weeklySummary' => '本週總結',
-      _ => null,
-    } ?? switch (path) {
       'monthlySummary' => '本月總結',
       'tagCopied' => 'Tag 已複製',
       'aiServiceConfig' => 'AI 服務配置',

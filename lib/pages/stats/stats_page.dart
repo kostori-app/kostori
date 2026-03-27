@@ -23,7 +23,6 @@ import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
-import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/line_chart_page.dart';
 import 'package:kostori/pages/stats/stats_controller.dart';
@@ -36,7 +35,9 @@ import 'package:word_cloud/word_cloud_exporter.dart';
 import 'package:word_cloud/word_cloud_view.dart';
 
 part 'stat_item_card.dart';
+
 part 'stats_overview.dart';
+
 part 'stats_view_page.dart';
 
 class StatsCalendarPage extends ConsumerStatefulWidget {

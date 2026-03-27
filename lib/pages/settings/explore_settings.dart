@@ -40,6 +40,10 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                     builder: setExplorePagesWidget,
                   ),
                   _SwitchSetting(
+                    title: t.tileTitleMarquee,
+                    settingKey: "tileTitleMarquee",
+                  ),
+                  _SwitchSetting(
                     title: t.showFavoriteStatusOnAnimeTile,
                     settingKey: "showFavoriteStatusOnTile",
                   ),

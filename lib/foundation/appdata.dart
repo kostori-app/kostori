@@ -203,6 +203,7 @@ class Settings with ChangeNotifier {
     'enablePlayerLog': true,
     'deepleKey': '',
     'explore_sources_order': [],
+    'tileTitleMarquee': false,
   };
 
   dynamic operator [](String key) {

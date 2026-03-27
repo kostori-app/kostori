@@ -966,8 +966,11 @@ importedAsNewConfig: Imported as new config
 imported: Imported
 invalidClipboardFormat: Invalid clipboard format
 cannotModifySystemPreset: Cannot modify system preset
-animeCardUseBlur: 番剧卡片使用模糊背景
-calendarFetchEpisodes: 每日番剧表启动时搜寻集信息
+animeCardUseBlur: Anime Card Use Blur Background
+tileTitleMarquee: Card Title Marquee
+bangumiCardPerRow: Anime Card Per Row
+bangumiCardPerRowAuto: Auto
+calendarFetchEpisodes: Fetch episode info on daily anime table startup
 addKeyword: Add keyword
 keyword: Keyword
 keywordAlreadyExists: Keyword already exists

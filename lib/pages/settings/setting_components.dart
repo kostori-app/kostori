@@ -462,6 +462,85 @@ class _SliderSettingState extends State<_SliderSetting> {
   }
 }
 
+class _IntSliderSetting extends StatefulWidget {
+  const _IntSliderSetting({
+    required this.title,
+    required this.settingsIndex,
+    required this.options,
+    this.onChanged,
+  });
+
+  final String title;
+
+  final String settingsIndex;
+
+  /// 选项列表，如 [0, 2, 3, 4, 5]，0 表示自动
+  final List<int> options;
+
+  final VoidCallback? onChanged;
+
+  @override
+  State<_IntSliderSetting> createState() => _IntSliderSettingState();
+}
+
+class _IntSliderSettingState extends State<_IntSliderSetting> {
+  String _getDisplayValue() {
+    final value = appdata.settings[widget.settingsIndex];
+    if (value == null || value.toString().isEmpty) {
+      return '自动';
+    }
+    return value.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Row(
+        children: [
+          Text(widget.title),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(_getDisplayValue(), style: ts.s12),
+          ),
+        ],
+      ),
+      subtitle: Slider(
+        value: _getCurrentIndex().toDouble(),
+        onChanged: (value) {
+          final index = value.round();
+          setState(() {
+            final option = widget.options[index];
+            if (option == 0) {
+              appdata.settings[widget.settingsIndex] = '';
+            } else {
+              appdata.settings[widget.settingsIndex] = option;
+            }
+            appdata.saveData();
+          });
+          widget.onChanged?.call();
+        },
+        divisions: widget.options.length - 1,
+        min: 0,
+        max: (widget.options.length - 1).toDouble(),
+      ),
+    );
+  }
+
+  int _getCurrentIndex() {
+    final value = appdata.settings[widget.settingsIndex];
+    if (value == null || value.toString().isEmpty) {
+      return 0; // 自动
+    }
+    final index = widget.options.indexOf(int.tryParse(value.toString()) ?? 0);
+    return index >= 0 ? index : 0;
+  }
+}
+
 class _PopupWindowSetting extends StatelessWidget {
   const _PopupWindowSetting({required this.title, required this.builder});
 
@@ -598,7 +677,7 @@ class _MultiPagesFilterState extends State<_MultiPagesFilter> {
     showDialog(
       context: context,
       builder: (context) {
-          return ContentDialog(
+        return ContentDialog(
           title: t.add,
           content: Column(
             mainAxisSize: MainAxisSize.min,

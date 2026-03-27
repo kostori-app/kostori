@@ -129,8 +129,8 @@ episodeEp: 第 ${ep} 话
 error: 错误
 exitMultiSelect: 退出多选
 exit: 退出
-explorePages: 浏览页面
-explore: 浏览
+explorePages: 探索页面
+explore: 探索
 exportAppData: 导出应用数据
 export: 导出
 failedToImport: 导入失败
@@ -967,6 +967,9 @@ imported: 已导入
 invalidClipboardFormat: 剪贴板格式无效
 cannotModifySystemPreset: 不能修改系统预设
 animeCardUseBlur: 番剧卡片使用模糊背景
+tileTitleMarquee: 卡片标题滚动
+bangumiCardPerRow: 番剧卡片每行数量
+bangumiCardPerRowAuto: 自动
 calendarFetchEpisodes: 每日番剧表启动时搜寻集信息
 addKeyword: 添加关键字
 keyword: 关键字

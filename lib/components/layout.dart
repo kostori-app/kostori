@@ -1,11 +1,12 @@
 part of 'components.dart';
 
 class SliverGridViewWithFixedItemHeight extends StatelessWidget {
-  const SliverGridViewWithFixedItemHeight(
-      {required this.delegate,
-      required this.maxCrossAxisExtent,
-      required this.itemHeight,
-      super.key});
+  const SliverGridViewWithFixedItemHeight({
+    required this.delegate,
+    required this.maxCrossAxisExtent,
+    required this.itemHeight,
+    super.key,
+  });
 
   final SliverChildDelegate delegate;
 
@@ -54,12 +55,13 @@ class SliverGridDelegateWithFixedHeight extends SliverGridDelegate {
       crossItems += 1;
     }
     return SliverGridRegularTileLayout(
-        crossAxisCount: crossItems,
-        mainAxisStride: itemHeight,
-        crossAxisStride: width / crossItems,
-        childMainAxisExtent: itemHeight,
-        childCrossAxisExtent: width / crossItems,
-        reverseCrossAxis: false);
+      crossAxisCount: crossItems,
+      mainAxisStride: itemHeight,
+      crossAxisStride: width / crossItems,
+      childMainAxisExtent: itemHeight,
+      childCrossAxisExtent: width / crossItems,
+      reverseCrossAxis: false,
+    );
   }
 
   @override
@@ -83,36 +85,35 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
   @override
   SliverGridLayout getLayout(SliverConstraints constraints) {
     if (useBriefMode) {
-      return getBriefModeLayout(
-        constraints,
-        scale,
-      );
+      return getBriefModeLayout(constraints, scale);
     } else {
-      return getDetailedModeLayout(
-        constraints,
-        scale,
-      );
+      return getDetailedModeLayout(constraints, scale);
     }
   }
 
   SliverGridLayout getDetailedModeLayout(
-      SliverConstraints constraints, double scale) {
+    SliverConstraints constraints,
+    double scale,
+  ) {
     const minCrossAxisExtent = 360;
     final itemHeight = 152 * scale;
     final width = constraints.crossAxisExtent;
     var crossItems = width ~/ minCrossAxisExtent;
     crossItems = math.max(1, crossItems);
     return SliverGridRegularTileLayout(
-        crossAxisCount: crossItems,
-        mainAxisStride: itemHeight,
-        crossAxisStride: width / crossItems,
-        childMainAxisExtent: itemHeight,
-        childCrossAxisExtent: width / crossItems,
-        reverseCrossAxis: false);
+      crossAxisCount: crossItems,
+      mainAxisStride: itemHeight,
+      crossAxisStride: width / crossItems,
+      childMainAxisExtent: itemHeight,
+      childCrossAxisExtent: width / crossItems,
+      reverseCrossAxis: false,
+    );
   }
 
   SliverGridLayout getBriefModeLayout(
-      SliverConstraints constraints, double scale) {
+    SliverConstraints constraints,
+    double scale,
+  ) {
     final maxCrossAxisExtent = 192.0 * scale;
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
@@ -157,9 +158,99 @@ class SliverLazyToBoxAdapter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SliverList.list(children: [
-      SizedBox(),
-      child,
-    ]);
+    return SliverList.list(children: [SizedBox(), child]);
+  }
+}
+
+class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
+  SliverGridDelegateWithBangumiItems(
+    this.useBriefMode, {
+    this.fixedCrossAxisCount,
+  });
+
+  final bool useBriefMode;
+  final int? fixedCrossAxisCount;
+  final double scale = 1.toDouble();
+
+  @override
+  SliverGridLayout getLayout(SliverConstraints constraints) {
+    if (useBriefMode) {
+      return getBriefModeLayout(constraints, scale);
+    } else {
+      return getDetailedModeLayout(constraints, scale);
+    }
+  }
+
+  SliverGridLayout getDetailedModeLayout(
+    SliverConstraints constraints,
+    double scale,
+  ) {
+    const minCrossAxisExtent = 360;
+    final itemHeight = 192 * scale;
+
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
+          .floor();
+      crossAxisCount = math.min(3, math.max(1, crossAxisCount));
+    }
+
+    return SliverGridRegularTileLayout(
+      crossAxisCount: crossAxisCount,
+      mainAxisStride: itemHeight,
+      crossAxisStride: constraints.crossAxisExtent / crossAxisCount,
+      childMainAxisExtent: itemHeight,
+      childCrossAxisExtent: constraints.crossAxisExtent / crossAxisCount,
+      reverseCrossAxis: false,
+    );
+  }
+
+  SliverGridLayout getBriefModeLayout(
+    SliverConstraints constraints,
+    double scale,
+  ) {
+    final maxCrossAxisExtent = 192.0 * scale;
+    const childAspectRatio = 0.68;
+    const crossAxisSpacing = 0.0;
+
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      crossAxisCount =
+          (constraints.crossAxisExtent /
+                  (maxCrossAxisExtent + crossAxisSpacing))
+              .ceil();
+      crossAxisCount = math.max(1, crossAxisCount);
+    }
+
+    final double usableCrossAxisExtent = math.max(
+      0.0,
+      constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1),
+    );
+    final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
+    final double childMainAxisExtent = childCrossAxisExtent / childAspectRatio;
+
+    return SliverGridRegularTileLayout(
+      crossAxisCount: crossAxisCount,
+      mainAxisStride: childMainAxisExtent,
+      crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
+      childMainAxisExtent: childMainAxisExtent,
+      childCrossAxisExtent: childCrossAxisExtent,
+      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
+    );
+  }
+
+  @override
+  bool shouldRelayout(covariant SliverGridDelegate oldDelegate) {
+    if (oldDelegate is! SliverGridDelegateWithBangumiItems) return true;
+    if (oldDelegate.scale != scale ||
+        oldDelegate.useBriefMode != useBriefMode ||
+        oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount) {
+      return true;
+    }
+    return false;
   }
 }

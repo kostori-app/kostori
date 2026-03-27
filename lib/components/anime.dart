@@ -352,6 +352,7 @@ class AnimeTile extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final useMarquee = appdata.settings['tileTitleMarquee'] == true;
           Widget image = Material(
             color: context.colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(12),
@@ -455,7 +456,7 @@ class AnimeTile extends ConsumerWidget {
                   child: SizedBox(
                     height: 20,
                     child: ClipRect(
-                      child: shouldScroll
+                      child: useMarquee && shouldScroll
                           ? Marquee(
                               text: title,
                               style: style,

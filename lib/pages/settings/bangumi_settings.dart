@@ -29,6 +29,11 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                     settingKey: "animeCardUseBlur",
                     dataSource: SwitchDataSource.implicit,
                   ),
+                  _IntSliderSetting(
+                    title: t.bangumiCardPerRow,
+                    settingsIndex: "bangumiCardPerRow",
+                    options: [0, 2, 3],
+                  ),
                   _SwitchSetting(
                     title: t.calendarFetchEpisodes,
                     settingKey: "calendarFetchEpisodes",

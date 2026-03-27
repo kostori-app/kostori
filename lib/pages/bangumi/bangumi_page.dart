@@ -6,6 +6,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/grid_speed_dial.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
@@ -111,6 +112,14 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
     await queryBangumiByTrend();
   }
 
+  int? _getFixedCrossAxisCount() {
+    final perRow = appdata.settings['bangumiCardPerRow'];
+    if (perRow != null && perRow.toString().isNotEmpty) {
+      return int.tryParse(perRow.toString());
+    }
+    return null;
+  }
+
   List<Widget> buildBangumiTrendingSlivers(BuildContext context) {
     return [
       SliverPadding(
@@ -158,7 +167,10 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
                   )
                 : null;
           }, childCount: bangumiItems.length),
-          gridDelegate: SliverGridDelegateWithBangumiItems(true),
+          gridDelegate: SliverGridDelegateWithBangumiItems(
+            true,
+            fixedCrossAxisCount: _getFixedCrossAxisCount(),
+          ),
         ),
       ),
       // 加载更多指示器

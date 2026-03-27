@@ -19,7 +19,6 @@ import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
-import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/bangumi/character_page.dart';
 import 'package:kostori/pages/bangumi/person_page.dart';
 import 'package:kostori/utils/io.dart';
@@ -264,7 +263,7 @@ class BangumiWidget {
     final ep = currentWeekEp.values.first;
 
     if (ep?.sort != null) {
-        return Expanded(
+      return Expanded(
         child: Text(
           isCompleted
               ? t.fullBEpisodesReleased(b: bangumiItem.totalEpisodes)
@@ -821,6 +820,7 @@ class BangumiBriefCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 2, 2, 4),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final useMarquee = appdata.settings['tileTitleMarquee'] == true;
           final height = constraints.maxHeight - 16;
           Widget image = Container(
             decoration: BoxDecoration(
@@ -929,14 +929,13 @@ class BangumiBriefCard extends StatelessWidget {
                   child: SizedBox(
                     height: 20,
                     child: ClipRect(
-                      child: shouldScroll
+                      child: useMarquee && shouldScroll
                           ? Marquee(
                               text: title,
                               style: style,
                               scrollAxis: Axis.horizontal,
                               blankSpace: 10.0,
                               velocity: 40.0,
-                              // startPadding: 10.0,
                               pauseAfterRound: Duration.zero,
                               accelerationDuration: Duration.zero,
                               decelerationDuration: Duration.zero,
@@ -1140,10 +1139,7 @@ class BangumiDetailedCard extends StatelessWidget {
                     itemSize: 16.0,
                   ),
                   Text(
-                    t.tReviewsR(
-                      r: bangumiItem.rank,
-                      t: bangumiItem.total,
-                    ),
+                    t.tReviewsR(r: bangumiItem.rank, t: bangumiItem.total),
                     style: const TextStyle(fontSize: 10),
                   ),
                 ],
@@ -1427,6 +1423,7 @@ class _BangumiCardState extends State<BangumiCard> {
   Widget build(BuildContext context) {
     String? image = widget.bangumiItem.images['large'];
     final animeCardUseBlur = appdata.implicitData['animeCardUseBlur'] ?? false;
+    final useMarquee = appdata.settings['tileTitleMarquee'] == true;
     Widget containerBackground(Widget child) {
       return Container(
         decoration: BoxDecoration(
@@ -1589,7 +1586,7 @@ class _BangumiCardState extends State<BangumiCard> {
                             right: 4,
                             bottom: 4,
                           ),
-                          child: shouldScroll
+                          child: useMarquee && shouldScroll
                               ? Marquee(
                                   text: title,
                                   style: style,

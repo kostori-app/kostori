@@ -2803,11 +2803,20 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Cannot modify system preset'
 	String get cannotModifySystemPreset => 'Cannot modify system preset';
 
-	/// en: '番剧卡片使用模糊背景'
-	String get animeCardUseBlur => '番剧卡片使用模糊背景';
+	/// en: 'Anime Card Use Blur Background'
+	String get animeCardUseBlur => 'Anime Card Use Blur Background';
 
-	/// en: '每日番剧表启动时搜寻集信息'
-	String get calendarFetchEpisodes => '每日番剧表启动时搜寻集信息';
+	/// en: 'Card Title Marquee'
+	String get tileTitleMarquee => 'Card Title Marquee';
+
+	/// en: 'Anime Card Per Row'
+	String get bangumiCardPerRow => 'Anime Card Per Row';
+
+	/// en: 'Auto'
+	String get bangumiCardPerRowAuto => 'Auto';
+
+	/// en: 'Fetch episode info on daily anime table startup'
+	String get calendarFetchEpisodes => 'Fetch episode info on daily anime table startup';
 
 	/// en: 'Add keyword'
 	String get addKeyword => 'Add keyword';
@@ -4416,8 +4425,11 @@ extension on Translations {
 			'imported' => 'Imported',
 			'invalidClipboardFormat' => 'Invalid clipboard format',
 			'cannotModifySystemPreset' => 'Cannot modify system preset',
-			'animeCardUseBlur' => '番剧卡片使用模糊背景',
-			'calendarFetchEpisodes' => '每日番剧表启动时搜寻集信息',
+			'animeCardUseBlur' => 'Anime Card Use Blur Background',
+			'tileTitleMarquee' => 'Card Title Marquee',
+			'bangumiCardPerRow' => 'Anime Card Per Row',
+			'bangumiCardPerRowAuto' => 'Auto',
+			'calendarFetchEpisodes' => 'Fetch episode info on daily anime table startup',
 			'addKeyword' => 'Add keyword',
 			'keyword' => 'Keyword',
 			'keywordAlreadyExists' => 'Keyword already exists',
@@ -4474,11 +4486,11 @@ extension on Translations {
 			'thisMonth' => 'This Month',
 			'generateSummary' => 'Generate Summary',
 			'generateTag' => 'Generate Tag',
+			_ => null,
+		} ?? switch (path) {
 			'summaryReport' => 'Summary Report',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',
-			_ => null,
-		} ?? switch (path) {
 			'monthlySummary' => 'Monthly Summary',
 			'tagCopied' => 'Tag copied',
 			'aiServiceConfig' => 'AI Service Configuration',

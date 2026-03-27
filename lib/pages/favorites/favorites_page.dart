@@ -26,7 +26,6 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
-import 'package:kostori/pages/bangumi/bangumi_search_page.dart';
 import 'package:kostori/pages/favorites/favorites_controller.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';

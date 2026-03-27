@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -10,12 +8,13 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
 import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_casts_item.dart';
 import 'package:kostori/foundation/consts.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
-import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
 
 class BangumiSearchPage extends ConsumerStatefulWidget {
@@ -41,6 +40,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   bool useBriefMode = false;
   bool displayLabels = false;
   bool multiSelectMode = false;
+  int? fixedCrossAxisCount;
 
   int? lastSelectedIndex;
 
@@ -95,6 +95,10 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   @override
   void initState() {
     super.initState();
+    final perRow = appdata.settings['bangumiCardPerRow'];
+    if (perRow != null && perRow.toString().isNotEmpty) {
+      fixedCrossAxisCount = int.tryParse(perRow.toString());
+    }
     if (widget.tag != null) {
       tags.add(widget.tag!);
       displayLabels = true;
@@ -644,6 +648,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
       ),
       gridDelegate: SliverGridDelegateWithBangumiItems(
         subjectSearch ? useBriefMode : true,
+        fixedCrossAxisCount: fixedCrossAxisCount,
       ),
     );
   }
@@ -902,9 +907,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                     );
 
                     return ContentDialog(
-                      title: step == 0
-                          ? t.selectYearAndMonth
-                          : t.selectDay,
+                      title: step == 0 ? t.selectYearAndMonth : t.selectDay,
                       content: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 200),
                         child: step == 0
@@ -1165,15 +1168,12 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                 ElevatedButton(
                   onPressed: () async {
                     if (air == null && end == null) {
-                      App.rootContext.showMessage(
-                        message: t.pleaseSelectADate,
-                      );
+                      App.rootContext.showMessage(message: t.pleaseSelectADate);
                       return;
                     }
                     if (air != null && end != null && end!.isBefore(air!)) {
                       context.showMessage(
-                        message:
-                            t.endDateCannotBeEarlierThanStartDate,
+                        message: t.endDateCannotBeEarlierThanStartDate,
                       );
                       return;
                     }
@@ -1208,9 +1208,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
           if (bangumiItems.isNotEmpty || characterItmes.isNotEmpty) ...[
             Text(
               t.showingLResults(
-                l: subjectSearch
-                    ? bangumiItems.length
-                    : characterItmes.length,
+                l: subjectSearch ? bangumiItems.length : characterItmes.length,
               ),
             ),
             const SizedBox(width: 8),
@@ -1298,15 +1296,9 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
       child: Row(
         children: [
           if (bangumiItems.isNotEmpty)
-            Text(
-              t.selectedAAnimes(a: selectedBangumiItems.length),
-            ),
+            Text(t.selectedAAnimes(a: selectedBangumiItems.length)),
           if (characterItmes.isNotEmpty)
-            Text(
-              t.selectedACharacter(
-                a: selectedCharacterItems.length,
-              ),
-            ),
+            Text(t.selectedACharacter(a: selectedCharacterItems.length)),
           const SizedBox(width: 8),
           IconButton(
             onPressed: () {
@@ -1664,9 +1656,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: Colors.transparent,
-                  hintText: keyword.isNotEmpty
-                      ? keyword
-                      : t.enterKeywords,
+                  hintText: keyword.isNotEmpty ? keyword : t.enterKeywords,
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -1971,98 +1961,4 @@ class TagCategory {
   final List<String> tags;
 
   TagCategory({required this.title, required this.tags});
-}
-
-class SliverGridDelegateWithBangumiItems extends SliverGridDelegate {
-  SliverGridDelegateWithBangumiItems(
-    this.useBriefMode, {
-    this.fixedCrossAxisCount,
-  });
-
-  final bool useBriefMode;
-  final int? fixedCrossAxisCount;
-  final double scale = 1.toDouble();
-
-  @override
-  SliverGridLayout getLayout(SliverConstraints constraints) {
-    if (useBriefMode) {
-      return getBriefModeLayout(constraints, scale);
-    } else {
-      return getDetailedModeLayout(constraints, scale);
-    }
-  }
-
-  SliverGridLayout getDetailedModeLayout(
-    SliverConstraints constraints,
-    double scale,
-  ) {
-    const minCrossAxisExtent = 360;
-    final itemHeight = 192 * scale;
-
-    int crossAxisCount;
-    if (fixedCrossAxisCount != null) {
-      crossAxisCount = fixedCrossAxisCount!;
-    } else {
-      crossAxisCount = (constraints.crossAxisExtent / minCrossAxisExtent)
-          .floor();
-      crossAxisCount = math.min(3, math.max(1, crossAxisCount));
-    }
-
-    return SliverGridRegularTileLayout(
-      crossAxisCount: crossAxisCount,
-      mainAxisStride: itemHeight,
-      crossAxisStride: constraints.crossAxisExtent / crossAxisCount,
-      childMainAxisExtent: itemHeight,
-      childCrossAxisExtent: constraints.crossAxisExtent / crossAxisCount,
-      reverseCrossAxis: false,
-    );
-  }
-
-  SliverGridLayout getBriefModeLayout(
-    SliverConstraints constraints,
-    double scale,
-  ) {
-    final maxCrossAxisExtent = 192.0 * scale;
-    const childAspectRatio = 0.68;
-    const crossAxisSpacing = 0.0;
-
-    int crossAxisCount;
-    if (fixedCrossAxisCount != null) {
-      crossAxisCount = fixedCrossAxisCount!;
-    } else {
-      crossAxisCount =
-          (constraints.crossAxisExtent /
-                  (maxCrossAxisExtent + crossAxisSpacing))
-              .ceil();
-      crossAxisCount = math.max(1, crossAxisCount);
-    }
-
-    final double usableCrossAxisExtent = math.max(
-      0.0,
-      constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1),
-    );
-    final double childCrossAxisExtent = usableCrossAxisExtent / crossAxisCount;
-    final double childMainAxisExtent = childCrossAxisExtent / childAspectRatio;
-
-    return SliverGridRegularTileLayout(
-      crossAxisCount: crossAxisCount,
-      mainAxisStride: childMainAxisExtent,
-      crossAxisStride: childCrossAxisExtent + crossAxisSpacing,
-      childMainAxisExtent: childMainAxisExtent,
-      childCrossAxisExtent: childCrossAxisExtent,
-      reverseCrossAxis: axisDirectionIsReversed(constraints.crossAxisDirection),
-    );
-  }
-
-  @override
-  bool shouldRelayout(covariant SliverGridDelegate oldDelegate) {
-    if (oldDelegate is! SliverGridDelegateWithBangumiItems) return true;
-    if (oldDelegate.scale != scale ||
-        oldDelegate.useBriefMode != useBriefMode ||
-        oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount) {
-      // 新增：检查固定列数变化
-      return true;
-    }
-    return false;
-  }
 }
