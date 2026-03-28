@@ -338,7 +338,7 @@ class _WebdavSettingState extends State<_WebdavSetting> {
                     App.rootPop();
                   }
                 },
-                child: Text(t['continue']),
+                child: Text(t.continueText),
               ),
             ),
           ],

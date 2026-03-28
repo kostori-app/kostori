@@ -72,7 +72,7 @@ close: 關閉
 comment: 吐槽
 comments: 吐槽箱
 confirm: 確定
-continue: 繼續
+continueText: 繼續
 copied: 已複製
 analyze: 分析
 analyzing: 分析中...
@@ -355,7 +355,7 @@ completed: 已完結
 mainCharacter: 主角
 supportingCharacter: 配角
 cameo: 客串
-idleCorner: 閒暇角落
+idleCorner: 閒角
 unknown: 未知
 debugInfo: 調試資訊
 install: 安裝

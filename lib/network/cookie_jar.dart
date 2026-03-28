@@ -63,6 +63,18 @@ class CookieJarSql {
     _db = _CookieDb(path);
   }
 
+  Future<T> _withDb<T>(Future<T> Function() op) async {
+    try {
+      return await op();
+    } catch (e) {
+      if (e.toString().contains('connection was closed')) {
+        _db = _CookieDb(path);
+        return await op();
+      }
+      rethrow;
+    }
+  }
+
   Cookie _rowToCookie(CookiesTableData r) => Cookie(r.name, r.value)
     ..domain = r.domain
     ..path = r.path
@@ -83,27 +95,31 @@ class CookieJarSql {
         );
         if (currentCookie != null) cookie.domain = currentCookie.domain;
       }
-      await _db
-          .into(_db.cookiesTable)
-          .insertOnConflictUpdate(
-            CookiesTableCompanion(
-              name: Value(cookie.name),
-              value: Value(cookie.value),
-              domain: Value(cookie.domain ?? uri.host),
-              path: Value(cookie.path ?? '/'),
-              expires: Value(cookie.expires?.millisecondsSinceEpoch),
-              secure: Value(cookie.secure),
-              httpOnly: Value(cookie.httpOnly),
+      await _withDb(
+        () => _db
+            .into(_db.cookiesTable)
+            .insertOnConflictUpdate(
+              CookiesTableCompanion(
+                name: Value(cookie.name),
+                value: Value(cookie.value),
+                domain: Value(cookie.domain ?? uri.host),
+                path: Value(cookie.path ?? '/'),
+                expires: Value(cookie.expires?.millisecondsSinceEpoch),
+                secure: Value(cookie.secure),
+                httpOnly: Value(cookie.httpOnly),
+              ),
             ),
-          );
+      );
     }
   }
 
   Future<List<Cookie>> _loadWithDomain(String domain) async {
-    final rows = await (_db.select(
-      _db.cookiesTable,
-    )..where((t) => t.domain.equals(domain))).get();
-    return rows.map(_rowToCookie).toList();
+    return _withDb(() async {
+      final rows = await (_db.select(
+        _db.cookiesTable,
+      )..where((t) => t.domain.equals(domain))).get();
+      return rows.map(_rowToCookie).toList();
+    });
   }
 
   List<String> _getAcceptedDomains(String host) {
@@ -128,13 +144,16 @@ class CookieJarSql {
         .toList();
 
     for (final c in expired) {
-      await (_db.delete(_db.cookiesTable)..where(
-            (t) =>
-                t.name.equals(c.name) &
-                t.domain.equals(c.domain!) &
-                t.path.equals(c.path!),
-          ))
-          .go();
+      await _withDb(
+        () =>
+            (_db.delete(_db.cookiesTable)..where(
+                  (t) =>
+                      t.name.equals(c.name) &
+                      t.domain.equals(c.domain!) &
+                      t.path.equals(c.path!),
+                ))
+                .go(),
+      );
     }
 
     return cookies
@@ -187,32 +206,39 @@ class CookieJarSql {
 
   Future<void> delete(Uri uri, String name) async {
     for (final domain in _getAcceptedDomains(uri.host)) {
-      await (_db.delete(_db.cookiesTable)..where(
-            (t) =>
-                t.name.equals(name) &
-                t.domain.equals(domain) &
-                t.path.equals(uri.path),
-          ))
-          .go();
+      await _withDb(
+        () =>
+            (_db.delete(_db.cookiesTable)..where(
+                  (t) =>
+                      t.name.equals(name) &
+                      t.domain.equals(domain) &
+                      t.path.equals(uri.path),
+                ))
+                .go(),
+      );
     }
   }
 
   Future<void> deleteCookieByName(String name) async {
-    await (_db.delete(
-      _db.cookiesTable,
-    )..where((t) => t.name.equals(name))).go();
+    await _withDb(
+      () => (_db.delete(
+        _db.cookiesTable,
+      )..where((t) => t.name.equals(name))).go(),
+    );
   }
 
   Future<void> deleteUri(Uri uri) async {
     for (final domain in _getAcceptedDomains(uri.host)) {
-      await (_db.delete(
-        _db.cookiesTable,
-      )..where((t) => t.domain.equals(domain))).go();
+      await _withDb(
+        () => (_db.delete(
+          _db.cookiesTable,
+        )..where((t) => t.domain.equals(domain))).go(),
+      );
     }
   }
 
   Future<void> deleteAll() async {
-    await _db.delete(_db.cookiesTable).go();
+    await _withDb(() => _db.delete(_db.cookiesTable).go());
   }
 
   Future<void> dispose() async {

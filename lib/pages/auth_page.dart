@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -43,10 +44,7 @@ class _AuthPageState extends State<AuthPage> {
               const SizedBox(height: 16),
               Text("Authentication Required".tl),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: auth,
-                child: Text("Continue".tl),
-              ),
+              FilledButton(onPressed: auth, child: Text(t.continueText)),
             ],
           ),
         ),
