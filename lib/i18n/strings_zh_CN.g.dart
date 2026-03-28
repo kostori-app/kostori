@@ -113,7 +113,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get comment => '评论';
 	@override String get comments => '评论';
 	@override String get confirm => '确认';
-	@override String get kContinue => '继续';
+	@override String get continueText => '继续';
 	@override String get copied => '已复制';
 	@override String get analyze => '分析';
 	@override String get analyzing => '分析中...';
@@ -396,7 +396,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get mainCharacter => '主角';
 	@override String get supportingCharacter => '配角';
 	@override String get cameo => '客串';
-	@override String get idleCorner => '闲暇角落';
+	@override String get idleCorner => '闲角';
 	@override String get unknown => '未知';
 	@override String get debugInfo => '调试信息';
 	@override String get install => '安装';
@@ -1266,7 +1266,7 @@ extension on TranslationsZhCn {
 			'comment' => '评论',
 			'comments' => '评论',
 			'confirm' => '确认',
-			'kContinue' => '继续',
+			'continueText' => '继续',
 			'copied' => '已复制',
 			'analyze' => '分析',
 			'analyzing' => '分析中...',
@@ -1549,7 +1549,7 @@ extension on TranslationsZhCn {
 			'mainCharacter' => '主角',
 			'supportingCharacter' => '配角',
 			'cameo' => '客串',
-			'idleCorner' => '闲暇角落',
+			'idleCorner' => '闲角',
 			'unknown' => '未知',
 			'debugInfo' => '调试信息',
 			'install' => '安装',

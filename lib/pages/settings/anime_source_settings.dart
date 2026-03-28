@@ -181,7 +181,7 @@ class _BodyState extends State<_Body> {
                   App.forceRebuild();
                   App.rootContext.showMessage(message: t.loadSuccess);
                 },
-                child: Text(t.kContinue),
+                child: Text(t.continueText),
               ),
             ],
           ),
@@ -480,9 +480,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
                     changed = true;
                   },
                 ).paddingHorizontal(16).paddingBottom(8),
-                Text(
-                  t.theUrlShouldPointToAIndexJsonFile,
-                ).paddingLeft(16),
+                Text(t.theUrlShouldPointToAIndexJsonFile).paddingLeft(16),
                 Text(
                   t.doNotReportAnyIssuesRelatedToSourcesToAppRepo,
                 ).paddingLeft(16),
@@ -497,10 +495,7 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
                       },
                       child: Text(t.reset),
                     ),
-                    FilledButton.tonal(
-                      onPressed: load,
-                      child: Text(t.refresh),
-                    ),
+                    FilledButton.tonal(onPressed: load, child: Text(t.refresh)),
                     const SizedBox(width: 16),
                   ],
                 ),
@@ -1147,7 +1142,7 @@ class _LoginPageState extends State<_LoginPage> {
                   Button.filled(
                     isLoading: loading,
                     onPressed: login,
-                    child: Text(t['continue']),
+                    child: Text(t.continueText),
                   ),
                 const SizedBox(height: 24),
                 if (widget.config.loginWebsite != null)
@@ -1585,9 +1580,7 @@ class _PingTestPageState extends State<_PingTestPage> {
                             ? Theme.of(context).colorScheme.error
                             : null,
                       ),
-                      tooltip: continuousPing
-                          ? t.close
-                          : t.continuousPing,
+                      tooltip: continuousPing ? t.close : t.continuousPing,
                       onPressed: testing
                           ? null
                           : continuousPing

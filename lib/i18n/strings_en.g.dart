@@ -264,7 +264,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	String get confirm => 'Confirm';
 
 	/// en: 'Continue'
-	String get kContinue => 'Continue';
+	String get continueText => 'Continue';
 
 	/// en: 'Copied'
 	String get copied => 'Copied';
@@ -3534,7 +3534,7 @@ extension on Translations {
 			'comment' => 'Comment',
 			'comments' => 'Comments',
 			'confirm' => 'Confirm',
-			'kContinue' => 'Continue',
+			'continueText' => 'Continue',
 			'copied' => 'Copied',
 			'analyze' => 'Analyze',
 			'analyzing' => 'Analyzing...',

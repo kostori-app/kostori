@@ -347,6 +347,75 @@ function setInterval(callback, delay) {
 }
 
 /**
+ * WebViewVideo - Headless WebView-based page extractor
+ *
+ * Loads a page in a native WebView (Android/iOS: HeadlessInAppWebView,
+ * Desktop: desktop_webview_window), executes JavaScript after load,
+ * and collects all values reported via __kostoriReport().
+ *
+ * @param {string} url     - The page URL to load
+ * @param {object} headers - Optional request headers (e.g. Referer, Cookie).
+ *                           'User-Agent' is applied at WebView level separately.
+ * @param {string} script  - JavaScript to inject after page load.
+ *                           Call __kostoriReport(data) to return data to Dart.
+ *                           'data' can be any JSON-serializable value.
+ * @param {number} waitMs  - How long (ms) to wait for async JS to finish
+ *                           before collecting results. Default: 8000.
+ * @returns {Promise<Array>} - Array of all values passed to __kostoriReport().
+ *
+ * @example
+ * // Extract all m3u8/mp4 URLs from a video page
+ * const results = await WebViewVideo.fetchVideoUrl(
+ *   'https://example.com/video',
+ *   { 'Referer': 'https://example.com', 'Cookie': 'token=abc' },
+ *   `
+ *     var origOpen = XMLHttpRequest.prototype.open;
+ *     XMLHttpRequest.prototype.open = function(m, u) {
+ *       if (/\.m3u8|\.mp4/i.test(u)) __kostoriReport({ type: 'video', url: u });
+ *       return origOpen.apply(this, arguments);
+ *     };
+ *   `,
+ *   10000,
+ * );
+ * // results => [{ type: 'video', url: 'https://...' }, ...]
+ *
+ * @example
+ * // Scrape image URLs from a gallery page
+ * const images = await WebViewVideo.fetchVideoUrl(
+ *   'https://example.com/gallery',
+ *   {},
+ *   `
+ *     document.querySelectorAll('img[src]').forEach(img => {
+ *       __kostoriReport({ type: 'image', url: img.src });
+ *     });
+ *   `,
+ * );
+ *
+ * @example
+ * // Extract embedded JSON data (e.g. Next.js __NEXT_DATA__)
+ * const data = await WebViewVideo.fetchVideoUrl(
+ *   'https://example.com/page',
+ *   {},
+ *   `
+ *     var el = document.getElementById('__NEXT_DATA__');
+ *     if (el) __kostoriReport(JSON.parse(el.textContent));
+ *   `,
+ * );
+ */
+const WebViewVideo = {
+    fetchVideoUrl: (url, headers, script, waitMs) => {
+        return sendMessage({
+            method: 'webview',
+            action: 'extract',
+            url: url,
+            headers: headers ?? {},
+            script: script ?? '',
+            waitMs: waitMs ?? 8000,
+        });
+    }
+};
+
+/**
  * Create a cookie object.
  * @param name {string}
  * @param value {string}

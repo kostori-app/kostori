@@ -207,7 +207,7 @@ class TranslationsZhTw extends Translations
 
   @override String get confirm => '確定';
 
-  @override String get kContinue => '繼續';
+  @override String get continueText => '繼續';
 
   @override String get copied => '已複製';
 
@@ -793,7 +793,7 @@ class TranslationsZhTw extends Translations
 
   @override String get cameo => '客串';
 
-  @override String get idleCorner => '閒暇角落';
+  @override String get idleCorner => '閒角';
 
   @override String get unknown => '未知';
 
@@ -2496,7 +2496,7 @@ extension on TranslationsZhTw {
       'comment' => '吐槽',
       'comments' => '吐槽箱',
       'confirm' => '確定',
-      'kContinue' => '繼續',
+      'continueText' => '繼續',
       'copied' => '已複製',
       'analyze' => '分析',
       'analyzing' => '分析中...',
@@ -2788,7 +2788,7 @@ extension on TranslationsZhTw {
       'mainCharacter' => '主角',
       'supportingCharacter' => '配角',
       'cameo' => '客串',
-      'idleCorner' => '閒暇角落',
+      'idleCorner' => '閒角',
       'unknown' => '未知',
       'debugInfo' => '調試資訊',
       'install' => '安裝',

@@ -72,7 +72,7 @@ close: 关闭
 comment: 评论
 comments: 评论
 confirm: 确认
-continue: 继续
+continueText: 继续
 copied: 已复制
 analyze: 分析
 analyzing: 分析中...
@@ -355,7 +355,7 @@ completed: 已完成
 mainCharacter: 主角
 supportingCharacter: 配角
 cameo: 客串
-idleCorner: 闲暇角落
+idleCorner: 闲角
 unknown: 未知
 debugInfo: 调试信息
 install: 安装

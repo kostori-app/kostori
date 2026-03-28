@@ -15,6 +15,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/js_pool.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/network/proxy.dart';
@@ -157,6 +158,8 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
             source?.saveData();
           case 'http':
             return _http(Map.from(message));
+          case 'webview':
+            return _handleWebView(Map.from(message));
           case 'html':
             return handleHtmlCallback(Map.from(message));
           case 'convert':
@@ -411,6 +414,31 @@ mixin class _JSEngineApi {
         clearCookies([data["url"]]);
         return null;
     }
+  }
+
+  Future<dynamic> _handleWebView(Map<String, dynamic> data) async {
+    String? action = data["action"] as String?;
+    if (action == 'extract') {
+      final url = data["url"] as String? ?? '';
+      final waitMs = data["waitMs"] as int? ?? 8000;
+      final script = data["script"] as String?;
+      Map<String, String>? headers;
+      if (data['headers'] != null) {
+        headers = Map<String, String>.from(data['headers']);
+      }
+      try {
+        return await WebViewResolver.fetchViaWebView(
+          url,
+          headers: headers,
+          script: script,
+          waitMs: waitMs,
+        );
+      } catch (e) {
+        SourceLog.error("WebViewResolver", e.toString());
+        return <dynamic>[];
+      }
+    }
+    return null;
   }
 
   void clearCookies(List<String> domains) async {
