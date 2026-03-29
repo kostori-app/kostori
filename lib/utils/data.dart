@@ -79,10 +79,10 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       }
     }
     if (await historyFile.exists()) {
-      await HistoryManager().close();
-      File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
-      historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
-      await HistoryManager().init();
+      await HistoryManager().reinit(() async {
+        File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
+        historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
+      });
     }
     if (await localFavoriteFile.exists()) {
       LocalFavoritesManager().close();
@@ -95,26 +95,26 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       LocalFavoritesManager().init();
     }
     if (await bangumiFile.exists()) {
-      await providerContainer.read(bangumiManagerProvider).close();
-      File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
-      bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
-      await providerContainer.read(bangumiManagerProvider).init();
+      await providerContainer.read(bangumiManagerProvider).reinit(() async {
+        File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
+        bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
+      });
     }
     if (await statsFile.exists()) {
-      await StatsManager().close();
-      File(FilePath.join(App.dataPath, "stats.db")).deleteIfExistsSync();
-      statsFile.renameSync(FilePath.join(App.dataPath, "stats.db"));
-      await StatsManager().init();
+      await StatsManager().reinit(() async {
+        File(FilePath.join(App.dataPath, "stats.db")).deleteIfExistsSync();
+        statsFile.renameSync(FilePath.join(App.dataPath, "stats.db"));
+      });
     }
     if (await searchHistoryFile.exists()) {
-      await SearchHistoryManager().close();
-      File(
-        FilePath.join(App.dataPath, "search_history.db"),
-      ).deleteIfExistsSync();
-      searchHistoryFile.renameSync(
-        FilePath.join(App.dataPath, "search_history.db"),
-      );
-      await SearchHistoryManager().init();
+      await SearchHistoryManager().reinit(() async {
+        File(
+          FilePath.join(App.dataPath, "search_history.db"),
+        ).deleteIfExistsSync();
+        searchHistoryFile.renameSync(
+          FilePath.join(App.dataPath, "search_history.db"),
+        );
+      });
     }
     if (await appdataFile.exists()) {
       var content = await appdataFile.readAsString();

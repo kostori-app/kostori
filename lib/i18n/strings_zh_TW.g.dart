@@ -353,7 +353,7 @@ class TranslationsZhTw extends Translations
 
   @override String get folders => '資料夾';
 
-  @override String get following => '追蹤中';
+  @override String get following => '收藏';
 
   @override String get fullScreen => '全螢幕';
 
@@ -2567,7 +2567,7 @@ extension on TranslationsZhTw {
       'folderName' => '資料夾名稱',
       'folder' => '資料夾',
       'folders' => '資料夾',
-      'following' => '追蹤中',
+      'following' => '收藏',
       'fullScreen' => '全螢幕',
       'fullscreen' => '全螢幕',
       'gitMirror' => 'Git 鏡像',

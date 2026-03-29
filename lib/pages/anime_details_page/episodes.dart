@@ -130,6 +130,11 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
           ),
           const Divider(height: 1, indent: 16, endIndent: 16),
           ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 0,
+            ),
+            minVerticalPadding: 0,
             title: Row(
               children: [
                 Text(t.playlist),
@@ -197,124 +202,141 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
             ),
           ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: GridView.builder(
-              key: ValueKey(playList),
-              gridDelegate: const SliverGridDelegateWithFixedHeight(
-                maxCrossAxisExtent: 200,
-                itemHeight: 84,
-              ),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: length,
-              itemBuilder: (context, i) {
-                int index = i;
-                if (reverse) {
-                  index = length - i - 1;
-                }
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final availableWidth =
+                  constraints.maxWidth - 16; // subtract horizontal padding
+              final crossAxisCount = screenWidth < 1200 ? 3 : 4;
+              final itemWidth = availableWidth / crossAxisCount;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Wrap(
+                  spacing: 0,
+                  runSpacing: 0,
+                  children: List.generate(length, (i) {
+                    int index = i;
+                    if (reverse) {
+                      index = length - i - 1;
+                    }
 
-                var key = currentEps.keys.elementAt(index);
-                var value = currentEps[key]!;
-                bool visited = (history?.watchEpisode ?? const {}).contains(
-                  index + 1,
-                );
+                    var key = currentEps.keys.elementAt(index);
+                    var value = currentEps[key]!;
+                    bool visited = (history?.watchEpisode ?? const {}).contains(
+                      index + 1,
+                    );
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 8,
-                  ),
-                  child: Material(
-                    color: !visited
-                        ? context.colorScheme.surfaceContainer
-                        : Theme.of(context).colorScheme.primary.toOpacity(0.3),
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                    child: InkWell(
-                      onTap: () async => await WatcherState.currentState!
-                          .loadInfo(index + 1, playList)
-                          .then((_) {
-                            if (mounted) {
-                              setState(() {});
-                            }
-                          }),
-                      onLongPress: () {
-                        showEp(ep: index, road: playList);
-                      },
-                      borderRadius: const BorderRadius.all(Radius.circular(12)),
+                    return SizedBox(
+                      width: itemWidth,
+                      height: 84,
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 4,
+                          vertical: 8,
                         ),
-                        child: Row(
-                          children: [
-                            Observer(
-                              builder: (context) {
-                                final isCurrent =
-                                    playList ==
-                                        state.playerController.currentRoad &&
-                                    index ==
-                                        state.playerController.currentEpisoded -
-                                            1;
-
-                                if (!isCurrent) {
-                                  return const SizedBox.shrink();
-                                }
-
-                                return Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    state.playerController.playing
-                                        ? Image.asset(
-                                            'assets/img/playing.gif',
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                            height: 16,
-                                          )
-                                        : Icon(
-                                            Icons.pause,
-                                            size: 16,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                          ),
-                                    const SizedBox(width: 6),
-                                  ],
-                                );
-                              },
+                        child: Material(
+                          color: !visited
+                              ? context.colorScheme.surfaceContainer
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.primary.toOpacity(0.3),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(12),
+                          ),
+                          child: InkWell(
+                            onTap: () async => await WatcherState.currentState!
+                                .loadInfo(index + 1, playList)
+                                .then((_) {
+                                  if (mounted) {
+                                    setState(() {});
+                                  }
+                                }),
+                            onLongPress: () {
+                              showEp(ep: index, road: playList);
+                            },
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(12),
                             ),
-                            Expanded(
-                              child: Text(
-                                value,
-                                maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: visited
-                                      ? (playList ==
-                                                    state
-                                                        .playerController
-                                                        .currentRoad &&
-                                                i ==
-                                                    state
-                                                            .playerController
-                                                            .currentEpisoded -
-                                                        1)
-                                            ? null
-                                            : context.colorScheme.outline
-                                      : null,
-                                ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Row(
+                                children: [
+                                  Observer(
+                                    builder: (context) {
+                                      final isCurrent =
+                                          playList ==
+                                              state
+                                                  .playerController
+                                                  .currentRoad &&
+                                          index ==
+                                              state
+                                                      .playerController
+                                                      .currentEpisoded -
+                                                  1;
+
+                                      if (!isCurrent) {
+                                        return const SizedBox.shrink();
+                                      }
+
+                                      return Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          state.playerController.playing
+                                              ? Image.asset(
+                                                  'assets/img/playing.gif',
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                                  height: 16,
+                                                )
+                                              : Icon(
+                                                  Icons.pause,
+                                                  size: 16,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                                ),
+                                          const SizedBox(width: 6),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      value,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: visited
+                                            ? (playList ==
+                                                          state
+                                                              .playerController
+                                                              .currentRoad &&
+                                                      i ==
+                                                          state
+                                                                  .playerController
+                                                                  .currentEpisoded -
+                                                              1)
+                                                  ? null
+                                                  : context.colorScheme.outline
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                    );
+                  }),
+                ),
+              );
+            },
           ),
 
           if (currentEps.length > 24 && !showAll)

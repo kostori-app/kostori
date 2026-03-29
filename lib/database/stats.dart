@@ -508,6 +508,19 @@ class StatsManager with ChangeNotifier {
     isInitialized = false;
   }
 
+  Future<void> reinit([Future<void> Function()? between]) async {
+    if (isInitialized) {
+      await _db.close();
+      isInitialized = false;
+    }
+
+    await between?.call();
+
+    _db = _StatsDb();
+    isInitialized = true;
+    notifyListeners();
+  }
+
   // ─── 工具 ──────────────────────────────────
 
   StatsDataImpl createStatsData({

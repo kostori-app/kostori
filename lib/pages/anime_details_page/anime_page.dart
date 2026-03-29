@@ -198,13 +198,13 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   Future<void> onDataLoaded() async {
     if (history == null) {
       history = History.fromModel(model: data!);
-      HistoryManager().addHistory(history!);
+      await HistoryManager().addHistory(history!);
     }
     if (history?.bangumiId != null) {
       updateBangumiBind();
     }
     history!.time = DateTime.now();
-    HistoryManager().addHistoryAsync(history!);
+    await HistoryManager().addHistory(history!);
     watcherController.history = history;
 
     isBangumi = animeSource.isBangumi;
@@ -281,7 +281,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
 
     history?.bangumiId = res.first.id;
-    HistoryManager().addHistoryAsync(history!);
+    await HistoryManager().addHistory(history!);
   }
 
   void onScroll() {
@@ -1058,11 +1058,18 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  child: SliverGridAnimes(
-                    animes: anime.recommend!,
-                    isRecommend: true,
-                    asSliver: false,
-                    shrinkWrap: true,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final screenWidth = MediaQuery.of(context).size.width;
+                      final crossAxisCount = screenWidth < 800 ? 3 : 4;
+                      return SliverGridAnimes(
+                        animes: anime.recommend!,
+                        isRecommend: true,
+                        asSliver: false,
+                        shrinkWrap: true,
+                        crossAxisCount: crossAxisCount,
+                      );
+                    },
                   ),
                 ),
               ],

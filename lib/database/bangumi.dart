@@ -327,6 +327,19 @@ class BangumiManager with ChangeNotifier {
     isInitialized = false;
   }
 
+  Future<void> reinit([Future<void> Function()? between]) async {
+    if (isInitialized) {
+      await _db.close();
+      isInitialized = false;
+    }
+
+    await between?.call();
+
+    _db = _BangumiDb();
+    isInitialized = true;
+    notifyListeners();
+  }
+
   // ─── bangumi_data ──────────────────────────
 
   Future<void> addBangumiData(BangumiData item) async {

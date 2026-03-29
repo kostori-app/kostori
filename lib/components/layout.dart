@@ -76,7 +76,9 @@ class SliverGridDelegateWithFixedHeight extends SliverGridDelegate {
 }
 
 class SliverGridDelegateWithAnimes extends SliverGridDelegate {
-  SliverGridDelegateWithAnimes();
+  SliverGridDelegateWithAnimes({this.fixedCrossAxisCount});
+
+  final int? fixedCrossAxisCount;
 
   final bool useBriefMode = appdata.settings['animeDisplayMode'] == 'brief';
 
@@ -98,8 +100,13 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
     const minCrossAxisExtent = 360;
     final itemHeight = 152 * scale;
     final width = constraints.crossAxisExtent;
-    var crossItems = width ~/ minCrossAxisExtent;
-    crossItems = math.max(1, crossItems);
+    int crossItems;
+    if (fixedCrossAxisCount != null) {
+      crossItems = fixedCrossAxisCount!;
+    } else {
+      crossItems = width ~/ minCrossAxisExtent;
+      crossItems = math.max(1, crossItems);
+    }
     return SliverGridRegularTileLayout(
       crossAxisCount: crossItems,
       mainAxisStride: itemHeight,
@@ -114,15 +121,20 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
     SliverConstraints constraints,
     double scale,
   ) {
-    final maxCrossAxisExtent = 192.0 * scale;
+    int crossAxisCount;
+    if (fixedCrossAxisCount != null) {
+      crossAxisCount = fixedCrossAxisCount!;
+    } else {
+      final maxCrossAxisExtent = 192.0 * scale;
+      const crossAxisSpacing = 0.0;
+      crossAxisCount =
+          (constraints.crossAxisExtent /
+                  (maxCrossAxisExtent + crossAxisSpacing))
+              .ceil();
+      crossAxisCount = math.max(1, crossAxisCount);
+    }
     const childAspectRatio = 0.68;
     const crossAxisSpacing = 0.0;
-    int crossAxisCount =
-        (constraints.crossAxisExtent / (maxCrossAxisExtent + crossAxisSpacing))
-            .ceil();
-    // Ensure a minimum count of 1, can be zero and result in an infinite extent
-    // below when the window size is 0.
-    crossAxisCount = math.max(1, crossAxisCount);
     final double usableCrossAxisExtent = math.max(
       0.0,
       constraints.crossAxisExtent - crossAxisSpacing * (crossAxisCount - 1),
@@ -143,7 +155,8 @@ class SliverGridDelegateWithAnimes extends SliverGridDelegate {
   bool shouldRelayout(covariant SliverGridDelegate oldDelegate) {
     if (oldDelegate is! SliverGridDelegateWithAnimes) return true;
     if (oldDelegate.scale != scale ||
-        oldDelegate.useBriefMode != useBriefMode) {
+        oldDelegate.useBriefMode != useBriefMode ||
+        oldDelegate.fixedCrossAxisCount != fixedCrossAxisCount) {
       return true;
     }
     return false;

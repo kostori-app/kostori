@@ -75,6 +75,19 @@ class SearchHistoryManager with ChangeNotifier {
     isInitialized = false;
   }
 
+  Future<void> reinit([Future<void> Function()? between]) async {
+    if (isInitialized) {
+      await _db.close();
+      isInitialized = false;
+    }
+
+    await between?.call();
+
+    _db = _SearchHistoryDb();
+    isInitialized = true;
+    notifyListeners();
+  }
+
   Future<void> addSearch(String keyword) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await _db.customUpdate(

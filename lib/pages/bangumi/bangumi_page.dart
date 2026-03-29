@@ -368,7 +368,7 @@ class _TimetableState extends State<_Timetable> {
 
   Future<void> filterTodayBangumiItems() async {
     try {
-      final calendar = await loadBangumiCalendar();
+      final calendar = await loadBangumiCalendar(isFetchEpisodes: false);
       final todayItems = calendar[weekday - 1];
 
       if (mounted) {

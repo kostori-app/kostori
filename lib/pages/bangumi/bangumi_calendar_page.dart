@@ -23,7 +23,9 @@ import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 
-Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
+Future<List<List<BangumiItem>>> loadBangumiCalendar({
+  bool isFetchEpisodes = true,
+}) async {
   try {
     final allItems = await providerContainer
         .read(bangumiManagerProvider)
@@ -39,7 +41,7 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
         .toList();
 
     final fetchEpisodes = appdata.settings['calendarFetchEpisodes'] ?? false;
-    final allEpisodesMap = fetchEpisodes
+    final allEpisodesMap = fetchEpisodes && isFetchEpisodes
         ? await _fetchEpisodesInBatches(validItems)
         : <int, List<EpisodeInfo>>{};
 
@@ -56,7 +58,7 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar() async {
         final weekday = DateTime.parse(airTimeStr).toLocal().weekday;
         final episodes = allEpisodesMap[item.id];
 
-        final episodeResult = fetchEpisodes
+        final episodeResult = fetchEpisodes && isFetchEpisodes
             ? await _processEpisodeInfo(
                 episodes: episodes,
                 now: now,

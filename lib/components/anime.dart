@@ -758,6 +758,7 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
     this.isRecommend,
     this.asSliver = true,
     this.shrinkWrap = false,
+    this.crossAxisCount,
   });
 
   final List<Anime> animes;
@@ -783,6 +784,8 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
   final bool asSliver;
 
   final bool shrinkWrap;
+
+  final int? crossAxisCount;
 
   @override
   ConsumerState<SliverGridAnimes> createState() => _SliverGridAnimesState();
@@ -860,6 +863,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
       isRecommend: widget.isRecommend,
       asSliver: widget.asSliver,
       shrinkWrap: widget.shrinkWrap,
+      crossAxisCount: widget.crossAxisCount,
     );
   }
 }
@@ -879,6 +883,7 @@ class _SliverGridAnimes extends StatelessWidget {
     this.isRecommend,
     this.asSliver = true,
     this.shrinkWrap = false,
+    this.crossAxisCount,
   });
 
   final List<Anime> animes;
@@ -906,6 +911,8 @@ class _SliverGridAnimes extends StatelessWidget {
   final bool asSliver;
 
   final bool shrinkWrap;
+
+  final int? crossAxisCount;
 
   @override
   Widget build(BuildContext context) {
@@ -950,14 +957,18 @@ class _SliverGridAnimes extends StatelessWidget {
             child: anime,
           );
         }, childCount: animes.length),
-        gridDelegate: SliverGridDelegateWithAnimes(),
+        gridDelegate: SliverGridDelegateWithAnimes(
+          fixedCrossAxisCount: crossAxisCount,
+        ),
       );
     } else {
       return GridView.builder(
         padding: EdgeInsets.zero,
         physics: const ClampingScrollPhysics(),
         itemCount: animes.length,
-        gridDelegate: SliverGridDelegateWithAnimes(),
+        gridDelegate: SliverGridDelegateWithAnimes(
+          fixedCrossAxisCount: crossAxisCount,
+        ),
         shrinkWrap: shrinkWrap,
         itemBuilder: (context, index) {
           if (index == animes.length - 1) {

@@ -385,7 +385,7 @@ abstract mixin class _AnimePageActions {
                 try {
                   if (history != null) {
                     history!.bangumiId = item.id;
-                    HistoryManager().addHistoryAsync(history!);
+                    await HistoryManager().addHistory(history!);
                     WatcherState.currentState!.bangumiId = item.id;
                     infoController.bangumiId = item.id;
                     BottomInfoState.currentState?.queryBangumiInfoByID(item.id);

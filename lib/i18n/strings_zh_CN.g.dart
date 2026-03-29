@@ -183,7 +183,7 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get folderName => '文件夹名称';
 	@override String get folder => '文件夹';
 	@override String get folders => '文件夹';
-	@override String get following => '追番中';
+	@override String get following => '收藏';
 	@override String get fullScreen => '全屏';
 	@override String get fullscreen => '全屏';
 	@override String get gitMirror => 'Git 镜像';
@@ -1336,7 +1336,7 @@ extension on TranslationsZhCn {
 			'folderName' => '文件夹名称',
 			'folder' => '文件夹',
 			'folders' => '文件夹',
-			'following' => '追番中',
+			'following' => '收藏',
 			'fullScreen' => '全屏',
 			'fullscreen' => '全屏',
 			'gitMirror' => 'Git 镜像',

@@ -395,6 +395,22 @@ class HistoryManager with ChangeNotifier {
     isInitialized = false;
   }
 
+  Future<void> reinit([Future<void> Function()? between]) async {
+    if (isInitialized) {
+      await _db.close();
+      isInitialized = false;
+      _cachedHistoryIds = null;
+      cachedHistories.clear();
+    }
+
+    await between?.call();
+
+    _db = _HistoryDb();
+    isInitialized = true;
+    await _updateCache();
+    notifyListeners();
+  }
+
   int get length => _cachedHistoryIds?.length ?? 0;
 
   // ─── 缓存 ──────────────────────────────────
@@ -422,9 +438,6 @@ class HistoryManager with ChangeNotifier {
     cachedHistories.remove(cachedHistories.keys.first);
     notifyListeners();
   }
-
-  /// Drift 后台数据库已在独立 isolate 运行，直接 await 即可
-  Future<void> addHistoryAsync(History item) => addHistory(item);
 
   Future<void> remove(String id, AnimeType type) async {
     await (_db.delete(_db.historyTable)..where((t) => t.id.equals(id))).go();

@@ -95,7 +95,7 @@ class WatcherState extends State<Watcher>
       if (history.lastWatchEpisode != 0) {
         loadInfo(history.lastWatchEpisode!, history.lastRoad!.toInt());
       }
-      updateHistory();
+      await updateHistory();
     });
   }
 
@@ -249,7 +249,7 @@ class WatcherState extends State<Watcher>
       history.lastRoad = road;
 
       loaded = episodeIndex;
-      updateHistory();
+      await updateHistory();
     } catch (e, s) {
       PlayLog.error("_loadEpisode", "$e\n$s");
     }
@@ -295,7 +295,9 @@ class WatcherState extends State<Watcher>
     await completer.future;
     updateHistoryTimer?.cancel();
     if (!mounted) return;
-    updateHistoryTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    updateHistoryTimer = Timer.periodic(const Duration(seconds: 1), (
+      timer,
+    ) async {
       if (playerController.player.state.playing) {
         history.lastWatchTime =
             playerController.player.state.position.inMilliseconds;
@@ -303,7 +305,7 @@ class WatcherState extends State<Watcher>
           history.bangumiId = bangumiId;
         }
 
-        HistoryManager().addHistoryAsync(history);
+        await HistoryManager().addHistory(history);
         HistoryManager().updateProgress(
           historyId: anime.id,
           type: anime.animeType,
@@ -445,7 +447,7 @@ class WatcherState extends State<Watcher>
     );
   }
 
-  void updateHistory() {
+  Future<void> updateHistory() async {
     history.lastWatchEpisode = epIndex;
     history.allEpisode =
         anime.episode?.values.elementAt(playerController.currentRoad).length ??
@@ -453,7 +455,7 @@ class WatcherState extends State<Watcher>
     if (anime.cover.isNotEmpty) {
       history.cover = anime.cover;
     }
-    HistoryManager().addHistoryAsync(history);
+    await HistoryManager().addHistory(history);
   }
 }
 
