@@ -1,11 +1,16 @@
 import 'dart:ui';
 
+import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
+import 'package:kostori/utils/remote.dart';
 import 'package:scrollview_observer/scrollview_observer.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -34,6 +39,9 @@ class _VideoPageState extends State<VideoPage>
 
   // 当前播放列表
   late int currentRoad;
+
+  // Tab controller for the side panel
+  late TabController _panelTabController;
 
   void menuJumpToCurrentEpisode() {
     Future.delayed(const Duration(milliseconds: 20), () {
@@ -106,6 +114,9 @@ class _VideoPageState extends State<VideoPage>
     playerController.showTabBody = false;
     playerController.currentRoad = 0;
     currentRoad = 0;
+
+    // Initialize panel tab controller with 3 tabs
+    _panelTabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -114,6 +125,7 @@ class _VideoPageState extends State<VideoPage>
       playerController.overlayKey = null;
     }
     observerController.controller?.dispose();
+    _panelTabController.dispose();
     super.dispose();
   }
 
@@ -240,30 +252,54 @@ class _VideoPageState extends State<VideoPage>
       ),
       child: Container(
         color: Colors.black.toOpacity(0.42),
-        child: GridViewObserver(
-          controller: observerController,
-          child: Column(children: [tabBar, tabBody]),
+        child: Column(
+          children: [
+            _buildTabBar(),
+            Expanded(
+              child: ExtendedTabBarView(
+                controller: _panelTabController,
+                children: [
+                  _buildPlaylistTab(),
+                  _buildVideoInfoAndSettingsTab(),
+                  _buildPlayerDetailsTab(),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget get playerBody {
-    return PlayerItem(
-      openMenu: openTabBodyAnimated,
-      locateEpisode: menuJumpToCurrentEpisode,
-      keyboardFocus: playerController.keyboardFocus,
-      playerController: playerController,
+  Widget _buildTabBar() {
+    return TabBar(
+      controller: _panelTabController,
+      isScrollable: true,
+      tabAlignment: TabAlignment.start,
+      indicatorColor: Theme.of(context).colorScheme.primary,
+      labelColor: Colors.white,
+      unselectedLabelColor: Colors.white60,
+      tabs: const [
+        Tab(text: '播放列表'),
+        Tab(text: '视频详情'),
+        Tab(text: '播放详情'),
+      ],
     );
   }
 
-  Widget get tabBar {
+  Widget _buildPlaylistTab() {
+    return GridViewObserver(
+      controller: observerController,
+      child: Column(children: [_buildPlaylistHeader(), _buildPlaylistBody()]),
+    );
+  }
+
+  Widget _buildPlaylistHeader() {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(' 合集 '),
           Expanded(
             child: Text(
               WatcherState.currentState!.anime.title,
@@ -327,12 +363,10 @@ class _VideoPageState extends State<VideoPage>
     );
   }
 
-  Widget get tabBody {
+  Widget _buildPlaylistBody() {
     var cardList = <Widget>[];
     var roadList = WatcherState.currentState!.anime.episode ?? {};
-    var selectedRoad = roadList.values.elementAt(
-      currentRoad,
-    ); // 用 currentRoad 直接获取对应的 road
+    var selectedRoad = roadList.values.elementAt(currentRoad);
     final watcher = WatcherState.currentState!;
 
     int count = 1;
@@ -378,7 +412,7 @@ class _VideoPageState extends State<VideoPage>
                         ],
                         Expanded(
                           child: Text(
-                            selectedRoad[epKey] ?? "", // 显示每一集的标题
+                            selectedRoad[epKey] ?? "",
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -430,6 +464,276 @@ class _VideoPageState extends State<VideoPage>
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildVideoInfoAndSettingsTab() {
+    final anime = WatcherState.currentState!.anime;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Video info section
+          Text(
+            anime.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (anime.subTitle != null && anime.subTitle!.isNotEmpty) ...[
+            Text(
+              anime.subTitle!,
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (anime.description != null && anime.description!.isNotEmpty) ...[
+            const Text(
+              '简介',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              anime.description!,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+          ],
+          _buildInfoItem('当前集数', playerController.currentEpisoded.toString()),
+          _buildInfoItem('播放线路', playerController.currentSetName),
+          _buildInfoItem(
+            '进度',
+            '${playerController.currentPosition.inSeconds}秒 / ${playerController.duration.inSeconds}秒',
+          ),
+          const Divider(color: Colors.white24, height: 32),
+          // Settings section
+          // Playback speed slider
+          const Text(
+            '播放倍率',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text(
+                '0.5x',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              Expanded(
+                child: Slider(
+                  value: playerController.playbackSpeed,
+                  min: 0.5,
+                  max: 4.0,
+                  divisions: 7,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                  inactiveColor: Colors.white24,
+                  onChanged: (value) {
+                    playerController.setPlaybackSpeed(value);
+                    setState(() {});
+                  },
+                ),
+              ),
+              const Text(
+                '4.0x',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+          Center(
+            child: Text(
+              '${playerController.playbackSpeed.toStringAsFixed(2)}x',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Super resolution section
+          Text(
+            t.superResolution,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SegmentedButton<int>(
+            segments: [
+              ButtonSegment<int>(value: 1, label: Text(t.superResolutionOff)),
+              ButtonSegment<int>(
+                value: 2,
+                label: Text(t.superResolutionEfficiency),
+              ),
+              ButtonSegment<int>(
+                value: 3,
+                label: Text(t.superResolutionQuality),
+              ),
+            ],
+            selected: {playerController.superResolutionType},
+            onSelectionChanged: (Set<int> selected) {
+              if (selected.isNotEmpty) {
+                final type = selected.first;
+                playerController.setShader(type);
+                setState(() {});
+              }
+            },
+          ),
+          const SizedBox(height: 24),
+          // Other settings
+          const Text(
+            '其他设置',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Audio option (Android only)
+          if (App.isAndroid)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ListTile(
+                title: Text(
+                  (appdata.settings['audioOutType'] ?? true)
+                      ? '音频: 低延迟'
+                      : '音频: 兼容模式',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                trailing: CustomSwitch(
+                  value: appdata.settings['audioOutType'] ?? true,
+                  onChanged: (value) async {
+                    try {
+                      await playerController.changeAudioOutType();
+                      App.rootContext.showMessage(message: '切换成功');
+                      setState(() {});
+                    } catch (e) {
+                      App.rootContext.showMessage(message: '切换失败');
+                    }
+                  },
+                ),
+              ),
+            ),
+          // Light mode toggle
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white10,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              title: Text(
+                '${t.glimmerMode}: ${playerController.glimmerEffect ? t.glimmerModeOn : t.glimmerModeOff}',
+                style: const TextStyle(color: Colors.white),
+              ),
+              trailing: CustomSwitch(
+                value: playerController.glimmerEffect,
+                onChanged: (value) {
+                  playerController.glimmerEffect = value;
+                  appdata.implicitData['glimmerEffect'] = value;
+                  appdata.writeImplicitData();
+                  setState(() {});
+                },
+              ),
+            ),
+          ),
+          // Remote cast button
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white10,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.cast, color: Colors.white70),
+              title: const Text('远程投屏', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                bool needRestart = playerController.playing;
+                playerController.pause();
+                RemotePlay().castVideo(playerController.videoUrl).whenComplete(
+                  () {
+                    if (needRestart) {
+                      playerController.play();
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+          // Logs button (only when not fullscreen)
+          if (!playerController.isFullScreen)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.bug_report, color: Colors.white70),
+                title: const Text('日志', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  context.to(() => const LogsPage());
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white60, fontSize: 14),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerDetailsTab() {
+    return VideoInfoSheet(playerController: playerController);
+  }
+
+  Widget get playerBody {
+    return PlayerItem(
+      openMenu: openTabBodyAnimated,
+      locateEpisode: menuJumpToCurrentEpisode,
+      keyboardFocus: playerController.keyboardFocus,
+      playerController: playerController,
     );
   }
 }

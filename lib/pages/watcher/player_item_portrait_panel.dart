@@ -239,7 +239,6 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                         },
                                       ),
                                     ),
-                              widget.buildMenuItems,
                             ],
                           ),
                         ),
@@ -248,41 +247,6 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              //超分
-                              MenuAnchor(
-                                consumeOutsideTap: true,
-                                onOpen: () {
-                                  widget.cancelHideTimer();
-                                  playerController.canHidePlayerPanel = false;
-                                },
-                                onClose: () {
-                                  widget.cancelHideTimer();
-                                  widget.startHideTimer();
-                                  playerController.canHidePlayerPanel = true;
-                                },
-                                builder:
-                                    (
-                                      BuildContext context,
-                                      MenuController controller,
-                                      Widget? child,
-                                    ) {
-                                      return TextButton(
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                          ),
-                                        ),
-                                        onPressed: () => controller.isOpen
-                                            ? controller.close()
-                                            : controller.open(),
-                                        child: const Text('超分辨率'),
-                                      );
-                                    },
-                                menuChildren: playerController
-                                    .buildShaderMenuItems(context),
-                              ),
-
                               if (playerController.isFullScreen) ...[
                                 const SizedBox(width: 4),
                                 Container(
@@ -522,15 +486,6 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                 },
                               ),
                               const Spacer(),
-                              IconButton(
-                                color: Colors.white,
-                                onPressed: () {
-                                  playerController.showPlaybackSpeedDialog(
-                                    context,
-                                  );
-                                },
-                                icon: const Icon(Icons.speed),
-                              ),
                               IconButton(
                                 color: Colors.white,
                                 onPressed: () {

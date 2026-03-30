@@ -191,6 +191,27 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Block'
 	String get block => 'Block';
 
+	/// en: 'Super Resolution'
+	String get superResolution => 'Super Resolution';
+
+	/// en: 'Off'
+	String get superResolutionOff => 'Off';
+
+	/// en: 'Efficiency'
+	String get superResolutionEfficiency => 'Efficiency';
+
+	/// en: 'Quality'
+	String get superResolutionQuality => 'Quality';
+
+	/// en: 'Glimmer Mode'
+	String get glimmerMode => 'Glimmer Mode';
+
+	/// en: 'On'
+	String get glimmerModeOn => 'On';
+
+	/// en: 'Off'
+	String get glimmerModeOff => 'Off';
+
 	/// en: 'Blue'
 	String get blue => 'Blue';
 
@@ -3510,6 +3531,13 @@ extension on Translations {
 			'back' => 'Back',
 			'bangumi' => 'Bangumi',
 			'block' => 'Block',
+			'superResolution' => 'Super Resolution',
+			'superResolutionOff' => 'Off',
+			'superResolutionEfficiency' => 'Efficiency',
+			'superResolutionQuality' => 'Quality',
+			'glimmerMode' => 'Glimmer Mode',
+			'glimmerModeOn' => 'On',
+			'glimmerModeOff' => 'Off',
 			'blue' => 'Blue',
 			'brief' => 'Brief',
 			'cacheLimit' => 'Cache Limit',
@@ -3965,6 +3993,8 @@ extension on Translations {
 			'colors.warmPurple' => 'Warm Purple',
 			'colors.yellowishTan' => 'Yellowish Tan',
 			'colors.cement' => 'Cement',
+			_ => null,
+		} ?? switch (path) {
 			'colors.darkGrassGreen' => 'Dark Grass Green',
 			'colors.dustyTeal' => 'Dusty Teal',
 			'colors.greyTeal' => 'Grey Teal',
@@ -3972,8 +4002,6 @@ extension on Translations {
 			'colors.pinkishTan' => 'Pinkish Tan',
 			'colors.spruce' => 'Spruce',
 			'colors.strongBlue' => 'Strong Blue',
-			_ => null,
-		} ?? switch (path) {
 			'colors.toxicGreen' => 'Toxic Green',
 			'colors.windowsBlue' => 'Windows Blue',
 			'colors.blueBlue' => 'Blue Blue',
@@ -4479,6 +4507,8 @@ extension on Translations {
 			'aiConfigMissing' => 'AI Config Missing',
 			'generating' => 'Generating...',
 			'generatedTags' => 'Generated Tags',
+			_ => null,
+		} ?? switch (path) {
 			'exportScreenshot' => 'Export Screenshot',
 			'copyAll' => 'Copy all',
 			'timeRange' => 'Time Range',
@@ -4486,8 +4516,6 @@ extension on Translations {
 			'thisMonth' => 'This Month',
 			'generateSummary' => 'Generate Summary',
 			'generateTag' => 'Generate Tag',
-			_ => null,
-		} ?? switch (path) {
 			'summaryReport' => 'Summary Report',
 			'noActivityInTimeRange' => 'No activity in this time range',
 			'weeklySummary' => 'Weekly Summary',

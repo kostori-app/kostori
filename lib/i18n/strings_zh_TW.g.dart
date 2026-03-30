@@ -994,6 +994,20 @@ class TranslationsZhTw extends Translations
 
   @override String get copyLink => '複製連結';
 
+  @override String get superResolution => '超分辨率';
+
+  @override String get superResolutionOff => '關閉';
+
+  @override String get superResolutionEfficiency => '效率檔';
+
+  @override String get superResolutionQuality => '品質檔';
+
+  @override String get glimmerMode => '微光模式';
+
+  @override String get glimmerModeOn => '開';
+
+  @override String get glimmerModeOff => '關';
+
   @override String get aValidWebDavDirectoryUrl => '有效的 WebDAV 目錄 URL';
 
   @override String get autoSyncData => '自動同步數據';
@@ -2888,6 +2902,13 @@ extension on TranslationsZhTw {
       'switchFailed' => '切換失敗',
       'remoteCast' => '遠端投屏',
       'copyLink' => '複製連結',
+      'superResolution' => '超分辨率',
+      'superResolutionOff' => '關閉',
+      'superResolutionEfficiency' => '效率檔',
+      'superResolutionQuality' => '品質檔',
+      'glimmerMode' => '微光模式',
+      'glimmerModeOn' => '開',
+      'glimmerModeOff' => '關',
       'aValidWebDavDirectoryUrl' => '有效的 WebDAV 目錄 URL',
       'autoSyncData' => '自動同步數據',
       'screenshotShare' => '截圖分享',
@@ -2937,6 +2958,8 @@ extension on TranslationsZhTw {
       'colors.warmPurple' => '暖紫色',
       'colors.yellowishTan' => '黃棕色',
       'colors.cement' => '水泥色',
+      _ => null,
+    } ?? switch (path) {
       'colors.darkGrassGreen' => '暗草綠色',
       'colors.dustyTeal' => '粉青色',
       'colors.greyTeal' => '灰青色',
@@ -2944,8 +2967,6 @@ extension on TranslationsZhTw {
       'colors.pinkishTan' => '粉棕色',
       'colors.spruce' => '杉綠色',
       'colors.strongBlue' => '強藍色',
-      _ => null,
-    } ?? switch (path) {
       'colors.toxicGreen' => '毒液綠色',
       'colors.windowsBlue' => '視窗藍色',
       'colors.blueBlue' => '純藍色',
@@ -3462,6 +3483,8 @@ extension on TranslationsZhTw {
       'aiConfigMissing' => 'AI配置缺失',
       'generating' => '生成中...',
       'generatedTags' => '已生成 Tags',
+      _ => null,
+    } ?? switch (path) {
       'exportScreenshot' => '導出截圖',
       'copyAll' => '複製全部',
       'timeRange' => '時間範圍',
@@ -3469,8 +3492,6 @@ extension on TranslationsZhTw {
       'thisMonth' => '本月',
       'generateSummary' => '生成總結',
       'generateTag' => '生成 Tag',
-      _ => null,
-    } ?? switch (path) {
       'summaryReport' => '總結報告',
       'noActivityInTimeRange' => '該時間段內暫無活動記錄',
       'weeklySummary' => '本週總結',

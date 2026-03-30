@@ -34,6 +34,12 @@ extension Navigation on BuildContext {
     ).push<T>(BlurFadeRoute(builder: (context) => builder()));
   }
 
+  Future<T?> toFadeScale<T>(Widget Function() builder) {
+    return Navigator.of(
+      this,
+    ).push<T>(FadeScalePageRoute<T>(builder: (_) => builder()));
+  }
+
   double get width => MediaQuery.of(this).size.width;
 
   double get height => MediaQuery.of(this).size.height;

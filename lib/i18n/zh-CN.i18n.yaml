@@ -448,16 +448,23 @@ discussion: 讨论
 logs: 日志
 playerDetails: 播放器详情
 status: 状态
-audioOptionLowLatency: |-
-  音频选项：
-   低延迟
-audioOptionCompatibility: |-
-  音频选项：
-   兼容性
+audioOptionLowLatency: "音频: 低延迟"
+audioOptionCompatibility: "音频: 兼容模式"
 switchSuccessful: 切换成功
 switchFailed: 切换失败
 remoteCast: 远程投屏
 copyLink: 复制链接
+
+# Super resolution settings
+superResolution: 超分辨率
+superResolutionOff: 关闭
+superResolutionEfficiency: 效率档
+superResolutionQuality: 质量档
+
+# Glimmer mode
+glimmerMode: 微光模式
+glimmerModeOn: 开
+glimmerModeOff: 关
 aValidWebDavDirectoryUrl: 有效的 WebDAV 目录 URL
 autoSyncData: 自动同步数据
 screenshotShare: 截图分享

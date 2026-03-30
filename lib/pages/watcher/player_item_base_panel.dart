@@ -178,7 +178,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                 duration: const Duration(milliseconds: 300),
                 child: playerController.showSeekTime
                     ? Wrap(
-                        key: ValueKey<bool>(playerController.showSeekTime),
+                        key: const ValueKey('seekTime'),
                         alignment: WrapAlignment.center,
                         children: <Widget>[
                           Container(
@@ -199,7 +199,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                           ),
                         ],
                       )
-                    : Container(key: UniqueKey()),
+                    : const SizedBox.shrink(key: ValueKey('emptySeek')),
               ),
             ),
             // 顶部播放速度条
@@ -209,7 +209,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                 duration: const Duration(milliseconds: 300),
                 child: playerController.showPlaySpeed
                     ? Wrap(
-                        key: UniqueKey(),
+                        key: const ValueKey('playSpeed'),
                         alignment: WrapAlignment.center,
                         children: <Widget>[
                           Container(
@@ -233,7 +233,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                           ),
                         ],
                       )
-                    : Container(key: UniqueKey()),
+                    : const SizedBox.shrink(key: ValueKey('emptySpeed')),
               ),
             ),
             // 亮度条
@@ -243,7 +243,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                 duration: const Duration(milliseconds: 300),
                 child: playerController.showBrightness
                     ? Wrap(
-                        key: ValueKey<bool>(playerController.showBrightness),
+                        key: const ValueKey('brightness'),
                         alignment: WrapAlignment.center,
                         children: <Widget>[
                           Container(
@@ -267,7 +267,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                           ),
                         ],
                       )
-                    : Container(key: UniqueKey()),
+                    : const SizedBox.shrink(key: ValueKey('emptyBrightness')),
               ),
             ),
             // 音量条
@@ -277,7 +277,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                 duration: const Duration(milliseconds: 300),
                 child: playerController.showVolume
                     ? Wrap(
-                        key: ValueKey<bool>(playerController.showVolume),
+                        key: const ValueKey('volume'),
                         alignment: WrapAlignment.center,
                         children: <Widget>[
                           Container(
@@ -301,7 +301,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                           ),
                         ],
                       )
-                    : Container(key: UniqueKey()),
+                    : const SizedBox.shrink(key: ValueKey('emptyVolume')),
               ),
             ),
           ],

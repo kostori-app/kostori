@@ -458,6 +458,17 @@ switchSuccessful: 切換成功
 switchFailed: 切換失敗
 remoteCast: 遠端投屏
 copyLink: 複製連結
+
+# Super resolution settings
+superResolution: 超分辨率
+superResolutionOff: 關閉
+superResolutionEfficiency: 效率檔
+superResolutionQuality: 品質檔
+
+# Glimmer mode
+glimmerMode: 微光模式
+glimmerModeOn: 開
+glimmerModeOff: 關
 aValidWebDavDirectoryUrl: 有效的 WebDAV 目錄 URL
 autoSyncData: 自動同步數據
 screenshotShare: 截圖分享

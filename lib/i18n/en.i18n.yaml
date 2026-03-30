@@ -48,6 +48,17 @@ autoPageTurning: Auto Page Turning
 back: Back
 bangumi: Bangumi
 block: Block
+
+# Super resolution settings
+superResolution: Super Resolution
+superResolutionOff: Off
+superResolutionEfficiency: Efficiency
+superResolutionQuality: Quality
+
+# Glimmer mode
+glimmerMode: Glimmer Mode
+glimmerModeOn: On
+glimmerModeOff: Off
 blue: Blue
 brief: Brief
 cacheLimit: Cache Limit

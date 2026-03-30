@@ -11,7 +11,6 @@ import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_volume_controller/flutter_volume_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:kostori/components/bangumi_widget.dart';
-import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -545,7 +544,7 @@ abstract class _PlayerController with Store {
       } else {
         // 进入全屏
         Future.microtask(() {
-          App.rootContext.to(
+          App.rootContext.toFadeScale(
             () =>
                 FullscreenVideoPage(playerController: this as PlayerController),
           );
@@ -575,7 +574,7 @@ abstract class _PlayerController with Store {
           ]);
         }
 
-        App.rootContext.to(
+        App.rootContext.toFadeScale(
           () => FullscreenVideoPage(playerController: this as PlayerController),
         );
       }
@@ -722,7 +721,7 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> enterPiPMode() async {
-    App.rootContext.to(
+    App.rootContext.toFadeScale(
       () => FullscreenVideoPage(playerController: this as PlayerController),
     );
     await Floating().enable(ImmediatePiP(aspectRatio: Rational(16, 9)));
@@ -733,56 +732,6 @@ abstract class _PlayerController with Store {
   Future<void> exitPiPMode() async {
     await Floating().cancelOnLeavePiP();
     isPiPMode = false;
-  }
-
-  String getShaderTypeName(int type) {
-    switch (type) {
-      case 1:
-        return '关闭';
-      case 2:
-        return '效率档';
-      case 3:
-        return '质量档';
-      default:
-        return '未知';
-    }
-  }
-
-  void showPlaybackSpeedDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => ContentDialog(
-        title: '选择播放速度',
-        displayButton: false,
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (double speed in [
-                0.5,
-                0.75,
-                1.0,
-                1.5,
-                2.0,
-                3.0,
-                4.0,
-                5.0,
-                6.0,
-                7.0,
-                8.0,
-              ])
-                ListTile(
-                  title: Text('${speed}x'),
-                  onTap: () {
-                    setPlaybackSpeed(speed);
-                    Navigator.pop(context);
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> captureAndSaveScreenshot({required BuildContext context}) async {
@@ -821,27 +770,6 @@ abstract class _PlayerController with Store {
       Log.error('截图失败', '$e');
     }
   }
-
-  // 单独提取菜单项构建方法
-  List<MenuItemButton> buildShaderMenuItems(BuildContext context) {
-    return List.generate(3, (index) {
-      final type = index + 1;
-      final isSelected = superResolutionType == type;
-
-      return MenuItemButton(
-        onPressed: () => setShader(type),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-          child: Text(
-            getShaderTypeName(type),
-            style: TextStyle(
-              color: isSelected ? Theme.of(context).colorScheme.primary : null,
-            ),
-          ),
-        ),
-      );
-    });
-  }
 }
 
 class FullscreenVideoPage extends StatefulWidget {
@@ -866,18 +794,15 @@ class _FullscreenVideoPageState extends State<FullscreenVideoPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Hero(
-      tag: WatcherState.currentState!.anime.id,
-      child: Observer(
-        builder: (context) {
-          return playerController.isPiPMode
-              ? Video(
-                  controller: playerController.playerController,
-                  controls: null,
-                )
-              : VideoPage(playerController: playerController);
-        },
-      ),
+    return Observer(
+      builder: (context) {
+        return playerController.isPiPMode
+            ? Video(
+                controller: playerController.playerController,
+                controls: null,
+              )
+            : VideoPage(playerController: playerController);
+      },
     );
   }
 }

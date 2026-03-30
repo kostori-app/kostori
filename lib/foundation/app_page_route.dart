@@ -517,3 +517,55 @@ class SlidePageTransitionBuilder extends PageTransitionsBuilder {
     );
   }
 }
+
+class FadeScalePageRoute<T> extends PageRoute<T> {
+  final WidgetBuilder builder;
+
+  FadeScalePageRoute({required this.builder}) : super();
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 350);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 300);
+
+  @override
+  Color? get barrierColor => null;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return builder(context);
+  }
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final scale = Tween<double>(
+      begin: 0.92,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+
+    final fade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: animation, curve: const Interval(0.0, 0.6)),
+    );
+
+    return FadeTransition(
+      opacity: fade,
+      child: ScaleTransition(scale: scale, child: child),
+    );
+  }
+}
