@@ -80,6 +80,30 @@ class _PlayerSettingsState extends State<PlayerSettings> {
             ),
           ),
         ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.m3u8AdFilter,
+                  icon: Icons.filter_alt_outlined,
+                ),
+                _SwitchSetting(
+                  title: t.enableAdFilter,
+                  settingKey: 'm3u8AdFilterEnabled',
+                ),
+                _CallbackSetting(
+                  title: t.filterRules,
+                  actionTitle: t.manage,
+                  callback: () {
+                    showPopUpWidget(App.rootContext, const M3u8RulesPage());
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -139,4 +163,160 @@ Future<void> showSelection({
       },
     ),
   );
+}
+
+class M3u8RulesPage extends StatefulWidget {
+  const M3u8RulesPage({super.key});
+
+  @override
+  State<M3u8RulesPage> createState() => _M3u8RulesPageState();
+}
+
+class _M3u8RulesPageState extends State<M3u8RulesPage> {
+  late List<M3u8AdRule> rules;
+
+  @override
+  void initState() {
+    super.initState();
+    rules = M3u8AdRuleStore.rules;
+  }
+
+  void _save() {
+    M3u8AdRuleStore.save(rules);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopUpWidgetScaffold(
+      title: t.adFilterRules,
+      tailing: [
+        IconButton(icon: const Icon(Icons.add), onPressed: _showAddDialog),
+      ],
+      body: ListView.builder(
+        itemCount: rules.length,
+        itemBuilder: (context, i) {
+          return Column(
+            children: [
+              ListTile(
+                title: Text(rules[i].name),
+                subtitle: Text(_ruleSubtitle(rules[i])),
+                leading: CustomSwitch(
+                  value: rules[i].enabled,
+                  onChanged: (v) {
+                    rules[i] = M3u8AdRule(
+                      name: rules[i].name,
+                      type: rules[i].type,
+                      enabled: v,
+                      pattern: rules[i].pattern,
+                      blockedDomains: rules[i].blockedDomains,
+                      maxDuration: rules[i].maxDuration,
+                      tag: rules[i].tag,
+                    );
+                    _save();
+                  },
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 20),
+                  onPressed: () {
+                    rules.removeAt(i);
+                    _save();
+                  },
+                ),
+              ),
+              if (i < rules.length - 1) const Divider(height: 1, indent: 16),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  String _ruleSubtitle(M3u8AdRule rule) => switch (rule.type) {
+    M3u8RuleType.urlPattern => '${t.urlRegex}: ${rule.pattern}',
+    M3u8RuleType.domainBlock =>
+      '${t.domainBlock}: ${rule.blockedDomains?.join(', ')}',
+    M3u8RuleType.maxDuration => '${t.durationFilter} < ${rule.maxDuration}s',
+    M3u8RuleType.tagPresent => '${t.tagMark}: ${rule.tag}',
+  };
+
+  void _showAddDialog() {
+    final nameCtrl = TextEditingController();
+    final valueCtrl = TextEditingController();
+    var selectedType = M3u8RuleType.urlPattern;
+
+    ContentDialog.show(
+      context: context,
+      title: t.addRule,
+      content: StatefulBuilder(
+        builder: (context, setState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: InputDecoration(labelText: t.ruleName),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: M3u8RuleType.values.map((type) {
+                return FilterChip(
+                  label: Text(_typeName(type)),
+                  selected: selectedType == type,
+                  onSelected: (_) => setState(() => selectedType = type),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: valueCtrl,
+              decoration: InputDecoration(labelText: _typeHint(selectedType)),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            if (nameCtrl.text.isEmpty || valueCtrl.text.isEmpty) return;
+            rules.add(
+              M3u8AdRule(
+                name: nameCtrl.text,
+                type: selectedType,
+                pattern: selectedType == M3u8RuleType.urlPattern
+                    ? valueCtrl.text
+                    : null,
+                blockedDomains: selectedType == M3u8RuleType.domainBlock
+                    ? valueCtrl.text.split(',').map((s) => s.trim()).toList()
+                    : null,
+                maxDuration: selectedType == M3u8RuleType.maxDuration
+                    ? double.tryParse(valueCtrl.text)
+                    : null,
+                tag: selectedType == M3u8RuleType.tagPresent
+                    ? valueCtrl.text
+                    : null,
+              ),
+            );
+            _save();
+            App.rootContext.pop();
+          },
+          child: Text(t.add),
+        ),
+      ],
+    );
+  }
+
+  String _typeName(M3u8RuleType type) => switch (type) {
+    M3u8RuleType.urlPattern => t.urlRegex,
+    M3u8RuleType.domainBlock => t.domainBlock,
+    M3u8RuleType.maxDuration => t.durationFilter,
+    M3u8RuleType.tagPresent => t.tagMark,
+  };
+
+  String _typeHint(M3u8RuleType type) => switch (type) {
+    M3u8RuleType.urlPattern => t.regexHint,
+    M3u8RuleType.domainBlock => t.domainHint,
+    M3u8RuleType.maxDuration => t.durationHint,
+    M3u8RuleType.tagPresent => t.tagHint,
+  };
 }

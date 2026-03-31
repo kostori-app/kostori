@@ -1147,3 +1147,59 @@ selectBackground: Select Background
 changeBackground: Change Background
 clearBackground: Clear Background
 charCount: ${count} chars
+
+# M3u8 Ad Filter
+m3u8AdFilter: M3u8 Ad Filter
+enableAdFilter: Enable Ad Filter
+filterRules: Filter Rules
+adFilterRules: Ad Filter Rules
+addRule: Add Rule
+ruleName: Rule Name
+urlRegex: URL Regex
+domainBlock: Domain Block
+durationFilter: Duration Filter
+tagMark: Tag Mark
+regexHint: "Regex pattern, e.g. preroll|/ads?/"
+domainHint: "Domains, separated by commas"
+durationHint: "Seconds, e.g. 4.0"
+tagHint: "e.g. #EXT-X-CUE-OUT"
+cueAdTag: CUE Ad Tag
+ultraShortSegment: Ultra Short Segment
+commonAdUrlPattern: Common Ad URL Pattern
+
+# Video page
+videoDetails: Video Details
+synopsis: Synopsis
+currentEpisode: Current Episode
+playbackRoute: Playback Route
+progress: Progress
+playbackSpeed: Playback Speed
+otherSettings: Other Settings
+audioLowLatency: "Audio: Low Latency"
+audioCompatibility: "Audio: Compatibility"
+
+# Video Clip Editor
+videoClipEditor: Video Clip Editor
+clipStartTime: Start Time
+clipEndTime: End Time
+clipDuration: Duration
+previewClip: Preview
+exportClip: Export
+exportFormat: Export Format
+exportQuality: Export Quality
+exportSize: Export Size
+cropArea: Crop Area
+selectCropArea: Select Crop Area
+fullFrame: Full Frame
+customCrop: Custom Crop
+qualityLow: Low Quality
+qualityMedium: Medium Quality
+qualityHigh: High Quality
+gifExport: GIF Export
+apngExport: APNG Export
+mp4Export: MP4 Export
+exportSuccess: Export Success
+exportFailed: Export Failed
+selectTimeRange: Select Time Range
+recordingFeature: Record
+tapToRecord: Tap to Record

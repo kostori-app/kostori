@@ -204,6 +204,7 @@ class Settings with ChangeNotifier {
     'deepleKey': '',
     'explore_sources_order': [],
     'tileTitleMarquee': false,
+    'm3u8AdFilterEnabled': false,
   };
 
   dynamic operator [](String key) {

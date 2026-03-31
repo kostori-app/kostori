@@ -279,10 +279,10 @@ class _VideoPageState extends State<VideoPage>
       indicatorColor: Theme.of(context).colorScheme.primary,
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white60,
-      tabs: const [
-        Tab(text: '播放列表'),
-        Tab(text: '视频详情'),
-        Tab(text: '播放详情'),
+      tabs: [
+        Tab(text: t.playlist),
+        Tab(text: t.videoDetails),
+        Tab(text: t.playerDetails),
       ],
     );
   }
@@ -492,8 +492,8 @@ class _VideoPageState extends State<VideoPage>
             const SizedBox(height: 12),
           ],
           if (anime.description != null && anime.description!.isNotEmpty) ...[
-            const Text(
-              '简介',
+            Text(
+              t.synopsis,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -507,17 +507,20 @@ class _VideoPageState extends State<VideoPage>
             ),
             const SizedBox(height: 12),
           ],
-          _buildInfoItem('当前集数', playerController.currentEpisoded.toString()),
-          _buildInfoItem('播放线路', playerController.currentSetName),
           _buildInfoItem(
-            '进度',
-            '${playerController.currentPosition.inSeconds}秒 / ${playerController.duration.inSeconds}秒',
+            t.currentEpisode,
+            playerController.currentEpisoded.toString(),
+          ),
+          _buildInfoItem(t.playbackRoute, playerController.currentSetName),
+          _buildInfoItem(
+            t.progress,
+            '${playerController.currentPosition.inSeconds}${t.secondsUnit} / ${playerController.duration.inSeconds}${t.secondsUnit}',
           ),
           const Divider(color: Colors.white24, height: 32),
           // Settings section
           // Playback speed slider
-          const Text(
-            '播放倍率',
+          Text(
+            t.playbackSpeed,
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -595,8 +598,8 @@ class _VideoPageState extends State<VideoPage>
           ),
           const SizedBox(height: 24),
           // Other settings
-          const Text(
-            '其他设置',
+          Text(
+            t.otherSettings,
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -615,8 +618,8 @@ class _VideoPageState extends State<VideoPage>
               child: ListTile(
                 title: Text(
                   (appdata.settings['audioOutType'] ?? true)
-                      ? '音频: 低延迟'
-                      : '音频: 兼容模式',
+                      ? t.audioLowLatency
+                      : t.audioCompatibility,
                   style: const TextStyle(color: Colors.white),
                 ),
                 trailing: CustomSwitch(
@@ -624,10 +627,10 @@ class _VideoPageState extends State<VideoPage>
                   onChanged: (value) async {
                     try {
                       await playerController.changeAudioOutType();
-                      App.rootContext.showMessage(message: '切换成功');
+                      App.rootContext.showMessage(message: t.switchSuccessful);
                       setState(() {});
                     } catch (e) {
-                      App.rootContext.showMessage(message: '切换失败');
+                      App.rootContext.showMessage(message: t.switchFailed);
                     }
                   },
                 ),
@@ -665,7 +668,10 @@ class _VideoPageState extends State<VideoPage>
             ),
             child: ListTile(
               leading: const Icon(Icons.cast, color: Colors.white70),
-              title: const Text('远程投屏', style: TextStyle(color: Colors.white)),
+              title: Text(
+                t.remoteCast,
+                style: const TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 bool needRestart = playerController.playing;
                 playerController.pause();
@@ -689,7 +695,10 @@ class _VideoPageState extends State<VideoPage>
               ),
               child: ListTile(
                 leading: const Icon(Icons.bug_report, color: Colors.white70),
-                title: const Text('日志', style: TextStyle(color: Colors.white)),
+                title: Text(
+                  t.logs,
+                  style: const TextStyle(color: Colors.white),
+                ),
                 onTap: () {
                   context.to(() => const LogsPage());
                 },

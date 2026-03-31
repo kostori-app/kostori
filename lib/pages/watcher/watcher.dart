@@ -13,7 +13,10 @@ import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/m3u8_proxy_server.dart';
+import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
@@ -258,7 +261,33 @@ class WatcherState extends State<Watcher>
   Future<void> _play(String res, int currentPlaybackTime) async {
     try {
       if (mounted) {
-        await playerController.player.open(Media(res, httpHeaders: headers));
+        String actualPlayUrl = res;
+
+        if (appdata.settings['m3u8AdFilterEnabled'] == true) {
+          final isM3u8 =
+              res.contains('.m3u8') ||
+              res.contains('mpegurl') ||
+              await _isM3u8(res);
+
+          if (isM3u8) {
+            actualPlayUrl = await M3u8ProxyServer.instance.proxyUrl(
+              res,
+              headers,
+            );
+            PlayLog.info('M3u8Proxy', '代理地址: $actualPlayUrl');
+          }
+        }
+
+        // 保存实际播放的 URL 和 headers
+        playerController.playUrl = actualPlayUrl;
+        playerController.videoHeaders = actualPlayUrl == res ? headers : null;
+
+        await playerController.player.open(
+          Media(
+            actualPlayUrl,
+            httpHeaders: actualPlayUrl == res ? headers : {},
+          ),
+        );
       }
     } catch (e, s) {
       PlayLog.error("openMedia", "$e\n$s");
@@ -416,31 +445,25 @@ class WatcherState extends State<Watcher>
               padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.0),
-                child: Hero(
-                  tag: anime.id,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.width * 0.45,
-                      maxWidth: MediaQuery.of(context).size.width,
-                    ),
-                    child: VideoPage(playerController: playerController),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.width * 0.45,
+                    maxWidth: MediaQuery.of(context).size.width,
                   ),
+                  child: VideoPage(playerController: playerController),
                 ),
               ),
             )
           : Padding(
               padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: Hero(
-                  tag: anime.id,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.width * 0.6,
-                      maxWidth: MediaQuery.of(context).size.width,
-                    ),
-                    child: VideoPage(playerController: playerController),
+                borderRadius: BorderRadius.circular(16.0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.width * 0.6,
+                    maxWidth: MediaQuery.of(context).size.width,
                   ),
+                  child: VideoPage(playerController: playerController),
                 ),
               ),
             ),
@@ -456,6 +479,16 @@ class WatcherState extends State<Watcher>
       history.cover = anime.cover;
     }
     await HistoryManager().addHistory(history);
+  }
+
+  Future<bool> _isM3u8(String url) async {
+    try {
+      final resp = await AppDio().head(url);
+      final ct = resp.headers.value('content-type') ?? '';
+      return ct.contains('mpegurl');
+    } catch (_) {
+      return false;
+    }
   }
 }
 

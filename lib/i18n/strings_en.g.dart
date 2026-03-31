@@ -3333,6 +3333,156 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: '${count} chars'
 	String charCount({required Object count}) => '${count} chars';
+
+	/// en: 'M3u8 Ad Filter'
+	String get m3u8AdFilter => 'M3u8 Ad Filter';
+
+	/// en: 'Enable Ad Filter'
+	String get enableAdFilter => 'Enable Ad Filter';
+
+	/// en: 'Filter Rules'
+	String get filterRules => 'Filter Rules';
+
+	/// en: 'Ad Filter Rules'
+	String get adFilterRules => 'Ad Filter Rules';
+
+	/// en: 'Add Rule'
+	String get addRule => 'Add Rule';
+
+	/// en: 'Rule Name'
+	String get ruleName => 'Rule Name';
+
+	/// en: 'URL Regex'
+	String get urlRegex => 'URL Regex';
+
+	/// en: 'Domain Block'
+	String get domainBlock => 'Domain Block';
+
+	/// en: 'Duration Filter'
+	String get durationFilter => 'Duration Filter';
+
+	/// en: 'Tag Mark'
+	String get tagMark => 'Tag Mark';
+
+	/// en: 'Regex pattern, e.g. preroll|/ads?/'
+	String get regexHint => 'Regex pattern, e.g. preroll|/ads?/';
+
+	/// en: 'Domains, separated by commas'
+	String get domainHint => 'Domains, separated by commas';
+
+	/// en: 'Seconds, e.g. 4.0'
+	String get durationHint => 'Seconds, e.g. 4.0';
+
+	/// en: 'e.g. #EXT-X-CUE-OUT'
+	String get tagHint => 'e.g. #EXT-X-CUE-OUT';
+
+	/// en: 'CUE Ad Tag'
+	String get cueAdTag => 'CUE Ad Tag';
+
+	/// en: 'Ultra Short Segment'
+	String get ultraShortSegment => 'Ultra Short Segment';
+
+	/// en: 'Common Ad URL Pattern'
+	String get commonAdUrlPattern => 'Common Ad URL Pattern';
+
+	/// en: 'Video Details'
+	String get videoDetails => 'Video Details';
+
+	/// en: 'Synopsis'
+	String get synopsis => 'Synopsis';
+
+	/// en: 'Current Episode'
+	String get currentEpisode => 'Current Episode';
+
+	/// en: 'Playback Route'
+	String get playbackRoute => 'Playback Route';
+
+	/// en: 'Progress'
+	String get progress => 'Progress';
+
+	/// en: 'Playback Speed'
+	String get playbackSpeed => 'Playback Speed';
+
+	/// en: 'Other Settings'
+	String get otherSettings => 'Other Settings';
+
+	/// en: 'Audio: Low Latency'
+	String get audioLowLatency => 'Audio: Low Latency';
+
+	/// en: 'Audio: Compatibility'
+	String get audioCompatibility => 'Audio: Compatibility';
+
+	/// en: 'Video Clip Editor'
+	String get videoClipEditor => 'Video Clip Editor';
+
+	/// en: 'Start Time'
+	String get clipStartTime => 'Start Time';
+
+	/// en: 'End Time'
+	String get clipEndTime => 'End Time';
+
+	/// en: 'Duration'
+	String get clipDuration => 'Duration';
+
+	/// en: 'Preview'
+	String get previewClip => 'Preview';
+
+	/// en: 'Export'
+	String get exportClip => 'Export';
+
+	/// en: 'Export Format'
+	String get exportFormat => 'Export Format';
+
+	/// en: 'Export Quality'
+	String get exportQuality => 'Export Quality';
+
+	/// en: 'Export Size'
+	String get exportSize => 'Export Size';
+
+	/// en: 'Crop Area'
+	String get cropArea => 'Crop Area';
+
+	/// en: 'Select Crop Area'
+	String get selectCropArea => 'Select Crop Area';
+
+	/// en: 'Full Frame'
+	String get fullFrame => 'Full Frame';
+
+	/// en: 'Custom Crop'
+	String get customCrop => 'Custom Crop';
+
+	/// en: 'Low Quality'
+	String get qualityLow => 'Low Quality';
+
+	/// en: 'Medium Quality'
+	String get qualityMedium => 'Medium Quality';
+
+	/// en: 'High Quality'
+	String get qualityHigh => 'High Quality';
+
+	/// en: 'GIF Export'
+	String get gifExport => 'GIF Export';
+
+	/// en: 'APNG Export'
+	String get apngExport => 'APNG Export';
+
+	/// en: 'MP4 Export'
+	String get mp4Export => 'MP4 Export';
+
+	/// en: 'Export Success'
+	String get exportSuccess => 'Export Success';
+
+	/// en: 'Export Failed'
+	String get exportFailed => 'Export Failed';
+
+	/// en: 'Select Time Range'
+	String get selectTimeRange => 'Select Time Range';
+
+	/// en: 'Record'
+	String get recordingFeature => 'Record';
+
+	/// en: 'Tap to Record'
+	String get tapToRecord => 'Tap to Record';
 }
 
 // Path: colors
@@ -4625,6 +4775,56 @@ extension on Translations {
 			'changeBackground' => 'Change Background',
 			'clearBackground' => 'Clear Background',
 			'charCount' => ({required Object count}) => '${count} chars',
+			'm3u8AdFilter' => 'M3u8 Ad Filter',
+			'enableAdFilter' => 'Enable Ad Filter',
+			'filterRules' => 'Filter Rules',
+			'adFilterRules' => 'Ad Filter Rules',
+			'addRule' => 'Add Rule',
+			'ruleName' => 'Rule Name',
+			'urlRegex' => 'URL Regex',
+			'domainBlock' => 'Domain Block',
+			'durationFilter' => 'Duration Filter',
+			'tagMark' => 'Tag Mark',
+			'regexHint' => 'Regex pattern, e.g. preroll|/ads?/',
+			'domainHint' => 'Domains, separated by commas',
+			'durationHint' => 'Seconds, e.g. 4.0',
+			'tagHint' => 'e.g. #EXT-X-CUE-OUT',
+			'cueAdTag' => 'CUE Ad Tag',
+			'ultraShortSegment' => 'Ultra Short Segment',
+			'commonAdUrlPattern' => 'Common Ad URL Pattern',
+			'videoDetails' => 'Video Details',
+			'synopsis' => 'Synopsis',
+			'currentEpisode' => 'Current Episode',
+			'playbackRoute' => 'Playback Route',
+			'progress' => 'Progress',
+			'playbackSpeed' => 'Playback Speed',
+			'otherSettings' => 'Other Settings',
+			'audioLowLatency' => 'Audio: Low Latency',
+			'audioCompatibility' => 'Audio: Compatibility',
+			'videoClipEditor' => 'Video Clip Editor',
+			'clipStartTime' => 'Start Time',
+			'clipEndTime' => 'End Time',
+			'clipDuration' => 'Duration',
+			'previewClip' => 'Preview',
+			'exportClip' => 'Export',
+			'exportFormat' => 'Export Format',
+			'exportQuality' => 'Export Quality',
+			'exportSize' => 'Export Size',
+			'cropArea' => 'Crop Area',
+			'selectCropArea' => 'Select Crop Area',
+			'fullFrame' => 'Full Frame',
+			'customCrop' => 'Custom Crop',
+			'qualityLow' => 'Low Quality',
+			'qualityMedium' => 'Medium Quality',
+			'qualityHigh' => 'High Quality',
+			'gifExport' => 'GIF Export',
+			'apngExport' => 'APNG Export',
+			'mp4Export' => 'MP4 Export',
+			'exportSuccess' => 'Export Success',
+			'exportFailed' => 'Export Failed',
+			'selectTimeRange' => 'Select Time Range',
+			'recordingFeature' => 'Record',
+			'tapToRecord' => 'Tap to Record',
 			_ => null,
 		};
 	}

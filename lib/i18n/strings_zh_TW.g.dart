@@ -2326,6 +2326,106 @@ class TranslationsZhTw extends Translations
   @override String get clearBackground => '清除背景';
 
   @override String charCount({required Object count}) => '${count} 字';
+
+  @override String get m3u8AdFilter => 'M3u8 廣告過濾';
+
+  @override String get enableAdFilter => '啟用廣告過濾';
+
+  @override String get filterRules => '過濾規則';
+
+  @override String get adFilterRules => '廣告過濾規則';
+
+  @override String get addRule => '新增規則';
+
+  @override String get ruleName => '規則名稱';
+
+  @override String get urlRegex => 'URL 正則';
+
+  @override String get domainBlock => '網域封鎖';
+
+  @override String get durationFilter => '時長過濾';
+
+  @override String get tagMark => 'Tag 標記';
+
+  @override String get regexHint => '正則表達式，如 preroll|/ads?/';
+
+  @override String get domainHint => '網域，多個用逗號分隔';
+
+  @override String get durationHint => '秒數，如 4.0';
+
+  @override String get tagHint => '如';
+
+  @override String get cueAdTag => 'CUE 廣告標記';
+
+  @override String get ultraShortSegment => '極短分片';
+
+  @override String get commonAdUrlPattern => '常見廣告 URL 特徵';
+
+  @override String get videoDetails => '影片詳情';
+
+  @override String get synopsis => '簡介';
+
+  @override String get currentEpisode => '目前集數';
+
+  @override String get playbackRoute => '播放線路';
+
+  @override String get progress => '進度';
+
+  @override String get playbackSpeed => '播放倍率';
+
+  @override String get otherSettings => '其他設定';
+
+  @override String get audioLowLatency => '音訊: 低延遲';
+
+  @override String get audioCompatibility => '音訊: 相容模式';
+
+  @override String get videoClipEditor => '影片剪輯';
+
+  @override String get clipStartTime => '開始時間';
+
+  @override String get clipEndTime => '結束時間';
+
+  @override String get clipDuration => '時長';
+
+  @override String get previewClip => '預覽';
+
+  @override String get exportClip => '匯出';
+
+  @override String get exportFormat => '匯出格式';
+
+  @override String get exportQuality => '匯出品質';
+
+  @override String get exportSize => '匯出尺寸';
+
+  @override String get cropArea => '裁剪區域';
+
+  @override String get selectCropArea => '選擇裁剪區域';
+
+  @override String get fullFrame => '完整畫面';
+
+  @override String get customCrop => '自定義裁剪';
+
+  @override String get qualityLow => '低品質';
+
+  @override String get qualityMedium => '中等品質';
+
+  @override String get qualityHigh => '高品質';
+
+  @override String get gifExport => 'GIF 匯出';
+
+  @override String get apngExport => 'APNG 匯出';
+
+  @override String get mp4Export => 'MP4 匯出';
+
+  @override String get exportSuccess => '匯出成功';
+
+  @override String get exportFailed => '匯出失敗';
+
+  @override String get selectTimeRange => '選擇時間範圍';
+
+  @override String get recordingFeature => '錄製';
+
+  @override String get tapToRecord => '點擊錄製';
 }
 
 // Path: colors
@@ -3601,6 +3701,56 @@ extension on TranslationsZhTw {
       'changeBackground' => '更換背景',
       'clearBackground' => '清除背景',
       'charCount' => ({required Object count}) => '${count} 字',
+      'm3u8AdFilter' => 'M3u8 廣告過濾',
+      'enableAdFilter' => '啟用廣告過濾',
+      'filterRules' => '過濾規則',
+      'adFilterRules' => '廣告過濾規則',
+      'addRule' => '新增規則',
+      'ruleName' => '規則名稱',
+      'urlRegex' => 'URL 正則',
+      'domainBlock' => '網域封鎖',
+      'durationFilter' => '時長過濾',
+      'tagMark' => 'Tag 標記',
+      'regexHint' => '正則表達式，如 preroll|/ads?/',
+      'domainHint' => '網域，多個用逗號分隔',
+      'durationHint' => '秒數，如 4.0',
+      'tagHint' => '如',
+      'cueAdTag' => 'CUE 廣告標記',
+      'ultraShortSegment' => '極短分片',
+      'commonAdUrlPattern' => '常見廣告 URL 特徵',
+      'videoDetails' => '影片詳情',
+      'synopsis' => '簡介',
+      'currentEpisode' => '目前集數',
+      'playbackRoute' => '播放線路',
+      'progress' => '進度',
+      'playbackSpeed' => '播放倍率',
+      'otherSettings' => '其他設定',
+      'audioLowLatency' => '音訊: 低延遲',
+      'audioCompatibility' => '音訊: 相容模式',
+      'videoClipEditor' => '影片剪輯',
+      'clipStartTime' => '開始時間',
+      'clipEndTime' => '結束時間',
+      'clipDuration' => '時長',
+      'previewClip' => '預覽',
+      'exportClip' => '匯出',
+      'exportFormat' => '匯出格式',
+      'exportQuality' => '匯出品質',
+      'exportSize' => '匯出尺寸',
+      'cropArea' => '裁剪區域',
+      'selectCropArea' => '選擇裁剪區域',
+      'fullFrame' => '完整畫面',
+      'customCrop' => '自定義裁剪',
+      'qualityLow' => '低品質',
+      'qualityMedium' => '中等品質',
+      'qualityHigh' => '高品質',
+      'gifExport' => 'GIF 匯出',
+      'apngExport' => 'APNG 匯出',
+      'mp4Export' => 'MP4 匯出',
+      'exportSuccess' => '匯出成功',
+      'exportFailed' => '匯出失敗',
+      'selectTimeRange' => '選擇時間範圍',
+      'recordingFeature' => '錄製',
+      'tapToRecord' => '點擊錄製',
       _ => null,
     };
   }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:floating/floating.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,7 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/player_item_base_panel.dart';
@@ -208,6 +210,23 @@ class _PlayerItemState extends State<PlayerItem>
               }
             },
           ),
+        if (!playerController.isFullScreen && App.isAndroid)
+          MenuEntry(
+            icon: Icons.picture_in_picture_alt,
+            text: '小窗模式',
+            onClick: () async {
+              final floating = Floating();
+              if (await floating.isPipAvailable) {
+                final status = await floating.pipStatus;
+                if (status == PiPStatus.disabled ||
+                    status == PiPStatus.automatic) {
+                  playerController.enterPiPMode();
+                } else if (status == PiPStatus.enabled) {
+                  playerController.exitPiPMode();
+                }
+              }
+            },
+          ),
         MenuEntry(
           text: !playerController.glimmerEffect ? "微光模式:关".tl : "微光模式:开".tl,
           onClick: () {
@@ -215,7 +234,7 @@ class _PlayerItemState extends State<PlayerItem>
           },
         ),
         MenuEntry(
-          text: "Remote Cast".tl,
+          text: t.remoteCast,
           onClick: () {
             bool needRestart = playerController.playing;
             playerController.pause();
@@ -228,13 +247,13 @@ class _PlayerItemState extends State<PlayerItem>
         ),
         if (!playerController.isFullScreen)
           MenuEntry(
-            text: "Logs".tl,
+            text: t.log,
             onClick: () {
               context.to(() => const LogsPage());
             },
           ),
         MenuEntry(
-          text: "Player Details".tl,
+          text: t.playerDetails,
           onClick: () {
             showVideoInfo();
           },

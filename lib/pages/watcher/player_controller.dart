@@ -22,7 +22,9 @@ import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/network/proxy.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
+import 'package:kostori/pages/watcher/video_clip_editor.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
@@ -138,6 +140,9 @@ abstract class _PlayerController with Store {
   // 视频地址
   @observable
   String videoUrl = '';
+  @observable
+  String playUrl = ''; // 实际播放的 URL（可能是代理 URL）
+  Map<String, String>? videoHeaders; // HTTP headers for video
   @observable
   String saveAddress = '';
   @observable
@@ -366,12 +371,22 @@ abstract class _PlayerController with Store {
     }
 
     if (appdata.settings['proxy'] != 'direct' &&
-        appdata.settings['proxy'] != 'system') {
-      if (appdata.settings['proxy'] != null) {
-        String proxyUrl = appdata.settings['proxy'];
-        if (!proxyUrl.startsWith('http://')) {
+        appdata.settings['proxy'] != null) {
+      String? proxyUrl;
+      if (appdata.settings['proxy'] == 'system') {
+        final proxyAddr = await getProxy();
+        if (proxyAddr != null) {
+          proxyUrl = proxyAddr.startsWith('http://')
+              ? proxyAddr
+              : 'http://$proxyAddr';
+        }
+      } else {
+        proxyUrl = appdata.settings['proxy'];
+        if (!proxyUrl!.startsWith('http://')) {
           proxyUrl = 'http://$proxyUrl';
         }
+      }
+      if (proxyUrl != null) {
         await pp.setProperty('http-proxy', proxyUrl);
         PlayLog.info('Player: HTTP 代理设置', proxyUrl);
       }
@@ -769,6 +784,23 @@ abstract class _PlayerController with Store {
       ImageSaver.showResult(success: false, message: t.screenshotFailed);
       Log.error('截图失败', '$e');
     }
+  }
+
+  /// Open video clip editor
+  Future<void> openVideoClipEditor({required BuildContext context}) async {
+    // Pause video before opening editor
+    await pause();
+
+    if (!context.mounted) return;
+
+    showVideoClipEditor(
+      context: context,
+      player: player,
+      videoUrl: playUrl.isNotEmpty ? playUrl : videoUrl,
+      httpHeaders: videoHeaders,
+      currentPosition: currentPosition,
+      duration: duration,
+    );
   }
 }
 

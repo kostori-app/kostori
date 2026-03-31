@@ -427,6 +427,11 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
                                         context: context,
                                       );
                                 },
+                                onLongPress: () async {
+                                  await playerController.openVideoClipEditor(
+                                    context: context,
+                                  );
+                                },
                               ),
                               IconButton(
                                 icon: Icon(Icons.refresh, color: Colors.white),

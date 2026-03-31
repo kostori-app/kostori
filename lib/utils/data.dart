@@ -83,6 +83,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
         File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
         historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
       });
+      providerContainer.invalidate(historyAllProvider);
     }
     if (await localFavoriteFile.exists()) {
       LocalFavoritesManager().close();

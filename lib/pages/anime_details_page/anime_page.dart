@@ -80,8 +80,6 @@ class AnimePage extends ConsumerStatefulWidget {
 class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     with _AnimePageActions, TickerProviderStateMixin {
   bool showAppbarTitle = false;
-
-  var scrollController = ScrollController();
   bool isDownloaded = false;
   bool isBangumi = false;
 
@@ -180,7 +178,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   void initState() {
     super.initState();
     updateStatsClicks();
-    scrollController.addListener(onScroll);
     HistoryManager().addListener(updateHistory);
     providerContainer
         .read(bangumiManagerProvider)
@@ -233,7 +230,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   @override
   void dispose() {
-    scrollController.removeListener(onScroll);
     HistoryManager().removeListener(updateHistory);
     providerContainer
         .read(bangumiManagerProvider)
@@ -242,7 +238,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     Future.microtask(() {
       DataSync().onDataChanged();
     });
-    scrollController.dispose();
     tabController.dispose();
     super.dispose();
   }
@@ -284,22 +279,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     await HistoryManager().addHistory(history!);
   }
 
-  void onScroll() {
-    if (scrollController.offset > 250) {
-      if (!showAppbarTitle) {
-        setState(() {
-          showAppbarTitle = true;
-        });
-      }
-    } else {
-      if (showAppbarTitle) {
-        setState(() {
-          showAppbarTitle = false;
-        });
-      }
-    }
-  }
-
   var isFirst = true;
 
   @override
@@ -310,7 +289,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     final playerHeight = isDesktop ? screenWidth * 0.45 : screenWidth * 0.6;
 
     Widget widget = NestedScrollView(
-      controller: scrollController,
       physics: const BouncingScrollPhysics(),
       headerSliverBuilder: (context, innerBoxIsScrolled) {
         return [
@@ -360,7 +338,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );
-    history = HistoryManager().find(
+    history = await HistoryManager().findAsync(
       widget.id,
       AnimeType(widget.sourceKey.hashCode),
     );

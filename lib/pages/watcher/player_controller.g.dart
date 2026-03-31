@@ -373,6 +373,24 @@ mixin _$PlayerController on _PlayerController, Store {
     });
   }
 
+  late final _$playUrlAtom = Atom(
+    name: '_PlayerController.playUrl',
+    context: context,
+  );
+
+  @override
+  String get playUrl {
+    _$playUrlAtom.reportRead();
+    return super.playUrl;
+  }
+
+  @override
+  set playUrl(String value) {
+    _$playUrlAtom.reportWrite(value, super.playUrl, () {
+      super.playUrl = value;
+    });
+  }
+
   late final _$saveAddressAtom = Atom(
     name: '_PlayerController.saveAddress',
     context: context,
@@ -712,6 +730,7 @@ lastPreviewTime: ${lastPreviewTime},
 currentEpisoded: ${currentEpisoded},
 currentRoad: ${currentRoad},
 videoUrl: ${videoUrl},
+playUrl: ${playUrl},
 saveAddress: ${saveAddress},
 showTabBody: ${showTabBody},
 volume: ${volume},

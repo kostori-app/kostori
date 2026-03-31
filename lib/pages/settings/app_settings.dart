@@ -160,6 +160,34 @@ class _AppSettingsState extends State<AppSettings> {
             ),
           ),
         ),
+        // 桌面平台：FFmpeg 设置
+        if (App.isDesktop)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            sliver: SliverToBoxAdapter(
+              child: _SettingCard(
+                children: [
+                  _SettingPartTitle(title: 'FFmpeg', icon: Icons.video_file),
+                  _CallbackSetting(
+                    title: t.selectFile,
+                    subtitle: appdata.settings['ffmpegPath'] ?? 'ffmpeg',
+                    callback: () async {
+                      final file = await selectFile(
+                        ext: App.isWindows ? ['exe'] : [],
+                      );
+                      if (file != null) {
+                        final path = file.path;
+                        appdata.settings['ffmpegPath'] = path;
+                        appdata.saveData();
+                        setState(() {});
+                      }
+                    },
+                    actionTitle: t.set,
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

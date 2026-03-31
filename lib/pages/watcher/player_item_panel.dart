@@ -1,6 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/components.dart';
@@ -73,7 +72,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
             // 侧边栏:截图,快进
             Positioned(
               right: 10,
-              top: 60,
+              top: 40,
               child: FadeTransition(
                 opacity: fadeAnimation,
                 child: IgnorePointer(
@@ -100,6 +99,11 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                               context: context,
                             );
                           },
+                          onLongPress: () async {
+                            await playerController.openVideoClipEditor(
+                              context: context,
+                            );
+                          },
                         ),
                         IconButton(
                           icon: Icon(Icons.refresh, color: Colors.white),
@@ -110,26 +114,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                             );
                           },
                         ),
-                        (!playerController.isFullScreen && App.isAndroid)
-                            ? IconButton(
-                                icon: const Icon(
-                                  Icons.picture_in_picture_alt,
-                                  color: Colors.white,
-                                ),
-                                onPressed: () async {
-                                  final floating = Floating();
-                                  if (await floating.isPipAvailable) {
-                                    final status = await floating.pipStatus;
-                                    if (status == PiPStatus.disabled ||
-                                        status == PiPStatus.automatic) {
-                                      playerController.enterPiPMode();
-                                    } else if (status == PiPStatus.enabled) {
-                                      playerController.exitPiPMode();
-                                    }
-                                  }
-                                },
-                              )
-                            : Container(),
                       ],
                     ),
                   ),
