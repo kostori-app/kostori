@@ -372,21 +372,11 @@ abstract class _PlayerController with Store {
 
     if (appdata.settings['proxy'] != 'direct' &&
         appdata.settings['proxy'] != null) {
-      String? proxyUrl;
-      if (appdata.settings['proxy'] == 'system') {
-        final proxyAddr = await getProxy();
-        if (proxyAddr != null) {
-          proxyUrl = proxyAddr.startsWith('http://')
-              ? proxyAddr
-              : 'http://$proxyAddr';
-        }
-      } else {
-        proxyUrl = appdata.settings['proxy'];
-        if (!proxyUrl!.startsWith('http://')) {
-          proxyUrl = 'http://$proxyUrl';
-        }
-      }
-      if (proxyUrl != null) {
+      final proxyAddr = await getProxy();
+      if (proxyAddr != null) {
+        final proxyUrl = proxyAddr.startsWith('http://')
+            ? proxyAddr
+            : 'http://$proxyAddr';
         await pp.setProperty('http-proxy', proxyUrl);
         PlayLog.info('Player: HTTP 代理设置', proxyUrl);
       }

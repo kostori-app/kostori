@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit_config.dart';
+import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit_config.dart'
+    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit_config.dart';
 import 'package:ffmpeg_kit_flutter_new_min/return_code.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -137,8 +138,10 @@ class FfmpegEncoder {
 
     final totalMs = args.lengthMs;
     double lastProgress = 0;
+    final stderrBuffer = StringBuffer();
 
     process.stderr.transform(const SystemEncoding().decoder).listen((data) {
+      stderrBuffer.write(data);
       final m = RegExp(r'time=(\d+):(\d+):(\d+)\.(\d+)').firstMatch(data);
       if (m != null) {
         try {
@@ -158,7 +161,11 @@ class FfmpegEncoder {
 
     final exitCode = await process.exitCode;
     args.onProgress?.call(1.0);
-    if (exitCode != 0) throw Exception('FFmpeg exited with code: $exitCode');
+    if (exitCode != 0) {
+      throw Exception(
+        'FFmpeg exited with code: $exitCode. Stderr: $stderrBuffer',
+      );
+    }
   }
 
   // ── Android / iOS / other via ffmpeg_kit ─────────────────────────────────
@@ -236,8 +243,11 @@ class FfmpegEncoder {
     buf.write('-ss $startSec ');
     buf.write('-t $durationSec ');
 
-    // Proxy
-    if (args.proxyUrl != null && args.proxyUrl!.isNotEmpty) {
+    // Proxy only for network inputs
+    if (args.proxyUrl != null &&
+        args.proxyUrl!.isNotEmpty &&
+        (args.inputUrl.startsWith('http://') ||
+            args.inputUrl.startsWith('https://'))) {
       String proxy = args.proxyUrl!;
       if (!proxy.startsWith('http://')) proxy = 'http://$proxy';
       buf.write('-http_proxy "$proxy" ');
@@ -246,8 +256,10 @@ class FfmpegEncoder {
     // Input
     buf.write('-i "$inputPath" ');
 
-    // HTTP headers (for network inputs)
-    if (args.headers.isNotEmpty) {
+    // HTTP headers only for network inputs
+    if (args.headers.isNotEmpty &&
+        (args.inputUrl.startsWith('http://') ||
+            args.inputUrl.startsWith('https://'))) {
       for (final e in args.headers.entries) {
         buf.write('-headers "${e.key}: ${e.value}" ');
       }

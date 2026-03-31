@@ -80,14 +80,14 @@ class _Semaphore {
 }
 
 class _HlsDownloader {
-  /// Downloads all HLS segments concurrently via AppDio (respects app proxy/TLS).
-  /// Handles master → variant playlist resolution.
-  /// Returns path to a local m3u8 pointing to cached segment files,
-  /// or [null] if the URL is not HLS or download fails (caller falls back
-  /// to passing the original URL to FFmpeg).
+  /// Downloads only the HLS segments that overlap [startMs, endMs].
+  /// Parses #EXTINF durations to skip segments outside the clip range.
+  /// Falls back to null (caller uses original URL) on any error.
   static Future<String?> download({
     required String url,
     required Map<String, String> headers,
+    required int startMs,
+    required int endMs,
     void Function(double progress, String status)? onProgress,
   }) async {
     if (!_isHls(url)) return null;
@@ -143,17 +143,58 @@ class _HlsDownloader {
         }
       }
 
-      // ── Parse segment list from variant playlist ──────────────────────
+      // ── Parse segment list + durations from variant playlist ──────────
       final segBase = _baseOf(targetUrl);
       final playlistLines = content.split('\n');
-      final segmentUrls = <String>[];
+
+      // Build a list of (url, durationMs) pairs
+      final allSegs = <({String url, int durationMs})>[];
+      double pendingDurSec = 0;
       for (final line in playlistLines) {
         final l = line.trim();
-        if (l.isNotEmpty && !l.startsWith('#')) {
-          segmentUrls.add(l.startsWith('http') ? l : '$segBase$l');
+        if (l.startsWith('#EXTINF:')) {
+          // #EXTINF:<duration>, → parse the float after the colon
+          final raw = l.substring(8).split(',').first;
+          pendingDurSec = double.tryParse(raw) ?? pendingDurSec;
+        } else if (l.isNotEmpty && !l.startsWith('#')) {
+          final segUrl = l.startsWith('http') ? l : '$segBase$l';
+          allSegs.add((
+            url: segUrl,
+            durationMs: (pendingDurSec * 1000).round(),
+          ));
+          pendingDurSec = 0;
         }
       }
-      if (segmentUrls.isEmpty) return null;
+      if (allSegs.isEmpty) return null;
+
+      // ── Find which segments overlap [startMs, endMs] ──────────────────
+      // Add one-segment buffer before/after to handle imprecise seeks.
+      int cursor = 0;
+      int firstIdx = 0;
+      int lastIdx = allSegs.length - 1;
+      bool foundFirst = false;
+      for (int i = 0; i < allSegs.length; i++) {
+        final segEnd = cursor + allSegs[i].durationMs;
+        if (!foundFirst && segEnd > startMs) {
+          firstIdx = (i - 1).clamp(
+            0,
+            allSegs.length - 1,
+          ); // 1-seg buffer before
+          foundFirst = true;
+        }
+        if (cursor >= endMs) {
+          lastIdx = (i + 1).clamp(0, allSegs.length - 1); // 1-seg buffer after
+          break;
+        }
+        cursor += allSegs[i].durationMs;
+      }
+      final needed = allSegs.sublist(firstIdx, lastIdx + 1);
+
+      Log.info(
+        'HlsDownloader',
+        'Downloading ${needed.length}/${allSegs.length} segments '
+            '(idx $firstIdx–$lastIdx) for clip $startMs–${endMs}ms',
+      );
 
       // ── Create temp directory ─────────────────────────────────────────
       final tempDir = await getTemporaryDirectory();
@@ -163,48 +204,70 @@ class _HlsDownloader {
 
       // ── Concurrent download with semaphore (max 6 parallel) ──────────
       final sem = _Semaphore(6);
+      final errors = <String>[];
       int completed = 0;
-      final total = segmentUrls.length;
+      final total = needed.length;
 
       await Future.wait(
-        segmentUrls.asMap().entries.map((entry) async {
+        needed.asMap().entries.map((entry) async {
           await sem.acquire();
           try {
-            final idx = entry.key;
-            final segUrl = entry.value;
+            final localIdx = entry.key;
+            final segUrl = entry.value.url;
             final segPath =
-                '${segDir.path}/seg_${idx.toString().padLeft(6, '0')}.ts';
-            await dio.download(
+                '${segDir.path}/seg_${localIdx.toString().padLeft(6, '0')}.ts';
+            final resp = await dio.get<List<int>>(
               segUrl,
-              segPath,
-              options: Options(headers: headers),
+              options: Options(
+                headers: headers,
+                responseType: ResponseType.bytes,
+              ),
             );
+            if (resp.data != null && resp.data!.isNotEmpty) {
+              await File(segPath).writeAsBytes(resp.data!, flush: true);
+            }
             completed++;
             onProgress?.call(completed / total, '下载分片 $completed/$total…');
           } catch (e) {
-            Log.error('HlsDownloader', 'Segment ${entry.key} failed: $e');
-            // Create empty file so index stays consistent
-            await File(
-              '${segDir.path}/seg_${entry.key.toString().padLeft(6, '0')}.ts',
-            ).create();
+            errors.add('Segment ${entry.key}: $e');
+            Log.error(
+              'HlsDownloader',
+              'Segment ${firstIdx + entry.key} error: $e',
+            );
           } finally {
             sem.release();
           }
         }),
       );
 
-      // ── Rewrite playlist with local paths ─────────────────────────────
-      int segIdx = 0;
-      final localLines = playlistLines.map((line) {
-        final l = line.trim();
-        if (l.isNotEmpty && !l.startsWith('#')) {
-          final localPath =
-              '${segDir.path}/seg_${segIdx.toString().padLeft(6, '0')}.ts';
-          segIdx++;
-          return localPath;
+      if (errors.isNotEmpty) {
+        for (final e in errors) {
+          Log.error('HlsDownloader', e);
         }
-        return line;
-      }).toList();
+        return null;
+      }
+
+      // ── Build trimmed local m3u8 (only needed segments) ───────────────
+      // Extract header lines (everything before the first segment URL in the
+      // original playlist) to keep codec/key/targetduration metadata.
+      final headerLines = <String>[];
+      bool headerDone = false;
+      for (final line in playlistLines) {
+        final l = line.trim();
+        if (!headerDone && l.isNotEmpty && !l.startsWith('#')) {
+          headerDone = true; // first segment → stop collecting headers
+        }
+        if (!headerDone) headerLines.add(line);
+      }
+
+      // Rebuild playlist: headers + EXTINF+localPath for each needed segment
+      final localLines = <String>[...headerLines];
+      for (int i = 0; i < needed.length; i++) {
+        final durSec = (needed[i].durationMs / 1000.0).toStringAsFixed(3);
+        localLines.add('#EXTINF:$durSec,');
+        localLines.add('${segDir.path}/seg_${i.toString().padLeft(6, '0')}.ts');
+      }
+      localLines.add('#EXT-X-ENDLIST');
 
       final localM3u8 = '${segDir.path}/local.m3u8';
       await File(localM3u8).writeAsString(localLines.join('\n'));
@@ -558,18 +621,24 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     final proxyUrl = await getProxy();
 
     try {
-      // ── Step 1: HLS concurrent pre-download ───────────────────────────
-      if (_HlsDownloader._isHls(exportUrl)) {
-        setState(() {
-          _exportStatus = '下载视频分片…';
-        });
+      // ── Step 1: HLS concurrent pre-download (MP4 only) ───────────────
+      // For animated formats (GIF/APNG/WebP), FFmpeg handles HLS natively:
+      // it fetches only the segments it needs for -ss/-t, so pre-downloading
+      // would waste time and bandwidth. Only pre-download for MP4 where the
+      // concurrent fetch gives a real speed-up during encoding.
+      final bool doPreDownload =
+          _format == ExportFormat.mp4 && _HlsDownloader._isHls(exportUrl);
+
+      if (doPreDownload) {
+        setState(() => _exportStatus = '下载视频分片…');
         final localM3u8 = await _HlsDownloader.download(
           url: exportUrl,
           headers: exportHeaders,
+          startMs: _startTime.inMilliseconds,
+          endMs: _endTime.inMilliseconds,
           onProgress: (p, msg) {
             if (mounted && !_exportCancelled) {
               setState(() {
-                // HLS download = 0..40% of total progress
                 _exportProgress = p * 0.4;
                 _exportStatus = msg;
               });
@@ -598,7 +667,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         proxyUrl: proxyUrl,
       );
 
-      final baseProgress = _HlsDownloader._isHls(widget.videoUrl) ? 0.4 : 0.0;
+      final baseProgress =
+          doPreDownload && _HlsDownloader._isHls(widget.videoUrl) ? 0.4 : 0.0;
 
       final encodeArgsWithProgress = FfmpegEncodeArgs(
         inputUrl: encodeArgs.inputUrl,
