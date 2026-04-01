@@ -14,7 +14,7 @@ import desktop_drop
 import desktop_webview_window
 import device_info_plus
 import dynamic_color
-import ffmpeg_kit_flutter_new_min
+import ffmpeg_kit_flutter_new_min_gpl
 import file_picker
 import file_selector_macos
 import flutter_image_compress_macos

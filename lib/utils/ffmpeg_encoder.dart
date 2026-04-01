@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart'
-    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit_config.dart'
-    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit_config.dart';
-import 'package:ffmpeg_kit_flutter_new_min/return_code.dart'
-    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
+import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart'
+    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit_config.dart'
+    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit_config.dart';
+import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_session.dart'
+    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_session.dart';
+import 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart'
+    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 
@@ -171,30 +174,95 @@ class FfmpegEncoder {
   // ── Android / iOS / other via ffmpeg_kit ─────────────────────────────────
 
   Future<void> _encodeMobile(String cmd) async {
-    try {
-      final totalMs = args.lengthMs;
-      double lastProgress = 0;
+    Log.info('FfmpegEncoder', 'Mobile FFmpeg command: $cmd');
 
-      final session = await FFmpegKit.executeAsync(cmd, (_) async {});
+    final totalMs = args.lengthMs;
+    double lastProgress = 0;
 
-      FFmpegKitConfig.enableStatisticsCallback((stats) {
-        final t = stats.getTime();
-        if (t > 0 && totalMs > 0) {
-          double p = (t / totalMs).clamp(0.0, 1.0);
-          if (p > lastProgress + 0.01) {
-            lastProgress = p;
-            args.onProgress?.call(p);
-          }
+    // Enable statistics callback before starting
+    FFmpegKitConfig.enableStatisticsCallback((stats) {
+      final t = stats.getTime();
+      if (t > 0 && totalMs > 0) {
+        double p = (t / totalMs).clamp(0.0, 1.0);
+        if (p > lastProgress + 0.01) {
+          lastProgress = p;
+          args.onProgress?.call(p);
         }
-      });
+      }
+    });
 
-      final returnCode = await session.getReturnCode();
+    // Use a Completer to wait for the session to complete
+    final completer = Completer<void>();
+    FFmpegSession? completedSession;
+
+    try {
+      final session = await FFmpegKit.executeAsync(
+        cmd,
+        (session) async {
+          // Session complete callback
+          completedSession = session;
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+        (log) {
+          // Log callback - uncomment for debugging
+          // Log.info('FfmpegEncoder', log.getMessage());
+        },
+        (stats) {
+          // Statistics callback
+          final t = stats.getTime();
+          if (t > 0 && totalMs > 0) {
+            double p = (t / totalMs).clamp(0.0, 1.0);
+            if (p > lastProgress + 0.01) {
+              lastProgress = p;
+              args.onProgress?.call(p);
+            }
+          }
+        },
+      );
+
+      // Wait for the session to complete with a timeout
+      final timeout = Duration(seconds: 300); // 5 minutes max
+      await completer.future.timeout(
+        timeout,
+        onTimeout: () {
+          session.cancel();
+          throw Exception(
+            'FFmpeg encoding timed out after ${timeout.inSeconds} seconds',
+          );
+        },
+      );
+
       args.onProgress?.call(1.0);
 
-      if (!ReturnCode.isSuccess(returnCode)) {
-        final output = await session.getOutput();
+      // Now get the results
+      final returnCode = await completedSession!.getReturnCode();
+      final output = await completedSession!.getOutput();
+      final allLogs = await completedSession!.getAllLogsAsString();
+
+      if (returnCode == null) {
+        Log.error('FfmpegEncoder', 'Return code is null');
         Log.error('FfmpegEncoder', 'Output: $output');
-        throw Exception('FFmpeg encoding failed: $returnCode');
+        Log.error('FfmpegEncoder', 'All logs: $allLogs');
+        throw Exception(
+          'FFmpeg encoding failed: return code is null. '
+          'Command: $cmd. '
+          'Output: $output. '
+          'Logs: $allLogs',
+        );
+      }
+
+      if (!ReturnCode.isSuccess(returnCode)) {
+        Log.error('FfmpegEncoder', 'Return code: $returnCode');
+        Log.error('FfmpegEncoder', 'Output: $output');
+        Log.error('FfmpegEncoder', 'All logs: $allLogs');
+        throw Exception(
+          'FFmpeg encoding failed: $returnCode. '
+          'Command: $cmd. '
+          'Output: $output. '
+          'Logs: $allLogs',
+        );
       }
     } catch (e) {
       Log.error('FfmpegEncoder', 'FFmpeg Kit error: $e');
@@ -291,7 +359,10 @@ class FfmpegEncoder {
         if (filterParts.isNotEmpty) {
           buf.write('-vf "${filterParts.join(',')}" ');
         }
-        buf.write('-c:v libx264 -preset fast -crf $crf ');
+        // Use libx264 for all platforms (min-gpl package includes x264)
+        buf.write('-c:v libx264 ');
+        buf.write('-preset fast ');
+        buf.write('-crf $crf ');
         if (args.includeAudio) {
           buf.write('-c:a aac -b:a 128k ');
         } else {

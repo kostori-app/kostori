@@ -142,7 +142,7 @@ dependencies:
   zxing2: ^0.2.4
   slang: ^4.14.0
   slang_flutter: ^4.14.0
-  ffmpeg_kit_flutter_new_min: ^3.1.0
+  ffmpeg_kit_flutter_new_min_gpl: ^2.1.1
 
 dev_dependencies:
   flutter_test:

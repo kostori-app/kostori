@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/proxy.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
@@ -37,6 +39,64 @@ Future<void> showVideoClipEditor({
   required Duration currentPosition,
   required Duration duration,
 }) async {
+  // Check FFmpeg existence on desktop
+  if (App.isDesktop) {
+    final customPath = appdata.settings['ffmpegPath'] as String?;
+    bool ffmpegExists = false;
+
+    if (customPath != null && customPath.isNotEmpty) {
+      ffmpegExists = await File(customPath).exists();
+    }
+
+    if (!ffmpegExists) {
+      try {
+        final result = await Process.run('where', ['ffmpeg.exe']);
+        if (result.exitCode == 0) {
+          ffmpegExists = true;
+        }
+      } catch (_) {}
+    }
+
+    if (!ffmpegExists) {
+      for (final p in [
+        'C:\\ffmpeg\\bin\\ffmpeg.exe',
+        'C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
+        'C:\\Program Files (x86)\\ffmpeg\\bin\\ffmpeg.exe',
+        '/usr/bin/ffmpeg',
+        '/usr/local/bin/ffmpeg',
+      ]) {
+        if (await File(p).exists()) {
+          ffmpegExists = true;
+          break;
+        }
+      }
+    }
+
+    if (!ffmpegExists) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('FFmpeg 未找到'),
+          content: const Text(
+            '桌面端导出功能需要 FFmpeg，但未找到 FFmpeg 可执行文件。\n\n'
+            '请在设置中配置 FFmpeg 路径，或确保 FFmpeg 在系统 PATH 中。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('仍要打开'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+  }
+
   await showPopUpWidget(
     context,
     VideoClipEditorPage(
@@ -318,6 +378,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   StreamSubscription<Duration>? _positionSub;
 
   // ── Time ──────────────────────────────────────────────────────────────────
+  static const maxExportDurationMs = 60000; // 60 seconds max export
   late Duration _startTime;
   late Duration _endTime;
 
@@ -370,9 +431,12 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     super.initState();
     _videoController = VideoController(widget.player);
 
-    // Default selection: current position → +10 s
+    // Default selection: current position → +10 s (max 60s)
     _startTime = widget.currentPosition;
-    _endTime = widget.currentPosition + const Duration(seconds: 10);
+    _endTime = _startTime + const Duration(seconds: 10);
+    final maxEndTime =
+        _startTime + const Duration(milliseconds: maxExportDurationMs);
+    if (_endTime > maxEndTime) _endTime = maxEndTime;
     if (_endTime > widget.duration) _endTime = widget.duration;
 
     // Initial video dimensions
@@ -502,10 +566,14 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           ),
         );
       } else {
+        final maxEnd = [
+          _startTime.inMilliseconds + maxExportDurationMs,
+          widget.duration.inMilliseconds,
+        ].reduce((a, b) => a < b ? a : b);
         _endTime = Duration(
           milliseconds: (_endTime.inMilliseconds + deltaMs).clamp(
             _startTime.inMilliseconds + 100,
-            widget.duration.inMilliseconds,
+            maxEnd,
           ),
         );
       }
@@ -518,6 +586,9 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       _startTime = pos;
       if (_startTime >= _endTime) {
         _endTime = _startTime + const Duration(seconds: 1);
+        final maxEndTime =
+            _startTime + const Duration(milliseconds: maxExportDurationMs);
+        if (_endTime > maxEndTime) _endTime = maxEndTime;
         if (_endTime > widget.duration) _endTime = widget.duration;
       }
     });
@@ -531,6 +602,11 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _startTime = _endTime - const Duration(seconds: 1);
         if (_startTime < Duration.zero) _startTime = Duration.zero;
       }
+      // Clamp to max duration
+      final maxEndTime =
+          _startTime + const Duration(milliseconds: maxExportDurationMs);
+      if (_endTime > maxEndTime) _endTime = maxEndTime;
+      if (_endTime > widget.duration) _endTime = widget.duration;
     });
   }
 
@@ -621,13 +697,14 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     final proxyUrl = await getProxy();
 
     try {
-      // ── Step 1: HLS concurrent pre-download (MP4 only) ───────────────
-      // For animated formats (GIF/APNG/WebP), FFmpeg handles HLS natively:
-      // it fetches only the segments it needs for -ss/-t, so pre-downloading
-      // would waste time and bandwidth. Only pre-download for MP4 where the
-      // concurrent fetch gives a real speed-up during encoding.
+      // ── Step 1: HLS concurrent pre-download ─────────────────────────
+      // For desktop, animated formats (GIF/APNG/WebP) can let FFmpeg handle HLS natively.
+      // For mobile (Android/iOS), FFmpeg builds often lack HTTPS support, so we must
+      // pre-download segments to local files regardless of format.
+      final bool isMobile = Platform.isAndroid || Platform.isIOS;
       final bool doPreDownload =
-          _format == ExportFormat.mp4 && _HlsDownloader._isHls(exportUrl);
+          _HlsDownloader._isHls(exportUrl) &&
+          (_format == ExportFormat.mp4 || isMobile);
 
       if (doPreDownload) {
         setState(() => _exportStatus = '下载视频分片…');
@@ -1015,53 +1092,100 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   Widget _buildTimeSection() {
     final cs = Theme.of(context).colorScheme;
     final totalMs = widget.duration.inMilliseconds.toDouble();
+    final isCompact = App.isMobile;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        isCompact ? 8 : 16,
+        12,
+        isCompact ? 8 : 16,
+        0,
+      ),
       child: Card.outlined(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          padding: EdgeInsets.fromLTRB(
+            isCompact ? 8 : 12,
+            12,
+            isCompact ? 8 : 12,
+            8,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Section title + clip info
-              Row(
-                children: [
-                  const Icon(Icons.timer_outlined, size: 16),
-                  const SizedBox(width: 6),
-                  Text('时间范围', style: Theme.of(context).textTheme.titleSmall),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
+              if (isCompact)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          '时间范围',
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                      ],
                     ),
-                    decoration: BoxDecoration(
-                      color: cs.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${_fmt(_clipDuration)}  ≈ ${_estimatedSize()}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onPrimaryContainer,
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_fmt(_clipDuration)}  ≈ ${_estimatedSize()}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onPrimaryContainer,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    const Icon(Icons.timer_outlined, size: 16),
+                    const SizedBox(width: 6),
+                    Text('时间范围', style: Theme.of(context).textTheme.titleSmall),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_fmt(_clipDuration)}  ≈ ${_estimatedSize()}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 4),
 
               // RangeSlider
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  rangeThumbShape: const RoundRangeSliderThumbShape(
-                    enabledThumbRadius: 8,
+                  rangeThumbShape: RoundRangeSliderThumbShape(
+                    enabledThumbRadius: isCompact ? 6 : 8,
                   ),
                   trackHeight: 4,
-                  overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 16,
+                  overlayShape: RoundSliderOverlayShape(
+                    overlayRadius: isCompact ? 12 : 16,
                   ),
                 ),
                 child: RangeSlider(
@@ -1075,59 +1199,127 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   onChanged: (v) {
                     setState(() {
                       _startTime = Duration(milliseconds: v.start.round());
-                      _endTime = Duration(milliseconds: v.end.round());
+                      var newEnd = Duration(milliseconds: v.end.round());
+                      // Clamp to max duration
+                      final maxEnd =
+                          _startTime +
+                          const Duration(milliseconds: maxExportDurationMs);
+                      if (newEnd > maxEnd) newEnd = maxEnd;
+                      if (newEnd > widget.duration) newEnd = widget.duration;
+                      _endTime = newEnd;
                     });
                   },
                 ),
               ),
 
               // Fine-tune row: [- Start +]  |  [- End +]
-              Row(
-                children: [
-                  _buildFineControl(isStart: true),
-                  const Spacer(),
-                  _buildFineControl(isStart: false),
-                ],
-              ),
+              if (isCompact)
+                Column(
+                  children: [
+                    _buildFineControl(isStart: true, compact: isCompact),
+                    _buildFineControl(isStart: false, compact: isCompact),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    _buildFineControl(isStart: true, compact: isCompact),
+                    const Spacer(),
+                    _buildFineControl(isStart: false, compact: isCompact),
+                  ],
+                ),
 
               const SizedBox(height: 8),
 
               // "Set here" quick buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
+              if (isCompact)
+                Row(
+                  children: [
+                    OutlinedButton(
                       onPressed: _setStartToCurrent,
-                      icon: const Icon(Icons.content_cut, size: 15),
-                      label: const Text('设为起点'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 8,
+                        ),
+                        minimumSize: Size.zero,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.content_cut, size: 14),
+                          const SizedBox(width: 4),
+                          const Text('起点', style: TextStyle(fontSize: 12)),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
+                    const SizedBox(width: 8),
+                    OutlinedButton(
                       onPressed: _setEndToCurrent,
-                      icon: const Icon(Icons.content_cut_rounded, size: 15),
-                      label: const Text('设为终点'),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 4,
+                          horizontal: 8,
+                        ),
+                        minimumSize: Size.zero,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.content_cut_rounded, size: 14),
+                          const SizedBox(width: 4),
+                          const Text('终点', style: TextStyle(fontSize: 12)),
+                        ],
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.outlined(
-                    onPressed: _seekToStart,
-                    icon: const Icon(Icons.skip_previous, size: 18),
-                    tooltip: '跳到起点',
-                    style: IconButton.styleFrom(
-                      minimumSize: const Size(36, 36),
-                      padding: EdgeInsets.zero,
+                    const Spacer(),
+                    IconButton.outlined(
+                      onPressed: _seekToStart,
+                      icon: const Icon(Icons.skip_previous, size: 16),
+                      tooltip: '跳到起点',
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(32, 32),
+                        padding: EdgeInsets.zero,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _setStartToCurrent,
+                        icon: const Icon(Icons.content_cut, size: 15),
+                        label: const Text('设为起点'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _setEndToCurrent,
+                        icon: const Icon(Icons.content_cut_rounded, size: 15),
+                        label: const Text('设为终点'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton.outlined(
+                      onPressed: _seekToStart,
+                      icon: const Icon(Icons.skip_previous, size: 18),
+                      tooltip: '跳到起点',
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(36, 36),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -1135,48 +1327,55 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     );
   }
 
-  Widget _buildFineControl({required bool isStart}) {
+  Widget _buildFineControl({required bool isStart, bool compact = false}) {
     final time = isStart ? _startTime : _endTime;
+    final iconSize = compact ? 12.0 : 14.0;
+    final btnMinSize = compact ? 24.0 : 28.0;
+    final timeFontSize = compact ? 11.0 : 12.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         // −1 s
         _nudgeBtn(
           icon: Icons.fast_rewind,
-          size: 14,
+          size: iconSize,
           tooltip: isStart ? '起点 −1s' : '终点 −1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: -1000),
+          minSize: btnMinSize,
         ),
         // −0.1 s
         _nudgeBtn(
           icon: Icons.remove,
-          size: 14,
+          size: iconSize,
           tooltip: isStart ? '起点 −0.1s' : '终点 −0.1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: -100),
+          minSize: btnMinSize,
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4),
           child: Text(
             _fmt(time),
-            style: const TextStyle(
-              fontSize: 12,
-              fontFeatures: [FontFeature.tabularFigures()],
+            style: TextStyle(
+              fontSize: timeFontSize,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ),
         // +0.1 s
         _nudgeBtn(
           icon: Icons.add,
-          size: 14,
+          size: iconSize,
           tooltip: isStart ? '起点 +0.1s' : '终点 +0.1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: 100),
+          minSize: btnMinSize,
         ),
         // +1 s
         _nudgeBtn(
           icon: Icons.fast_forward,
-          size: 14,
+          size: iconSize,
           tooltip: isStart ? '起点 +1s' : '终点 +1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: 1000),
+          minSize: btnMinSize,
         ),
       ],
     );
@@ -1187,13 +1386,14 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     required double size,
     required String tooltip,
     required VoidCallback onTap,
+    double minSize = 28,
   }) {
     return IconButton(
       icon: Icon(icon, size: size),
       tooltip: tooltip,
       onPressed: onTap,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+      constraints: BoxConstraints(minWidth: minSize, minHeight: minSize),
     );
   }
 
@@ -1301,7 +1501,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     const Icon(Icons.volume_up_outlined, size: 18),
                     const SizedBox(width: 8),
                     const Expanded(child: Text('包含音频')),
-                    Switch(
+                    CustomSwitch(
                       value: _includeAudio,
                       onChanged: (v) => setState(() => _includeAudio = v),
                     ),
@@ -1389,7 +1589,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                 children: [
                   _sectionTitle(Icons.crop, '裁剪'),
                   const Spacer(),
-                  Switch(
+                  CustomSwitch(
                     value: _useCustomCrop,
                     onChanged: (v) {
                       setState(() {
