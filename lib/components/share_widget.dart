@@ -125,6 +125,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
       selectedBangumiItems = widget.selectedBangumiItems!;
       isLoding = false;
     } else if (widget.characterFullItem != null) {
+      isCharacter = widget.isCharacter!;
       characterFullItem = widget.characterFullItem!;
       isLoding = false;
     } else if (widget.selectedCharacterItems != null) {
