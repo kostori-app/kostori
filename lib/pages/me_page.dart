@@ -17,6 +17,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
+import 'package:kostori/pages/lan_discovery_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:sliver_tools/sliver_tools.dart';
@@ -55,6 +56,7 @@ class _MePageState extends State<MePage> {
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
         const QrClipboardWidget(),
+        const _LanDiscoveryEntry(),
         const TodayRecommendation(),
         const _ImageManipulation(),
         const AiHubEntry(),
@@ -591,5 +593,51 @@ class _StatsViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(child: StatsViewPage());
+  }
+}
+
+class _LanDiscoveryEntry extends StatelessWidget {
+  const _LanDiscoveryEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: cs.outlineVariant, width: 0.6),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            context.to(() => const LanDiscoveryPage());
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.wifi_find, color: cs.primary, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t.lanDiscovery, style: ts.s16),
+                      Text(
+                        t.lanRemoteControlDescription,
+                        style: ts.s12.copyWith(color: cs.outline),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: cs.outline),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

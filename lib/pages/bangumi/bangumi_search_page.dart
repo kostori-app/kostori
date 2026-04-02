@@ -1014,18 +1014,14 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                           );
                           final result = await showDialog<int>(
                             context: context,
-                            builder: (_) => AlertDialog(
-                              title: Text(t.enterYear),
+                            builder: (_) => ContentDialog(
+                              title: t.enterYear,
                               content: TextField(
                                 controller: ctrl,
                                 keyboardType: TextInputType.number,
                                 autofocus: true,
                               ),
                               actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text(t.cancel),
-                                ),
                                 ElevatedButton(
                                   onPressed: () => Navigator.pop(
                                     context,

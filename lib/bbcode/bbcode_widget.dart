@@ -6,6 +6,7 @@ import 'package:kostori/bbcode/bbcode_elements.dart';
 import 'package:kostori/bbcode/generated/BBCodeLexer.dart';
 import 'package:kostori/bbcode/generated/BBCodeParser.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/io.dart';
@@ -13,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 class _QuoteBlock {
   final List<dynamic> items;
+
   _QuoteBlock(this.items);
 }
 
@@ -213,13 +215,10 @@ class _BBCodeWidgetState extends State<BBCodeWidget> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(t.imageOperations),
+        return ContentDialog(
+          title: t.imageOperations,
+          content: SizedBox(),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(t.cancel),
-            ),
             TextButton(
               onPressed: () => ImageSaver.saveImageToGallery(imageUrl),
               child: Text(t.saveToAlbum),

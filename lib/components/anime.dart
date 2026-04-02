@@ -108,39 +108,48 @@ class AnimeTile extends ConsumerWidget {
   }
 
   void _onLongPress(BuildContext context, WidgetRef ref) {
-    if (!enableHistory) {
-      if (!LocalFavoritesManager().isExist(anime.id, _animeType)) {
-        defaultFavorite(anime);
-        ref.read(favoritesVersion.notifier).state++;
-        App.rootContext.showMessage(message: t.addToFavoritesSuccess);
-      } else {
-        var renderBox = context.findRenderObject() as RenderBox;
-        var size = renderBox.size;
-        var location = renderBox.localToGlobal(
-          Offset((size.width - 242) / 2, size.height / 2),
-        );
-        _showMenu(location, context, ref);
-      }
-    } else {
-      var renderBox = context.findRenderObject() as RenderBox;
-      var size = renderBox.size;
-      var location = renderBox.localToGlobal(
-        Offset((size.width - 242) / 2, size.height / 2),
-      );
-      _showMenu(location, context, ref);
-    }
+    // 从上下文获取位置用于上下文菜单
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final Offset location =
+        renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
+    _showMenu(location, context, ref);
   }
 
   void _onSecondaryTap(
     TapDownDetails details,
     BuildContext context,
     WidgetRef ref,
-  ) {
-    _showMenu(details.globalPosition, context, ref);
+  ) async {
+    await _showMenu(details.globalPosition, context, ref);
   }
 
-  void _showMenu(Offset location, BuildContext context, WidgetRef ref) {
-    showMenuX(App.rootContext, location, [
+  Future<void> _showMenu(
+    Offset location,
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    // 确保远程控制服务已启动
+    if (!LanControlService.instance.isListening &&
+        LanControlService.instance.connectionCount == 0) {
+      try {
+        final port =
+            appdata.implicitData['lan_discovery_port'] as int? ?? 42183;
+        await LanControlService.instance.start(port);
+      } catch (e) {
+        DebugLog.warning('AnimeTile', '启动远程控制服务失败: $e');
+      }
+    }
+
+    // 检查是否有远程连接
+    // isListening: 当前设备作为被控端是否正在监听
+    // connectionCount: 当前设备作为被控端有多少客户端连接
+    // isConnected: 当前设备作为控制端是否已连接到其他设备
+    final isRemoteConnected = LanControlClient.instance.isConnected;
+
+    // 检查是否已收藏
+    final isFavorited = LocalFavoritesManager().isExist(anime.id, _animeType);
+
+    final menuEntries = <MenuEntry>[
       MenuEntry(
         icon: Icons.copy,
         text: t.copyTitle,
@@ -149,16 +158,113 @@ class AnimeTile extends ConsumerWidget {
           App.rootContext.showMessage(message: t.titleCopied);
         },
       ),
-      MenuEntry(
-        icon: Icons.stars_outlined,
-        text: t.addToFavorites,
-        onClick: () {
-          addFavorite(anime);
-          ref.read(favoritesVersion.notifier).state++;
-        },
-      ),
-      ...?menuOptions,
-    ]);
+    ];
+
+    // 收藏按钮：根据是否已收藏显示不同选项
+    if (isFavorited) {
+      menuEntries.add(
+        MenuEntry(
+          icon: Icons.star,
+          text: t.removeFromFavorites,
+          onClick: () {
+            // 从所有文件夹中移除收藏
+            final folders = LocalFavoritesManager().find(anime.id, _animeType);
+            for (final folder in folders) {
+              LocalFavoritesManager().deleteAnimeWithId(
+                folder,
+                anime.id,
+                _animeType,
+              );
+            }
+            ref.read(favoritesVersion.notifier).state++;
+          },
+        ),
+      );
+    } else {
+      // 未收藏时显示两个选项：添加到收藏夹 / 添加到默认
+      menuEntries.add(
+        MenuEntry(
+          icon: Icons.stars_outlined,
+          text: t.addToFavorites,
+          onClick: () {
+            addFavorite(anime);
+            ref.read(favoritesVersion.notifier).state++;
+          },
+        ),
+      );
+      menuEntries.add(
+        MenuEntry(
+          icon: Icons.add_circle_outline,
+          text: t.addToDefault,
+          onClick: () {
+            if (!LocalFavoritesManager().isExist(anime.id, _animeType)) {
+              defaultFavorite(anime);
+              ref.read(favoritesVersion.notifier).state++;
+              App.rootContext.showMessage(message: t.addToFavoritesSuccess);
+            }
+          },
+        ),
+      );
+    }
+
+    if (isRemoteConnected) {
+      // ✅ FIX: 直接从 LanControlClient 单例读取设备，不走 Provider
+      final connectedDevice = LanControlClient.instance.connectedDevice;
+
+      menuEntries.add(
+        MenuEntry(
+          icon: Icons.cast,
+          text: t.lanRemoteControl,
+          onClick: () {
+            if (connectedDevice == null) {
+              // 理论上不会发生（isConnected == true 时 connectedDevice 一定有值）
+              DebugLog.warning(
+                'AnimeTile',
+                'isConnected=true 但 connectedDevice=null，不应出现',
+              );
+              return;
+            }
+
+            DebugLog.info(
+              'AnimeTile',
+              'Cast → ${connectedDevice.name} (${connectedDevice.ip})',
+            );
+
+            // 先跳转到遥控页面，由用户在页面内选择操作
+            App.rootContext.to(
+              () => RemoteControlPage(device: connectedDevice),
+            );
+            _castAnimeToRemote();
+          },
+        ),
+      );
+    }
+
+    if (menuOptions != null) {
+      menuEntries.addAll(menuOptions!);
+    }
+
+    showMenuX(App.rootContext, location, menuEntries);
+  }
+
+  Future<void> _castAnimeToRemote() async {
+    final device = LanControlClient.instance.connectedDevice;
+    if (device == null || !LanControlClient.instance.isConnected) {
+      DebugLog.warning('AnimeTile', '无可用的远程连接');
+      return;
+    }
+
+    try {
+      // 发送 animeAction，让对端打开并播放这部动漫
+      await LanControlClient.instance.sendAnimeAction(
+        anime.id.toString(),
+        anime.sourceKey,
+        AnimeActionType.play,
+      );
+      DebugLog.info('AnimeTile', 'Cast 成功: ${anime.title} → ${device.name}');
+    } catch (e) {
+      DebugLog.warning('AnimeTile', 'Cast 失败: $e');
+    }
   }
 
   @override

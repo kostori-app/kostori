@@ -10,6 +10,8 @@ import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -126,11 +128,93 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         } catch (e) {
           App.rootContext.showMessage(message: t.failedToFetchPersonInfo);
         }
+      } else if (parsed.type == KostoriRouteType.remote) {
+        // 远程控制协议
+        await _handleRemoteControl(context, parsed);
       } else {
         App.rootContext.showMessage(message: t.unrecognizedLink);
       }
     } finally {
       _isNavigating = false;
+    }
+  }
+
+  /// 处理远程控制协议
+  Future<void> _handleRemoteControl(
+    BuildContext context,
+    ParsedProtocol parsed,
+  ) async {
+    if (parsed.remoteInfo == null) {
+      App.rootContext.showMessage(message: t.lanInvalidRemoteControlLink);
+      return;
+    }
+
+    final remote = parsed.remoteInfo!;
+
+    // 显示确认对话框
+    final navigator = Navigator.of(App.rootContext, rootNavigator: true);
+
+    final result = await showDialog<bool>(
+      context: App.rootContext,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.lanRemoteControlConnection),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.smartphone,
+                  color: Theme.of(ctx).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(remote.deviceName, style: ts.s16),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${t.lanDeviceId}: ${remote.deviceId}',
+              style: ts.s12.copyWith(color: Theme.of(ctx).colorScheme.outline),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => navigator.pop(false),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () => navigator.pop(true),
+            child: Text(t.lanConnect),
+          ),
+        ],
+      ),
+    );
+
+    if (result != true || !mounted) return;
+
+    // 发起连接
+    App.rootContext.showMessage(message: t.lanConnectingToRemoteDevice);
+
+    try {
+      // 将 RemoteControlProtocol 转换为 LanDiscoveredDevice 后连接
+      final device = LanDiscoveredDevice(
+        id: remote.deviceId,
+        name: remote.deviceName,
+        ip: remote.ip ?? '',
+        port: remote.port,
+        deviceType: LanDeviceType.unknown,
+        discoveredAt: DateTime.now(),
+        lastSeen: DateTime.now(),
+        capabilities: {'remoteControl': true, 'token': remote.token},
+      );
+      await LanControlClient.instance.connect(device);
+
+      App.rootContext.showMessage(message: t.lanRemoteControlConnected);
+    } catch (e) {
+      DebugLog.error('RemoteControl', '连接失败', e);
+      App.rootContext.showMessage(message: t.lanRemoteControlConnectionFailed);
     }
   }
 

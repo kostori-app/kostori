@@ -23,6 +23,7 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/bangumi/bangumi_calendar_page.dart';
 import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/protocol_parser.dart';
 import 'package:path/path.dart' as p;
 import 'package:pointycastle/api.dart';
 import 'package:pointycastle/block/aes.dart';
@@ -84,6 +85,16 @@ part 'hub_service/hub_service_upload_handler.dart';
 part 'image/hub_image_uploader.dart';
 
 part 'image/upload_config.dart';
+
+part 'lan_discovery/lan_control_handlers.dart';
+
+part 'lan_discovery/lan_control_protocol.dart';
+
+part 'lan_discovery/lan_control_service.dart';
+
+part 'lan_discovery/lan_discovery_models.dart';
+
+part 'lan_discovery/lan_discovery_service.dart';
 
 class HubCrypto {
   static Uint8List? _key;
@@ -153,6 +164,11 @@ class HubCrypto {
 /// 聊天消息的子类型，用于 [HubMessage.messageType]。
 /// system 仅客户端渲染用，不通过 HubMessage 在网络上传输。
 enum HubMessageType { chat, pin, reaction, recall }
+
+/// 远程控制服务
+final lanControlServiceProvider = Provider<LanControlService>(
+  (ref) => LanControlService.instance,
+);
 
 enum UserStatus { online, away, busy, offline }
 

@@ -221,9 +221,8 @@ class _EpisodeCommentsSheetState extends State<EpisodeCommentsSheet> {
       context: context, // 必须传入 BuildContext
       barrierDismissible: false, // 禁止点击遮罩关闭
       builder: (context) {
-        return AlertDialog(
-          title: const Text('输入集数'),
-          contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        return ContentDialog(
+          title: '输入集数',
           content: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               return TextField(

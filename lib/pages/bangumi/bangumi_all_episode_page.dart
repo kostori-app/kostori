@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -164,7 +165,7 @@ class _BangumiAllEpisodePageState extends State<BangumiAllEpisodePage> {
                                 showDialog(
                                   context: context,
                                   builder: (context) {
-                                    return AlertDialog(
+                                    return ContentDialog(
                                       content: ConstrainedBox(
                                         constraints: const BoxConstraints(
                                           maxWidth: 320,

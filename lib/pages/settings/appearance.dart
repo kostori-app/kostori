@@ -434,8 +434,8 @@ class _ColorPickPageState extends State<ColorPickPage> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(t.selectColor),
+    return ContentDialog(
+      title: t.selectColor,
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

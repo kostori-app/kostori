@@ -9,6 +9,8 @@ addAAnimeSourceInHomePage: Add a anime source in home page
 addAnimeSource: Add anime source
 addNewFavoriteTo: Add new favorite to
 addToFavorites: Add to favorites
+addToDefault: Add to Default
+removeFromFavorites: Remove from favorites
 imageProperties: Image Properties
 fileName: File Name
 fileSize: File Size
@@ -1203,3 +1205,65 @@ exportFailed: Export Failed
 selectTimeRange: Select Time Range
 recordingFeature: Record
 tapToRecord: Tap to Record
+lanDiscovery: LAN Discovery
+lanDiscoverDevices: Discover Devices
+lanRemoteControl: Remote Control
+lanStartDiscovery: Start Discovery
+lanStopDiscovery: Stop Discovery
+lanNoDevicesFound: No Devices Found
+lanSearching: Searching...
+lanShowQrCode: Show QR Code
+lanDeviceInfo: Device Info
+lanDeviceDoesNotSupportQrPairing: Device does not support QR pairing
+lanQrCodeFor: QR Code for
+lanScanQrCodeToConnect: Scan QR code to connect remote device
+lanGeneratingQrCode: Generating QR Code...
+lanRemoteControlDescription: After scanning, you can remotely control this device
+lanPairingRequestReceived: Pairing Request Received
+lanDevice: Device
+lanConnectingToRemoteDevice: Connecting to remote device...
+lanRemoteControlConnected: Remote control connected
+lanRemoteControlConnectionFailed: Remote control connection failed
+lanInvalidRemoteControlLink: Invalid remote control link
+lanRemoteControlConnection: Remote Control Connection
+lanAccept: Accept
+lanDeviceId: Device ID
+lanConnect: Connect
+lanExitControl: Exit Control
+lanConnectedDevices: Connected Devices
+lanNoDeviceConnected: No device connected
+lanPlayerControl: Player Control
+lanNavigationControl: Navigation Control
+lanNavHome: Home
+lanNavSearch: Search
+lanNavSettings: Settings
+lanSeekBack: Seek Back
+lanSeekForward: Seek Forward
+lanNavigation: Navigation
+lanSearch: Search
+lanPlaybackControl: Playback Control
+lanPlay: Play
+lanPause: Pause
+lanSeekTo: Seek to
+lanVolume: Volume
+lanPlaybackSpeed: Playback Speed
+lanSelectEpisode: Select Episode
+lanNextEpisode: Next Episode
+lanPreviousEpisode: Previous Episode
+lanSyncStatus: Sync Status
+lanSyncing: Syncing...
+lanLastSyncTime: Last sync time
+lanPendingChanges: Pending changes
+lanConflictDetected: Conflict Detected
+lanConflictResolution: Conflict Resolution
+lanLocalWins: Keep Local
+lanRemoteWins: Keep Remote
+lanKeepBoth: Keep Both
+lanManualResolution: Manual Resolution
+lanConflictField: Conflicting field
+lanErrorOccurred: Error occurred
+lanCommandExecuted: Command executed
+lanCommandFailed: Command failed
+lanNoPermission: No permission
+lanOpenAnimeDetail: Open Anime Detail
+lanSyncProgress: Sync Progress

@@ -12,6 +12,7 @@ enum KostoriRouteType {
   bangumi('b', 'Bangumi'),
   character('c', '角色'),
   person('d', '人物'),
+  remote('r', '远程控制'),
   unknown('?', '未知');
 
   final String code;
@@ -27,6 +28,29 @@ enum KostoriRouteType {
   }
 }
 
+/// 远程控制协议解析结果
+class RemoteControlProtocol {
+  final String deviceId;
+  final String deviceName;
+  final String token;
+  final int port;
+  final String? ip;
+
+  const RemoteControlProtocol({
+    required this.deviceId,
+    required this.deviceName,
+    required this.token,
+    required this.port,
+    this.ip,
+  });
+
+  /// WebSocket 连接地址
+  String get wsUrl => 'ws://${ip ?? 'auto'}:$port/hub';
+
+  /// 是否有效（基于 token）
+  bool get isValid => token.isNotEmpty;
+}
+
 class ParsedProtocol {
   final KostoriRouteType type;
 
@@ -38,15 +62,21 @@ class ParsedProtocol {
 
   final bool wasBase64;
 
+  /// 远程控制协议的额外信息（仅当 type == KostoriRouteType.remote 时有效）
+  final RemoteControlProtocol? remoteInfo;
+
   const ParsedProtocol({
     required this.type,
     required this.payload,
     required this.rawInput,
     required this.resolvedProtocol,
     this.wasBase64 = false,
+    this.remoteInfo,
   });
 
   bool get isRoutable => type != KostoriRouteType.unknown;
+
+  bool get isRemoteControl => type == KostoriRouteType.remote;
 
   @override
   String toString() =>
@@ -128,6 +158,10 @@ class ProtocolParser {
     // 1. 直接匹配协议
     final direct = _matchProtocol(text);
     if (direct != null) {
+      // 检查是否是远程控制协议
+      if (direct.$1 == KostoriRouteType.remote) {
+        return _parseRemotePayload(direct.$2, text, false);
+      }
       return ParsedProtocol(
         type: direct.$1,
         payload: direct.$2,
@@ -143,6 +177,10 @@ class ProtocolParser {
       if (decoded != null) {
         final inner = _matchProtocol(decoded.trim());
         if (inner != null) {
+          // 检查是否是远程控制协议
+          if (inner.$1 == KostoriRouteType.remote) {
+            return _parseRemotePayload(inner.$2, text, true);
+          }
           return ParsedProtocol(
             type: inner.$1,
             payload: inner.$2,
@@ -155,6 +193,42 @@ class ProtocolParser {
     }
 
     return null;
+  }
+
+  /// 解析远程控制协议的有效载荷
+  /// 格式: deviceId|name|token|port
+  static ParsedProtocol? _parseRemotePayload(
+    String payload,
+    String rawInput,
+    bool wasBase64,
+  ) {
+    try {
+      final parts = payload.split('|');
+      if (parts.length < 3) return null;
+
+      final deviceId = parts[0];
+      final deviceName = parts.length > 1 ? parts[1] : 'Unknown';
+      final token = parts[2];
+      final port = parts.length > 3 ? int.tryParse(parts[3]) ?? 42183 : 42183;
+
+      final remoteInfo = RemoteControlProtocol(
+        deviceId: deviceId,
+        deviceName: deviceName,
+        token: token,
+        port: port,
+      );
+
+      return ParsedProtocol(
+        type: KostoriRouteType.remote,
+        payload: payload,
+        rawInput: rawInput,
+        resolvedProtocol: wasBase64 ? payload : rawInput,
+        wasBase64: wasBase64,
+        remoteInfo: remoteInfo,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
   static bool looksLikeProtocol(String text) {

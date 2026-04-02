@@ -6,6 +6,7 @@ import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/bean/card/reviews_card.dart';
 import 'package:kostori/components/bean/card/staff_card.dart';
 import 'package:kostori/components/bean/card/topics_card.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/components/error_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/foundation/app.dart';
@@ -267,7 +268,7 @@ class _InfoTabViewState extends State<InfoTabView>
                                     showDialog(
                                       context: context,
                                       builder: (context) {
-                                        return AlertDialog(
+                                        return ContentDialog(
                                           content: ConstrainedBox(
                                             constraints: const BoxConstraints(
                                               maxWidth: 420,
@@ -597,9 +598,7 @@ class _InfoTabViewState extends State<InfoTabView>
                             : Icons.bar_chart,
                       ),
                       label: Text(
-                        infoController.showLineChart
-                            ? t.lineChart
-                            : t.barChart,
+                        infoController.showLineChart ? t.lineChart : t.barChart,
                       ),
                     ),
                   ],
@@ -992,7 +991,7 @@ class _InfoTabViewState extends State<InfoTabView>
       builder: (BuildContext context) {
         return CustomScrollView(
           scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>(t.characters),
+          key: PageStorageKey<String>(t.characters),
           slivers: <Widget>[
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
@@ -1061,7 +1060,7 @@ class _InfoTabViewState extends State<InfoTabView>
       builder: (BuildContext context) {
         return CustomScrollView(
           scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>(t.staffList),
+          key: PageStorageKey<String>(t.staffList),
           slivers: <Widget>[
             SliverOverlapInjector(
               handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),

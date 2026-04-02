@@ -74,6 +74,12 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Add to favorites'
 	String get addToFavorites => 'Add to favorites';
 
+	/// en: 'Add to Default'
+	String get addToDefault => 'Add to Default';
+
+	/// en: 'Remove from favorites'
+	String get removeFromFavorites => 'Remove from favorites';
+
 	/// en: 'Image Properties'
 	String get imageProperties => 'Image Properties';
 
@@ -3483,6 +3489,192 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Tap to Record'
 	String get tapToRecord => 'Tap to Record';
+
+	/// en: 'LAN Discovery'
+	String get lanDiscovery => 'LAN Discovery';
+
+	/// en: 'Discover Devices'
+	String get lanDiscoverDevices => 'Discover Devices';
+
+	/// en: 'Remote Control'
+	String get lanRemoteControl => 'Remote Control';
+
+	/// en: 'Start Discovery'
+	String get lanStartDiscovery => 'Start Discovery';
+
+	/// en: 'Stop Discovery'
+	String get lanStopDiscovery => 'Stop Discovery';
+
+	/// en: 'No Devices Found'
+	String get lanNoDevicesFound => 'No Devices Found';
+
+	/// en: 'Searching...'
+	String get lanSearching => 'Searching...';
+
+	/// en: 'Show QR Code'
+	String get lanShowQrCode => 'Show QR Code';
+
+	/// en: 'Device Info'
+	String get lanDeviceInfo => 'Device Info';
+
+	/// en: 'Device does not support QR pairing'
+	String get lanDeviceDoesNotSupportQrPairing => 'Device does not support QR pairing';
+
+	/// en: 'QR Code for'
+	String get lanQrCodeFor => 'QR Code for';
+
+	/// en: 'Scan QR code to connect remote device'
+	String get lanScanQrCodeToConnect => 'Scan QR code to connect remote device';
+
+	/// en: 'Generating QR Code...'
+	String get lanGeneratingQrCode => 'Generating QR Code...';
+
+	/// en: 'After scanning, you can remotely control this device'
+	String get lanRemoteControlDescription => 'After scanning, you can remotely control this device';
+
+	/// en: 'Pairing Request Received'
+	String get lanPairingRequestReceived => 'Pairing Request Received';
+
+	/// en: 'Device'
+	String get lanDevice => 'Device';
+
+	/// en: 'Connecting to remote device...'
+	String get lanConnectingToRemoteDevice => 'Connecting to remote device...';
+
+	/// en: 'Remote control connected'
+	String get lanRemoteControlConnected => 'Remote control connected';
+
+	/// en: 'Remote control connection failed'
+	String get lanRemoteControlConnectionFailed => 'Remote control connection failed';
+
+	/// en: 'Invalid remote control link'
+	String get lanInvalidRemoteControlLink => 'Invalid remote control link';
+
+	/// en: 'Remote Control Connection'
+	String get lanRemoteControlConnection => 'Remote Control Connection';
+
+	/// en: 'Accept'
+	String get lanAccept => 'Accept';
+
+	/// en: 'Device ID'
+	String get lanDeviceId => 'Device ID';
+
+	/// en: 'Connect'
+	String get lanConnect => 'Connect';
+
+	/// en: 'Exit Control'
+	String get lanExitControl => 'Exit Control';
+
+	/// en: 'Connected Devices'
+	String get lanConnectedDevices => 'Connected Devices';
+
+	/// en: 'No device connected'
+	String get lanNoDeviceConnected => 'No device connected';
+
+	/// en: 'Player Control'
+	String get lanPlayerControl => 'Player Control';
+
+	/// en: 'Navigation Control'
+	String get lanNavigationControl => 'Navigation Control';
+
+	/// en: 'Home'
+	String get lanNavHome => 'Home';
+
+	/// en: 'Search'
+	String get lanNavSearch => 'Search';
+
+	/// en: 'Settings'
+	String get lanNavSettings => 'Settings';
+
+	/// en: 'Seek Back'
+	String get lanSeekBack => 'Seek Back';
+
+	/// en: 'Seek Forward'
+	String get lanSeekForward => 'Seek Forward';
+
+	/// en: 'Navigation'
+	String get lanNavigation => 'Navigation';
+
+	/// en: 'Search'
+	String get lanSearch => 'Search';
+
+	/// en: 'Playback Control'
+	String get lanPlaybackControl => 'Playback Control';
+
+	/// en: 'Play'
+	String get lanPlay => 'Play';
+
+	/// en: 'Pause'
+	String get lanPause => 'Pause';
+
+	/// en: 'Seek to'
+	String get lanSeekTo => 'Seek to';
+
+	/// en: 'Volume'
+	String get lanVolume => 'Volume';
+
+	/// en: 'Playback Speed'
+	String get lanPlaybackSpeed => 'Playback Speed';
+
+	/// en: 'Select Episode'
+	String get lanSelectEpisode => 'Select Episode';
+
+	/// en: 'Next Episode'
+	String get lanNextEpisode => 'Next Episode';
+
+	/// en: 'Previous Episode'
+	String get lanPreviousEpisode => 'Previous Episode';
+
+	/// en: 'Sync Status'
+	String get lanSyncStatus => 'Sync Status';
+
+	/// en: 'Syncing...'
+	String get lanSyncing => 'Syncing...';
+
+	/// en: 'Last sync time'
+	String get lanLastSyncTime => 'Last sync time';
+
+	/// en: 'Pending changes'
+	String get lanPendingChanges => 'Pending changes';
+
+	/// en: 'Conflict Detected'
+	String get lanConflictDetected => 'Conflict Detected';
+
+	/// en: 'Conflict Resolution'
+	String get lanConflictResolution => 'Conflict Resolution';
+
+	/// en: 'Keep Local'
+	String get lanLocalWins => 'Keep Local';
+
+	/// en: 'Keep Remote'
+	String get lanRemoteWins => 'Keep Remote';
+
+	/// en: 'Keep Both'
+	String get lanKeepBoth => 'Keep Both';
+
+	/// en: 'Manual Resolution'
+	String get lanManualResolution => 'Manual Resolution';
+
+	/// en: 'Conflicting field'
+	String get lanConflictField => 'Conflicting field';
+
+	/// en: 'Error occurred'
+	String get lanErrorOccurred => 'Error occurred';
+
+	/// en: 'Command executed'
+	String get lanCommandExecuted => 'Command executed';
+
+	/// en: 'Command failed'
+	String get lanCommandFailed => 'Command failed';
+
+	/// en: 'No permission'
+	String get lanNoPermission => 'No permission';
+
+	/// en: 'Open Anime Detail'
+	String get lanOpenAnimeDetail => 'Open Anime Detail';
+
+	/// en: 'Sync Progress'
+	String get lanSyncProgress => 'Sync Progress';
 }
 
 // Path: colors
@@ -3642,6 +3834,8 @@ extension on Translations {
 			'addAnimeSource' => 'Add anime source',
 			'addNewFavoriteTo' => 'Add new favorite to',
 			'addToFavorites' => 'Add to favorites',
+			'addToDefault' => 'Add to Default',
+			'removeFromFavorites' => 'Remove from favorites',
 			'imageProperties' => 'Image Properties',
 			'fileName' => 'File Name',
 			'fileSize' => 'File Size',
@@ -4141,10 +4335,10 @@ extension on Translations {
 			'colors.reallyLightBlue' => 'Really Light Blue',
 			'colors.tea' => 'Tea',
 			'colors.warmPurple' => 'Warm Purple',
-			'colors.yellowishTan' => 'Yellowish Tan',
-			'colors.cement' => 'Cement',
 			_ => null,
 		} ?? switch (path) {
+			'colors.yellowishTan' => 'Yellowish Tan',
+			'colors.cement' => 'Cement',
 			'colors.darkGrassGreen' => 'Dark Grass Green',
 			'colors.dustyTeal' => 'Dusty Teal',
 			'colors.greyTeal' => 'Grey Teal',
@@ -4655,10 +4849,10 @@ extension on Translations {
 			'generateQrCodeShare' => 'Generate QR Code to Share',
 			'aiSettings' => 'AI Settings',
 			'aiConfigMissing' => 'AI Config Missing',
-			'generating' => 'Generating...',
-			'generatedTags' => 'Generated Tags',
 			_ => null,
 		} ?? switch (path) {
+			'generating' => 'Generating...',
+			'generatedTags' => 'Generated Tags',
 			'exportScreenshot' => 'Export Screenshot',
 			'copyAll' => 'Copy all',
 			'timeRange' => 'Time Range',
@@ -4825,6 +5019,68 @@ extension on Translations {
 			'selectTimeRange' => 'Select Time Range',
 			'recordingFeature' => 'Record',
 			'tapToRecord' => 'Tap to Record',
+			'lanDiscovery' => 'LAN Discovery',
+			'lanDiscoverDevices' => 'Discover Devices',
+			'lanRemoteControl' => 'Remote Control',
+			'lanStartDiscovery' => 'Start Discovery',
+			'lanStopDiscovery' => 'Stop Discovery',
+			'lanNoDevicesFound' => 'No Devices Found',
+			'lanSearching' => 'Searching...',
+			'lanShowQrCode' => 'Show QR Code',
+			'lanDeviceInfo' => 'Device Info',
+			'lanDeviceDoesNotSupportQrPairing' => 'Device does not support QR pairing',
+			'lanQrCodeFor' => 'QR Code for',
+			'lanScanQrCodeToConnect' => 'Scan QR code to connect remote device',
+			'lanGeneratingQrCode' => 'Generating QR Code...',
+			'lanRemoteControlDescription' => 'After scanning, you can remotely control this device',
+			'lanPairingRequestReceived' => 'Pairing Request Received',
+			'lanDevice' => 'Device',
+			'lanConnectingToRemoteDevice' => 'Connecting to remote device...',
+			'lanRemoteControlConnected' => 'Remote control connected',
+			'lanRemoteControlConnectionFailed' => 'Remote control connection failed',
+			'lanInvalidRemoteControlLink' => 'Invalid remote control link',
+			'lanRemoteControlConnection' => 'Remote Control Connection',
+			'lanAccept' => 'Accept',
+			'lanDeviceId' => 'Device ID',
+			'lanConnect' => 'Connect',
+			'lanExitControl' => 'Exit Control',
+			'lanConnectedDevices' => 'Connected Devices',
+			'lanNoDeviceConnected' => 'No device connected',
+			'lanPlayerControl' => 'Player Control',
+			'lanNavigationControl' => 'Navigation Control',
+			'lanNavHome' => 'Home',
+			'lanNavSearch' => 'Search',
+			'lanNavSettings' => 'Settings',
+			'lanSeekBack' => 'Seek Back',
+			'lanSeekForward' => 'Seek Forward',
+			'lanNavigation' => 'Navigation',
+			'lanSearch' => 'Search',
+			'lanPlaybackControl' => 'Playback Control',
+			'lanPlay' => 'Play',
+			'lanPause' => 'Pause',
+			'lanSeekTo' => 'Seek to',
+			'lanVolume' => 'Volume',
+			'lanPlaybackSpeed' => 'Playback Speed',
+			'lanSelectEpisode' => 'Select Episode',
+			'lanNextEpisode' => 'Next Episode',
+			'lanPreviousEpisode' => 'Previous Episode',
+			'lanSyncStatus' => 'Sync Status',
+			'lanSyncing' => 'Syncing...',
+			'lanLastSyncTime' => 'Last sync time',
+			'lanPendingChanges' => 'Pending changes',
+			'lanConflictDetected' => 'Conflict Detected',
+			'lanConflictResolution' => 'Conflict Resolution',
+			'lanLocalWins' => 'Keep Local',
+			'lanRemoteWins' => 'Keep Remote',
+			'lanKeepBoth' => 'Keep Both',
+			'lanManualResolution' => 'Manual Resolution',
+			'lanConflictField' => 'Conflicting field',
+			'lanErrorOccurred' => 'Error occurred',
+			'lanCommandExecuted' => 'Command executed',
+			'lanCommandFailed' => 'Command failed',
+			'lanNoPermission' => 'No permission',
+			'lanOpenAnimeDetail' => 'Open Anime Detail',
+			'lanSyncProgress' => 'Sync Progress',
 			_ => null,
 		};
 	}

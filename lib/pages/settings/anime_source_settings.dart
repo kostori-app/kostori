@@ -168,13 +168,10 @@ class _BodyState extends State<_Body> {
         await Process.run("code", [source.filePath], runInShell: true);
         await showDialog(
           context: App.rootContext,
-          builder: (context) => AlertDialog(
-            title: Text(t.reloadConfigs),
+          builder: (context) => ContentDialog(
+            title: t.reloadConfigs,
+            content: SizedBox(),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(t.cancel),
-              ),
               TextButton(
                 onPressed: () async {
                   await AnimeSourceManager().reload();
