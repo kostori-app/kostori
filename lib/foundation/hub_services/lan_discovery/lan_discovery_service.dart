@@ -35,9 +35,12 @@ class LanDiscoveryService {
   String? _cachedLocalIp;
 
   LanDiscoveryServiceState get state => _state;
+
   String? get lastError => _lastError;
+
   Map<String, LanDiscoveredDevice> get discoveredDevices =>
       Map.unmodifiable(_devices);
+
   List<LanDiscoveredDevice> get devicesList => _devices.values.toList();
 
   Future<void> init({
@@ -183,6 +186,7 @@ class LanDiscoveryService {
       _deviceName ?? 'Unknown',
       token,
       _hubPort.toString(),
+      _cachedLocalIp ?? '',
     ].join('|');
 
     final encoded = ProtocolParser.encodeWithBase64Payload(

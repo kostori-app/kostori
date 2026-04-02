@@ -82,6 +82,15 @@ class LanControlClient {
     return _sendAndWait(message);
   }
 
+  Future<Map<String, dynamic>?> sendSeek(double positionSeconds) {
+    final message = LanPlayerControlMessage(
+      requestId: LanControlMessage.generateRequestId(),
+      action: PlayerControlAction.seek,
+      value: positionSeconds,
+    );
+    return _sendAndWait(message);
+  }
+
   Future<Map<String, dynamic>?> sendEpisodeSelect({
     required int animeId,
     required String source,

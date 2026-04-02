@@ -464,6 +464,8 @@ class CurrentAnime {
   final String title;
   final int currentEpisode;
   final String? coverUrl;
+  final Map<String, Map<String, String>>? episodes;
+  final Set<int>? watchedEpisodes;
 
   const CurrentAnime({
     required this.animeId,
@@ -471,6 +473,8 @@ class CurrentAnime {
     required this.title,
     required this.currentEpisode,
     this.coverUrl,
+    this.episodes,
+    this.watchedEpisodes,
   });
 
   factory CurrentAnime.fromJson(Map<String, dynamic> json) => CurrentAnime(
@@ -479,6 +483,21 @@ class CurrentAnime {
     title: json['title'] as String? ?? '',
     currentEpisode: json['currentEpisode'] as int? ?? 1,
     coverUrl: json['coverUrl'] as String?,
+    episodes: json['episodes'] != null
+        ? (json['episodes'] as Map<String, dynamic>).map(
+            (key, value) => MapEntry(
+              key,
+              (value as Map<String, dynamic>).map(
+                (k, v) => MapEntry(k, v.toString()),
+              ),
+            ),
+          )
+        : null,
+    watchedEpisodes: json['watchedEpisodes'] != null
+        ? (json['watchedEpisodes'] as List<dynamic>)
+              .map((e) => e as int)
+              .toSet()
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -487,6 +506,8 @@ class CurrentAnime {
     'title': title,
     'currentEpisode': currentEpisode,
     if (coverUrl != null) 'coverUrl': coverUrl,
+    if (episodes != null) 'episodes': episodes,
+    if (watchedEpisodes != null) 'watchedEpisodes': watchedEpisodes!.toList(),
   };
 }
 

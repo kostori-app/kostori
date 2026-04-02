@@ -210,12 +210,14 @@ class ProtocolParser {
       final deviceName = parts.length > 1 ? parts[1] : 'Unknown';
       final token = parts[2];
       final port = parts.length > 3 ? int.tryParse(parts[3]) ?? 42183 : 42183;
+      final ip = parts.length > 4 ? parts[4] : null;
 
       final remoteInfo = RemoteControlProtocol(
         deviceId: deviceId,
         deviceName: deviceName,
         token: token,
         port: port,
+        ip: ip,
       );
 
       return ParsedProtocol(

@@ -114,12 +114,15 @@ class _LanPlayerControlHandler implements LanPlayerControlHandler {
     final watcher = _getWatcher();
     if (watcher == null) return null;
     final anime = watcher.anime;
+    final history = watcher.history;
     return CurrentAnime(
       animeId: int.tryParse(anime.id) ?? 0,
       source: anime.sourceKey,
       title: anime.title,
       currentEpisode: watcher.epIndex,
       coverUrl: anime.cover,
+      episodes: anime.episode,
+      watchedEpisodes: history.watchEpisode,
     );
   }
 
@@ -470,7 +473,7 @@ class _LanDiscoveryPageState extends ConsumerState<LanDiscoveryPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar: Appbar(
         title: Text(t.lanDiscovery),
         actions: [
           IconButton(

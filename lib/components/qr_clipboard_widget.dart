@@ -156,8 +156,8 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
 
     final result = await showDialog<bool>(
       context: App.rootContext,
-      builder: (ctx) => AlertDialog(
-        title: Text(t.lanRemoteControlConnection),
+      builder: (ctx) => ContentDialog(
+        title: t.lanRemoteControlConnection,
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,10 +180,6 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => navigator.pop(false),
-            child: Text(t.cancel),
-          ),
           FilledButton(
             onPressed: () => navigator.pop(true),
             child: Text(t.lanConnect),

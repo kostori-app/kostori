@@ -13,6 +13,7 @@ class LanControlService {
   LanControlServiceState _state = LanControlServiceState.idle;
   String? _lastError;
   Timer? _heartbeatTimer;
+  Timer? _statusBroadcastTimer;
   int _port = 42183;
 
   final _onMessageListeners = <LanControlCallback>[];
@@ -165,6 +166,9 @@ class LanControlService {
     }
     _connections.clear();
 
+    // Stop any existing status broadcast timer
+    _statusBroadcastTimer?.cancel();
+
     final deviceId = _generateDeviceId();
     _connections[deviceId] = ws;
 
@@ -175,11 +179,59 @@ class LanControlService {
     HubLog.info('LanControlService', '客户端连接: $deviceId');
     _notifyConnect(deviceId);
 
+    // Start periodic status broadcast (every 1 second)
+    _startStatusBroadcast();
+
     ws.listen(
       (data) => _handleMessage(deviceId, data),
       onError: (error) => _handleError(deviceId, error),
       onDone: () => _handleDisconnect(deviceId),
     );
+  }
+
+  void _startStatusBroadcast() {
+    _statusBroadcastTimer?.cancel();
+    _statusBroadcastTimer = null;
+    // Delay broadcast to allow anime data to fully load
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (_connections.isNotEmpty) {
+        _statusBroadcastTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+          _broadcastStatus();
+        });
+      }
+    });
+  }
+
+  void _broadcastStatus() {
+    if (_connections.isEmpty) {
+      _statusBroadcastTimer?.cancel();
+      return;
+    }
+
+    // Skip broadcast if no anime is playing
+    final playerHandler = _playerHandler;
+    if (playerHandler == null || playerHandler.getCurrentAnime() == null) {
+      return;
+    }
+
+    final currentAnime = playerHandler.getCurrentAnime();
+
+    // Skip if anime hasn't loaded episode data yet
+    if (currentAnime?.episodes == null || currentAnime!.episodes!.isEmpty) {
+      return;
+    }
+
+    final playerStatus = playerHandler.getCurrentStatus();
+    final syncStatus = _getSyncStatus();
+
+    final statusSync = LanStatusSyncMessage(
+      playerStatus: playerStatus,
+      currentAnime: currentAnime,
+      syncStatus: syncStatus,
+    );
+
+    // Broadcast to all connected clients
+    broadcast(statusSync);
   }
 
   void _handleMessage(String deviceId, dynamic data) {
@@ -215,6 +267,12 @@ class LanControlService {
     _connections.remove(deviceId);
     HubLog.info('LanControlService', '客户端断开: $deviceId');
     _notifyDisconnect(deviceId);
+
+    // Stop status broadcast when no clients connected
+    if (_connections.isEmpty) {
+      _statusBroadcastTimer?.cancel();
+      _statusBroadcastTimer = null;
+    }
 
     if (_connections.isEmpty && _state == LanControlServiceState.connected) {
       _setState(LanControlServiceState.listening);

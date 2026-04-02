@@ -112,6 +112,7 @@ class WatcherState extends State<Watcher>
 
   @override
   void dispose() {
+    currentState = null;
     updateHistoryTimer?.cancel();
     playerController.dispose();
     playerController.disposeWindow();
