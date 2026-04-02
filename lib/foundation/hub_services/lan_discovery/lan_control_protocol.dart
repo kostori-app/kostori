@@ -64,7 +64,8 @@ enum PlayerControlAction {
   setSpeed,
   setQuality,
   nextEpisode,
-  previousEpisode;
+  previousEpisode,
+  fullscreen;
 
   String get name => switch (this) {
     PlayerControlAction.play => 'play',
@@ -78,6 +79,7 @@ enum PlayerControlAction {
     PlayerControlAction.setQuality => 'set_quality',
     PlayerControlAction.nextEpisode => 'next_episode',
     PlayerControlAction.previousEpisode => 'previous_episode',
+    PlayerControlAction.fullscreen => 'fullscreen',
   };
 
   static PlayerControlAction? fromString(String name) {

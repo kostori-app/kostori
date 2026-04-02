@@ -69,6 +69,9 @@ class _LanPlayerControlHandler implements LanPlayerControlHandler {
         break;
       case PlayerControlAction.setQuality:
         break;
+      case PlayerControlAction.fullscreen:
+        await controller.toggleFullScreen(watcher.context);
+        break;
     }
     return {'success': true};
   }
@@ -175,6 +178,12 @@ class LanDiscoveryController extends ChangeNotifier {
     _service.addPairingRequestListener(_onPairingRequest);
     LanControlService.instance.setNavigationHandler(_onNavigationRequest);
     LanControlService.instance.setPlayerHandler(_LanPlayerControlHandler());
+
+    // Auto start discovery based on setting, but skip if already connected
+    if (appdata.settings['lanAutoDiscovery'] != false &&
+        !LanControlClient.instance.isConnected) {
+      startDiscovery();
+    }
   }
 
   Future<void> _onNavigationRequest(
@@ -369,6 +378,15 @@ class LanDiscoveryController extends ChangeNotifier {
   }
 
   Future<void> disconnectControlledSession() async {
+    // 先通知所有已连接的客户端：主动断开，不要再重连
+    await LanControlService.instance.broadcast(
+      LanControlMessage(
+        type: LanControlMessageType.disconnect,
+        requestId: LanControlMessage.generateRequestId(),
+      ),
+    );
+    // 短暂延迟确保消息送达
+    await Future.delayed(const Duration(milliseconds: 100));
     LanControlService.instance.stop();
     final port = _getHubPort();
     await LanControlService.instance.start(port);
@@ -442,7 +460,10 @@ class _LanDiscoveryPageState extends ConsumerState<LanDiscoveryPage>
       _savedCtrl = ctrl;
       ctrl.initialize();
       ctrl.generatePairingQr();
-      ctrl.startDiscovery();
+      if (appdata.settings['lanAutoDiscovery'] != false &&
+          !LanControlClient.instance.isConnected) {
+        ctrl.startDiscovery();
+      }
       final port = appdata.implicitData['lan_discovery_port'] as int? ?? 42183;
       await LanControlService.instance.start(port);
     });
@@ -451,7 +472,9 @@ class _LanDiscoveryPageState extends ConsumerState<LanDiscoveryPage>
   void _showPortSettings() {
     showModalBottomSheet(
       context: context,
-      builder: (ctx) => _PortSettingsSheet(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _PortSettingsSheet(ref: ref),
     );
   }
 
@@ -484,6 +507,9 @@ class _LanDiscoveryPageState extends ConsumerState<LanDiscoveryPage>
         ],
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          indicatorColor: Theme.of(context).colorScheme.primary,
+          tabAlignment: TabAlignment.center,
           tabs: [
             Tab(text: t.lanDiscoverDevices),
             Tab(text: t.lanRemoteControl),
@@ -510,7 +536,6 @@ class _DeviceDiscoveryTab extends ConsumerStatefulWidget {
 class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
   final _ipController = TextEditingController();
   final _portController = TextEditingController(text: '42183');
-  bool _showManualConnect = false;
 
   @override
   void dispose() {
@@ -525,184 +550,6 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
     final state = ref.watch(lanDiscoveryProvider);
     final cs = Theme.of(context).colorScheme;
     final isConnected = LanControlClient.instance.isConnected;
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: isConnected
-                    ? OutlinedButton.icon(
-                        onPressed: null,
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: Text(t.connected),
-                      )
-                    : state.serviceState == LanDiscoveryServiceState.discovering
-                    ? OutlinedButton.icon(
-                        onPressed: ctrl.stopDiscovery,
-                        icon: const Icon(Icons.stop),
-                        label: Text(t.lanStopDiscovery),
-                      )
-                    : FilledButton.icon(
-                        onPressed: ctrl.startDiscovery,
-                        icon: const Icon(Icons.search),
-                        label: Text(t.lanStartDiscovery),
-                      ),
-              ),
-              if (!isConnected) ...[
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: state.isRefreshing ? null : ctrl.refresh,
-                  icon: state.isRefreshing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh),
-                  tooltip: '刷新',
-                ),
-                IconButton(
-                  onPressed: () =>
-                      setState(() => _showManualConnect = !_showManualConnect),
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    color: _showManualConnect ? cs.primary : null,
-                  ),
-                  tooltip: '手动输入 IP 连接',
-                ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: state.devices.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.devices_other, size: 48, color: cs.outline),
-                      const SizedBox(height: 8),
-                      Text(
-                        isConnected ? t.connected : t.lanNoDevicesFound,
-                        style: ts.s14.copyWith(color: cs.outline),
-                      ),
-                      if (!isConnected &&
-                          state.serviceState ==
-                              LanDiscoveryServiceState.discovering)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            t.lanSearching,
-                            style: ts.s12.copyWith(color: cs.outline),
-                          ),
-                        ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: state.devices.length,
-                  itemBuilder: (context, index) {
-                    final device = state.devices[index];
-                    final isSelected = state.selectedDevice?.id == device.id;
-                    final isThisConnected =
-                        isSelected && LanControlClient.instance.isConnected;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 4,
-                        horizontal: 8,
-                      ),
-                      child: ListTile(
-                        leading: _DeviceIcon(deviceType: device.deviceType),
-                        title: Text(device.name),
-                        subtitle: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('${device.ip}:${device.port}', style: ts.s12),
-                            if (isThisConnected)
-                              Text(
-                                t.connected,
-                                style: ts.s10.copyWith(color: cs.primary),
-                              ),
-                          ],
-                        ),
-                        selected: isSelected,
-                        onTap: isThisConnected
-                            ? null
-                            : () => ctrl.selectDevice(device),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isThisConnected)
-                              FilledButton.tonal(
-                                onPressed: () => ctrl.disconnectFromDevice(),
-                                style: FilledButton.styleFrom(
-                                  visualDensity: VisualDensity.compact,
-                                  foregroundColor: cs.error,
-                                  backgroundColor: cs.errorContainer.withAlpha(
-                                    120,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.link_off, size: 16),
-                                    const SizedBox(width: 4),
-                                    Text(t.lanExitControl, style: ts.s12),
-                                  ],
-                                ),
-                              )
-                            else if (isSelected &&
-                                !LanControlClient.instance.isConnected)
-                              IconButton(
-                                icon: state.isConnecting
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.link),
-                                onPressed: state.isConnecting
-                                    ? null
-                                    : () => ctrl.connectToDevice(device),
-                                tooltip: t.lanConnect,
-                              )
-                            else if (!isSelected &&
-                                !LanControlClient.instance.isConnected &&
-                                device.supportsRemoteControl)
-                              Chip(
-                                label: Text(t.lanRemoteControl, style: ts.s10),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RemoteControlTab extends ConsumerWidget {
-  const _RemoteControlTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(lanDiscoveryProvider);
-    final ctrl = ref.watch(lanDiscoveryProvider.notifier);
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final qrBg = isDark ? cs.surfaceContainerHighest : cs.surface;
 
     final isBeingControlled =
         LanControlService.instance.isListening &&
@@ -770,6 +617,182 @@ class _RemoteControlTab extends ConsumerWidget {
               ),
             ),
           ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: isConnected
+                    ? OutlinedButton.icon(
+                        onPressed: null,
+                        icon: const Icon(Icons.check_circle_outline),
+                        label: Text(t.connected),
+                      )
+                    : state.serviceState == LanDiscoveryServiceState.discovering
+                    ? OutlinedButton.icon(
+                        onPressed: ctrl.stopDiscovery,
+                        icon: const Icon(Icons.stop),
+                        label: Text(t.lanStopDiscovery),
+                      )
+                    : FilledButton.icon(
+                        onPressed: ctrl.startDiscovery,
+                        icon: const Icon(Icons.search),
+                        label: Text(t.lanStartDiscovery),
+                      ),
+              ),
+              if (!isConnected) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: state.isRefreshing ? null : ctrl.refresh,
+                  icon: state.isRefreshing
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh),
+                  tooltip: t.refresh,
+                ),
+              ],
+              if (isConnected)
+                IconButton(
+                  onPressed: () => LanControlClient.instance.disconnect(),
+                  icon: Icon(
+                    Icons.link_off,
+                    color: isConnected ? cs.error : null,
+                  ),
+                  tooltip: '取消连接',
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: state.devices.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.devices_other, size: 48, color: cs.outline),
+                      const SizedBox(height: 8),
+                      Text(
+                        isConnected ? t.connected : t.lanNoDevicesFound,
+                        style: ts.s14.copyWith(color: cs.outline),
+                      ),
+                      if (!isConnected &&
+                          state.serviceState ==
+                              LanDiscoveryServiceState.discovering)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            t.lanSearching,
+                            style: ts.s12.copyWith(color: cs.outline),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  itemCount: state.devices.length,
+                  itemBuilder: (context, index) {
+                    final device = state.devices[index];
+                    final isSelected = state.selectedDevice?.id == device.id;
+                    final isThisConnected =
+                        isSelected && LanControlClient.instance.isConnected;
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4,
+                        horizontal: 8,
+                      ),
+                      child: ListTile(
+                        leading: _DeviceIcon(deviceType: device.deviceType),
+                        title: Text(device.name),
+                        subtitle: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${device.ip}:${device.port}', style: ts.s12),
+                            if (isThisConnected)
+                              Text(
+                                t.connected,
+                                style: ts.s10.copyWith(color: cs.primary),
+                              ),
+                          ],
+                        ),
+                        selected: isSelected,
+                        onTap: isThisConnected
+                            ? null
+                            : () => ctrl.connectToDevice(device),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isThisConnected)
+                              FilledButton.tonal(
+                                onPressed: () => ctrl.disconnectFromDevice(),
+                                style: FilledButton.styleFrom(
+                                  visualDensity: VisualDensity.compact,
+                                  foregroundColor: cs.error,
+                                  backgroundColor: cs.errorContainer.withAlpha(
+                                    120,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.link_off, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(t.lanExitControl, style: ts.s12),
+                                  ],
+                                ),
+                              )
+                            else if (isSelected &&
+                                !LanControlClient.instance.isConnected)
+                              IconButton(
+                                icon: state.isConnecting
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.link),
+                                onPressed: state.isConnecting
+                                    ? null
+                                    : () => ctrl.connectToDevice(device),
+                                tooltip: t.lanConnect,
+                              )
+                            else if (!isSelected &&
+                                !LanControlClient.instance.isConnected &&
+                                device.supportsRemoteControl)
+                              Chip(
+                                label: Text(t.lanRemoteControl, style: ts.s10),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RemoteControlTab extends ConsumerWidget {
+  const _RemoteControlTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(lanDiscoveryProvider);
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final qrBg = isDark ? cs.surfaceContainerHighest : cs.surface;
+    return Column(
+      children: [
         Expanded(
           child: Center(
             child: state.qrContent != null
@@ -787,8 +810,8 @@ class _RemoteControlTab extends ConsumerWidget {
                           ),
                         ),
                         child: SizedBox(
-                          width: 180,
-                          height: 180,
+                          width: 400,
+                          height: 400,
                           child: PrettyQrView.data(
                             data: state.qrContent!,
                             errorCorrectLevel: QrErrorCorrectLevel.H,
@@ -913,6 +936,10 @@ class _DeviceIcon extends StatelessWidget {
 }
 
 class _PortSettingsSheet extends ConsumerStatefulWidget {
+  final WidgetRef ref;
+
+  const _PortSettingsSheet({required this.ref});
+
   @override
   ConsumerState<_PortSettingsSheet> createState() => _PortSettingsSheetState();
 }
@@ -946,7 +973,7 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
     appdata.implicitData['lan_discovery_port'] = port;
     appdata.writeImplicitData();
 
-    ref.read(lanDiscoveryProvider.notifier).reinitialize(port);
+    widget.ref.read(lanDiscoveryProvider.notifier).reinitialize(port);
 
     Navigator.pop(context);
     App.rootContext.showMessage(message: t.saved);
@@ -956,82 +983,84 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: context.padding.bottom,
-        left: 16,
-        right: 16,
-        top: 16,
+    return Sheet(
+      title: t.settings,
+      icon: Icons.settings_outlined,
+      initialSize: 0.5,
+      footer: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: FilledButton(onPressed: _save, child: Text(t.save)),
+        ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: cs.onSurfaceVariant.withAlpha(64),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
+      builder: (context, sc) => SingleChildScrollView(
+        controller: sc,
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.settings_outlined, size: 20, color: cs.primary),
-              const SizedBox(width: 8),
-              Text(t.settings, style: ts.s18),
+              Text(t.port, style: ts.s14),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _portController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: '42183',
+                  prefixIcon: const Icon(Icons.lan_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  suffixText: 'UDP/WebSocket',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return t.thisFieldCannotBeEmpty;
+                  }
+                  final port = int.tryParse(value);
+                  if (port == null) {
+                    return t.invalidUrlConfig;
+                  }
+                  if (port < 1024 || port > 65535) {
+                    return '端口号必须在 1024-65535 之间';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'UDP 广播端口用于设备发现，WebSocket 端口用于远程控制连接',
+                style: ts.s12.copyWith(color: cs.outline),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(t.lanAutoDiscovery, style: ts.s14),
+                  const Spacer(),
+                  CustomSwitch(
+                    value: appdata.settings['lanAutoDiscovery'] != false,
+                    onChanged: (value) {
+                      appdata.settings['lanAutoDiscovery'] = value;
+                      appdata.saveData();
+                      if (value) {
+                        widget.ref
+                            .read(lanDiscoveryProvider.notifier)
+                            .startDiscovery();
+                      } else {
+                        widget.ref
+                            .read(lanDiscoveryProvider.notifier)
+                            .stopDiscovery();
+                      }
+                      setState(() {});
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 24),
-          Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(t.port, style: ts.s14),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: _portController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: '42183',
-                    prefixIcon: const Icon(Icons.lan_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    suffixText: 'UDP/WebSocket',
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return t.thisFieldCannotBeEmpty;
-                    }
-                    final port = int.tryParse(value);
-                    if (port == null) {
-                      return t.invalidUrlConfig;
-                    }
-                    if (port < 1024 || port > 65535) {
-                      return '端口号必须在 1024-65535 之间';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'UDP 广播端口用于设备发现，WebSocket 端口用于远程控制连接',
-                  style: ts.s12.copyWith(color: cs.outline),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(onPressed: _save, child: Text(t.save)),
-          ),
-        ],
+        ),
       ),
     );
   }

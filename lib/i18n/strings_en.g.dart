@@ -3493,6 +3493,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'LAN Discovery'
 	String get lanDiscovery => 'LAN Discovery';
 
+	/// en: 'Auto Discovery on Page Enter'
+	String get lanAutoDiscovery => 'Auto Discovery on Page Enter';
+
 	/// en: 'Discover Devices'
 	String get lanDiscoverDevices => 'Discover Devices';
 
@@ -3624,6 +3627,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Previous Episode'
 	String get lanPreviousEpisode => 'Previous Episode';
+
+	/// en: 'Toggle Fullscreen'
+	String get lanToggleFullscreen => 'Toggle Fullscreen';
 
 	/// en: 'Sync Status'
 	String get lanSyncStatus => 'Sync Status';
@@ -5020,6 +5026,7 @@ extension on Translations {
 			'recordingFeature' => 'Record',
 			'tapToRecord' => 'Tap to Record',
 			'lanDiscovery' => 'LAN Discovery',
+			'lanAutoDiscovery' => 'Auto Discovery on Page Enter',
 			'lanDiscoverDevices' => 'Discover Devices',
 			'lanRemoteControl' => 'Remote Control',
 			'lanStartDiscovery' => 'Start Discovery',
@@ -5064,6 +5071,7 @@ extension on Translations {
 			'lanSelectEpisode' => 'Select Episode',
 			'lanNextEpisode' => 'Next Episode',
 			'lanPreviousEpisode' => 'Previous Episode',
+			'lanToggleFullscreen' => 'Toggle Fullscreen',
 			'lanSyncStatus' => 'Sync Status',
 			'lanSyncing' => 'Syncing...',
 			'lanLastSyncTime' => 'Last sync time',

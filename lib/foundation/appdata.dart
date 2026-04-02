@@ -205,6 +205,7 @@ class Settings with ChangeNotifier {
     'explore_sources_order': [],
     'tileTitleMarquee': false,
     'm3u8AdFilterEnabled': false,
+    'lanAutoDiscovery': true,
   };
 
   dynamic operator [](String key) {

@@ -2430,6 +2430,8 @@ class TranslationsZhCn extends Translations
 
   @override String get lanDiscovery => '局域网发现';
 
+  @override String get lanAutoDiscovery => '进入页面自动发现';
+
   @override String get lanDiscoverDevices => '发现设备';
 
   @override String get lanRemoteControl => '远程控制';
@@ -2509,6 +2511,8 @@ class TranslationsZhCn extends Translations
   @override String get lanNextEpisode => '下一集';
 
   @override String get lanPreviousEpisode => '上一集';
+
+  @override String get lanToggleFullscreen => '切换全屏';
 
   @override String get lanSyncStatus => '同步状态';
 
@@ -3874,6 +3878,7 @@ extension on TranslationsZhCn {
       'recordingFeature' => '录制',
       'tapToRecord' => '点击录制',
       'lanDiscovery' => '局域网发现',
+      'lanAutoDiscovery' => '进入页面自动发现',
       'lanDiscoverDevices' => '发现设备',
       'lanRemoteControl' => '远程控制',
       'lanStartDiscovery' => '开始发现',
@@ -3914,6 +3919,7 @@ extension on TranslationsZhCn {
       'lanSelectEpisode' => '选择集数',
       'lanNextEpisode' => '下一集',
       'lanPreviousEpisode' => '上一集',
+      'lanToggleFullscreen' => '切换全屏',
       'lanSyncStatus' => '同步状态',
       'lanSyncing' => '同步中...',
       'lanLastSyncTime' => '上次同步时间',

@@ -234,6 +234,17 @@ class LanControlClient {
         case LanControlMessageType.pong:
           break;
 
+        case LanControlMessageType.disconnect:
+          // 被控制端主动断开，清空 serverUrl 阻止自动重连
+          HubLog.info('LanControlClient', '收到服务端断开指令，不再自动重连');
+          _reconnectTimer?.cancel();
+          _serverUrl = null;
+          _connectedDevice = null;
+          _socket?.close();
+          _socket = null;
+          _setState(LanControlServiceState.idle);
+          return;
+
         case LanControlMessageType.error:
           final error = message.data?['error'] as String? ?? '未知错误';
           for (final listener in _onErrorListeners) {

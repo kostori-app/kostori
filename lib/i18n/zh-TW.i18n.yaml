@@ -1208,6 +1208,7 @@ tapToRecord: 點擊錄製
 
 # LAN Discovery
 lanDiscovery: 區域網發現
+lanAutoDiscovery: 進入頁面自動發現
 lanDiscoverDevices: 發現設備
 lanRemoteControl: 遠端控制
 lanStartDiscovery: 開始發現
@@ -1248,6 +1249,7 @@ lanPlaybackSpeed: 播放速度
 lanSelectEpisode: 選擇集數
 lanNextEpisode: 下一集
 lanPreviousEpisode: 上一集
+lanToggleFullscreen: 切換全屏
 lanSyncStatus: 同步狀態
 lanSyncing: 同步中...
 lanLastSyncTime: 上次同步時間

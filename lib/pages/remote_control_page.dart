@@ -104,6 +104,10 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
   CurrentAnime? _currentAnime;
   bool _isWaitingForData = true;
 
+  // Playback speed state
+  double _playbackSpeed = 1.0;
+  double? _speedBeforeLongPress; // 长按前的速度，用于松开后恢复
+
   @override
   void initState() {
     super.initState();
@@ -132,6 +136,10 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
       _playerStatus = message.playerStatus;
       _currentAnime = message.currentAnime;
       _isWaitingForData = _playerStatus == null && _currentAnime == null;
+      // 更新播放速度
+      if (_playerStatus?.speed != null) {
+        _playbackSpeed = _playerStatus!.speed;
+      }
     });
   }
 
@@ -231,6 +239,22 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
       PlayerControlAction.previousEpisode,
     ),
   );
+
+  Future<void> _toggleFullscreen() => _send(
+    () => LanControlClient.instance.sendPlayerControl(
+      PlayerControlAction.fullscreen,
+    ),
+  );
+
+  Future<void> _setPlaybackSpeed(double speed) => _send(() async {
+    await LanControlClient.instance.sendPlayerControl(
+      PlayerControlAction.setSpeed,
+      speed,
+    );
+    if (mounted) {
+      setState(() => _playbackSpeed = speed);
+    }
+  });
 
   Future<void> _seekTo(Duration position) => _send(
     () => LanControlClient.instance.sendSeek(position.inSeconds.toDouble()),
@@ -406,6 +430,38 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
                 onSeekForward: _seekForward,
                 onPrevEpisode: _prevEpisode,
                 onNextEpisode: _nextEpisode,
+                onLongPressStart: () {
+                  _speedBeforeLongPress = _playbackSpeed;
+                  _setPlaybackSpeed(_playbackSpeed * 2);
+                },
+                onLongPressEnd: () {
+                  if (_speedBeforeLongPress != null) {
+                    _setPlaybackSpeed(_speedBeforeLongPress!);
+                    _speedBeforeLongPress = null;
+                  }
+                },
+              ),
+            ),
+            Positioned(
+              right: 10,
+              bottom: 16,
+              child: _CompactIconButton(
+                icon: _playerStatus?.isPlaying ?? false
+                    ? Icons.fullscreen_exit
+                    : Icons.fullscreen,
+                tooltip: t.lanToggleFullscreen,
+                onPressed: _toggleFullscreen,
+              ),
+            ),
+            Positioned(
+              left: 10,
+              bottom: 16,
+              child: _SpeedButton(
+                speed: _playbackSpeed,
+                onPressed: () {
+                  final newSpeed = _playbackSpeed < 2.0 ? 2.0 : 1.0;
+                  _setPlaybackSpeed(newSpeed);
+                },
               ),
             ),
           ],
@@ -491,6 +547,8 @@ class _TimeProgressSection extends ConsumerStatefulWidget {
   final VoidCallback onSeekForward;
   final VoidCallback onPrevEpisode;
   final VoidCallback onNextEpisode;
+  final VoidCallback onLongPressStart;
+  final VoidCallback onLongPressEnd;
 
   const _TimeProgressSection({
     required this.playerStatus,
@@ -503,6 +561,8 @@ class _TimeProgressSection extends ConsumerStatefulWidget {
     required this.onSeekForward,
     required this.onPrevEpisode,
     required this.onNextEpisode,
+    required this.onLongPressStart,
+    required this.onLongPressEnd,
   });
 
   @override
@@ -548,6 +608,8 @@ class _TimeProgressSectionState extends ConsumerState<_TimeProgressSection> {
                 final isPlaying = widget.playerStatus?.isPlaying ?? false;
                 isPlaying ? widget.onPause() : widget.onPlay();
               },
+              onLongPressStart: (_) => widget.onLongPressStart(),
+              onLongPressEnd: (_) => widget.onLongPressEnd(),
               onHorizontalDragStart: _handleDragStart,
               onHorizontalDragUpdate: (d) =>
                   _handleDragUpdate(d, constraints.maxWidth),
@@ -1026,6 +1088,35 @@ class _CompactIconButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(6),
           child: Icon(icon, size: 40),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeedButton extends StatelessWidget {
+  final double speed;
+  final VoidCallback onPressed;
+
+  const _SpeedButton({required this.speed, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: '播放速度',
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Text(
+            '${speed}X',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ),
     );

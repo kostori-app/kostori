@@ -2433,6 +2433,8 @@ class TranslationsZhTw extends Translations
 
   @override String get lanDiscovery => '區域網發現';
 
+  @override String get lanAutoDiscovery => '進入頁面自動發現';
+
   @override String get lanDiscoverDevices => '發現設備';
 
   @override String get lanRemoteControl => '遠端控制';
@@ -2512,6 +2514,8 @@ class TranslationsZhTw extends Translations
   @override String get lanNextEpisode => '下一集';
 
   @override String get lanPreviousEpisode => '上一集';
+
+  @override String get lanToggleFullscreen => '切換全屏';
 
   @override String get lanSyncStatus => '同步狀態';
 
@@ -3874,6 +3878,7 @@ extension on TranslationsZhTw {
       'recordingFeature' => '錄製',
       'tapToRecord' => '點擊錄製',
       'lanDiscovery' => '區域網發現',
+      'lanAutoDiscovery' => '進入頁面自動發現',
       'lanDiscoverDevices' => '發現設備',
       'lanRemoteControl' => '遠端控制',
       'lanStartDiscovery' => '開始發現',
@@ -3914,6 +3919,7 @@ extension on TranslationsZhTw {
       'lanSelectEpisode' => '選擇集數',
       'lanNextEpisode' => '下一集',
       'lanPreviousEpisode' => '上一集',
+      'lanToggleFullscreen' => '切換全屏',
       'lanSyncStatus' => '同步狀態',
       'lanSyncing' => '同步中...',
       'lanLastSyncTime' => '上次同步時間',
