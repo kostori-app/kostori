@@ -6,7 +6,6 @@ import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 
 class SMTCManagerWindows {
-  // 单例
   SMTCManagerWindows._privateConstructor();
 
   static final SMTCManagerWindows instance =
@@ -17,8 +16,12 @@ class SMTCManagerWindows {
 
   PlayerController? _controller;
 
-  // 用于存放所有事件监听的订阅，方便统一取消
   final List<StreamSubscription> _subscriptions = [];
+
+  // Cache last metadata to avoid redundant native calls
+  String? _lastTitle;
+  String? _lastArtist;
+  String? _lastThumbnail;
 
   Future<void> init() async {
     try {
@@ -35,23 +38,20 @@ class SMTCManagerWindows {
           rewindEnabled: false,
         ),
       );
-
       _isEnabled = true;
     } catch (e, st) {
       Log.error('Failed to initialize SMTCWindows', '$e\n$st');
     }
   }
 
-  // 页面初始化 PlayerController 后调用
   void setController(PlayerController controller) {
     try {
-      // 如果之前有 Controller，先清理旧的监听
       _clearListeners();
       _ensureEnabled();
       _controller = controller;
       final player = controller.player;
 
-      // 监听播放状态 -> 通知 SMTC 播放状态
+      // 1. Playback status
       _subscriptions.add(
         player.stream.playing.listen((isPlaying) {
           _ensureEnabled();
@@ -61,23 +61,15 @@ class SMTCManagerWindows {
         }),
       );
 
-      // 监听媒体信息 -> 更新 Metadata
+      // 2. Metadata — update only when the episode/anime actually changes,
+      //    not on every position tick.
       _subscriptions.add(
-        player.stream.position.listen((_) {
-          final title = _controller!.currentSetName;
-          final artUri = _controller!.animeImg;
-          updateMetadata(
-            MusicMetadata(
-              title: WatcherState.currentState!.anime.title,
-              artist: title,
-              album: '',
-              thumbnail: artUri,
-            ),
-          );
+        player.stream.playlist.listen((_) {
+          _pushMetadataIfChanged();
         }),
       );
 
-      // 监听播放进度 -> 更新 Timeline
+      // 3. Timeline — still driven by position, but separated from metadata.
       _subscriptions.add(
         player.stream.position.listen((pos) {
           final duration = player.state.duration.inMilliseconds;
@@ -85,45 +77,91 @@ class SMTCManagerWindows {
         }),
       );
 
-      _subscriptions.add(
-        _smtc?.buttonPressStream.listen((event) {
-              switch (event) {
-                case PressedButton.play:
-                  _controller?.playOrPause();
-                  break;
-                case PressedButton.pause:
-                  _controller?.pause();
-                  break;
-                case PressedButton.next:
-                  _controller?.playNextEpisode();
-                  break;
-                default:
-                  break;
-              }
-            })
-            as StreamSubscription,
+      // 4. Button events — guard against null smtc
+      final buttonStream = _smtc?.buttonPressStream;
+      if (buttonStream != null) {
+        _subscriptions.add(
+          buttonStream.listen((event) {
+            switch (event) {
+              case PressedButton.play:
+                _controller?.playOrPause();
+                break;
+              case PressedButton.pause:
+                _controller?.pause();
+                break;
+              case PressedButton.next:
+                _controller?.playNextEpisode();
+                break;
+              default:
+                break;
+            }
+          }),
+        );
+      }
+
+      // Push metadata immediately when the controller is first attached.
+      _pushMetadataIfChanged();
+    } catch (e, st) {
+      Log.error('SMTC setController error', '$e\n$st');
+    }
+  }
+
+  /// Only calls the native API when something actually changed,
+  /// and guards every nullable field before touching SMTC.
+  void _pushMetadataIfChanged() {
+    try {
+      final watcherState = WatcherState.currentState;
+      if (watcherState == null || _controller == null) return;
+
+      final title = watcherState.anime.title;
+      final artist = _controller!.currentSetName;
+
+      // Sanitise thumbnail: empty string → null so SMTC gets no URI
+      // rather than an empty one, which is what triggers the panic.
+      final rawImg = _controller!.animeImg;
+      final thumbnail = (rawImg.isNotEmpty) ? rawImg : null;
+
+      // Skip the native call if nothing changed.
+      if (title == _lastTitle &&
+          artist == _lastArtist &&
+          thumbnail == _lastThumbnail) {
+        return;
+      }
+
+      _lastTitle = title;
+      _lastArtist = artist;
+      _lastThumbnail = thumbnail;
+
+      updateMetadata(
+        MusicMetadata(
+          title: title,
+          artist: artist,
+          album: '',
+          thumbnail: thumbnail,
+        ),
       );
     } catch (e) {
-      Log.error('SMTC setController error', '$e');
+      Log.error('SMTC _pushMetadataIfChanged error', '$e');
     }
   }
 
   void hideSmtcButKeepSession() {
-    if (_smtc == null) return;
-    if (_isEnabled == false) return;
+    if (_smtc == null || !_isEnabled) return;
     _isEnabled = false;
     _clearListeners();
-    // 设置状态为停止，这样不会显示正在播放的 UI
     _smtc!.setPlaybackStatus(PlaybackStatus.stopped);
     _smtc!.disableSmtc();
   }
 
-  /// 清理所有监听
   void _clearListeners() {
     for (final sub in _subscriptions) {
       sub.cancel();
     }
     _subscriptions.clear();
+    // Reset metadata cache so it is re-sent on next attach.
+    _lastTitle = null;
+    _lastArtist = null;
+    _lastThumbnail = null;
   }
 
   void _ensureEnabled() {

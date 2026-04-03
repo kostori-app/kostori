@@ -333,6 +333,7 @@ class PageJumpTarget {
       context.to(
         () => CategoryAnimesPage(
           categoryKey: key,
+          sourceKey: sourceKey,
           category:
               attributes?["category"] ??
               (throw ArgumentError("Category name is required")),

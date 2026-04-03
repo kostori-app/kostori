@@ -981,6 +981,7 @@ invalidClipboardFormat: 無效的剪貼簿格式
 cannotModifySystemPreset: 無法修改系統預設
 animeCardUseBlur: 動漫卡片使用模糊背景
 tileTitleMarquee: 卡片標題滾動
+horizontalLayout: 水平佈局
 bangumiCardPerRow: 動漫卡片每行數量
 bangumiCardPerRowAuto: 自動
 calendarFetchEpisodes: 每日動畫表啟動時搜尋集資訊

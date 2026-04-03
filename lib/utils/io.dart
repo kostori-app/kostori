@@ -290,14 +290,19 @@ class IOSDirectoryPicker {
 }
 
 Future<FileSelectResult?> selectFile({required List<String> ext}) async {
+  // ✅ 重入守卫：已经在选文件就直接返回
+  if (IO._isSelectingFiles) return null;
   IO._isSelectingFiles = true;
+
   try {
     var extensions = App.isMacOS || App.isIOS ? null : ext;
     file_selector.XTypeGroup typeGroup = file_selector.XTypeGroup(
       label: 'files',
       extensions: extensions,
     );
+
     FileSelectResult? file;
+
     if (App.isAndroid) {
       const selectFileChannel = MethodChannel("kostori/select_file");
       String mimeType = "*/*";
@@ -307,30 +312,32 @@ Future<FileSelectResult?> selectFile({required List<String> ext}) async {
           mimeType = "*/*";
         }
       }
-      var filePath = await selectFileChannel.invokeMethod(
+      final filePath = await selectFileChannel.invokeMethod(
         "selectFile",
         mimeType,
       );
       if (filePath == null) return null;
       file = FileSelectResult(filePath);
     } else {
-      var xFile = await file_selector.openFile(
+      final xFile = await file_selector.openFile(
         acceptedTypeGroups: <file_selector.XTypeGroup>[typeGroup],
       );
       if (xFile == null) return null;
       file = FileSelectResult(xFile.path);
     }
-    if (!ext.contains(file.path.split(".").last)) {
-      App.rootContext.showMessage(
-        message: "Invalid file type: ${file.path.split(".").last}",
-      );
+
+    final fileExt = file.path.split(".").last;
+    if (!ext.contains(fileExt)) {
+      App.rootContext.showMessage(message: "Invalid file type: $fileExt");
       return null;
     }
+
     return file;
   } finally {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      IO._isSelectingFiles = false;
-    });
+    // ✅ 同步重置，Future.delayed 不可靠
+    // 保留短暂延迟防止同一次点击事件触发两次（平台事件去抖）
+    await Future.delayed(const Duration(milliseconds: 100));
+    IO._isSelectingFiles = false;
   }
 }
 

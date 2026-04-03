@@ -414,7 +414,9 @@ class AnimeSourceParser {
                     (data['animes'] as List).map((e) {
                       return Anime.fromJson(e, _key!);
                     }).toList(),
-                    data['viewMore'],
+                    data['viewMore'] != null
+                        ? PageJumpTarget.parse(_key!, data['viewMore'])
+                        : null,
                   ),
                 );
               }

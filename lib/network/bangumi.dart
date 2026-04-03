@@ -23,6 +23,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
+import 'package:kostori/utils/utils.dart';
 
 class Bangumi {
   static final instance = Bangumi._();
@@ -559,13 +560,21 @@ class Bangumi {
     return bangumiCalendar;
   }
 
-  Future<void> getCalendarData() async {
+  Future<void> getCalendarData({bool isUpdata = false}) async {
+    final nowStr = Utils.formatDate(DateTime.now());
+    if (!isUpdata) {
+      final needsUpdate = appdata.settings['getCalendarDataTime'] != nowStr;
+      final enableSkipUpdate = appdata.settings['enableSkipUpdate'] ?? true;
+      if (!needsUpdate && enableSkipUpdate) return;
+    }
     try {
       var res = await getCalendar();
 
       for (dynamic jsonlist in res) {
         await manager.batchAddBangumiCalendar(jsonlist);
       }
+      appdata.settings['getCalendarDataTime'] = nowStr;
+      appdata.saveData();
     } catch (e, s) {
       NetLog.error('getCalendarData', '$e\n$s');
     }
@@ -591,7 +600,14 @@ class Bangumi {
     }
   }
 
-  Future<void> getBangumiData() async {
+  Future<void> getBangumiData({bool isUpdata = false}) async {
+    final nowStr = Utils.formatDate(DateTime.now());
+    if (!isUpdata) {
+      final needsUpdate = appdata.settings['getBangumiDataTime'] != nowStr;
+      final enableSkipUpdate = appdata.settings['enableSkipUpdate'] ?? true;
+      if (!needsUpdate && enableSkipUpdate) return;
+    }
+
     try {
       final response = await _dio.request(
         Api.bangumiDataUrl,
@@ -620,6 +636,8 @@ class Bangumi {
       await manager.clearBangumiData();
       DebugLog.info('getBangumiData', 'clearBangumiData success');
       await manager.batchAddBangumiData(last100Items);
+      appdata.settings['getBangumiDataTime'] != nowStr;
+      appdata.saveData();
       DebugLog.info('getBangumiData', 'batchAddBangumiData success');
     } on DioException catch (e, s) {
       NetLog.error('getBangumiData', 'Network error: ${e.message}\nStack: $s');
@@ -701,8 +719,8 @@ class Bangumi {
       NetLog.info('resetBangumiData', '${jsonData['tag_name']}');
       appdata.settings['getBangumiAllEpInfoTime'] = null;
       NetLog.info('resetBangumiData', 'Cleared bangumi data successfully');
-      await getBangumiData();
-      await getCalendarData();
+      await getBangumiData(isUpdata: true);
+      await getCalendarData(isUpdata: true);
       App.rootContext.showMessage(
         message:
             'bangumiData数据更新成功${appdata.settings['bangumiDataVer']} - ${jsonData['tag_name']}',

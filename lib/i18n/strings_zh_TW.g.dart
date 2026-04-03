@@ -1977,6 +1977,8 @@ class TranslationsZhTw extends Translations
 
   @override String get tileTitleMarquee => '卡片標題滾動';
 
+  @override String get horizontalLayout => '水平佈局';
+
   @override String get bangumiCardPerRow => '動漫卡片每行數量';
 
   @override String get bangumiCardPerRowAuto => '自動';
@@ -3655,6 +3657,7 @@ extension on TranslationsZhTw {
       'cannotModifySystemPreset' => '無法修改系統預設',
       'animeCardUseBlur' => '動漫卡片使用模糊背景',
       'tileTitleMarquee' => '卡片標題滾動',
+      'horizontalLayout' => '水平佈局',
       'bangumiCardPerRow' => '動漫卡片每行數量',
       'bangumiCardPerRowAuto' => '自動',
       'calendarFetchEpisodes' => '每日動畫表啟動時搜尋集資訊',
@@ -3706,9 +3709,9 @@ extension on TranslationsZhTw {
       'tokenCopiedToClipboard' => 'Token已複製到剪貼簿',
       'generateQrCodeShare' => '產生二維碼分享',
       'aiSettings' => 'AI 設置',
-      'aiConfigMissing' => 'AI配置缺失',
       _ => null,
     } ?? switch (path) {
+      'aiConfigMissing' => 'AI配置缺失',
       'generating' => '生成中...',
       'generatedTags' => '已生成 Tags',
       'exportScreenshot' => '導出截圖',

@@ -143,7 +143,10 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
       scheduleMicrotask(() {
         PaintingBinding.instance.imageCache.evict(key);
       });
-      Log.error("Image Loading", e, s);
+      final msg = e.toString();
+      if (!msg.contains('404') && !msg.contains('403')) {
+        DebugLog.error("Image Loading", e, s);
+      }
       rethrow;
     } finally {
       chunkEvents.close();
@@ -177,4 +180,47 @@ typedef FileDecoderCallback = Future<ui.Codec> Function(Uint8List);
 
 class _ImageLoadingStopException implements Exception {
   const _ImageLoadingStopException();
+}
+
+class Base64ImageProvider extends BaseImageProvider<Base64ImageProvider> {
+  const Base64ImageProvider(this.base64String);
+
+  final String base64String;
+
+  @override
+  String get key => base64String.substring(0, min(64, base64String.length));
+
+  @override
+  Future<Uint8List> load(
+    StreamController<ImageChunkEvent> chunkEvents,
+    void Function() checkStop,
+  ) async {
+    checkStop();
+
+    var raw = base64String;
+    if (raw.contains(',')) {
+      raw = raw.split(',').last;
+    }
+
+    final bytes = base64Decode(raw);
+    chunkEvents.add(
+      ImageChunkEvent(
+        cumulativeBytesLoaded: bytes.length,
+        expectedTotalBytes: bytes.length,
+      ),
+    );
+    return bytes;
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is Base64ImageProvider && base64String == other.base64String;
+
+  @override
+  int get hashCode => base64String.hashCode;
+
+  @override
+  Future<Base64ImageProvider> obtainKey(ImageConfiguration configuration) {
+    return SynchronousFuture(this);
+  }
 }

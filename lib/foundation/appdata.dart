@@ -143,7 +143,6 @@ class Settings with ChangeNotifier {
     'newFavoriteAddTo': 'end', // start, end
     'moveFavoriteAfterRead': 'none', // none, end, start
     'proxy': 'system', // direct, system, proxy string
-    'explore_pages': [],
     'categories': [],
     'favorites': [],
     'searchSources': null,
@@ -206,6 +205,10 @@ class Settings with ChangeNotifier {
     'tileTitleMarquee': false,
     'm3u8AdFilterEnabled': false,
     'lanAutoDiscovery': true,
+    'explore_pages_v2': {},
+    'getCalendarDataTime': null,
+    'getBangumiDataTime': null,
+    'enableSkipUpdate': true,
   };
 
   dynamic operator [](String key) {

@@ -299,7 +299,13 @@ class _AnimatedImageState extends State<AnimatedImage>
         filterQuality: widget.filterQuality,
       );
     } else if (_lastException != null) {
-      result = const Center(child: Icon(Icons.error));
+      final is404 = _lastException.toString().contains('404');
+      result = Center(
+        child: Icon(
+          is404 ? Icons.image_not_supported_outlined : Icons.error,
+          color: is404 ? Colors.grey : null,
+        ),
+      );
 
       if (!widget.excludeFromSemantics) {
         result = Semantics(

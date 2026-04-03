@@ -1,4 +1,5 @@
 import 'dart:async' show Future;
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +30,23 @@ class CachedImageProvider
 
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
+    // ✅ base64 直接解码，不走网络
+    if (url.startsWith('data:') ||
+        (!url.contains('://') && !url.startsWith('/') && url.length > 100)) {
+      var raw = url;
+      if (raw.contains(',')) {
+        raw = raw.split(',').last;
+      }
+      final bytes = base64Decode(raw);
+      chunkEvents.add(
+        ImageChunkEvent(
+          cumulativeBytesLoaded: bytes.length,
+          expectedTotalBytes: bytes.length,
+        ),
+      );
+      return bytes;
+    }
+
     while (loadingCount > _kMaxLoadingCount) {
       await Future.delayed(const Duration(milliseconds: 100));
       checkStop();

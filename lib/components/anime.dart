@@ -380,7 +380,9 @@ class AnimeTile extends ConsumerWidget {
 
   Widget buildImage(BuildContext context) {
     var image = _findImageProvider(anime);
+    if (anime.cover.isEmpty) return const SizedBox();
     if (image == null) return const SizedBox();
+
     return AnimatedImage(
       image: image,
       fit: BoxFit.cover,
@@ -865,6 +867,7 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
     this.asSliver = true,
     this.shrinkWrap = false,
     this.crossAxisCount,
+    this.horizontal = false,
   });
 
   final List<Anime> animes;
@@ -892,6 +895,8 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
   final bool shrinkWrap;
 
   final int? crossAxisCount;
+
+  final bool horizontal;
 
   @override
   ConsumerState<SliverGridAnimes> createState() => _SliverGridAnimesState();
@@ -970,6 +975,7 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
       asSliver: widget.asSliver,
       shrinkWrap: widget.shrinkWrap,
       crossAxisCount: widget.crossAxisCount,
+      horizontal: widget.horizontal,
     );
   }
 }
@@ -990,6 +996,7 @@ class _SliverGridAnimes extends StatelessWidget {
     this.asSliver = true,
     this.shrinkWrap = false,
     this.crossAxisCount,
+    this.horizontal = false,
   });
 
   final List<Anime> animes;
@@ -1020,8 +1027,78 @@ class _SliverGridAnimes extends StatelessWidget {
 
   final int? crossAxisCount;
 
+  final bool horizontal;
+
   @override
   Widget build(BuildContext context) {
+    // 水平布局模式
+    if (horizontal) {
+      const height = 240.0;
+      const aspectRatio = 0.68;
+      final width = height * aspectRatio;
+      return SliverToBoxAdapter(
+        child: SizedBox(
+          height: animes.isEmpty ? 0.0 : height,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: animes.length,
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            itemBuilder: (context, index) {
+              if (index == animes.length - 1) {
+                onLastItemBuild?.call();
+              }
+              var badge = badgeBuilder?.call(animes[index]);
+              var isSelected = selection == null
+                  ? false
+                  : selection![animes[index]] ?? false;
+              var anime = AnimeTile(
+                anime: animes[index],
+                isRecommend: isRecommend ?? false,
+                enableFavorite: enableFavorite ?? true,
+                enableHistory: enableHistory ?? false,
+                badge: badge,
+                menuOptions: menuBuilder?.call(animes[index]),
+                onTap: onTap != null
+                    ? () => onTap!(animes[index], heroIDs[index])
+                    : null,
+                onLongPressed: onLongPressed != null
+                    ? () => onLongPressed!(animes[index], heroIDs[index])
+                    : null,
+                heroID: heroIDs[index],
+              );
+              if (selection == null) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                  child: SizedBox(width: width, height: height, child: anime),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                child: SizedBox(
+                  width: width,
+                  height: height,
+                  child: AnimatedContainer(
+                    key: ValueKey(animes[index].id),
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.secondaryContainer.toOpacity(0.72)
+                          : null,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    margin: const EdgeInsets.all(4),
+                    child: anime,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
     if (asSliver) {
       return SliverGrid(
         delegate: SliverChildBuilderDelegate((context, index) {

@@ -27,6 +27,8 @@ Future<List<List<BangumiItem>>> loadBangumiCalendar({
   bool isFetchEpisodes = true,
 }) async {
   try {
+    await Bangumi.instance.getCalendarData();
+    await Bangumi.instance.checkBangumiData();
     final allItems = await providerContainer
         .read(bangumiManagerProvider)
         .getWeeks([1, 2, 3, 4, 5, 6, 7]);

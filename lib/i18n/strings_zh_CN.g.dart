@@ -1979,6 +1979,8 @@ class TranslationsZhCn extends Translations
 
   @override String get tileTitleMarquee => '卡片标题滚动';
 
+  @override String get horizontalLayout => '水平布局';
+
   @override String get bangumiCardPerRow => '番剧卡片每行数量';
 
   @override String get bangumiCardPerRowAuto => '自动';
@@ -3655,6 +3657,7 @@ extension on TranslationsZhCn {
       'cannotModifySystemPreset' => '不能修改系统预设',
       'animeCardUseBlur' => '番剧卡片使用模糊背景',
       'tileTitleMarquee' => '卡片标题滚动',
+      'horizontalLayout' => '水平布局',
       'bangumiCardPerRow' => '番剧卡片每行数量',
       'bangumiCardPerRowAuto' => '自动',
       'calendarFetchEpisodes' => '每日番剧表启动时搜寻集信息',
@@ -3706,9 +3709,9 @@ extension on TranslationsZhCn {
       'tokenCopiedToClipboard' => 'Token已复制到剪贴板',
       'generateQrCodeShare' => '生成二维码分享',
       'aiSettings' => 'AI 设置',
-      'aiConfigMissing' => 'AI配置缺失',
       _ => null,
     } ?? switch (path) {
+      'aiConfigMissing' => 'AI配置缺失',
       'generating' => '生成中...',
       'generatedTags' => '已生成 Tags',
       'exportScreenshot' => '导出截图',

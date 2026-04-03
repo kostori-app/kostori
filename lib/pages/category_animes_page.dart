@@ -10,6 +10,7 @@ class CategoryAnimesPage extends StatefulWidget {
   const CategoryAnimesPage({
     required this.category,
     this.param,
+    required this.sourceKey,
     required this.categoryKey,
     this.options,
     super.key,
@@ -18,7 +19,7 @@ class CategoryAnimesPage extends StatefulWidget {
   final String category;
 
   final String? param;
-
+  final String sourceKey;
   final String categoryKey;
 
   final List<String>? options;
@@ -36,34 +37,30 @@ class _CategoryAnimesPageState extends State<CategoryAnimesPage> {
   String? error;
 
   void findData() {
-    for (final source in AnimeSource.all()) {
-      if (source.categoryData?.key == widget.categoryKey) {
-        if (source.categoryAnimesData == null) {
-          throw "The anime source ${source.name} does not support category animes";
-        }
-        data = source.categoryAnimesData!;
-        if (data.options != null) {
-          options = data.options!.where((element) {
-            if (element.notShowWhen.contains(widget.category)) {
-              return false;
-            } else if (element.showWhen != null) {
-              return element.showWhen!.contains(widget.category);
-            }
-            return true;
-          }).toList();
-        } else {
-          options = null;
-        }
-        if (data.optionsLoader != null) {
-          optionsLoader = data.optionsLoader;
-          loadOptions();
-        }
-        resetOptionsValue();
-        sourceKey = source.key;
-        return;
-      }
+    final source = AnimeSource.find(widget.sourceKey);
+    if (source == null) throw "${widget.sourceKey} Not found";
+    if (source.categoryAnimesData == null) {
+      throw "The anime source ${source.name} does not support category animes";
     }
-    throw "${widget.categoryKey} Not found";
+    data = source.categoryAnimesData!;
+    if (data.options != null) {
+      options = data.options!.where((element) {
+        if (element.notShowWhen.contains(widget.category)) {
+          return false;
+        } else if (element.showWhen != null) {
+          return element.showWhen!.contains(widget.category);
+        }
+        return true;
+      }).toList();
+    } else {
+      options = null;
+    }
+    if (data.optionsLoader != null) {
+      optionsLoader = data.optionsLoader;
+      loadOptions();
+    }
+    resetOptionsValue();
+    sourceKey = source.key;
   }
 
   void resetOptionsValue() {

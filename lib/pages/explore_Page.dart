@@ -12,6 +12,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/global_state.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/explore_controller.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/translations.dart';
@@ -31,13 +32,17 @@ class _ExplorePageState extends State<ExplorePage>
   late final ExploreController exploreController;
 
   bool get showFB => exploreController.showFB;
+
+  bool get horizontalLayout =>
+      appdata.settings['explore_horizontal_layout'] ?? false;
+
   double location = 0;
 
   late List<String> sources;
   late Map<String, List<String>> sourcePages;
 
   void onSettingsChanged() {
-    var explorePages = List<String>.from(appdata.settings["explore_pages"]);
+    final pagesMap = _readPagesMap();
     var savedOrder = List<String>.from(
       appdata.settings["explore_sources_order"] ?? [],
     );
@@ -45,12 +50,11 @@ class _ExplorePageState extends State<ExplorePage>
     var newSourcePages = <String, List<String>>{};
     var newSources = <String>[];
 
-    // 按保存的顺序加载
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
       var allPagesForSource = source.explorePages.map((e) => e.title).toList();
-      var pagesForSource = explorePages
+      var pagesForSource = (pagesMap[key] ?? [])
           .where((p) => allPagesForSource.contains(p))
           .toList();
       if (pagesForSource.isNotEmpty) {
@@ -59,13 +63,12 @@ class _ExplorePageState extends State<ExplorePage>
       }
     }
 
-    // 添加新出现的源
     for (var source in allSources) {
       if (!newSources.contains(source.key)) {
         var allPagesForSource = source.explorePages
             .map((e) => e.title)
             .toList();
-        var pagesForSource = explorePages
+        var pagesForSource = (pagesMap[source.key] ?? [])
             .where((p) => allPagesForSource.contains(p))
             .toList();
         if (pagesForSource.isNotEmpty) {
@@ -110,6 +113,16 @@ class _ExplorePageState extends State<ExplorePage>
     showPopUpWidget(App.rootContext, setExplorePagesWidget());
   }
 
+  Map<String, List<String>> _readPagesMap() {
+    final rawMap = appdata.settings["explore_pages_v2"];
+    if (rawMap is Map) {
+      return rawMap.map(
+        (k, v) => MapEntry(k as String, List<String>.from(v as List)),
+      );
+    }
+    return {};
+  }
+
   NaviPaneState? naviPane;
 
   @override
@@ -125,20 +138,18 @@ class _ExplorePageState extends State<ExplorePage>
   }
 
   void _initSourcesAndPages() {
-    var explorePages = List<String>.from(appdata.settings["explore_pages"]);
+    final pagesMap = _readPagesMap();
     var savedOrder = List<String>.from(
       appdata.settings["explore_sources_order"] ?? [],
     );
-    var allSources = AnimeSource.all();
     sourcePages = {};
     sources = [];
 
-    // 按保存的顺序加载
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
       var allPagesForSource = source.explorePages.map((e) => e.title).toList();
-      var pagesForSource = explorePages
+      var pagesForSource = (pagesMap[key] ?? [])
           .where((p) => allPagesForSource.contains(p))
           .toList();
       if (pagesForSource.isNotEmpty) {
@@ -147,13 +158,12 @@ class _ExplorePageState extends State<ExplorePage>
       }
     }
 
-    // 添加新出现的源
-    for (var source in allSources) {
+    for (var source in AnimeSource.all()) {
       if (!sources.contains(source.key)) {
         var allPagesForSource = source.explorePages
             .map((e) => e.title)
             .toList();
-        var pagesForSource = explorePages
+        var pagesForSource = (pagesMap[source.key] ?? [])
             .where((p) => allPagesForSource.contains(p))
             .toList();
         if (pagesForSource.isNotEmpty) {
@@ -195,16 +205,8 @@ class _ExplorePageState extends State<ExplorePage>
   }
 
   Tab buildPageTab(String title, String sourceKey) {
-    return Tab(text: title.ts(sourceKey), key: Key(title));
+    return Tab(text: title.ts(sourceKey), key: Key("${sourceKey}_$title"));
   }
-
-  Widget buildBody(String i) => Material(
-    child: _SingleExplorePage(
-      i,
-      key: PageStorageKey(i),
-      exploreController: exploreController,
-    ),
-  );
 
   Widget buildEmpty() {
     var msg = "No Explore Pages".tl;
@@ -267,6 +269,7 @@ class _ExplorePageState extends State<ExplorePage>
                             pages: sourcePages[sourceKey] ?? [],
                             pageController: pageControllers[sourceKey]!,
                             exploreController: exploreController,
+                            horizontalLayout: horizontalLayout,
                           ),
                         )
                         .toList(),
@@ -355,6 +358,29 @@ class _ExplorePageState extends State<ExplorePage>
                           },
                         ),
                       ],
+                      [
+                        SpeedDialChild(
+                          child:
+                              appdata.settings['explore_horizontal_layout'] ==
+                                  true
+                              ? Icon(Icons.view_week)
+                              : Icon(Icons.view_module),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimaryContainer,
+                          onTap: () {
+                            appdata.settings['explore_horizontal_layout'] =
+                                !(appdata
+                                        .settings['explore_horizontal_layout'] ??
+                                    false);
+                            appdata.saveData();
+                            setState(() {});
+                          },
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -374,12 +400,16 @@ class _SingleExplorePage extends StatefulWidget {
   const _SingleExplorePage(
     this.title, {
     super.key,
+    required this.sourceKey,
     required this.exploreController,
+    this.horizontalLayout = false,
   });
 
   final String title;
-
+  final String sourceKey;
   final ExploreController exploreController;
+
+  final bool horizontalLayout;
 
   @override
   State<_SingleExplorePage> createState() => _SingleExplorePageState();
@@ -402,8 +432,11 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   bool get showFB => exploreController.showFB;
 
   void onSettingsChanged() {
-    var explorePages = appdata.settings["explore_pages"];
-    if (!explorePages.contains(widget.title)) {
+    final rawMap = appdata.settings["explore_pages_v2"];
+    if (rawMap is! Map) return;
+
+    final pages = List<String>.from(rawMap[animeSourceKey] ?? []);
+    if (!pages.contains(widget.title)) {
       _wantKeepAlive = false;
       updateKeepAlive();
     }
@@ -426,16 +459,17 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     super.initState();
     exploreController = widget.exploreController;
     scrollController.addListener(onScroll);
-    for (var source in AnimeSource.all()) {
+    var source = AnimeSource.find(widget.sourceKey);
+    if (source != null) {
       for (var d in source.explorePages) {
         if (d.title == widget.title) {
           data = d;
           animeSourceKey = source.key;
+          appdata.settings.addListener(onSettingsChanged);
           return;
         }
       }
     }
-    appdata.settings.addListener(onSettingsChanged);
     throw "Explore Page ${widget.title} Not Found!";
   }
 
@@ -452,20 +486,21 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
     super.build(context);
     if (data.loadMultiPart != null) {
       return _MultiPartExplorePage(
-        key: const PageStorageKey("anime_list"),
+        key: PageStorageKey("anime_list_${widget.title}"),
         data: data,
         controller: scrollController,
         animeSourceKey: animeSourceKey,
         refreshHandlerCallback: (c) {
           refreshHandler = c;
         },
+        horizontalLayout: widget.horizontalLayout,
       );
     } else if (data.loadPage != null || data.loadNext != null) {
       return AnimeList(
         enablePageStorage: true,
         loadPage: data.loadPage,
         loadNext: data.loadNext,
-        key: const PageStorageKey("anime_list"),
+        key: PageStorageKey("anime_list_${widget.title}"),
         controller: scrollController,
         refreshHandlerCallback: (c) {
           refreshHandler = c;
@@ -480,7 +515,7 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
           child: _MixedExplorePage(
             data,
             animeSourceKey,
-            key: const PageStorageKey("anime_list"),
+            key: PageStorageKey("anime_list_${widget.title}"),
             controller: scrollController,
             refreshHandlerCallback: (c) {
               refreshHandler = c;
@@ -600,8 +635,9 @@ class _MixedExplorePageState
 
 Iterable<Widget> _buildExplorePagePart(
   ExplorePagePart part,
-  String sourceKey,
-) sync* {
+  String sourceKey, {
+  bool horizontal = false,
+}) sync* {
   Widget buildTitle(ExplorePagePart part) {
     return SliverToBoxAdapter(
       child: SizedBox(
@@ -624,7 +660,7 @@ Iterable<Widget> _buildExplorePagePart(
                     var context = App.mainNavigatorKey!.currentContext!;
                     part.viewMore!.jump(context);
                   },
-                  child: Text("View more".tl),
+                  child: Text(t.viewMore),
                 ),
             ],
           ),
@@ -634,7 +670,7 @@ Iterable<Widget> _buildExplorePagePart(
   }
 
   Widget buildAnimes(ExplorePagePart part) {
-    return SliverGridAnimes(animes: part.animes);
+    return SliverGridAnimes(animes: part.animes, horizontal: horizontal);
   }
 
   yield buildTitle(part);
@@ -648,6 +684,7 @@ class _MultiPartExplorePage extends StatefulWidget {
     required this.controller,
     required this.animeSourceKey,
     required this.refreshHandlerCallback,
+    this.horizontalLayout = false,
   });
 
   final ExplorePageData data;
@@ -657,6 +694,8 @@ class _MultiPartExplorePage extends StatefulWidget {
   final String animeSourceKey;
 
   final void Function(VoidCallback c) refreshHandlerCallback;
+
+  final bool horizontalLayout;
 
   @override
   State<_MultiPartExplorePage> createState() => _MultiPartExplorePageState();
@@ -756,7 +795,11 @@ class _MultiPartExplorePageState extends State<_MultiPartExplorePage> {
 
   Iterable<Widget> _buildPage() sync* {
     for (var part in parts!) {
-      yield* _buildExplorePagePart(part, widget.animeSourceKey);
+      yield* _buildExplorePagePart(
+        part,
+        widget.animeSourceKey,
+        horizontal: widget.horizontalLayout,
+      );
     }
   }
 }
@@ -768,12 +811,14 @@ class _SourceExplorePage extends StatefulWidget {
     required this.pages,
     required this.pageController,
     required this.exploreController,
+    this.horizontalLayout = false,
   });
 
   final String sourceKey;
   final List<String> pages;
   final TabController pageController;
   final ExploreController exploreController;
+  final bool horizontalLayout;
 
   @override
   State<_SourceExplorePage> createState() => _SourceExplorePageState();
@@ -782,14 +827,19 @@ class _SourceExplorePage extends StatefulWidget {
 class _SourceExplorePageState extends State<_SourceExplorePage>
     with AutomaticKeepAliveClientMixin<_SourceExplorePage> {
   Tab buildPageTab(String title) {
-    return Tab(text: title.ts(widget.sourceKey), key: Key(title));
+    return Tab(
+      text: title.ts(widget.sourceKey),
+      key: Key("${widget.sourceKey}_$title"),
+    );
   }
 
   Widget buildBody(String pageTitle) => Material(
     child: _SingleExplorePage(
       pageTitle,
       key: PageStorageKey("${widget.sourceKey}_$pageTitle"),
+      sourceKey: widget.sourceKey,
       exploreController: widget.exploreController,
+      horizontalLayout: widget.horizontalLayout,
     ),
   );
 

@@ -51,6 +51,10 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                     title: t.showHistoryOnAnimeTile,
                     settingKey: "showHistoryStatusOnTile",
                   ),
+                  _SwitchSetting(
+                    title: t.horizontalLayout,
+                    settingKey: "explore_horizontal_layout",
+                  ),
 
                   SelectSetting(
                     title: t.defaultSearchTarget,
@@ -208,23 +212,50 @@ class _SourcesListState extends State<_SourcesList> {
   }
 
   void _loadData() {
-    var selectedPages = List<String>.from(appdata.settings["explore_pages"]);
     var savedOrder = List<String>.from(
       appdata.settings["explore_sources_order"] ?? [],
     );
     sourcePages = {};
     sourceKeys = [];
 
+    // ✅ 读取新格式
+    final rawMap = appdata.settings["explore_pages_v2"];
+    Map<String, List<String>>? pagesMap;
+    if (rawMap is Map) {
+      pagesMap = rawMap.map(
+        (k, v) => MapEntry(k as String, List<String>.from(v as List)),
+      );
+    }
+
+    // ✅ 旧格式一次性迁移：首次升级时自动转换
+    if (pagesMap == null) {
+      final oldPages = List<String>.from(
+        appdata.settings["explore_pages"] ?? [],
+      );
+      pagesMap = {};
+      for (var source in AnimeSource.all()) {
+        var allPagesForSource = source.explorePages
+            .map((e) => e.title)
+            .toList();
+        pagesMap[source.key] = oldPages
+            .where((p) => allPagesForSource.contains(p))
+            .toSet()
+            .toList();
+      }
+      // 立即持久化新格式
+      appdata.settings["explore_pages_v2"] = pagesMap;
+      appdata.saveData();
+    }
+
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
       if (source == null) continue;
       var allPagesForSource = source.explorePages.map((e) => e.title).toList();
-      var selectedForSource = selectedPages
-          .where((p) => allPagesForSource.contains(p))
-          .toList();
       if (allPagesForSource.isNotEmpty) {
         sourceKeys.add(key);
-        sourcePages[key] = selectedForSource;
+        sourcePages[key] = (pagesMap[key] ?? [])
+            .where((p) => allPagesForSource.contains(p))
+            .toList();
       }
     }
 
@@ -233,26 +264,22 @@ class _SourcesListState extends State<_SourcesList> {
         var allPagesForSource = source.explorePages
             .map((e) => e.title)
             .toList();
-        var selectedForSource = selectedPages
-            .where((p) => allPagesForSource.contains(p))
-            .toList();
         if (allPagesForSource.isNotEmpty) {
           sourceKeys.add(source.key);
-          sourcePages[source.key] = selectedForSource;
+          sourcePages[source.key] = (pagesMap[source.key] ?? [])
+              .where((p) => allPagesForSource.contains(p))
+              .toList();
         }
       }
-    }
-    for (var key in sourceKeys) {
-      debugPrint('[LOAD]   $key pages: ${sourcePages[key]}');
     }
   }
 
   void _saveData() {
-    var allSelected = <String>[];
+    var pagesMap = <String, List<String>>{};
     for (var key in sourceKeys) {
-      allSelected.addAll(sourcePages[key] ?? []);
+      pagesMap[key] = sourcePages[key] ?? [];
     }
-    appdata.settings["explore_pages"] = allSelected;
+    appdata.settings["explore_pages_v2"] = pagesMap;
     appdata.settings["explore_sources_order"] = List<String>.from(sourceKeys);
     appdata.saveData();
   }
@@ -352,15 +379,14 @@ class _SourcePagesListState extends State<_SourcePagesList> {
   @override
   void initState() {
     super.initState();
-    _pages = List<String>.from(widget.pages);
+    _pages = widget.pages.toSet().toList();
   }
 
   @override
   void didUpdateWidget(_SourcePagesList oldWidget) {
     super.didUpdateWidget(oldWidget);
-
     if (widget.pages != oldWidget.pages) {
-      _pages = List<String>.from(widget.pages);
+      _pages = widget.pages.toSet().toList();
     }
   }
 
@@ -401,7 +427,7 @@ class _SourcePagesListState extends State<_SourcePagesList> {
         itemBuilder: (context, index) {
           var page = _pages[index];
           return ListTile(
-            key: ValueKey(page),
+            key: ValueKey("${widget.sourceKey}_$page"),
             leading: const Icon(Icons.drag_handle),
             title: Text(page.ts(widget.sourceKey)),
             trailing: IconButton(

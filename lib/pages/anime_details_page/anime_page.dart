@@ -467,16 +467,20 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                   ],
                                 ),
                                 clipBehavior: Clip.antiAlias,
-                                child: AnimatedImage(
-                                  image: CachedImageProvider(
-                                    widget.cover ?? anime.cover,
-                                    sourceKey: anime.sourceKey,
-                                    aid: anime.id,
-                                  ),
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                ),
+                                child:
+                                    widget.cover != null ||
+                                        anime.cover.isNotEmpty
+                                    ? AnimatedImage(
+                                        image: CachedImageProvider(
+                                          widget.cover ?? anime.cover,
+                                          sourceKey: anime.sourceKey,
+                                          aid: anime.id,
+                                        ),
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                      )
+                                    : SizedBox(),
                               ),
                             ),
                           ),

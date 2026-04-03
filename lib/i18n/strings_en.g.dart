@@ -2836,6 +2836,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Card Title Marquee'
 	String get tileTitleMarquee => 'Card Title Marquee';
 
+	/// en: 'Horizontal Layout'
+	String get horizontalLayout => 'Horizontal Layout';
+
 	/// en: 'Anime Card Per Row'
 	String get bangumiCardPerRow => 'Anime Card Per Row';
 
@@ -4805,6 +4808,7 @@ extension on Translations {
 			'cannotModifySystemPreset' => 'Cannot modify system preset',
 			'animeCardUseBlur' => 'Anime Card Use Blur Background',
 			'tileTitleMarquee' => 'Card Title Marquee',
+			'horizontalLayout' => 'Horizontal Layout',
 			'bangumiCardPerRow' => 'Anime Card Per Row',
 			'bangumiCardPerRowAuto' => 'Auto',
 			'calendarFetchEpisodes' => 'Fetch episode info on daily anime table startup',
@@ -4854,9 +4858,9 @@ extension on Translations {
 			'tokenCopiedToClipboard' => 'Token copied to clipboard',
 			'generateQrCodeShare' => 'Generate QR Code to Share',
 			'aiSettings' => 'AI Settings',
-			'aiConfigMissing' => 'AI Config Missing',
 			_ => null,
 		} ?? switch (path) {
+			'aiConfigMissing' => 'AI Config Missing',
 			'generating' => 'Generating...',
 			'generatedTags' => 'Generated Tags',
 			'exportScreenshot' => 'Export Screenshot',

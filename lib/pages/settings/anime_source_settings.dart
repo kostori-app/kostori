@@ -177,6 +177,7 @@ class _BodyState extends State<_Body> {
                   await AnimeSourceManager().reload();
                   App.forceRebuild();
                   App.rootContext.showMessage(message: t.loadSuccess);
+                  App.pop();
                 },
                 child: Text(t.continueText),
               ),
@@ -551,49 +552,84 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
 }
 
 void _validatePages() {
-  List explorePages = appdata.settings['explore_pages'];
-  List categoryPages = appdata.settings['categories'];
+  final rawMap = appdata.settings["explore_pages_v2"];
+  if (rawMap is! Map) return;
 
-  var totalExplorePages = AnimeSource.all()
-      .map((e) => e.explorePages.map((e) => e.title))
-      .expand((element) => element)
-      .toList();
+  final pagesMap = rawMap.map(
+    (k, v) => MapEntry(k as String, List<String>.from(v as List)),
+  );
+
+  var changed = false;
+
+  for (var sourceKey in pagesMap.keys.toList()) {
+    var source = AnimeSource.find(sourceKey);
+    if (source == null) {
+      pagesMap.remove(sourceKey);
+      changed = true;
+      continue;
+    }
+
+    var validPages = source.explorePages.map((e) => e.title).toSet();
+    var oldPages = pagesMap[sourceKey]!;
+    var newPages = oldPages
+        .where((p) => validPages.contains(p))
+        .toSet()
+        .toList();
+
+    if (newPages.length != oldPages.length) {
+      pagesMap[sourceKey] = newPages;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    appdata.settings["explore_pages_v2"] = pagesMap;
+  }
+
+  List categoryPages = appdata.settings['categories'];
   var totalCategoryPages = AnimeSource.all()
       .map((e) => e.categoryData?.key)
-      .where((element) => element != null)
+      .where((e) => e != null)
       .map((e) => e!)
       .toList();
 
-  for (var page in List.from(explorePages)) {
-    if (!totalExplorePages.contains(page)) {
-      explorePages.remove(page);
-    }
-  }
   for (var page in List.from(categoryPages)) {
     if (!totalCategoryPages.contains(page)) {
       categoryPages.remove(page);
     }
   }
-
-  appdata.settings['explore_pages'] = explorePages.toSet().toList();
   appdata.settings['categories'] = categoryPages.toSet().toList();
 
   appdata.saveData();
 }
 
 void _addAllPagesWithAnimeSource(AnimeSource source) {
-  var explorePages = appdata.settings['explore_pages'];
+  final rawMap = appdata.settings["explore_pages_v2"];
+  Map<String, List<String>> pagesMap;
+
+  if (rawMap is Map) {
+    pagesMap = rawMap.map(
+      (k, v) => MapEntry(k as String, List<String>.from(v as List)),
+    );
+  } else {
+    pagesMap = {};
+  }
+
+  if (source.explorePages.isNotEmpty) {
+    var existing = pagesMap[source.key] ?? [];
+    var existingSet = existing.toSet();
+    for (var page in source.explorePages) {
+      existingSet.add(page.title);
+    }
+    pagesMap[source.key] = existingSet.toList();
+  }
+
+  appdata.settings["explore_pages_v2"] = pagesMap;
+
   var categoryPages = appdata.settings['categories'];
   var networkFavorites = appdata.settings['favorites'];
   var searchPages = appdata.settings['searchSources'];
 
-  if (source.explorePages.isNotEmpty) {
-    for (var page in source.explorePages) {
-      if (!explorePages.contains(page.title)) {
-        explorePages.add(page.title);
-      }
-    }
-  }
   if (source.categoryData != null &&
       !categoryPages.contains(source.categoryData!.key)) {
     categoryPages.add(source.categoryData!.key);
@@ -602,7 +638,6 @@ void _addAllPagesWithAnimeSource(AnimeSource source) {
     searchPages.add(source.key);
   }
 
-  appdata.settings['explore_pages'] = explorePages.toSet().toList();
   appdata.settings['categories'] = categoryPages.toSet().toList();
   appdata.settings['favorites'] = networkFavorites.toSet().toList();
   appdata.settings['searchSources'] = searchPages.toSet().toList();
