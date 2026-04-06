@@ -600,14 +600,7 @@ class Bangumi {
     }
   }
 
-  Future<void> getBangumiData({bool isUpdata = false}) async {
-    final nowStr = Utils.formatDate(DateTime.now());
-    if (!isUpdata) {
-      final needsUpdate = appdata.settings['getBangumiDataTime'] != nowStr;
-      final enableSkipUpdate = appdata.settings['enableSkipUpdate'] ?? true;
-      if (!needsUpdate && enableSkipUpdate) return;
-    }
-
+  Future<void> getBangumiData() async {
     try {
       final response = await _dio.request(
         Api.bangumiDataUrl,
@@ -636,8 +629,7 @@ class Bangumi {
       await manager.clearBangumiData();
       DebugLog.info('getBangumiData', 'clearBangumiData success');
       await manager.batchAddBangumiData(last100Items);
-      appdata.settings['getBangumiDataTime'] != nowStr;
-      appdata.saveData();
+
       DebugLog.info('getBangumiData', 'batchAddBangumiData success');
     } on DioException catch (e, s) {
       NetLog.error('getBangumiData', 'Network error: ${e.message}\nStack: $s');
@@ -665,7 +657,13 @@ class Bangumi {
     }).toList();
   }
 
-  Future<void> checkBangumiData() async {
+  Future<void> checkBangumiData({bool isUpdata = false}) async {
+    final nowStr = Utils.formatDate(DateTime.now());
+    if (!isUpdata) {
+      final needsUpdate = appdata.settings['getBangumiDataTime'] != nowStr;
+      final enableSkipUpdate = appdata.settings['enableSkipUpdate'] ?? true;
+      if (!needsUpdate && enableSkipUpdate) return;
+    }
     try {
       var res = await _dio.request(
         Api.checkBangumiDataUrl,
@@ -685,6 +683,7 @@ class Bangumi {
           '当前数据库版本: ${appdata.settings['bangumiDataVer']}, 远端数据库版本: ${jsonData['tag_name']}',
         );
         appdata.settings['bangumiDataVer'] = jsonData['tag_name'];
+        appdata.settings['getBangumiDataTime'] = nowStr;
         appdata.saveData();
         NetLog.info(
           'bangumiDataVer',
@@ -719,7 +718,7 @@ class Bangumi {
       NetLog.info('resetBangumiData', '${jsonData['tag_name']}');
       appdata.settings['getBangumiAllEpInfoTime'] = null;
       NetLog.info('resetBangumiData', 'Cleared bangumi data successfully');
-      await getBangumiData(isUpdata: true);
+      await getBangumiData();
       await getCalendarData(isUpdata: true);
       App.rootContext.showMessage(
         message:

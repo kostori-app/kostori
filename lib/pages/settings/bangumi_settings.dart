@@ -38,6 +38,10 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                     title: t.calendarFetchEpisodes,
                     settingKey: "calendarFetchEpisodes",
                   ),
+                  _SwitchSetting(
+                    title: '启用跳过bangumi日程',
+                    settingKey: "enableSkipUpdate",
+                  ),
                 ],
               ),
             ),
