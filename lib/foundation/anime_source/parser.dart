@@ -387,7 +387,9 @@ class AnimeSourceParser {
                     (e['animes'] as List).map((e) {
                       return Anime.fromJson(e, _key!);
                     }).toList(),
-                    PageJumpTarget.parse(_key!, e['viewMore']),
+                    e['viewMore'] != null
+                        ? PageJumpTarget.parse(_key!, e['viewMore'])
+                        : null,
                   );
                 }),
               ),
@@ -737,8 +739,8 @@ class AnimeSourceParser {
       options.add(
         SearchOptions(
           map,
-          element["label"],
-          element['type'] ?? 'select',
+          element["label"]?.toString() ?? '',
+          element['type']?.toString() ?? 'select',
           element['default'] == null ? null : jsonEncode(element['default']),
         ),
       );
