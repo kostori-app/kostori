@@ -237,8 +237,11 @@ class WatcherState extends State<Watcher>
 
       if (res is! String || res.isEmpty) {
         PlayLog.error("加载剧集", "$res 不合法");
-        App.rootContext.showMessage(message: '获取视频链接异常');
-        throw Exception("$res 不合法");
+        App.rootContext.showMessage(
+          message: '获取视频链接异常: $res',
+          level: LogLevel.error,
+        );
+        return;
       }
 
       await _play(res, time);
