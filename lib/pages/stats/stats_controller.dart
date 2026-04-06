@@ -3,11 +3,11 @@
 import 'package:ensemble_table_calendar/ensemble_table_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/database/stats.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
@@ -94,9 +94,13 @@ abstract class _StatsController with Store {
       selectors,
     ).map((i) => AnimeType(i)).toList();
 
-    final activeList = selectorList
-        .map((t) => t.sourceKey)
-        .whereType<String>()
+    final activeList = AnimeSource.all()
+        .where(
+          (a) => selectorList.any(
+            (t) => t.value == AnimeType.fromKey(a.name).value,
+          ),
+        )
+        .map((a) => a.name)
         .toList();
     showDialog(
       context: App.rootContext,
@@ -111,17 +115,17 @@ abstract class _StatsController with Store {
                   spacing: 8,
                   runSpacing: 8,
                   children: baseList.map((item) {
-                    final isInactive = activeList.contains(item);
+                    final isActive = activeList.contains(item);
 
                     return InputChip(
                       label: Text(item),
-                      selected: !isInactive,
+                      selected: isActive,
                       onSelected: (selected) {
                         setState(() {
-                          if (isInactive) {
-                            activeList.remove(item);
-                          } else {
+                          if (selected) {
                             activeList.add(item);
+                          } else {
+                            activeList.remove(item);
                           }
                         });
                       },
@@ -132,7 +136,7 @@ abstract class _StatsController with Store {
                       checkmarkColor: Theme.of(context).colorScheme.primary,
                       shape: StadiumBorder(
                         side: BorderSide(
-                          color: isInactive
+                          color: isActive
                               ? Theme.of(
                                   context,
                                 ).colorScheme.primary.toOpacity(0.7)
@@ -150,18 +154,14 @@ abstract class _StatsController with Store {
                 FilledButton(
                   child: Text("Apply".tl),
                   onPressed: () async {
-                    final selectedAnimeTypes = activeList
-                        .map((sourceKey) => AnimeType.fromKey(sourceKey))
-                        .toList();
-
-                    final selectedInts = selectedAnimeTypes
-                        .map((t) => t.value)
+                    final selectedInts = activeList
+                        .map((name) => AnimeType.fromKey(name).value)
                         .toList();
 
                     appdata.settings['statsSelectors'] = selectedInts;
                     appdata.saveData();
                     await loadEvents();
-                    Navigator.pop(context);
+                    App.pop();
                   },
                 ),
               ],

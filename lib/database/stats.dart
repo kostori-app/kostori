@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/database/history.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -685,10 +686,29 @@ class StatsManager with ChangeNotifier {
       all.add(StatsDataImpl.fromDrift(rows[i]));
       if (i % 50 == 0) await Future.delayed(Duration.zero);
     }
+
+    final bangumiType = AnimeType.fromKey('bangumi').value;
+
+    bool isBangumi(StatsDataImpl s) => s.type == bangumiType;
+
+    final existingTypes = AnimeSource.all()
+        .map((a) => AnimeType.fromKey(a.name).value)
+        .toSet();
+
     final selectors = appdata.settings['statsSelectors'];
-    if (selectors == null || (selectors as List).isEmpty) return all;
+    if (selectors == null || (selectors as List).isEmpty) {
+      return all
+          .where((s) => isBangumi(s) || existingTypes.contains(s.type))
+          .toList();
+    }
     final selectorList = List<int>.from(selectors);
-    return all.where((s) => !selectorList.contains(s.type)).toList();
+    return all
+        .where(
+          (s) =>
+              isBangumi(s) ||
+              (selectorList.contains(s.type) && existingTypes.contains(s.type)),
+        )
+        .toList();
   }
 
   Stream<List<StatsDataImpl>> watchAll() {
