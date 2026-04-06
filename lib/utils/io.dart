@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui' as ui;
 
-import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +20,6 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/file_type.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -235,15 +234,15 @@ class DirectoryPicker {
   static const _methodChannel = MethodChannel("kostori/method_channel");
 
   Future<Directory?> pickDirectory({bool directAccess = false}) async {
+    if (IO._isSelectingFiles) return null;
     IO._isSelectingFiles = true;
     try {
       String? directory;
       if (App.isWindows || App.isLinux) {
-        directory = await file_selector.getDirectoryPath();
+        directory = await FilePicker.platform.getDirectoryPath();
       } else if (App.isAndroid) {
         directory = (await AndroidDirectory.pickDirectory())?.path;
         if (directory != null && directAccess) {
-          // Native library does not have access to the directory. Copy it to cache.
           var cache = FilePath.join(App.cachePath, "selected_directory");
           if (Directory(cache).existsSync()) {
             Directory(cache).deleteSync(recursive: true);
@@ -262,9 +261,8 @@ class DirectoryPicker {
       _finalizer.attach(this, directory);
       return Directory(directory);
     } finally {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        IO._isSelectingFiles = false;
-      });
+      await Future.delayed(const Duration(milliseconds: 100));
+      IO._isSelectingFiles = false;
     }
   }
 }
@@ -290,66 +288,44 @@ class IOSDirectoryPicker {
 }
 
 Future<FileSelectResult?> selectFile({required List<String> ext}) async {
-  // ✅ 重入守卫：已经在选文件就直接返回
   if (IO._isSelectingFiles) return null;
   IO._isSelectingFiles = true;
 
   try {
-    var extensions = App.isMacOS || App.isIOS ? null : ext;
-    file_selector.XTypeGroup typeGroup = file_selector.XTypeGroup(
-      label: 'files',
-      extensions: extensions,
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ext,
     );
 
-    FileSelectResult? file;
+    if (result == null || result.files.isEmpty) return null;
 
-    if (App.isAndroid) {
-      const selectFileChannel = MethodChannel("kostori/select_file");
-      String mimeType = "*/*";
-      if (ext.length == 1) {
-        mimeType = FileType.fromExtension(ext[0]).mime;
-        if (mimeType == "application/octet-stream") {
-          mimeType = "*/*";
-        }
-      }
-      final filePath = await selectFileChannel.invokeMethod(
-        "selectFile",
-        mimeType,
-      );
-      if (filePath == null) return null;
-      file = FileSelectResult(filePath);
-    } else {
-      final xFile = await file_selector.openFile(
-        acceptedTypeGroups: <file_selector.XTypeGroup>[typeGroup],
-      );
-      if (xFile == null) return null;
-      file = FileSelectResult(xFile.path);
-    }
+    final file = result.files.single;
 
-    final fileExt = file.path.split(".").last;
+    // Android 上 file_picker 返回的是 bytes，不一定有 path
+    if (file.path == null) return null;
+
+    final fileExt = file.path!.split('.').last;
     if (!ext.contains(fileExt)) {
       App.rootContext.showMessage(message: "Invalid file type: $fileExt");
       return null;
     }
 
-    return file;
+    return FileSelectResult(file.path!);
   } finally {
-    // ✅ 同步重置，Future.delayed 不可靠
-    // 保留短暂延迟防止同一次点击事件触发两次（平台事件去抖）
     await Future.delayed(const Duration(milliseconds: 100));
     IO._isSelectingFiles = false;
   }
 }
 
 Future<String?> selectDirectory() async {
+  if (IO._isSelectingFiles) return null;
   IO._isSelectingFiles = true;
   try {
-    var path = await file_selector.getDirectoryPath();
+    final path = await FilePicker.platform.getDirectoryPath();
     return path;
   } finally {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      IO._isSelectingFiles = false;
-    });
+    await Future.delayed(const Duration(milliseconds: 100));
+    IO._isSelectingFiles = false;
   }
 }
 
@@ -366,6 +342,7 @@ Future<void> saveFile({
   if (data == null && file == null) {
     throw Exception("data and file cannot be null at the same time");
   }
+  if (IO._isSelectingFiles) return;
   IO._isSelectingFiles = true;
   try {
     if (data != null) {
@@ -380,18 +357,14 @@ Future<void> saveFile({
       final params = SaveFileDialogParams(sourceFilePath: file!.path);
       await FlutterFileDialog.saveFile(params: params);
     } else {
-      final result = await file_selector.getSaveLocation(
-        suggestedName: filename,
-      );
+      final result = await FilePicker.platform.saveFile(fileName: filename);
       if (result != null) {
-        var xFile = file_selector.XFile(file!.path);
-        await xFile.saveTo(result.path);
+        await File(file!.path).copy(result);
       }
     }
   } finally {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      IO._isSelectingFiles = false;
-    });
+    await Future.delayed(const Duration(milliseconds: 100));
+    IO._isSelectingFiles = false;
   }
 }
 
