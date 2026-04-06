@@ -338,7 +338,6 @@ class _BodyState extends State<_Body> {
     var animeSource = await AnimeSourceParser().createAndParse(js, fileName);
     AnimeSourceManager().add(animeSource);
     _addAllPagesWithAnimeSource(animeSource);
-    appdata.saveData();
     App.forceRebuild();
   }
 }
