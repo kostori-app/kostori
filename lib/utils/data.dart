@@ -10,6 +10,7 @@ import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/utils/io.dart';
@@ -61,6 +62,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
   }
   cacheDir.createSync();
   try {
+    DebugLog.info('importAppData', '开始导入数据');
     await Isolate.run(() {
       ZipFile.openAndExtract(file.path, cacheDirPath);
     });
@@ -77,8 +79,10 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       if (version is int && version <= appdata.settings["dataVersion"]) {
         return;
       }
+      DebugLog.info('importAppData', '检查数据版本');
     }
     if (await historyFile.exists()) {
+      DebugLog.info('importAppData', '开始导入historyFile');
       await HistoryManager().reinit(() async {
         File(FilePath.join(App.dataPath, "history.db")).deleteIfExistsSync();
         historyFile.renameSync(FilePath.join(App.dataPath, "history.db"));
@@ -86,6 +90,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       providerContainer.invalidate(historyAllProvider);
     }
     if (await localFavoriteFile.exists()) {
+      DebugLog.info('importAppData', '开始导入localFavoriteFile');
       LocalFavoritesManager().close();
       File(
         FilePath.join(App.dataPath, "local_favorite.db"),
@@ -96,18 +101,23 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       LocalFavoritesManager().init();
     }
     if (await bangumiFile.exists()) {
+      DebugLog.info('importAppData', '开始导入bangumiFile');
+      providerContainer.invalidate(bangumiInitProvider);
       await providerContainer.read(bangumiManagerProvider).reinit(() async {
         File(FilePath.join(App.dataPath, "bangumi.db")).deleteIfExistsSync();
         bangumiFile.renameSync(FilePath.join(App.dataPath, "bangumi.db"));
       });
+      providerContainer.invalidate(bangumiInitProvider);
     }
     if (await statsFile.exists()) {
+      DebugLog.info('importAppData', '开始导入statsFile');
       await StatsManager().reinit(() async {
         File(FilePath.join(App.dataPath, "stats.db")).deleteIfExistsSync();
         statsFile.renameSync(FilePath.join(App.dataPath, "stats.db"));
       });
     }
     if (await searchHistoryFile.exists()) {
+      DebugLog.info('importAppData', '开始导入searchHistoryFile');
       await SearchHistoryManager().reinit(() async {
         File(
           FilePath.join(App.dataPath, "search_history.db"),
@@ -118,11 +128,13 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       });
     }
     if (await appdataFile.exists()) {
+      DebugLog.info('importAppData', '开始导入appdataFile');
       var content = await appdataFile.readAsString();
       var data = jsonDecode(content);
       appdata.syncData(data);
     }
     if (await cookieFile.exists()) {
+      DebugLog.info('importAppData', '开始导入cookieFile');
       await SingleInstanceCookieJar.instance?.dispose();
       SingleInstanceCookieJar.instance = null;
       File(FilePath.join(App.dataPath, "cookie.db")).deleteIfExistsSync();
@@ -133,6 +145,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     }
     var aiFile = cacheDir.joinFile("ai_database.db");
     if (await aiFile.exists()) {
+      DebugLog.info('importAppData', '开始导入aiFile');
       await AiDatabase.instance.close();
       File(FilePath.join(App.dataPath, "ai_database.db")).deleteIfExistsSync();
       aiFile.renameSync(FilePath.join(App.dataPath, "ai_database.db"));
@@ -140,6 +153,7 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
     }
     var animeSourceDir = FilePath.join(cacheDirPath, "anime_source");
     if (Directory(animeSourceDir).existsSync()) {
+      DebugLog.info('importAppData', '开始导入animeSource');
       Directory(
         FilePath.join(App.dataPath, "anime_source"),
       ).deleteIfExistsSync(recursive: true);
@@ -156,6 +170,8 @@ Future<void> importAppData(File file, [bool checkVersion = false]) async {
       }
       await AnimeSourceManager().reload();
     }
+  } catch (e) {
+    DebugLog.error('importAppData', '$e');
   } finally {
     cacheDir.deleteIgnoreError(recursive: true);
   }
