@@ -1169,6 +1169,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'All'
 	String get all => 'All';
 
+	/// en: 'Cloudflare verification required'
+	String get cloudflareVerificationRequired => 'Cloudflare verification required';
+
 	/// en: 'Reload Configs'
 	String get reloadConfigs => 'Reload Configs';
 
@@ -1418,6 +1421,24 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Status'
 	String get status => 'Status';
 
+	/// en: 'DLNA Error'
+	String get dlnaError => 'DLNA Error';
+
+	/// en: 'Start searching'
+	String get startSearching => 'Start searching';
+
+	/// en: 'Searching for devices…'
+	String get searchingDevices => 'Searching for devices…';
+
+	/// en: 'No devices found'
+	String get noDevicesFound => 'No devices found';
+
+	/// en: 'Trying to cast to'
+	String get tryingToCast => 'Trying to cast to';
+
+	/// en: 'DLNA exception'
+	String get dlnaException => 'DLNA exception';
+
 	/// en: 'Audio Option: Low Latency'
 	String get audioOptionLowLatency => 'Audio Option: \n Low Latency';
 
@@ -1551,6 +1572,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Last'
 	String get last => 'Last';
+
+	/// en: 'Invalid page'
+	String get invalidPage => 'Invalid page';
+
+	/// en: 'Unknown error'
+	String get unknownError => 'Unknown error';
+
+	/// en: 'loadPage and loadNext can't be null at the same time'
+	String get loadPageAndLoadNextCantBeNull => 'loadPage and loadNext can\'t be null at the same time';
 
 	/// en: 'Disable Length Limitation'
 	String get disableLengthLimitation => 'Disable Length Limitation';
@@ -1950,6 +1980,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Actor'
 	String get actor => 'Actor';
+
+	/// en: 'CV'
+	String get cv => 'CV';
 
 	/// en: 'Dub'
 	String get dub => 'Dub';
@@ -3109,12 +3142,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'No search sources'
 	String get noSearchSources => 'No search sources';
 
-	/// en: 'Please add some sources'
-	String get pleaseAddSomeSources => 'Please add some sources';
-
-	/// en: 'Manage'
-	String get manage => 'Manage';
-
 	/// en: 'Import Persona'
 	String get importPersona => 'Import Persona';
 
@@ -3315,9 +3342,6 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Start search'
 	String get startSearch => 'Start search';
-
-	/// en: 'DLNA error'
-	String get dlnaError => 'DLNA error';
 
 	/// en: 'Please enter episode number'
 	String get pleaseEnterEpisodeNumber => 'Please enter episode number';
@@ -3693,6 +3717,186 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'LAN'
 	String get lanLabel => 'LAN';
+
+	/// en: 'H.264 · CRF'
+	String get h264CRF => 'H.264 · CRF';
+
+	/// en: 'FFmpeg Not Found'
+	String get ffmpegNotFound => 'FFmpeg Not Found';
+
+	/// en: 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.'
+	String get ffmpegNotFoundDesktop => 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.';
+
+	/// en: 'Still Open'
+	String get stillOpenAnyway => 'Still Open';
+
+	/// en: 'Preparing…'
+	String get preparing => 'Preparing…';
+
+	/// en: 'Downloading preview clip…'
+	String get downloadingPreviewClip => 'Downloading preview clip…';
+
+	/// en: 'Loading player…'
+	String get loadingPlayer => 'Loading player…';
+
+	/// en: 'Cancel Export?'
+	String get cancelExport => 'Cancel Export?';
+
+	/// en: 'Export in progress, closing will interrupt export.'
+	String get exportInProgress => 'Export in progress, closing will interrupt export.';
+
+	/// en: 'Confirm Close'
+	String get confirmClose => 'Confirm Close';
+
+	/// en: 'Stop Preview'
+	String get stopPreview => 'Stop Preview';
+
+	/// en: 'Loading preview…'
+	String get loadingPreview => 'Loading preview…';
+
+	/// en: 'Preview load failed'
+	String get previewLoadFailed => 'Preview load failed';
+
+	/// en: 'Reload preview clip'
+	String get reloadPreviewClip => 'Reload preview clip';
+
+	/// en: 'Video timeline thumbnails'
+	String get videoTimelineThumbnails => 'Video timeline thumbnails';
+
+	/// en: 'Start'
+	String get startPoint => 'Start';
+
+	/// en: 'End'
+	String get endPoint => 'End';
+
+	/// en: 'Jump to start'
+	String get jumpToStart => 'Jump to start';
+
+	/// en: 'Set Start'
+	String get setStartPoint => 'Set Start';
+
+	/// en: 'Set End'
+	String get setEndPoint => 'Set End';
+
+	/// en: 'Edit Start'
+	String get editStartPoint => 'Edit Start';
+
+	/// en: 'Edit End'
+	String get editEndPoint => 'Edit End';
+
+	/// en: 'Supported formats: 90, 01:30, 1.5...'
+	String get durationFormatHint => 'Supported formats: 90, 01:30, 1.5...';
+
+	/// en: 'Pure numbers are treated as seconds'
+	String get secondsAsNumber => 'Pure numbers are treated as seconds';
+
+	/// en: 'Export Settings'
+	String get exportSettings => 'Export Settings';
+
+	/// en: 'Fixed bitrate (optional, overrides CRF)'
+	String get fixedBitrateOptional => 'Fixed bitrate (optional, overrides CRF)';
+
+	/// en: 'Fixed bitrate'
+	String get fixedBitrate => 'Fixed bitrate';
+
+	/// en: 'Palette colors'
+	String get paletteColors => 'Palette colors';
+
+	/// en: 'Fewer colors = smaller size'
+	String get paletteColorsHint => 'Fewer colors = smaller size';
+
+	/// en: 'Enable Dither'
+	String get enableDither => 'Enable Dither';
+
+	/// en: 'Better quality, slightly larger size'
+	String get ditherHint => 'Better quality, slightly larger size';
+
+	/// en: 'WebP Quality'
+	String get webpQuality => 'WebP Quality';
+
+	/// en: 'Aspect Ratio Presets'
+	String get aspectRatioPresets => 'Aspect Ratio Presets';
+
+	/// en: 'Hide Crop Box'
+	String get hideCropBox => 'Hide Crop Box';
+
+	/// en: 'Show Crop Box (draggable)'
+	String get showCropBox => 'Show Crop Box (draggable)';
+
+	/// en: 'After enabling, drag to select export area'
+	String get dragToSelectExportArea => 'After enabling, drag to select export area';
+
+	/// en: 'Edit crop box'
+	String get editCropBox => 'Edit crop box';
+
+	/// en: 'Start −1s'
+	String get startPointMinus1s => 'Start −1s';
+
+	/// en: 'End −1s'
+	String get endPointMinus1s => 'End −1s';
+
+	/// en: 'Start −0.1s'
+	String get startPointMinus0_1s => 'Start −0.1s';
+
+	/// en: 'End −0.1s'
+	String get endPointMinus0_1s => 'End −0.1s';
+
+	/// en: 'Start +0.1s'
+	String get startPointPlus0_1s => 'Start +0.1s';
+
+	/// en: 'End +0.1s'
+	String get endPointPlus0_1s => 'End +0.1s';
+
+	/// en: 'Start +1s'
+	String get startPointPlus1s => 'Start +1s';
+
+	/// en: 'End +1s'
+	String get endPointPlus1s => 'End +1s';
+
+	/// en: 'With Audio'
+	String get withAudio => 'With Audio';
+
+	/// en: 'No Audio'
+	String get noAudio => 'No Audio';
+
+	/// en: 'Dither On'
+	String get ditherOn => 'Dither On';
+
+	/// en: 'Dither Off'
+	String get ditherOff => 'Dither Off';
+
+	/// en: 'GIF'
+	String get gifFormat => 'GIF';
+
+	/// en: 'APNG'
+	String get apngFormat => 'APNG';
+
+	/// en: 'WebP'
+	String get webpFormat => 'WebP';
+
+	/// en: 'Browser compatible'
+	String get browserCompatible => 'Browser compatible';
+
+	/// en: 'Smallest size'
+	String get smallestSize => 'Smallest size';
+
+	/// en: 'Video Format'
+	String get videoFormat => 'Video Format';
+
+	/// en: 'Encoding…'
+	String get encoding => 'Encoding…';
+
+	/// en: 'Downloading video segments…'
+	String get downloadingVideoSegments => 'Downloading video segments…';
+
+	/// en: 'Manage'
+	String get manage => 'Manage';
+
+	/// en: 'Please add some sources'
+	String get pleaseAddSomeSources => 'Please add some sources';
+
+	/// en: 'No Category Pages'
+	String get noCategoryPages => 'No Category Pages';
 }
 
 // Path: colors
@@ -4217,6 +4421,7 @@ extension on Translations {
 			'mirror' => 'Mirror',
 			'result' => 'Result',
 			'all' => 'All',
+			'cloudflareVerificationRequired' => 'Cloudflare verification required',
 			'reloadConfigs' => 'Reload Configs',
 			'invalidUrlConfig' => 'Invalid url config',
 			'inconsistentVersions' => 'Inconsistent versions',
@@ -4300,6 +4505,12 @@ extension on Translations {
 			'logs' => 'Logs',
 			'playerDetails' => 'Player Details',
 			'status' => 'Status',
+			'dlnaError' => 'DLNA Error',
+			'startSearching' => 'Start searching',
+			'searchingDevices' => 'Searching for devices…',
+			'noDevicesFound' => 'No devices found',
+			'tryingToCast' => 'Trying to cast to',
+			'dlnaException' => 'DLNA exception',
 			'audioOptionLowLatency' => 'Audio Option: \n Low Latency',
 			'audioOptionCompatibility' => 'Audio Option: \n Compatibility',
 			'switchSuccessful' => 'Switch Successful',
@@ -4346,6 +4557,8 @@ extension on Translations {
 			'colors.cloudyBlue' => 'Cloudy Blue',
 			'colors.darkPastelGreen' => 'Dark Pastel Green',
 			'colors.dust' => 'Dust',
+			_ => null,
+		} ?? switch (path) {
 			'colors.electricLime' => 'Electric Lime',
 			'colors.freshGreen' => 'Fresh Green',
 			'colors.lightEggplant' => 'Light Eggplant',
@@ -4353,8 +4566,6 @@ extension on Translations {
 			'colors.reallyLightBlue' => 'Really Light Blue',
 			'colors.tea' => 'Tea',
 			'colors.warmPurple' => 'Warm Purple',
-			_ => null,
-		} ?? switch (path) {
 			'colors.yellowishTan' => 'Yellowish Tan',
 			'colors.cement' => 'Cement',
 			'colors.darkGrassGreen' => 'Dark Grass Green',
@@ -4389,6 +4600,9 @@ extension on Translations {
 			'pagePM' => ({required Object p, required Object m}) => 'Page ${p} / ${m}',
 			'first' => 'First',
 			'last' => 'Last',
+			'invalidPage' => 'Invalid page',
+			'unknownError' => 'Unknown error',
+			'loadPageAndLoadNextCantBeNull' => 'loadPage and loadNext can\'t be null at the same time',
 			'disableLengthLimitation' => 'Disable Length Limitation',
 			'updateLog' => 'Update log',
 			'liked' => 'Liked',
@@ -4522,6 +4736,7 @@ extension on Translations {
 			'videoSynchronizationMode' => 'Video synchronization mode',
 			'enableNoProxyOverrides' => 'Enable No Proxy Overrides',
 			'actor' => 'Actor',
+			'cv' => 'CV',
 			'dub' => 'Dub',
 			'chineseDub' => 'Chinese Dub',
 			'japaneseDub' => 'Japanese Dub',
@@ -4856,6 +5071,8 @@ extension on Translations {
 			'manualSelect' => 'Manual Select',
 			'qrAndClipboard' => 'QR & Clipboard',
 			'go' => 'Go',
+			_ => null,
+		} ?? switch (path) {
 			'clipboard' => 'Clipboard',
 			'recognizeFromGallery' => 'Recognize from Gallery',
 			'scanQrCode' => 'Scan QR Code',
@@ -4867,8 +5084,6 @@ extension on Translations {
 			'tokenCopiedToClipboard' => 'Token copied to clipboard',
 			'generateQrCodeShare' => 'Generate QR Code to Share',
 			'aiSettings' => 'AI Settings',
-			_ => null,
-		} ?? switch (path) {
 			'aiConfigMissing' => 'AI Config Missing',
 			'generating' => 'Generating...',
 			'generatedTags' => 'Generated Tags',
@@ -4910,8 +5125,6 @@ extension on Translations {
 			'noStickersYet' => 'No stickers yet',
 			'removeSticker' => 'Remove sticker',
 			'noSearchSources' => 'No search sources',
-			'pleaseAddSomeSources' => 'Please add some sources',
-			'manage' => 'Manage',
 			'importPersona' => 'Import Persona',
 			'newPersona' => 'New Persona',
 			'notConfigured' => 'Not configured',
@@ -4979,7 +5192,6 @@ extension on Translations {
 			'loadingDuplicateEpisode' => 'Loading duplicate episode',
 			'getVideoUrlFailed' => 'Failed to get video URL',
 			'startSearch' => 'Start search',
-			'dlnaError' => 'DLNA error',
 			'pleaseEnterEpisodeNumber' => 'Please enter episode number',
 			'pleaseEnterValidEpisodeNumber' => 'Please enter a valid episode number between 1-999',
 			'imageTitle' => 'Title',
@@ -5105,6 +5317,66 @@ extension on Translations {
 			'aggregationEntry' => 'Aggregation Entry',
 			'aiLabel' => 'AI',
 			'lanLabel' => 'LAN',
+			'h264CRF' => 'H.264 · CRF',
+			'ffmpegNotFound' => 'FFmpeg Not Found',
+			'ffmpegNotFoundDesktop' => 'Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.',
+			'stillOpenAnyway' => 'Still Open',
+			'preparing' => 'Preparing…',
+			'downloadingPreviewClip' => 'Downloading preview clip…',
+			'loadingPlayer' => 'Loading player…',
+			'cancelExport' => 'Cancel Export?',
+			'exportInProgress' => 'Export in progress, closing will interrupt export.',
+			'confirmClose' => 'Confirm Close',
+			'stopPreview' => 'Stop Preview',
+			'loadingPreview' => 'Loading preview…',
+			'previewLoadFailed' => 'Preview load failed',
+			'reloadPreviewClip' => 'Reload preview clip',
+			'videoTimelineThumbnails' => 'Video timeline thumbnails',
+			'startPoint' => 'Start',
+			'endPoint' => 'End',
+			'jumpToStart' => 'Jump to start',
+			'setStartPoint' => 'Set Start',
+			'setEndPoint' => 'Set End',
+			'editStartPoint' => 'Edit Start',
+			'editEndPoint' => 'Edit End',
+			'durationFormatHint' => 'Supported formats: 90, 01:30, 1.5...',
+			'secondsAsNumber' => 'Pure numbers are treated as seconds',
+			'exportSettings' => 'Export Settings',
+			'fixedBitrateOptional' => 'Fixed bitrate (optional, overrides CRF)',
+			'fixedBitrate' => 'Fixed bitrate',
+			'paletteColors' => 'Palette colors',
+			'paletteColorsHint' => 'Fewer colors = smaller size',
+			'enableDither' => 'Enable Dither',
+			'ditherHint' => 'Better quality, slightly larger size',
+			'webpQuality' => 'WebP Quality',
+			'aspectRatioPresets' => 'Aspect Ratio Presets',
+			'hideCropBox' => 'Hide Crop Box',
+			'showCropBox' => 'Show Crop Box (draggable)',
+			'dragToSelectExportArea' => 'After enabling, drag to select export area',
+			'editCropBox' => 'Edit crop box',
+			'startPointMinus1s' => 'Start −1s',
+			'endPointMinus1s' => 'End −1s',
+			'startPointMinus0_1s' => 'Start −0.1s',
+			'endPointMinus0_1s' => 'End −0.1s',
+			'startPointPlus0_1s' => 'Start +0.1s',
+			'endPointPlus0_1s' => 'End +0.1s',
+			'startPointPlus1s' => 'Start +1s',
+			'endPointPlus1s' => 'End +1s',
+			'withAudio' => 'With Audio',
+			'noAudio' => 'No Audio',
+			'ditherOn' => 'Dither On',
+			'ditherOff' => 'Dither Off',
+			'gifFormat' => 'GIF',
+			'apngFormat' => 'APNG',
+			'webpFormat' => 'WebP',
+			'browserCompatible' => 'Browser compatible',
+			'smallestSize' => 'Smallest size',
+			'videoFormat' => 'Video Format',
+			'encoding' => 'Encoding…',
+			'downloadingVideoSegments' => 'Downloading video segments…',
+			'manage' => 'Manage',
+			'pleaseAddSomeSources' => 'Please add some sources',
+			'noCategoryPages' => 'No Category Pages',
 			_ => null,
 		};
 	}

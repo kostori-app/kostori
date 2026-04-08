@@ -80,18 +80,15 @@ Future<void> showVideoClipEditor({
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => ContentDialog(
-          title: 'FFmpeg 未找到',
-          content: const Text(
-            '桌面端导出功能需要 FFmpeg，但未找到 FFmpeg 可执行文件。\n\n'
-            '请在设置中配置 FFmpeg 路径，或确保 FFmpeg 在系统 PATH 中。',
-          ),
+          title: t.ffmpegNotFound,
+          content: Text(t.ffmpegNotFoundDesktop),
           cancel: () {
             Navigator.of(context).pop(false);
           },
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('仍要打开'),
+              child: Text(t.stillOpenAnyway),
             ),
           ],
         ),
@@ -340,7 +337,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     setState(() {
       _previewLoading = true;
       _previewError = null;
-      _previewStatus = '准备中…';
+      _previewStatus = t.preparing;
       _isPlaying = false;
     });
 
@@ -358,7 +355,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       String mediaUrl = widget.videoUrl;
 
       if (isHls) {
-        setState(() => _previewStatus = '正在下载预览片段…');
+        setState(() => _previewStatus = t.downloadingPreviewClip);
         final local = await _HlsDownloader.download(
           url: widget.videoUrl,
           headers: widget.httpHeaders ?? {},
@@ -376,7 +373,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       }
 
       if (!mounted) return;
-      setState(() => _previewStatus = '加载播放器…');
+      setState(() => _previewStatus = t.loadingPlayer);
 
       bool hAenable = appdata.settings['hAenable'] ?? true;
       String hardwareDecoder =
@@ -809,8 +806,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('取消导出?'),
-            content: const Text('导出正在进行中，关闭将中断导出。'),
+            title: Text(t.cancelExport),
+            content: Text(t.exportInProgress),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -818,7 +815,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('确认关闭'),
+                child: Text(t.confirmClose),
               ),
             ],
           ),
@@ -840,7 +837,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     setState(() {
       _isExporting = true;
       _exportProgress = 0.0;
-      _exportStatus = '准备中…';
+      _exportStatus = t.preparing;
       _exportCancelled = false;
     });
 
@@ -883,7 +880,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                 (_format == ExportFormat.mp4 || isMobile);
 
       if (doPreDownload) {
-        setState(() => _exportStatus = '下载视频分片…');
+        setState(() => _exportStatus = t.downloadingVideoSegments);
         final localM3u8 = await _HlsDownloader.download(
           url: exportUrl,
           headers: exportHeaders,
@@ -906,7 +903,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
       if (_exportCancelled) return;
 
-      setState(() => _exportStatus = '编码中…');
+      setState(() => _exportStatus = t.encoding);
 
       final outputDir = await getTemporaryDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
@@ -1131,13 +1128,13 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   const SizedBox(width: 4),
                   IconButton(
                     icon: const Icon(Icons.close),
-                    tooltip: '关闭',
+                    tooltip: t.close,
                     onPressed: _handleClose,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '视频剪辑',
+                      t.videoClipEditor,
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
@@ -1152,13 +1149,13 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                         ? IconButton(
                             key: const ValueKey('stop'),
                             icon: const Icon(Icons.stop_circle_outlined),
-                            tooltip: '停止预览',
+                            tooltip: t.stopPreview,
                             onPressed: _stopPreview,
                           )
                         : IconButton(
                             key: const ValueKey('play'),
                             icon: const Icon(Icons.play_circle_outline),
-                            tooltip: '预览片段',
+                            tooltip: t.previewClip,
                             onPressed:
                                 (_isExporting || _previewController == null)
                                 ? null
@@ -1224,7 +1221,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _previewStatus.isEmpty ? '正在加载预览…' : _previewStatus,
+                    _previewStatus.isEmpty ? t.loadingPreview : _previewStatus,
                     style: const TextStyle(color: Colors.white70, fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
@@ -1242,8 +1239,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     size: 32,
                   ),
                   const SizedBox(height: 6),
-                  const Text(
-                    '预览加载失败',
+                  Text(
+                    t.previewLoadFailed,
                     style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                   const SizedBox(height: 2),
@@ -1266,7 +1263,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                       backgroundColor: Colors.white12,
                       foregroundColor: Colors.white70,
                     ),
-                    child: const Text('重试', style: TextStyle(fontSize: 12)),
+                    child: Text(t.retry),
                   ),
                 ],
               ),
@@ -1297,7 +1294,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     ? FloatingActionButton.small(
                         key: const ValueKey('crop_on'),
                         heroTag: 'crop_toggle',
-                        tooltip: '编辑裁剪框',
+                        tooltip: t.editCropBox,
                         backgroundColor: _showCropOverlay
                             ? cs.primary
                             : cs.surface,

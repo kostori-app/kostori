@@ -10,7 +10,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/res.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 class AnimeList extends StatefulWidget {
   const AnimeList({
@@ -147,10 +147,10 @@ class AnimeListState extends State<AnimeList>
                 context: App.rootContext,
                 builder: (context) {
                   return ContentDialog(
-                    title: "Jump to page".tl,
+                    title: t.jumpToPage,
                     content: TextField(
                       keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: "Page".tl),
+                      decoration: InputDecoration(labelText: t.page),
                       inputFormatters: <TextInputFormatter>[
                         FilteringTextInputFormatter.digitsOnly,
                       ],
@@ -164,7 +164,7 @@ class AnimeListState extends State<AnimeList>
                           Navigator.of(context).pop();
                           var page = int.tryParse(value);
                           if (page == null) {
-                            context.showMessage(message: "Invalid page".tl);
+                            context.showMessage(message: t.invalidPage);
                           } else {
                             if (page > 0 &&
                                 (_maxPage == null || page <= _maxPage!)) {
@@ -173,11 +173,11 @@ class AnimeListState extends State<AnimeList>
                                 _page = page;
                               });
                             } else {
-                              context.showMessage(message: "Invalid page".tl);
+                              context.showMessage(message: t.invalidPage);
                             }
                           }
                         },
-                        child: Text("Apply".tl),
+                        child: Text(t.apply),
                       ),
                     ],
                   );
@@ -194,7 +194,7 @@ class AnimeListState extends State<AnimeList>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
+                t.pagePM(p: _page.toString(), m: (_maxPage ?? '?').toString()),
               ),
             ),
           ),
@@ -204,7 +204,7 @@ class AnimeListState extends State<AnimeList>
             _buildAnimeButton(
               context: context,
               icon: Icons.chevron_left,
-              tooltip: "Back".tl,
+              tooltip: t.back,
               enabled: _page > 1,
               onPressed: _page > 1
                   ? () {
@@ -219,7 +219,7 @@ class AnimeListState extends State<AnimeList>
             _buildAnimeButton(
               context: context,
               icon: Icons.chevron_right,
-              tooltip: "Next".tl,
+              tooltip: t.next,
               enabled: _page < (_maxPage ?? (_page + 1)),
               onPressed: _page < (_maxPage ?? (_page + 1))
                   ? () {
@@ -246,7 +246,7 @@ class AnimeListState extends State<AnimeList>
             _buildAnimeButton(
               context: context,
               icon: Icons.first_page,
-              tooltip: "First".tl,
+              tooltip: t.first,
               enabled: _page > 1,
               onPressed: _page > 1
                   ? () {
@@ -261,7 +261,7 @@ class AnimeListState extends State<AnimeList>
             _buildAnimeButton(
               context: context,
               icon: Icons.chevron_left,
-              tooltip: "Back".tl,
+              tooltip: t.back,
               enabled: _page > 1,
               onPressed: _page > 1
                   ? () {
@@ -284,10 +284,10 @@ class AnimeListState extends State<AnimeList>
                     context: App.rootContext,
                     builder: (context) {
                       return ContentDialog(
-                        title: "Jump to page".tl,
+                        title: t.jumpToPage,
                         content: TextField(
                           keyboardType: TextInputType.number,
-                          decoration: InputDecoration(labelText: "Page".tl),
+                          decoration: InputDecoration(labelText: t.page),
                           inputFormatters: <TextInputFormatter>[
                             FilteringTextInputFormatter.digitsOnly,
                           ],
@@ -301,7 +301,7 @@ class AnimeListState extends State<AnimeList>
                               Navigator.of(context).pop();
                               var page = int.tryParse(value);
                               if (page == null) {
-                                context.showMessage(message: "Invalid page".tl);
+                                context.showMessage(message: t.invalidPage);
                               } else {
                                 if (page > 0 &&
                                     (_maxPage == null || page <= _maxPage!)) {
@@ -310,13 +310,11 @@ class AnimeListState extends State<AnimeList>
                                     _page = page;
                                   });
                                 } else {
-                                  context.showMessage(
-                                    message: "Invalid page".tl,
-                                  );
+                                  context.showMessage(message: t.invalidPage);
                                 }
                               }
                             },
-                            child: Text("Apply".tl),
+                            child: Text(t.apply),
                           ),
                         ],
                       );
@@ -336,7 +334,10 @@ class AnimeListState extends State<AnimeList>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
-                    "Page @p / @m".tlParams({"p": _page, "m": _maxPage ?? '?'}),
+                    t.pagePM(
+                      p: _page.toString(),
+                      m: (_maxPage ?? '?').toString(),
+                    ),
                   ),
                 ),
               ),
@@ -345,7 +346,7 @@ class AnimeListState extends State<AnimeList>
             _buildAnimeButton(
               context: context,
               icon: Icons.chevron_right,
-              tooltip: "Next".tl,
+              tooltip: t.next,
               enabled: _page < (_maxPage ?? (_page + 1)),
               onPressed: _page < (_maxPage ?? (_page + 1))
                   ? () {
@@ -360,7 +361,7 @@ class AnimeListState extends State<AnimeList>
             _buildAnimeButton(
               context: context,
               icon: Icons.last_page,
-              tooltip: "Last".tl,
+              tooltip: t.last,
               enabled: _page < (_maxPage ?? (_page + 1)),
               onPressed: _page < (_maxPage ?? (_page + 1))
                   ? () {
@@ -423,7 +424,7 @@ class AnimeListState extends State<AnimeList>
 
   Future<void> _loadPage(int page) async {
     if (widget.loadPage == null && widget.loadNext == null) {
-      _error = "loadPage and loadNext can't be null at the same time";
+      _error = t.loadPageAndLoadNextCantBeNull;
       Future.microtask(() {
         setState(() {});
       });
@@ -455,7 +456,7 @@ class AnimeListState extends State<AnimeList>
           }
         } else {
           setState(() {
-            _error = res.errorMessage ?? "Unknown error".tl;
+            _error = res.errorMessage ?? t.unknownError;
           });
         }
       } else {
@@ -738,7 +739,7 @@ class AnimeListState extends State<AnimeList>
                         _error = null;
                       });
                     },
-                    child: Text("Retry".tl),
+                    child: Text(t.retry),
                   ),
                 ),
               ],

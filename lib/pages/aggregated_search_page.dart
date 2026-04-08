@@ -4,8 +4,8 @@ import "package:kostori/database/search_history.dart";
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import "package:kostori/foundation/app.dart";
 import "package:kostori/foundation/appdata.dart";
+import "package:kostori/i18n/strings.g.dart";
 import "package:kostori/pages/search_result_page.dart";
-import "package:kostori/utils/translations.dart";
 import "package:shimmer_animation/shimmer_animation.dart";
 
 class AggregatedSearchPage extends StatefulWidget {
@@ -115,7 +115,7 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
                       children: [
                         Icon(Icons.sort, size: 20),
                         const SizedBox(width: 6),
-                        Text(showOnlyNonEmpty ? "Result".tl : "All".tl),
+                        Text(showOnlyNonEmpty ? t.result : t.all),
                       ],
                     ),
                   ),
@@ -204,7 +204,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
         } else {
           if (!mounted) return;
           setState(() {
-            error = res.errorMessage ?? "Unknown error".tl;
+            error = res.errorMessage ?? t.unknownError;
             isLoading = false;
           });
           notify(false);
@@ -223,7 +223,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
         } else {
           if (!mounted) return;
           setState(() {
-            error = res.errorMessage ?? "Unknown error".tl;
+            error = res.errorMessage ?? t.unknownError;
             isLoading = false;
           });
           notify(false);
@@ -279,7 +279,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
   @override
   Widget build(BuildContext context) {
     if (error != null && error!.startsWith("CloudflareException")) {
-      error = "Cloudflare verification required".tl;
+      error = t.cloudflareVerificationRequired;
     }
     super.build(context);
     return InkWell(
@@ -336,7 +336,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          error ?? "No search results found".tl,
+                          error ?? t.noSearchResultsFound,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

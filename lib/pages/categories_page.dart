@@ -3,10 +3,10 @@ import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ranking_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});
@@ -78,23 +78,23 @@ class _CategoriesPageState extends State<CategoriesPage>
   }
 
   Widget buildEmpty() {
-    var msg = "No Category Pages".tl;
+    var msg = t.noCategoryPages;
     msg += '\n';
     VoidCallback onTap;
     if (AnimeSource.isEmpty) {
-      msg += "Please add some sources".tl;
+      msg += t.pleaseAddSomeSources;
       onTap = () {
         context.to(() => AnimeSourceSettings());
       };
     } else {
-      msg += "Please check your settings".tl;
+      msg += t.pleaseCheckYourSettings;
       onTap = addPage;
     }
     return NetworkError(
       message: msg,
       retry: onTap,
       withAppbar: false,
-      buttonText: "Manage".tl,
+      buttonText: t.manage,
     );
   }
 
@@ -122,7 +122,7 @@ class _CategoriesPageState extends State<CategoriesPage>
             }).toList(),
             actionButton: TabActionButton(
               icon: const Icon(Icons.add),
-              text: "Add".tl,
+              text: t.add,
               onPressed: addPage,
             ),
           ).paddingTop(context.padding.top),
@@ -174,11 +174,11 @@ class _CategoryPage extends StatelessWidget {
           child: Wrap(
             children: [
               if (data.enableRankingPage)
-                buildTag("Ranking".tl, () {
+                buildTag(t.ranking, () {
                   context.to(() => RankingPage(categoryKey: data.key));
                 }),
               for (var buttonData in data.buttons)
-                buildTag(buttonData.label.tl, buttonData.onTap),
+                buildTag(buttonData.label, buttonData.onTap),
             ],
           ),
         ),
@@ -210,7 +210,7 @@ class _CategoryPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 5, 10),
       child: Text(
-        title.tl,
+        title,
         style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
       ),
     );
@@ -222,7 +222,7 @@ class _CategoryPage extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            title.tl,
+            title,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
           ),
           const Spacer(),
@@ -318,7 +318,7 @@ class _CollapsibleCategoryState extends State<CollapsibleCategory> {
           color: context.colorScheme.onSurface,
         ),
         label: Text(
-          title.tl,
+          title,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
       ),
@@ -331,7 +331,7 @@ class _CollapsibleCategoryState extends State<CollapsibleCategory> {
       child: Row(
         children: [
           Text(
-            title.tl,
+            title,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
           ),
           const Spacer(),

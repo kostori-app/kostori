@@ -367,6 +367,7 @@ save: 儲存
 mirror: 鏡像
 result: 結果
 all: 全部
+cloudflareVerificationRequired: 需要 Cloudflare 驗證
 reloadConfigs: 重載配置
 invalidUrlConfig: 無效的 URL 設定
 inconsistentVersions: 版本不一致
@@ -459,6 +460,13 @@ audioOptionCompatibility: |-
 switchSuccessful: 切換成功
 switchFailed: 切換失敗
 remoteCast: 遠端投屏
+dlnaError: DLNA 異常
+startSearching: 開始搜尋
+searchingDevices: 正在搜尋設備…
+noDevicesFound: 未找到設備
+tryingToCast: 嘗試投屏至
+dlnaException: DLNA 異常
+startSearch: 搜尋
 copyLink: 複製連結
 
 # Super resolution settings
@@ -553,6 +561,9 @@ page: 頁碼
 pagePM: 第 ${p} / ${m} 頁
 first: 第一頁
 last: 最後一頁
+invalidPage: 無效頁碼
+unknownError: 未知錯誤
+loadPageAndLoadNextCantBeNull: loadPage and loadNext can't be null at the same time
 disableLengthLimitation: 停用長度限制
 updateLog: 更新日誌
 liked: 喜歡
@@ -686,6 +697,7 @@ videoRenderer: 影片渲染器
 videoSynchronizationMode: 影片同步模式
 enableNoProxyOverrides: 啟用無代理覆寫
 actor: 角色
+cv: CV
 dub: 配音
 chineseDub: 中配
 japaneseDub: 日配
@@ -1140,8 +1152,6 @@ noMoreEpisodes: 沒有更多集數可播放
 routeNotFound: 線路不存在
 loadingDuplicateEpisode: 載入重複集數
 getVideoUrlFailed: 取得影片連結異常
-startSearch: 開始搜尋
-dlnaError: DLNA 異常
 pleaseEnterEpisodeNumber: 請輸入集數
 pleaseEnterValidEpisodeNumber: 請輸入1-999之間的有效集數
 imageTitle: 標題
@@ -1271,3 +1281,65 @@ lanSyncProgress: 同步進度
 aggregationEntry: 聚合入口
 aiLabel: AI
 lanLabel: 區域網
+h264CRF: H.264 · CRF
+ffmpegNotFound: FFmpeg 未找到
+ffmpegNotFoundDesktop: 桌面端導出功能需要 FFmpeg，但未找到 FFmpeg 可執行檔。請在設定中配置 FFmpeg 路徑，或確保 FFmpeg 在系統 PATH 中。
+stillOpenAnyway: 仍要打開
+preparing: 準備中…
+downloadingPreviewClip: 正在下載預覽片段…
+loadingPlayer: 載入播放器…
+cancelExport: 取消導出?
+exportInProgress: 導出正在進行中，關閉將中斷導出。
+confirmClose: 確認關閉
+stopPreview: 停止預覽
+loadingPreview: 正在載入預覽…
+previewLoadFailed: 預覽載入失敗
+reloadPreviewClip: 重新載入預覽片段
+videoTimelineThumbnails: 影片時間軸縮圖
+startPoint: 起點
+endPoint: 終點
+jumpToStart: 跳到起點
+setStartPoint: 設定起點
+setEndPoint: 設定終點
+editStartPoint: 修改起點
+editEndPoint: 修改終點
+durationFormatHint: "支援格式: 90, 01:30, 1.5..."
+secondsAsNumber: 輸入純數字視為秒數
+exportSettings: 導出設定
+paletteColorsHint: 越少體積越小
+ditherHint: 畫質更好，體積稍大
+aspectRatioPresets: 寬高比快速預設
+hideCropBox: 隱藏裁剪框
+showCropBox: 顯示裁剪框（可拖曳）
+dragToSelectExportArea: 開啟後可透過拖曳選擇導出區域
+withAudio: 含音訊
+noAudio: 無音訊
+ditherOn: 抖動開
+ditherOff: 抖動關
+gifFormat: GIF
+apngFormat: APNG
+webpFormat: WebP
+browserCompatible: 瀏覽器相容性好
+smallestSize: 體積最小
+videoFormat: 影片格式
+encoding: 編碼中…
+downloadingVideoSegments: 正在下載影片分片…
+editCropBox: 編輯裁剪框
+noCategoryPages: 無分類頁面
+lanShowQrCode: 顯示 QR Code
+lanDeviceInfo: 裝置資訊
+lanDeviceDoesNotSupportQrPairing: 裝置不支援 QR Code 配對
+lanQrCodeFor: QR Code 用於
+fixedBitrateOptional: 固定位元率 (選填，將覆蓋 CRF)
+fixedBitrate: 固定位元率
+paletteColors: 調色盤顏色
+enableDither: 啟用抖動 (Dither)
+webpQuality: WebP 品質
+startPointMinus1s: 起點 -1s
+endPointMinus1s: 終點 -1s
+startPointMinus0_1s: 起點 -0.1s
+endPointMinus0_1s: 終點 -0.1s
+startPointPlus0_1s: 起點 +0.1s
+endPointPlus0_1s: 終點 +0.1s
+startPointPlus1s: 起點 +1s
+endPointPlus1s: 終點 +1s

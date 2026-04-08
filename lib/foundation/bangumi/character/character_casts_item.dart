@@ -1,6 +1,6 @@
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/character/character_item.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 
 class CharacterCastsItem {
   final List<CharacterCast> casts;
@@ -102,19 +102,19 @@ extension CastRelationTypeExtension on CastRelationType {
   String get nameStr {
     switch (this) {
       case CastRelationType.cv:
-        return "CV";
+        return t.cv;
       case CastRelationType.actor:
-        return "Actor".tl;
+        return t.actor;
       case CastRelationType.dub:
-        return "Dub".tl;
+        return t.dub;
       case CastRelationType.chineseDub:
-        return "Chinese Dub".tl;
+        return t.chineseDub;
       case CastRelationType.japaneseDub:
-        return "Japanese Dub".tl;
+        return t.japaneseDub;
       case CastRelationType.englishDub:
-        return "English Dub".tl;
+        return t.englishDub;
       case CastRelationType.koreanDub:
-        return "Korean Dub".tl;
+        return t.koreanDub;
     }
   }
 }

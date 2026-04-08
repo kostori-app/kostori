@@ -367,6 +367,7 @@ save: 保存
 mirror: 镜像
 result: 结果
 all: 全部
+cloudflareVerificationRequired: 需要 Cloudflare 验证
 reloadConfigs: 重新加载配置
 invalidUrlConfig: 无效的 URL 配置
 inconsistentVersions: 版本不一致
@@ -455,6 +456,12 @@ audioOptionCompatibility: "音频: 兼容模式"
 switchSuccessful: 切换成功
 switchFailed: 切换失败
 remoteCast: 远程投屏
+dlnaError: DLNA 异常
+startSearching: 开始搜索
+searchingDevices: 正在搜索设备…
+noDevicesFound: 未找到设备
+tryingToCast: 尝试投屏至
+dlnaException: DLNA 异常
 copyLink: 复制链接
 
 # Super resolution settings
@@ -549,6 +556,8 @@ page: 页
 pagePM: 第 ${p} / ${m} 页
 first: 首页
 last: 末页
+invalidPage: 无效页码
+unknownError: 未知错误
 disableLengthLimitation: 禁用长度限制
 updateLog: 更新日志
 liked: 喜欢
@@ -682,6 +691,7 @@ videoRenderer: 视频渲染器
 videoSynchronizationMode: 视频同步模式
 enableNoProxyOverrides: 启用无代理覆写
 actor: 演员
+cv: CV
 dub: 配音
 chineseDub: 中配
 japaneseDub: 日配
@@ -1075,6 +1085,7 @@ newPersona: 新建角色配置
 notConfigured: 未配置
 enabled: 已启用
 required: 必填
+noCategoryPages: 无分类页面
 linkFormatErrorCannotParseAnimeInfo: 链接格式错误，无法解析番剧信息
 sourceNotFoundPleaseConfirmSourceInstalled: 未找到数据源，请确认数据源已安装
 linkFormatErrorCannotParseBangumiId: 链接格式错误，无法解析 Bangumi ID
@@ -1137,7 +1148,6 @@ routeNotFound: 线路不存在
 loadingDuplicateEpisode: 加载重复集数
 getVideoUrlFailed: 获取视频链接异常
 startSearch: 开始搜索
-dlnaError: DLNA 异常
 pleaseEnterEpisodeNumber: 请输入集数
 pleaseEnterValidEpisodeNumber: 请输入1-999之间的有效集数
 imageTitle: 标题
@@ -1267,3 +1277,66 @@ lanSyncProgress: 同步进度
 aggregationEntry: 聚合入口
 aiLabel: AI
 lanLabel: 局域网
+
+ffmpegNotFound: FFmpeg 未找到
+ffmpegNotFoundDesktop: 桌面端导出功能需要 FFmpeg，但未找到 FFmpeg 可执行文件。请在设置中配置 FFmpeg 路径，或确保 FFmpeg 在系统 PATH 中。
+stillOpenAnyway: 仍要打开
+preparing: 准备中…
+downloadingPreviewClip: 正在下载预览片段…
+loadingPlayer: 加载播放器…
+cancelExport: 取消导出?
+exportInProgress: 导出正在进行中，关闭将中断导出。
+confirmClose: 确认关闭
+stopPreview: 停止预览
+loadingPreview: 正在加载预览…
+previewLoadFailed: 预览加载失败
+reloadPreviewClip: 重新加载预览片段
+startPoint: 起点
+endPoint: 终点
+jumpToStart: 跳到起点
+setStartPoint: 设置起点
+setEndPoint: 设置终点
+editStartPoint: 修改起点
+editEndPoint: 修改终点
+durationFormatHint: "支持格式: 90, 01:30, 1.5..."
+secondsAsNumber: 输入纯数字视为秒数
+exportSettings: 导出设置
+h264CRF: H.264 · CRF
+withAudio: 含音频
+noAudio: 无音频
+ditherOn: 抖动开
+ditherOff: 抖动关
+gifFormat: GIF
+apngFormat: APNG
+webpFormat: WebP
+browserCompatible: 浏览器兼容好
+smallestSize: 体积最小
+videoFormat: 视频格式
+encoding: 编码中…
+downloadingVideoSegments: 下载视频分片…
+editCropBox: 编辑裁剪框
+loadPageAndLoadNextCantBeNull: loadPage 和 loadNext 不能同时为空
+lanShowQrCode: 显示二维码
+lanDeviceInfo: 设备信息
+lanDeviceDoesNotSupportQrPairing: 设备不支持二维码配对
+lanQrCodeFor: 二维码用于
+videoTimelineThumbnails: 视频时间轴缩略图
+fixedBitrateOptional: 固定码率 (可选，将覆盖 CRF)
+fixedBitrate: 固定码率
+paletteColors: 调色板颜色
+paletteColorsHint: 颜色越少 = 体积越小
+enableDither: 启用抖动 (Dither)
+ditherHint: 质量更好，体积略微增大
+webpQuality: WebP 质量
+aspectRatioPresets: 画面比例预设
+hideCropBox: 隐藏裁剪框
+showCropBox: 显示裁剪框 (可拖动)
+dragToSelectExportArea: 开启后，拖动以选择导出区域
+startPointMinus1s: 起点 -1s
+endPointMinus1s: 终点 -1s
+startPointMinus0_1s: 起点 -0.1s
+endPointMinus0_1s: 终点 -0.1s
+startPointPlus0_1s: 起点 +0.1s
+endPointPlus0_1s: 终点 +0.1s
+startPointPlus1s: 起点 +1s
+endPointPlus1s: 终点 +1s

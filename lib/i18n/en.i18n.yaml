@@ -378,6 +378,7 @@ save: Save
 mirror: Mirror
 result: Result
 all: All
+cloudflareVerificationRequired: Cloudflare verification required
 reloadConfigs: Reload Configs
 invalidUrlConfig: Invalid url config
 inconsistentVersions: Inconsistent versions
@@ -461,6 +462,12 @@ discussion: Discussion
 logs: Logs
 playerDetails: Player Details
 status: Status
+dlnaError: DLNA Error
+startSearching: Start searching
+searchingDevices: Searching for devices…
+noDevicesFound: No devices found
+tryingToCast: Trying to cast to
+dlnaException: DLNA exception
 audioOptionLowLatency: |-
   Audio Option: 
    Low Latency
@@ -553,6 +560,9 @@ page: Page
 pagePM: Page ${p} / ${m}
 first: First
 last: Last
+invalidPage: Invalid page
+unknownError: Unknown error
+loadPageAndLoadNextCantBeNull: loadPage and loadNext can't be null at the same time
 disableLengthLimitation: Disable Length Limitation
 updateLog: Update log
 liked: Liked
@@ -686,6 +696,7 @@ videoRenderer: Video renderer
 videoSynchronizationMode: Video synchronization mode
 enableNoProxyOverrides: Enable No Proxy Overrides
 actor: Actor
+cv: CV
 dub: Dub
 chineseDub: Chinese Dub
 japaneseDub: Japanese Dub
@@ -1072,8 +1083,6 @@ stickers: Stickers
 noStickersYet: No stickers yet
 removeSticker: Remove sticker
 noSearchSources: No search sources
-pleaseAddSomeSources: Please add some sources
-manage: Manage
 importPersona: Import Persona
 newPersona: New Persona
 notConfigured: Not configured
@@ -1141,7 +1150,6 @@ routeNotFound: Route not found
 loadingDuplicateEpisode: Loading duplicate episode
 getVideoUrlFailed: Failed to get video URL
 startSearch: Start search
-dlnaError: DLNA error
 pleaseEnterEpisodeNumber: Please enter episode number
 pleaseEnterValidEpisodeNumber: Please enter a valid episode number between 1-999
 imageTitle: Title
@@ -1273,3 +1281,63 @@ lanSyncProgress: Sync Progress
 aggregationEntry: Aggregation Entry
 aiLabel: AI
 lanLabel: LAN
+h264CRF: H.264 · CRF
+ffmpegNotFound: FFmpeg Not Found
+ffmpegNotFoundDesktop: Desktop export requires FFmpeg, but no FFmpeg executable found. Please configure FFmpeg path in settings or ensure FFmpeg is in system PATH.
+stillOpenAnyway: Still Open
+preparing: Preparing…
+downloadingPreviewClip: Downloading preview clip…
+loadingPlayer: Loading player…
+cancelExport: Cancel Export?
+exportInProgress: Export in progress, closing will interrupt export.
+confirmClose: Confirm Close
+stopPreview: Stop Preview
+loadingPreview: Loading preview…
+previewLoadFailed: Preview load failed
+reloadPreviewClip: Reload preview clip
+videoTimelineThumbnails: Video timeline thumbnails
+startPoint: Start
+endPoint: End
+jumpToStart: Jump to start
+setStartPoint: Set Start
+setEndPoint: Set End
+editStartPoint: Edit Start
+editEndPoint: Edit End
+durationFormatHint: "Supported formats: 90, 01:30, 1.5..."
+secondsAsNumber: Pure numbers are treated as seconds
+exportSettings: Export Settings
+fixedBitrateOptional: Fixed bitrate (optional, overrides CRF)
+fixedBitrate: Fixed bitrate
+paletteColors: Palette colors
+paletteColorsHint: Fewer colors = smaller size
+enableDither: Enable Dither
+ditherHint: Better quality, slightly larger size
+webpQuality: WebP Quality
+aspectRatioPresets: Aspect Ratio Presets
+hideCropBox: Hide Crop Box
+showCropBox: Show Crop Box (draggable)
+dragToSelectExportArea: After enabling, drag to select export area
+editCropBox: Edit crop box
+startPointMinus1s: Start −1s
+endPointMinus1s: End −1s
+startPointMinus0_1s: Start −0.1s
+endPointMinus0_1s: End −0.1s
+startPointPlus0_1s: Start +0.1s
+endPointPlus0_1s: End +0.1s
+startPointPlus1s: Start +1s
+endPointPlus1s: End +1s
+withAudio: With Audio
+noAudio: No Audio
+ditherOn: Dither On
+ditherOff: Dither Off
+gifFormat: GIF
+apngFormat: APNG
+webpFormat: WebP
+browserCompatible: Browser compatible
+smallestSize: Smallest size
+videoFormat: Video Format
+encoding: Encoding…
+downloadingVideoSegments: Downloading video segments…
+manage: Manage
+pleaseAddSomeSources: Please add some sources
+noCategoryPages: No Category Pages

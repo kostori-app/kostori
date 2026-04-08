@@ -10,7 +10,7 @@ import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
-import 'package:kostori/utils/translations.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:path/path.dart' as p;
 
 part 'history.g.dart';
@@ -130,15 +130,13 @@ class History implements Anime {
       return '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
     }
 
-    var res = '${type.animeSource?.name ?? "Unknown"} | ';
+    var res = '${type.animeSource?.name ?? t.unknown} | ';
     if ((lastWatchEpisode ?? 0) >= 1) {
-      res += "Currently seen @ep".tlParams({"ep": lastWatchEpisode ?? 0});
+      res += t.currentlySeenEp(ep: (lastWatchEpisode ?? 0).toString());
     }
     if ((lastWatchTime ?? 0) >= 1) {
       if ((lastWatchEpisode ?? 0) >= 1) res += " | ";
-      res += "lastWatchTime @time".tlParams({
-        "time": formatMs(lastWatchTime ?? 0),
-      });
+      res += t.lastWatchTimeTime(time: formatMs(lastWatchTime ?? 0));
     }
     return res;
   }
@@ -199,15 +197,15 @@ class HistoryGroup {
 
 extension HistoryTimeGroupExt on HistoryTimeGroup {
   String get title => switch (this) {
-    HistoryTimeGroup.today => "Today".tl,
-    HistoryTimeGroup.yesterday => "Yesterday".tl,
-    HistoryTimeGroup.last3Days => "Last 3 Days".tl,
-    HistoryTimeGroup.last7Days => "Last 7 Days".tl,
-    HistoryTimeGroup.last30Days => "Last 30 Days".tl,
-    HistoryTimeGroup.last3Months => "Last 3 Months".tl,
-    HistoryTimeGroup.last6Months => "Last 6 Months".tl,
-    HistoryTimeGroup.thisYear => "This Year".tl,
-    HistoryTimeGroup.older => "Older".tl,
+    HistoryTimeGroup.today => t.today,
+    HistoryTimeGroup.yesterday => t.yesterday,
+    HistoryTimeGroup.last3Days => t.last3Days,
+    HistoryTimeGroup.last7Days => t.last7Days,
+    HistoryTimeGroup.last30Days => t.last30Days,
+    HistoryTimeGroup.last3Months => t.last3Months,
+    HistoryTimeGroup.last6Months => t.last6Months,
+    HistoryTimeGroup.thisYear => t.thisYear,
+    HistoryTimeGroup.older => t.older,
   };
 
   int get order => switch (this) {
