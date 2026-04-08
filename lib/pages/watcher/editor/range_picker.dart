@@ -99,7 +99,12 @@ class _RangeOverlayState extends State<_RangeOverlay> {
       children: [
         CustomPaint(
           size: widget.size,
-          painter: _RangeMaskPainter(startPx, endPx, widget.size),
+          painter: _RangeMaskPainter(
+            startPx,
+            endPx,
+            widget.size,
+            Theme.of(context).colorScheme.primary,
+          ),
         ),
 
         Positioned(
@@ -281,11 +286,13 @@ class _RangeMaskPainter extends CustomPainter {
   final double startPx;
   final double endPx;
   final Size size;
+  final Color color;
 
-  _RangeMaskPainter(this.startPx, this.endPx, this.size);
+  _RangeMaskPainter(this.startPx, this.endPx, this.size, this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 绘制半透明遮罩
     final maskPaint = Paint()..color = Colors.black.withAlpha(140);
     canvas.drawRect(Rect.fromLTWH(0, 0, startPx, size.height), maskPaint);
     canvas.drawRect(
@@ -294,13 +301,17 @@ class _RangeMaskPainter extends CustomPainter {
     );
 
     final borderPaint = Paint()
-      ..color = Colors.yellow
+      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0;
+
     canvas.drawRect(Rect.fromLTRB(startPx, 0, endPx, size.height), borderPaint);
   }
 
   @override
   bool shouldRepaint(_RangeMaskPainter old) =>
-      old.startPx != startPx || old.endPx != endPx || old.size != size;
+      old.startPx != startPx ||
+      old.endPx != endPx ||
+      old.size != size ||
+      old.color != color; // 别忘了颜色变化也要重绘
 }
