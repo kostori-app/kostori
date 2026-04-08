@@ -55,13 +55,10 @@ class AnimeListState extends State<AnimeList>
   final Map<int, List<Anime>> _data = {};
 
   int _page = 1;
-
+  int _generation = 0;
   String? _error;
 
   final Map<int, bool> _loading = {};
-
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
 
   String? _nextUrl;
 
@@ -79,17 +76,6 @@ class AnimeListState extends State<AnimeList>
     'loading': _loading,
     'nextUrl': _nextUrl,
   };
-
-  void onScroll() {
-    final shouldShow = scrollController.offset > 50;
-    if (shouldShow && !showFB) {
-      showFB = true;
-      _controller.forward();
-    } else if (!shouldShow && showFB) {
-      showFB = false;
-      _controller.reverse();
-    }
-  }
 
   void restoreState(Map<String, dynamic>? state) {
     if (state == null || !enablePageStorage) {
@@ -122,6 +108,7 @@ class AnimeListState extends State<AnimeList>
   }
 
   void refresh() {
+    _generation++;
     _data.clear();
     _page = 1;
     _maxPage = null;
@@ -133,24 +120,8 @@ class AnimeListState extends State<AnimeList>
   }
 
   @override
-  void initState() {
-    scrollController.addListener(onScroll);
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
-    super.initState();
-  }
-
-  @override
   void dispose() {
-    scrollController.removeListener(onScroll);
     scrollController.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
@@ -460,11 +431,14 @@ class AnimeListState extends State<AnimeList>
     if (_data[page] != null || _loading[page] == true) {
       return;
     }
+
+    final gen = _generation;
+
     _loading[page] = true;
     try {
       if (widget.loadPage != null) {
         var res = await widget.loadPage!(page);
-        if (!mounted) return;
+        if (!mounted || gen != _generation) return;
         if (res.success) {
           if (res.data.isEmpty) {
             setState(() {
@@ -487,13 +461,14 @@ class AnimeListState extends State<AnimeList>
       } else {
         try {
           while (_data[page] == null) {
+            if (gen != _generation) return;
             await _fetchNext();
           }
-          if (mounted) {
+          if (mounted && gen == _generation) {
             setState(() {});
           }
         } catch (e) {
-          if (mounted) {
+          if (mounted && gen == _generation) {
             setState(() {
               _error = e.toString();
             });
@@ -501,8 +476,8 @@ class AnimeListState extends State<AnimeList>
         }
       }
     } finally {
-      _loading[page] = false;
-      storeState();
+      if (gen == _generation) _loading[page] = false;
+      if (mounted) storeState();
     }
   }
 
@@ -527,72 +502,57 @@ class AnimeListState extends State<AnimeList>
               : buildContinuousMode(context),
         ),
         Positioned(
-          bottom: 30,
+          bottom: 15,
           right: 10,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: IgnorePointer(
-              ignoring: !showFB,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 20, right: 0),
-                child: GridSpeedDial(
-                  icon: Icons.menu,
-                  activeIcon: Icons.close,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  spacing: 6,
-                  spaceBetweenChildren: 4,
-                  direction: SpeedDialDirection.up,
-                  childPadding: const EdgeInsets.all(6),
-                  childrens: [
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.refresh),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: refresh,
-                      ),
-                    ],
-                    [
-                      SpeedDialChild(
-                        child: const Icon(Icons.vertical_align_top),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: scrollToTop,
-                      ),
-                    ],
-                    [
-                      SpeedDialChild(
-                        child: type == 'paging'
-                            ? Icon(Icons.view_cozy_outlined)
-                            : Icon(Icons.menu),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimaryContainer,
-                        onTap: () {
-                          appdata.settings['animeListDisplayMode'] =
-                              type == 'paging' ? 'continuous' : 'paging';
-                          appdata.saveData();
-                          refresh;
-                          setState(() {});
-                        },
-                      ),
-                    ],
-                  ],
+          child: FloatingMenu(
+            controller: scrollController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: refresh,
                 ),
-              ),
-            ),
+              ],
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: scrollToTop,
+                ),
+              ],
+              [
+                SpeedDialChild(
+                  child: type == 'paging'
+                      ? Icon(Icons.view_cozy_outlined)
+                      : Icon(Icons.menu),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onPrimaryContainer,
+                  onTap: () {
+                    appdata.settings['animeListDisplayMode'] = type == 'paging'
+                        ? 'continuous'
+                        : 'paging';
+                    appdata.saveData();
+                    refresh;
+                    setState(() {});
+                  },
+                ),
+              ],
+            ],
           ),
         ),
       ],
