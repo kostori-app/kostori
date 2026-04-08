@@ -153,27 +153,21 @@ class _HlsDownloader {
         return null;
       }
 
-      final headerLines = <String>[];
-      bool headerDone = false;
-      for (final line in playlistLines) {
-        final l = line.trim();
-        if (!headerDone && l.isNotEmpty && !l.startsWith('#')) {
-          headerDone = true;
-        }
-        if (!headerDone) headerLines.add(line);
-      }
-
-      final localLines = <String>[...headerLines];
+      final mergedPath = '${segDir.path}/merged.ts';
+      final mergedFile = File(mergedPath);
+      final sink = mergedFile.openWrite();
       for (int i = 0; i < needed.length; i++) {
-        final durSec = (needed[i].durationMs / 1000.0).toStringAsFixed(3);
-        localLines.add('#EXTINF:$durSec,');
-        localLines.add('${segDir.path}/seg_${i.toString().padLeft(6, '0')}.ts');
+        final tsPath = '${segDir.path}/seg_${i.toString().padLeft(6, '0')}.ts';
+        final tsFile = File(tsPath);
+        if (await tsFile.exists()) {
+          final data = await tsFile.readAsBytes();
+          sink.add(data);
+          await tsFile.delete();
+        }
       }
-      localLines.add('#EXT-X-ENDLIST');
+      await sink.close();
 
-      final localM3u8 = '${segDir.path}/local.m3u8';
-      await File(localM3u8).writeAsString(localLines.join('\n'));
-      return localM3u8;
+      return mergedPath;
     } catch (e, st) {
       Log.error('HlsDownloader', '$e\n$st');
       return null;

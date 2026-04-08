@@ -1,11 +1,16 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
+import 'dart:io' as io;
 import 'dart:math' as math;
 import 'dart:math';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart'
+    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart';
+import 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart'
+    if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
@@ -198,10 +203,13 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   bool _atScrollTop = true;
   Directory? _hlsTempDir;
 
-  // 用于单独刷新进度条
   final ValueNotifier<Duration> _positionNotifier = ValueNotifier(
     Duration.zero,
   );
+
+  // 缩略图相关
+  bool _thumbnailsLoading = false;
+  List<String> _thumbnailPaths = [];
 
   @override
   void initState() {
@@ -486,6 +494,9 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _previewLoading = false;
         _previewStatus = '';
       });
+
+      // 初始化完成后生成缩略图
+      _generateThumbnails();
     } catch (e, st) {
       Log.error('PreviewPlayer', '$e\n$st');
       if (mounted) {
@@ -495,6 +506,215 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           _previewStatus = '';
         });
       }
+    }
+  }
+
+  Future<String?> _findFfmpeg() async {
+    final customPath = appdata.settings['ffmpegPath'] as String?;
+    if (customPath != null && customPath.isNotEmpty) {
+      if (await File(customPath).exists()) return customPath;
+    }
+
+    try {
+      final result = Platform.isWindows
+          ? await Process.run('where', ['ffmpeg.exe'])
+          : await Process.run('which', ['ffmpeg']);
+      if (result.exitCode == 0) {
+        return result.stdout.toString().trim().split('\n').first.trim();
+      }
+    } catch (_) {}
+
+    for (final p in [
+      'C:\\ffmpeg\\bin\\ffmpeg.exe',
+      'C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe',
+      'C:\\Program Files (x86)\\ffmpeg\\bin\\ffmpeg.exe',
+      '/usr/bin/ffmpeg',
+      '/usr/local/bin/ffmpeg',
+    ]) {
+      if (await File(p).exists()) return p;
+    }
+    return null;
+  }
+
+  Future<void> _generateThumbnails() async {
+    Log.info(
+      'Thumbnail',
+      'Start generating, _videoDuration=${_videoDuration.inSeconds}s',
+    );
+    if (_videoDuration == Duration.zero) {
+      Log.info('Thumbnail', 'Duration is zero, skip');
+      return;
+    }
+
+    // 获取本地视频文件路径（合并后的 ts 文件或 mp4）
+    final localDir = _previewHlsTempDir?.path;
+    Log.info('Thumbnail', 'Local video dir: $localDir');
+
+    // 先检查本地文件
+    String? mediaPath;
+    if (localDir != null) {
+      final mediaDir = Directory(localDir);
+      if (await mediaDir.exists()) {
+        final files = mediaDir.listSync();
+
+        final mp4Files = files
+            .where((f) => f.path.toLowerCase().endsWith('.mp4'))
+            .toList();
+        if (mp4Files.isNotEmpty) {
+          mediaPath = mp4Files.first.path;
+          Log.info('Thumbnail', 'Found mp4: $mediaPath');
+        } else {
+          final mergedTs = files
+              .where((f) => f.path.toLowerCase().endsWith('merged.ts'))
+              .toList();
+          if (mergedTs.isNotEmpty) {
+            mediaPath = mergedTs.first.path;
+            Log.info('Thumbnail', 'Found merged.ts: $mediaPath');
+          }
+        }
+      }
+    }
+
+    // 如果没有本地文件，检查是否需要从网络提取（针对非 HLS 视频）
+    if (mediaPath == null) {
+      final isHls = _HlsDownloader._isHls(widget.videoUrl);
+      if (!isHls) {
+        // 非 HLS 视频，可以使用原始 URL 进行缩略图提取
+        mediaPath = widget.videoUrl;
+        Log.info(
+          'Thumbnail',
+          'Using original URL for non-HLS video: $mediaPath',
+        );
+      } else {
+        Log.info('Thumbnail', 'No local file and is HLS, skip');
+        if (mounted) setState(() => _thumbnailsLoading = false);
+        return;
+      }
+    }
+
+    for (final path in _thumbnailPaths) {
+      try {
+        await File(path).delete();
+      } catch (_) {}
+    }
+
+    setState(() {
+      _thumbnailsLoading = true;
+      _thumbnailPaths = [];
+    });
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final thumbDir = Directory(
+        '${tempDir.path}/thumbnails_${DateTime.now().millisecondsSinceEpoch}',
+      );
+      await thumbDir.create(recursive: true);
+
+      final totalSeconds = _videoDuration.inSeconds;
+      const thumbnailCount = 10;
+      final intervalSeconds = (totalSeconds / thumbnailCount).floor();
+      Log.info(
+        'Thumbnail',
+        'Total $totalSeconds seconds, interval $intervalSeconds seconds',
+      );
+
+      if (intervalSeconds < 1) {
+        Log.info('Thumbnail', 'Interval too small, skip');
+        if (mounted) setState(() => _thumbnailsLoading = false);
+        return;
+      }
+
+      final safeInputUrl = mediaPath.replaceAll('\\', '/');
+      final List<String> paths = [];
+
+      final bool isDesktop =
+          Platform.isWindows || Platform.isLinux || Platform.isMacOS;
+      Log.info('Thumbnail', 'Is desktop: $isDesktop');
+
+      final String? ffmpegPath = isDesktop ? await _findFfmpeg() : null;
+      Log.info('Thumbnail', 'FFmpeg path: $ffmpegPath');
+
+      if (isDesktop && ffmpegPath == null) {
+        Log.info('Thumbnail', 'FFmpeg not found on desktop, skip');
+        if (mounted) setState(() => _thumbnailsLoading = false);
+        return;
+      }
+
+      for (int i = 1; i < thumbnailCount; i++) {
+        final timeSec = i * intervalSeconds;
+        final outputPath = '${thumbDir.path}/thumb_$i.jpg';
+
+        // 构建参数列表，避免空格路径问题
+        final args = [
+          '-y',
+          '-ss',
+          '$timeSec',
+          '-i',
+          safeInputUrl,
+          '-vframes',
+          '1',
+          '-q:v',
+          '2',
+          '-vf',
+          'scale=120:-1',
+          outputPath,
+        ];
+
+        try {
+          Log.info('Thumbnail', 'Processing frame $i at $timeSec sec');
+          if (isDesktop) {
+            Log.info(
+              'Thumbnail',
+              'Running FFmpeg: $ffmpegPath with args: $args',
+            );
+            final process = await io.Process.start(ffmpegPath!, args);
+            final stdoutBuffer = StringBuffer();
+            final stderrBuffer = StringBuffer();
+
+            process.stdout.transform(const io.SystemEncoding().decoder).listen((
+              data,
+            ) {
+              stdoutBuffer.write(data);
+            });
+            process.stderr.transform(const io.SystemEncoding().decoder).listen((
+              data,
+            ) {
+              stderrBuffer.write(data);
+            });
+
+            final exitCode = await process.exitCode;
+            Log.info('Thumbnail', 'FFmpeg stdout: $stdoutBuffer');
+            Log.info('Thumbnail', 'FFmpeg stderr: $stderrBuffer');
+            Log.info('Thumbnail', 'FFmpeg exited with code: $exitCode');
+            if (exitCode == 0 && await File(outputPath).exists()) {
+              paths.add(outputPath);
+              Log.info('Thumbnail', 'Frame $i saved: $outputPath');
+            }
+          } else {
+            // 移动端：拼成字符串传给 FFmpegKit（内部已处理）
+            final cmd = args.map((a) => a.contains(' ') ? '"$a"' : a).join(' ');
+            Log.info('Thumbnail', 'Running FFmpegKit: $cmd');
+            final session = await FFmpegKit.execute(cmd);
+            final returnCode = await session.getReturnCode();
+            if (ReturnCode.isSuccess(returnCode) &&
+                await File(outputPath).exists()) {
+              paths.add(outputPath);
+            }
+          }
+        } catch (e) {
+          Log.error('Thumbnail', 'Frame $i failed: $e');
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _thumbnailPaths = paths;
+          _thumbnailsLoading = false;
+        });
+      }
+    } catch (e) {
+      Log.error('Thumbnail', 'Generate failed: $e');
+      if (mounted) setState(() => _thumbnailsLoading = false);
     }
   }
 
@@ -627,12 +847,40 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     String exportUrl = widget.videoUrl;
     final exportHeaders = Map<String, String>.from(widget.httpHeaders ?? {});
     final proxyUrl = await getProxy();
+    final localDir = _previewHlsTempDir?.path;
+    bool useLocalFile = false;
+
+    if (localDir != null) {
+      final mediaDir = Directory(localDir);
+      if (await mediaDir.exists()) {
+        final files = mediaDir.listSync();
+
+        final mp4Files = files
+            .where((f) => f.path.toLowerCase().endsWith('.mp4'))
+            .toList();
+        if (mp4Files.isNotEmpty) {
+          exportUrl = mp4Files.first.path;
+          useLocalFile = true;
+          Log.info('Export', 'Using local mp4 file: $exportUrl');
+        } else {
+          final mergedTs = files
+              .where((f) => f.path.toLowerCase().endsWith('merged.ts'))
+              .toList();
+          if (mergedTs.isNotEmpty) {
+            exportUrl = mergedTs.first.path;
+            useLocalFile = true;
+            Log.info('Export', 'Using local merged file: $exportUrl');
+          }
+        }
+      }
+    }
 
     try {
       final bool isMobile = Platform.isAndroid || Platform.isIOS;
-      final bool doPreDownload =
-          _HlsDownloader._isHls(exportUrl) &&
-          (_format == ExportFormat.mp4 || isMobile);
+      final bool doPreDownload = useLocalFile
+          ? false
+          : _HlsDownloader._isHls(exportUrl) &&
+                (_format == ExportFormat.mp4 || isMobile);
 
       if (doPreDownload) {
         setState(() => _exportStatus = '下载视频分片…');
@@ -1216,18 +1464,47 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     _endTime = end;
                   });
                 },
-                timelineThumbnails: Container(
-                  color: Colors.grey[800],
-                  child: Center(
-                    child: Text(
-                      '视频时间轴缩略图',
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 10,
+                timelineThumbnails: _thumbnailsLoading
+                    ? const Center(
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white38,
+                          ),
+                        ),
+                      )
+                    : _thumbnailPaths.isEmpty
+                    ? Center(
+                        child: Text(
+                          '视频时间轴缩略图',
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10,
+                          ),
+                        ),
+                      )
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final itemWidth =
+                              constraints.maxWidth / _thumbnailPaths.length;
+                          return Row(
+                            children: _thumbnailPaths.map((path) {
+                              return SizedBox(
+                                width: itemWidth,
+                                height: 60,
+                                child: Image.file(
+                                  File(path),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) =>
+                                      Container(color: Colors.grey[800]),
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                ),
               ),
 
               const SizedBox(height: 12),
