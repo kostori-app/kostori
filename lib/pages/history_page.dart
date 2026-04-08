@@ -121,14 +121,27 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     });
   }
 
-  void _removeHistory(History anime) {
+  void _removeHistory(History anime) async {
+    if (mounted) {
+      setState(() {
+        animes.removeWhere((h) => h == anime);
+        if (multiSelectMode) {
+          selectedAnimes.remove(anime);
+          if (selectedAnimes.isEmpty) multiSelectMode = false;
+        }
+      });
+    }
+
     if (anime.sourceKey.startsWith("Unknown")) {
-      HistoryManager().remove(
+      await HistoryManager().remove(
         anime.id,
         AnimeType(int.parse(anime.sourceKey.split(':')[1])),
       );
     } else {
-      HistoryManager().remove(anime.id, AnimeType(anime.sourceKey.hashCode));
+      await HistoryManager().remove(
+        anime.id,
+        AnimeType(anime.sourceKey.hashCode),
+      );
     }
   }
 
