@@ -27,18 +27,19 @@ class FfmpegEncodeArgs {
   final int? cropY;
   final int? cropWidth;
   final int? cropHeight;
-
-  /// MP4: CRF value as string (e.g. "18", "23", "28").
-  /// WebP: quality 0-100 as string (e.g. "75").
-  /// GIF/APNG: unused.
   final String? quality;
-
-  /// Frame-rate for animated formats (GIF / APNG / WebP).
-  /// Ignored for MP4 (uses source fps).
   final int? fps;
-
-  /// Whether to include audio stream. MP4 only; ignored for image formats.
   final bool includeAudio;
+
+  /// MP4 固定码率 (kbps)。设置后忽略 [quality] (CRF)，改用 -b:v 模式。
+  /// 用于极低码率场景（e.g. 200 kbps）。
+  final int? videoBitrateKbps;
+
+  /// GIF 调色板最大颜色数 (2–256)。越少体积越小，质量越低。默认 128。
+  final int gifColors;
+
+  /// GIF 是否启用抖动 (dithering)。关闭后色块更明显但体积更小。
+  final bool gifDither;
 
   final void Function(double progress)? onProgress;
 
@@ -59,6 +60,9 @@ class FfmpegEncodeArgs {
     this.quality,
     this.fps,
     this.includeAudio = true,
+    this.videoBitrateKbps,
+    this.gifColors = 128,
+    this.gifDither = true,
     this.onProgress,
   });
 }
@@ -116,8 +120,6 @@ class FfmpegEncoder {
     Log.info('FfmpegEncoder', 'Encoding successful');
   }
 
-  // ── Windows ──────────────────────────────────────────────────────────────
-
   Future<void> _encodeWindows(String cmd) async {
     final ffmpegPath = await _findFfmpeg();
     if (ffmpegPath == null) {
@@ -128,7 +130,6 @@ class FfmpegEncoder {
     }
     Log.info('FfmpegEncoder', 'Using FFmpeg at: $ffmpegPath');
 
-    // Parse command string into argument list, stripping surrounding quotes
     final raw = cmd.split(' ').where((s) => s.isNotEmpty).toList();
     final processedArgs = raw.map((a) {
       if (a.startsWith('"') && a.endsWith('"')) {
@@ -171,8 +172,6 @@ class FfmpegEncoder {
     }
   }
 
-  // ── Android / iOS / other via ffmpeg_kit ─────────────────────────────────
-
   Future<void> _encodeMobile(String cmd) async {
     Log.info('FfmpegEncoder', 'Mobile FFmpeg command: $cmd');
 
@@ -191,7 +190,6 @@ class FfmpegEncoder {
       }
     });
 
-    // Use a Completer to wait for the session to complete
     final completer = Completer<void>();
     FFmpegSession? completedSession;
 
@@ -205,10 +203,7 @@ class FfmpegEncoder {
             completer.complete();
           }
         },
-        (log) {
-          // Log callback - uncomment for debugging
-          // Log.info('FfmpegEncoder', log.getMessage());
-        },
+        (log) {},
         (stats) {
           // Statistics callback
           final t = stats.getTime();
@@ -222,8 +217,7 @@ class FfmpegEncoder {
         },
       );
 
-      // Wait for the session to complete with a timeout
-      final timeout = Duration(seconds: 300); // 5 minutes max
+      final timeout = Duration(seconds: 300);
       await completer.future.timeout(
         timeout,
         onTimeout: () {
@@ -236,7 +230,6 @@ class FfmpegEncoder {
 
       args.onProgress?.call(1.0);
 
-      // Now get the results
       final returnCode = await completedSession!.getReturnCode();
       final output = await completedSession!.getOutput();
       final allLogs = await completedSession!.getAllLogsAsString();
@@ -270,8 +263,6 @@ class FfmpegEncoder {
     }
   }
 
-  // ── FFmpeg path discovery (Windows) ──────────────────────────────────────
-
   Future<String?> _findFfmpeg() async {
     final customPath = appdata.settings['ffmpegPath'] as String?;
     if (customPath != null && customPath.isNotEmpty) {
@@ -297,8 +288,6 @@ class FfmpegEncoder {
     return null;
   }
 
-  // ── Command builder ───────────────────────────────────────────────────────
-
   String _buildCommand({
     required String inputPath,
     required String outputPath,
@@ -307,11 +296,9 @@ class FfmpegEncoder {
   }) {
     final buf = StringBuffer();
 
-    // Seek BEFORE input for stream copy fast-seek
     buf.write('-ss $startSec ');
     buf.write('-t $durationSec ');
 
-    // Proxy only for network inputs
     if (args.proxyUrl != null &&
         args.proxyUrl!.isNotEmpty &&
         (args.inputUrl.startsWith('http://') ||
@@ -321,10 +308,8 @@ class FfmpegEncoder {
       buf.write('-http_proxy "$proxy" ');
     }
 
-    // Input
     buf.write('-i "$inputPath" ');
 
-    // HTTP headers only for network inputs
     if (args.headers.isNotEmpty &&
         (args.inputUrl.startsWith('http://') ||
             args.inputUrl.startsWith('https://'))) {
@@ -333,7 +318,6 @@ class FfmpegEncoder {
       }
     }
 
-    // ── Build shared filter chain: crop → scale ──────────────────────────
     final filterParts = <String>[];
 
     if (args.cropWidth != null && args.cropHeight != null) {
@@ -343,7 +327,6 @@ class FfmpegEncoder {
     }
 
     if (args.width != null || args.height != null) {
-      // -2 keeps aspect ratio AND ensures even dimension (required by H.264)
       final sw = args.width ?? -2;
       final sh = args.height ?? -2;
       filterParts.add('scale=$sw:$sh:flags=lanczos');
@@ -351,18 +334,21 @@ class FfmpegEncoder {
 
     final int effectiveFps = args.fps ?? 15;
 
-    // ── Per-format encoding ──────────────────────────────────────────────
     switch (args.outputFormat) {
       case 'mp4':
-        // quality field is used as CRF (18=high, 23=medium, 28=low)
-        final crf = args.quality ?? '23';
         if (filterParts.isNotEmpty) {
           buf.write('-vf "${filterParts.join(',')}" ');
         }
-        // Use libx264 for all platforms (min-gpl package includes x264)
         buf.write('-c:v libx264 ');
         buf.write('-preset fast ');
-        buf.write('-crf $crf ');
+        if (args.videoBitrateKbps != null) {
+          buf.write('-b:v ${args.videoBitrateKbps}k ');
+          buf.write('-maxrate ${(args.videoBitrateKbps! * 1.5).round()}k ');
+          buf.write('-bufsize ${args.videoBitrateKbps! * 2}k ');
+        } else {
+          final crf = args.quality ?? '23';
+          buf.write('-crf $crf ');
+        }
         if (args.includeAudio) {
           buf.write('-c:a aac -b:a 128k ');
         } else {
@@ -372,15 +358,18 @@ class FfmpegEncoder {
         break;
 
       case 'gif':
-        // fps first, then crop/scale
-        final gifFilter = ['fps=$effectiveFps', ...filterParts].join(',');
-        buf.write('-vf "$gifFilter" ');
-        buf.write('-gifflags +transdiff ');
+        final gifScale = ['fps=$effectiveFps', ...filterParts].join(',');
+        final maxColors = args.gifColors.clamp(2, 256);
+        final dither = args.gifDither ? 'sierra2_4a' : 'none';
+        buf.write(
+          '-vf "$gifScale,split[s0][s1];'
+          '[s0]palettegen=max_colors=$maxColors:reserve_transparent=0[p];'
+          '[s1][p]paletteuse=dither=$dither" ',
+        );
         buf.write('-loop 0 ');
         break;
 
       case 'apng':
-        // fps first, then crop/scale; NOTE: 'plays 0' = infinite loop for APNG
         final apngFilter = ['fps=$effectiveFps', ...filterParts].join(',');
         buf.write('-vf "$apngFilter" ');
         buf.write('-c:v apng ');
@@ -388,7 +377,6 @@ class FfmpegEncoder {
         break;
 
       case 'webp':
-        // quality field is 0-100 WebP quality
         final webpFilter = ['fps=$effectiveFps', ...filterParts].join(',');
         buf.write('-vf "$webpFilter" ');
         buf.write('-c:v libwebp_anim ');

@@ -24,7 +24,7 @@ import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
-import 'package:kostori/pages/watcher/video_clip_editor.dart';
+import 'package:kostori/pages/watcher/editor/video_clip_editor.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/shaders/shaders_controller.dart';
@@ -776,16 +776,13 @@ abstract class _PlayerController with Store {
     }
   }
 
-  /// Open video clip editor
   Future<void> openVideoClipEditor({required BuildContext context}) async {
-    // Pause video before opening editor
     await pause();
 
     if (!context.mounted) return;
 
     showVideoClipEditor(
       context: context,
-      player: player,
       videoUrl: playUrl.isNotEmpty ? playUrl : videoUrl,
       httpHeaders: videoHeaders,
       currentPosition: currentPosition,
