@@ -172,8 +172,9 @@ class _RangeOverlayState extends State<_RangeOverlay> {
                           milliseconds:
                               _VideoClipEditorPageState.maxExportDurationMs,
                         );
-                    if (_localStart < Duration.zero)
+                    if (_localStart < Duration.zero) {
                       _localStart = Duration.zero;
+                    }
                   }
                 } else {
                   _localStart = newStart;
@@ -259,7 +260,7 @@ class _RangeHandle extends StatelessWidget {
       child: Container(
         width: radius * 2,
         height: 66.0,
-        alignment: Alignment.topCenter,
+        alignment: Alignment.center,
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: Colors.red,

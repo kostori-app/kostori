@@ -20,6 +20,7 @@ import 'package:kostori/utils/ffmpeg_encoder.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:media_kit_video/media_kit_video_controls/src/controls/extensions/duration.dart';
 import 'package:path_provider/path_provider.dart';
 
 part 'crop.dart';
@@ -154,6 +155,7 @@ class VideoClipEditorPage extends StatefulWidget {
 class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   static const maxExportDurationMs = 60000;
   static const _previewWindowMs = 3 * 60 * 1000;
+  static bool _rangeInitialized = false;
 
   late Duration _startTime;
   late Duration _endTime;
@@ -199,12 +201,29 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   @override
   void initState() {
     super.initState();
+    _rangeInitialized = false;
     _startTime = widget.currentPosition;
-    _endTime = _startTime + const Duration(seconds: 10);
-    final maxEndTime =
-        _startTime + const Duration(milliseconds: maxExportDurationMs);
-    if (_endTime > maxEndTime) _endTime = maxEndTime;
+    _endTime = const Duration(seconds: 60);
     _initPreviewPlayer();
+  }
+
+  void _initRangeFromDuration(Duration totalDuration) {
+    DebugLog.info('_initRangeFromDuration.totalDuration', '$totalDuration');
+    final clipDuration = const Duration(seconds: 60);
+    var start = (totalDuration - clipDuration) ~/ 2;
+
+    if (start < Duration.zero) start = Duration.zero;
+
+    var end = start + clipDuration;
+
+    if (end > totalDuration) {
+      end = totalDuration;
+      start = end - clipDuration;
+      if (start < Duration.zero) start = Duration.zero;
+    }
+
+    _startTime = start;
+    _endTime = end;
   }
 
   @override
@@ -408,6 +427,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
             }
           });
         }
+        if (!_rangeInitialized && d != Duration.zero) {
+          _rangeInitialized = true;
+          _initRangeFromDuration(d);
+        }
       });
 
       final seekTarget = isHls && mediaUrl != widget.videoUrl
@@ -466,25 +489,25 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   }
 
   void _nudge({required bool isStart, required int deltaMs}) {
+    const int maxClipMs = 60000;
+    const int minClipMs = 100;
+    final int totalMs = _videoDuration.inMilliseconds;
+
     setState(() {
       if (isStart) {
-        _startTime = Duration(
-          milliseconds: (_startTime.inMilliseconds + deltaMs).clamp(
-            0,
-            _endTime.inMilliseconds - 100,
-          ),
-        );
+        int newStart = _startTime.inMilliseconds + deltaMs;
+        newStart = newStart.clamp(0, _endTime.inMilliseconds - minClipMs);
+        if (_endTime.inMilliseconds - newStart > maxClipMs) {
+          _endTime = Duration(milliseconds: newStart + maxClipMs);
+        }
+        _startTime = Duration(milliseconds: newStart);
       } else {
-        final maxEnd = [
-          _startTime.inMilliseconds + maxExportDurationMs,
-          _videoDuration.inMilliseconds,
-        ].reduce((a, b) => a < b ? a : b);
-        _endTime = Duration(
-          milliseconds: (_endTime.inMilliseconds + deltaMs).clamp(
-            _startTime.inMilliseconds + 100,
-            maxEnd,
-          ),
-        );
+        int newEnd = _endTime.inMilliseconds + deltaMs;
+        newEnd = newEnd.clamp(_startTime.inMilliseconds + minClipMs, totalMs);
+        if (newEnd - _startTime.inMilliseconds > maxClipMs) {
+          _startTime = Duration(milliseconds: newEnd - maxClipMs);
+        }
+        _endTime = Duration(milliseconds: newEnd);
       }
     });
   }
@@ -1220,13 +1243,17 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           onTap: () => _nudge(isStart: isStart, deltaMs: -100),
           minSize: btnMinSize,
         ),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4),
-          child: Text(
-            _fmt(time),
-            style: TextStyle(
-              fontSize: timeFontSize,
-              fontFeatures: const [FontFeature.tabularFigures()],
+        InkWell(
+          onTap: () => _showTimeEditDialog(isStart), // 点击弹出修改框
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4),
+            child: Text(
+              _fmt(time),
+              style: TextStyle(
+                fontSize: timeFontSize,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
         ),
@@ -1246,6 +1273,80 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         ),
       ],
     );
+  }
+
+  void _showTimeEditDialog(bool isStart) {
+    final TextEditingController controller = TextEditingController(
+      text: _fmt(isStart ? _startTime : _endTime),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => ContentDialog(
+        title: isStart ? '修改起点' : '修改终点',
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: '支持格式: 90, 01:30, 1.5...',
+            helperText: '输入纯数字视为秒数',
+          ),
+          onSubmitted: (_) => _handleSubmitted(isStart, controller.text),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => _handleSubmitted(isStart, controller.text),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleSubmitted(bool isStart, String value) {
+    final newDuration = _parseDuration(value);
+    if (newDuration != null) {
+      setState(() {
+        if (isStart) {
+          _startTime = newDuration.clamp(Duration.zero, _endTime);
+        } else {
+          _endTime = newDuration.clamp(_startTime, widget.duration);
+        }
+      });
+    }
+    App.pop();
+  }
+
+  Duration? _parseDuration(String input) {
+    if (input.isEmpty) return null;
+
+    final double? seconds = double.tryParse(input);
+    if (seconds != null) {
+      return Duration(milliseconds: (seconds * 1000).toInt());
+    }
+
+    final parts = input
+        .split(':')
+        .map((e) => double.tryParse(e) ?? 0.0)
+        .toList();
+
+    try {
+      if (parts.length == 2) {
+        return Duration(
+          minutes: parts[0].toInt(),
+          milliseconds: (parts[1] * 1000).toInt(),
+        );
+      } else if (parts.length >= 3) {
+        return Duration(
+          hours: parts[0].toInt(),
+          minutes: parts[1].toInt(),
+          milliseconds: (parts[2] * 1000).toInt(),
+        );
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
   }
 
   Widget _nudgeBtn({
