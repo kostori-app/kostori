@@ -286,7 +286,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     final screenWidth = MediaQuery.of(context).size.width;
     final topPadding = MediaQuery.of(context).padding.top;
     final isDesktop = screenWidth > 800;
-    final playerHeight = isDesktop ? screenWidth * 0.45 : screenWidth * 0.6;
+    final playerHeight = isDesktop ? screenWidth * 0.35 : screenWidth * 0.6;
 
     Widget widget = NestedScrollView(
       physics: const BouncingScrollPhysics(),
@@ -1043,7 +1043,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final screenWidth = MediaQuery.of(context).size.width;
-                      final crossAxisCount = screenWidth < 800 ? 3 : 4;
+                      final crossAxisCount = screenWidth < 800 ? 3 : 8;
                       return SliverGridAnimes(
                         animes: anime.recommend!,
                         isRecommend: true,
