@@ -292,7 +292,6 @@ class _RangeMaskPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // 绘制半透明遮罩
     final maskPaint = Paint()..color = Colors.black.withAlpha(140);
     canvas.drawRect(Rect.fromLTWH(0, 0, startPx, size.height), maskPaint);
     canvas.drawRect(
@@ -313,5 +312,5 @@ class _RangeMaskPainter extends CustomPainter {
       old.startPx != startPx ||
       old.endPx != endPx ||
       old.size != size ||
-      old.color != color; // 别忘了颜色变化也要重绘
+      old.color != color;
 }

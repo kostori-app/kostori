@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:math';
 
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -187,7 +188,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   String? _previewError;
   String _previewStatus = '';
   Duration _previewSeekTarget = Duration.zero;
-  Duration _previewStopTarget = Duration.zero;
   Directory? _previewHlsTempDir;
 
   bool _isPlaying = false;
@@ -197,6 +197,11 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   bool _exportCancelled = false;
   bool _atScrollTop = true;
   Directory? _hlsTempDir;
+
+  // 用于单独刷新进度条
+  final ValueNotifier<Duration> _positionNotifier = ValueNotifier(
+    Duration.zero,
+  );
 
   @override
   void initState() {
@@ -436,7 +441,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       final seekTarget = isHls && mediaUrl != widget.videoUrl
           ? Duration(milliseconds: _startTime.inMilliseconds - downloadStartMs)
           : _startTime;
-      final stopTarget = seekTarget + _clipDuration;
 
       await Future.delayed(const Duration(milliseconds: 400));
       if (!mounted) {
@@ -446,7 +450,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       await player.seek(seekTarget);
 
       _previewSeekTarget = seekTarget;
-      _previewStopTarget = stopTarget;
 
       player.stream.videoParams.listen((p) {
         if (!mounted || p.dw == null || p.dh == null) return;
@@ -458,10 +461,17 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
       _previewPosSub = player.stream.position.listen((pos) {
         if (!mounted) return;
-        if (_isPlaying && pos >= _previewStopTarget) {
-          player.pause();
-          player.seek(_previewSeekTarget);
-          if (mounted) setState(() => _isPlaying = false);
+
+        final playing = player.state.playing;
+
+        if (_isPlaying && pos >= _endTime) {
+          player.seek(_startTime);
+        }
+
+        _positionNotifier.value = pos;
+
+        if (playing != _isPlaying) {
+          setState(() => _isPlaying = playing);
         }
       });
 
@@ -926,6 +936,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                 child: CustomScrollView(
                   slivers: [
                     SliverToBoxAdapter(child: _buildVideoPreview()),
+                    SliverToBoxAdapter(child: _buildVideoControls()),
                     SliverToBoxAdapter(child: _buildTimeSection()),
                     SliverToBoxAdapter(child: _buildExportSettings()),
                     SliverToBoxAdapter(child: _buildCropSection()),
@@ -1091,6 +1102,89 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     );
   }
 
+  Widget _buildVideoControls() {
+    if (_previewController == null || _previewLoading) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.black87,
+      child: ValueListenableBuilder<Duration>(
+        valueListenable: _positionNotifier,
+        builder: (context, position, child) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ProgressBar(
+                progress: position,
+                total: _videoDuration,
+                buffered: _videoDuration,
+                onSeek: (duration) {
+                  _previewPlayer?.seek(duration);
+                },
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    color: Colors.white,
+                    icon: const Icon(Icons.replay_5),
+                    onPressed: () {
+                      final newPos = position - const Duration(seconds: 5);
+                      _previewPlayer?.seek(
+                        newPos < Duration.zero ? Duration.zero : newPos,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    color: Colors.white,
+                    iconSize: 36,
+                    icon: AnimatedSwitcher(
+                      duration: Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) {
+                        return ScaleTransition(scale: animation, child: child);
+                      },
+                      child: Icon(
+                        _isPlaying ? Icons.pause : Icons.play_arrow,
+                        key: ValueKey<bool>(_isPlaying),
+                      ),
+                    ),
+                    onPressed: () {
+                      if (_isPlaying) {
+                        _previewPlayer?.pause();
+                        setState(() => _isPlaying = false);
+                      } else {
+                        if (position < _startTime || position >= _endTime) {
+                          _previewPlayer?.seek(_startTime);
+                        }
+                        _previewPlayer?.play();
+                        setState(() => _isPlaying = true);
+                      }
+                    },
+                  ),
+                  IconButton(
+                    color: Colors.white,
+                    icon: const Icon(Icons.forward_5),
+                    onPressed: () {
+                      final newPos = position + const Duration(seconds: 5);
+                      if (newPos >= _endTime) {
+                        _previewPlayer?.seek(_startTime);
+                      } else {
+                        _previewPlayer?.seek(newPos);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildTimeSection() {
     final isCompact = App.isMobile;
 
@@ -1244,7 +1338,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           minSize: btnMinSize,
         ),
         InkWell(
-          onTap: () => _showTimeEditDialog(isStart), // 点击弹出修改框
+          onTap: () => _showTimeEditDialog(isStart),
           borderRadius: BorderRadius.circular(4),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: compact ? 2 : 4),
