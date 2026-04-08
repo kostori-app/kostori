@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/image_loader/base_image_provider.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart'
     as image_provider;
+import 'package:kostori/foundation/log.dart';
 import 'package:kostori/network/images.dart';
 import 'package:kostori/utils/io.dart';
 
@@ -30,7 +31,16 @@ class CachedImageProvider
 
   @override
   Future<Uint8List> load(chunkEvents, checkStop) async {
-    // ✅ base64 直接解码，不走网络
+    final isBase64 =
+        url.startsWith('data:') ||
+        (!url.contains('://') && !url.startsWith('/') && url.length > 100);
+    final isFile = url.startsWith('file://');
+    final isHttp = url.startsWith('http://') || url.startsWith('https://');
+
+    if (!isBase64 && !isFile && !isHttp) {
+      DebugLog.error('CachedImageProvider', url);
+    }
+
     if (url.startsWith('data:') ||
         (!url.contains('://') && !url.startsWith('/') && url.length > 100)) {
       var raw = url;
