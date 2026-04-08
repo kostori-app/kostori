@@ -329,6 +329,7 @@ class BangumiManager with ChangeNotifier {
 
   Future<void> reinit([Future<void> Function()? between]) async {
     if (isInitialized) {
+      await Future.delayed(Duration.zero);
       await _db.close();
       isInitialized = false;
     }

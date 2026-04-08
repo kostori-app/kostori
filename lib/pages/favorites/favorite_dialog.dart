@@ -45,6 +45,9 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
   List<String> selectedLocalFolders = [];
   late List<String> filteredFolders;
 
+  String _displayName(String folder) =>
+      folder == 'default' ? t.kDefault : folder;
+
   FavoritesController get favoritesController => widget.favoritesController;
 
   @override
@@ -95,19 +98,18 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
           children: [
             Expanded(child: buildLocalContent()),
             const Divider(height: 1),
-            // 添加操作统计信息
-              if (selectedLocalFolders.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    t.aToAddBToRemoveCToMove(
-                      a: foldersToAdd.toString(),
-                      b: foldersToRemove.toString(),
-                      c: foldersToMove.toString(),
-                    ),
-                    style: Theme.of(context).textTheme.bodySmall,
+            if (selectedLocalFolders.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  t.aToAddBToRemoveCToMove(
+                    a: foldersToAdd.toString(),
+                    b: foldersToRemove.toString(),
+                    c: foldersToMove.toString(),
                   ),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
+              ),
           ],
         ),
       ),
@@ -225,7 +227,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
           },
           title: Row(
             children: [
-              Text(folder),
+              Text(_displayName(folder)),
               const SizedBox(width: 8),
               if (isAdded)
                 Container(

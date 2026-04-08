@@ -93,120 +93,71 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
     super.dispose();
   }
 
-  Future<void> loadDoingList({int offset = 0}) async {
-    if (doingIsLoading) return;
+  Future<void> _loadList({
+    required int offset,
+    required bool Function() isLoading,
+    required void Function(bool) setLoading,
+    required void Function(bool) setTimeout,
+    required Future<void> Function({int offset, required String name}) query,
+    required ObservableList list,
+  }) async {
+    if (isLoading()) return;
     setState(() {
-      doingIsLoading = true;
-      doingQueryTimeout = false;
+      setLoading(true);
+      setTimeout(false);
     });
-    favoritesController
-        .queryBangumiFavoriteDoingByName(name: name, offset: offset)
-        .then((_) {
-          if (favoritesController.doingList.isEmpty && mounted) {
-            setState(() {
-              doingIsLoading = false;
-              doingQueryTimeout = true;
-            });
-          }
-          if (favoritesController.doingList.isNotEmpty && mounted) {
-            setState(() {
-              doingIsLoading = false;
-            });
-          }
-        });
+    await query(name: name, offset: offset);
+    if (!mounted) return;
+    setState(() {
+      setLoading(false);
+      if (list.isEmpty) setTimeout(true);
+    });
   }
 
-  Future<void> loadCollectList({int offset = 0}) async {
-    if (collectIsLoading) return;
-    setState(() {
-      collectIsLoading = true;
-      collectQueryTimeout = false;
-    });
-    favoritesController
-        .queryBangumiFavoriteCollectByName(name: name, offset: offset)
-        .then((_) {
-          if (favoritesController.collectList.isEmpty && mounted) {
-            setState(() {
-              collectIsLoading = false;
-              collectQueryTimeout = true;
-            });
-          }
-          if (favoritesController.collectList.isNotEmpty && mounted) {
-            setState(() {
-              collectIsLoading = false;
-            });
-          }
-        });
-  }
+  Future<void> loadDoingList({int offset = 0}) => _loadList(
+    offset: offset,
+    isLoading: () => doingIsLoading,
+    setLoading: (v) => doingIsLoading = v,
+    setTimeout: (v) => doingQueryTimeout = v,
+    query: favoritesController.queryBangumiDoing,
+    list: favoritesController.doingList,
+  );
 
-  Future<void> loadWishList({int offset = 0}) async {
-    if (wishIsLoading) return;
-    setState(() {
-      wishIsLoading = true;
-      wishQueryTimeout = false;
-    });
-    favoritesController
-        .queryBangumiFavoriteWishByName(name: name, offset: offset)
-        .then((_) {
-          if (favoritesController.wishList.isEmpty && mounted) {
-            setState(() {
-              wishIsLoading = false;
-              wishQueryTimeout = true;
-            });
-          }
-          if (favoritesController.wishList.isNotEmpty && mounted) {
-            setState(() {
-              wishIsLoading = false;
-            });
-          }
-        });
-  }
+  Future<void> loadCollectList({int offset = 0}) => _loadList(
+    offset: offset,
+    isLoading: () => collectIsLoading,
+    setLoading: (v) => collectIsLoading = v,
+    setTimeout: (v) => collectQueryTimeout = v,
+    query: favoritesController.queryBangumiCollect,
+    list: favoritesController.collectList,
+  );
 
-  Future<void> loadOnHoldList({int offset = 0}) async {
-    if (onHoldIsLoading) return;
-    setState(() {
-      onHoldIsLoading = true;
-      onHoldQueryTimeout = false;
-    });
-    favoritesController
-        .queryBangumiFavoriteOnHoldByName(name: name, offset: offset)
-        .then((_) {
-          if (favoritesController.onHoldList.isEmpty && mounted) {
-            setState(() {
-              onHoldIsLoading = false;
-              onHoldQueryTimeout = true;
-            });
-          }
-          if (favoritesController.onHoldList.isNotEmpty && mounted) {
-            setState(() {
-              onHoldIsLoading = false;
-            });
-          }
-        });
-  }
+  Future<void> loadWishList({int offset = 0}) => _loadList(
+    offset: offset,
+    isLoading: () => wishIsLoading,
+    setLoading: (v) => wishIsLoading = v,
+    setTimeout: (v) => wishQueryTimeout = v,
+    query: favoritesController.queryBangumiWish,
+    list: favoritesController.wishList,
+  );
 
-  Future<void> loadDroppedList({int offset = 0}) async {
-    if (droppedIsLoading) return;
-    setState(() {
-      droppedIsLoading = true;
-      droppedQueryTimeout = false;
-    });
-    favoritesController
-        .queryBangumiFavoriteDroppedByName(name: name, offset: offset)
-        .then((_) {
-          if (favoritesController.droppedList.isEmpty && mounted) {
-            setState(() {
-              droppedIsLoading = false;
-              droppedQueryTimeout = true;
-            });
-          }
-          if (favoritesController.droppedList.isNotEmpty && mounted) {
-            setState(() {
-              droppedIsLoading = false;
-            });
-          }
-        });
-  }
+  Future<void> loadOnHoldList({int offset = 0}) => _loadList(
+    offset: offset,
+    isLoading: () => onHoldIsLoading,
+    setLoading: (v) => onHoldIsLoading = v,
+    setTimeout: (v) => onHoldQueryTimeout = v,
+    query: favoritesController.queryBangumiOnHold,
+    list: favoritesController.onHoldList,
+  );
+
+  Future<void> loadDroppedList({int offset = 0}) => _loadList(
+    offset: offset,
+    isLoading: () => droppedIsLoading,
+    setLoading: (v) => droppedIsLoading = v,
+    setTimeout: (v) => droppedQueryTimeout = v,
+    query: favoritesController.queryBangumiDropped,
+    list: favoritesController.droppedList,
+  );
 
   Widget _bangumiListSliver(List<BangumiItem> bangumiItems) {
     return SliverGrid(

@@ -1,8 +1,7 @@
 part of 'favorites_page.dart';
 
 const _asyncDataFetchLimit = 500;
-
-final excludedFolders = ["default", "默认"];
+const excludedFolders = ['default', '默认'];
 
 class _LocalFavoritesPage extends ConsumerStatefulWidget {
   const _LocalFavoritesPage({required this.favoritesController});
@@ -23,14 +22,11 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
   FavoritesController get favoritesController => widget.favoritesController;
 
+  LocalFavoritesManager get manager => LocalFavoritesManager();
   Map<Anime, bool> selectedAnimes = {};
+  Map<String, List<FavoriteItem>> searchResults = {};
 
-  var selectedLocalFolders = <String>{};
-
-  late List<String> added = [];
-
-  String keyword = "";
-
+  String keyword = '';
   bool searchMode = false;
   bool searchAllMode = false;
   bool searchHasUpper = false;
@@ -39,199 +35,15 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
   int? lastSelectedIndex;
 
-  LocalFavoritesManager get manager => LocalFavoritesManager();
-
-  Map<String, List<FavoriteItem>> searchResults = {};
-
-  void updateSearchAllResult() {
-    setState(() {
-      if (keyword.trim().isEmpty) {
-        searchResults = Map.from(favoritesController.animes);
-        favoritesController.tabs = getTabs();
-      } else {
-        searchResults = {};
-        for (var entry in favoritesController.animes.entries) {
-          final filtered = entry.value
-              .where((anime) => matchKeyword(keyword, anime))
-              .toList();
-          if (filtered.isNotEmpty) {
-            searchResults[entry.key] = filtered;
-          }
-        }
-        favoritesController.tabs = getTabs();
-      }
-    });
-  }
-
-  Future<void> updateAnimes() async {
-    if (isLoading) return;
-    final Map<String, List<FavoriteItem>> result = {};
-
-    favoritesController.folders = manager.folderNames.where((name) {
-      if (name == 'default') {
-        return manager
-            .getAllAnimes('default', FavoriteSortType.nameAsc)
-            .isNotEmpty;
-      }
-      return true;
-    }).toList();
-
-    for (var folder in favoritesController.folders) {
-      final count = manager.folderAnimes(folder);
-      if (count < _asyncDataFetchLimit) {
-        result[folder] = manager.getAllAnimes(folder, sortType);
-      } else {
-        isLoading = true;
-        result[folder] = await manager
-            .getFolderAnimesAsync(folder, sortType)
-            .minTime(const Duration(milliseconds: 200));
-      }
-    }
-
-    if (favoritesController.isRefreshEnabled) {
-      final data = appdata.implicitData['favoriteFolder'];
-
-      if (data != null) {
-        favoritesController.index = favoritesController.folders.indexWhere(
-          (folderName) => folderName == data['name'],
-        );
-      }
-      if (favoritesController.index < 0 ||
-          favoritesController.index >= favoritesController.folders.length) {
-        favoritesController.index = 0;
-      }
-      favoritesController.tabs.clear();
-      favoritesController.tabs = getTabs();
-      favoritesController.folder =
-          favoritesController.folders[favoritesController.index];
-      favPage.setFolder(false, favoritesController.folder);
-      favoritesController.tabController.dispose();
-      favoritesController.tabController = TabController(
-        length: favoritesController.folders.length,
-        vsync: this,
-        initialIndex: favoritesController.index,
-      );
-      favoritesController.tabController.addListener(() {
-        setState(() {
-          int indexs = favoritesController.tabController.index;
-          String folderName = favoritesController.folders[indexs];
-          if (multiSelectMode) {
-            multiSelectMode = false;
-            selectedAnimes.clear();
-          }
-          favoritesController.folder = folderName;
-          favPage.setFolder(false, folderName);
-        });
-      });
-      favoritesController.isRefreshEnabled = false;
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      favoritesController.animes.clear();
-      favoritesController.animes.addAll(result);
-      isLoading = false;
-    });
-  }
-
-  bool checkKeyWordMatch(String keyword, String compare, bool needEqual) {
-    String temp = compare;
-
-    if (!searchHasUpper) {
-      temp = temp.toLowerCase();
-    }
-    if (needEqual) {
-      return keyword == temp;
-    }
-    return temp.contains(keyword);
-  }
-
-  bool matchKeyword(String keyword, FavoriteItem anime) {
-    var list = keyword.split(" ");
-    for (var k in list) {
-      if (k.isEmpty) continue;
-      if (keyword == anime.type.sourceKey) {
-        return true;
-      }
-      if (checkKeyWordMatch(k, anime.title, false)) {
-        continue;
-      } else if (anime.subtitle != null &&
-          checkKeyWordMatch(k, anime.subtitle!, false)) {
-        continue;
-      } else if (anime.tags.any((tag) {
-        if (checkKeyWordMatch(k, tag, true)) {
-          return true;
-        } else if (tag.contains(':') &&
-            checkKeyWordMatch(k, tag.split(':')[1], true)) {
-          return true;
-        }
-        return false;
-      })) {
-        continue;
-      } else if (checkKeyWordMatch(k, anime.author, true)) {
-        continue;
-      }
-      return false;
-    }
-    return true;
-  }
-
-  void scrollToTop() {
-    if (scrollController.hasClients) {
-      scrollController.animateTo(
-        0.0,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    var sort = appdata.implicitData["favori_sort"] ?? "displayOrder_asc";
+    final sort = appdata.implicitData['favori_sort'] ?? 'displayOrder_asc';
     sortType = FavoriteSortType.fromString(sort);
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
-    favoritesController.folders = manager.folderNames.where((name) {
-      if (name == 'default') {
-        return manager
-            .getAllAnimes('default', FavoriteSortType.nameAsc)
-            .isNotEmpty;
-      }
-      return true;
-    }).toList();
-    final data = appdata.implicitData['favoriteFolder'];
 
-    if (data != null) {
-      favoritesController.index = favoritesController.folders.indexWhere(
-        (folderName) => folderName == data['name'],
-      );
-    }
-    if (favoritesController.index < 0 ||
-        favoritesController.index >= favoritesController.folders.length) {
-      favoritesController.index = 0;
-    }
-
-    favoritesController.folder =
-        favoritesController.folders[favoritesController.index];
-    favoritesController.tabController = TabController(
-      length: favoritesController.folders.length,
-      vsync: this,
-      initialIndex: favoritesController.index,
-    );
-    favoritesController.tabController.addListener(() {
-      setState(() {
-        int indexs = favoritesController.tabController.index;
-        String folderName = favoritesController.folders[indexs];
-        if (multiSelectMode) {
-          multiSelectMode = false;
-          selectedAnimes.clear();
-        }
-        favoritesController.folder = folderName;
-        favPage.setFolder(false, folderName);
-      });
-    });
+    _initFolders();
+    _buildTabController();
     updateAnimes();
     manager.addListener(updateAnimes);
   }
@@ -244,45 +56,185 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     super.dispose();
   }
 
-  void update() {
-    setState(() {});
+  @override
+  bool get wantKeepAlive => true;
+
+  void _initFolders() {
+    favoritesController.folders = manager.folderNames.where((name) {
+      if (name == 'default') {
+        return manager
+            .getAllAnimes('default', FavoriteSortType.nameAsc)
+            .isNotEmpty;
+      }
+      return true;
+    }).toList();
+
+    final data = appdata.implicitData['favoriteFolder'];
+    if (data != null) {
+      favoritesController.index = favoritesController.folders.indexWhere(
+        (name) => name == data['name'],
+      );
+    }
+    if (favoritesController.index < 0 ||
+        favoritesController.index >= favoritesController.folders.length) {
+      favoritesController.index = 0;
+    }
+    if (favoritesController.folders.isNotEmpty) {
+      favoritesController.folder =
+          favoritesController.folders[favoritesController.index];
+    }
   }
 
-  void selectAll() {
+  void _buildTabController({int? initialIndex}) {
+    final idx = (initialIndex ?? favoritesController.index).clamp(
+      0,
+      (favoritesController.folders.length - 1).clamp(
+        0,
+        double.maxFinite.toInt(),
+      ),
+    );
+    favoritesController.tabController = TabController(
+      length: favoritesController.folders.length,
+      vsync: this,
+      initialIndex: idx,
+    );
+    favoritesController.tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    final idx = favoritesController.tabController.index;
+    if (idx >= favoritesController.folders.length) return;
+    final folderName = favoritesController.folders[idx];
     setState(() {
-      selectedAnimes = {};
-      final currentList = searchMode
-          ? (searchResults[favoritesController.folder] ?? [])
-          : (favoritesController.animes[favoritesController.folder] ?? []);
-      for (var anime in currentList) {
-        selectedAnimes[anime] = true;
+      if (multiSelectMode) {
+        multiSelectMode = false;
+        selectedAnimes.clear();
       }
+      favoritesController.folder = folderName;
+      favPage.setFolder(false, folderName);
     });
   }
 
-  void invertSelection() {
+  Future<void> updateAnimes() async {
+    if (isLoading) return;
+
+    final newFolders = manager.folderNames.where((name) {
+      if (name == 'default') {
+        return manager
+            .getAllAnimes('default', FavoriteSortType.nameAsc)
+            .isNotEmpty;
+      }
+      return true;
+    }).toList();
+
+    final result = <String, List<FavoriteItem>>{};
+    isLoading = true;
+    for (final folder in newFolders) {
+      final count = manager.folderAnimes(folder);
+      if (count < _asyncDataFetchLimit) {
+        result[folder] = manager.getAllAnimes(folder, sortType);
+      } else {
+        result[folder] = await manager
+            .getFolderAnimesAsync(folder, sortType)
+            .minTime(const Duration(milliseconds: 200));
+      }
+    }
+    isLoading = false;
+
+    if (!mounted) return;
+
+    int newIndex = newFolders.indexWhere(
+      (name) => name == favoritesController.folder,
+    );
+    if (newIndex < 0) {
+      final data = appdata.implicitData['favoriteFolder'];
+      if (data != null) {
+        newIndex = newFolders.indexWhere((name) => name == data['name']);
+      }
+    }
+    newIndex = newIndex.clamp(
+      0,
+      (newFolders.length - 1).clamp(0, double.maxFinite.toInt()),
+    );
+
+    if (favoritesController.tabController.length != newFolders.length) {
+      favoritesController.tabController.removeListener(_onTabChanged);
+      favoritesController.tabController.dispose();
+      favoritesController.folders = newFolders;
+      _buildTabController(initialIndex: newIndex);
+    } else {
+      favoritesController.folders = newFolders;
+    }
+
+    final newFolder = newFolders.isEmpty ? '' : newFolders[newIndex];
+    favoritesController.index = newIndex;
+
     setState(() {
-      final currentList = searchMode
-          ? (searchResults[favoritesController.folder] ?? [])
-          : (favoritesController.animes[favoritesController.folder] ?? []);
-      for (var anime in currentList) {
-        if (selectedAnimes.containsKey(anime)) {
-          selectedAnimes.remove(anime);
-        } else {
-          selectedAnimes[anime] = true;
+      favoritesController.animes
+        ..clear()
+        ..addAll(result);
+      favoritesController.tabs = _buildTabs();
+      favoritesController.folder = newFolder;
+    });
+
+    favPage.setFolder(false, newFolder.isEmpty ? null : newFolder);
+    favoritesController.isRefreshEnabled = false;
+  }
+
+  void updateSearchAllResult() {
+    setState(() {
+      if (keyword.trim().isEmpty) {
+        searchResults = Map.from(favoritesController.animes);
+      } else {
+        searchResults = {};
+        for (final entry in favoritesController.animes.entries) {
+          final filtered = entry.value
+              .where((a) => _matchKeyword(keyword, a))
+              .toList();
+          if (filtered.isNotEmpty) searchResults[entry.key] = filtered;
         }
       }
+      favoritesController.tabs = _buildTabs();
     });
   }
 
-  List<Tab> getTabs() {
-    final String wish = appdata.settings['FavoriteTypeWish'] ?? 'wish';
-    final String doing = appdata.settings['FavoriteTypeDoing'] ?? 'doing';
-    final String collect = appdata.settings['FavoriteTypeCollect'] ?? 'collect';
-    final String onHold = appdata.settings['FavoriteTypeOnHold'] ?? 'on_hold';
-    final String dropped = appdata.settings['FavoriteTypeDropped'] ?? 'dropped';
+  bool _matchKeyword(String keyword, FavoriteItem anime) {
+    for (final k in keyword.split(' ')) {
+      if (k.isEmpty) continue;
+      if (keyword == anime.type.sourceKey) return true;
+      if (_contains(k, anime.title)) continue;
+      if (anime.subtitle != null && _contains(k, anime.subtitle!)) continue;
+      if (anime.tags.any(
+        (tag) =>
+            _equals(k, tag) ||
+            (tag.contains(':') && _equals(k, tag.split(':')[1])),
+      )) {
+        continue;
+      }
+      if (_equals(k, anime.author)) continue;
+      return false;
+    }
+    return true;
+  }
 
-    final Map<String, IconData> iconMap = {
+  bool _contains(String keyword, String value) {
+    final v = searchHasUpper ? value : value.toLowerCase();
+    return v.contains(keyword);
+  }
+
+  bool _equals(String keyword, String value) {
+    final v = searchHasUpper ? value : value.toLowerCase();
+    return v == keyword;
+  }
+
+  List<Tab> _buildTabs() {
+    final wish = appdata.settings['FavoriteTypeWish'] ?? 'wish';
+    final doing = appdata.settings['FavoriteTypeDoing'] ?? 'doing';
+    final collect = appdata.settings['FavoriteTypeCollect'] ?? 'collect';
+    final onHold = appdata.settings['FavoriteTypeOnHold'] ?? 'on_hold';
+    final dropped = appdata.settings['FavoriteTypeDropped'] ?? 'dropped';
+
+    final iconMap = <String, IconData>{
       wish: Icons.star_rounded,
       doing: Icons.favorite,
       collect: Icons.task_alt_outlined,
@@ -291,18 +243,18 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     };
 
     return favoritesController.folders.map((name) {
-      int count = manager.folderAnimes(name);
-      final IconData? iconData = iconMap[name];
+      final count = manager.folderAnimes(name);
+      final displayCount = searchAllMode
+          ? (searchResults[name]?.length ?? 0).toString()
+          : count.toString();
+      final icon = iconMap[name];
+
       return Tab(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (iconData != null) ...[
-              Icon(
-                iconData,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: context.colorScheme.onSurface),
               const SizedBox(width: 4),
             ],
             Flexible(
@@ -320,11 +272,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                searchAllMode
-                    ? searchResults[name] == null
-                          ? '0'
-                          : searchResults[name]!.length.toString()
-                    : count.toString(),
+                displayCount,
                 style: Theme.of(context).textTheme.labelSmall,
               ),
             ),
@@ -334,106 +282,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     }).toList();
   }
 
-  MenuButton _buildSortMenuItems() {
-    return MenuButton(
-      icon: Icons.sort,
-      message: t.sort,
-      entries: [
-        MenuEntry(
-          icon: Icons.receipt_long,
-          endIcon:
-              (sortType == FavoriteSortType.recentlyWatchedAsc ||
-                  sortType == FavoriteSortType.recentlyWatchedDesc)
-              ? (sortType == FavoriteSortType.recentlyWatchedAsc
-                    ? Icons.arrow_upward
-                    : Icons.arrow_downward)
-              : null,
-          text: t.recentlyWatched,
-          onClick: () {
-            setState(() {
-              sortType = sortType == FavoriteSortType.recentlyWatchedAsc
-                  ? FavoriteSortType.recentlyWatchedDesc
-                  : FavoriteSortType.recentlyWatchedAsc;
-              appdata.implicitData["favori_sort"] = sortType.value;
-              appdata.writeImplicitData();
-              updateAnimes();
-            });
-          },
-        ),
-        MenuEntry(
-          icon: Icons.sort_by_alpha,
-          endIcon:
-              (sortType == FavoriteSortType.nameAsc ||
-                  sortType == FavoriteSortType.nameDesc)
-              ? (sortType == FavoriteSortType.nameAsc
-                    ? Icons.arrow_upward
-                    : Icons.arrow_downward)
-              : null,
-          text: t.byName,
-          onClick: () {
-            setState(() {
-              sortType = sortType == FavoriteSortType.nameAsc
-                  ? FavoriteSortType.nameDesc
-                  : FavoriteSortType.nameAsc;
-              appdata.implicitData["favori_sort"] = sortType.value;
-              appdata.writeImplicitData();
-              updateAnimes();
-            });
-          },
-        ),
-        MenuEntry(
-          icon: Icons.access_time,
-          endIcon:
-              (sortType == FavoriteSortType.timeAsc ||
-                  sortType == FavoriteSortType.timeDesc)
-              ? (sortType == FavoriteSortType.timeAsc
-                    ? Icons.arrow_upward
-                    : Icons.arrow_downward)
-              : null,
-          text: t.byTime,
-          onClick: () {
-            setState(() {
-              sortType = sortType == FavoriteSortType.timeAsc
-                  ? FavoriteSortType.timeDesc
-                  : FavoriteSortType.timeAsc;
-              appdata.implicitData["favori_sort"] = sortType.value;
-              appdata.writeImplicitData();
-              updateAnimes();
-            });
-          },
-        ),
-        MenuEntry(
-          icon: Icons.view_list,
-          endIcon:
-              (sortType == FavoriteSortType.displayOrderAsc ||
-                  sortType == FavoriteSortType.displayOrderDesc)
-              ? (sortType == FavoriteSortType.displayOrderAsc
-                    ? Icons.arrow_upward
-                    : Icons.arrow_downward)
-              : null,
-          text: t.defaultOrder,
-          onClick: () {
-            setState(() {
-              sortType = sortType == FavoriteSortType.displayOrderAsc
-                  ? FavoriteSortType.displayOrderDesc
-                  : FavoriteSortType.displayOrderAsc;
-              appdata.implicitData["favori_sort"] = sortType.value;
-              appdata.writeImplicitData();
-              updateAnimes();
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    if (favoritesController.tabs.isEmpty) {
-      favoritesController.tabs = getTabs();
-    }
-    PreferredSizeWidget tab = PreferredSize(
+  PreferredSizeWidget _buildTabBar() {
+    return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
       child: Observer(
         builder: (_) => TabBar(
@@ -442,500 +292,355 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           tabs: favoritesController.tabs,
           dividerHeight: 0,
           tabAlignment: TabAlignment.start,
-          labelColor: Theme.of(context).colorScheme.primary,
+          labelColor: context.colorScheme.primary,
         ),
       ),
-    );
-
-    Widget body = NestedScrollView(
-      controller: scrollController,
-      headerSliverBuilder: (context, innerBoxIsScrolled) => [
-        if (!searchAllMode && !searchMode && !multiSelectMode)
-          SliverAppbar(
-            key: PageStorageKey(
-              "${manager.folderAnimes(favoritesController.folder)}",
-            ),
-            style: context.width < changePoint
-                ? AppbarStyle.shadow
-                : AppbarStyle.blur,
-            leading: Tooltip(
-              message: t.folders,
-              child: context.width <= _kTwoPanelChangeWidth
-                  ? IconButton(
-                      icon: const Icon(Icons.menu),
-                      color: context.colorScheme.primary,
-                      onPressed: favPage.showFolderSelector,
-                    )
-                  : const SizedBox(),
-            ),
-            title: GestureDetector(
-              onTap: context.width < _kTwoPanelChangeWidth
-                  ? favPage.showFolderSelector
-                  : null,
-              child: Text(
-                favPage.folder != null
-                    ? LocalFavoritesManager().totalAnimes.toString()
-                    : t.unselected,
-              ),
-            ),
-            actions: [
-              Tooltip(
-                message: t.search,
-                child: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    setState(() {
-                      keyword = "";
-                      searchAllMode = true;
-                      updateSearchAllResult();
-                    });
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      keyword = "";
-                      searchAllMode = true;
-                      updateSearchAllResult();
-                    });
-                  },
-                ),
-              ),
-              _buildSortMenuItems(),
-              MenuButton(
-                entries: [
-                  if (favoritesController.folder != 'default')
-                    MenuEntry(
-                      icon: Icons.edit_outlined,
-                      text: t.rename,
-                      onClick: () {
-                        showInputDialog(
-                          context: App.rootContext,
-                          title: t.rename,
-                          hintText: t.newName,
-                          onConfirm: (value) {
-                            var err = validateFolderName(value.toString());
-                            if (err != null) {
-                              return err;
-                            }
-                            favoritesController.isRefreshEnabled = true;
-                            manager.rename(
-                              favoritesController.folder,
-                              value.toString(),
-                            );
-                            manager.initCounts();
-                            // favPage.folderList?.updateFolders();
-                            favPage.setFolder(false, value.toString());
-                            return null;
-                          },
-                        );
-                      },
-                    ),
-                  MenuEntry(
-                    icon: Icons.upload_file,
-                    text: t.export,
-                    onClick: () {
-                      var json = manager.folderToJson(
-                        favoritesController.folder,
-                      );
-                      saveFile(
-                        data: utf8.encode(json),
-                        filename: "$favoritesController.folder.json",
-                      );
-                    },
-                  ),
-                  if (favoritesController.folder != 'default')
-                    MenuEntry(
-                      icon: Icons.delete_outline,
-                      text: t.deleteFolder,
-                      color: context.colorScheme.error,
-                      onClick: () {
-                        showConfirmDialog(
-                          context: App.rootContext,
-                          title: t.delete,
-                          content: t.deleteFolderF(f: favoritesController.folder),
-                          btnColor: context.colorScheme.error,
-                          onConfirm: () {
-                            favoritesController.isRefreshEnabled = true;
-                            manager.deleteFolder(favoritesController.folder);
-                            int oldIndex = favoritesController.index;
-                            if (favoritesController.folders.isEmpty) {
-                              favoritesController.index = 0;
-                              favoritesController.folder = '';
-                              favPage.setFolder(false, null);
-                            } else {
-                              if (oldIndex >=
-                                  favoritesController.folders.length) {
-                                favoritesController.index =
-                                    favoritesController.folders.length - 1;
-                              } else {
-                                favoritesController.index = oldIndex;
-                              }
-
-                              favoritesController.folder = favoritesController
-                                  .folders[favoritesController.index];
-                              favPage.setFolder(
-                                false,
-                                favoritesController.folder,
-                              );
-                            }
-                            setState(() {});
-                            // updateAnimes();
-                          },
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ],
-            bottom: tab,
-          )
-        else if (multiSelectMode)
-          SliverAppbar(
-            key: PageStorageKey(
-              "${manager.folderAnimes(favoritesController.folder)}",
-            ),
-            style: context.width < changePoint
-                ? AppbarStyle.shadow
-                : AppbarStyle.blur,
-            leading: Tooltip(
-              message: t.cancel,
-              child: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  setState(() {
-                    multiSelectMode = false;
-                    selectedAnimes.clear();
-                  });
-                },
-              ),
-            ),
-            title: Text(
-              t.selectedAAnimes(a: selectedAnimes.length),
-            ),
-            actions: [
-              MenuButton(
-                entries: [
-                  MenuEntry(
-                    icon: Icons.star_rounded,
-                    text: t.favoriteActions,
-                    onClick: () async {
-                      favoritesController.isRefreshEnabled = true;
-                      final bool? changed = await _FavoriteDialog.show(
-                        context: context,
-                        selectedAnimes: selectedAnimes,
-                        favPage: favPage,
-                        cancel: () => _cancel(),
-                        favoritesController: favoritesController,
-                      );
-
-                      if (changed == true) {
-                        manager.initCounts();
-
-                        favoritesController.isRefreshEnabled = true;
-
-                        await updateAnimes();
-                        if (searchAllMode) {
-                          updateSearchAllResult();
-                        }
-
-                        multiSelectMode = false;
-                        selectedAnimes.clear();
-
-                        favoritesController.tabs = getTabs();
-
-                        if (mounted) {
-                          setState(() {});
-                        }
-                      }
-                    },
-                  ),
-                  MenuEntry(
-                    icon: Icons.select_all,
-                    text: t.selectAll,
-                    onClick: selectAll,
-                  ),
-                  MenuEntry(
-                    icon: Icons.deselect,
-                    text: t.deselect,
-                    onClick: _cancel,
-                  ),
-                  MenuEntry(
-                    icon: Icons.flip,
-                    text: t.invertSelection,
-                    onClick: invertSelection,
-                  ),
-                  MenuEntry(
-                    icon: Icons.delete_outline,
-                    text: t.deleteAnime,
-                    color: context.colorScheme.error,
-                    onClick: () {
-                      showConfirmDialog(
-                        context: context,
-                        title: t.delete,
-                        content: t.deleteCAnimes(c: selectedAnimes.length),
-                        btnColor: context.colorScheme.error,
-                        onConfirm: () {
-                          _deleteAnimeWithId();
-                        },
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ],
-            bottom: tab,
-          )
-        else if (searchAllMode)
-          SliverAppbar(
-            key: PageStorageKey(
-              "${manager.folderAnimes(favoritesController.folder)}",
-            ),
-            style: context.width < changePoint
-                ? AppbarStyle.shadow
-                : AppbarStyle.blur,
-            leading: Tooltip(
-              message: t.cancel,
-              child: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  setState(() {
-                    searchAllMode = false;
-                    favoritesController.isRefreshEnabled = true;
-                    updateAnimes();
-                  });
-                },
-              ),
-            ),
-            title: TextField(
-              decoration: InputDecoration(
-                hintText: keyword.isNotEmpty ? keyword : t.searchAll,
-                border: UnderlineInputBorder(),
-              ),
-              onChanged: (v) {
-                keyword = v;
-                searchHasUpper = keyword.contains(RegExp(r'[A-Z]'));
-                updateSearchAllResult();
-              },
-            ).paddingBottom(4).paddingRight(8),
-            bottom: tab,
-          ),
-      ],
-      body: isLoading
-          ? Center(
-              child: SizedBox(
-                height: 200,
-                width: 200,
-                child: KostoriRefreshIndicator(),
-              ),
-            )
-          : TabBarView(
-              key: PageStorageKey("${widget.favoritesController.folders}"),
-              controller: widget.favoritesController.tabController,
-              children: widget.favoritesController.folders.map((name) {
-                return Observer(
-                  builder: (context) => SliverGridAnimes(
-                    key: PageStorageKey("local_$name"),
-                    asSliver: false,
-                    animes: searchAllMode
-                        ? (searchResults[name] ?? [])
-                        : (widget.favoritesController.animes[name] ?? []),
-                    selections: selectedAnimes,
-                    enableFavorite: false,
-                    onTap: multiSelectMode
-                        ? (a, heroID) {
-                            setState(() {
-                              if (selectedAnimes.containsKey(
-                                a as FavoriteItem,
-                              )) {
-                                selectedAnimes.remove(a);
-                                _checkExitSelectMode();
-                              } else {
-                                selectedAnimes[a] = true;
-                              }
-                              lastSelectedIndex =
-                                  (searchMode
-                                          ? searchResults[name]
-                                          : favoritesController.animes[name])
-                                      ?.indexOf(a) ??
-                                  -1;
-                            });
-                          }
-                        : (a, heroID) {
-                            if (a.viewMore != null &&
-                                a.viewMore?.attributes != null) {
-                              var context =
-                                  App.mainNavigatorKey!.currentContext!;
-                              a.viewMore!.jump(context);
-                            } else {
-                              App.mainNavigatorKey?.currentContext?.to(
-                                () => AnimePage(
-                                  id: a.id,
-                                  sourceKey: a.sourceKey,
-                                  cover: a.cover,
-                                  title: a.title,
-                                  heroID: heroID,
-                                ),
-                              );
-                              final stats = StatsManager();
-                              if (!stats.isExist(
-                                a.id,
-                                AnimeType(a.sourceKey.hashCode),
-                              )) {
-                                try {
-                                  stats.addStats(
-                                    stats.createStatsData(
-                                      id: a.id,
-                                      title: a.title,
-                                      cover: a.cover,
-                                      type: a.sourceKey.hashCode,
-                                    ),
-                                  );
-                                } catch (e) {
-                                  StatsLog.error('addStats', e.toString());
-                                }
-                              }
-                            }
-                            manager.updateRecentlyWatched(
-                              a.id,
-                              AnimeType(a.sourceKey.hashCode),
-                            );
-                          },
-                    onLongPressed: (a, heroID) {
-                      setState(() {
-                        if (!multiSelectMode) {
-                          multiSelectMode = true;
-                          if (!selectedAnimes.containsKey(a as FavoriteItem)) {
-                            selectedAnimes[a] = true;
-                          }
-                          lastSelectedIndex =
-                              (searchMode
-                                      ? searchResults[name]
-                                      : favoritesController.animes[name])
-                                  ?.indexOf(a) ??
-                              -1;
-                        } else {
-                          if (lastSelectedIndex != null &&
-                              lastSelectedIndex! >= 0) {
-                            int start = lastSelectedIndex!;
-                            int end =
-                                (searchMode
-                                        ? searchResults[name]
-                                        : favoritesController.animes[name])
-                                    ?.indexOf(a as FavoriteItem) ??
-                                -1;
-                            if (end < 0) return;
-                            if (start > end) {
-                              int temp = start;
-                              start = end;
-                              end = temp;
-                            }
-
-                            var currentList =
-                                (searchMode
-                                    ? searchResults[name]
-                                    : favoritesController.animes[name]) ??
-                                [];
-                            for (int i = start; i <= end; i++) {
-                              if (i == lastSelectedIndex) continue;
-                              var anime = currentList[i];
-                              if (selectedAnimes.containsKey(anime)) {
-                                selectedAnimes.remove(anime);
-                              } else {
-                                selectedAnimes[anime] = true;
-                              }
-                            }
-                          }
-                          lastSelectedIndex =
-                              (searchMode
-                                      ? searchResults[name]
-                                      : favoritesController.animes[name])
-                                  ?.indexOf(a as FavoriteItem) ??
-                              -1;
-                        }
-                        _checkExitSelectMode();
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-    );
-    body = Stack(
-      children: [
-        Positioned.fill(child: body),
-        Positioned(
-          bottom: 10,
-          right: 10,
-          child: FloatingMenu(
-            controller: scrollController,
-            child: [
-              [
-                SpeedDialChild(
-                  child: const Icon(Icons.refresh),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
-                  onTap: () async {
-                    await updateAnimes();
-                  },
-                ),
-              ],
-              [
-                SpeedDialChild(
-                  child: const Icon(Icons.vertical_align_top),
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primaryContainer,
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.onPrimaryContainer,
-                  onTap: () => scrollToTop(),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-    body = AppScrollBar(
-      topPadding:
-          52.0 + MediaQuery.of(context).padding.top + tab.preferredSize.height,
-      controller: scrollController,
-      isNested: true,
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: body,
-      ),
-    );
-    return PopScope(
-      key: PageStorageKey("${favoritesController.folders}"),
-      canPop: multiSelectMode == false && searchAllMode == false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        if (multiSelectMode) {
-          setState(() {
-            multiSelectMode = false;
-            selectedAnimes.clear();
-          });
-        } else if (searchAllMode) {
-          setState(() {
-            searchAllMode = false;
-            favoritesController.isRefreshEnabled = true;
-            updateAnimes();
-          });
-        }
-      },
-      child: body,
     );
   }
 
+  MenuButton _buildSortMenu() {
+    IconData? endIcon(FavoriteSortType asc, FavoriteSortType desc) {
+      if (sortType == asc) return Icons.arrow_upward;
+      if (sortType == desc) return Icons.arrow_downward;
+      return null;
+    }
+
+    void setSort(FavoriteSortType asc, FavoriteSortType desc) {
+      setState(() {
+        sortType = sortType == asc ? desc : asc;
+        appdata.implicitData['favori_sort'] = sortType.value;
+        appdata.writeImplicitData();
+        updateAnimes();
+      });
+    }
+
+    return MenuButton(
+      icon: Icons.sort,
+      message: t.sort,
+      entries: [
+        MenuEntry(
+          icon: Icons.receipt_long,
+          endIcon: endIcon(
+            FavoriteSortType.recentlyWatchedAsc,
+            FavoriteSortType.recentlyWatchedDesc,
+          ),
+          text: t.recentlyWatched,
+          onClick: () => setSort(
+            FavoriteSortType.recentlyWatchedAsc,
+            FavoriteSortType.recentlyWatchedDesc,
+          ),
+        ),
+        MenuEntry(
+          icon: Icons.sort_by_alpha,
+          endIcon: endIcon(FavoriteSortType.nameAsc, FavoriteSortType.nameDesc),
+          text: t.byName,
+          onClick: () =>
+              setSort(FavoriteSortType.nameAsc, FavoriteSortType.nameDesc),
+        ),
+        MenuEntry(
+          icon: Icons.access_time,
+          endIcon: endIcon(FavoriteSortType.timeAsc, FavoriteSortType.timeDesc),
+          text: t.byTime,
+          onClick: () =>
+              setSort(FavoriteSortType.timeAsc, FavoriteSortType.timeDesc),
+        ),
+        MenuEntry(
+          icon: Icons.view_list,
+          endIcon: endIcon(
+            FavoriteSortType.displayOrderAsc,
+            FavoriteSortType.displayOrderDesc,
+          ),
+          text: t.defaultOrder,
+          onClick: () => setSort(
+            FavoriteSortType.displayOrderAsc,
+            FavoriteSortType.displayOrderDesc,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNormalAppbar(PreferredSizeWidget tab) {
+    return SliverAppbar(
+      key: PageStorageKey(
+        '${manager.folderAnimes(favoritesController.folder)}',
+      ),
+      style: context.width < changePoint
+          ? AppbarStyle.shadow
+          : AppbarStyle.blur,
+      leading: Tooltip(
+        message: t.folders,
+        child: context.width <= _kTwoPanelChangeWidth
+            ? IconButton(
+                icon: const Icon(Icons.menu),
+                color: context.colorScheme.primary,
+                onPressed: favPage.showFolderSelector,
+              )
+            : const SizedBox(),
+      ),
+      title: GestureDetector(
+        onTap: context.width < _kTwoPanelChangeWidth
+            ? favPage.showFolderSelector
+            : null,
+        child: Text(
+          favPage.folder != null
+              ? LocalFavoritesManager().totalAnimes.toString()
+              : t.unselected,
+        ),
+      ),
+      actions: [
+        Tooltip(
+          message: t.search,
+          child: IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: _enterSearchAllMode,
+            onLongPress: _enterSearchAllMode,
+          ),
+        ),
+        _buildSortMenu(),
+        MenuButton(
+          entries: [
+            if (favoritesController.folder != 'default')
+              MenuEntry(
+                icon: Icons.edit_outlined,
+                text: t.rename,
+                onClick: _renameFolder,
+              ),
+            MenuEntry(
+              icon: Icons.upload_file,
+              text: t.export,
+              onClick: _exportFolder,
+            ),
+            if (favoritesController.folder != 'default')
+              MenuEntry(
+                icon: Icons.delete_outline,
+                text: t.deleteFolder,
+                color: context.colorScheme.error,
+                onClick: _deleteFolder,
+              ),
+          ],
+        ),
+      ],
+      bottom: tab,
+    );
+  }
+
+  Widget _buildMultiSelectAppbar(PreferredSizeWidget tab) {
+    return SliverAppbar(
+      key: PageStorageKey(
+        '${manager.folderAnimes(favoritesController.folder)}',
+      ),
+      style: context.width < changePoint
+          ? AppbarStyle.shadow
+          : AppbarStyle.blur,
+      leading: Tooltip(
+        message: t.cancel,
+        child: IconButton(icon: const Icon(Icons.close), onPressed: _cancel),
+      ),
+      title: Text(t.selectedAAnimes(a: selectedAnimes.length)),
+      actions: [
+        MenuButton(
+          entries: [
+            MenuEntry(
+              icon: Icons.star_rounded,
+              text: t.favoriteActions,
+              onClick: _showFavoriteDialog,
+            ),
+            MenuEntry(
+              icon: Icons.select_all,
+              text: t.selectAll,
+              onClick: selectAll,
+            ),
+            MenuEntry(icon: Icons.deselect, text: t.deselect, onClick: _cancel),
+            MenuEntry(
+              icon: Icons.flip,
+              text: t.invertSelection,
+              onClick: invertSelection,
+            ),
+            MenuEntry(
+              icon: Icons.delete_outline,
+              text: t.deleteAnime,
+              color: context.colorScheme.error,
+              onClick: () => showConfirmDialog(
+                context: context,
+                title: t.delete,
+                content: t.deleteCAnimes(c: selectedAnimes.length),
+                btnColor: context.colorScheme.error,
+                onConfirm: _deleteAnimeWithId,
+              ),
+            ),
+          ],
+        ),
+      ],
+      bottom: tab,
+    );
+  }
+
+  Widget _buildSearchAppbar(PreferredSizeWidget tab) {
+    return SliverAppbar(
+      key: PageStorageKey(
+        '${manager.folderAnimes(favoritesController.folder)}',
+      ),
+      style: context.width < changePoint
+          ? AppbarStyle.shadow
+          : AppbarStyle.blur,
+      leading: Tooltip(
+        message: t.cancel,
+        child: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _exitSearchAllMode,
+        ),
+      ),
+      title: TextField(
+        decoration: InputDecoration(
+          hintText: keyword.isNotEmpty ? keyword : t.searchAll,
+          border: const UnderlineInputBorder(),
+        ),
+        onChanged: (v) {
+          keyword = v;
+          searchHasUpper = keyword.contains(RegExp(r'[A-Z]'));
+          updateSearchAllResult();
+        },
+      ).paddingBottom(4).paddingRight(8),
+      bottom: tab,
+    );
+  }
+
+  void _enterSearchAllMode() {
+    setState(() {
+      keyword = '';
+      searchAllMode = true;
+      updateSearchAllResult();
+    });
+  }
+
+  void _exitSearchAllMode() {
+    setState(() {
+      searchAllMode = false;
+      favoritesController.isRefreshEnabled = true;
+    });
+    updateAnimes();
+  }
+
+  void _renameFolder() {
+    showInputDialog(
+      context: App.rootContext,
+      title: t.rename,
+      hintText: t.newName,
+      onConfirm: (value) {
+        final err = validateFolderName(value.toString());
+        if (err != null) return err;
+        favoritesController.isRefreshEnabled = true;
+        manager.rename(favoritesController.folder, value.toString());
+        manager.initCounts();
+        favPage.setFolder(false, value.toString());
+        return null;
+      },
+    );
+  }
+
+  void _exportFolder() {
+    final json = manager.folderToJson(favoritesController.folder);
+    saveFile(
+      data: utf8.encode(json),
+      filename: '${favoritesController.folder}.json',
+    );
+  }
+
+  void _deleteFolder() {
+    showConfirmDialog(
+      context: App.rootContext,
+      title: t.delete,
+      content: t.deleteFolderF(f: favoritesController.folder),
+      btnColor: context.colorScheme.error,
+      onConfirm: () {
+        favoritesController.isRefreshEnabled = true;
+        manager.deleteFolder(favoritesController.folder);
+        final oldIndex = favoritesController.index;
+        if (favoritesController.folders.isEmpty) {
+          favoritesController.index = 0;
+          favoritesController.folder = '';
+          favPage.setFolder(false, null);
+        } else {
+          favoritesController.index =
+              oldIndex >= favoritesController.folders.length
+              ? favoritesController.folders.length - 1
+              : oldIndex;
+          favoritesController.folder =
+              favoritesController.folders[favoritesController.index];
+          favPage.setFolder(false, favoritesController.folder);
+        }
+        setState(() {});
+      },
+    );
+  }
+
+  Future<void> _showFavoriteDialog() async {
+    favoritesController.isRefreshEnabled = true;
+    final changed = await _FavoriteDialog.show(
+      context: context,
+      selectedAnimes: selectedAnimes,
+      favPage: favPage,
+      cancel: _cancel,
+      favoritesController: favoritesController,
+    );
+    if (changed == true) {
+      manager.initCounts();
+      favoritesController.isRefreshEnabled = true;
+      await updateAnimes();
+      if (searchAllMode) updateSearchAllResult();
+      if (mounted) {
+        setState(() {
+          multiSelectMode = false;
+          selectedAnimes.clear();
+          favoritesController.tabs = _buildTabs();
+        });
+      }
+    }
+  }
+
+  void update() => setState(() {});
+
+  void selectAll() {
+    setState(() {
+      selectedAnimes = {};
+      final list = _currentList(favoritesController.folder);
+      for (final anime in list) {
+        selectedAnimes[anime] = true;
+      }
+    });
+  }
+
+  void invertSelection() {
+    setState(() {
+      final list = _currentList(favoritesController.folder);
+      for (final anime in list) {
+        if (selectedAnimes.containsKey(anime)) {
+          selectedAnimes.remove(anime);
+        } else {
+          selectedAnimes[anime] = true;
+        }
+      }
+    });
+  }
+
+  void scrollToTop() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  List<FavoriteItem> _currentList(String name) => searchMode
+      ? (searchResults[name] ?? [])
+      : (favoritesController.animes[name] ?? []);
+
   void _checkExitSelectMode() {
     if (selectedAnimes.isEmpty) {
-      setState(() {
-        multiSelectMode = false;
-      });
+      setState(() => multiSelectMode = false);
     }
   }
 
@@ -948,14 +653,200 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
   void _deleteAnimeWithId() {
     favoritesController.isRefreshEnabled = true;
-    var toBeDeleted = selectedAnimes.keys
-        .map((e) => e as FavoriteItem)
-        .toList();
-    manager.batchDeleteAnimes(favoritesController.folder, toBeDeleted);
-    // updateAnimes();
+    final toDelete = selectedAnimes.keys.map((e) => e as FavoriteItem).toList();
+    manager.batchDeleteAnimes(favoritesController.folder, toDelete);
     _cancel();
   }
 
+  void _onAnimeTap(Anime a, int heroID) {
+    if (a.viewMore != null && a.viewMore?.attributes != null) {
+      var context = App.mainNavigatorKey!.currentContext!;
+      a.viewMore!.jump(context);
+      return;
+    }
+    App.mainNavigatorKey?.currentContext?.to(
+      () => AnimePage(
+        id: a.id,
+        sourceKey: a.sourceKey,
+        cover: a.cover,
+        title: a.title,
+        heroID: heroID,
+      ),
+    );
+    final stats = StatsManager();
+    if (!stats.isExist(a.id, AnimeType(a.sourceKey.hashCode))) {
+      try {
+        stats.addStats(
+          stats.createStatsData(
+            id: a.id,
+            title: a.title,
+            cover: a.cover,
+            type: a.sourceKey.hashCode,
+          ),
+        );
+      } catch (e) {
+        StatsLog.error('addStats', e.toString());
+      }
+    }
+    manager.updateRecentlyWatched(a.id, AnimeType(a.sourceKey.hashCode));
+  }
+
+  void _onAnimeMultiTap(Anime a, int heroID, String name) {
+    setState(() {
+      final item = a as FavoriteItem;
+      if (selectedAnimes.containsKey(item)) {
+        selectedAnimes.remove(item);
+        _checkExitSelectMode();
+      } else {
+        selectedAnimes[item] = true;
+      }
+      lastSelectedIndex = _currentList(name).indexOf(item);
+    });
+  }
+
+  void _onAnimeLongPress(Anime a, int heroID, String name) {
+    setState(() {
+      final item = a as FavoriteItem;
+      if (!multiSelectMode) {
+        multiSelectMode = true;
+        selectedAnimes[item] = true;
+        lastSelectedIndex = _currentList(name).indexOf(item);
+        return;
+      }
+      // Range select.
+      if (lastSelectedIndex != null && lastSelectedIndex! >= 0) {
+        int start = lastSelectedIndex!;
+        int end = _currentList(name).indexOf(item);
+        if (end < 0) return;
+        if (start > end) {
+          final tmp = start;
+          start = end;
+          end = tmp;
+        }
+        final list = _currentList(name);
+        for (int i = start; i <= end; i++) {
+          if (i == lastSelectedIndex) continue;
+          final anime = list[i];
+          if (selectedAnimes.containsKey(anime)) {
+            selectedAnimes.remove(anime);
+          } else {
+            selectedAnimes[anime] = true;
+          }
+        }
+      }
+      lastSelectedIndex = _currentList(name).indexOf(item);
+      _checkExitSelectMode();
+    });
+  }
+
   @override
-  bool get wantKeepAlive => true;
+  Widget build(BuildContext context) {
+    super.build(context);
+    if (favoritesController.tabs.isEmpty) {
+      favoritesController.tabs = _buildTabs();
+    }
+
+    final tab = _buildTabBar();
+
+    Widget body = NestedScrollView(
+      controller: scrollController,
+      headerSliverBuilder: (context, _) => [
+        if (!searchAllMode && !searchMode && !multiSelectMode)
+          _buildNormalAppbar(tab)
+        else if (multiSelectMode)
+          _buildMultiSelectAppbar(tab)
+        else if (searchAllMode)
+          _buildSearchAppbar(tab),
+      ],
+      body: isLoading
+          ? const Center(
+              child: SizedBox(
+                height: 200,
+                width: 200,
+                child: KostoriRefreshIndicator(),
+              ),
+            )
+          : TabBarView(
+              key: PageStorageKey('${widget.favoritesController.folders}'),
+              controller: widget.favoritesController.tabController,
+              children: widget.favoritesController.folders.map((name) {
+                return Observer(
+                  builder: (context) => SliverGridAnimes(
+                    key: PageStorageKey('local_$name'),
+                    asSliver: false,
+                    animes: searchAllMode
+                        ? (searchResults[name] ?? [])
+                        : (favoritesController.animes[name] ?? []),
+                    selections: selectedAnimes,
+                    enableFavorite: false,
+                    onTap: multiSelectMode
+                        ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
+                        : _onAnimeTap,
+                    onLongPressed: (a, heroID) =>
+                        _onAnimeLongPress(a, heroID, name),
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+
+    body = Stack(
+      children: [
+        Positioned.fill(child: body),
+        Positioned(
+          bottom: 10,
+          right: 10,
+          child: FloatingMenu(
+            controller: scrollController,
+            child: [
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.refresh),
+                  backgroundColor: context.colorScheme.primaryContainer,
+                  foregroundColor: context.colorScheme.onPrimaryContainer,
+                  onTap: updateAnimes,
+                ),
+              ],
+              [
+                SpeedDialChild(
+                  child: const Icon(Icons.vertical_align_top),
+                  backgroundColor: context.colorScheme.primaryContainer,
+                  foregroundColor: context.colorScheme.onPrimaryContainer,
+                  onTap: scrollToTop,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+
+    body = AppScrollBar(
+      topPadding:
+          52.0 + MediaQuery.of(context).padding.top + tab.preferredSize.height,
+      controller: scrollController,
+      isNested: true,
+      child: ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: body,
+      ),
+    );
+
+    return PopScope(
+      key: PageStorageKey('${favoritesController.folders}'),
+      canPop: !multiSelectMode && !searchAllMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (multiSelectMode) {
+          setState(() {
+            multiSelectMode = false;
+            selectedAnimes.clear();
+          });
+        } else if (searchAllMode) {
+          _exitSearchAllMode();
+        }
+      },
+      child: body,
+    );
+  }
 }
