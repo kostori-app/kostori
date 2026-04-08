@@ -671,7 +671,7 @@ class HistoryAllNotifier extends StreamNotifier<List<History>> {
   @override
   Stream<List<History>> build() async* {
     final manager = HistoryManager();
-    await manager.init();
+    if (!manager.isInitialized) await manager.init();
     yield* manager.watchAll();
   }
 }
