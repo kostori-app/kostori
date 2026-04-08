@@ -94,7 +94,7 @@ class Anime {
   Anime.fromJson(Map<String, dynamic> json, this.sourceKey)
     : title = json["title"],
       subtitle = json["subtitle"] ?? "",
-      cover = json["cover"],
+      cover = json["cover"] ?? '',
       id = json["id"],
       tags = List<String>.from(json["tags"] ?? []),
       description = json["description"] ?? "",
