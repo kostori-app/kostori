@@ -24,22 +24,26 @@ class _StatsViewPageState extends State<StatsViewPage> {
 
   Future<void> _loadData() async {
     final map = await StatsManager().getRatingsWithBangumiIds();
+    final manager = providerContainer.read(bangumiManagerProvider);
 
     final newMap = <int, List<BangumiItem>>{};
-    for (final entry in map.entries) {
-      final items = <BangumiItem>[];
-      for (final id in entry.value) {
-        final item = await providerContainer
-            .read(bangumiManagerProvider)
-            .getBangumiItem(id);
-        if (item != null) items.add(item);
-      }
-      newMap[entry.key] = items;
-    }
-    ratingBangumiMap = newMap;
 
+    for (final entry in map.entries) {
+      if (!mounted) return;
+
+      final results = await Future.wait(
+        entry.value.map((id) => manager.getBangumiItem(id)),
+      );
+
+      if (!mounted) return;
+
+      newMap[entry.key] = results.whereType<BangumiItem>().toList();
+    }
+
+    ratingBangumiMap = newMap;
     ratingList = List.generate(10, (i) => ratingBangumiMap[i + 1]?.length ?? 0);
     _calculateStats();
+
     if (mounted) setState(() => loading = false);
   }
 
