@@ -36,10 +36,15 @@ class _CategoriesPageState extends State<CategoriesPage>
         .where((element) => allCategories.contains(element))
         .toList();
     if (!categories.isEqualTo(this.categories)) {
+      final newController = TabController(
+        length: categories.length,
+        vsync: this,
+      );
       setState(() {
         this.categories = categories;
+        controller.dispose();
+        controller = newController;
       });
-      controller = TabController(length: categories.length, vsync: this);
     }
   }
 
@@ -58,7 +63,7 @@ class _CategoriesPageState extends State<CategoriesPage>
         .where((element) => allCategories.contains(element))
         .toList();
     appdata.settings.addListener(onSettingsChanged);
-    controller = TabController(length: categories.length, vsync: this);
+    controller = TabController(length: this.categories.length, vsync: this);
   }
 
   void addPage() {
@@ -123,6 +128,7 @@ class _CategoriesPageState extends State<CategoriesPage>
           ).paddingTop(context.padding.top),
           Expanded(
             child: TabBarView(
+              key: ValueKey(categories.join(',')),
               controller: controller,
               children: categories.map((e) => _CategoryPage(e)).toList(),
             ),
