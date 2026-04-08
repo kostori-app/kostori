@@ -13,8 +13,6 @@ class Appdata with Init {
 
   final Settings settings = Settings._create();
 
-  var searchHistory = <String>[];
-
   bool _isSavingData = false;
 
   Future<void> saveData([bool sync = true]) async {
@@ -34,29 +32,8 @@ class Appdata with Init {
     // }
   }
 
-  void addSearchHistory(String keyword) {
-    if (searchHistory.contains(keyword)) {
-      searchHistory.remove(keyword);
-    }
-    searchHistory.insert(0, keyword);
-    if (searchHistory.length > 50) {
-      searchHistory.removeLast();
-    }
-    saveData();
-  }
-
-  void removeSearchHistory(String keyword) {
-    searchHistory.remove(keyword);
-    saveData();
-  }
-
-  void clearSearchHistory() {
-    searchHistory.clear();
-    saveData();
-  }
-
   Map<String, dynamic> toJson() {
-    return {'settings': settings._data, 'searchHistory': searchHistory};
+    return {'settings': settings._data};
   }
 
   /// Following fields are related to device-specific data and should not be synced.
@@ -77,7 +54,6 @@ class Appdata with Init {
         }
       }
     }
-    searchHistory = List.from(data['searchHistory'] ?? []);
     saveData();
   }
 
@@ -110,7 +86,6 @@ class Appdata with Init {
           settings[key] = json['settings'][key];
         }
       }
-      searchHistory = List.from(json['searchHistory']);
     } catch (e) {
       Log.error("Appdata", "Failed to load appdata", e);
       Log.info("Appdata", "Resetting appdata");
