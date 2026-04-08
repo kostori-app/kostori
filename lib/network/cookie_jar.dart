@@ -19,11 +19,17 @@ class CookiesTable extends Table {
   String get tableName => 'cookies';
 
   TextColumn get name => text()();
+
   TextColumn get value => text()();
+
   TextColumn get domain => text()();
+
   TextColumn get path => text().nullable()();
+
   IntColumn get expires => integer().nullable()();
+
   BoolColumn get secure => boolean().withDefault(const Constant(false))();
+
   BoolColumn get httpOnly =>
       boolean().named('httpOnly').withDefault(const Constant(false))();
 
@@ -48,7 +54,7 @@ class _CookieDb extends _$_CookieDb {
 }
 
 LazyDatabase _openConn(String dbPath) => LazyDatabase(() async {
-  return NativeDatabase.createInBackground(File(dbPath));
+  return NativeDatabase(File(dbPath));
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -67,7 +73,9 @@ class CookieJarSql {
     try {
       return await op();
     } catch (e) {
-      if (e.toString().contains('connection was closed')) {
+      final msg = e.toString();
+      if (msg.contains('connection was closed') ||
+          msg.contains("Can't re-open a database")) {
         _db = _CookieDb(path);
         return await op();
       }
@@ -271,16 +279,14 @@ class SingleInstanceCookieJar extends CookieJarSql {
 // ═══════════════════════════════════════════════════════════
 
 class CookieManagerSql extends Interceptor {
-  final CookieJarSql cookieJar;
-
-  CookieManagerSql(this.cookieJar);
+  CookieJarSql get _jar => SingleInstanceCookieJar.instance!;
 
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final cookies = await cookieJar.loadForRequestCookieHeader(options.uri);
+    final cookies = await _jar.loadForRequestCookieHeader(options.uri);
     if (cookies.isNotEmpty) {
       final existing = options.headers['cookie'];
       options.headers['cookie'] = existing != null
@@ -292,7 +298,7 @@ class CookieManagerSql extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) async {
-    await cookieJar.saveFromResponseCookieHeader(
+    await _jar.saveFromResponseCookieHeader(
       response.requestOptions.uri,
       response.headers['set-cookie'] ?? [],
     );

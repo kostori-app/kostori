@@ -256,9 +256,7 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
               ..findProxy = (uri) => proxy == null ? "DIRECT" : "PROXY $proxy";
           },
         );
-        dio.interceptors.add(
-          CookieManagerSql(SingleInstanceCookieJar.instance!),
-        );
+        dio.interceptors.add(CookieManagerSql());
         dio.interceptors.add(LogInterceptor());
       }
       response = await dio!.request(
