@@ -137,7 +137,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
           ).paddingHorizontal(16),
           const Divider(height: 1, indent: 16, endIndent: 16),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             child: buildViewWidget(context),
           ),
         ],
@@ -169,7 +169,7 @@ class _StatsViewPageState extends State<StatsViewPage> {
   Widget _buildNormalLayout() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [_buildStatsCards(), const SizedBox(height: 12), _buildChart()],
+      children: [_buildStatsCards(), const SizedBox(height: 24), _buildChart()],
     );
   }
 

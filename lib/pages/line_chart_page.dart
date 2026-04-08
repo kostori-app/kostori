@@ -358,10 +358,10 @@ class IntListBarChartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxValue = values.isEmpty ? 1.0 : values.reduce(max).toDouble();
     final yInterval = _calculateOptimalIntegerInterval(maxValue);
-    final maxY = _ceilToInterval(maxValue + 1, yInterval); // +1 margin
+    final maxY = _ceilToInterval(maxValue + 1, yInterval);
 
     return AspectRatio(
-      aspectRatio: 1.2, // 更扁，条子高度更短
+      aspectRatio: 1.2,
       child: BarChart(
         BarChartData(
           maxY: maxY > 0 ? maxY : 1,
@@ -431,7 +431,6 @@ class IntListBarChartPage extends StatelessWidget {
             toY: count,
             gradient: gradient,
             width: 12,
-            // 条子宽一点看起来更短
             borderSide: BorderSide.none,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           ),
