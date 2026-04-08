@@ -1264,3 +1264,6 @@ lanCommandFailed: 命令执行失败
 lanNoPermission: 无权限
 lanOpenAnimeDetail: 打开动漫详情
 lanSyncProgress: 同步进度
+aggregationEntry: 聚合入口
+aiLabel: AI
+lanLabel: 局域网

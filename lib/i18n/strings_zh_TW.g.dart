@@ -2552,6 +2552,12 @@ class TranslationsZhTw extends Translations
   @override String get lanOpenAnimeDetail => '打開動漫詳情';
 
   @override String get lanSyncProgress => '同步進度';
+
+  @override String get aggregationEntry => '聚合入口';
+
+  @override String get aiLabel => 'AI';
+
+  @override String get lanLabel => '區域網';
 }
 
 // Path: colors
@@ -3940,6 +3946,9 @@ extension on TranslationsZhTw {
       'lanNoPermission' => '無權限',
       'lanOpenAnimeDetail' => '打開動漫詳情',
       'lanSyncProgress' => '同步進度',
+      'aggregationEntry' => '聚合入口',
+      'aiLabel' => 'AI',
+      'lanLabel' => '區域網',
       _ => null,
     };
   }

@@ -1270,3 +1270,6 @@ lanCommandFailed: Command failed
 lanNoPermission: No permission
 lanOpenAnimeDetail: Open Anime Detail
 lanSyncProgress: Sync Progress
+aggregationEntry: Aggregation Entry
+aiLabel: AI
+lanLabel: LAN

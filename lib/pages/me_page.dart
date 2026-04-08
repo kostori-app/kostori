@@ -56,10 +56,9 @@ class _MePageState extends State<MePage> {
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
         const QrClipboardWidget(),
-        const _LanDiscoveryEntry(),
+        const _AiHubLanCompositeEntry(),
         const TodayRecommendation(),
         const _ImageManipulation(),
-        const AiHubEntry(),
         const _StatsViewPage(),
         SliverPadding(
           padding: EdgeInsets.only(top: context.padding.bottom + 56),
@@ -438,6 +437,125 @@ class _TodayRecCard extends StatelessWidget {
   }
 }
 
+// IconTile: reusable small icon-row tile with optional subtitle
+class IconTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+
+  const IconTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: cs.primary, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: ts.s16),
+                  if (subtitle != null)
+                    Text(subtitle!, style: ts.s12.copyWith(color: cs.outline)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: cs.outline),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Composite entry merging AiHubEntry and LanDiscovery into one block
+class _AiHubLanCompositeEntry extends StatelessWidget {
+  const _AiHubLanCompositeEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: cs.outlineVariant, width: 0.6),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.dashboard, color: cs.primary, size: 24),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(t.aggregationEntry, style: ts.s16)),
+                ],
+              ),
+            ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  _iconBlock(
+                    context,
+                    Icons.extension,
+                    () => context.to(() => const AiHubPage()),
+                    t.aiLabel,
+                  ),
+                  const SizedBox(width: 28),
+                  _iconBlock(
+                    context,
+                    Icons.wifi_find,
+                    () => context.to(() => const LanDiscoveryPage()),
+                    t.lanLabel,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _iconBlock(
+    BuildContext context,
+    IconData icon,
+    VoidCallback onTap,
+    String label,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(icon: Icon(icon), color: cs.primary, onPressed: onTap),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
 class _ImageManipulation extends ConsumerStatefulWidget {
   const _ImageManipulation();
 
@@ -593,51 +711,5 @@ class _StatsViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SliverToBoxAdapter(child: StatsViewPage());
-  }
-}
-
-class _LanDiscoveryEntry extends StatelessWidget {
-  const _LanDiscoveryEntry();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return SliverToBoxAdapter(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          border: Border.all(color: cs.outlineVariant, width: 0.6),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            context.to(() => const LanDiscoveryPage());
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(Icons.wifi_find, color: cs.primary, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(t.lanDiscovery, style: ts.s16),
-                      Text(
-                        t.lanRemoteControlDescription,
-                        style: ts.s12.copyWith(color: cs.outline),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: cs.outline),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

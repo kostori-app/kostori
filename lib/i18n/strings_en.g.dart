@@ -3684,6 +3684,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Sync Progress'
 	String get lanSyncProgress => 'Sync Progress';
+
+	/// en: 'Aggregation Entry'
+	String get aggregationEntry => 'Aggregation Entry';
+
+	/// en: 'AI'
+	String get aiLabel => 'AI';
+
+	/// en: 'LAN'
+	String get lanLabel => 'LAN';
 }
 
 // Path: colors
@@ -5093,6 +5102,9 @@ extension on Translations {
 			'lanNoPermission' => 'No permission',
 			'lanOpenAnimeDetail' => 'Open Anime Detail',
 			'lanSyncProgress' => 'Sync Progress',
+			'aggregationEntry' => 'Aggregation Entry',
+			'aiLabel' => 'AI',
+			'lanLabel' => 'LAN',
 			_ => null,
 		};
 	}
