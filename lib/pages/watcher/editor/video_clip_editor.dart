@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'dart:math';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart'
     if (dart.library.io) 'package:ffmpeg_kit_flutter_new_min_gpl/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter_new_min_gpl/return_code.dart'
@@ -16,7 +15,6 @@ import 'package:flutter/services.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
@@ -319,10 +317,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     setState(() => _isPlaying = false);
   }
 
-  void _seekToStart() {
-    _previewPlayer?.seek(_previewSeekTarget);
-  }
-
   Future<void> _initPreviewPlayer() async {
     _previewPosSub?.cancel();
     _previewPosSub = null;
@@ -375,47 +369,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       if (!mounted) return;
       setState(() => _previewStatus = t.loadingPlayer);
 
-      bool hAenable = appdata.settings['hAenable'] ?? true;
-      String hardwareDecoder =
-          appdata.settings['hardwareDecoder'] ?? 'auto-safe';
-      String videoRenderer = '';
-      if (App.isAndroid) {
-        final info = await DeviceInfo.getDeviceInfo();
-
-        final String androidVideoRenderer =
-            appdata.settings['animeListDisplayMode'];
-
-        if (androidVideoRenderer == 'auto') {
-          // Android 14 及以上使用基于 Vulkan 的 MPV GPU-NEXT 视频输出，着色器性能更好
-          // GPU-NEXT 需要 Vulkan 1.2 支持
-          // 避免 Android 14 及以下设备上部分机型 Vulkan 支持不佳导致的黑屏问题
-          final int androidSdkVersion =
-              (info as AndroidDeviceInfo).version.sdkInt;
-          if (androidSdkVersion >= 34) {
-            videoRenderer = 'gpu-next';
-          } else {
-            videoRenderer = 'gpu';
-          }
-        } else {
-          videoRenderer = androidVideoRenderer;
-        }
-      }
-
-      if (videoRenderer == 'mediacodec_embed') {
-        hAenable = true;
-        hardwareDecoder = 'mediacodec';
-      }
-
       final player = Player();
-      final controller = VideoController(
-        player,
-        configuration: VideoControllerConfiguration(
-          vo: videoRenderer,
-          enableHardwareAcceleration: hAenable,
-          hwdec: hAenable ? hardwareDecoder : 'no',
-          androidAttachSurfaceAfterVideoParameters: false,
-        ),
-      );
+      final controller = VideoController(player);
 
       await player.open(
         Media(
@@ -736,35 +691,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         }
         _endTime = Duration(milliseconds: newEnd);
       }
-    });
-  }
-
-  void _setStartToCurrent() {
-    final pos = _previewPlayer?.state.position ?? _startTime;
-    setState(() {
-      _startTime = pos;
-      if (_startTime >= _endTime) {
-        _endTime = _startTime + const Duration(seconds: 1);
-        final maxEndTime =
-            _startTime + const Duration(milliseconds: maxExportDurationMs);
-        if (_endTime > maxEndTime) _endTime = maxEndTime;
-        if (_endTime > _videoDuration) _endTime = _videoDuration;
-      }
-    });
-  }
-
-  void _setEndToCurrent() {
-    final pos = _previewPlayer?.state.position ?? _endTime;
-    setState(() {
-      _endTime = pos;
-      if (_endTime <= _startTime) {
-        _startTime = _endTime - const Duration(seconds: 1);
-        if (_startTime < Duration.zero) _startTime = Duration.zero;
-      }
-      final maxEndTime =
-          _startTime + const Duration(milliseconds: maxExportDurationMs);
-      if (_endTime > maxEndTime) _endTime = maxEndTime;
-      if (_endTime > _videoDuration) _endTime = _videoDuration;
     });
   }
 
@@ -1271,7 +1197,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           else if (_previewController != null)
             Video(
               controller: _previewController!,
-              fill: Colors.transparent,
+              fill: Colors.black,
               controls: NoVideoControls,
             ),
 
@@ -1434,20 +1360,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     final isCompact = App.isMobile;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        isCompact ? 8 : 16,
-        12,
-        isCompact ? 8 : 16,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Card.outlined(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            isCompact ? 8 : 12,
-            12,
-            isCompact ? 8 : 12,
-            8,
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1503,9 +1419,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                         },
                       ),
               ),
-
               const SizedBox(height: 12),
-
               if (isCompact)
                 Column(
                   children: [
@@ -1519,67 +1433,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     _buildFineControl(isStart: true, compact: isCompact),
                     const Spacer(),
                     _buildFineControl(isStart: false, compact: isCompact),
-                  ],
-                ),
-
-              const SizedBox(height: 10),
-
-              if (isCompact)
-                Row(
-                  children: [
-                    OutlinedButton(
-                      onPressed: _setStartToCurrent,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 4,
-                          horizontal: 8,
-                        ),
-                        minimumSize: Size.zero,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.content_cut, size: 14),
-                          const SizedBox(width: 4),
-                          const Text('起点', style: TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: _setEndToCurrent,
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 4,
-                          horizontal: 8,
-                        ),
-                        minimumSize: Size.zero,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.content_cut_rounded, size: 14),
-                          const SizedBox(width: 4),
-                          const Text('终点', style: TextStyle(fontSize: 12)),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton.outlined(
-                      onPressed: _seekToStart,
-                      icon: const Icon(Icons.skip_previous, size: 16),
-                      tooltip: '跳到起点',
-                      style: IconButton.styleFrom(
-                        minimumSize: const Size(32, 32),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    // Expanded OutlinedButton... (kept as is)
                   ],
                 ),
             ],
