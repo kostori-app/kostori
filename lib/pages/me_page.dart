@@ -19,6 +19,7 @@ import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
+import 'package:kostori/pages/video_test_page.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
@@ -56,7 +57,7 @@ class _MePageState extends State<MePage> {
         SliverPadding(padding: EdgeInsets.only(top: context.padding.top)),
         const _SyncDataWidget(),
         const QrClipboardWidget(),
-        const _AiHubLanCompositeEntry(),
+        const _ToolEntryGrid(),
         const TodayRecommendation(),
         const _ImageManipulation(),
         const _StatsViewPage(),
@@ -93,7 +94,6 @@ class _MePageState extends State<MePage> {
       ],
     );
 
-    // 滚动条封装
     widget = AppScrollBar(
       topPadding: 56,
       controller: scrollController,
@@ -482,9 +482,8 @@ class IconTile extends StatelessWidget {
   }
 }
 
-// Composite entry merging AiHubEntry and LanDiscovery into one block
-class _AiHubLanCompositeEntry extends StatelessWidget {
-  const _AiHubLanCompositeEntry();
+class _ToolEntryGrid extends StatelessWidget {
+  const _ToolEntryGrid();
 
   @override
   Widget build(BuildContext context) {
@@ -528,6 +527,13 @@ class _AiHubLanCompositeEntry extends StatelessWidget {
                     () => context.to(() => const LanDiscoveryPage()),
                     t.lanLabel,
                   ),
+                  const SizedBox(width: 28),
+                  _iconBlock(
+                    context,
+                    Icons.play_circle_outline_rounded,
+                    () => context.to(() => const VideoTestPage()),
+                    t.videoTestLabel,
+                  ),
                 ],
               ),
             ),
@@ -550,7 +556,7 @@ class _AiHubLanCompositeEntry extends StatelessWidget {
       children: [
         IconButton(icon: Icon(icon), color: cs.primary, onPressed: onTap),
         const SizedBox(height: 4),
-        Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       ],
     );
   }

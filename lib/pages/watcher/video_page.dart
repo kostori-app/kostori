@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -251,7 +252,7 @@ class _VideoPageState extends State<VideoPage>
         ],
       ),
       child: Container(
-        color: Colors.black.toOpacity(0.42),
+        color: Colors.transparent,
         child: Column(
           children: [
             _buildTabBar(),
@@ -734,7 +735,7 @@ class _VideoPageState extends State<VideoPage>
   }
 
   Widget _buildPlayerDetailsTab() {
-    return VideoInfoSheet(playerController: playerController);
+    return VideoInfoSheet.fromController(playerController);
   }
 
   Widget get playerBody {

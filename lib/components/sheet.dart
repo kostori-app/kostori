@@ -572,3 +572,609 @@ Future<void> showQrShareSheet(
     builder: (_) => QrShareSheet(config: config),
   );
 }
+
+abstract class VideoInfoSource {
+  List<Media> get medias;
+
+  String get videoUrl;
+
+  VideoParams get videoParams;
+
+  AudioParams get audioParams;
+
+  AudioTrack get audioTrack;
+
+  VideoTrack get videoTrack;
+
+  String get audioBitrate;
+
+  List<PlayerLogEntry> get logs;
+}
+
+class PlayerControllerInfoSource implements VideoInfoSource {
+  final PlayerController controller;
+
+  const PlayerControllerInfoSource(this.controller);
+
+  @override
+  List<Media> get medias => controller.playerPlaylist.medias;
+
+  @override
+  String get videoUrl => controller.videoUrl;
+
+  @override
+  VideoParams get videoParams => controller.playerVideoParams;
+
+  @override
+  AudioParams get audioParams => controller.playerAudioParams;
+
+  @override
+  AudioTrack get audioTrack => controller.playerAudioTracks;
+
+  @override
+  VideoTrack get videoTrack => controller.playerVideoTracks;
+
+  @override
+  String get audioBitrate => controller.playerAudioBitrate;
+
+  @override
+  List<PlayerLogEntry> get logs => controller.playerLog;
+}
+
+class RawPlayerInfoSource implements VideoInfoSource {
+  final Player player;
+  @override
+  final String videoUrl;
+  @override
+  final List<PlayerLogEntry> logs;
+
+  const RawPlayerInfoSource({
+    required this.player,
+    required this.videoUrl,
+    required this.logs,
+  });
+
+  @override
+  List<Media> get medias => player.state.playlist.medias;
+
+  @override
+  VideoParams get videoParams => player.state.videoParams;
+
+  @override
+  AudioParams get audioParams => player.state.audioParams;
+
+  @override
+  AudioTrack get audioTrack => player.state.track.audio;
+
+  @override
+  VideoTrack get videoTrack => player.state.track.video;
+
+  @override
+  String get audioBitrate => player.state.audioBitrate?.toString() ?? '-';
+}
+
+class ParamCard extends StatelessWidget {
+  final String title;
+  final Map<String, Object?> params;
+
+  const ParamCard({super.key, required this.title, required this.params});
+
+  @override
+  Widget build(BuildContext context) {
+    final String allText = [
+      title,
+      ...params.entries
+          .where((e) => e.value != null)
+          .map((e) => '${e.key}: ${e.value}'),
+    ].join('\n');
+
+    return Material(
+      elevation: 2,
+      color: Theme.of(context).brightness == Brightness.light
+          ? Colors.white.toOpacity(0.72)
+          : const Color(0xFF1E1E1E).toOpacity(0.72),
+      shadowColor: Theme.of(context).colorScheme.shadow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: allText));
+          App.rootContext.showMessage(message: t.copySuccess);
+        },
+        child: Container(
+          width: 300,
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                title,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                scrollPhysics: const NeverScrollableScrollPhysics(),
+              ),
+              const SizedBox(height: 8),
+              ...params.entries
+                  .where((e) => e.value != null)
+                  .map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: SelectableText.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '${e.key}: ',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(text: e.value.toString()),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MediaInfoWidget extends StatelessWidget {
+  final VideoParams? videoParams;
+  final AudioParams? audioParams;
+  final AudioTrack? audioTrack;
+  final VideoTrack? videoTrack;
+  final String? audioBitrate;
+
+  const MediaInfoWidget({
+    super.key,
+    this.videoParams,
+    this.audioParams,
+    this.audioTrack,
+    this.videoTrack,
+    this.audioBitrate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> cards = [];
+
+    if (videoParams != null) {
+      final Map<String, Object?> videoMap = {
+        t.pixelFormat: videoParams!.pixelformat,
+        t.hwPixelFormat: videoParams!.hwPixelformat,
+        t.resolution: '${videoParams!.w}x${videoParams!.h}',
+        t.displayWidth: videoParams!.dw,
+        t.displayHeight: videoParams!.dh,
+        t.aspect: videoParams!.aspect,
+        t.pixelAspectRatio: videoParams!.par,
+        t.colormatrix: videoParams!.colormatrix,
+        t.colorLevels: videoParams!.colorlevels,
+        t.primaries: videoParams!.primaries,
+        t.gamma: videoParams!.gamma,
+        t.signalPeak: videoParams!.sigPeak,
+        t.lights: videoParams!.light,
+        t.chromaLocation: videoParams!.chromaLocation,
+        t.rotate: videoParams!.rotate,
+        t.stereoIn: videoParams!.stereoIn,
+        t.averageBpp: videoParams!.averageBpp,
+        t.alpha: videoParams!.alpha,
+      };
+
+      if (videoTrack != null) {
+        videoMap.addAll({
+          t.trackId: videoTrack!.id,
+          t.trackTitle: videoTrack!.title,
+          t.trackLanguage: videoTrack!.language,
+          t.trackImage: videoTrack!.image,
+          t.trackAlbumArt: videoTrack!.albumart,
+          t.trackCodec: videoTrack!.codec,
+          t.trackDecoder: videoTrack!.decoder,
+          t.trackWidth: videoTrack!.w,
+          t.trackHeight: videoTrack!.h,
+          t.trackChannelsCount: videoTrack!.channelscount,
+          t.trackChannels: videoTrack!.channels,
+          t.trackSampleRate: videoTrack!.samplerate,
+          t.trackFps: videoTrack!.fps,
+          t.trackBitrate: videoTrack!.bitrate,
+          t.trackRotate: videoTrack!.rotate,
+          t.trackPar: videoTrack!.par,
+          t.trackAudioChannels: videoTrack!.audiochannels,
+        });
+      }
+
+      cards.add(ParamCard(title: t.video, params: videoMap));
+    }
+
+    if (audioParams != null) {
+      final Map<String, Object?> audioMap = {
+        t.format: audioParams!.format,
+        t.sampleRate: audioParams!.sampleRate,
+        t.channels: audioParams!.channels,
+        t.channelCount: audioParams!.channelCount,
+        t.hrChannels: audioParams!.hrChannels,
+      };
+
+      if (audioTrack != null) {
+        audioMap.addAll({
+          t.trackId: audioTrack!.id,
+          t.trackTitle: audioTrack!.title,
+          t.trackLanguage: audioTrack!.language,
+          t.uriTrack: audioTrack!.uri,
+          t.trackImage: audioTrack!.image,
+          t.trackAlbumArt: audioTrack!.albumart,
+          t.trackCodec: audioTrack!.codec,
+          t.trackDecoder: audioTrack!.decoder,
+          t.trackWidth: audioTrack!.w,
+          t.trackHeight: audioTrack!.h,
+          t.channelsCount: audioTrack!.channelscount,
+          t.channels: audioTrack!.channels,
+          t.trackSampleRate: audioTrack!.samplerate,
+          t.fps: audioTrack!.fps,
+          t.bitrate: audioTrack!.bitrate,
+          t.rotate: audioTrack!.rotate,
+          t.par: audioTrack!.par,
+          t.audioChannels: audioTrack!.audiochannels,
+        });
+      }
+
+      if (audioBitrate != null) {
+        audioMap.addAll({t.audioBitrate: audioBitrate});
+      }
+
+      cards.add(ParamCard(title: t.audio, params: audioMap));
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: cards
+              .map(
+                (card) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: card,
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class MediaWidget extends StatelessWidget {
+  final Media media;
+
+  const MediaWidget({super.key, required this.media});
+
+  @override
+  Widget build(BuildContext context) {
+    final String allText = media.uri;
+
+    return Material(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onLongPress: () {
+          Clipboard.setData(ClipboardData(text: allText));
+          App.rootContext.showMessage(message: t.copySuccess);
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                t.media,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(media.uri, style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VideoInfoSheet extends StatefulWidget {
+  factory VideoInfoSheet.fromController(PlayerController controller) =>
+      VideoInfoSheet._(source: PlayerControllerInfoSource(controller));
+
+  factory VideoInfoSheet.fromPlayer({
+    required Player player,
+    required String videoUrl,
+    required List<PlayerLogEntry> logs,
+  }) => VideoInfoSheet._(
+    source: RawPlayerInfoSource(player: player, videoUrl: videoUrl, logs: logs),
+  );
+
+  const VideoInfoSheet._({required this.source});
+
+  final VideoInfoSource source;
+
+  @override
+  _VideoInfoSheetState createState() => _VideoInfoSheetState();
+}
+
+class _VideoInfoSheetState extends State<VideoInfoSheet>
+    with TickerProviderStateMixin {
+  late TabController _tabControllerZero;
+  late TabController _tabControllerOne;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabControllerZero = TabController(length: 2, vsync: this);
+    _tabControllerOne = TabController(length: 3, vsync: this);
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _tabControllerZero.dispose();
+    _tabControllerOne.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      child: Column(
+        children: [
+          ExtendedTabBar(
+            controller: _tabControllerZero,
+            mainAxisAlignment: MainAxisAlignment.center,
+            tabs: [
+              Tab(text: t.status),
+              Tab(text: t.log),
+            ],
+            indicatorSize: TabBarIndicatorSize.tab,
+          ),
+          Expanded(
+            child: ExtendedTabBarView(
+              shouldIgnorePointerWhenScrolling: false,
+              controller: _tabControllerZero,
+              children: [
+                KeepAliveWrapper(child: _buildVideoInfoTab()),
+                KeepAliveWrapper(child: _buildVideoLogTab()),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoInfoTab() {
+    return Material(
+      color: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (widget.source.medias.isNotEmpty)
+                MediaWidget(media: widget.source.medias.first),
+              Material(
+                child: InkWell(
+                  onLongPress: () {
+                    Clipboard.setData(
+                      ClipboardData(text: widget.source.videoUrl),
+                    );
+                    App.rootContext.showMessage(message: t.copySuccess);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SelectableText(
+                          t.source,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                          scrollPhysics: const NeverScrollableScrollPhysics(),
+                        ),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          'URI: ${widget.source.videoUrl}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          scrollPhysics: const NeverScrollableScrollPhysics(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              MediaInfoWidget(
+                videoParams: widget.source.videoParams,
+                audioParams: widget.source.audioParams,
+                audioTrack: widget.source.audioTrack,
+                videoTrack: widget.source.videoTrack,
+                audioBitrate: widget.source.audioBitrate,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoLogTab() {
+    final logs = widget.source.logs;
+
+    final Map<String, List<PlayerLogEntry>> logsByLevel = {
+      'info': [],
+      'warn': [],
+      'error': [],
+    };
+    for (var entry in logs) {
+      final level = entry.log.level;
+      if (logsByLevel.containsKey(level)) {
+        logsByLevel[level]!.add(entry);
+      } else {
+        logsByLevel['info']!.add(entry);
+      }
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: ExtendedTabBar(
+        controller: _tabControllerOne,
+        mainAxisAlignment: MainAxisAlignment.center,
+        tabs: logsByLevel.keys
+            .map((level) => Tab(text: level.toUpperCase()))
+            .toList(),
+      ),
+      body: ExtendedTabBarView(
+        shouldIgnorePointerWhenScrolling: false,
+        controller: _tabControllerOne,
+        children: logsByLevel.keys.map((level) {
+          final levelLogs = logsByLevel[level]!;
+
+          return Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: ListView.separated(
+              itemCount: levelLogs.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final entry = levelLogs[index];
+                final log = entry.log;
+                final timeStr = DateFormat('HH:mm:ss').format(entry.time);
+
+                return Material(
+                  elevation: 2,
+                  color: Theme.of(context).brightness == Brightness.light
+                      ? Colors.white.toOpacity(0.85)
+                      : const Color(0xFF1E1E1E).toOpacity(0.85),
+                  shadowColor: Theme.of(context).colorScheme.shadow,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 6,
+                              ),
+                              child: Text(
+                                log.prefix,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: log.level == 'error'
+                                    ? Theme.of(context).colorScheme.error
+                                    : log.level == 'warn'
+                                    ? Theme.of(
+                                        context,
+                                      ).colorScheme.errorContainer
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2,
+                                horizontal: 6,
+                              ),
+                              child: Text(
+                                log.level,
+                                style: TextStyle(
+                                  color: log.level == 'error'
+                                      ? Colors.white
+                                      : Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              timeStr,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          log.text,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: log.text));
+                              App.rootContext.showMessage(
+                                message: t.copySuccess,
+                              );
+                            },
+                            child: Text(t.copy),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        }).toList(),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.copy),
+        onPressed: () {
+          final allText = widget.source.logs
+              .map(
+                (e) =>
+                    '[${DateFormat('HH:mm:ss').format(e.time)}] ${e.log.level} ${e.log.prefix}: ${e.log.text}',
+              )
+              .join('\n');
+          Clipboard.setData(ClipboardData(text: allText));
+          App.rootContext.showMessage(message: t.copySuccess);
+        },
+      ),
+    );
+  }
+}
+
+class PlayerLogEntry {
+  final PlayerLog log;
+  final DateTime time;
+
+  PlayerLogEntry(this.log) : time = DateTime.now();
+}
