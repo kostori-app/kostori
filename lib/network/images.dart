@@ -30,6 +30,11 @@ abstract class ImageDownloader {
     if (sourceKey != null) {
       var animeSource = AnimeSource.find(sourceKey);
       configs = animeSource?.getThumbnailLoadingConfig?.call(url) ?? {};
+      final sourceHeaders = animeSource?.httpHeaders ?? {};
+      configs['headers'] = {
+        ...sourceHeaders,
+        ...(configs['headers'] as Map? ?? {}),
+      };
     }
     configs['headers'] ??= {};
     if (configs['headers']['user-agent'] == null &&
@@ -152,6 +157,11 @@ abstract class ImageDownloader {
             eid,
           )) ??
           {};
+      final sourceHeaders = animeSource.httpHeaders ?? {};
+      configs['headers'] = {
+        ...sourceHeaders,
+        ...(configs['headers'] as Map? ?? {}),
+      };
     }
     var retryLimit = 5;
     while (true) {
