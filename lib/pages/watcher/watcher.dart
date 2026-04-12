@@ -282,9 +282,9 @@ class WatcherState extends State<Watcher>
           }
         }
 
-        // 保存实际播放的 URL 和 headers
         playerController.playUrl = actualPlayUrl;
         playerController.videoHeaders = actualPlayUrl == res ? headers : null;
+        PlayLog.info('_play', 'httpHraders: $headers');
 
         await playerController.player.open(
           Media(
@@ -479,7 +479,7 @@ class WatcherState extends State<Watcher>
     history.allEpisode =
         anime.episode?.values.elementAt(playerController.currentRoad).length ??
         0;
-    if (anime.cover.isNotEmpty) {
+    if (anime.cover.trim().isNotEmpty) {
       history.cover = anime.cover;
     }
     await HistoryManager().addHistory(history);

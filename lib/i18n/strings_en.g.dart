@@ -3897,6 +3897,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'No Category Pages'
 	String get noCategoryPages => 'No Category Pages';
+
+	/// en: 'videoTestLabel'
+	String get videoTestLabel => 'videoTestLabel';
 }
 
 // Path: colors
@@ -5377,6 +5380,7 @@ extension on Translations {
 			'manage' => 'Manage',
 			'pleaseAddSomeSources' => 'Please add some sources',
 			'noCategoryPages' => 'No Category Pages',
+			'videoTestLabel' => 'videoTestLabel',
 			_ => null,
 		};
 	}

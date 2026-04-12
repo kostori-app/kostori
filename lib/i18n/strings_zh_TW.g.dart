@@ -1325,6 +1325,7 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get endPointPlus0_1s => '終點 +0.1s';
 	@override String get startPointPlus1s => '起點 +1s';
 	@override String get endPointPlus1s => '終點 +1s';
+	@override String get videoTestLabel => '影片測試';
 }
 
 // Path: colors
@@ -2719,6 +2720,7 @@ extension on TranslationsZhTw {
 			'endPointPlus0_1s' => '終點 +0.1s',
 			'startPointPlus1s' => '起點 +1s',
 			'endPointPlus1s' => '終點 +1s',
+			'videoTestLabel' => '影片測試',
 			_ => null,
 		};
 	}

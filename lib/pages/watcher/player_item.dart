@@ -184,7 +184,7 @@ class _PlayerItemState extends State<PlayerItem>
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
-      builder: (_) => VideoInfoSheet(playerController: playerController),
+      builder: (_) => VideoInfoSheet.fromController(playerController),
     );
   }
 

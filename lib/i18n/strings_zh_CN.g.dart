@@ -2702,6 +2702,8 @@ class TranslationsZhCn extends Translations
   @override String get startPointPlus1s => '起点 +1s';
 
   @override String get endPointPlus1s => '终点 +1s';
+
+  @override String get videoTestLabel => '视频测试';
 }
 
 // Path: colors
@@ -4168,6 +4170,7 @@ extension on TranslationsZhCn {
       'endPointPlus0_1s' => '终点 +0.1s',
       'startPointPlus1s' => '起点 +1s',
       'endPointPlus1s' => '终点 +1s',
+      'videoTestLabel' => '视频测试',
       _ => null,
     };
   }

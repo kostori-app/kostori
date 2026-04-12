@@ -206,9 +206,58 @@ class AnimeTile extends ConsumerWidget {
         ),
       );
     }
+    final settingKey = 'debugInfo';
+
+    bool enabled = appdata.settings[settingKey] as bool? ?? false;
+
+    if (kDebugMode || enabled) {
+      menuEntries.add(
+        MenuEntry(
+          icon: Icons.info_outline_rounded,
+          text: t.debugInfo,
+          onClick: () {
+            ContentDialog.show(
+              context: App.rootContext,
+              title: t.debugInfo,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children:
+                    [
+                      ("title", anime.title),
+                      ("id", anime.id),
+                      ("sourceKey", anime.sourceKey),
+                      ("cover", anime.cover),
+                      ("subtitle", anime.subtitle),
+                      ("language", anime.language),
+                      ("stars", anime.stars?.toString()),
+                      ("favoriteId", anime.favoriteId),
+                      ("tags", anime.tags?.join(', ')),
+                      ("description", anime.description),
+                      (
+                        "viewMore",
+                        "${anime.viewMore?.page} / ${anime.viewMore?.attributes}",
+                      ),
+                    ].map((e) {
+                      final text = "${e.$1}: ${e.$2}";
+                      return InkWell(
+                        onLongPress: () {
+                          Clipboard.setData(ClipboardData(text: text));
+                          App.rootContext.showMessage(message: "已复制: ${e.$1}");
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Text(text),
+                        ),
+                      );
+                    }).toList(),
+              ),
+            );
+          },
+        ),
+      );
+    }
 
     if (isRemoteConnected) {
-      // ✅ FIX: 直接从 LanControlClient 单例读取设备，不走 Provider
       final connectedDevice = LanControlClient.instance.connectedDevice;
 
       menuEntries.add(
