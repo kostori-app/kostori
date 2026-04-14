@@ -48,3 +48,14 @@ app.*.map.json
 /CHANGELOG.md
 /yarn.lock
 /.versionrc.js
+
+# Generated platform files (Safe to remove as they are regenerated)
+**/GeneratedPluginRegistrant.swift
+**/GeneratedPluginRegistrant.m
+**/GeneratedPluginRegistrant.h
+**/GeneratedPluginRegistrant.java
+**/GeneratedPluginRegistrant.objc.h
+
+# Gradle and Android build reports
+**/build/reports/
+.gradle/
