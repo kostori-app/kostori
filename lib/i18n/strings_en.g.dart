@@ -3900,6 +3900,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'videoTestLabel'
 	String get videoTestLabel => 'videoTestLabel';
+
+	/// en: 'uploading'
+	String get uploading => 'uploading';
 }
 
 // Path: colors
@@ -5381,6 +5384,7 @@ extension on Translations {
 			'pleaseAddSomeSources' => 'Please add some sources',
 			'noCategoryPages' => 'No Category Pages',
 			'videoTestLabel' => 'videoTestLabel',
+			'uploading' => 'uploading',
 			_ => null,
 		};
 	}

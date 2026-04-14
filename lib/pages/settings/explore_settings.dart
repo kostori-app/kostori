@@ -53,7 +53,7 @@ class _ExploreSettingsState extends State<ExploreSettings> {
                   ),
                   _SwitchSetting(
                     title: t.horizontalLayout,
-                    settingKey: "explore_horizontal_layout",
+                    settingKey: "exploreHorizontalLayout",
                   ),
 
                   SelectSetting(
@@ -212,40 +212,13 @@ class _SourcesListState extends State<_SourcesList> {
   }
 
   void _loadData() {
-    var savedOrder = List<String>.from(
-      appdata.settings["explore_sources_order"] ?? [],
-    );
+    var savedOrder = List<String>.from(appdata.settings.s.exploreSourcesOrder);
     sourcePages = {};
     sourceKeys = [];
 
-    // ✅ 读取新格式
-    final rawMap = appdata.settings["explore_pages_v2"];
+    final rawMap = appdata.settings.s.explorePagesV2;
     Map<String, List<String>>? pagesMap;
-    if (rawMap is Map) {
-      pagesMap = rawMap.map(
-        (k, v) => MapEntry(k as String, List<String>.from(v as List)),
-      );
-    }
-
-    // ✅ 旧格式一次性迁移：首次升级时自动转换
-    if (pagesMap == null) {
-      final oldPages = List<String>.from(
-        appdata.settings["explore_pages"] ?? [],
-      );
-      pagesMap = {};
-      for (var source in AnimeSource.all()) {
-        var allPagesForSource = source.explorePages
-            .map((e) => e.title)
-            .toList();
-        pagesMap[source.key] = oldPages
-            .where((p) => allPagesForSource.contains(p))
-            .toSet()
-            .toList();
-      }
-      // 立即持久化新格式
-      appdata.settings["explore_pages_v2"] = pagesMap;
-      appdata.saveData();
-    }
+    pagesMap = rawMap.map((k, v) => MapEntry(k, List<String>.from(v as List)));
 
     for (var key in savedOrder) {
       var source = AnimeSource.find(key);
@@ -279,8 +252,8 @@ class _SourcesListState extends State<_SourcesList> {
     for (var key in sourceKeys) {
       pagesMap[key] = sourcePages[key] ?? [];
     }
-    appdata.settings["explore_pages_v2"] = pagesMap;
-    appdata.settings["explore_sources_order"] = List<String>.from(sourceKeys);
+    appdata.settings.update((s) => s.copyWith(explorePagesV2: pagesMap));
+    appdata.settings.update((s) => s.copyWith(exploreSourcesOrder: sourceKeys));
     appdata.saveData();
   }
 

@@ -16,31 +16,32 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
   @override
   void initState() {
     super.initState();
-    themeMode = themeModes.keys.toList().indexOf(
-      appdata.settings["theme_mode"],
-    );
+    themeMode = themeModes.keys.toList().indexOf(appdata.settings.s.themeMode);
     _tabController = TabController(
       length: themeModes.length,
       vsync: this,
       initialIndex: themeMode,
     );
     _tabController.addListener(() {
-      switch (_tabController.index) {
-        case 0:
-          appdata.settings["theme_mode"] = "system";
-          appdata.saveData();
-          App.forceRebuild();
-          break;
-        case 1:
-          appdata.settings["theme_mode"] = "light";
-          appdata.saveData();
-          App.forceRebuild();
-          break;
-        case 2:
-          appdata.settings["theme_mode"] = "dark";
-          appdata.saveData();
-          App.forceRebuild();
-          break;
+      if (!_tabController.indexIsChanging) {
+        String newMode;
+        switch (_tabController.index) {
+          case 0:
+            newMode = "system";
+            break;
+          case 1:
+            newMode = "light";
+            break;
+          case 2:
+            newMode = "dark";
+            break;
+          default:
+            return;
+        }
+
+        appdata.settings.update((s) => s.copyWith(themeMode: newMode));
+        appdata.saveData();
+        App.forceRebuild();
       }
     });
   }
@@ -70,7 +71,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings>
               children: [
                 _SwitchSetting(
                   title: "AMOLED",
-                  settingKey: "AMOLED",
+                  settingKey: "amoled",
                   onChanged: () {
                     App.forceRebuild();
                   },

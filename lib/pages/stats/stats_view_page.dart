@@ -178,19 +178,19 @@ class _StatsViewPageState extends State<StatsViewPage> {
     const double cardHeight = 80;
     const double spacing = 8;
 
-    final int doing = appdata.settings['FavoriteTypeDoing'] != 'none'
+    final int doing = appdata.settings.s.favoriteTypeDoing != 'none'
         ? LocalFavoritesManager().folderAnimes(
-            appdata.settings['FavoriteTypeDoing'],
+            appdata.settings.s.favoriteTypeDoing,
           )
         : 0;
-    final int wish = appdata.settings['FavoriteTypeWish'] != 'none'
+    final int wish = appdata.settings.s.favoriteTypeWish != 'none'
         ? LocalFavoritesManager().folderAnimes(
-            appdata.settings['FavoriteTypeWish'],
+            appdata.settings.s.favoriteTypeWish,
           )
         : 0;
-    final int collect = appdata.settings['FavoriteTypeCollect'] != 'none'
+    final int collect = appdata.settings.s.favoriteTypeCollect != 'none'
         ? LocalFavoritesManager().folderAnimes(
-            appdata.settings['FavoriteTypeCollect'],
+            appdata.settings.s.favoriteTypeCollect,
           )
         : 0;
 
@@ -203,12 +203,12 @@ class _StatsViewPageState extends State<StatsViewPage> {
           break;
         case 1:
           content = Text(
-            '完成: ${appdata.settings['FavoriteTypeCollect'] != 'none' ? LocalFavoritesManager().folderAnimes(appdata.settings['FavoriteTypeCollect']) : '0'}',
+            '完成: ${appdata.settings.s.favoriteTypeCollect != 'none' ? LocalFavoritesManager().folderAnimes(appdata.settings.s.favoriteTypeCollect) : '0'}',
           );
           break;
         case 2:
           content = Text(
-            '完成率: ${appdata.settings['FavoriteTypeCollect'] != 'none' ? '${(LocalFavoritesManager().folderAnimes(appdata.settings['FavoriteTypeCollect']) / all * 100).toStringAsFixed(1)}%' : '0%'}',
+            '完成率: ${appdata.settings.s.favoriteTypeCollect != 'none' ? '${(LocalFavoritesManager().folderAnimes(appdata.settings.s.favoriteTypeCollect) / all * 100).toStringAsFixed(1)}%' : '0%'}',
           );
           break;
         case 3:

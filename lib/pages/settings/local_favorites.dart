@@ -9,11 +9,11 @@ class LocalFavoritesSettings extends StatefulWidget {
 
 class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
   final excludeSet = {
-    appdata.settings['FavoriteTypeWish'],
-    appdata.settings['FavoriteTypeDoing'],
-    appdata.settings['FavoriteTypeCollect'],
-    appdata.settings['FavoriteTypeOnHold'],
-    appdata.settings['FavoriteTypeDropped'],
+    appdata.settings.s.favoriteTypeWish,
+    appdata.settings.s.favoriteTypeDoing,
+    appdata.settings.s.favoriteTypeCollect,
+    appdata.settings.s.favoriteTypeOnHold,
+    appdata.settings.s.favoriteTypeDropped,
   };
 
   @override
@@ -42,61 +42,61 @@ class _LocalFavoritesSettingsState extends State<LocalFavoritesSettings> {
                 ),
                 SelectSetting(
                   title: t.favoriteType + t.wishStatus,
-                  settingKey: "FavoriteTypeWish",
+                  settingKey: "favoriteTypeWish",
                   help: t.markTheSelectedFavoritesAs + t.wishStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
                       if (e != 'default' && !excludeSet.contains(e) ||
-                          e == appdata.settings['FavoriteTypeWish'])
+                          e == appdata.settings.s.favoriteTypeWish)
                         e: e,
                   },
                 ),
                 SelectSetting(
                   title: t.favoriteType + t.doingStatus,
-                  settingKey: "FavoriteTypeDoing",
+                  settingKey: "favoriteTypeDoing",
                   help: t.markTheSelectedFavoritesAs + t.doingStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
                       if (e != 'default' && !excludeSet.contains(e) ||
-                          e == appdata.settings['FavoriteTypeDoing'])
+                          e == appdata.settings.s.favoriteTypeDoing)
                         e: e,
                   },
                 ),
                 SelectSetting(
                   title: t.favoriteType + t.collectStatus,
-                  settingKey: "FavoriteTypeCollect",
+                  settingKey: "favoriteTypeCollect",
                   help: t.markTheSelectedFavoritesAs + t.collectStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
                       if (e != 'default' && !excludeSet.contains(e) ||
-                          e == appdata.settings['FavoriteTypeCollect'])
+                          e == appdata.settings.s.favoriteTypeCollect)
                         e: e,
                   },
                 ),
                 SelectSetting(
                   title: t.favoriteType + t.onHoldStatus,
-                  settingKey: "FavoriteTypeOnHold",
+                  settingKey: "favoriteTypeOnHold",
                   help: t.markTheSelectedFavoritesAs + t.onHoldStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
                       if (e != 'default' && !excludeSet.contains(e) ||
-                          e == appdata.settings['FavoriteTypeOnHold'])
+                          e == appdata.settings.s.favoriteTypeOnHold)
                         e: e,
                   },
                 ),
                 SelectSetting(
                   title: t.favoriteType + t.droppedStatus,
-                  settingKey: "FavoriteTypeDropped",
+                  settingKey: "favoriteTypeDropped",
                   help: t.markTheSelectedFavoritesAs + t.droppedStatus,
                   optionTranslation: {
                     'none': 'none',
                     for (var e in LocalFavoritesManager().folderNames)
                       if (e != 'default' && !excludeSet.contains(e) ||
-                          e == appdata.settings['FavoriteTypeDropped'])
+                          e == appdata.settings.s.favoriteTypeDropped)
                         e: e,
                   },
                 ),

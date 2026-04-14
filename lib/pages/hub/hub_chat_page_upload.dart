@@ -52,7 +52,7 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     final state = this as _HubChatPageState;
     try {
       if (App.isDesktop) {
-        final result = await FilePicker.platform.pickFiles(
+        final result = await FilePicker.pickFiles(
           type: FileType.image,
           allowMultiple: true,
           withData: true,

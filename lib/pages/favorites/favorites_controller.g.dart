@@ -27,6 +27,60 @@ mixin _$FavoritesController on _FavoritesController, Store {
     });
   }
 
+  late final _$isRefreshEnabledAtom = Atom(
+    name: '_FavoritesController.isRefreshEnabled',
+    context: context,
+  );
+
+  @override
+  bool get isRefreshEnabled {
+    _$isRefreshEnabledAtom.reportRead();
+    return super.isRefreshEnabled;
+  }
+
+  @override
+  set isRefreshEnabled(bool value) {
+    _$isRefreshEnabledAtom.reportWrite(value, super.isRefreshEnabled, () {
+      super.isRefreshEnabled = value;
+    });
+  }
+
+  late final _$indexAtom = Atom(
+    name: '_FavoritesController.index',
+    context: context,
+  );
+
+  @override
+  int get index {
+    _$indexAtom.reportRead();
+    return super.index;
+  }
+
+  @override
+  set index(int value) {
+    _$indexAtom.reportWrite(value, super.index, () {
+      super.index = value;
+    });
+  }
+
+  late final _$folderAtom = Atom(
+    name: '_FavoritesController.folder',
+    context: context,
+  );
+
+  @override
+  String get folder {
+    _$folderAtom.reportRead();
+    return super.folder;
+  }
+
+  @override
+  set folder(String value) {
+    _$folderAtom.reportWrite(value, super.folder, () {
+      super.folder = value;
+    });
+  }
+
   late final _$tabsAtom = Atom(
     name: '_FavoritesController.tabs',
     context: context,
@@ -63,60 +117,6 @@ mixin _$FavoritesController on _FavoritesController, Store {
     });
   }
 
-  late final _$folderAtom = Atom(
-    name: '_FavoritesController.folder',
-    context: context,
-  );
-
-  @override
-  String get folder {
-    _$folderAtom.reportRead();
-    return super.folder;
-  }
-
-  @override
-  set folder(String value) {
-    _$folderAtom.reportWrite(value, super.folder, () {
-      super.folder = value;
-    });
-  }
-
-  late final _$indexAtom = Atom(
-    name: '_FavoritesController.index',
-    context: context,
-  );
-
-  @override
-  int get index {
-    _$indexAtom.reportRead();
-    return super.index;
-  }
-
-  @override
-  set index(int value) {
-    _$indexAtom.reportWrite(value, super.index, () {
-      super.index = value;
-    });
-  }
-
-  late final _$isRefreshEnabledAtom = Atom(
-    name: '_FavoritesController.isRefreshEnabled',
-    context: context,
-  );
-
-  @override
-  bool get isRefreshEnabled {
-    _$isRefreshEnabledAtom.reportRead();
-    return super.isRefreshEnabled;
-  }
-
-  @override
-  set isRefreshEnabled(bool value) {
-    _$isRefreshEnabledAtom.reportWrite(value, super.isRefreshEnabled, () {
-      super.isRefreshEnabled = value;
-    });
-  }
-
   late final _$animesAtom = Atom(
     name: '_FavoritesController.animes',
     context: context,
@@ -132,6 +132,24 @@ mixin _$FavoritesController on _FavoritesController, Store {
   set animes(ObservableMap<String, List<FavoriteItem>> value) {
     _$animesAtom.reportWrite(value, super.animes, () {
       super.animes = value;
+    });
+  }
+
+  late final _$wishListAtom = Atom(
+    name: '_FavoritesController.wishList',
+    context: context,
+  );
+
+  @override
+  ObservableList<BangumiItem> get wishList {
+    _$wishListAtom.reportRead();
+    return super.wishList;
+  }
+
+  @override
+  set wishList(ObservableList<BangumiItem> value) {
+    _$wishListAtom.reportWrite(value, super.wishList, () {
+      super.wishList = value;
     });
   }
 
@@ -168,24 +186,6 @@ mixin _$FavoritesController on _FavoritesController, Store {
   set collectList(ObservableList<BangumiItem> value) {
     _$collectListAtom.reportWrite(value, super.collectList, () {
       super.collectList = value;
-    });
-  }
-
-  late final _$wishListAtom = Atom(
-    name: '_FavoritesController.wishList',
-    context: context,
-  );
-
-  @override
-  ObservableList<BangumiItem> get wishList {
-    _$wishListAtom.reportRead();
-    return super.wishList;
-  }
-
-  @override
-  set wishList(ObservableList<BangumiItem> value) {
-    _$wishListAtom.reportWrite(value, super.wishList, () {
-      super.wishList = value;
     });
   }
 
@@ -229,15 +229,15 @@ mixin _$FavoritesController on _FavoritesController, Store {
   String toString() {
     return '''
 isLoading: ${isLoading},
+isRefreshEnabled: ${isRefreshEnabled},
+index: ${index},
+folder: ${folder},
 tabs: ${tabs},
 folders: ${folders},
-folder: ${folder},
-index: ${index},
-isRefreshEnabled: ${isRefreshEnabled},
 animes: ${animes},
+wishList: ${wishList},
 doingList: ${doingList},
 collectList: ${collectList},
-wishList: ${wishList},
 onHoldList: ${onHoldList},
 droppedList: ${droppedList}
     ''';

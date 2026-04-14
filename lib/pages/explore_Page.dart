@@ -33,8 +33,7 @@ class _ExplorePageState extends State<ExplorePage>
 
   bool get showFB => exploreController.showFB;
 
-  bool get horizontalLayout =>
-      appdata.settings['explore_horizontal_layout'] ?? false;
+  bool get horizontalLayout => appdata.settings.s.exploreHorizontalLayout;
 
   double location = 0;
 
@@ -43,9 +42,7 @@ class _ExplorePageState extends State<ExplorePage>
 
   void onSettingsChanged() {
     final pagesMap = _readPagesMap();
-    var savedOrder = List<String>.from(
-      appdata.settings["explore_sources_order"] ?? [],
-    );
+    var savedOrder = List<String>.from(appdata.settings.s.exploreSourcesOrder);
     var allSources = AnimeSource.all();
     var newSourcePages = <String, List<String>>{};
     var newSources = <String>[];
@@ -114,13 +111,8 @@ class _ExplorePageState extends State<ExplorePage>
   }
 
   Map<String, List<String>> _readPagesMap() {
-    final rawMap = appdata.settings["explore_pages_v2"];
-    if (rawMap is Map) {
-      return rawMap.map(
-        (k, v) => MapEntry(k as String, List<String>.from(v as List)),
-      );
-    }
-    return {};
+    final rawMap = appdata.settings.s.explorePagesV2;
+    return rawMap.map((k, v) => MapEntry(k, List<String>.from(v as List)));
   }
 
   NaviPaneState? naviPane;
@@ -139,9 +131,7 @@ class _ExplorePageState extends State<ExplorePage>
 
   void _initSourcesAndPages() {
     final pagesMap = _readPagesMap();
-    var savedOrder = List<String>.from(
-      appdata.settings["explore_sources_order"] ?? [],
-    );
+    var savedOrder = List<String>.from(appdata.settings.s.exploreSourcesOrder);
     sourcePages = {};
     sources = [];
 
@@ -361,8 +351,7 @@ class _ExplorePageState extends State<ExplorePage>
                       [
                         SpeedDialChild(
                           child:
-                              appdata.settings['explore_horizontal_layout'] ==
-                                  true
+                              appdata.settings.s.exploreHorizontalLayout == true
                               ? Icon(Icons.view_week)
                               : Icon(Icons.view_module),
                           backgroundColor: Theme.of(
@@ -372,10 +361,12 @@ class _ExplorePageState extends State<ExplorePage>
                             context,
                           ).colorScheme.onPrimaryContainer,
                           onTap: () {
-                            appdata.settings['explore_horizontal_layout'] =
-                                !(appdata
-                                        .settings['explore_horizontal_layout'] ??
-                                    false);
+                            appdata.settings.update(
+                              (s) => s.copyWith(
+                                exploreHorizontalLayout:
+                                    !appdata.settings.s.exploreHorizontalLayout,
+                              ),
+                            );
                             appdata.saveData();
                             setState(() {});
                           },
@@ -432,8 +423,7 @@ class _SingleExplorePageState extends AutomaticGlobalState<_SingleExplorePage>
   bool get showFB => exploreController.showFB;
 
   void onSettingsChanged() {
-    final rawMap = appdata.settings["explore_pages_v2"];
-    if (rawMap is! Map) return;
+    final rawMap = appdata.settings.s.explorePagesV2;
 
     final pages = List<String>.from(rawMap[animeSourceKey] ?? []);
     if (!pages.contains(widget.title)) {

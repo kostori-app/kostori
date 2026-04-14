@@ -551,11 +551,10 @@ class _AnimeSourceListState extends State<_AnimeSourceList> {
 }
 
 void _validatePages() {
-  final rawMap = appdata.settings["explore_pages_v2"];
-  if (rawMap is! Map) return;
+  final rawMap = appdata.settings.s.explorePagesV2;
 
   final pagesMap = rawMap.map(
-    (k, v) => MapEntry(k as String, List<String>.from(v as List)),
+    (k, v) => MapEntry(k, List<String>.from(v as List)),
   );
 
   var changed = false;
@@ -582,7 +581,7 @@ void _validatePages() {
   }
 
   if (changed) {
-    appdata.settings["explore_pages_v2"] = pagesMap;
+    appdata.settings.update((s) => s.copyWith(explorePagesV2: pagesMap));
   }
 
   List categoryPages = appdata.settings['categories'];
@@ -603,16 +602,10 @@ void _validatePages() {
 }
 
 void _addAllPagesWithAnimeSource(AnimeSource source) {
-  final rawMap = appdata.settings["explore_pages_v2"];
+  final rawMap = appdata.settings.s.explorePagesV2;
   Map<String, List<String>> pagesMap;
 
-  if (rawMap is Map) {
-    pagesMap = rawMap.map(
-      (k, v) => MapEntry(k as String, List<String>.from(v as List)),
-    );
-  } else {
-    pagesMap = {};
-  }
+  pagesMap = rawMap.map((k, v) => MapEntry(k, List<String>.from(v as List)));
 
   if (source.explorePages.isNotEmpty) {
     var existing = pagesMap[source.key] ?? [];
@@ -623,7 +616,7 @@ void _addAllPagesWithAnimeSource(AnimeSource source) {
     pagesMap[source.key] = existingSet.toList();
   }
 
-  appdata.settings["explore_pages_v2"] = pagesMap;
+  appdata.settings.update((s) => s.copyWith(explorePagesV2: pagesMap));
 
   var categoryPages = appdata.settings['categories'];
   var networkFavorites = appdata.settings['favorites'];

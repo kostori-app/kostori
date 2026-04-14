@@ -81,7 +81,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   void setName(String name) {
     setState(() => favoritesController.bangumiUserName = name);
     folderList?.update();
-    appdata.settings['BangumiUserName'] = name;
+    appdata.settings.update((s) => s.copyWith(bangumiUserName: name));
     appdata.saveData();
   }
 
@@ -99,8 +99,7 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
     super.initState();
     favoritesController = FavoritesController();
     pageId = appdata.settings['favoritePageId'] ?? 0;
-    favoritesController.bangumiUserName =
-        appdata.settings['BangumiUserName'] ?? '';
+    favoritesController.bangumiUserName = appdata.settings.s.bangumiUserName;
 
     // Ensure 'default' folder exists.
     final mgr = LocalFavoritesManager();

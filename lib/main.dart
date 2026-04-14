@@ -216,8 +216,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ];
     }
     final isAmoled =
-        (appdata.settings['theme_mode'] == 'dark' &&
-        appdata.settings['AMOLED']);
+        (appdata.settings.s.themeMode == 'dark' && appdata.settings.s.amoled);
 
     final Color color = primary;
     return ThemeData(

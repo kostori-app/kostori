@@ -239,7 +239,7 @@ class DirectoryPicker {
     try {
       String? directory;
       if (App.isWindows || App.isLinux) {
-        directory = await FilePicker.platform.getDirectoryPath();
+        directory = await FilePicker.getDirectoryPath();
       } else if (App.isAndroid) {
         directory = (await AndroidDirectory.pickDirectory())?.path;
         if (directory != null && directAccess) {
@@ -292,7 +292,7 @@ Future<FileSelectResult?> selectFile({required List<String> ext}) async {
   IO._isSelectingFiles = true;
 
   try {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ext,
     );
@@ -321,7 +321,7 @@ Future<String?> selectDirectory() async {
   if (IO._isSelectingFiles) return null;
   IO._isSelectingFiles = true;
   try {
-    final path = await FilePicker.platform.getDirectoryPath();
+    final path = await FilePicker.getDirectoryPath();
     return path;
   } finally {
     await Future.delayed(const Duration(milliseconds: 100));
@@ -357,7 +357,7 @@ Future<void> saveFile({
       final params = SaveFileDialogParams(sourceFilePath: file!.path);
       await FlutterFileDialog.saveFile(params: params);
     } else {
-      final result = await FilePicker.platform.saveFile(fileName: filename);
+      final result = await FilePicker.saveFile(fileName: filename);
       if (result != null) {
         await File(file!.path).copy(result);
       }

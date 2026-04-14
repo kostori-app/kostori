@@ -104,8 +104,8 @@ class _TranslationSettingsState extends State<TranslationSettings> {
                                     keyRow.apiKey.isEmpty ||
                                     !keyRow.isEnabled) {
                                   App.rootContext.showMessage(
-                                    message:
-                                        t.pleaseConfigureApiKeyInAiSettingsFirst,
+                                    message: t
+                                        .pleaseConfigureApiKeyInAiSettingsFirst,
                                   );
                                   return;
                                 }
@@ -160,7 +160,7 @@ class _DeepLConfigPageState extends State<_DeepLConfigPage> {
   @override
   void initState() {
     super.initState();
-    _apiKeyCtrl.text = appdata.settings['deeplKey'] ?? '';
+    _apiKeyCtrl.text = appdata.settings.s.deeplKey;
     _fetchUsage(_apiKeyCtrl.text);
   }
 
@@ -196,7 +196,7 @@ class _DeepLConfigPageState extends State<_DeepLConfigPage> {
       App.rootContext.showMessage(message: t.apiKeyCannotBeEmpty);
       return;
     }
-    appdata.settings['deeplKey'] = key;
+    appdata.settings.update((s) => s.copyWith(deeplKey: key));
     appdata.saveData();
     App.rootContext.showMessage(message: t.saved);
     App.rootContext.pop();

@@ -303,7 +303,7 @@ abstract class _PlayerController with Store {
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
     audioOutType = appdata.settings['audioOutType'] ?? true;
-    hAenable = appdata.settings['hAenable'] ?? true;
+    hAenable = appdata.settings.s.haEnable;
     hardwareDecoder = appdata.settings['hardwareDecoder'] ?? 'auto-safe';
     videoSync = appdata.settings['videoSynchronizationMode'] ?? 'audio';
 

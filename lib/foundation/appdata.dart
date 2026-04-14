@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/settings.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/utils/init.dart';
 import 'package:kostori/utils/io.dart';
@@ -27,16 +28,12 @@ class Appdata with Init {
     } finally {
       _isSavingData = false;
     }
-    // if (sync) {
-    //   DataSync().uploadData();
-    // }
   }
 
   Map<String, dynamic> toJson() {
-    return {'settings': settings._data};
+    return {'settings': settings.toJson()};
   }
 
-  /// Following fields are related to device-specific data and should not be synced.
   static const _disableSync = [
     "proxy",
     "authorizationRequired",
@@ -44,15 +41,15 @@ class Appdata with Init {
     "webdav",
   ];
 
-  /// Sync data from another device
   void syncData(Map<String, dynamic> data) {
     if (data['settings'] is Map) {
-      var settings = data['settings'] as Map<String, dynamic>;
-      for (var key in settings.keys) {
-        if (!_disableSync.contains(key)) {
-          this.settings[key] = settings[key];
-        }
+      final incoming = Map<String, dynamic>.from(data['settings'] as Map);
+      for (final key in _disableSync) {
+        incoming.remove(key);
       }
+      final current = settings.toJson();
+      current.addAll(incoming);
+      settings.fromJson(current);
     }
     saveData();
   }
@@ -72,24 +69,70 @@ class Appdata with Init {
     }
   }
 
+  Map<String, dynamic> _migrateSettings(Map<String, dynamic> oldJson) {
+    const mapping = {
+      'theme_mode': 'themeMode',
+      'BangumiUserName': 'bangumiUserName',
+      'AMOLED': 'amoled',
+      'hAenable': 'haEnable',
+      'deepleKey': 'deeplKey',
+      'explore_sources_order': 'exploreSourcesOrder',
+      'explore_pages_v2': 'explorePagesV2',
+      'explore_horizontal_layout': 'exploreHorizontalLayout',
+      'FavoriteTypeWish': 'favoriteTypeWish',
+      'FavoriteTypeDoing': 'favoriteTypeDoing',
+      'FavoriteTypeCollect': 'favoriteTypeCollect',
+      'FavoriteTypeOnHold': 'favoriteTypeOnHold',
+      'FavoriteTypeDropped': 'favoriteTypeDropped',
+    };
+
+    final newJson = Map<String, dynamic>.from(oldJson);
+    mapping.forEach((oldKey, newKey) {
+      if (newJson.containsKey(oldKey)) {
+        newJson[newKey] = newJson[oldKey];
+        newJson.remove(oldKey);
+      }
+    });
+    return newJson;
+  }
+
   @override
   Future<void> doInit() async {
     var dataPath = (await getApplicationSupportDirectory()).path;
     var file = File(FilePath.join(dataPath, 'appdata.json'));
-    if (!await file.exists()) {
-      return;
-    }
-    try {
-      var json = jsonDecode(await file.readAsString());
-      for (var key in (json['settings'] as Map<String, dynamic>).keys) {
-        if (json['settings'][key] != null) {
-          settings[key] = json['settings'][key];
+    if (await file.exists()) {
+      try {
+        var json =
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+        if (json['settings'] is Map) {
+          final migratedSettings = _migrateSettings(
+            Map<String, dynamic>.from(json['settings'] as Map),
+          );
+          try {
+            settings.fromJson(migratedSettings);
+          } catch (e) {
+            Log.error(
+              "Appdata",
+              "Settings parse error, falling back to defaults: $e",
+            );
+            final current = settings.toJson();
+            for (final key in migratedSettings.keys) {
+              try {
+                current[key] = migratedSettings[key];
+                settings.fromJson(Map<String, dynamic>.from(current));
+              } catch (_) {
+                current[key] = settings.toJson()[key];
+              }
+            }
+          }
         }
+      } catch (e) {
+        Log.error("Appdata", "Failed to load appdata", e);
+        file.deleteIgnoreError();
       }
-    } catch (e) {
-      Log.error("Appdata", "Failed to load appdata", e);
-      Log.info("Appdata", "Resetting appdata");
-      file.deleteIgnoreError();
+    }
+    if (settings.s.animeSourceListUrl.isEmpty) {
+      settings.update((s) => s.copyWith(animeSourceListUrl: Api.kostoriConfig));
     }
     try {
       var implicitDataFile = File(FilePath.join(dataPath, 'implicitData.json'));
@@ -110,97 +153,37 @@ final appdata = Appdata._create();
 class Settings with ChangeNotifier {
   Settings._create();
 
-  final _data = <String, dynamic>{
-    'animeDisplayMode': 'brief', // detailed, brief
-    'animeTileScale': 1.00, // 0.75-1.25
-    'color': 'blue', // red, pink, purple, green, orange, blue
-    'theme_mode': 'system', // light, dark, system
-    'newFavoriteAddTo': 'end', // start, end
-    'moveFavoriteAfterRead': 'none', // none, end, start
-    'proxy': 'system', // direct, system, proxy string
-    'categories': [],
-    'favorites': [],
-    'searchSources': null,
-    'showFavoriteStatusOnTile': true,
-    'showHistoryStatusOnTile': false,
-    'blockedWords': [],
-    'defaultSearchTarget': null,
-    'enableTapToTurnPages': true,
-    'enablePageAnimation': true,
-    'language': 'system', // system, zh-CN, zh-TW, en-US
-    'cacheSize': 2048, // in MB
-    'downloadThreads': 5,
-    'enableLongPressToZoom': true,
-    'checkUpdateOnStart': false,
-    'limitImageWidth': true,
-    'webdav': [], // empty means not configured
-    'dataVersion': 0,
-    'quickFavorite': null,
-    'enableTurnPageByVolumeKey': true,
-    'enableClockAndBatteryInfoInReader': true,
-    'authorizationRequired': false,
-    'enableDnsOverrides': false,
-    'dnsOverrides': {},
-    'sni': true,
-    'autoAddLanguageFilter': 'none',
-    'bangumiDataVer': null,
-    'getBangumiAllEpInfoTime': null,
-    'animeSourceListUrl': Api.kostoriConfig,
-    'gitMirror': false,
-    'initialPage': '0',
-    'debugInfo': false,
-    'BangumiUserName': '',
-    'favoritePageId': 0,
-    'AMOLED': false,
-    'dynamicColor': false,
-    'enableNoProxyOverrides': true,
-    'noProxyOverrides': ['bgm', 'bangumi'],
-    'ignoreBadCertificate': false,
-    'statsSelectors': [],
-    'FavoriteTypeWish': 'none',
-    'FavoriteTypeDoing': 'none',
-    'FavoriteTypeCollect': 'none',
-    'FavoriteTypeOnHold': 'none',
-    'FavoriteTypeDropped': 'none',
-    'animeListDisplayMode': 'paging',
-    'androidVideoRenderer': 'auto',
-    'hAenable': true,
-    'hardwareDecoder': 'auto-safe',
-    'audioOutType': true,
-    'videoSynchronizationMode': 'audio',
-    'translationSource': 'bing',
-    'calendarFetchEpisodes': false,
-    'enableNetLog': true,
-    'enableHubLog': true,
-    "enableStatsLog": true,
-    "enableSourceLog": true,
-    'enablePlayerLog': true,
-    'deepleKey': '',
-    'explore_sources_order': [],
-    'tileTitleMarquee': false,
-    'm3u8AdFilterEnabled': false,
-    'lanAutoDiscovery': true,
-    'explore_pages_v2': {},
-    'getCalendarDataTime': null,
-    'getBangumiDataTime': null,
-    'enableSkipUpdate': true,
-  };
+  SettingsData _state = const SettingsData();
 
-  dynamic operator [](String key) {
-    return _data[key];
+  SettingsData get s => _state;
+
+  /// 批量更新，freezed copyWith
+  void update(SettingsData Function(SettingsData) updater) {
+    final next = updater(_state);
+    if (next == _state) return;
+    _state = next;
+    notifyListeners();
   }
 
+  /// 从 json 全量替换（用于 doInit / syncData）
+  void fromJson(Map<String, dynamic> json) {
+    _state = SettingsData.fromJson(json);
+    notifyListeners();
+  }
+
+  /// 导出 json（用于 saveData / syncData）
+  Map<String, dynamic> toJson() => _state.toJson();
+
+  dynamic operator [](String key) => _state.toJson()[key];
+
   void operator []=(String key, dynamic value) {
-    _data[key] = value;
-    if (key != "dataVersion") {
-      notifyListeners();
-    }
+    final json = _state.toJson()..[key] = value;
+    _state = SettingsData.fromJson(json);
+    if (key != 'dataVersion') notifyListeners();
   }
 
   @override
-  String toString() {
-    return _data.toString();
-  }
+  String toString() => _state.toString();
 }
 
 const defaultAnimeSourceUrl =

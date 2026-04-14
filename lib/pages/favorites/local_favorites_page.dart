@@ -228,11 +228,11 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }
 
   List<Tab> _buildTabs() {
-    final wish = appdata.settings['FavoriteTypeWish'] ?? 'wish';
-    final doing = appdata.settings['FavoriteTypeDoing'] ?? 'doing';
-    final collect = appdata.settings['FavoriteTypeCollect'] ?? 'collect';
-    final onHold = appdata.settings['FavoriteTypeOnHold'] ?? 'on_hold';
-    final dropped = appdata.settings['FavoriteTypeDropped'] ?? 'dropped';
+    final wish = appdata.settings.s.favoriteTypeWish;
+    final doing = appdata.settings.s.favoriteTypeDoing;
+    final collect = appdata.settings.s.favoriteTypeCollect;
+    final onHold = appdata.settings.s.favoriteTypeOnHold;
+    final dropped = appdata.settings.s.favoriteTypeDropped;
 
     final iconMap = <String, IconData>{
       wish: Icons.star_rounded,
