@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -151,23 +152,56 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     Widget child;
     if (!DataSync().isEnabled) {
       child = const SliverPadding(padding: EdgeInsets.zero);
     } else if (DataSync().isUploading || DataSync().isDownloading) {
+      final progress = DataSync().progress;
+      final isUpload = DataSync().isUploading;
       child = SliverToBoxAdapter(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).colorScheme.primary),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: cs.outlineVariant, width: 0.6),
           ),
-          child: ListTile(
-            leading: const Icon(Icons.sync),
-            title: Text(t.syncingData),
-            trailing: const CircularProgressIndicator(
-              strokeWidth: 2,
-            ).fixWidth(18).fixHeight(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.sync),
+                title: Text(t.syncingData),
+                subtitle: Text(
+                  isUpload ? t.uploading : t.downloading,
+                  style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                ),
+                trailing: progress != null
+                    ? Text(
+                        '${(progress * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                          color: cs.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      )
+                    : const CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ).fixWidth(18).fixHeight(18),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: cs.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation(cs.primary),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -176,10 +210,8 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: cs.outlineVariant, width: 0.6),
           ),
           child: ListTile(
             leading: const Icon(Icons.sync),
@@ -249,7 +281,7 @@ class TodayRecommendation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final doingFolder = appdata.settings['FavoriteTypeDoing'] ?? 'none';
+    final doingFolder = appdata.settings.s.favoriteTypeDoing;
 
     if (doingFolder == 'none' ||
         doingFolder.isEmpty ||
@@ -488,6 +520,8 @@ class _ToolEntryGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final settingKey = 'debugInfo';
+    bool enabled = appdata.settings[settingKey] as bool? ?? false;
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -527,13 +561,15 @@ class _ToolEntryGrid extends StatelessWidget {
                     () => context.to(() => const LanDiscoveryPage()),
                     t.lanLabel,
                   ),
-                  const SizedBox(width: 28),
-                  _iconBlock(
-                    context,
-                    Icons.play_circle_outline_rounded,
-                    () => context.to(() => const VideoTestPage()),
-                    t.videoTestLabel,
-                  ),
+                  if (kDebugMode || enabled) ...[
+                    const SizedBox(width: 28),
+                    _iconBlock(
+                      context,
+                      Icons.play_circle_outline_rounded,
+                      () => context.to(() => const VideoTestPage()),
+                      t.videoTestLabel,
+                    ),
+                  ],
                 ],
               ),
             ),

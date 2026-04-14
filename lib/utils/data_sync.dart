@@ -37,6 +37,10 @@ class DataSync with ChangeNotifier {
 
   factory DataSync() => instance ?? (instance = DataSync._());
 
+  double? _progress;
+
+  double? get progress => _progress;
+
   bool _isDownloading = false;
 
   bool get isDownloading => _isDownloading;
@@ -134,7 +138,14 @@ class DataSync with ChangeNotifier {
           files.sort((a, b) => a.name!.compareTo(b.name!));
           await client.remove(files.first.name!);
         }
-        await client.write(filename, await data.readAsBytes());
+        await client.write(
+          filename,
+          await data.readAsBytes(),
+          onProgress: (count, total) {
+            _progress = total > 0 ? count / total : null;
+            notifyListeners();
+          },
+        );
         data.deleteIgnoreError();
         Log.info("Upload Data", "Data uploaded successfully");
         return const Res(true);
@@ -145,6 +156,7 @@ class DataSync with ChangeNotifier {
       }
     } finally {
       _isUploading = false;
+      _progress = null;
       notifyListeners();
     }
   }
@@ -193,7 +205,14 @@ class DataSync with ChangeNotifier {
         }
         Log.info("Data Sync", "Downloading data from WebDAV server");
         var localFile = File(FilePath.join(App.cachePath, file.name!));
-        await client.read2File(file.name!, localFile.path);
+        await client.read2File(
+          file.name!,
+          localFile.path,
+          onProgress: (count, total) {
+            _progress = total > 0 ? count / total : null;
+            notifyListeners();
+          },
+        );
         await importAppData(localFile, true);
         await localFile.delete();
         Log.info("Data Sync", "Data downloaded successfully");
@@ -205,6 +224,7 @@ class DataSync with ChangeNotifier {
       }
     } finally {
       _isDownloading = false;
+      _progress = null;
       notifyListeners();
     }
   }
