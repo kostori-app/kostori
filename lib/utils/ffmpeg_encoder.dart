@@ -296,9 +296,6 @@ class FfmpegEncoder {
   }) {
     final buf = StringBuffer();
 
-    buf.write('-ss $startSec ');
-    buf.write('-t $durationSec ');
-
     if (args.proxyUrl != null &&
         args.proxyUrl!.isNotEmpty &&
         (args.inputUrl.startsWith('http://') ||
@@ -308,8 +305,6 @@ class FfmpegEncoder {
       buf.write('-http_proxy "$proxy" ');
     }
 
-    buf.write('-i "$inputPath" ');
-
     if (args.headers.isNotEmpty &&
         (args.inputUrl.startsWith('http://') ||
             args.inputUrl.startsWith('https://'))) {
@@ -317,6 +312,13 @@ class FfmpegEncoder {
         buf.write('-headers "${e.key}: ${e.value}" ');
       }
     }
+
+    final roughSec = (startSec - 5).clamp(0.0, startSec);
+    buf.write('-ss $roughSec ');
+    buf.write('-i "$inputPath" ');
+
+    buf.write('-ss ${startSec - roughSec} ');
+    buf.write('-t $durationSec ');
 
     final filterParts = <String>[];
 

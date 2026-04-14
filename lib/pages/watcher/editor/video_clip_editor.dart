@@ -197,6 +197,11 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   bool _exportCancelled = false;
   bool _atScrollTop = true;
   Directory? _hlsTempDir;
+  int _previewDownloadStartMs = 0;
+
+  double? _estimatedBytes;
+  bool _sampling = false;
+  Timer? _sampleDebounce;
 
   final ValueNotifier<Duration> _positionNotifier = ValueNotifier(
     Duration.zero,
@@ -262,44 +267,89 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     return '$mm:$ss.$cs';
   }
 
-  String _estimatedSize() {
-    final durSec = _clipDuration.inMilliseconds / 1000.0;
-    if (durSec <= 0 || _videoWidth == 0) return '--';
-
-    final outW = _exportWidth ?? _videoWidth;
-    final outH = _videoWidth > 0 && _videoHeight > 0
-        ? (outW * _videoHeight / _videoWidth).round()
-        : outW * 9 ~/ 16;
-    final px = outW * outH;
-
-    int bytes;
-    switch (_format) {
-      case ExportFormat.mp4:
-        if (_mp4BitrateKbps != null) {
-          final audio = _includeAudio ? 128000.0 : 0.0;
-          bytes = ((_mp4BitrateKbps! * 1000.0 + audio) / 8 * durSec).round();
-        } else {
-          final bpp = switch (_quality) {
-            ExportQuality.high => 0.10,
-            ExportQuality.medium => 0.04,
-            ExportQuality.low => 0.015,
-          };
-          final audio = _includeAudio ? 16000.0 : 0.0;
-          bytes = ((px * bpp / 8 + audio) * durSec).round();
-        }
-      case ExportFormat.gif:
-        final colorFactor = (_gifColors / 256.0).clamp(0.1, 1.0);
-        final ditherFactor = _gifDither ? 1.15 : 1.0;
-        bytes = (px * _animFps * durSec * 0.40 * colorFactor * ditherFactor)
-            .round();
-      case ExportFormat.apng:
-        bytes = (px * _animFps * durSec * 0.25).round();
-      case ExportFormat.webp:
-        final qf = _webpQuality / 100.0;
-        bytes = (px * _animFps * durSec * 0.15 * qf).round();
+  Future<void> _runSampleEstimate() async {
+    if (_previewHlsTempDir == null && _HlsDownloader._isHls(widget.videoUrl)) {
+      return; // 还没有本地文件，不采样
     }
+    if (_clipDuration.inMilliseconds <= 0) return;
+    if (_sampling) return;
 
-    if (bytes < 1024) return '${bytes}B';
+    setState(() {
+      _sampling = true;
+      _estimatedBytes = null;
+    });
+
+    try {
+      // 取片段中间 1 秒
+      final sampleSec = 1.0;
+      final midMs =
+          _startTime.inMilliseconds + _clipDuration.inMilliseconds ~/ 2;
+      final sampleStartMs = (midMs - 500).clamp(
+        _startTime.inMilliseconds,
+        _endTime.inMilliseconds - 1000,
+      );
+
+      final tempDir = await getTemporaryDirectory();
+
+      // 构造和真实导出一样的参数，只改 startMs 和 lengthMs
+      final localPath = _getSampleInputPath(); // 见下方
+      if (localPath == null) return;
+
+      final (_, encodeArgs) = _buildEncodeArgs(
+        outputDir: tempDir.path,
+        timestamp: 0,
+        exportUrl: localPath,
+        exportHeaders: {},
+        proxyUrl: null,
+        startMsOverride: sampleStartMs,
+        lengthMsOverride: (sampleSec * 1000).toInt(),
+      );
+
+      await FfmpegEncoder.encode(encodeArgs);
+
+      if (!await File(encodeArgs.outputPath).exists()) return;
+
+      final sampleBytes = await File(encodeArgs.outputPath).length();
+      File(encodeArgs.outputPath).delete().ignore();
+
+      // 按时长比例推算总大小
+      final ratio = _clipDuration.inMilliseconds / (sampleSec * 1000);
+      if (mounted) {
+        setState(() {
+          _estimatedBytes = sampleBytes * ratio;
+          _sampling = false;
+        });
+      }
+    } catch (e) {
+      Log.error('SampleEstimate', '$e');
+      if (mounted) setState(() => _sampling = false);
+    }
+  }
+
+  String? _getSampleInputPath() {
+    final dir = _previewHlsTempDir;
+    if (dir == null) return widget.videoUrl;
+    final files = dir.listSync();
+    final mp4 = files.where((f) => f.path.endsWith('.mp4')).firstOrNull;
+    if (mp4 != null) return mp4.path;
+    final ts = files.where((f) => f.path.endsWith('merged.ts')).firstOrNull;
+    if (ts != null) return ts.path;
+    return widget.videoUrl;
+  }
+
+  void _scheduleSampleEstimate() {
+    _sampleDebounce?.cancel();
+    _sampleDebounce = Timer(
+      const Duration(milliseconds: 800),
+      _runSampleEstimate,
+    );
+  }
+
+  String _estimatedSize() {
+    if (_sampling) return '估算中…';
+    final bytes = _estimatedBytes;
+    if (bytes == null || _videoWidth == 0) return '--';
+    if (bytes < 1024) return '${bytes.toInt()}B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}KB';
     return '${(bytes / 1024 / 1024).toStringAsFixed(1)}MB';
   }
@@ -341,6 +391,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         0,
         widget.duration.inMilliseconds,
       );
+      _previewDownloadStartMs = downloadStartMs;
       final downloadEndMs = (_startTime.inMilliseconds + halfWindowMs).clamp(
         0,
         widget.duration.inMilliseconds,
@@ -387,7 +438,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         if (_videoDuration != d) {
           setState(() {
             _videoDuration = d;
-            if (_endTime > _videoDuration) {
+            if (!_rangeInitialized && _endTime > _videoDuration) {
               _endTime = _videoDuration;
             }
           });
@@ -423,9 +474,16 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         if (!mounted) return;
 
         final playing = player.state.playing;
+        final needsOffset = isHls && mediaUrl != widget.videoUrl;
+        final offset = needsOffset
+            ? Duration(milliseconds: _previewDownloadStartMs)
+            : Duration.zero;
 
-        if (_isPlaying && pos >= _endTime) {
-          player.seek(_startTime);
+        final localStart = _startTime - offset;
+        final localEnd = _endTime - offset;
+
+        if (_isPlaying && (pos >= localEnd || pos < localStart)) {
+          player.seek(localStart);
         }
 
         _positionNotifier.value = pos;
@@ -447,8 +505,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _previewStatus = '';
       });
 
-      // 初始化完成后生成缩略图
       _generateThumbnails();
+      _scheduleSampleEstimate();
     } catch (e, st) {
       Log.error('PreviewPlayer', '$e\n$st');
       if (mounted) {
@@ -692,6 +750,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _endTime = Duration(milliseconds: newEnd);
       }
     });
+    _scheduleSampleEstimate();
   }
 
   void _applyCropAspect(int w, int h) {
@@ -810,7 +869,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         final localM3u8 = await _HlsDownloader.download(
           url: exportUrl,
           headers: exportHeaders,
-          startMs: _startTime.inMilliseconds,
+          startMs: _startTime.inMilliseconds + _previewDownloadStartMs,
           endMs: _endTime.inMilliseconds,
           onProgress: (p, msg) {
             if (mounted && !_exportCancelled) {
@@ -833,13 +892,14 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
       final outputDir = await getTemporaryDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
-
+      final startMsForEncode = doPreDownload ? 0 : _startTime.inMilliseconds;
       final (ext, encodeArgs) = _buildEncodeArgs(
         outputDir: outputDir.path,
         timestamp: ts,
         exportUrl: exportUrl,
         exportHeaders: exportHeaders,
         proxyUrl: proxyUrl,
+        startMsOverride: startMsForEncode,
       );
 
       final baseProgress =
@@ -917,7 +977,11 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     required String exportUrl,
     required Map<String, String> exportHeaders,
     required String? proxyUrl,
+    int? startMsOverride,
+    int? lengthMsOverride,
   }) {
+    final startMs = startMsOverride ?? _startTime.inMilliseconds;
+    final lengthMs = lengthMsOverride ?? _clipDuration.inMilliseconds;
     int? cropX, cropY, cropW, cropH;
     if (_useCustomCrop && _videoWidth > 0 && _videoHeight > 0) {
       cropW = (_cropRect.width * _videoWidth).round() & ~1;
@@ -943,8 +1007,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           FfmpegEncodeArgs(
             inputUrl: exportUrl,
             outputPath: '$outputDir/clip_$timestamp.mp4',
-            startMs: _startTime.inMilliseconds,
-            lengthMs: _clipDuration.inMilliseconds,
+            startMs: startMs,
+            lengthMs: lengthMs,
             headers: exportHeaders,
             outputFormat: 'mp4',
             width: outW,
@@ -964,8 +1028,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           FfmpegEncodeArgs(
             inputUrl: exportUrl,
             outputPath: '$outputDir/clip_$timestamp.gif',
-            startMs: _startTime.inMilliseconds,
-            lengthMs: _clipDuration.inMilliseconds,
+            startMs: startMs,
+            lengthMs: lengthMs,
             headers: exportHeaders,
             outputFormat: 'gif',
             width: outW ?? (cropW ?? 480),
@@ -985,8 +1049,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           FfmpegEncodeArgs(
             inputUrl: exportUrl,
             outputPath: '$outputDir/clip_$timestamp.apng',
-            startMs: _startTime.inMilliseconds,
-            lengthMs: _clipDuration.inMilliseconds,
+            startMs: startMs,
+            lengthMs: lengthMs,
             headers: exportHeaders,
             outputFormat: 'apng',
             width: outW,
@@ -1004,8 +1068,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           FfmpegEncodeArgs(
             inputUrl: exportUrl,
             outputPath: '$outputDir/clip_$timestamp.webp',
-            startMs: _startTime.inMilliseconds,
-            lengthMs: _clipDuration.inMilliseconds,
+            startMs: startMs,
+            lengthMs: lengthMs,
             headers: exportHeaders,
             outputFormat: 'webp',
             width: outW,
@@ -1300,7 +1364,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    color: Colors.white,
                     icon: const Icon(Icons.replay_5),
                     onPressed: () {
                       final newPos = position - const Duration(seconds: 5);
@@ -1309,8 +1372,15 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                       );
                     },
                   ),
+                  const SizedBox(width: 4),
                   IconButton(
-                    color: Colors.white,
+                    icon: const Icon(Icons.first_page),
+                    onPressed: () {
+                      _previewPlayer?.seek(_startTime);
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
                     iconSize: 36,
                     icon: AnimatedSwitcher(
                       duration: Duration(milliseconds: 300),
@@ -1335,8 +1405,15 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                       }
                     },
                   ),
+                  const SizedBox(width: 4),
                   IconButton(
-                    color: Colors.white,
+                    icon: const Icon(Icons.last_page),
+                    onPressed: () {
+                      _previewPlayer?.seek(_endTime);
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
                     icon: const Icon(Icons.forward_5),
                     onPressed: () {
                       final newPos = position + const Duration(seconds: 5);
@@ -1376,6 +1453,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     _startTime = start;
                     _endTime = end;
                   });
+                  _scheduleSampleEstimate();
                 },
                 timelineThumbnails: _thumbnailsLoading
                     ? const Center(
@@ -1627,8 +1705,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                       ),
                     ],
                     selected: {_format},
-                    onSelectionChanged: (s) =>
-                        setState(() => _format = s.first),
+                    onSelectionChanged: (s) => setState(() {
+                      _format = s.first;
+                      _scheduleSampleEstimate();
+                    }),
                     style: ButtonStyle(
                       visualDensity: narrow
                           ? VisualDensity.compact
@@ -1680,6 +1760,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   onSelectionChanged: (s) => setState(() {
                     _quality = s.first;
                     _mp4BitrateKbps = null;
+                    _scheduleSampleEstimate();
                   }),
                 ),
                 const SizedBox(height: 10),
@@ -1839,7 +1920,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     return ChoiceChip(
       label: Text(label),
       selected: _exportWidth == value,
-      onSelected: (_) => setState(() => _exportWidth = value),
+      onSelected: (_) => setState(() {
+        _exportWidth = value;
+        _scheduleSampleEstimate();
+      }),
     );
   }
 
