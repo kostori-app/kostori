@@ -174,6 +174,7 @@ class _PlayerItemState extends State<PlayerItem>
   void showVideoInfo() {
     showModalBottomSheet(
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 3 / 4,
         maxWidth: MediaQuery.of(context).size.width <= 600
@@ -184,7 +185,11 @@ class _PlayerItemState extends State<PlayerItem>
       ),
       clipBehavior: Clip.antiAlias,
       context: context,
-      builder: (_) => VideoInfoSheet.fromController(playerController),
+      builder: (_) => Sheet(
+        title: '详情 & 日志',
+        icon: Icons.info_outline_rounded,
+        builder: (_, _) => VideoInfoSheet.fromController(playerController),
+      ),
     );
   }
 

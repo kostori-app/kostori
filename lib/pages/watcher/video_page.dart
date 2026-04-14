@@ -470,242 +470,279 @@ class _VideoPageState extends State<VideoPage>
 
   Widget _buildVideoInfoAndSettingsTab() {
     final anime = WatcherState.currentState!.anime;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Video info section
-          Text(
-            anime.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (anime.subTitle != null && anime.subTitle!.isNotEmpty) ...[
-            Text(
-              anime.subTitle!,
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (anime.description != null && anime.description!.isNotEmpty) ...[
-            Text(
-              t.synopsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              anime.description!,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-            const SizedBox(height: 12),
-          ],
-          _buildInfoItem(
-            t.currentEpisode,
-            playerController.currentEpisoded.toString(),
-          ),
-          _buildInfoItem(t.playbackRoute, playerController.currentSetName),
-          _buildInfoItem(
-            t.progress,
-            '${playerController.currentPosition.inSeconds}${t.secondsUnit} / ${playerController.duration.inSeconds}${t.secondsUnit}',
-          ),
-          const Divider(color: Colors.white24, height: 32),
-          // Settings section
-          // Playback speed slider
-          Text(
-            t.playbackSpeed,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '0.5x',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
+              Text(
+                anime.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              Expanded(
-                child: Slider(
-                  value: playerController.playbackSpeed,
-                  min: 0.5,
-                  max: 4.0,
-                  divisions: 7,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  inactiveColor: Colors.white24,
-                  onChanged: (value) {
-                    playerController.setPlaybackSpeed(value);
+              const SizedBox(height: 12),
+              if (anime.subTitle != null && anime.subTitle!.isNotEmpty) ...[
+                Text(
+                  anime.subTitle!,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (anime.description != null &&
+                  anime.description!.isNotEmpty) ...[
+                Text(
+                  t.synopsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  anime.description!,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+                const SizedBox(height: 12),
+              ],
+              _buildInfoItem(
+                t.currentEpisode,
+                playerController.currentEpisoded.toString(),
+              ),
+              _buildInfoItem(t.playbackRoute, playerController.currentSetName),
+              _buildInfoItem(
+                t.progress,
+                '${playerController.currentPosition.inSeconds}${t.secondsUnit} / ${playerController.duration.inSeconds}${t.secondsUnit}',
+              ),
+              const Divider(color: Colors.white24, height: 32),
+              // Playback speed
+              Text(
+                t.playbackSpeed,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Text(
+                    '0.5x',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: playerController.playbackSpeed,
+                      min: 0.5,
+                      max: 4.0,
+                      divisions: 7,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      inactiveColor: Colors.white24,
+                      onChanged: (value) {
+                        playerController.setPlaybackSpeed(value);
+                        setState(() {});
+                      },
+                    ),
+                  ),
+                  const Text(
+                    '4.0x',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                ],
+              ),
+              Center(
+                child: Text(
+                  '${playerController.playbackSpeed.toStringAsFixed(2)}x',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Super resolution
+              Text(
+                t.superResolution,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SegmentedButton<int>(
+                segments: [
+                  ButtonSegment<int>(
+                    value: 1,
+                    label: Text(t.superResolutionOff),
+                  ),
+                  ButtonSegment<int>(
+                    value: 2,
+                    label: Text(t.superResolutionEfficiency),
+                  ),
+                  ButtonSegment<int>(
+                    value: 3,
+                    label: Text(t.superResolutionQuality),
+                  ),
+                ],
+                selected: {playerController.superResolutionType},
+                onSelectionChanged: (Set<int> selected) {
+                  if (selected.isNotEmpty) {
+                    playerController.setShader(selected.first);
                     setState(() {});
-                  },
+                  }
+                },
+              ),
+              const SizedBox(height: 24),
+              // Other settings
+              Text(
+                t.otherSettings,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              const Text(
-                '4.0x',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-            ],
-          ),
-          Center(
-            child: Text(
-              '${playerController.playbackSpeed.toStringAsFixed(2)}x',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Super resolution section
-          Text(
-            t.superResolution,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SegmentedButton<int>(
-            segments: [
-              ButtonSegment<int>(value: 1, label: Text(t.superResolutionOff)),
-              ButtonSegment<int>(
-                value: 2,
-                label: Text(t.superResolutionEfficiency),
-              ),
-              ButtonSegment<int>(
-                value: 3,
-                label: Text(t.superResolutionQuality),
-              ),
-            ],
-            selected: {playerController.superResolutionType},
-            onSelectionChanged: (Set<int> selected) {
-              if (selected.isNotEmpty) {
-                final type = selected.first;
-                playerController.setShader(type);
-                setState(() {});
-              }
-            },
-          ),
-          const SizedBox(height: 24),
-          // Other settings
-          Text(
-            t.otherSettings,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // Audio option (Android only)
-          if (App.isAndroid)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: Colors.white10,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ListTile(
-                title: Text(
-                  (appdata.settings['audioOutType'] ?? true)
-                      ? t.audioLowLatency
-                      : t.audioCompatibility,
-                  style: const TextStyle(color: Colors.white),
+              const SizedBox(height: 8),
+              if (App.isAndroid)
+                _settingsTile(
+                  child: ListTile(
+                    title: Text(
+                      (appdata.settings['audioOutType'] ?? true)
+                          ? t.audioLowLatency
+                          : t.audioCompatibility,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    trailing: CustomSwitch(
+                      value: appdata.settings['audioOutType'] ?? true,
+                      onChanged: (value) async {
+                        try {
+                          await playerController.changeAudioOutType();
+                          App.rootContext.showMessage(
+                            message: t.switchSuccessful,
+                          );
+                          setState(() {});
+                        } catch (e) {
+                          App.rootContext.showMessage(message: t.switchFailed);
+                        }
+                      },
+                    ),
+                  ),
                 ),
-                trailing: CustomSwitch(
-                  value: appdata.settings['audioOutType'] ?? true,
-                  onChanged: (value) async {
-                    try {
-                      await playerController.changeAudioOutType();
-                      App.rootContext.showMessage(message: t.switchSuccessful);
+              _settingsTile(
+                child: ListTile(
+                  title: Text(
+                    '${t.glimmerMode}: ${playerController.glimmerEffect ? t.glimmerModeOn : t.glimmerModeOff}',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  trailing: CustomSwitch(
+                    value: playerController.glimmerEffect,
+                    onChanged: (value) {
+                      playerController.glimmerEffect = value;
+                      appdata.implicitData['glimmerEffect'] = value;
+                      appdata.writeImplicitData();
                       setState(() {});
-                    } catch (e) {
-                      App.rootContext.showMessage(message: t.switchFailed);
-                    }
-                  },
+                    },
+                  ),
                 ),
               ),
-            ),
-          // Light mode toggle
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.white10,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListTile(
-              title: Text(
-                '${t.glimmerMode}: ${playerController.glimmerEffect ? t.glimmerModeOn : t.glimmerModeOff}',
-                style: const TextStyle(color: Colors.white),
-              ),
-              trailing: CustomSwitch(
-                value: playerController.glimmerEffect,
-                onChanged: (value) {
-                  playerController.glimmerEffect = value;
-                  appdata.implicitData['glimmerEffect'] = value;
-                  appdata.writeImplicitData();
-                  setState(() {});
-                },
-              ),
-            ),
-          ),
-          // Remote cast button
-          Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.white10,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.cast, color: Colors.white70),
-              title: Text(
-                t.remoteCast,
-                style: const TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                bool needRestart = playerController.playing;
-                playerController.pause();
-                RemotePlay().castVideo(playerController.videoUrl).whenComplete(
-                  () {
-                    if (needRestart) {
-                      playerController.play();
-                    }
-                  },
-                );
-              },
-            ),
-          ),
-          // Logs button (only when not fullscreen)
-          if (!playerController.isFullScreen)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: Colors.white10,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ListTile(
-                leading: const Icon(Icons.bug_report, color: Colors.white70),
-                title: Text(
-                  t.logs,
-                  style: const TextStyle(color: Colors.white),
+              if (!playerController.isFullScreen)
+                _settingsTile(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.bug_report,
+                      color: Colors.white70,
+                    ),
+                    title: Text(
+                      t.logs,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    onTap: () => context.to(() => const LogsPage()),
+                  ),
                 ),
-                onTap: () {
-                  context.to(() => const LogsPage());
-                },
+            ],
+          ),
+        ),
+
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.7),
+                ],
               ),
             ),
-        ],
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Row(
+              children: [
+                // Cast 按钮
+                _bottomAction(
+                  icon: Icons.cast,
+                  label: t.remoteCast,
+                  onTap: () {
+                    bool needRestart = playerController.playing;
+                    playerController.pause();
+                    RemotePlay()
+                        .castVideo(playerController.videoUrl)
+                        .whenComplete(() {
+                          if (needRestart) playerController.play();
+                        });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _settingsTile({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _bottomAction({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white70, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+            ),
+          ],
+        ),
       ),
     );
   }

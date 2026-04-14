@@ -858,6 +858,7 @@ class MediaWidget extends StatelessWidget {
     final String allText = media.uri;
 
     return Material(
+      color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onLongPress: () {
@@ -971,7 +972,9 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
               if (widget.source.medias.isNotEmpty)
                 MediaWidget(media: widget.source.medias.first),
               Material(
+                color: Colors.transparent,
                 child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
                   onLongPress: () {
                     Clipboard.setData(
                       ClipboardData(text: widget.source.videoUrl),
