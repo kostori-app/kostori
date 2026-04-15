@@ -27,6 +27,7 @@ import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
+import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
@@ -206,7 +207,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     isBangumi = animeSource.isBangumi;
     if (history?.bangumiId == null) {
-      debugPrint('isBangumi: $isBangumi');
+      DebugLog.info('onDataLoaded', 'isBangumi: $isBangumi');
       if (isBangumi) {
         updateBangumiId();
       }
@@ -857,21 +858,10 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }) {
       Color color;
       if (isTitle) {
-        const colors = [
-          Colors.blue,
-          Colors.cyan,
-          Colors.red,
-          Colors.pink,
-          Colors.purple,
-          Colors.indigo,
-          Colors.teal,
-          Colors.green,
-          Colors.lime,
-          Colors.yellow,
-        ];
+        final colors = standardColorMap.keys.toList();
         color = context.useBackgroundColor(colors[(i++) % (colors.length)]);
       } else {
-        color = context.colorScheme.surfaceContainerLow;
+        color = context.colorScheme.surfaceContainerHighest;
       }
 
       final borderRadius = BorderRadius.circular(12);
@@ -946,18 +936,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
             ),
             const Divider(height: 1, indent: 16, endIndent: 16),
             ListTile(title: Text(t.information)),
-            if (anime.stars != null)
-              Row(
-                children: [
-                  StarRating(
-                    value: anime.stars!,
-                    size: 24,
-                    // onTap: starRating,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(anime.stars!.toStringAsFixed(2)),
-                ],
-              ).paddingLeft(16).paddingVertical(8),
             for (var e in anime.tags.entries)
               buildWrap(
                 children: [
@@ -965,27 +943,6 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                     buildTag(text: e.key.ts(animeSource.key), isTitle: true),
                   for (var tag in e.value)
                     buildTag(text: tag, onTap: () => onTapTag(tag, e.key)),
-                ],
-              ),
-            if (anime.uploader != null)
-              buildWrap(
-                children: [
-                  buildTag(text: t.uploader, isTitle: true),
-                  buildTag(text: anime.uploader!),
-                ],
-              ),
-            if (anime.uploadTime != null)
-              buildWrap(
-                children: [
-                  buildTag(text: t.uploadTime, isTitle: true),
-                  buildTag(text: anime.uploadTime!),
-                ],
-              ),
-            if (anime.updateTime != null)
-              buildWrap(
-                children: [
-                  buildTag(text: t.updateTime, isTitle: true),
-                  buildTag(text: anime.updateTime!),
                 ],
               ),
           ],
