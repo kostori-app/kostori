@@ -350,7 +350,13 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                 child: Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    playerController.currentSetName,
+                                    playerController
+                                                .currentSetName
+                                                .characters
+                                                .length >
+                                            12
+                                        ? '${playerController.currentSetName.characters.take(12)}...'
+                                        : playerController.currentSetName,
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: playerController.isFullScreen
@@ -421,9 +427,6 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                                     color: Colors.white,
                                     icon: const Icon(Icons.skip_next),
                                     onPressed: () async {
-                                      // if (playerController.loading) {
-                                      //   return;
-                                      // }
                                       playerController.pause();
                                       await playerController.playNextEpisode();
                                     },
