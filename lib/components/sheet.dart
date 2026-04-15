@@ -1056,104 +1056,8 @@ class _VideoInfoSheetState extends State<VideoInfoSheet>
             child: ListView.separated(
               itemCount: levelLogs.length,
               separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final entry = levelLogs[index];
-                final log = entry.log;
-                final timeStr = DateFormat('HH:mm:ss').format(entry.time);
-
-                return Material(
-                  elevation: 2,
-                  color: Theme.of(context).brightness == Brightness.light
-                      ? Colors.white.toOpacity(0.85)
-                      : const Color(0xFF1E1E1E).toOpacity(0.85),
-                  shadowColor: Theme.of(context).colorScheme.shadow,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 2,
-                                horizontal: 6,
-                              ),
-                              child: Text(
-                                log.prefix,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: log.level == 'error'
-                                    ? Theme.of(context).colorScheme.error
-                                    : log.level == 'warn'
-                                    ? Theme.of(
-                                        context,
-                                      ).colorScheme.errorContainer
-                                    : Theme.of(
-                                        context,
-                                      ).colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 2,
-                                horizontal: 6,
-                              ),
-                              child: Text(
-                                log.level,
-                                style: TextStyle(
-                                  color: log.level == 'error'
-                                      ? Colors.white
-                                      : Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              timeStr,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          log.text,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              Clipboard.setData(ClipboardData(text: log.text));
-                              App.rootContext.showMessage(
-                                message: t.copySuccess,
-                              );
-                            },
-                            child: Text(t.copy),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+              itemBuilder: (context, index) =>
+                  _LogEntryCard(entry: levelLogs[index]),
             ),
           );
         }).toList(),
@@ -1180,4 +1084,110 @@ class PlayerLogEntry {
   final DateTime time;
 
   PlayerLogEntry(this.log) : time = DateTime.now();
+}
+
+class _LogEntryCard extends StatefulWidget {
+  const _LogEntryCard({required this.entry});
+  final PlayerLogEntry entry;
+
+  @override
+  State<_LogEntryCard> createState() => _LogEntryCardState();
+}
+
+class _LogEntryCardState extends State<_LogEntryCard> {
+  final _tc = TranslationController();
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final log = widget.entry.log;
+    final timeStr = DateFormat('HH:mm:ss').format(widget.entry.time);
+
+    return Material(
+      elevation: 2,
+      color: Theme.of(context).brightness == Brightness.light
+          ? Colors.white.toOpacity(0.85)
+          : const Color(0xFF1E1E1E).toOpacity(0.85),
+      shadowColor: Theme.of(context).colorScheme.shadow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 2,
+                    horizontal: 6,
+                  ),
+                  child: Text(
+                    log.prefix,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  decoration: BoxDecoration(
+                    color: log.level == 'error'
+                        ? Theme.of(context).colorScheme.error
+                        : log.level == 'warn'
+                        ? Theme.of(context).colorScheme.errorContainer
+                        : Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 2,
+                    horizontal: 6,
+                  ),
+                  child: Text(
+                    log.level,
+                    style: TextStyle(
+                      color: log.level == 'error' ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  timeStr,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                ),
+                TranslateIconButton(data: log.text, controller: _tc),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(log.text, style: Theme.of(context).textTheme.bodyMedium),
+            TranslationOutput(
+              controller: _tc,
+              padding: const EdgeInsets.only(top: 8),
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: log.text));
+                  App.rootContext.showMessage(message: t.copySuccess);
+                },
+                child: Text(t.copy),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

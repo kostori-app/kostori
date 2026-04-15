@@ -8,6 +8,7 @@ import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/comments_card.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/database/stats.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
@@ -21,6 +22,7 @@ import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/translation_service.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
@@ -111,6 +113,8 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   int? latestRating;
   String? latestComment;
   int? watchDuration;
+
+  final _tc = TranslationController();
 
   @override
   void initState() {
@@ -591,6 +595,11 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const Spacer(),
+                      TranslateIconButton(
+                        data: bangumiItem.summary,
+                        controller: _tc,
+                      ),
                     ],
                   ),
                 ),
@@ -600,6 +609,10 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     horizontal: 24,
                   ),
                   child: BBCodeWidget(bbcode: bangumiItem.summary),
+                ),
+                TranslationOutput(
+                  controller: _tc,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                 ),
                 const SizedBox(height: 8),
                 Center(
@@ -1394,11 +1407,20 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     vertical: 6,
                     horizontal: 16,
                   ),
-                  child: Text(
-                    t.characterIntroduction,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    children: [
+                      Text(
+                        t.characterIntroduction,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      TranslateIconButton(
+                        data: characterFullItem.summary,
+                        controller: _tc,
+                      ),
+                    ],
                   ),
                 ),
                 Padding(
@@ -1411,6 +1433,10 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     style: Theme.of(context).textTheme.bodyMedium,
                     textAlign: TextAlign.justify,
                   ),
+                ),
+                TranslationOutput(
+                  controller: _tc,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
                 ShareQrCode(
                   type: isCharacter

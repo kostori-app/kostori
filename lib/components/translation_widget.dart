@@ -276,3 +276,205 @@ class _TranslationWidgetState extends State<TranslationWidget> {
     );
   }
 }
+
+class TranslateIconButton extends StatefulWidget {
+  const TranslateIconButton({
+    super.key,
+    required this.data,
+    required this.controller,
+    this.iconSize = 24.0,
+    this.targetLanguage,
+  });
+
+  final String data;
+  final TranslationController controller;
+  final double iconSize;
+  final String? targetLanguage;
+
+  @override
+  State<TranslateIconButton> createState() => _TranslateIconButtonState();
+}
+
+class _TranslateIconButtonState extends State<TranslateIconButton> {
+  late Sort _selectedLanguage;
+
+  @override
+  void initState() {
+    super.initState();
+    final saved = appdata.implicitData['currentLanguage'] as String?;
+    _selectedLanguage = saved != null
+        ? translationSorts.firstWhere(
+            (s) => s.extData == saved,
+            orElse: () => translationSorts.first,
+          )
+        : translationSorts.first;
+  }
+
+  Future<void> _translate({String? targetLanguage}) async {
+    await widget.controller.translate(
+      widget.data,
+      targetLanguage: targetLanguage ?? widget.targetLanguage,
+    );
+  }
+
+  void _showLanguageDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.selectTranslationLanguage,
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: RadioGroup<SortId>(
+              groupValue: _selectedLanguage.id,
+              onChanged: (_) {},
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: translationSorts.map((sort) {
+                  return ListTile(
+                    dense: true,
+                    title: Text(sort.label),
+                    trailing: Radio<SortId>(value: sort.id),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      setState(() => _selectedLanguage = sort);
+                      appdata.implicitData['currentLanguage'] = sort.extData;
+                      appdata.writeImplicitData();
+                      _translate(targetLanguage: sort.extData);
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.controller,
+      builder: (context, _) {
+        final isTranslating = widget.controller.isTranslating;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: t.translationResult,
+              onPressed: isTranslating ? null : () => _translate(),
+              icon: isTranslating
+                  ? SizedBox(
+                      width: widget.iconSize,
+                      height: widget.iconSize,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.translate,
+                      size: widget.iconSize,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+            ),
+            if (widget.targetLanguage == null)
+              IconButton(
+                tooltip: t.selectTranslationLanguage,
+                onPressed: isTranslating ? null : _showLanguageDialog,
+                icon: Icon(
+                  Icons.keyboard_double_arrow_down_rounded,
+                  size: widget.iconSize,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class TranslationOutput extends StatelessWidget {
+  const TranslationOutput({
+    super.key,
+    required this.controller,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16),
+  });
+
+  final TranslationController controller;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        if (!controller.isTranslating && !controller.hasTranslation) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: padding,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.translate, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      t.translationResult,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey.withValues(alpha: 0.05),
+                      ),
+                      child: Text(
+                        'Powered by ${TranslationService.getPoweredName()}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (controller.isTranslating)
+                  Skeletonizer.zone(child: Bone.multiText(lines: 3))
+                else if (controller.hasTranslation)
+                  CustomMarkdownWidget(data: controller.translatedText!),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

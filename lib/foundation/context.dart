@@ -4,6 +4,7 @@ import 'package:kostori/foundation/app_page_route.dart';
 import 'package:kostori/foundation/blur_fade_route.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:markdown_widget/config/all.dart';
 
 extension Navigation on BuildContext {
   void pop<T>([T? result]) {
@@ -73,8 +74,16 @@ extension Navigation on BuildContext {
     );
   }
 
-  Color useBackgroundColor(MaterialColor color) {
-    return color[brightness == Brightness.light ? 100 : 800]!;
+  Color useBackgroundColor(Color color) {
+    if (color is MaterialColor) {
+      return color[brightness == Brightness.light ? 100 : 800]!;
+    } else {
+      if (brightness == Brightness.light) {
+        return Color.alphaBlend(color.toOpacity(0.12), Colors.white);
+      } else {
+        return Color.alphaBlend(color.toOpacity(0.8), Colors.black);
+      }
+    }
   }
 
   Color useTextColor(MaterialColor color) {

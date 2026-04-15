@@ -319,7 +319,7 @@ class BangumiWidget {
       final pageController = PageController(initialPage: initIndex);
       final img = isLocal
           ? FileImage(File(url)) as ImageProvider
-          : NetworkImage(url);
+          : CachedImageProvider(url);
 
       await App.rootContext.toBlurFade(
         () => ProviderScope(
@@ -450,15 +450,10 @@ class _ExpandableTextState extends State<ExpandableText> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CustomMarkdownWidget(data: widget.text),
-              if (widget.translationController!.isTranslating ||
-                  (widget.translationController!.isTranslationComplete &&
-                      widget.translationController != null)) ...[
-                const SizedBox(height: 16),
-                TranslatedContent(
-                  data: widget.text,
-                  translationController: widget.translationController!,
-                ),
-              ],
+              TranslationOutput(
+                controller: widget.translationController!,
+                padding: const EdgeInsets.only(top: 16),
+              ),
             ],
           );
         }
@@ -493,17 +488,10 @@ class _ExpandableTextState extends State<ExpandableText> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomMarkdownWidget(data: widget.text),
-                      if (widget.translationController!.isTranslating ||
-                          (widget
-                                  .translationController!
-                                  .isTranslationComplete &&
-                              widget.translationController != null)) ...[
-                        const SizedBox(height: 16),
-                        TranslatedContent(
-                          data: widget.text,
-                          translationController: widget.translationController!,
-                        ),
-                      ],
+                      TranslationOutput(
+                        controller: widget.translationController!,
+                        padding: const EdgeInsets.only(top: 16),
+                      ),
                     ],
                   ),
                 ),
