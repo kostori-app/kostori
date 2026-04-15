@@ -20,8 +20,11 @@ class AudioServiceManager {
     return _handler!;
   }
 
+  PlayerAudioHandler? get handlerOrNull => _isInitialized ? _handler : null;
+
   // 初始化 handler
   Future<void> initializeHandler() async {
+    if (_isInitialized) return;
     _handler = await AudioService.init(
       builder: () => PlayerAudioHandler(),
       config: const AudioServiceConfig(

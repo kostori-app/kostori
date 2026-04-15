@@ -16,6 +16,8 @@ class PlayerAudioHandler extends BaseAudioHandler {
   Timer? _throttleTimer;
   bool _pendingBroadcast = false;
 
+  final List<StreamSubscription> _subscriptions = [];
+
   Timer _createHeadsetClicksTimer(FutureOr<void> Function() callback) {
     return Timer(const Duration(milliseconds: 250), () async {
       try {
@@ -28,15 +30,13 @@ class PlayerAudioHandler extends BaseAudioHandler {
     });
   }
 
-  // 用于存放所有事件监听的订阅，方便统一取消
-  final List<StreamSubscription> _subscriptions = [];
-
-  // 页面初始化 PlayerController 后调用
   void setController(PlayerController controller) {
     try {
       _clearListeners();
 
       _controller = controller;
+      _willPlayWhenReady = true;
+
       final player = controller.player;
 
       final streams = [
@@ -50,55 +50,55 @@ class PlayerAudioHandler extends BaseAudioHandler {
         _subscriptions.add(
           stream.listen((_) {
             if (_throttleTimer == null) {
-              // 没有定时器时立即触发一次
               _broadcastState();
               _throttleTimer = Timer(const Duration(seconds: 1), () {
                 _throttleTimer = null;
-                // 如果期间有新的事件标记为待触发，则触发一次
                 if (_pendingBroadcast) {
                   _pendingBroadcast = false;
                   _broadcastState();
                 }
               });
             } else {
-              // 定时器期间有事件来了，标记为待触发
               _pendingBroadcast = true;
             }
           }),
         );
       }
 
-      // 设置 Controller 后，立即广播一次当前状态
       _broadcastState();
-      // Log.addLog(LogLevel.info, "setController", '初始化系统通知栏');
     } catch (e) {
       Log.error("setController", e.toString());
     }
   }
 
-  // 统一的取消监听方法
-  Future<void> _clearListeners() async {
-    // 修复：创建一个副本进行迭代，防止并发修改
-    final subscriptionsCopy = List.from(_subscriptions);
-    for (final sub in subscriptionsCopy) {
+  Future<void> clearController() async {
+    await stop();
+  }
+
+  void _clearListeners() {
+    final copy = List<StreamSubscription>.from(_subscriptions);
+    for (final sub in copy) {
       try {
-        await sub.cancel();
+        sub.cancel();
       } catch (e) {
         Log.error("_clearListeners", e.toString());
       }
     }
     _subscriptions.clear();
+
     _throttleTimer?.cancel();
     _throttleTimer = null;
     _pendingBroadcast = false;
+
+    _headsetButtonClickTimer?.cancel();
+    _headsetButtonClickTimer = null;
+    _headsetClicksCount = 0;
   }
 
   void _broadcastState() {
-    // 如果 controller 不存在了，就不要广播了
     if (_controller == null) return;
 
     final player = _controller!.player;
-
     final title = _controller!.currentSetName;
     final artUri = _controller!.animeImg;
 
@@ -113,6 +113,7 @@ class PlayerAudioHandler extends BaseAudioHandler {
         genre: '',
       ),
     );
+
     playbackState.add(
       playbackState.value.copyWith(
         playing: player.state.playing,
@@ -151,10 +152,6 @@ class PlayerAudioHandler extends BaseAudioHandler {
         },
       ),
     );
-    DebugLog.info(
-      "_broadcastState",
-      "更新状态中: \n playing: ${player.state.playing} \n updatePosition: ${player.state.position} \n bufferedPosition: ${player.state.buffer} \n updated: ${playbackState.value} \n duration: ${_controller!.duration} \n _getProcessingState: ${_getProcessingState(player.state)}",
-    );
   }
 
   AudioProcessingState _getProcessingState(PlayerState playerState) {
@@ -186,26 +183,27 @@ class PlayerAudioHandler extends BaseAudioHandler {
   @override
   Future<void> stop() async {
     try {
-      await _clearListeners().then((_) async {
-        if (_controller != null) {
-          try {
-            await _controller!.pause();
-          } catch (_) {
-          } finally {
-            playbackState.add(
-              PlaybackState(
-                playing: false,
-                processingState: AudioProcessingState.idle,
-              ),
-            );
-            mediaItem.add(null);
-          }
-        }
-      });
+      _clearListeners();
 
-      Log.info("stop", "updated: ${playbackState.value}");
+      try {
+        await _controller?.pause();
+      } catch (_) {}
+
+      playbackState.add(
+        PlaybackState(
+          playing: false,
+          processingState: AudioProcessingState.idle,
+        ),
+      );
+      mediaItem.add(null);
+
+      _controller = null;
+
+      await super.stop();
+
+      Log.info("AudioService.stop", "通知栏已清除");
     } catch (e) {
-      Log.error("stop", e.toString());
+      Log.error("AudioService.stop", e.toString());
     }
   }
 
@@ -216,12 +214,11 @@ class PlayerAudioHandler extends BaseAudioHandler {
   @override
   Future<void> click([MediaButton button = MediaButton.media]) async {
     if (button == MediaButton.next) {
-      skipToNext();
+      await skipToNext();
       return;
     }
 
     _headsetClicksCount++;
-
     _headsetButtonClickTimer?.cancel();
 
     if (_headsetClicksCount == 1) {
@@ -238,9 +235,7 @@ class PlayerAudioHandler extends BaseAudioHandler {
     final player = _controller?.player;
     if (player == null) return;
 
-    final current = player.state.position;
-    final target = current + const Duration(seconds: 10);
-
+    final target = player.state.position + const Duration(seconds: 10);
     await player.seek(target);
   }
 
@@ -249,12 +244,8 @@ class PlayerAudioHandler extends BaseAudioHandler {
     final player = _controller?.player;
     if (player == null) return;
 
-    final current = player.state.position;
-    var target = current - const Duration(seconds: 10);
-    if (target < Duration.zero) {
-      target = Duration.zero;
-    }
-
+    var target = player.state.position - const Duration(seconds: 10);
+    if (target < Duration.zero) target = Duration.zero;
     await player.seek(target);
   }
 }
