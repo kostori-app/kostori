@@ -662,32 +662,33 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     if (a.viewMore != null && a.viewMore?.attributes != null) {
       var context = App.mainNavigatorKey!.currentContext!;
       a.viewMore!.jump(context);
-      return;
-    }
-    App.mainNavigatorKey?.currentContext?.to(
-      () => AnimePage(
-        id: a.id,
-        sourceKey: a.sourceKey,
-        cover: a.cover,
-        title: a.title,
-        heroID: heroID,
-      ),
-    );
-    final stats = StatsManager();
-    if (!stats.isExist(a.id, AnimeType(a.sourceKey.hashCode))) {
-      try {
-        stats.addStats(
-          stats.createStatsData(
-            id: a.id,
-            title: a.title,
-            cover: a.cover,
-            type: a.sourceKey.hashCode,
-          ),
-        );
-      } catch (e) {
-        StatsLog.error('addStats', e.toString());
+    } else {
+      App.mainNavigatorKey?.currentContext?.to(
+        () => AnimePage(
+          id: a.id,
+          sourceKey: a.sourceKey,
+          cover: a.cover,
+          title: a.title,
+          heroID: heroID,
+        ),
+      );
+      final stats = StatsManager();
+      if (!stats.isExist(a.id, AnimeType(a.sourceKey.hashCode))) {
+        try {
+          stats.addStats(
+            stats.createStatsData(
+              id: a.id,
+              title: a.title,
+              cover: a.cover,
+              type: a.sourceKey.hashCode,
+            ),
+          );
+        } catch (e) {
+          StatsLog.error('addStats', e.toString());
+        }
       }
     }
+
     manager.updateRecentlyWatched(a.id, AnimeType(a.sourceKey.hashCode));
   }
 

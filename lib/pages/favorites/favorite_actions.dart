@@ -300,7 +300,7 @@ Future<void> sortFolders() async {
             ),
           ],
           body: ReorderableListView.builder(
-            onReorder: (oldIndex, newIndex) {
+            onReorderItem: (oldIndex, newIndex) {
               if (oldIndex < newIndex) {
                 newIndex--;
               }

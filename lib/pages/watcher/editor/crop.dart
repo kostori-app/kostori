@@ -62,18 +62,9 @@ class _CropOverlayState extends State<_CropOverlay> {
               height: dr.height,
               child: GestureDetector(
                 behavior: HitTestBehavior.translucent,
-                onPanUpdate: (d) {
-                  final dx = d.delta.dx / sz.width;
-                  final dy = d.delta.dy / sz.height;
-                  _update(
-                    Rect.fromLTWH(
-                      (_rect.left + dx).clamp(0, 1.0 - _rect.width),
-                      (_rect.top + dy).clamp(0, 1.0 - _rect.height),
-                      _rect.width,
-                      _rect.height,
-                    ),
-                  );
-                },
+                onVerticalDragUpdate: (d) => _handleMove(d, sz),
+                onHorizontalDragUpdate: (d) => _handleMove(d, sz),
+                onPanUpdate: (d) => _handleMove(d, sz),
                 child: Container(color: Colors.transparent),
               ),
             ),
@@ -176,6 +167,19 @@ class _CropOverlayState extends State<_CropOverlay> {
     );
   }
 
+  void _handleMove(DragUpdateDetails d, Size sz) {
+    final dx = d.delta.dx / sz.width;
+    final dy = d.delta.dy / sz.height;
+    _update(
+      Rect.fromLTWH(
+        (_rect.left + dx).clamp(0, 1.0 - _rect.width),
+        (_rect.top + dy).clamp(0, 1.0 - _rect.height),
+        _rect.width,
+        _rect.height,
+      ),
+    );
+  }
+
   Widget _handle(
     Offset pos,
     Size sz,
@@ -190,6 +194,8 @@ class _CropOverlayState extends State<_CropOverlay> {
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onPanUpdate: onUpdate,
+        onVerticalDragUpdate: onUpdate,
+        onHorizontalDragUpdate: onUpdate,
         child: SizedBox(
           width: hs,
           height: hs,

@@ -357,7 +357,10 @@ Future<void> saveFile({
       final params = SaveFileDialogParams(sourceFilePath: file!.path);
       await FlutterFileDialog.saveFile(params: params);
     } else {
-      final result = await FilePicker.saveFile(fileName: filename);
+      final result = await FilePicker.saveFile(
+        fileName: filename,
+        bytes: Uint8List(0),
+      );
       if (result != null) {
         await File(file!.path).copy(result);
       }

@@ -367,11 +367,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }
 
   Iterable<Widget> buildTitle() sync* {
-    yield const SliverPadding(padding: EdgeInsets.only(top: 8));
-
     yield SliverLazyToBoxAdapter(
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final bindAll = ref
@@ -776,7 +774,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
     return SliverToBoxAdapter(
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           children: [
             Padding(
@@ -812,7 +810,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     }
     return SliverToBoxAdapter(
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           children: [
             Padding(
@@ -917,7 +915,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
     return SliverToBoxAdapter(
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -969,7 +967,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       padding: EdgeInsets.zero,
       children: [
         Card(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           child: ScrollConfiguration(
             behavior: ScrollConfiguration.of(
               context,

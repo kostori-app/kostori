@@ -221,15 +221,13 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         App.rootContext.showMessage(message: t.saveSuccessful);
       }
     } catch (e) {
-      App.rootContext.showMessage(
-        message: t.saveFailedE(e: e.toString()),
-      );
+      App.rootContext.showMessage(message: t.saveFailedE(e: e.toString()));
     }
   }
 
   Widget _buildReorderView() {
     return ReorderableListView(
-      onReorder: _onReorder,
+      onReorderItem: _onReorder,
       buildDefaultDragHandles: false,
       scrollController: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -370,9 +368,7 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
                     onPressed: () {
                       setState(() => isReorderMode = !isReorderMode);
                     },
-                    label: Text(
-                      isReorderMode ? t.finishSorting : t.sortImages,
-                    ),
+                    label: Text(isReorderMode ? t.finishSorting : t.sortImages),
                   ),
                   const SizedBox(width: 20),
                   if (!isReorderMode)

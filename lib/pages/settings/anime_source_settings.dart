@@ -267,18 +267,7 @@ class _BodyState extends State<_Body> {
             title: Text(t.checkUpdates),
             trailing: _CheckUpdatesButton(),
           ),
-          ListTile(
-            title: Text(t.gitMirror),
-            trailing: CustomSwitch(
-              value: appdata.settings["gitMirror"],
-              onChanged: (value) {
-                setState(() {
-                  appdata.settings["gitMirror"] = value;
-                });
-                appdata.saveData();
-              },
-            ),
-          ),
+          _SwitchSetting(title: t.gitMirror, settingKey: "gitMirror"),
           const SizedBox(height: 8),
         ],
       ),

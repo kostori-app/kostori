@@ -219,37 +219,51 @@ class AnimeTile extends ConsumerWidget {
             ContentDialog.show(
               context: App.rootContext,
               title: t.debugInfo,
-              content: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children:
-                    [
-                      ("title", anime.title),
-                      ("id", anime.id),
-                      ("sourceKey", anime.sourceKey),
-                      ("cover", anime.cover),
-                      ("subtitle", anime.subtitle),
-                      ("language", anime.language),
-                      ("stars", anime.stars?.toString()),
-                      ("favoriteId", anime.favoriteId),
-                      ("tags", anime.tags?.join(', ')),
-                      ("description", anime.description),
-                      (
-                        "viewMore",
-                        "${anime.viewMore?.page} / ${anime.viewMore?.attributes}",
-                      ),
-                    ].map((e) {
-                      final text = "${e.$1}: ${e.$2}";
-                      return InkWell(
-                        onLongPress: () {
-                          Clipboard.setData(ClipboardData(text: text));
-                          App.rootContext.showMessage(message: "已复制: ${e.$1}");
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2),
-                          child: Text(text),
-                        ),
-                      );
-                    }).toList(),
+              content: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(App.rootContext).size.height * 0.6,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children:
+                        [
+                          ("title", anime.title),
+                          ("id", anime.id),
+                          ("sourceKey", anime.sourceKey),
+                          ("cover", anime.cover),
+                          ("subtitle", anime.subtitle),
+                          ("language", anime.language),
+                          ("stars", anime.stars?.toString()),
+                          ("favoriteId", anime.favoriteId),
+                          ("tags", anime.tags?.join(', ')),
+                          ("description", anime.description),
+                          (
+                            "viewMore",
+                            "${anime.viewMore?.page} / ${anime.viewMore?.attributes}",
+                          ),
+                        ].map((e) {
+                          final displayText = "${e.$1}: ${e.$2}";
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onLongPress: () {
+                              final copyValue = e.$2 ?? '';
+                              Clipboard.setData(ClipboardData(text: copyValue));
+                              App.rootContext.showMessage(
+                                message: "已复制: ${e.$1}",
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 8,
+                              ),
+                              child: Text(displayText),
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                ),
               ),
             );
           },

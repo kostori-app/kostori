@@ -178,8 +178,12 @@ class Settings with ChangeNotifier {
 
   void operator []=(String key, dynamic value) {
     final json = _state.toJson()..[key] = value;
-    _state = SettingsData.fromJson(json);
-    if (key != 'dataVersion') notifyListeners();
+    final next = SettingsData.fromJson(json);
+    if (next == _state) return;
+    _state = next;
+    if (key != 'dataVersion') {
+      Future.microtask(() => notifyListeners());
+    }
   }
 
   @override

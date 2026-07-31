@@ -6,6 +6,7 @@ typedef LanControlCallback = void Function(LanControlMessage message);
 
 class LanControlService {
   LanControlService._();
+
   static final LanControlService instance = LanControlService._();
 
   HttpServer? _server;
@@ -26,12 +27,17 @@ class LanControlService {
   LanNavigationHandler? _navigationHandler;
 
   LanControlServiceState get state => _state;
+
   String? get lastError => _lastError;
+
   int get port => _port;
+
   int get connectionCount => _connections.length;
+
   bool get isListening =>
       _state == LanControlServiceState.listening ||
       _state == LanControlServiceState.connected;
+
   Set<String> get connectedDeviceIds => _connections.keys.toSet();
 
   void setPlayerHandler(LanPlayerControlHandler handler) {
@@ -84,10 +90,18 @@ class LanControlService {
       return;
     }
 
+    if (_server != null) {
+      await stop();
+    }
+
     _port = port;
 
     try {
-      _server = await HttpServer.bind(InternetAddress.anyIPv4, port);
+      _server = await HttpServer.bind(
+        InternetAddress.anyIPv4,
+        port,
+        shared: true,
+      );
       _setState(LanControlServiceState.listening);
 
       _server!.listen(
@@ -99,8 +113,34 @@ class LanControlService {
       );
 
       _startHeartbeat();
-
       HubLog.info('LanControlService', 'WebSocket 服务已启动，端口: $port');
+    } on SocketException catch (e) {
+      if (e.osError?.errorCode == 10048) {
+        HubLog.error(
+          'LanControlService',
+          '端口 $port 被占用 (TIME_WAIT)，正在尝试随机端口...',
+        );
+        try {
+          _server = await HttpServer.bind(
+            InternetAddress.anyIPv4,
+            0,
+            shared: true,
+          );
+          _port = _server!.port;
+          _setState(LanControlServiceState.listening);
+
+          _server!.listen(_handleHttpRequest);
+          _startHeartbeat();
+          HubLog.info('LanControlService', 'WebSocket 服务已在动态端口启动，端口: $_port');
+          return;
+        } catch (innerEx) {
+          _lastError = '动态端口绑定失败: $innerEx';
+        }
+      } else {
+        _lastError = '网络绑定失败: ${e.message}';
+      }
+      _setState(LanControlServiceState.error);
+      rethrow;
     } catch (e) {
       _lastError = '启动失败: $e';
       _setState(LanControlServiceState.error);
@@ -108,17 +148,19 @@ class LanControlService {
     }
   }
 
-  void stop() {
+  Future<void> stop() async {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
 
     for (final ws in _connections.values) {
-      ws.close();
+      await ws.close();
     }
     _connections.clear();
 
-    _server?.close();
-    _server = null;
+    if (_server != null) {
+      await _server!.close(force: true);
+      _server = null;
+    }
 
     _setState(LanControlServiceState.idle);
     HubLog.info('LanControlService', 'WebSocket 服务已停止');
@@ -553,6 +595,7 @@ abstract class LanPlayerControlHandler {
   );
 
   PlayerStatus? getCurrentStatus();
+
   CurrentAnime? getCurrentAnime();
 }
 

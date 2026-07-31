@@ -59,6 +59,7 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
 
   @override
   void dispose() {
+    textController.dispose();
     super.dispose();
   }
 

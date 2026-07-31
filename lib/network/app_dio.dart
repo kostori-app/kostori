@@ -14,7 +14,7 @@ import 'package:rhttp/rhttp.dart' as rhttp;
 
 export 'package:dio/dio.dart';
 
-class MyLogInterceptor implements Interceptor {
+class MyLogInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     NetLog.error(

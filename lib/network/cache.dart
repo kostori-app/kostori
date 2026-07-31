@@ -27,7 +27,7 @@ class NetworkCache {
   });
 }
 
-class NetworkCacheManager implements Interceptor {
+class NetworkCacheManager extends Interceptor {
   NetworkCacheManager._();
 
   static final NetworkCacheManager instance = NetworkCacheManager._();

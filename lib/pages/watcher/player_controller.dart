@@ -47,6 +47,12 @@ abstract class _PlayerController with Store {
   final FocusNode keyboardFocus = FocusNode();
 
   StreamSubscription<PiPStatus>? _pipStatusSubscription;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration>? _bufferSub;
+  StreamSubscription<Duration>? _durationSub;
+  StreamSubscription<bool>? _playingSub;
+  StreamSubscription<bool>? _bufferingSub;
+  StreamSubscription<bool>? _completedSub;
 
   DateTime currentTime = DateTime.now();
 
@@ -228,26 +234,37 @@ abstract class _PlayerController with Store {
   OverlayEntry? _overlayEntry;
   Timer? _overlayTimer;
 
-  Timer getPlayerTimer() {
-    return Timer.periodic(const Duration(seconds: 1), (timer) {
-      playing = player.state.playing;
-      isBuffering = player.state.buffering;
-      currentPosition = player.state.position;
-      buffer = player.state.buffer;
-      duration = player.state.duration;
-      completed = player.state.completed;
-      // 音量相关
+  void startPlayerStreams() {
+    _positionSub = player.stream.position.listen((pos) {
+      currentPosition = pos;
+    });
+    _bufferSub = player.stream.buffer.listen((buf) {
+      buffer = buf;
+    });
+    _durationSub = player.stream.duration.listen((dur) {
+      duration = dur;
+    });
+    _playingSub = player.stream.playing.listen((p) {
+      playing = p;
+    });
+    _bufferingSub = player.stream.buffering.listen((b) {
+      isBuffering = b;
+    });
+    _completedSub = player.stream.completed.listen((c) {
+      completed = c;
+    });
+
+    // 音量/亮度保持 Timer 但降低频率，且只在非 seeking 时才查询
+    playerTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (!volumeSeeking) {
         if (App.isDesktop) {
           volume = player.state.volume;
         } else {
           FlutterVolumeController.getVolume().then((value) {
-            final volumes = value ?? 0.0;
-            volume = volumes * 100;
+            volume = (value ?? 0.0) * 100;
           });
         }
       }
-      // 亮度相关
       if (!App.isWindows &&
           !App.isMacOS &&
           !App.isLinux &&
@@ -257,6 +274,16 @@ abstract class _PlayerController with Store {
         });
       }
     });
+  }
+
+  void stopPlayerStreams() {
+    _positionSub?.cancel();
+    _bufferSub?.cancel();
+    _durationSub?.cancel();
+    _playingSub?.cancel();
+    _bufferingSub?.cancel();
+    _completedSub?.cancel();
+    playerTimer?.cancel();
   }
 
   Future<void> playNextEpisode() async {
@@ -302,10 +329,10 @@ abstract class _PlayerController with Store {
   Future<void> changePlayerSettings() async {
     shadersController = ShadersController();
     shadersController.copyShadersToExternalDirectory();
-    audioOutType = appdata.settings['audioOutType'] ?? true;
+    audioOutType = appdata.settings.s.audioOutType;
     hAenable = appdata.settings.s.haEnable;
-    hardwareDecoder = appdata.settings['hardwareDecoder'] ?? 'auto-safe';
-    videoSync = appdata.settings['videoSynchronizationMode'] ?? 'audio';
+    hardwareDecoder = appdata.settings.s.hardwareDecoder;
+    videoSync = appdata.settings.s.videoSynchronizationMode;
 
     if (App.isAndroid) {
       final info = await DeviceInfo.getDeviceInfo();
@@ -390,7 +417,8 @@ abstract class _PlayerController with Store {
     await player.setAudioTrack(AudioTrack.auto());
 
     player.setPlaylistMode(PlaylistMode.none);
-    playerTimer = getPlayerTimer();
+    // playerTimer = getPlayerTimer();
+    startPlayerStreams();
 
     animeImg = WatcherState.currentState!.anime.cover;
 

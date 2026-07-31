@@ -343,13 +343,15 @@ class _RenderDialogueComposePageState
       App.rootContext.showMessage(message: t.saveSuccess);
     } catch (e, st) {
       debugPrint('保存长图异常: $e\n$st');
-      App.rootContext.showMessage(message: t.saveFailedWithError(e: e.toString()));
+      App.rootContext.showMessage(
+        message: t.saveFailedWithError(e: e.toString()),
+      );
     }
   }
 
   Widget _buildReorderView() {
     return ReorderableListView(
-      onReorder: _onReorder,
+      onReorderItem: _onReorder,
       buildDefaultDragHandles: false,
       scrollController: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -427,9 +429,7 @@ class _RenderDialogueComposePageState
                             padding: const EdgeInsets.all(6),
                             color: Colors.black54,
                             child: Text(
-                              t.cropHeightCPx(
-                                c: crop.toStringAsFixed(0),
-                              ),
+                              t.cropHeightCPx(c: crop.toStringAsFixed(0)),
                               style: const TextStyle(color: Colors.white),
                             ),
                           ),

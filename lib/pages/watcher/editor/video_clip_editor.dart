@@ -180,6 +180,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
   int _videoWidth = 0;
   int _videoHeight = 0;
+  Duration _hlsOffset = Duration.zero;
 
   Player? _previewPlayer;
   VideoController? _previewController;
@@ -269,7 +270,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
   Future<void> _runSampleEstimate() async {
     if (_previewHlsTempDir == null && _HlsDownloader._isHls(widget.videoUrl)) {
-      return; // 还没有本地文件，不采样
+      return;
     }
     if (_clipDuration.inMilliseconds <= 0) return;
     if (_sampling) return;
@@ -280,7 +281,6 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     });
 
     try {
-      // 取片段中间 1 秒
       final sampleSec = 1.0;
       final midMs =
           _startTime.inMilliseconds + _clipDuration.inMilliseconds ~/ 2;
@@ -291,8 +291,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
       final tempDir = await getTemporaryDirectory();
 
-      // 构造和真实导出一样的参数，只改 startMs 和 lengthMs
-      final localPath = _getSampleInputPath(); // 见下方
+      final localPath = _getSampleInputPath();
       if (localPath == null) return;
 
       final (_, encodeArgs) = _buildEncodeArgs(
@@ -368,6 +367,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   }
 
   Future<void> _initPreviewPlayer() async {
+    final startTime = widget.currentPosition;
     _previewPosSub?.cancel();
     _previewPosSub = null;
     final oldPlayer = _previewPlayer;
@@ -387,12 +387,12 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
     try {
       final halfWindowMs = _previewWindowMs ~/ 2;
-      final downloadStartMs = (_startTime.inMilliseconds - halfWindowMs).clamp(
+      final downloadStartMs = (startTime.inMilliseconds - halfWindowMs).clamp(
         0,
         widget.duration.inMilliseconds,
       );
       _previewDownloadStartMs = downloadStartMs;
-      final downloadEndMs = (_startTime.inMilliseconds + halfWindowMs).clamp(
+      final downloadEndMs = (startTime.inMilliseconds + halfWindowMs).clamp(
         0,
         widget.duration.inMilliseconds,
       );
@@ -450,8 +450,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       });
 
       final seekTarget = isHls && mediaUrl != widget.videoUrl
-          ? Duration(milliseconds: _startTime.inMilliseconds - downloadStartMs)
-          : _startTime;
+          ? Duration(milliseconds: startTime.inMilliseconds - downloadStartMs)
+          : startTime;
 
       await Future.delayed(const Duration(milliseconds: 400));
       if (!mounted) {
@@ -470,6 +470,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         });
       });
 
+      bool isSeeking = false;
+
       _previewPosSub = player.stream.position.listen((pos) {
         if (!mounted) return;
 
@@ -482,8 +484,13 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         final localStart = _startTime - offset;
         final localEnd = _endTime - offset;
 
-        if (_isPlaying && (pos >= localEnd || pos < localStart)) {
-          player.seek(localStart);
+        if (_isPlaying && !isSeeking && (pos >= localEnd || pos < localStart)) {
+          isSeeking = true;
+          player.seek(localStart).then((_) {
+            Future.delayed(const Duration(milliseconds: 200), () {
+              isSeeking = false;
+            });
+          });
         }
 
         _positionNotifier.value = pos;
@@ -503,6 +510,9 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _previewController = controller;
         _previewLoading = false;
         _previewStatus = '';
+        _hlsOffset = (isHls && mediaUrl != widget.videoUrl)
+            ? Duration(milliseconds: _previewDownloadStartMs)
+            : Duration.zero;
       });
 
       _generateThumbnails();
@@ -1366,9 +1376,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   IconButton(
                     icon: const Icon(Icons.replay_5),
                     onPressed: () {
+                      final localStart = _startTime - _hlsOffset;
                       final newPos = position - const Duration(seconds: 5);
                       _previewPlayer?.seek(
-                        newPos < Duration.zero ? Duration.zero : newPos,
+                        newPos < localStart ? localStart : newPos,
                       );
                     },
                   ),
@@ -1416,12 +1427,12 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   IconButton(
                     icon: const Icon(Icons.forward_5),
                     onPressed: () {
+                      final localStart = _startTime - _hlsOffset;
+                      final localEnd = _endTime - _hlsOffset;
                       final newPos = position + const Duration(seconds: 5);
-                      if (newPos >= _endTime) {
-                        _previewPlayer?.seek(_startTime);
-                      } else {
-                        _previewPlayer?.seek(newPos);
-                      }
+                      _previewPlayer?.seek(
+                        newPos >= localEnd ? localStart : newPos,
+                      );
                     },
                   ),
                 ],

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/anime_list.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
-import 'package:kostori/database/search_history.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
@@ -62,6 +62,7 @@ class _SearchResultPageState extends State<SearchResultPage> {
 
   @override
   void initState() {
+    super.initState();
     sourceKey = widget.sourceKey;
     text = widget.text;
     controller = SearchBarController(currentText: text, onSearch: search);
@@ -70,7 +71,6 @@ class _SearchResultPageState extends State<SearchResultPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SearchHistoryManager().addSearch(text);
     });
-    super.initState();
   }
 
   void validateOptions() {

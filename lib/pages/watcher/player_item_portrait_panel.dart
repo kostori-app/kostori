@@ -55,6 +55,12 @@ class _PlayerItemPortraitPanelState extends State<PlayerItemPortraitPanel> {
   }
 
   @override
+  void dispose() {
+    textController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Observer(
       builder: (context) {

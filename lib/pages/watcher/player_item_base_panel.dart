@@ -88,84 +88,18 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                   alignment: Alignment.bottomCenter,
                   children: [
                     // 底部渐变层
-                    TweenAnimationBuilder<double>(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      tween: Tween<double>(
-                        begin: playerController.isSeek ? 0.0 : 1.0,
-                        end: playerController.isSeek ? 1.0 : 0.0,
-                      ),
-                      builder: (context, value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Container(
-                            height: 30,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.toOpacity(0.1),
-                                  Colors.black.toOpacity(0.25),
-                                  Colors.black.toOpacity(0.45),
-                                  Colors.black.toOpacity(0.6),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.toOpacity(0.15),
-                                  blurRadius: 10.0,
-                                  spreadRadius: 2.0,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                    _SeekGradientLayer(isSeek: playerController.isSeek),
 
-                    TweenAnimationBuilder<double>(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                      tween: Tween<double>(
-                        begin: playerController.isSeek ? 0.0 : 1.0,
-                        end: playerController.isSeek ? 1.0 : 0.0,
-                      ),
-                      builder: (context, value, child) {
-                        return ProgressBar(
-                          thumbRadius: 6 * value,
-                          thumbGlowRadius: 0,
-                          barHeight: 2 + 2 * value,
-                          progressBarColor: Theme.of(
-                            context,
-                          ).colorScheme.primary.toOpacity(0.72),
-                          bufferedBarColor: Theme.of(
-                            context,
-                          ).colorScheme.primary.toOpacity(0.36),
-                          baseBarColor: Theme.of(
-                            context,
-                          ).colorScheme.primary.toOpacity(0.2),
-                          timeLabelLocation: TimeLabelLocation.none,
-                          progress: widget.currentPosition,
-                          buffered: widget.buffer,
-                          total: widget.duration,
-                          onSeek: (duration) {
-                            playerController.seek(duration);
-                          },
-                          onDragStart: (details) {
-                            widget.handleProgressBarDragStart(details);
-                          },
-                          onDragUpdate: (details) {
-                            playerController.currentPosition =
-                                details.timeStamp;
-                          },
-                          onDragEnd: () {
-                            widget.handleProgressBarDragEnd();
-                          },
-                        );
-                      },
+                    _SeekProgressBar(
+                      isSeek: playerController.isSeek,
+                      currentPosition: widget.currentPosition,
+                      buffer: widget.buffer,
+                      duration: widget.duration,
+                      onSeek: (duration) => playerController.seek(duration),
+                      onDragStart: widget.handleProgressBarDragStart,
+                      onDragUpdate: (details) =>
+                          playerController.currentPosition = details.timeStamp,
+                      onDragEnd: widget.handleProgressBarDragEnd,
                     ),
                   ],
                 ),
@@ -305,6 +239,161 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+// 新建两个小 Widget，分别对应渐变层和进度条
+
+class _SeekGradientLayer extends StatefulWidget {
+  const _SeekGradientLayer({required this.isSeek});
+  final bool isSeek;
+
+  @override
+  State<_SeekGradientLayer> createState() => _SeekGradientLayerState();
+}
+
+class _SeekGradientLayerState extends State<_SeekGradientLayer> {
+  late Tween<double> _tween;
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化时根据当前状态决定起点
+    _tween = Tween<double>(
+      begin: widget.isSeek ? 0.0 : 1.0,
+      end: widget.isSeek ? 1.0 : 0.0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_SeekGradientLayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 只在 isSeek 真正改变时才更新 tween
+    if (oldWidget.isSeek != widget.isSeek) {
+      _tween = Tween<double>(
+        begin: widget.isSeek ? 0.0 : 1.0,
+        end: widget.isSeek ? 1.0 : 0.0,
+      );
+    }
+    // isSeek 没变 → _tween 对象引用不变 → TweenAnimationBuilder 不会重启动画
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      tween: _tween, // ← 引用稳定，只在 isSeek 变化时才是新对象
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Container(
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+                colors: [
+                  Colors.transparent,
+                  Colors.black.toOpacity(0.1),
+                  Colors.black.toOpacity(0.25),
+                  Colors.black.toOpacity(0.45),
+                  Colors.black.toOpacity(0.6),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.toOpacity(0.15),
+                  blurRadius: 10.0,
+                  spreadRadius: 2.0,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SeekProgressBar extends StatefulWidget {
+  const _SeekProgressBar({
+    required this.isSeek,
+    required this.currentPosition,
+    required this.buffer,
+    required this.duration,
+    required this.onSeek,
+    required this.onDragStart,
+    required this.onDragUpdate,
+    required this.onDragEnd,
+  });
+
+  final bool isSeek;
+  final Duration currentPosition;
+  final Duration buffer;
+  final Duration duration;
+  final void Function(Duration) onSeek;
+  final void Function(ThumbDragDetails) onDragStart;
+  final void Function(ThumbDragDetails) onDragUpdate;
+  final void Function() onDragEnd;
+
+  @override
+  State<_SeekProgressBar> createState() => _SeekProgressBarState();
+}
+
+class _SeekProgressBarState extends State<_SeekProgressBar> {
+  late Tween<double> _tween;
+
+  @override
+  void initState() {
+    super.initState();
+    _tween = Tween<double>(
+      begin: widget.isSeek ? 0.0 : 1.0,
+      end: widget.isSeek ? 1.0 : 0.0,
+    );
+  }
+
+  @override
+  void didUpdateWidget(_SeekProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSeek != widget.isSeek) {
+      _tween = Tween<double>(
+        begin: widget.isSeek ? 0.0 : 1.0,
+        end: widget.isSeek ? 1.0 : 0.0,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+      tween: _tween,
+      builder: (context, value, child) {
+        return ProgressBar(
+          thumbRadius: 6 * value,
+          thumbGlowRadius: 0,
+          barHeight: 2 + 2 * value,
+          progressBarColor: Theme.of(
+            context,
+          ).colorScheme.primary.toOpacity(0.72),
+          bufferedBarColor: Theme.of(
+            context,
+          ).colorScheme.primary.toOpacity(0.36),
+          baseBarColor: Theme.of(context).colorScheme.primary.toOpacity(0.2),
+          timeLabelLocation: TimeLabelLocation.none,
+          progress: widget.currentPosition,
+          buffered: widget.buffer,
+          total: widget.duration,
+          onSeek: widget.onSeek,
+          onDragStart: widget.onDragStart,
+          onDragUpdate: widget.onDragUpdate,
+          onDragEnd: widget.onDragEnd,
         );
       },
     );

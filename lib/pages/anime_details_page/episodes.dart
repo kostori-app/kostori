@@ -111,7 +111,7 @@ class _AnimeEpisodesState extends State<_AnimeEpisodes> {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

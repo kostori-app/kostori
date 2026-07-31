@@ -146,7 +146,8 @@ class _PlayerItemState extends State<PlayerItem>
   }
 
   void handleProgressBarDragStart(ThumbDragDetails details) {
-    playerController.playerTimer?.cancel();
+    // playerController.playerTimer?.cancel();
+    playerController.stopPlayerStreams();
     playerController.pause();
     hideTimer?.cancel();
     playerController.showVideoController = true;
@@ -156,7 +157,8 @@ class _PlayerItemState extends State<PlayerItem>
   void handleProgressBarDragEnd() {
     playerController.play();
     startHideTimer();
-    playerController.playerTimer = playerController.getPlayerTimer();
+    // playerController.playerTimer = playerController.getPlayerTimer();
+    playerController.startPlayerStreams();
     // _hidePreview();
   }
 
@@ -191,10 +193,6 @@ class _PlayerItemState extends State<PlayerItem>
         builder: (_, _) => VideoInfoSheet.fromController(playerController),
       ),
     );
-  }
-
-  void update() {
-    setState(() {});
   }
 
   MenuButton _buildMenuItems() {
@@ -391,8 +389,9 @@ class _PlayerItemState extends State<PlayerItem>
                                     playerController.seek(
                                       playerController.currentPosition,
                                     );
-                                    playerController.playerTimer =
-                                        playerController.getPlayerTimer();
+                                    // playerController.playerTimer =
+                                    //     playerController.getPlayerTimer();
+                                    playerController.startPlayerStreams();
                                     return KeyEventResult.handled;
                                   } catch (e) {
                                     PlayLog.error('播放器内部错误', e.toString());
@@ -421,8 +420,9 @@ class _PlayerItemState extends State<PlayerItem>
                                     playerController.seek(
                                       playerController.currentPosition,
                                     );
-                                    playerController.playerTimer =
-                                        playerController.getPlayerTimer();
+                                    // playerController.playerTimer =
+                                    //     playerController.getPlayerTimer();
+                                    playerController.startPlayerStreams();
                                     return KeyEventResult.handled;
                                   } catch (e) {
                                     PlayLog.error('左方向键被按下', e.toString());
@@ -481,7 +481,8 @@ class _PlayerItemState extends State<PlayerItem>
                                     );
                                   } else {
                                     try {
-                                      playerController.playerTimer?.cancel();
+                                      // playerController.playerTimer?.cancel();
+                                      playerController.stopPlayerStreams();
                                       playerController.seek(
                                         Duration(
                                           seconds:
@@ -491,8 +492,9 @@ class _PlayerItemState extends State<PlayerItem>
                                               10,
                                         ),
                                       );
-                                      playerController.playerTimer =
-                                          playerController.getPlayerTimer();
+                                      // playerController.playerTimer =
+                                      //     playerController.getPlayerTimer();
+                                      playerController.startPlayerStreams();
                                     } catch (e) {
                                       PlayLog.error('播放器内部错误', e.toString());
                                     }
@@ -592,7 +594,8 @@ class _PlayerItemState extends State<PlayerItem>
                           },
                           onHorizontalDragUpdate: (DragUpdateDetails details) {
                             playerController.showSeekTime = true;
-                            playerController.playerTimer?.cancel();
+                            // playerController.playerTimer?.cancel();
+                            playerController.stopPlayerStreams();
                             playerController.pause();
                             final double scale =
                                 180000 / MediaQuery.sizeOf(context).width;
@@ -615,9 +618,11 @@ class _PlayerItemState extends State<PlayerItem>
                               playerController.currentPosition,
                             );
                             playerController.isSeek = false;
-                            playerController.playerTimer?.cancel();
-                            playerController.playerTimer = playerController
-                                .getPlayerTimer();
+                            // playerController.playerTimer?.cancel();
+                            playerController.stopPlayerStreams();
+                            // playerController.playerTimer = playerController
+                            //     .getPlayerTimer();
+                            playerController.startPlayerStreams();
                             playerController.showSeekTime = false;
                           },
                           onVerticalDragUpdate:
@@ -707,8 +712,8 @@ class _AmbientShaderVideoState extends State<AmbientShaderVideo> {
       scale: 1.1,
       child: ImageFiltered(
         imageFilter: ImageFilter.blur(
-          sigmaX: 120,
-          sigmaY: 120,
+          sigmaX: 40,
+          sigmaY: 40,
           tileMode: TileMode.mirror,
         ),
         child: ShaderMask(

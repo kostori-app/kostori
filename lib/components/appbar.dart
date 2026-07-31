@@ -27,7 +27,8 @@ class Appbar extends StatefulWidget implements PreferredSizeWidget {
   State<Appbar> createState() => _AppbarState();
 
   @override
-  Size get preferredSize => const Size.fromHeight(56 * 2);
+  Size get preferredSize =>
+      Size.fromHeight(_kAppBarHeight + (bottom?.preferredSize.height ?? 0));
 }
 
 class _AppbarState extends State<Appbar> {
@@ -98,7 +99,7 @@ class _AppbarState extends State<Appbar> {
                 const SizedBox(width: 8),
                 widget.leading ??
                     Tooltip(
-                        message: t.back,
+                      message: t.back,
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back_ios_new),
                         onPressed: () => Navigator.maybePop(context),
@@ -224,7 +225,7 @@ class _MySliverAppBarDelegate extends SliverPersistentHeaderDelegate {
             leading ??
                 (Navigator.of(context).canPop()
                     ? Tooltip(
-                      message: t.back,
+                        message: t.back,
                         child: IconButton(
                           icon: const Icon(Icons.arrow_back_ios_new),
                           onPressed: () => Navigator.maybePop(context),

@@ -28,7 +28,7 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                 ),
                 _SwitchSetting(
                   title: t.hardwareDecoding,
-                  settingKey: "hAenable",
+                  settingKey: "haEnable",
                 ),
                 _CallbackSetting(
                   title: t.hardwareDecoder,

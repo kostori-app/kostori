@@ -107,7 +107,9 @@ class _CategoriesPageState extends State<CategoriesPage>
 
     return Material(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          Appbar(title: Text(t.categories)),
           AppTabBar(
             controller: controller,
             key: PageStorageKey(categories.toString()),
@@ -125,7 +127,7 @@ class _CategoriesPageState extends State<CategoriesPage>
               text: t.add,
               onPressed: addPage,
             ),
-          ).paddingTop(context.padding.top),
+          ),
           Expanded(
             child: TabBarView(
               key: ValueKey(categories.join(',')),

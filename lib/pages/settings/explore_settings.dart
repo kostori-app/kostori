@@ -309,7 +309,7 @@ class _SourceReorderableList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ReorderableListView.builder(
       itemCount: sourceKeys.length,
-      onReorder: onReorder,
+      onReorderItem: onReorder,
       itemBuilder: (context, index) {
         var sourceKey = sourceKeys[index];
         var source = AnimeSource.find(sourceKey);
@@ -396,7 +396,7 @@ class _SourcePagesListState extends State<_SourcePagesList> {
       ],
       body: ReorderableListView.builder(
         itemCount: _pages.length,
-        onReorder: _onReorder,
+        onReorderItem: _onReorder,
         itemBuilder: (context, index) {
           var page = _pages[index];
           return ListTile(
