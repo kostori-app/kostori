@@ -9,10 +9,12 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   desktop_webview_window
   dynamic_color
+  ffmpeg_kit_flutter_new_min_gpl
   file_selector_windows
   flutter_inappwebview_windows
   flutter_qjs
   flutter_volume_controller
+  irondash_engine_context
   local_auth_windows
   media_kit_libs_windows_video
   media_kit_video
@@ -20,6 +22,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   permission_handler_windows
   screen_retriever_windows
   share_plus
+  super_native_extensions
   url_launcher_windows
   window_manager
   windows_taskbar

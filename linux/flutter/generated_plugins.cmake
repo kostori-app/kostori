@@ -6,15 +6,17 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   desktop_webview_window
   dynamic_color
+  ffmpeg_kit_flutter_new_min_gpl
   file_selector_linux
-  flutter_memory_info
   flutter_qjs
   flutter_volume_controller
   gtk
+  irondash_engine_context
   media_kit_libs_linux
   media_kit_video
   pasteboard
   screen_retriever_linux
+  super_native_extensions
   url_launcher_linux
   window_manager
 )

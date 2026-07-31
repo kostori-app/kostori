@@ -6,7 +6,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.3.0+130
 environment:
   sdk: ">=3.8.0 <4.0.0"
-  flutter: 3.41.6
+  flutter: 3.44.8
 
 dependencies:
   flutter:
@@ -24,17 +24,17 @@ dependencies:
       url: https://github.com/axlmly/flutter_desktop_webview
       path: packages/desktop_webview_window
       ref: 7801fc582ecf5a7351632887891ecf309a7b2583
-  dio: ^5.9.2
-  dlna_dart: ^0.1.0
+  dio: ^5.11.0
+  dlna_dart: ^0.1.1
   dynamic_color: ^1.8.1
   file_selector: ^1.1.0
   fl_chart: ^1.2.0
   flex_seed_scheme: ^4.0.1
   flex_color_picker: ^3.8.0
-  flutter_absolute_path_provider: ^0.0.1
+  flutter_absolute_path_provider: ^0.1.0
   flutter_colorpicker: ^1.1.0
   flutter_displaymode: ^0.7.0
-  flutter_file_dialog: ^3.0.3
+  flutter_file_dialog: ^3.3.2
   flutter_inappwebview:
     git:
       url: https://github.com/axlmly/flutter_inappwebview
@@ -42,28 +42,28 @@ dependencies:
       ref: 3ef899b3db57c911b080979f1392253b835f98ab
   flutter_localizations:
     sdk: flutter
-  flutter_memory_info: ^0.0.3
+  #  flutter_memory_info: ^0.0.3
   flutter_mobx: ^2.3.0
-  flutter_modular: ^6.4.1
+  flutter_modular: ^7.1.0
   flutter_qjs:
     git:
       url: https://github.com/axlmly/flutter_qjs
       ref: 8feae95df7fb00455df129ad7a0dfec1d0e8d8e4
   flutter_rating_bar: ^4.0.1
-  flutter_reorderable_grid_view: ^5.6.0
+  flutter_reorderable_grid_view: ^5.7.0
   flutter_saf:
     git:
       url: https://github.com/kostori-app/flutter_saf
       ref: fe182cdf40e5fa6230f451bc1d643b860f610d13
-  flutter_svg: ^2.2.4
+  flutter_svg: ^2.3.0
   #音量
-  flutter_volume_controller: ^1.3.4
+  flutter_volume_controller: ^2.0.1
   gif: ^2.3.0
-  html: ^0.15.5
-  image_gallery_saver_plus: ^4.0.1
-  image_picker: ^1.2.1
+  html: ^0.15.6
+  image_gallery_saver_plus: ^5.1.1
+  image_picker: ^1.2.3
   intl: ^0.20.2
-  local_auth: ^3.0.1
+  local_auth: ^3.0.2
   lodepng_flutter:
     git:
       url: https://github.com/axlmly/lodepng_flutter
@@ -74,52 +74,52 @@ dependencies:
   media_kit_video: ^2.0.1
   mime: ^2.0.0
   mobx: ^2.6.0
-  package_info_plus: ^9.0.0
+  package_info_plus: ^10.2.1
   path: ^1.9.1
   path_provider: any
-  permission_handler: ^12.0.1
+  permission_handler: ^13.0.0
   photo_view:
     git:
       url: https://github.com/axlmly/photo_view
       ref: 99c2a7257cd1e0708cb0486218622ccab50801cb
   pointycastle: ^4.0.0
-  rhttp: ^0.16.0
+  rhttp: ^0.18.0
   #屏幕亮度
-  screen_brightness_android: ^2.1.3
-  screen_brightness_platform_interface: ^2.1.0
+  screen_brightness_android: ^2.1.6
+  screen_brightness_platform_interface: ^2.1.2
   scrollable_positioned_list:
     git:
       url: https://github.com/axlmly/flutter.widgets
       ref: 09e756b1f1b04e6298318d99ec20a787fb360f59
       path: packages/scrollable_positioned_list
-  scrollview_observer: ^1.26.3
-  share_plus: ^12.0.1
+  scrollview_observer: ^1.27.0
+  share_plus: ^13.3.0
   shared_preferences: ^2.5.5
-  shared_preferences_android: ^2.4.23
+  shared_preferences_android: ^2.4.27
   shimmer_animation: ^2.2.2+1
   skeletonizer: ^2.1.3
   sliver_tools: ^0.2.12
-  sqlite3: ^3.3.1
-  syntax_highlight: ^0.4.0
+  sqlite3: ^3.5.0
+  syntax_highlight: ^0.5.0
   url_launcher: ^6.3.2
-  uuid: ^4.5.3
-  wakelock_plus: ^1.4.0
+  uuid: ^4.6.0
+  wakelock_plus: ^1.7.0
   webdav_client:
     git:
       url: https://github.com/axlmly/webdav_client
       ref: 2f669c98fb81cff1c64fee93466a1475c77e4273
-  window_manager: ^0.5.1
+  window_manager: ^0.5.2
   yaml: any
   zip_flutter: ^0.0.13
-  flutter_riverpod: ^3.3.1
-  riverpod_annotation: ^4.0.2
-  riverpod: ^3.2.1
+  flutter_riverpod: ^3.4.2
+  riverpod_annotation: ^4.0.6
+  riverpod: ^3.4.2
   animated_text_kit: ^4.3.0
   marquee: ^2.3.0
-  device_info_plus: ^12.3.0
+  device_info_plus: ^13.2.0
   floating: ^6.0.0
   markdown_widget: ^2.3.2+8
-  audio_service: ^0.18.18
+  audio_service: ^0.18.19
   smtc_windows:
     git:
       url: https://github.com/kostori-app/frb_plugins
@@ -132,27 +132,27 @@ dependencies:
       url: https://github.com/axlmly/word_cloud
       ref: 675a2e5ac2868769d128d961401d244e1441a00f
       path: word_cloud
-  connectivity_plus: ^7.0.0
-  network_info_plus: ^7.0.0
-  file_picker: ^11.0.2
-  flutter_image_compress: ^2.4.0
-  desktop_drop: ^0.7.0
-  drift: ^2.32.1
-  drift_flutter: ^0.3.0
+  connectivity_plus: ^7.3.1
+  network_info_plus: ^8.2.1
+  file_picker: ^12.0.0-beta.7
+  flutter_image_compress: ^2.5.1
+  desktop_drop: ^0.7.1
+  drift: ^2.34.3
+  drift_flutter: ^0.3.1
   pasteboard: ^0.5.0
-  mobile_scanner: ^7.2.0
+  mobile_scanner: ^7.4.0
   pretty_qr_code: ^3.6.0
   zxing2: ^0.2.4
-  slang: ^4.14.0
-  slang_flutter: ^4.14.0
-  ffmpeg_kit_flutter_new_min_gpl: ^2.1.1
+  slang: ^4.18.0
+  slang_flutter: ^4.18.0
+  ffmpeg_kit_flutter_new_min_gpl: ^2.6.2
   freezed_annotation: ^3.1.0
-  json_annotation: ^4.11.0
+  json_annotation: ^4.12.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  drift_dev: ^2.32.1
+  drift_dev: ^2.34.5
   build_runner: ^2.13.1
   flutter_launcher_icons: ^0.14.4
   change_app_package_name: ^1.5.0
@@ -160,13 +160,18 @@ dev_dependencies:
   mobx_codegen: ^2.7.7
   #  riverpod_generator: ^4.0.3
   #  riverpod_lint: ^3.1.3
-  msix: ^3.16.13
-  slang_build_runner: ^4.14.0
+  msix: ^3.18.0
+  slang_build_runner: ^4.18.0
   freezed: ^3.2.5
-  json_serializable: ^6.13.1
+  json_serializable: ^6.14.1
 
 dependency_overrides:
   analyzer: ^10.0.0
+  super_native_extensions:
+    git:
+      url: https://github.com/axlmly/super_native_extensions.git
+      path: super_native_extensions
+      ref: main
 
 flutter_launcher_icons:
   android: true
