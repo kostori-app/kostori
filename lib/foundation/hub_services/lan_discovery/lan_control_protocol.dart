@@ -11,7 +11,9 @@ enum LanControlMessageType {
   statusSync,
   error,
   ping,
-  pong;
+  pong,
+  hello,
+  pinVerify;
 
   String get name => switch (this) {
     LanControlMessageType.playerControl => 'player_control',
@@ -25,6 +27,8 @@ enum LanControlMessageType {
     LanControlMessageType.error => 'error',
     LanControlMessageType.ping => 'ping',
     LanControlMessageType.pong => 'pong',
+    LanControlMessageType.hello => 'hello',
+    LanControlMessageType.pinVerify => 'pin_verify',
   };
 
   static LanControlMessageType? fromString(String name) {

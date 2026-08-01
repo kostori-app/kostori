@@ -178,6 +178,10 @@ class LanDiscoveryController extends ChangeNotifier {
     _service.addPairingRequestListener(_onPairingRequest);
     LanControlService.instance.setNavigationHandler(_onNavigationRequest);
     LanControlService.instance.setPlayerHandler(_LanPlayerControlHandler());
+    LanControlService.instance.setPinRequirement(
+      enabled: _getPinEnabled(),
+      pin: _getPinCode(),
+    );
 
     // Auto start discovery based on setting, but skip if already connected
     if (appdata.settings['lanAutoDiscovery'] != false &&
@@ -274,6 +278,7 @@ class LanDiscoveryController extends ChangeNotifier {
       deviceType: _getDeviceType(),
       capabilities: {'remoteControl': true, 'qrPairing': true, 'wsHub': true},
       hubPort: _getHubPort(),
+      multicastGroup: _getMulticastGroup(),
     );
     _isInitialized = true;
     notifyListeners();
@@ -297,6 +302,8 @@ class LanDiscoveryController extends ChangeNotifier {
 
   Future<void> refresh() async {
     _isRefreshing = true;
+    _devices.clear();
+    _selectedDevice = null;
     notifyListeners();
     await _service.refresh();
     await Future.delayed(const Duration(milliseconds: 500));
@@ -340,10 +347,32 @@ class LanDiscoveryController extends ChangeNotifier {
       deviceType: _getDeviceType(),
       capabilities: {'remoteControl': true, 'qrPairing': true, 'wsHub': true},
       hubPort: newPort,
+      multicastGroup: _getMulticastGroup(),
     );
     _isInitialized = true;
     generatePairingQr();
     notifyListeners();
+  }
+
+  Future<void> applySettings(int newPort, String group) async {
+    final server = LanControlService.instance;
+
+    if (server.isListening) {
+      if (server.port != newPort) {
+        await server.stop();
+        await server.start(newPort);
+      }
+    } else {
+      await server.start(newPort);
+    }
+
+    await reinitialize(newPort);
+    await updateMulticastGroup(group);
+
+    if (_service.state == LanDiscoveryServiceState.discovering ||
+        _service.state == LanDiscoveryServiceState.broadcasting) {
+      await _service.refresh();
+    }
   }
 
   void selectDevice(LanDiscoveredDevice? device) {
@@ -357,7 +386,16 @@ class LanDiscoveryController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await LanControlClient.instance.connect(device);
+      final ok = await LanControlClient.instance.connect(device);
+      if (!ok) {
+        App.rootContext.showMessage(
+          message:
+              LanControlClient.instance.lastError ??
+              t.lanRemoteControlConnectionFailed,
+        );
+        _selectedDevice = null;
+        return;
+      }
       _selectedDevice = device;
       App.rootContext.showMessage(message: t.lanRemoteControlConnected);
       _service.stopDiscovery();
@@ -404,6 +442,10 @@ class LanDiscoveryController extends ChangeNotifier {
   }
 
   String _getDeviceName() {
+    final custom = (appdata.implicitData['lan_device_name'] as String?)?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       return Platform.localHostname;
     } else if (Platform.isAndroid || Platform.isIOS) {
@@ -423,6 +465,21 @@ class LanDiscoveryController extends ChangeNotifier {
 
   int _getHubPort() =>
       appdata.implicitData['lan_discovery_port'] as int? ?? 42183;
+
+  String _getMulticastGroup() =>
+      appdata.implicitData['lan_multicast_group'] as String? ??
+      kLanMulticastGroup;
+
+  bool _getPinEnabled() =>
+      appdata.implicitData['lan_pin_enabled'] as bool? ?? false;
+
+  String _getPinCode() => appdata.implicitData['lan_pin_code'] as String? ?? '';
+
+  Future<void> updateMulticastGroup(String group) async {
+    appdata.implicitData['lan_multicast_group'] = group;
+    appdata.writeImplicitData();
+    await LanDiscoveryService.instance.setMulticastGroup(group);
+  }
 
   @override
   void dispose() {
@@ -544,6 +601,32 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
     super.dispose();
   }
 
+  Future<void> _connectManually() async {
+    final ip = _ipController.text.trim();
+    final port = int.tryParse(_portController.text.trim()) ?? 42183;
+    if (ip.isEmpty || port <= 0 || port > 65535) return;
+    final device = LanDiscoveredDevice(
+      id: 'manual_$ip:$port',
+      name: ip,
+      ip: ip,
+      port: port,
+      deviceType: LanDeviceType.unknown,
+      discoveredAt: DateTime.now(),
+      lastSeen: DateTime.now(),
+      capabilities: const {'remoteControl': true},
+    );
+    await ref.read(lanDiscoveryProvider.notifier).connectToDevice(device);
+  }
+
+  void _runSelfCheck() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (_) => const _SelfCheckSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ctrl = ref.watch(lanDiscoveryProvider.notifier);
@@ -653,6 +736,12 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                       : const Icon(Icons.refresh),
                   tooltip: t.refresh,
                 ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _runSelfCheck,
+                  icon: const Icon(Icons.wifi_find),
+                  tooltip: '网络自检',
+                ),
               ],
               if (isConnected)
                 IconButton(
@@ -666,6 +755,72 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
             ],
           ),
         ),
+        if (!isConnected)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ipController,
+                    enabled: !state.isConnecting,
+                    decoration: InputDecoration(
+                      hintText: 'IP 地址',
+                      isDense: true,
+                      prefixIcon: const Icon(Icons.dns_outlined, size: 18),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onSubmitted: (_) => _connectManually(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 96,
+                  child: TextField(
+                    controller: _portController,
+                    enabled: !state.isConnecting,
+                    decoration: InputDecoration(
+                      hintText: '端口',
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onSubmitted: (_) => _connectManually(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: state.isConnecting
+                      ? null
+                      : () {
+                          FocusScope.of(context).unfocus();
+                          _connectManually();
+                        },
+                  icon: state.isConnecting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.link),
+                  tooltip: '手动连接',
+                ),
+              ],
+            ),
+          ),
         const SizedBox(height: 8),
         Expanded(
           child: state.devices.isEmpty
@@ -945,24 +1100,42 @@ class _PortSettingsSheet extends ConsumerStatefulWidget {
 }
 
 class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
+  late final TextEditingController _deviceNameController;
   late final TextEditingController _portController;
+  late final TextEditingController _multicastController;
+  late final TextEditingController _pinController;
   final _formKey = GlobalKey<FormState>();
+  bool _pinEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    _deviceNameController = TextEditingController(
+      text: appdata.implicitData['lan_device_name'] as String? ?? '',
+    );
     final currentPort =
         appdata.implicitData['lan_discovery_port'] as int? ?? 42183;
     _portController = TextEditingController(text: currentPort.toString());
+    final currentGroup =
+        appdata.implicitData['lan_multicast_group'] as String? ??
+        kLanMulticastGroup;
+    _multicastController = TextEditingController(text: currentGroup);
+    _pinEnabled = appdata.implicitData['lan_pin_enabled'] as bool? ?? false;
+    _pinController = TextEditingController(
+      text: appdata.implicitData['lan_pin_code'] as String? ?? '',
+    );
   }
 
   @override
   void dispose() {
+    _deviceNameController.dispose();
     _portController.dispose();
+    _multicastController.dispose();
+    _pinController.dispose();
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final port = int.tryParse(_portController.text);
@@ -970,13 +1143,38 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
       return;
     }
 
+    final group = _multicastController.text.trim();
+    final pin = _pinController.text.trim();
+    final deviceName = _deviceNameController.text.trim();
+
+    appdata.implicitData['lan_device_name'] = deviceName;
     appdata.implicitData['lan_discovery_port'] = port;
+    appdata.implicitData['lan_multicast_group'] = group;
+    appdata.implicitData['lan_pin_enabled'] = _pinEnabled;
+    appdata.implicitData['lan_pin_code'] = pin;
     appdata.writeImplicitData();
 
-    widget.ref.read(lanDiscoveryProvider.notifier).reinitialize(port);
+    LanControlService.instance.setPinRequirement(
+      enabled: _pinEnabled,
+      pin: pin,
+    );
 
+    await widget.ref
+        .read(lanDiscoveryProvider.notifier)
+        .applySettings(port, group);
+
+    if (!mounted) return;
     Navigator.pop(context);
     App.rootContext.showMessage(message: t.saved);
+  }
+
+  bool _isValidMulticastAddress(String value) {
+    final parts = value.split('.');
+    if (parts.length != 4) return false;
+    final nums = parts.map(int.tryParse).toList();
+    if (nums.any((n) => n == null || n < 0 || n > 255)) return false;
+    final first = nums[0];
+    return first != null && first >= 224 && first <= 239;
   }
 
   @override
@@ -1002,6 +1200,26 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text('设备名称', style: ts.s14),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _deviceNameController,
+                maxLength: 30,
+                decoration: InputDecoration(
+                  hintText: '留空则使用默认名称',
+                  prefixIcon: const Icon(Icons.devices_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  counterText: '',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '其他设备发现此设备时显示的名称',
+                style: ts.s12.copyWith(color: cs.outline),
+              ),
+              const SizedBox(height: 16),
               Text(t.port, style: ts.s14),
               const SizedBox(height: 8),
               TextFormField(
@@ -1035,6 +1253,33 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
                 style: ts.s12.copyWith(color: cs.outline),
               ),
               const SizedBox(height: 16),
+              Text('组播地址（多线程广播）', style: ts.s14),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _multicastController,
+                decoration: InputDecoration(
+                  hintText: kLanMulticastGroup,
+                  prefixIcon: const Icon(Icons.cell_tower_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return t.thisFieldCannotBeEmpty;
+                  }
+                  if (!_isValidMulticastAddress(value.trim())) {
+                    return '请输入合法的组播地址（224.0.0.0 - 239.255.255.255）';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '组播（多线程广播）用于设备发现；自定义地址可避开路由器/防火墙对默认组播地址的特殊过滤',
+                style: ts.s12.copyWith(color: cs.outline),
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Text(t.lanAutoDiscovery, style: ts.s14),
@@ -1058,8 +1303,180 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text('连接 PIN 码验证', style: ts.s14),
+                  const Spacer(),
+                  CustomSwitch(
+                    value: _pinEnabled,
+                    onChanged: (value) => setState(() => _pinEnabled = value),
+                  ),
+                ],
+              ),
+              if (_pinEnabled) ...[
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: _pinController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    hintText: '4-6 位数字',
+                    prefixIcon: const Icon(Icons.password_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    counterText: '',
+                  ),
+                  validator: (value) {
+                    if (!RegExp(r'^\d{4,6}$').hasMatch(value?.trim() ?? '')) {
+                      return '请输入 4-6 位数字 PIN';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '开启后，其他设备连接时需输入此 PIN 码',
+                  style: ts.s12.copyWith(color: cs.outline),
+                ),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SelfCheckSheet extends ConsumerStatefulWidget {
+  const _SelfCheckSheet();
+
+  @override
+  ConsumerState<_SelfCheckSheet> createState() => _SelfCheckSheetState();
+}
+
+class _SelfCheckSheetState extends ConsumerState<_SelfCheckSheet> {
+  Map<String, dynamic>? _result;
+  String? _error;
+  bool _running = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _run();
+  }
+
+  Future<void> _run() async {
+    if (_running) return;
+    _running = true;
+    _error = null;
+    if (mounted && _result != null) {
+      setState(() => _result = null);
+    }
+    try {
+      final result = await LanDiscoveryService.instance.runSelfCheck();
+      if (mounted) {
+        setState(() => _result = result);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = '$e');
+      }
+    } finally {
+      _running = false;
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final ts = Theme.of(context).textTheme;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      maxChildSize: 0.9,
+      builder: (context, scrollController) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: _error != null
+              ? Center(child: Text('自检失败: $_error', style: ts.bodyMedium))
+              : _result == null
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                  controller: scrollController,
+                  children: [
+                    Text('网络自检', style: ts.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(
+                      '设备: ${_result!['platform']}  UDP端口: ${_result!['udpPort']}  发现状态: ${_result!['state']}',
+                      style: ts.bodySmall?.copyWith(color: cs.outline),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '连接PIN验证: ${LanControlService.instance.pinEnabled ? '已开启' : '已关闭'}',
+                      style: ts.bodySmall?.copyWith(color: cs.outline),
+                    ),
+                    const SizedBox(height: 12),
+                    for (final c in _result!['checks'] as List)
+                      _CheckTile(
+                        name: c['name'] as String,
+                        pass: c['pass'] as bool,
+                        detail: c['detail'] as String,
+                      ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _running ? null : _run,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('重新自检'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '排查要点: 两端连接同一 Wi-Fi/路由器；路由器关闭"AP隔离/客户端隔离"；两端均为最新代码。',
+                      style: ts.bodySmall?.copyWith(color: cs.outline),
+                    ),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _CheckTile extends StatelessWidget {
+  final String name;
+  final bool pass;
+  final String detail;
+
+  const _CheckTile({
+    required this.name,
+    required this.pass,
+    required this.detail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final ts = Theme.of(context).textTheme;
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        dense: true,
+        leading: Icon(
+          pass ? Icons.check_circle : Icons.error,
+          color: pass ? cs.primary : cs.error,
+        ),
+        title: Text(name, style: ts.bodyMedium),
+        subtitle: Text(
+          detail,
+          style: ts.bodySmall?.copyWith(color: cs.outline),
         ),
       ),
     );

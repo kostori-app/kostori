@@ -205,7 +205,15 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
         lastSeen: DateTime.now(),
         capabilities: {'remoteControl': true, 'token': remote.token},
       );
-      await LanControlClient.instance.connect(device);
+      final ok = await LanControlClient.instance.connect(device);
+      if (!ok) {
+        App.rootContext.showMessage(
+          message:
+              LanControlClient.instance.lastError ??
+              t.lanRemoteControlConnectionFailed,
+        );
+        return;
+      }
 
       App.rootContext.showMessage(message: t.lanRemoteControlConnected);
     } catch (e) {

@@ -2,6 +2,8 @@ part of 'package:kostori/foundation/hub_services/services.dart';
 
 const int kLanDiscoveryPort = 45678;
 const int kLanBroadcastInterval = 2;
+// 默认组播组地址（多线程广播），可在设置中修改；路由器/AP 对组播的转发通常比广播更可靠
+const String kLanMulticastGroup = '224.0.0.167';
 
 enum LanDeviceType {
   desktop,
@@ -119,6 +121,7 @@ class LanDiscoveryRequest {
   final String senderId;
   final String senderName;
   final LanDeviceType deviceType;
+  final int port;
   final String? avatarUrl;
   final Map<String, dynamic>? capabilities;
 
@@ -126,15 +129,18 @@ class LanDiscoveryRequest {
     required this.senderId,
     required this.senderName,
     this.deviceType = LanDeviceType.unknown,
+    this.port = 42183,
     this.avatarUrl,
     this.capabilities,
   });
 
   factory LanDiscoveryRequest.fromJson(Map<String, dynamic> json) {
+    final port = json['port'] as int? ?? 42183;
     return LanDiscoveryRequest(
       senderId: json['senderId'] as String,
       senderName: json['senderName'] as String? ?? 'Unknown',
       deviceType: LanDeviceType.fromString(json['deviceType'] as String?),
+      port: (port >= 0 && port <= 65535) ? port : 42183,
       avatarUrl: json['avatarUrl'] as String?,
       capabilities: json['capabilities'] as Map<String, dynamic>?,
     );
@@ -145,6 +151,7 @@ class LanDiscoveryRequest {
     'senderId': senderId,
     'senderName': senderName,
     'deviceType': deviceType.name,
+    'port': port,
     if (avatarUrl != null) 'avatarUrl': avatarUrl,
     if (capabilities != null) 'capabilities': capabilities,
   };

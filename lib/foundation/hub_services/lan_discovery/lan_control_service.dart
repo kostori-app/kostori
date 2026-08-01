@@ -1,6 +1,8 @@
 part of 'package:kostori/foundation/hub_services/services.dart';
 
-enum LanControlServiceState { idle, listening, connected, error }
+enum LanControlServiceState { idle, listening, connected, error, pinRequired }
+
+const int _kMaxPinAttempts = 3;
 
 typedef LanControlCallback = void Function(LanControlMessage message);
 
@@ -13,9 +15,16 @@ class LanControlService {
   final Map<String, WebSocket> _connections = {};
   LanControlServiceState _state = LanControlServiceState.idle;
   String? _lastError;
-  Timer? _heartbeatTimer;
   Timer? _statusBroadcastTimer;
+  String? _lastAnimeSignature;
   int _port = 42183;
+  final _commandQueues = <String, Future<void>>{};
+
+  bool _pinEnabled = false;
+  String _pinCode = '';
+  final _pendingPinConnections = <String, WebSocket>{};
+  final _pinAttempts = <String, int>{};
+  final _pinTimeouts = <String, Timer>{};
 
   final _onMessageListeners = <LanControlCallback>[];
   final _onConnectListeners = <void Function(String)>[];
@@ -39,6 +48,17 @@ class LanControlService {
       _state == LanControlServiceState.connected;
 
   Set<String> get connectedDeviceIds => _connections.keys.toSet();
+
+  bool get pinEnabled => _pinEnabled;
+
+  void setPinRequirement({required bool enabled, required String pin}) {
+    _pinEnabled = enabled;
+    _pinCode = pin.trim();
+    HubLog.info(
+      'LanControlService',
+      '连接 PIN 码验证已${enabled ? '开启' : '关闭'}${enabled ? '（${_pinCode.length} 位）' : ''}',
+    );
+  }
 
   void setPlayerHandler(LanPlayerControlHandler handler) {
     _playerHandler = handler;
@@ -112,7 +132,6 @@ class LanControlService {
         },
       );
 
-      _startHeartbeat();
       HubLog.info('LanControlService', 'WebSocket 服务已启动，端口: $port');
     } on SocketException catch (e) {
       if (e.osError?.errorCode == 10048) {
@@ -130,7 +149,6 @@ class LanControlService {
           _setState(LanControlServiceState.listening);
 
           _server!.listen(_handleHttpRequest);
-          _startHeartbeat();
           HubLog.info('LanControlService', 'WebSocket 服务已在动态端口启动，端口: $_port');
           return;
         } catch (innerEx) {
@@ -149,13 +167,34 @@ class LanControlService {
   }
 
   Future<void> stop() async {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
+    _statusBroadcastTimer?.cancel();
+    _statusBroadcastTimer = null;
 
-    for (final ws in _connections.values) {
-      await ws.close();
+    for (final t in _pinTimeouts.values) {
+      t.cancel();
     }
+    _pinTimeouts.clear();
+    _pinAttempts.clear();
+
+    final connections = List<WebSocket>.of(_connections.values);
     _connections.clear();
+    for (final ws in connections) {
+      try {
+        await ws.close();
+      } catch (_) {
+        // 忽略已断开的连接
+      }
+    }
+
+    final pendingPin = List<WebSocket>.of(_pendingPinConnections.values);
+    _pendingPinConnections.clear();
+    for (final ws in pendingPin) {
+      try {
+        await ws.close();
+      } catch (_) {
+        // 忽略未验证的连接
+      }
+    }
 
     if (_server != null) {
       await _server!.close(force: true);
@@ -203,6 +242,38 @@ class LanControlService {
   }
 
   void _handleWebSocket(WebSocket ws, HttpRequest request) {
+    ws.pingInterval = const Duration(seconds: 30);
+    _lastAnimeSignature = null;
+
+    final deviceId = _generateDeviceId();
+    final requiresPin = _pinEnabled && _pinCode.isNotEmpty;
+
+    _sendToSocket(ws, _buildHelloMessage(requiresPin));
+
+    if (requiresPin) {
+      _pendingPinConnections[deviceId] = ws;
+      _pinTimeouts[deviceId] = Timer(const Duration(seconds: 30), () {
+        if (_pendingPinConnections.remove(deviceId) != null) {
+          _pinAttempts.remove(deviceId);
+          _pinTimeouts.remove(deviceId);
+          ws.close();
+          HubLog.info('LanControlService', 'PIN 验证超时，已关闭连接: $deviceId');
+        }
+      });
+    } else {
+      _registerConnection(deviceId, ws);
+    }
+
+    ws.listen(
+      (data) => _pendingPinConnections.containsKey(deviceId)
+          ? _handlePendingPinMessage(deviceId, ws, data)
+          : _handleMessage(deviceId, data),
+      onError: (error) => _handleError(deviceId, error),
+      onDone: () => _handleDisconnect(deviceId),
+    );
+  }
+
+  void _registerConnection(String deviceId, WebSocket ws) {
     for (final existingWs in _connections.values) {
       existingWs.close();
     }
@@ -211,7 +282,6 @@ class LanControlService {
     // Stop any existing status broadcast timer
     _statusBroadcastTimer?.cancel();
 
-    final deviceId = _generateDeviceId();
     _connections[deviceId] = ws;
 
     if (_state == LanControlServiceState.listening) {
@@ -223,12 +293,82 @@ class LanControlService {
 
     // Start periodic status broadcast (every 1 second)
     _startStatusBroadcast();
+  }
 
-    ws.listen(
-      (data) => _handleMessage(deviceId, data),
-      onError: (error) => _handleError(deviceId, error),
-      onDone: () => _handleDisconnect(deviceId),
-    );
+  LanControlMessage _buildHelloMessage(bool requiresPin) => LanControlMessage(
+    type: LanControlMessageType.hello,
+    requestId: LanControlMessage.generateRequestId(),
+    data: {
+      'requiresPin': requiresPin,
+      if (requiresPin) 'pinLength': _pinCode.length,
+    },
+  );
+
+  void _sendToSocket(WebSocket ws, LanControlMessage message) {
+    try {
+      ws.add(jsonEncode(message.toJson()));
+    } catch (e) {
+      HubLog.warning('LanControlService', '发送消息失败: $e');
+    }
+  }
+
+  void _handlePendingPinMessage(String deviceId, WebSocket ws, dynamic data) {
+    try {
+      final json = jsonDecode(data as String) as Map<String, dynamic>;
+      final message = LanControlMessage.fromJson(json);
+
+      if (message.type != LanControlMessageType.pinVerify) {
+        _sendToSocket(
+          ws,
+          LanControlMessage(
+            type: LanControlMessageType.error,
+            requestId: message.requestId,
+            data: {'error': '连接需要 PIN 码验证'},
+          ),
+        );
+        return;
+      }
+
+      final submitted = (message.data?['pin'] as String?)?.trim() ?? '';
+      if (submitted == _pinCode) {
+        _pinTimeouts[deviceId]?.cancel();
+        _pinTimeouts.remove(deviceId);
+        _pinAttempts.remove(deviceId);
+        _pendingPinConnections.remove(deviceId);
+        _registerConnection(deviceId, ws);
+        _sendToSocket(ws, LanControlResponseMessage.success(message.requestId));
+        HubLog.info('LanControlService', 'PIN 码验证通过: $deviceId');
+        return;
+      }
+
+      final attempts = (_pinAttempts[deviceId] ?? 0) + 1;
+      _pinAttempts[deviceId] = attempts;
+      final remaining = _kMaxPinAttempts - attempts;
+      _sendToSocket(
+        ws,
+        LanControlResponseMessage.failure(
+          message.requestId,
+          remaining > 0 ? 'PIN 码错误，还可尝试 $remaining 次' : 'PIN 码错误次数过多，连接已关闭',
+        ),
+      );
+      if (remaining <= 0) {
+        _pinTimeouts[deviceId]?.cancel();
+        _pinTimeouts.remove(deviceId);
+        _pinAttempts.remove(deviceId);
+        _pendingPinConnections.remove(deviceId);
+        ws.close();
+      }
+    } catch (e, stack) {
+      HubLog.warning('LanControlService', 'PIN 验证消息解析失败: $e\n$stack');
+      _sendToSocket(
+        ws,
+        LanControlMessage(
+          type: LanControlMessageType.error,
+          requestId: '',
+          data: {'error': '消息格式错误: $e'},
+        ),
+      );
+    }
   }
 
   void _startStatusBroadcast() {
@@ -266,15 +406,24 @@ class LanControlService {
     final playerStatus = playerHandler.getCurrentStatus();
     final syncStatus = _getSyncStatus();
 
+    // 只在 anime 身份信息变化时推送完整数据（含 episodes 大对象），
+    // 其余每秒 tick 仅推送轻量的播放状态
+    final signature = _animeSignature(currentAnime);
+    final animeChanged = signature != _lastAnimeSignature;
+    _lastAnimeSignature = signature;
+
     final statusSync = LanStatusSyncMessage(
       playerStatus: playerStatus,
-      currentAnime: currentAnime,
+      currentAnime: animeChanged ? currentAnime : null,
       syncStatus: syncStatus,
     );
 
     // Broadcast to all connected clients
     broadcast(statusSync);
   }
+
+  String _animeSignature(CurrentAnime anime) =>
+      '${anime.animeId}|${anime.source}|${anime.title}|${anime.currentEpisode}';
 
   void _handleMessage(String deviceId, dynamic data) {
     try {
@@ -294,19 +443,51 @@ class LanControlService {
         }
       }
 
-      _processCommand(deviceId, message);
+      _enqueueCommand(deviceId, message);
     } catch (e, stack) {
       HubLog.warning('LanControlService', '消息解析失败: $e\n$stack');
       _sendError(deviceId, '消息格式错误: $e');
     }
   }
 
+  void _enqueueCommand(String deviceId, LanControlMessage message) {
+    final previous = _commandQueues[deviceId] ?? Future<void>.value();
+    final tail = previous.then((_) => _processCommand(deviceId, message));
+    _commandQueues[deviceId] = tail.catchError((Object e) {
+      HubLog.warning('LanControlService', '处理命令失败 [$deviceId]: $e');
+    });
+  }
+
   void _handleError(String deviceId, Object error) {
     HubLog.warning('LanControlService', 'WebSocket 错误 [$deviceId]: $error');
+    final ws = _connections[deviceId];
+    if (ws != null) {
+      _connections.remove(deviceId);
+      _commandQueues.remove(deviceId);
+      ws.close();
+      _cleanupDisconnect(deviceId);
+    } else if (_pendingPinConnections.remove(deviceId) != null) {
+      _pinTimeouts[deviceId]?.cancel();
+      _pinTimeouts.remove(deviceId);
+      _pinAttempts.remove(deviceId);
+    }
   }
 
   void _handleDisconnect(String deviceId) {
-    _connections.remove(deviceId);
+    if (_connections.remove(deviceId) == null) {
+      if (_pendingPinConnections.remove(deviceId) != null) {
+        _pinTimeouts[deviceId]?.cancel();
+        _pinTimeouts.remove(deviceId);
+        _pinAttempts.remove(deviceId);
+        HubLog.info('LanControlService', '未通过验证的连接断开: $deviceId');
+      }
+      return;
+    }
+    _commandQueues.remove(deviceId);
+    _cleanupDisconnect(deviceId);
+  }
+
+  void _cleanupDisconnect(String deviceId) {
     HubLog.info('LanControlService', '客户端断开: $deviceId');
     _notifyDisconnect(deviceId);
 
@@ -314,6 +495,7 @@ class LanControlService {
     if (_connections.isEmpty) {
       _statusBroadcastTimer?.cancel();
       _statusBroadcastTimer = null;
+      _lastAnimeSignature = null;
     }
 
     if (_connections.isEmpty && _state == LanControlServiceState.connected) {
@@ -321,7 +503,10 @@ class LanControlService {
     }
   }
 
-  void _processCommand(String deviceId, LanControlMessage message) async {
+  Future<void> _processCommand(
+    String deviceId,
+    LanControlMessage message,
+  ) async {
     LanControlResponseMessage? response;
 
     try {
@@ -361,6 +546,14 @@ class LanControlService {
           HubLog.info('LanControlService', '收到 disconnect 消息，执行 pop');
           App.pop();
           _connections[deviceId]?.close();
+          return;
+
+        case LanControlMessageType.pong:
+        case LanControlMessageType.controlResponse:
+        case LanControlMessageType.statusSync:
+        case LanControlMessageType.hello:
+        case LanControlMessageType.pinVerify:
+          // 服务端不应收到这些类型，直接忽略
           return;
 
         default:
@@ -533,15 +726,6 @@ class LanControlService {
         data: {'error': error},
       ),
     );
-  }
-
-  void _startHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      broadcast(
-        LanControlMessage(type: LanControlMessageType.ping, requestId: ''),
-      );
-    });
   }
 
   void _setState(LanControlServiceState newState) {

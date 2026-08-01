@@ -134,7 +134,10 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
     }
     setState(() {
       _playerStatus = message.playerStatus;
-      _currentAnime = message.currentAnime;
+      // 周期性轻量推送中 currentAnime 可能为 null，避免覆盖已有的完整数据
+      if (message.currentAnime != null) {
+        _currentAnime = message.currentAnime;
+      }
       _isWaitingForData = _playerStatus == null && _currentAnime == null;
       // 更新播放速度
       if (_playerStatus?.speed != null) {

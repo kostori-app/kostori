@@ -52,17 +52,11 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     final state = this as _HubChatPageState;
     try {
       if (App.isDesktop) {
-        final result = await FilePicker.pickFiles(
-          type: FileType.image,
-          allowMultiple: true,
-          withData: true,
-        );
+        final result = await FilePicker.pickFiles(type: FileType.image);
         if (result == null || result.files.isEmpty) return;
         for (final f in result.files) {
-          final b =
-              f.bytes ??
-              (f.path != null ? await File(f.path!).readAsBytes() : null);
-          if (b != null && state.mounted) {
+          final b = await f.readAsBytes();
+          if (state.mounted) {
             state.setState(
               () => state._pendingImages.add(
                 PendingImage.local(bytes: b, fileName: f.name),

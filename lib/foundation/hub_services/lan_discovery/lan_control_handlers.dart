@@ -9,7 +9,8 @@ class LanControlClient {
   String? _serverUrl;
   LanControlServiceState _state = LanControlServiceState.idle;
   Timer? _reconnectTimer;
-  Timer? _pingTimer;
+  int _reconnectAttempts = 0;
+  bool _isConnecting = false;
 
   LanDiscoveredDevice? _connectedDevice;
   final _pendingRequests = <String, Completer<Map<String, dynamic>>>{};
@@ -17,37 +18,108 @@ class LanControlClient {
       <void Function(LanControlServiceState, String?)>[];
   final _onStatusSyncListeners = <void Function(LanStatusSyncMessage)>[];
   final _onErrorListeners = <void Function(String)>[];
+  Completer<bool>? _helloCompleter;
+  String? _lastError;
 
   LanControlServiceState get state => _state;
   bool get isConnected => _state == LanControlServiceState.connected;
   LanDiscoveredDevice? get connectedDevice => _connectedDevice;
+  String? get lastError => _lastError;
 
-  Future<void> connect(LanDiscoveredDevice device) async {
+  /// 连接设备。返回 true 表示已连接（如需 PIN 码则已通过验证）。
+  Future<bool> connect(LanDiscoveredDevice device) async {
+    if (_isConnecting || isConnected) return false;
+    _isConnecting = true;
+    _lastError = null;
     _serverUrl = 'ws://${device.ip}:${device.port}';
     _connectedDevice = device;
 
     try {
-      _socket = await WebSocket.connect(_serverUrl!);
-      _setState(LanControlServiceState.connected);
-
+      _socket = await WebSocket.connect(_serverUrl!).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('连接超时'),
+      );
+      _socket!.pingInterval = const Duration(seconds: 30);
+      _reconnectAttempts = 0;
+      _helloCompleter = Completer<bool>();
       _socket!.listen(
         _handleMessage,
         onError: (error) => _handleError('连接错误: $error'),
         onDone: _handleDisconnect,
       );
 
-      _startPing();
-      HubLog.info('LanControlClient', '已连接到: $_serverUrl (${device.name})');
+      final requiresPin = await _helloCompleter!.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => false,
+      );
+
+      if (!requiresPin) {
+        _setState(LanControlServiceState.connected);
+        HubLog.info('LanControlClient', '已连接到: $_serverUrl (${device.name})');
+        return true;
+      }
+
+      // 服务端要求 PIN 码验证，弹出输入框
+      _setState(LanControlServiceState.pinRequired);
+      HubLog.info('LanControlClient', '服务端要求 PIN 码验证: $_serverUrl');
+      final pin = await _promptForPin();
+      if (pin == null) {
+        disconnect();
+        return false;
+      }
+      final ok = await submitPin(pin);
+      if (!ok) {
+        disconnect();
+        return false;
+      }
+      HubLog.info('LanControlClient', 'PIN 验证通过，已连接到: $device');
+      return true;
     } catch (e) {
       _connectedDevice = null;
-      _setState(LanControlServiceState.error, '连接失败: $e');
+      _lastError = '连接失败: $e';
+      _setState(LanControlServiceState.error, _lastError);
       rethrow;
+    } finally {
+      _isConnecting = false;
     }
   }
 
+  /// 提交 PIN 码进行验证。成功返回 true。
+  Future<bool> submitPin(String pin) async {
+    final message = LanControlMessage(
+      type: LanControlMessageType.pinVerify,
+      requestId: LanControlMessage.generateRequestId(),
+      data: {'pin': pin.trim()},
+    );
+    try {
+      final result = await _sendAndWait(message);
+      final success = result?['data']?['success'] == true;
+      if (success) {
+        _lastError = null;
+        _setState(LanControlServiceState.connected);
+      } else {
+        _lastError = result?['data']?['error'] as String? ?? 'PIN 码错误';
+        _setState(LanControlServiceState.error, _lastError);
+      }
+      return success;
+    } catch (e) {
+      _lastError = 'PIN 验证失败: $e';
+      _setState(LanControlServiceState.error, _lastError);
+      return false;
+    }
+  }
+
+  Future<String?> _promptForPin() {
+    return showDialog<String>(
+      context: App.rootContext,
+      barrierDismissible: false,
+      builder: (_) => _PinInputDialog(deviceName: _connectedDevice?.name ?? ''),
+    );
+  }
+
   void disconnect() {
-    _pingTimer?.cancel();
     _reconnectTimer?.cancel();
+    _reconnectAttempts = 0;
     _serverUrl = null;
     _connectedDevice = null;
 
@@ -207,6 +279,12 @@ class LanControlClient {
       HubLog.info('LanControlClient', '收到消息: ${message.type.name}');
 
       switch (message.type) {
+        case LanControlMessageType.hello:
+          final requiresPin = message.data?['requiresPin'] as bool? ?? false;
+          if (_helloCompleter != null && !_helloCompleter!.isCompleted) {
+            _helloCompleter!.complete(requiresPin);
+          }
+
         case LanControlMessageType.controlResponse:
           final requestId = json['requestId'] as String?;
           if (requestId != null) {
@@ -267,7 +345,7 @@ class LanControlClient {
   }
 
   void _handleDisconnect() {
-    _pingTimer?.cancel();
+    _socket = null;
 
     for (final c in _pendingRequests.values) {
       if (!c.isCompleted) c.completeError(Exception('连接断开'));
@@ -281,16 +359,18 @@ class LanControlClient {
     }
   }
 
-  void _startPing() {
-    _pingTimer?.cancel();
-  }
-
   void _scheduleReconnect() {
+    if (_state == LanControlServiceState.pinRequired) return;
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+    final attempts = _reconnectAttempts++;
+    final delaySeconds = min(5 * (1 << min(attempts, 4)), 60);
+    _reconnectTimer = Timer(Duration(seconds: delaySeconds), () {
       final device = _connectedDevice;
       if (_serverUrl != null && !isConnected && device != null) {
-        HubLog.info('LanControlClient', '尝试重新连接: ${device.name}');
+        HubLog.info(
+          'LanControlClient',
+          '尝试重新连接 (第 $attempts 次): ${device.name}',
+        );
         connect(device).ignore();
       }
     });
@@ -309,5 +389,73 @@ class LanControlClient {
     _onStateChangedListeners.clear();
     _onStatusSyncListeners.clear();
     _onErrorListeners.clear();
+  }
+}
+
+class _PinInputDialog extends StatefulWidget {
+  final String deviceName;
+
+  const _PinInputDialog({required this.deviceName});
+
+  @override
+  State<_PinInputDialog> createState() => _PinInputDialogState();
+}
+
+class _PinInputDialogState extends State<_PinInputDialog> {
+  final _controller = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final pin = _controller.text.trim();
+    if (!RegExp(r'^\d{4,6}$').hasMatch(pin)) {
+      setState(() => _error = '请输入 4-6 位数字 PIN 码');
+      return;
+    }
+    Navigator.pop(context, pin);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: const Text('输入连接 PIN 码'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '连接到 ${widget.deviceName}',
+            style: ts.s14.copyWith(color: cs.outline),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            maxLength: 6,
+            decoration: InputDecoration(
+              hintText: '请输入 PIN 码',
+              errorText: _error,
+              border: const OutlineInputBorder(),
+            ),
+            onSubmitted: (_) => _submit(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('确定')),
+      ],
+    );
   }
 }

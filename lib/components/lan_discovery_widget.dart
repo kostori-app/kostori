@@ -69,7 +69,7 @@ class LanDiscoveryController extends ChangeNotifier {
   }
 
   void _onDeviceLeft(LanDiscoveredDevice device) {
-    _devices.removeWhere((d) => d.id != device.id);
+    _devices.removeWhere((d) => d.id == device.id);
     if (_selectedDevice?.id == device.id) {
       _selectedDevice = null;
     }
@@ -174,6 +174,10 @@ class LanDiscoveryController extends ChangeNotifier {
   }
 
   String _getDeviceName() {
+    final custom = (appdata.implicitData['lan_device_name'] as String?)?.trim();
+    if (custom != null && custom.isNotEmpty) {
+      return custom;
+    }
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       return Platform.localHostname;
     } else if (Platform.isAndroid || Platform.isIOS) {
