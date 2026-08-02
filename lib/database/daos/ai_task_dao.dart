@@ -41,4 +41,12 @@ class AiTaskDao extends DatabaseAccessor<AiDatabase> with _$AiTaskDaoMixin {
                 t.id.isBiggerOrEqualValue(fromTaskId),
           ))
           .go();
+
+  Future<void> deleteMessagesTo(String sessionId, int toTaskId) =>
+      (delete(aiTasks)..where(
+            (t) =>
+                t.sessionId.equals(sessionId) &
+                t.id.isSmallerOrEqualValue(toTaskId),
+          ))
+          .go();
 }

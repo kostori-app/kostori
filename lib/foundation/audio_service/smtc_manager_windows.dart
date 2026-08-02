@@ -81,21 +81,34 @@ class SMTCManagerWindows {
       final buttonStream = _smtc?.buttonPressStream;
       if (buttonStream != null) {
         _subscriptions.add(
-          buttonStream.listen((event) {
-            switch (event) {
-              case PressedButton.play:
-                _controller?.playOrPause();
-                break;
-              case PressedButton.pause:
-                _controller?.pause();
-                break;
-              case PressedButton.next:
-                _controller?.playNextEpisode();
-                break;
-              default:
-                break;
-            }
-          }),
+          buttonStream.listen(
+            (event) {
+              switch (event) {
+                case PressedButton.play:
+                  _controller?.playOrPause();
+                  break;
+                case PressedButton.pause:
+                  _controller?.pause();
+                  break;
+                case PressedButton.next:
+                  _controller?.playNextEpisode();
+                  break;
+                default:
+                  break;
+              }
+            },
+            // 流被取消（隐藏 SMTC / 应用退出）时 Rust 侧会上报取消错误，属正常现象，
+            // 忽略 STREAM_CANCEL_ERROR，避免未处理异常。
+            onError: (Object error, StackTrace st) {
+              final msg = error.toString();
+              if (msg.contains('STREAM_CANCEL_ERROR') ||
+                  msg.contains('stream cancel') ||
+                  msg.contains('channel is closed')) {
+                return;
+              }
+              Log.error('SMTC button stream error', '$error\n$st');
+            },
+          ),
         );
       }
 

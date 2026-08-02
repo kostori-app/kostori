@@ -29,31 +29,20 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
         return;
       }
 
-      final cfg = await AiDatabase.instance.aiConfigDao.getByKey(
-        _imageTagConfigKey,
+      await PromptInjectionStore.instance.ensureLoaded();
+      final injection = PromptInjectionStore.instance.findById(
+        kInjectionImageTag,
       );
-      if (cfg == null) {
-        App.rootContext.showMessage(message: t.aiConfigMissing);
-        return;
-      }
-      final systemPrompt = cfg.systemPrompt
+      final systemPrompt = (injection?.content ?? imageTagSystemPrompt)
           .replaceAll('{animeCount}', '${data.likedItems.length}')
           .replaceAll('{animeNames}', data.animeNames)
           .replaceAll('{topTags}', data.topTags);
-
-      await AiDatabase.instance.aiConfigDao.upsert(
-        AiConfigsCompanion.insert(
-          configKey: '${_imageTagConfigKey}_runtime',
-          systemPrompt: systemPrompt,
-          temperature: const Value(0.8),
-        ),
-      );
 
       final result = await AiConversationService().runTask(
         provider: _source,
         taskType: 'image_tag',
         prompt: '请根据我的番剧品味生成 AI 绘画 tag',
-        configKey: '${_imageTagConfigKey}_runtime',
+        systemPrompt: systemPrompt,
         sessionTitle: 'AI Tag ${DateTime.now().toString().substring(0, 10)}',
       );
 
@@ -71,9 +60,6 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
       App.rootContext.showMessage(message: 'Error: $e');
       Log.error('ImageTag', e.toString());
     } finally {
-      await AiDatabase.instance.aiConfigDao.deleteByKey(
-        '${_imageTagConfigKey}_runtime',
-      );
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -155,9 +141,7 @@ class _ImageTagPageState extends ConsumerState<ImageTagPage>
                     return GestureDetector(
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: tag));
-                        App.rootContext.showMessage(
-                          message: t.tagCopied,
-                        );
+                        App.rootContext.showMessage(message: t.tagCopied);
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(

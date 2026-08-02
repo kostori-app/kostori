@@ -39,4 +39,56 @@ class AiModelDao extends DatabaseAccessor<AiDatabase> with _$AiModelDaoMixin {
         ))
         .go();
   }
+
+  // 更新模型能力标记（null 表示保持不变）
+  Future<void> updateCapabilities(
+    String provider,
+    String modelId, {
+    bool? supportsVision,
+    bool? supportsTools,
+    bool? supportsReasoning,
+  }) {
+    return (update(aiModels)..where(
+          (t) => t.provider.equals(provider) & t.modelId.equals(modelId),
+        ))
+        .write(
+          AiModelsCompanion(
+            supportsVision: supportsVision == null
+                ? const Value.absent()
+                : Value(supportsVision),
+            supportsTools: supportsTools == null
+                ? const Value.absent()
+                : Value(supportsTools),
+            supportsReasoning: supportsReasoning == null
+                ? const Value.absent()
+                : Value(supportsReasoning),
+          ),
+        );
+  }
+
+  // 更新模型元信息（类型 / 输入模态 / 输出模态）
+  Future<void> updateMeta(
+    String provider,
+    String modelId, {
+    String? modelType,
+    String? inputModality,
+    String? outputModality,
+  }) {
+    return (update(aiModels)..where(
+          (t) => t.provider.equals(provider) & t.modelId.equals(modelId),
+        ))
+        .write(
+          AiModelsCompanion(
+            modelType: modelType == null
+                ? const Value.absent()
+                : Value(modelType),
+            inputModality: inputModality == null
+                ? const Value.absent()
+                : Value(inputModality),
+            outputModality: outputModality == null
+                ? const Value.absent()
+                : Value(outputModality),
+          ),
+        );
+  }
 }

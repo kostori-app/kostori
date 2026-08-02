@@ -75,19 +75,17 @@ Generate a $rangeLabel anime watch report based on the following data:
 - Watched titles: ${watchedTitles.take(20).join(', ')}
 ''';
 
-      final cfg = await AiDatabase.instance.aiConfigDao.getByKey(
-        _summaryConfigKey,
+      await PromptInjectionStore.instance.ensureLoaded();
+      final injection = PromptInjectionStore.instance.findById(
+        kInjectionSummary,
       );
-      if (cfg == null) {
-        App.rootContext.showMessage(message: t.aiConfigMissing);
-        return;
-      }
+      final systemPrompt = injection?.content ?? summarySystemPrompt;
 
       final result = await AiConversationService().runTask(
         provider: _source,
         taskType: 'summary',
         prompt: prompt,
-        configKey: _summaryConfigKey,
+        systemPrompt: systemPrompt,
         sessionTitle: '$rangeLabel总结 ${now.toString().substring(0, 10)}',
       );
 

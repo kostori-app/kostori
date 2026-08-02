@@ -121,9 +121,13 @@ class MyLogInterceptor extends Interceptor {
           "data:\n${options.data}",
     );
 
-    options.connectTimeout = const Duration(seconds: 15);
-    options.receiveTimeout = const Duration(seconds: 15);
-    options.sendTimeout = const Duration(seconds: 15);
+    // 流式请求不强制覆盖超时，避免长时间停顿（如推理思考）被误判为超时；
+    // 非流式请求仅在调用方未显式指定超时时套用默认值（防止覆盖 AI 等接口的显式超时）
+    if (options.extra['streaming'] != true) {
+      options.connectTimeout ??= const Duration(seconds: 15);
+      options.receiveTimeout ??= const Duration(seconds: 15);
+      options.sendTimeout ??= const Duration(seconds: 15);
+    }
     handler.next(options);
   }
 }
@@ -259,6 +263,12 @@ class RHttpAdapter implements HttpClientAdapter {
           "kostori/v${App.version} (Android) (https://github.com/kostori-app/kostori)";
     }
 
+    // 将 dio 的取消信号转发给 rhttp，真正中断正在进行的（流式）请求
+    final rhttpCancelToken = cancelFuture == null ? null : rhttp.CancelToken();
+    if (rhttpCancelToken != null) {
+      unawaited(cancelFuture!.then((_) => rhttpCancelToken.cancel()));
+    }
+
     var res = await rhttp.Rhttp.request(
       method: rhttp.HttpMethod(options.method),
       url: options.uri.toString(),
@@ -272,6 +282,7 @@ class RHttpAdapter implements HttpClientAdapter {
           ),
         ),
       ),
+      cancelToken: rhttpCancelToken,
     );
     if (res is! rhttp.HttpStreamResponse) {
       throw Exception("Invalid response type: ${res.runtimeType}");

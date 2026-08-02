@@ -176,9 +176,27 @@ logIn: 登录
 logOut: 登出
 log: 日志
 manualTranslation: 手动翻译
+manualTranslationHint: 输入文本，翻译为你偏好的语言
 enterTextToTranslate: 输入要翻译的文字
 translate: 翻译
+translationFailed: 翻译失败
 translating: 翻译中...
+autoDetect: 自动检测
+sourceLanguage: 源语言
+targetLanguage: 目标语言
+noTranslationYet: 在上方输入文本，点击翻译即可在此查看结果
+pluginModules: 插件模块
+addPlugin: 添加插件
+editPlugin: 编辑插件
+noPluginsYet: 暂无插件模块，点击 + 添加
+builtinPluginCannotDelete: 内置插件不可删除
+pluginIcon: 图标（emoji）
+pluginDescription: 描述
+pluginPrompt: 提示词
+pluginPromptHint: "提示词定义该模块的功能，你输入的文本会作为输入发送；留空则使用通用提示词。"
+processing: 处理中...
+run: 运行
+output: 输出
 translationResult: 翻译结果
 selectTranslationLanguage: 选择翻译语言
 pleaseEnterTextToTranslate: 请输入要翻译的文字
@@ -1008,6 +1026,7 @@ areYouSureYouWantToDeleteGeneric: 确定要删除吗
 baseUrl: 基础 URL
 optionalField: 可选
 model: 模型
+tokens: tokens
 addModel: 添加模型
 modelId: 模型 ID
 displayName: 显示名称
@@ -1053,6 +1072,13 @@ weeklySummary: 本周总结
 monthlySummary: 本月总结
 tagCopied: Tag 已复制
 aiServiceConfig: AI 服务配置
+auxModelSettings: 辅助任务模型
+auxProviderSelection: 服务商
+auxFollowSession: 跟随会话服务商
+auxFollowSessionHint: 该任务将使用当前对话会话中配置的服务商。
+contextCompression: 上下文压缩
+followUpSuggestions: 后续追问建议
+autoTitle: 自动标题
 connectionDisconnected: 连接已断开
 enterServerAddress: 输入服务器地址
 tapToShare: 点击分享
@@ -1085,6 +1111,7 @@ newPersona: 新建角色配置
 notConfigured: 未配置
 enabled: 已启用
 required: 必填
+invalidNumber: 无效数字
 noCategoryPages: 无分类页面
 linkFormatErrorCannotParseAnimeInfo: 链接格式错误，无法解析番剧信息
 sourceNotFoundPleaseConfirmSourceInstalled: 未找到数据源，请确认数据源已安装
@@ -1342,3 +1369,249 @@ startPointPlus1s: 起点 +1s
 endPointPlus1s: 终点 +1s
 videoTestLabel: 视频测试
 uploading: 上传中
+
+# AI Chat enhancements
+addImage: 添加图片
+removeImage: 移除图片
+compressingImage: 图片压缩中...
+skills: 技能
+selectSkills: 选择技能
+noSkillsAvailable: 暂无可用技能
+usingTools: 调用工具中...
+toolCallingTool: "调用 ${tool}..."
+toolCallLog: "工具调用: ${count}"
+generatingReply: 生成回复中...
+stopGenerating: 停止生成
+thinking: 思考中
+streamInterrupted: 生成已中断
+showThinking: 查看思考过程
+hideThinking: 收起思考过程
+thinkingInProgress: 正在思考...
+statsCached: 缓存
+jumpToBottom: 回到底部
+modelDoesNotSupportVision: 当前模型不支持图片理解
+myMessage: 我的消息
+aiMessage: AI 消息
+resendFromHere: 从此处重新发送
+regenerateReply: 重新生成此回复
+noPersonality: 无人格
+noSystemPromptUsed: 不使用系统提示词
+
+# AI Settings editors
+queryBalance: 查询余额
+balance: 余额
+queryingBalance: 查询中...
+balanceQueryUnsupported: 该服务商不支持查询余额
+balanceQueryUrl: 余额查询地址
+balanceKeyPath: 结果字段路径
+balanceQueryUrlHint: 相对路径或完整 URL
+balanceKeyPathHint: 点号路径，如 data.balance
+balanceQueryConfig: 余额查询配置
+customProviders: 自定义服务商
+noCustomProviders: 暂无自定义服务商
+newCustomProvider: 新建自定义服务商
+newMcpServer: 新建 MCP 服务器
+newSkill: 新建技能
+invalidJson: JSON 格式无效
+providerKey: 服务商 Key
+providerKeyHint: 例如 my-provider
+providerKeyExists: 服务商 Key 已存在，请更换
+defaultModel: 默认模型
+supportsVision: 支持图片理解
+supportsTools: 支持工具调用
+enableVision: 启用图片理解
+disableVision: 禁用图片理解
+enableTools: 启用工具调用
+disableTools: 禁用工具调用
+enterProviderKeyToAddModel: 请先在上方填写服务商 Key 再添加模型
+mcpServers: MCP 服务器
+noMcpServers: 暂无 MCP 服务器
+serverName: 服务器名称
+transport: 传输方式
+stdio: stdio
+http: HTTP
+sse: SSE
+command: 命令
+args: 参数（JSON）
+env: 环境变量（JSON）
+serverUrl: 服务器地址
+headers: 请求头（JSON）
+noSkillsYet: 暂无技能
+skillName: 技能名称
+skillKey: 技能 Key
+builtin: 内置
+skillMarkdownHint: 技能支持 Markdown 格式
+sendMessage: 发送消息
+contextAutoCompressed: 上下文过长，已自动压缩
+chatGreeting: 今天有什么可以帮你？
+chatStart1: 总结这段文本
+chatStart2: 写一首诗
+chatStart3: 解释一个概念
+chatStart4: 翻译这段内容
+importSkills: 导入技能
+importSkillsFromFiles: Markdown 文件
+importSkillsFromFilesHint: 导入一个或多个带 YAML frontmatter 的 .md 技能文件
+importSkillsFromFolder: 含 SKILL.md 的文件夹
+importSkillsFromFolderHint: 导入包含 SKILL.md 文件的文件夹
+importingSkills: 正在导入技能...
+noSkillFileFound: 所选文件夹中未找到 SKILL.md
+importedSkillCount: 已导入 ${count} 个技能
+importedSkillCountSkipped: 已导入 ${imported} 个技能，跳过 ${skipped} 个无效文件
+
+# Assistant Profiles
+assistantProfiles: 助手档案
+newProfile: 新建档案
+editAssistantProfile: 编辑档案
+profileName: 档案名称
+profileIcon: 图标
+profileIconHint: 一个 emoji，例如 🤖
+profilePersona: 人设
+profileTone: 语气
+profilePromptFragments: 提示片段（每行一条）
+profileKnowledge: 知识（每行一条）
+profileParams: 生成参数
+profileBehaviorPrefs: 行为偏好
+customParamsHint: 留空表示跟随服务商默认值
+previewSystemPrompt: 预览系统提示
+tryChatting: 试聊
+deleteProfile: 删除档案
+confirmDeleteProfile: 确定要删除该档案吗？
+noProfilesYet: 暂无档案
+profileSaved: 档案已保存
+profileCopiedToClipboard: 档案已复制到剪贴板
+switchedToProfile: "已切换到 ${name}"
+defaultAssistant: 默认
+conciseReplies: 简洁回复
+useMarkdownFormatting: 使用 Markdown 排版
+codeFirst: 代码优先
+actionableAdvice: 给出可执行建议
+profileTabPersona: 人设
+profileTabPrompt: 提示词
+profileTabSkills: 技能
+profileTabParams: 参数
+profileTabBasic: 基础
+profileTabExtensions: 扩展
+profileTabMemory: 记忆
+profileTabRequest: 请求
+profileTabMcp: MCP
+profileMcpHint: 绑定本助手的 MCP 服务器（连接后自动导入工具）
+profileTabLocalTools: 工具技能
+templateVarHint: "可用变量："
+profilePersonaRequired: 请先选择人格
+defaultAssistantCannotDelete: 系统默认助手不可删除
+imageUnderstandingDisabled: 该助手未启用图片理解
+modelType: 模型类型
+inputModality: 输入模态
+outputModality: 输出模态
+supportsReasoning: 支持推理
+apiFormat: 接口格式
+apiFormatOpenai: OpenAI（chat）
+apiFormatOpenaiResponses: OpenAI Responses
+apiFormatGemini: Google（Gemini）
+apiFormatClaude: Claude（Anthropic）
+testConnection: 测试连接
+testApiKey: 检测 API Key
+enabledByApiKey: 填写 API Key 后自动启用
+endpointChatCompletions: Chat Completions
+endpointResponses: Responses API
+connectionOk: 连接成功
+modelsUrl: 查询可用模型接口
+fetchModels: 拉取可用模型
+noModelsReturned: 未获取到模型
+enableReasoning: 启用推理
+disableReasoning: 禁用推理
+thinkingLevel: 思考程度
+thinkingLow: 简洁
+thinkingStandard: 标准
+thinkingDeep: 深度
+assistantSettings: 助手设置
+takePhoto: 拍照
+pickImages: 图片
+uploadFile: 上传文件
+compressHistory: 压缩历史
+compressHistoryConfirm: 压缩当前会话历史以节省 token，确定继续？
+compressed: 已压缩
+profileLocalTools: 本地工具
+profileLocalToolsHint: 内置工具链开关
+profileSkills: 技能
+profileSkillsHint: 勾选扩展管理中的技能进行绑定
+profileRequest: 自定义请求
+profileRequestSensitiveHint: 敏感信息（如 API Key）会随档案持久化，请谨慎填写
+profileRequestBaseUrl: Base URL 覆盖
+profileRequestApiKey: API Key 覆盖
+profileRequestHeaders: "自定义请求头（每行 Key: Value）"
+profileRequestExtraBody: 附加请求体字段（JSON）
+profileRequestStop: 停止序列（每行一个）
+profileRequestStopHint: 遇此序列停止生成
+profileExtensionsHint: 应用级可选模块开关
+profileMemoryEnabled: 启用长期记忆
+profileMemoryHint: 记录用户偏好/常问话题/关键结论，随助手切换
+profileMemoryMaxEntries: 记忆条目上限
+profileMemoryEntries: 记忆条目
+profileMemoryClear: 清空
+profileMemoryEmpty: 暂无记忆条目
+profileMemoryAdd: 新增记忆
+profileCopy: 复制
+profileExport: 导出
+profileImport: 导入
+profileExported: 已导出到剪贴板
+profileImportFailed: 导入失败
+
+# 扩展管理设置（改造点 7 修订）
+extensionManagement: 扩展管理设置
+extensionManagementHint: 辅助任务模型、角色管理、MCP 服务器与技能的统一入口
+roleManagement: 角色管理
+promptManagement: 提示词
+promptInjection: 提示词注入
+promptInjectionHint: 注入位置决定片段在 System Prompt 中的插入点
+worldBook: 世界书
+worldBookEntries: 世界书条目
+newPromptInjection: 新建注入
+editPromptInjection: 编辑注入
+injectionName: 名称
+injectionContent: 内容
+injectionPosition: 注入位置
+injectionPositionAfterPersonality: 人格之后
+injectionPositionAfterSystemPrompt: 自定义提示词之后
+injectionPositionAfterKnowledge: 知识之后
+injectionPositionAfterMemory: 记忆之后
+injectionPositionBeforeTools: 工具清单之前
+injectionSortOrder: 排序号
+noInjectionsYet: 暂无提示词注入
+worldBookName: 名称
+worldBookTriggers: 触发词（每行一个）
+worldBookTriggersHint: 用户消息命中任一触发词时才注入
+worldBookContent: 内容
+worldBookPriority: 优先级（越大越靠前）
+worldBookPriorityHint: 优先级高的条目先注入
+newWorldBookEntry: 新建条目
+worldBookHitTest: 命中测试
+worldBookHitTestHint: 输入一句话，查看哪些条目会被触发
+worldBookHitTestPlaceholder: 输入一句话...
+worldBookHitsResult: 命中条目
+worldBookNoHits: 没有条目命中
+noWorldBookEntriesYet: 暂无世界书条目
+auxTemperature: Temperature
+selectAssistantProfile: 选择助手档案
+profilePersonalityTags: 性格标签
+profilePersonalityTagsHint: 多选标签，如 理性/幽默/毒舌/温柔
+profileCatchphrases: 口头禅
+profileCatchphrasesHint: 每行一个
+profileExamples: 对话示例（few-shot）
+profileExamplesHint: "每行一组，格式：用户: xxx | 助手: xxx"
+profileReplyStyle: 回复风格
+replyLength: 回复长度
+replyLengthShort: 简短
+replyLengthNormal: 适中
+replyLengthDetailed: 详细
+replyUseEmoji: 使用 emoji
+replyUseMarkdown: 使用 Markdown 排版
+replyAskBack: 结尾反问用户
+mcpConnectionStatus: 连接状态
+mcpConnected: 已连接
+mcpDisconnected: 未连接
+mcpToolsImported: 个工具
+mcpReconnect: 重连
+mcpTestConnection: 测试连接
+mcpConnecting: 连接中...
+mcpConnectionFailed: 连接失败

@@ -16,6 +16,7 @@ import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
@@ -553,6 +554,13 @@ class _ToolEntryGrid extends StatelessWidget {
                     Icons.extension,
                     () => context.to(() => const AiHubPage()),
                     t.aiLabel,
+                  ),
+                  const SizedBox(width: 28),
+                  _iconBlock(
+                    context,
+                    Icons.translate,
+                    () => context.to(() => const ManualTranslationPage()),
+                    t.translation,
                   ),
                   const SizedBox(width: 28),
                   _iconBlock(

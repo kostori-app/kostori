@@ -5,41 +5,54 @@ class AnimeSourceSettings extends StatelessWidget {
   const AnimeSourceSettings({super.key});
 
   static Future<int> checkAnimeSourceUpdate() async {
-    if (AnimeSource.all().isEmpty) {
+    try {
+      if (AnimeSource.all().isEmpty) {
+        return 0;
+      }
+      var dio = AppDio();
+      dynamic res;
+      final timeout = const Duration(seconds: 30);
+      if (appdata.settings['gitMirror'] &&
+          appdata.settings['animeSourceListUrl'] == Api.kostoriConfig) {
+        res = await dio.get<String>(
+          Api.gitMirror + Api.kostoriConfig,
+          options: Options(method: 'GET', receiveTimeout: timeout),
+        );
+      } else {
+        res = await dio.get<String>(
+          appdata.settings['animeSourceListUrl'],
+          options: Options(method: 'GET', receiveTimeout: timeout),
+        );
+      }
+
+      if (res.statusCode != 200) {
+        return -1;
+      }
+      var list = jsonDecode(res.data!) as List;
+      var versions = <String, String>{};
+      for (var source in list) {
+        versions[source['key']] = source['version'];
+      }
+      var shouldUpdate = <String>[];
+      for (var source in AnimeSource.all()) {
+        if (versions.containsKey(source.key) &&
+            compareSemVer(versions[source.key]!, source.version)) {
+          shouldUpdate.add(source.key);
+        }
+      }
+      if (shouldUpdate.isNotEmpty) {
+        var updates = <String, String>{};
+        for (var key in shouldUpdate) {
+          updates[key] = versions[key]!;
+        }
+        AnimeSourceManager().updateAvailableUpdates(updates);
+      }
+      return shouldUpdate.length;
+    } catch (e) {
+      // 后台启动检查：网络不可达/超时时静默失败，避免未处理异常刷屏
+      NetLog.warning('checkAnimeSourceUpdate', '更新检查失败（网络不可达或超时）: $e');
       return 0;
     }
-    var dio = AppDio();
-    dynamic res;
-    if (appdata.settings['gitMirror'] &&
-        appdata.settings['animeSourceListUrl'] == Api.kostoriConfig) {
-      res = await dio.get<String>(Api.gitMirror + Api.kostoriConfig);
-    } else {
-      res = await dio.get<String>(appdata.settings['animeSourceListUrl']);
-    }
-
-    if (res.statusCode != 200) {
-      return -1;
-    }
-    var list = jsonDecode(res.data!) as List;
-    var versions = <String, String>{};
-    for (var source in list) {
-      versions[source['key']] = source['version'];
-    }
-    var shouldUpdate = <String>[];
-    for (var source in AnimeSource.all()) {
-      if (versions.containsKey(source.key) &&
-          compareSemVer(versions[source.key]!, source.version)) {
-        shouldUpdate.add(source.key);
-      }
-    }
-    if (shouldUpdate.isNotEmpty) {
-      var updates = <String, String>{};
-      for (var key in shouldUpdate) {
-        updates[key] = versions[key]!;
-      }
-      AnimeSourceManager().updateAvailableUpdates(updates);
-    }
-    return shouldUpdate.length;
   }
 
   static Future<void> update(

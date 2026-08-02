@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:kostori/database/ai_database.dart';
 
@@ -46,6 +48,38 @@ class AiSessionDao extends DatabaseAccessor<AiDatabase>
   Future<void> renameSession(String sessionId, String title) =>
       (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
         AiSessionsCompanion(title: Value(title)),
+      );
+
+  Future<void> setCompressedContent(String sessionId, String content) =>
+      (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
+        AiSessionsCompanion(
+          compressedContent: Value(content),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+  Future<void> setSkillKeys(String sessionId, List<String> keys) =>
+      (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
+        AiSessionsCompanion(
+          skillKeys: Value(jsonEncode(keys)),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+  Future<void> setProfileId(String sessionId, String? profileId) =>
+      (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
+        AiSessionsCompanion(
+          profileId: Value(profileId),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+
+  Future<void> setFollowUps(String sessionId, List<String> items) =>
+      (update(aiSessions)..where((t) => t.sessionId.equals(sessionId))).write(
+        AiSessionsCompanion(
+          followUps: Value(items.isEmpty ? null : jsonEncode(items)),
+          updatedAt: Value(DateTime.now()),
+        ),
       );
 
   Future<int> deleteSession(String sessionId) async {

@@ -422,11 +422,49 @@ class TranslationsZhTw extends Translations
 
   @override String get manualTranslation => '手動翻譯';
 
+  @override String get manualTranslationHint => '輸入文字，翻譯為你偏好的語言';
+
   @override String get enterTextToTranslate => '輸入需要翻譯的內容';
 
   @override String get translate => '翻譯';
 
+  @override String get translationFailed => '翻譯失敗';
+
   @override String get translating => '翻譯中...';
+
+  @override String get autoDetect => '自動偵測';
+
+  @override String get sourceLanguage => '來源語言';
+
+  @override String get targetLanguage => '目標語言';
+
+  @override String get noTranslationYet =>
+      '在上方輸入文字，點擊翻譯即可在此查看結果';
+
+  @override String get pluginModules => '外掛模組';
+
+  @override String get addPlugin => '新增外掛';
+
+  @override String get editPlugin => '編輯外掛';
+
+  @override String get noPluginsYet => '暫無外掛模組，點擊 + 新增';
+
+  @override String get builtinPluginCannotDelete => '內建外掛不可刪除';
+
+  @override String get pluginIcon => '圖示（emoji）';
+
+  @override String get pluginDescription => '描述';
+
+  @override String get pluginPrompt => '提示詞';
+
+  @override String get pluginPromptHint =>
+      '提示詞定義該模組的功能，你輸入的文字會作為輸入發送；留空則使用通用提示詞。';
+
+  @override String get processing => '處理中...';
+
+  @override String get run => '執行';
+
+  @override String get output => '輸出';
 
   @override String get translationResult => '翻譯結果';
 
@@ -1088,8 +1126,8 @@ class TranslationsZhTw extends Translations
   @override String get simplifiedChinese => '簡體中文';
 
   @override String get traditionalChinese => '繁體中文';
-  @override late final _TranslationsColorsZhTw colors = _TranslationsColorsZhTw
-      ._(_root);
+  @override late final Translations$colors$zh_TW colors = Translations$colors$zh_TW
+      .internal(_root);
 
   @override String get secondary => '次要';
 
@@ -2044,6 +2082,8 @@ class TranslationsZhTw extends Translations
 
   @override String get model => '模型';
 
+  @override String get tokens => 'tokens';
+
   @override String get addModel => '添加模型';
 
   @override String get modelId => '模型 ID';
@@ -2137,6 +2177,21 @@ class TranslationsZhTw extends Translations
 
   @override String get aiServiceConfig => 'AI 服務配置';
 
+  @override String get auxModelSettings => '輔助任務模型';
+
+  @override String get auxProviderSelection => '服務商';
+
+  @override String get auxFollowSession => '跟隨會話服務商';
+
+  @override String get auxFollowSessionHint =>
+      '該任務將使用目前對話會話中配置的服務商。';
+
+  @override String get contextCompression => '上下文壓縮';
+
+  @override String get followUpSuggestions => '後續追問建議';
+
+  @override String get autoTitle => '自動標題';
+
   @override String get connectionDisconnected => '連線已斷開';
 
   @override String get enterServerAddress => '輸入伺服器位址';
@@ -2202,6 +2257,8 @@ class TranslationsZhTw extends Translations
   @override String get enabled => '已啟用';
 
   @override String get required => '必填';
+
+  @override String get invalidNumber => '無效數字';
 
   @override String get linkFormatErrorCannotParseAnimeInfo =>
       'Link format error, cannot parse anime info';
@@ -2709,11 +2766,504 @@ class TranslationsZhTw extends Translations
   @override String get videoTestLabel => '影片測試';
 
   @override String get uploading => '上傳中';
+
+  @override String get addImage => '新增圖片';
+
+  @override String get removeImage => '移除圖片';
+
+  @override String get compressingImage => '圖片壓縮中...';
+
+  @override String get skills => '技能';
+
+  @override String get selectSkills => '選擇技能';
+
+  @override String get noSkillsAvailable => '暫無可用技能';
+
+  @override String get usingTools => '呼叫工具中...';
+
+  @override String toolCallingTool({required Object tool}) => '呼叫 ${tool}...';
+
+  @override String toolCallLog({required Object count}) => '工具呼叫: ${count}';
+
+  @override String get generatingReply => '生成回覆中...';
+
+  @override String get stopGenerating => '停止生成';
+
+  @override String get thinking => '思考中';
+
+  @override String get streamInterrupted => '生成已中斷';
+
+  @override String get showThinking => '查看思考過程';
+
+  @override String get hideThinking => '收起思考過程';
+
+  @override String get thinkingInProgress => '正在思考...';
+
+  @override String get statsCached => '快取';
+
+  @override String get jumpToBottom => '回到底部';
+
+  @override String get modelDoesNotSupportVision => '目前模型不支援圖片理解';
+
+  @override String get myMessage => '我的訊息';
+
+  @override String get aiMessage => 'AI 訊息';
+
+  @override String get resendFromHere => '從此處重新發送';
+
+  @override String get regenerateReply => '重新生成此回覆';
+
+  @override String get noPersonality => '無人格';
+
+  @override String get noSystemPromptUsed => '不使用系統提示詞';
+
+  @override String get queryBalance => '查詢餘額';
+
+  @override String get balance => '餘額';
+
+  @override String get queryingBalance => '查詢中...';
+
+  @override String get balanceQueryUnsupported => '該服務商不支援查詢餘額';
+
+  @override String get balanceQueryUrl => '餘額查詢位址';
+
+  @override String get balanceKeyPath => '結果欄位路徑';
+
+  @override String get balanceQueryUrlHint => '相對路徑或完整 URL';
+
+  @override String get balanceKeyPathHint => '點號路徑，如 data.balance';
+
+  @override String get balanceQueryConfig => '餘額查詢設定';
+
+  @override String get customProviders => '自訂服務商';
+
+  @override String get noCustomProviders => '暫無自訂服務商';
+
+  @override String get newCustomProvider => '新增自訂服務商';
+
+  @override String get newMcpServer => '新增 MCP 伺服器';
+
+  @override String get newSkill => '新增技能';
+
+  @override String get invalidJson => 'JSON 格式無效';
+
+  @override String get providerKey => '服務商 Key';
+
+  @override String get providerKeyHint => '例如 my-provider';
+
+  @override String get providerKeyExists => '服務商 Key 已存在，請更換';
+
+  @override String get defaultModel => '預設模型';
+
+  @override String get supportsVision => '支援圖片理解';
+
+  @override String get supportsTools => '支援工具呼叫';
+
+  @override String get enableVision => '啟用圖片理解';
+
+  @override String get disableVision => '停用圖片理解';
+
+  @override String get enableTools => '啟用工具呼叫';
+
+  @override String get disableTools => '停用工具呼叫';
+
+  @override String get enterProviderKeyToAddModel =>
+      '請先在上方填寫服務商 Key 再新增模型';
+
+  @override String get mcpServers => 'MCP 伺服器';
+
+  @override String get noMcpServers => '暫無 MCP 伺服器';
+
+  @override String get serverName => '伺服器名稱';
+
+  @override String get transport => '傳輸方式';
+
+  @override String get stdio => 'stdio';
+
+  @override String get http => 'HTTP';
+
+  @override String get sse => 'SSE';
+
+  @override String get command => '命令';
+
+  @override String get args => '參數（JSON）';
+
+  @override String get env => '環境變數（JSON）';
+
+  @override String get serverUrl => '伺服器位址';
+
+  @override String get headers => '請求標頭（JSON）';
+
+  @override String get noSkillsYet => '暫無技能';
+
+  @override String get skillName => '技能名稱';
+
+  @override String get skillKey => '技能 Key';
+
+  @override String get builtin => '內建';
+
+  @override String get skillMarkdownHint => '技能支援 Markdown 格式';
+
+  @override String get sendMessage => '發送訊息';
+
+  @override String get contextAutoCompressed => '上下文過長，已自動壓縮';
+
+  @override String get chatGreeting => '今天有什麼可以幫你？';
+
+  @override String get chatStart1 => '總結這段文字';
+
+  @override String get chatStart2 => '寫一首詩';
+
+  @override String get chatStart3 => '解釋一個概念';
+
+  @override String get chatStart4 => '翻譯這段內容';
+
+  @override String get importSkills => '匯入技能';
+
+  @override String get importSkillsFromFiles => 'Markdown 檔案';
+
+  @override String get importSkillsFromFilesHint =>
+      '匯入一個或多個帶 YAML frontmatter 的 .md 技能檔案';
+
+  @override String get importSkillsFromFolder => '含 SKILL.md 的資料夾';
+
+  @override String get importSkillsFromFolderHint =>
+      '匯入包含 SKILL.md 檔案的資料夾';
+
+  @override String get importingSkills => '正在匯入技能...';
+
+  @override String get noSkillFileFound => '所選資料夾中找不到 SKILL.md';
+
+  @override String importedSkillCount({required Object count}) =>
+      '已匯入 ${count} 個技能';
+
+  @override String importedSkillCountSkipped(
+      {required Object imported, required Object skipped}) =>
+      '已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案';
+
+  @override String get assistantProfiles => '助手檔案';
+
+  @override String get newProfile => '新增檔案';
+
+  @override String get editAssistantProfile => '編輯檔案';
+
+  @override String get profileName => '檔案名稱';
+
+  @override String get profileIcon => '圖示';
+
+  @override String get profileIconHint => '一個 emoji，例如 🤖';
+
+  @override String get profilePersona => '人設';
+
+  @override String get profileTone => '語氣';
+
+  @override String get profilePromptFragments => '提示片段（每行一條）';
+
+  @override String get profileKnowledge => '知識（每行一條）';
+
+  @override String get profileParams => '生成參數';
+
+  @override String get profileBehaviorPrefs => '行為偏好';
+
+  @override String get customParamsHint => '留空表示跟隨服務商預設值';
+
+  @override String get previewSystemPrompt => '預覽系統提示';
+
+  @override String get tryChatting => '試聊';
+
+  @override String get deleteProfile => '刪除檔案';
+
+  @override String get confirmDeleteProfile => '確定要刪除該檔案嗎？';
+
+  @override String get noProfilesYet => '暫無檔案';
+
+  @override String get profileSaved => '檔案已儲存';
+
+  @override String get profileCopiedToClipboard => '檔案已複製到剪貼簿';
+
+  @override String switchedToProfile({required Object name}) =>
+      '已切換到 ${name}';
+
+  @override String get defaultAssistant => '預設';
+
+  @override String get conciseReplies => '簡潔回覆';
+
+  @override String get useMarkdownFormatting => '使用 Markdown 排版';
+
+  @override String get codeFirst => '程式碼優先';
+
+  @override String get actionableAdvice => '給出可執行的建議';
+
+  @override String get profileTabPersona => '人設';
+
+  @override String get profileTabPrompt => '提示詞';
+
+  @override String get profileTabSkills => '技能';
+
+  @override String get profileTabParams => '參數';
+
+  @override String get profileTabBasic => '基礎';
+
+  @override String get profileTabExtensions => '擴充';
+
+  @override String get profileTabMemory => '記憶';
+
+  @override String get profileTabRequest => '請求';
+
+  @override String get profileTabMcp => 'MCP';
+
+  @override String get profileMcpHint =>
+      '綁定本助手的 MCP 伺服器（連線後自動匯入工具）';
+
+  @override String get profileTabLocalTools => '工具技能';
+
+  @override String get templateVarHint => '可用變數：';
+
+  @override String get profilePersonaRequired => '請先選擇人格';
+
+  @override String get defaultAssistantCannotDelete => '系統預設助手不可刪除';
+
+  @override String get imageUnderstandingDisabled => '該助手未啟用圖片理解';
+
+  @override String get modelType => '模型類型';
+
+  @override String get inputModality => '輸入模態';
+
+  @override String get outputModality => '輸出模態';
+
+  @override String get supportsReasoning => '支援推理';
+
+  @override String get apiFormat => '介面格式';
+
+  @override String get apiFormatOpenai => 'OpenAI（chat）';
+
+  @override String get apiFormatOpenaiResponses => 'OpenAI Responses';
+
+  @override String get apiFormatGemini => 'Google（Gemini）';
+
+  @override String get apiFormatClaude => 'Claude（Anthropic）';
+
+  @override String get testConnection => '測試連線';
+
+  @override String get testApiKey => '檢測 API Key';
+
+  @override String get enabledByApiKey => '填寫 API Key 後自動啟用';
+
+  @override String get endpointChatCompletions => 'Chat Completions';
+
+  @override String get endpointResponses => 'Responses API';
+
+  @override String get connectionOk => '連線成功';
+
+  @override String get modelsUrl => '查詢可用模型介面';
+
+  @override String get fetchModels => '拉取可用模型';
+
+  @override String get noModelsReturned => '未獲取到模型';
+
+  @override String get enableReasoning => '啟用推理';
+
+  @override String get disableReasoning => '停用推理';
+
+  @override String get thinkingLevel => '思考程度';
+
+  @override String get thinkingLow => '簡潔';
+
+  @override String get thinkingStandard => '標準';
+
+  @override String get thinkingDeep => '深度';
+
+  @override String get assistantSettings => '助手設定';
+
+  @override String get takePhoto => '拍照';
+
+  @override String get pickImages => '圖片';
+
+  @override String get uploadFile => '上傳檔案';
+
+  @override String get compressHistory => '壓縮歷史';
+
+  @override String get compressHistoryConfirm =>
+      '壓縮目前會話歷史以節省 token，確定繼續？';
+
+  @override String get compressed => '已壓縮';
+
+  @override String get profileLocalTools => '本地工具';
+
+  @override String get profileLocalToolsHint => '內建工具鏈開關';
+
+  @override String get profileSkills => '技能';
+
+  @override String get profileSkillsHint => '勾選擴充管理中的技能進行綁定';
+
+  @override String get profileRequest => '自訂請求';
+
+  @override String get profileRequestSensitiveHint =>
+      '敏感資訊（如 API Key）會隨檔案持久化，請謹慎填寫';
+
+  @override String get profileRequestBaseUrl => 'Base URL 覆寫';
+
+  @override String get profileRequestApiKey => 'API Key 覆寫';
+
+  @override String get profileRequestHeaders => '自訂請求頭（每行 Key: Value）';
+
+  @override String get profileRequestExtraBody => '附加請求體欄位（JSON）';
+
+  @override String get profileRequestStop => '停止序列（每行一個）';
+
+  @override String get profileRequestStopHint => '遇此序列停止生成';
+
+  @override String get profileExtensionsHint => '應用級可選模組開關';
+
+  @override String get profileMemoryEnabled => '啟用長期記憶';
+
+  @override String get profileMemoryHint =>
+      '記錄使用者偏好/常問話題/關鍵結論，隨助手切換';
+
+  @override String get profileMemoryMaxEntries => '記憶條目上限';
+
+  @override String get profileMemoryEntries => '記憶條目';
+
+  @override String get profileMemoryClear => '清空';
+
+  @override String get profileMemoryEmpty => '暫無記憶條目';
+
+  @override String get profileMemoryAdd => '新增記憶';
+
+  @override String get profileCopy => '複製';
+
+  @override String get profileExport => '匯出';
+
+  @override String get profileImport => '匯入';
+
+  @override String get profileExported => '已匯出到剪貼簿';
+
+  @override String get profileImportFailed => '匯入失敗';
+
+  @override String get extensionManagement => '擴充管理設定';
+
+  @override String get extensionManagementHint =>
+      '輔助任務模型、角色管理、MCP 伺服器與技能的統一入口';
+
+  @override String get roleManagement => '角色管理';
+
+  @override String get promptManagement => '提示詞';
+
+  @override String get promptInjection => '提示詞注入';
+
+  @override String get promptInjectionHint =>
+      '注入位置決定片段在 System Prompt 中的插入點';
+
+  @override String get worldBook => '世界書';
+
+  @override String get worldBookEntries => '世界書條目';
+
+  @override String get newPromptInjection => '新增注入';
+
+  @override String get editPromptInjection => '編輯注入';
+
+  @override String get injectionName => '名稱';
+
+  @override String get injectionContent => '內容';
+
+  @override String get injectionPosition => '注入位置';
+
+  @override String get injectionPositionAfterPersonality => '人格之後';
+
+  @override String get injectionPositionAfterSystemPrompt => '自訂提示詞之後';
+
+  @override String get injectionPositionAfterKnowledge => '知識之後';
+
+  @override String get injectionPositionAfterMemory => '記憶之後';
+
+  @override String get injectionPositionBeforeTools => '工具清單之前';
+
+  @override String get injectionSortOrder => '排序號';
+
+  @override String get noInjectionsYet => '暫無提示詞注入';
+
+  @override String get worldBookName => '名稱';
+
+  @override String get worldBookTriggers => '觸發詞（每行一個）';
+
+  @override String get worldBookTriggersHint =>
+      '使用者訊息命中任一觸發詞時才注入';
+
+  @override String get worldBookContent => '內容';
+
+  @override String get worldBookPriority => '優先級（越大越靠前）';
+
+  @override String get worldBookPriorityHint => '優先級高的條目先注入';
+
+  @override String get newWorldBookEntry => '新增條目';
+
+  @override String get worldBookHitTest => '命中測試';
+
+  @override String get worldBookHitTestHint =>
+      '輸入一句話，查看哪些條目會被觸發';
+
+  @override String get worldBookHitTestPlaceholder => '輸入一句話...';
+
+  @override String get worldBookHitsResult => '命中條目';
+
+  @override String get worldBookNoHits => '沒有條目命中';
+
+  @override String get noWorldBookEntriesYet => '暫無世界書條目';
+
+  @override String get auxTemperature => 'Temperature';
+
+  @override String get selectAssistantProfile => '選擇助手檔案';
+
+  @override String get profilePersonalityTags => '性格標籤';
+
+  @override String get profilePersonalityTagsHint =>
+      '多選標籤，如 理性/幽默/毒舌/溫柔';
+
+  @override String get profileCatchphrases => '口頭禪';
+
+  @override String get profileCatchphrasesHint => '每行一個';
+
+  @override String get profileExamples => '對話示例（few-shot）';
+
+  @override String get profileExamplesHint =>
+      '每行一組，格式：使用者: xxx | 助手: xxx';
+
+  @override String get profileReplyStyle => '回覆風格';
+
+  @override String get replyLength => '回覆長度';
+
+  @override String get replyLengthShort => '簡短';
+
+  @override String get replyLengthNormal => '適中';
+
+  @override String get replyLengthDetailed => '詳細';
+
+  @override String get replyUseEmoji => '使用 emoji';
+
+  @override String get replyUseMarkdown => '使用 Markdown 排版';
+
+  @override String get replyAskBack => '結尾反問使用者';
+
+  @override String get mcpConnectionStatus => '連線狀態';
+
+  @override String get mcpConnected => '已連線';
+
+  @override String get mcpDisconnected => '未連線';
+
+  @override String get mcpToolsImported => '個工具';
+
+  @override String get mcpReconnect => '重新連線';
+
+  @override String get mcpTestConnection => '測試連線';
+
+  @override String get mcpConnecting => '連線中...';
+
+  @override String get mcpConnectionFailed => '連線失敗';
 }
 
 // Path: colors
-class _TranslationsColorsZhTw extends TranslationsColorsEn {
-  _TranslationsColorsZhTw._(TranslationsZhTw root)
+class Translations$colors$zh_TW extends Translations$colors$en {
+  Translations$colors$zh_TW.internal(TranslationsZhTw root)
       : this._root = root,
         super.internal(root);
 
@@ -2998,9 +3548,27 @@ extension on TranslationsZhTw {
       'logOut' => '登出',
       'log' => '日誌',
       'manualTranslation' => '手動翻譯',
+      'manualTranslationHint' => '輸入文字，翻譯為你偏好的語言',
       'enterTextToTranslate' => '輸入需要翻譯的內容',
       'translate' => '翻譯',
+      'translationFailed' => '翻譯失敗',
       'translating' => '翻譯中...',
+      'autoDetect' => '自動偵測',
+      'sourceLanguage' => '來源語言',
+      'targetLanguage' => '目標語言',
+      'noTranslationYet' => '在上方輸入文字，點擊翻譯即可在此查看結果',
+      'pluginModules' => '外掛模組',
+      'addPlugin' => '新增外掛',
+      'editPlugin' => '編輯外掛',
+      'noPluginsYet' => '暫無外掛模組，點擊 + 新增',
+      'builtinPluginCannotDelete' => '內建外掛不可刪除',
+      'pluginIcon' => '圖示（emoji）',
+      'pluginDescription' => '描述',
+      'pluginPrompt' => '提示詞',
+      'pluginPromptHint' => '提示詞定義該模組的功能，你輸入的文字會作為輸入發送；留空則使用通用提示詞。',
+      'processing' => '處理中...',
+      'run' => '執行',
+      'output' => '輸出',
       'translationResult' => '翻譯結果',
       'selectTranslationLanguage' => '選擇翻譯語言',
       'pleaseEnterTextToTranslate' => '請輸入需要翻譯的內容',
@@ -3323,6 +3891,8 @@ extension on TranslationsZhTw {
       'pleaseSelectADate' => '請選擇日期',
       'endDateCannotBeEarlierThanStartDate' => '結束日期不能早於開始日期',
       'type' => '類型',
+      _ => null,
+    } ?? switch (path) {
       'background' => '背景',
       'emotion' => '情感',
       'source' => '來源',
@@ -3341,8 +3911,6 @@ extension on TranslationsZhTw {
       'colors.indigo' => '靛藍色',
       'colors.cloudyBlue' => '雲藍色',
       'colors.darkPastelGreen' => '暗粉綠色',
-      _ => null,
-    } ?? switch (path) {
       'colors.dust' => '塵埃色',
       'colors.electricLime' => '電光酸橙色',
       'colors.freshGreen' => '鮮綠色',
@@ -3846,7 +4414,10 @@ extension on TranslationsZhTw {
       'areYouSureYouWantToDeleteGeneric' => '確定要刪除嗎',
       'baseUrl' => '基礎 URL',
       'optionalField' => '選填',
+      _ => null,
+    } ?? switch (path) {
       'model' => '模型',
+      'tokens' => 'tokens',
       'addModel' => '添加模型',
       'modelId' => '模型 ID',
       'displayName' => '顯示名稱',
@@ -3866,8 +4437,6 @@ extension on TranslationsZhTw {
       'person' => '人物',
       'manualSelect' => '手動選擇',
       'qrAndClipboard' => '二維碼與剪貼簿',
-      _ => null,
-    } ?? switch (path) {
       'go' => '前往',
       'clipboard' => '剪貼簿',
       'recognizeFromGallery' => '從相簿識別',
@@ -3896,6 +4465,13 @@ extension on TranslationsZhTw {
       'monthlySummary' => '本月總結',
       'tagCopied' => 'Tag 已複製',
       'aiServiceConfig' => 'AI 服務配置',
+      'auxModelSettings' => '輔助任務模型',
+      'auxProviderSelection' => '服務商',
+      'auxFollowSession' => '跟隨會話服務商',
+      'auxFollowSessionHint' => '該任務將使用目前對話會話中配置的服務商。',
+      'contextCompression' => '上下文壓縮',
+      'followUpSuggestions' => '後續追問建議',
+      'autoTitle' => '自動標題',
       'connectionDisconnected' => '連線已斷開',
       'enterServerAddress' => '輸入伺服器位址',
       'tapToShare' => '點擊分享',
@@ -3928,6 +4504,7 @@ extension on TranslationsZhTw {
       'notConfigured' => '未配置',
       'enabled' => '已啟用',
       'required' => '必填',
+      'invalidNumber' => '無效數字',
       'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
       'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
       'linkFormatErrorCannotParseBangumiId' => 'Link format error, cannot parse Bangumi ID',
@@ -4174,6 +4751,249 @@ extension on TranslationsZhTw {
       'endPointPlus1s' => '終點 +1s',
       'videoTestLabel' => '影片測試',
       'uploading' => '上傳中',
+      'addImage' => '新增圖片',
+      'removeImage' => '移除圖片',
+      'compressingImage' => '圖片壓縮中...',
+      'skills' => '技能',
+      'selectSkills' => '選擇技能',
+      'noSkillsAvailable' => '暫無可用技能',
+      'usingTools' => '呼叫工具中...',
+      'toolCallingTool' => ({required Object tool}) => '呼叫 ${tool}...',
+      'toolCallLog' => ({required Object count}) => '工具呼叫: ${count}',
+      'generatingReply' => '生成回覆中...',
+      'stopGenerating' => '停止生成',
+      'thinking' => '思考中',
+      'streamInterrupted' => '生成已中斷',
+      'showThinking' => '查看思考過程',
+      'hideThinking' => '收起思考過程',
+      'thinkingInProgress' => '正在思考...',
+      'statsCached' => '快取',
+      'jumpToBottom' => '回到底部',
+      'modelDoesNotSupportVision' => '目前模型不支援圖片理解',
+      'myMessage' => '我的訊息',
+      'aiMessage' => 'AI 訊息',
+      'resendFromHere' => '從此處重新發送',
+      'regenerateReply' => '重新生成此回覆',
+      'noPersonality' => '無人格',
+      'noSystemPromptUsed' => '不使用系統提示詞',
+      'queryBalance' => '查詢餘額',
+      'balance' => '餘額',
+      'queryingBalance' => '查詢中...',
+      'balanceQueryUnsupported' => '該服務商不支援查詢餘額',
+      'balanceQueryUrl' => '餘額查詢位址',
+      'balanceKeyPath' => '結果欄位路徑',
+      'balanceQueryUrlHint' => '相對路徑或完整 URL',
+      'balanceKeyPathHint' => '點號路徑，如 data.balance',
+      'balanceQueryConfig' => '餘額查詢設定',
+      'customProviders' => '自訂服務商',
+      'noCustomProviders' => '暫無自訂服務商',
+      'newCustomProvider' => '新增自訂服務商',
+      'newMcpServer' => '新增 MCP 伺服器',
+      'newSkill' => '新增技能',
+      'invalidJson' => 'JSON 格式無效',
+      'providerKey' => '服務商 Key',
+      'providerKeyHint' => '例如 my-provider',
+      'providerKeyExists' => '服務商 Key 已存在，請更換',
+      'defaultModel' => '預設模型',
+      'supportsVision' => '支援圖片理解',
+      'supportsTools' => '支援工具呼叫',
+      'enableVision' => '啟用圖片理解',
+      'disableVision' => '停用圖片理解',
+      'enableTools' => '啟用工具呼叫',
+      'disableTools' => '停用工具呼叫',
+      'enterProviderKeyToAddModel' => '請先在上方填寫服務商 Key 再新增模型',
+      'mcpServers' => 'MCP 伺服器',
+      'noMcpServers' => '暫無 MCP 伺服器',
+      'serverName' => '伺服器名稱',
+      'transport' => '傳輸方式',
+      'stdio' => 'stdio',
+      'http' => 'HTTP',
+      'sse' => 'SSE',
+      'command' => '命令',
+      'args' => '參數（JSON）',
+      'env' => '環境變數（JSON）',
+      'serverUrl' => '伺服器位址',
+      'headers' => '請求標頭（JSON）',
+      'noSkillsYet' => '暫無技能',
+      'skillName' => '技能名稱',
+      'skillKey' => '技能 Key',
+      'builtin' => '內建',
+      'skillMarkdownHint' => '技能支援 Markdown 格式',
+      'sendMessage' => '發送訊息',
+      'contextAutoCompressed' => '上下文過長，已自動壓縮',
+      'chatGreeting' => '今天有什麼可以幫你？',
+      'chatStart1' => '總結這段文字',
+      'chatStart2' => '寫一首詩',
+      'chatStart3' => '解釋一個概念',
+      'chatStart4' => '翻譯這段內容',
+      'importSkills' => '匯入技能',
+      'importSkillsFromFiles' => 'Markdown 檔案',
+      'importSkillsFromFilesHint' => '匯入一個或多個帶 YAML frontmatter 的 .md 技能檔案',
+      'importSkillsFromFolder' => '含 SKILL.md 的資料夾',
+      'importSkillsFromFolderHint' => '匯入包含 SKILL.md 檔案的資料夾',
+      'importingSkills' => '正在匯入技能...',
+      'noSkillFileFound' => '所選資料夾中找不到 SKILL.md',
+      'importedSkillCount' =>
+          ({required Object count}) => '已匯入 ${count} 個技能',
+      'importedSkillCountSkipped' =>
+          (
+          {required Object imported, required Object skipped}) => '已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案',
+      'assistantProfiles' => '助手檔案',
+      'newProfile' => '新增檔案',
+      'editAssistantProfile' => '編輯檔案',
+      'profileName' => '檔案名稱',
+      'profileIcon' => '圖示',
+      'profileIconHint' => '一個 emoji，例如 🤖',
+      'profilePersona' => '人設',
+      'profileTone' => '語氣',
+      'profilePromptFragments' => '提示片段（每行一條）',
+      'profileKnowledge' => '知識（每行一條）',
+      'profileParams' => '生成參數',
+      'profileBehaviorPrefs' => '行為偏好',
+      'customParamsHint' => '留空表示跟隨服務商預設值',
+      'previewSystemPrompt' => '預覽系統提示',
+      'tryChatting' => '試聊',
+      'deleteProfile' => '刪除檔案',
+      'confirmDeleteProfile' => '確定要刪除該檔案嗎？',
+      'noProfilesYet' => '暫無檔案',
+      'profileSaved' => '檔案已儲存',
+      'profileCopiedToClipboard' => '檔案已複製到剪貼簿',
+      'switchedToProfile' => ({required Object name}) => '已切換到 ${name}',
+      'defaultAssistant' => '預設',
+      'conciseReplies' => '簡潔回覆',
+      'useMarkdownFormatting' => '使用 Markdown 排版',
+      'codeFirst' => '程式碼優先',
+      'actionableAdvice' => '給出可執行的建議',
+      'profileTabPersona' => '人設',
+      'profileTabPrompt' => '提示詞',
+      'profileTabSkills' => '技能',
+      'profileTabParams' => '參數',
+      'profileTabBasic' => '基礎',
+      'profileTabExtensions' => '擴充',
+      'profileTabMemory' => '記憶',
+      'profileTabRequest' => '請求',
+      'profileTabMcp' => 'MCP',
+      'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
+      'profileTabLocalTools' => '工具技能',
+      'templateVarHint' => '可用變數：',
+      'profilePersonaRequired' => '請先選擇人格',
+      'defaultAssistantCannotDelete' => '系統預設助手不可刪除',
+      'imageUnderstandingDisabled' => '該助手未啟用圖片理解',
+      'modelType' => '模型類型',
+      'inputModality' => '輸入模態',
+      'outputModality' => '輸出模態',
+      'supportsReasoning' => '支援推理',
+      'apiFormat' => '介面格式',
+      'apiFormatOpenai' => 'OpenAI（chat）',
+      'apiFormatOpenaiResponses' => 'OpenAI Responses',
+      'apiFormatGemini' => 'Google（Gemini）',
+      'apiFormatClaude' => 'Claude（Anthropic）',
+      'testConnection' => '測試連線',
+      'testApiKey' => '檢測 API Key',
+      'enabledByApiKey' => '填寫 API Key 後自動啟用',
+      'endpointChatCompletions' => 'Chat Completions',
+      'endpointResponses' => 'Responses API',
+      'connectionOk' => '連線成功',
+      'modelsUrl' => '查詢可用模型介面',
+      'fetchModels' => '拉取可用模型',
+      'noModelsReturned' => '未獲取到模型',
+      'enableReasoning' => '啟用推理',
+      'disableReasoning' => '停用推理',
+      'thinkingLevel' => '思考程度',
+      'thinkingLow' => '簡潔',
+      'thinkingStandard' => '標準',
+      'thinkingDeep' => '深度',
+      'assistantSettings' => '助手設定',
+      'takePhoto' => '拍照',
+      'pickImages' => '圖片',
+      'uploadFile' => '上傳檔案',
+      'compressHistory' => '壓縮歷史',
+      'compressHistoryConfirm' => '壓縮目前會話歷史以節省 token，確定繼續？',
+      'compressed' => '已壓縮',
+      'profileLocalTools' => '本地工具',
+      'profileLocalToolsHint' => '內建工具鏈開關',
+      'profileSkills' => '技能',
+      'profileSkillsHint' => '勾選擴充管理中的技能進行綁定',
+      'profileRequest' => '自訂請求',
+      'profileRequestSensitiveHint' => '敏感資訊（如 API Key）會隨檔案持久化，請謹慎填寫',
+      'profileRequestBaseUrl' => 'Base URL 覆寫',
+      'profileRequestApiKey' => 'API Key 覆寫',
+      'profileRequestHeaders' => '自訂請求頭（每行 Key: Value）',
+      'profileRequestExtraBody' => '附加請求體欄位（JSON）',
+      'profileRequestStop' => '停止序列（每行一個）',
+      'profileRequestStopHint' => '遇此序列停止生成',
+      'profileExtensionsHint' => '應用級可選模組開關',
+      'profileMemoryEnabled' => '啟用長期記憶',
+      'profileMemoryHint' => '記錄使用者偏好/常問話題/關鍵結論，隨助手切換',
+      'profileMemoryMaxEntries' => '記憶條目上限',
+      'profileMemoryEntries' => '記憶條目',
+      'profileMemoryClear' => '清空',
+      'profileMemoryEmpty' => '暫無記憶條目',
+      'profileMemoryAdd' => '新增記憶',
+      'profileCopy' => '複製',
+      'profileExport' => '匯出',
+      'profileImport' => '匯入',
+      _ => null,
+    } ?? switch (path) {
+      'profileExported' => '已匯出到剪貼簿',
+      'profileImportFailed' => '匯入失敗',
+      'extensionManagement' => '擴充管理設定',
+      'extensionManagementHint' => '輔助任務模型、角色管理、MCP 伺服器與技能的統一入口',
+      'roleManagement' => '角色管理',
+      'promptManagement' => '提示詞',
+      'promptInjection' => '提示詞注入',
+      'promptInjectionHint' => '注入位置決定片段在 System Prompt 中的插入點',
+      'worldBook' => '世界書',
+      'worldBookEntries' => '世界書條目',
+      'newPromptInjection' => '新增注入',
+      'editPromptInjection' => '編輯注入',
+      'injectionName' => '名稱',
+      'injectionContent' => '內容',
+      'injectionPosition' => '注入位置',
+      'injectionPositionAfterPersonality' => '人格之後',
+      'injectionPositionAfterSystemPrompt' => '自訂提示詞之後',
+      'injectionPositionAfterKnowledge' => '知識之後',
+      'injectionPositionAfterMemory' => '記憶之後',
+      'injectionPositionBeforeTools' => '工具清單之前',
+      'injectionSortOrder' => '排序號',
+      'noInjectionsYet' => '暫無提示詞注入',
+      'worldBookName' => '名稱',
+      'worldBookTriggers' => '觸發詞（每行一個）',
+      'worldBookTriggersHint' => '使用者訊息命中任一觸發詞時才注入',
+      'worldBookContent' => '內容',
+      'worldBookPriority' => '優先級（越大越靠前）',
+      'worldBookPriorityHint' => '優先級高的條目先注入',
+      'newWorldBookEntry' => '新增條目',
+      'worldBookHitTest' => '命中測試',
+      'worldBookHitTestHint' => '輸入一句話，查看哪些條目會被觸發',
+      'worldBookHitTestPlaceholder' => '輸入一句話...',
+      'worldBookHitsResult' => '命中條目',
+      'worldBookNoHits' => '沒有條目命中',
+      'noWorldBookEntriesYet' => '暫無世界書條目',
+      'auxTemperature' => 'Temperature',
+      'selectAssistantProfile' => '選擇助手檔案',
+      'profilePersonalityTags' => '性格標籤',
+      'profilePersonalityTagsHint' => '多選標籤，如 理性/幽默/毒舌/溫柔',
+      'profileCatchphrases' => '口頭禪',
+      'profileCatchphrasesHint' => '每行一個',
+      'profileExamples' => '對話示例（few-shot）',
+      'profileExamplesHint' => '每行一組，格式：使用者: xxx | 助手: xxx',
+      'profileReplyStyle' => '回覆風格',
+      'replyLength' => '回覆長度',
+      'replyLengthShort' => '簡短',
+      'replyLengthNormal' => '適中',
+      'replyLengthDetailed' => '詳細',
+      'replyUseEmoji' => '使用 emoji',
+      'replyUseMarkdown' => '使用 Markdown 排版',
+      'replyAskBack' => '結尾反問使用者',
+      'mcpConnectionStatus' => '連線狀態',
+      'mcpConnected' => '已連線',
+      'mcpDisconnected' => '未連線',
+      'mcpToolsImported' => '個工具',
+      'mcpReconnect' => '重新連線',
+      'mcpTestConnection' => '測試連線',
+      'mcpConnecting' => '連線中...',
+      'mcpConnectionFailed' => '連線失敗',
       _ => null,
     };
   }

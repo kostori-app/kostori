@@ -596,14 +596,68 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Manual Translation'
 	String get manualTranslation => 'Manual Translation';
 
+	/// en: 'Translate text into your preferred language'
+	String get manualTranslationHint => 'Translate text into your preferred language';
+
 	/// en: 'Enter text to translate'
 	String get enterTextToTranslate => 'Enter text to translate';
 
 	/// en: 'Translate'
 	String get translate => 'Translate';
 
+	/// en: 'Translation failed'
+	String get translationFailed => 'Translation failed';
+
 	/// en: 'Translating...'
 	String get translating => 'Translating...';
+
+	/// en: 'Auto-detect'
+	String get autoDetect => 'Auto-detect';
+
+	/// en: 'Source language'
+	String get sourceLanguage => 'Source language';
+
+	/// en: 'Target language'
+	String get targetLanguage => 'Target language';
+
+	/// en: 'Enter text above and tap Translate to see the result here'
+	String get noTranslationYet => 'Enter text above and tap Translate to see the result here';
+
+	/// en: 'Plugin Modules'
+	String get pluginModules => 'Plugin Modules';
+
+	/// en: 'Add Plugin'
+	String get addPlugin => 'Add Plugin';
+
+	/// en: 'Edit Plugin'
+	String get editPlugin => 'Edit Plugin';
+
+	/// en: 'No plugin modules yet, tap + to add one'
+	String get noPluginsYet => 'No plugin modules yet, tap + to add one';
+
+	/// en: 'Built-in plugins cannot be deleted'
+	String get builtinPluginCannotDelete => 'Built-in plugins cannot be deleted';
+
+	/// en: 'Icon (emoji)'
+	String get pluginIcon => 'Icon (emoji)';
+
+	/// en: 'Description'
+	String get pluginDescription => 'Description';
+
+	/// en: 'Prompt'
+	String get pluginPrompt => 'Prompt';
+
+	/// en: 'The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt.'
+	String get pluginPromptHint => 'The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt.';
+
+	/// en: 'Processing...'
+	String get processing => 'Processing...';
+
+	/// en: 'Run'
+	String get run => 'Run';
+
+	/// en: 'Output'
+	String get output => 'Output';
 
 	/// en: 'Translation result'
 	String get translationResult => 'Translation result';
@@ -1547,7 +1601,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Traditional Chinese'
 	String get traditionalChinese => 'Traditional Chinese';
 
-	late final TranslationsColorsEn colors = TranslationsColorsEn.internal(_root);
+	late final Translations$colors$en colors = Translations$colors$en.internal(_root);
 
 	/// en: 'Secondary'
 	String get secondary => 'Secondary';
@@ -2932,6 +2986,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Model'
 	String get model => 'Model';
 
+	/// en: 'tokens'
+	String get tokens => 'tokens';
+
 	/// en: 'Add Model'
 	String get addModel => 'Add Model';
 
@@ -3067,6 +3124,27 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'AI Service Configuration'
 	String get aiServiceConfig => 'AI Service Configuration';
 
+	/// en: 'Auxiliary Task Models'
+	String get auxModelSettings => 'Auxiliary Task Models';
+
+	/// en: 'Provider'
+	String get auxProviderSelection => 'Provider';
+
+	/// en: 'Follow session provider'
+	String get auxFollowSession => 'Follow session provider';
+
+	/// en: 'This task will use the provider configured in the current chat session.'
+	String get auxFollowSessionHint => 'This task will use the provider configured in the current chat session.';
+
+	/// en: 'Context Compression'
+	String get contextCompression => 'Context Compression';
+
+	/// en: 'Follow-up Suggestions'
+	String get followUpSuggestions => 'Follow-up Suggestions';
+
+	/// en: 'Auto Title'
+	String get autoTitle => 'Auto Title';
+
 	/// en: 'Connection to server disconnected'
 	String get connectionDisconnected => 'Connection to server disconnected';
 
@@ -3156,6 +3234,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Required'
 	String get required => 'Required';
+
+	/// en: 'Invalid number'
+	String get invalidNumber => 'Invalid number';
 
 	/// en: 'Link format error, cannot parse anime info'
 	String get linkFormatErrorCannotParseAnimeInfo => 'Link format error, cannot parse anime info';
@@ -3903,11 +3984,725 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'uploading'
 	String get uploading => 'uploading';
+
+	/// en: 'Add image'
+	String get addImage => 'Add image';
+
+	/// en: 'Remove image'
+	String get removeImage => 'Remove image';
+
+	/// en: 'Compressing image...'
+	String get compressingImage => 'Compressing image...';
+
+	/// en: 'Skills'
+	String get skills => 'Skills';
+
+	/// en: 'Select skills'
+	String get selectSkills => 'Select skills';
+
+	/// en: 'No skills available'
+	String get noSkillsAvailable => 'No skills available';
+
+	/// en: 'Calling tools...'
+	String get usingTools => 'Calling tools...';
+
+	/// en: 'Calling ${tool}...'
+	String toolCallingTool({required Object tool}) => 'Calling ${tool}...';
+
+	/// en: 'Tool calls: ${count}'
+	String toolCallLog({required Object count}) => 'Tool calls: ${count}';
+
+	/// en: 'Generating reply...'
+	String get generatingReply => 'Generating reply...';
+
+	/// en: 'Stop generating'
+	String get stopGenerating => 'Stop generating';
+
+	/// en: 'Thinking'
+	String get thinking => 'Thinking';
+
+	/// en: 'Generation interrupted'
+	String get streamInterrupted => 'Generation interrupted';
+
+	/// en: 'Show thinking'
+	String get showThinking => 'Show thinking';
+
+	/// en: 'Hide thinking'
+	String get hideThinking => 'Hide thinking';
+
+	/// en: 'Thinking...'
+	String get thinkingInProgress => 'Thinking...';
+
+	/// en: 'cached'
+	String get statsCached => 'cached';
+
+	/// en: 'Back to bottom'
+	String get jumpToBottom => 'Back to bottom';
+
+	/// en: 'The current model does not support image understanding'
+	String get modelDoesNotSupportVision => 'The current model does not support image understanding';
+
+	/// en: 'My message'
+	String get myMessage => 'My message';
+
+	/// en: 'AI message'
+	String get aiMessage => 'AI message';
+
+	/// en: 'Resend from here'
+	String get resendFromHere => 'Resend from here';
+
+	/// en: 'Regenerate this reply'
+	String get regenerateReply => 'Regenerate this reply';
+
+	/// en: 'No personality'
+	String get noPersonality => 'No personality';
+
+	/// en: 'No system prompt used'
+	String get noSystemPromptUsed => 'No system prompt used';
+
+	/// en: 'Query Balance'
+	String get queryBalance => 'Query Balance';
+
+	/// en: 'Balance'
+	String get balance => 'Balance';
+
+	/// en: 'Querying balance...'
+	String get queryingBalance => 'Querying balance...';
+
+	/// en: 'This provider does not support balance query'
+	String get balanceQueryUnsupported => 'This provider does not support balance query';
+
+	/// en: 'Balance Query URL'
+	String get balanceQueryUrl => 'Balance Query URL';
+
+	/// en: 'Result field path'
+	String get balanceKeyPath => 'Result field path';
+
+	/// en: 'Relative path or absolute URL'
+	String get balanceQueryUrlHint => 'Relative path or absolute URL';
+
+	/// en: 'Dot notation, e.g. data.balance'
+	String get balanceKeyPathHint => 'Dot notation, e.g. data.balance';
+
+	/// en: 'Balance Query Config'
+	String get balanceQueryConfig => 'Balance Query Config';
+
+	/// en: 'Custom Providers'
+	String get customProviders => 'Custom Providers';
+
+	/// en: 'No custom providers yet'
+	String get noCustomProviders => 'No custom providers yet';
+
+	/// en: 'New Custom Provider'
+	String get newCustomProvider => 'New Custom Provider';
+
+	/// en: 'New MCP Server'
+	String get newMcpServer => 'New MCP Server';
+
+	/// en: 'New Skill'
+	String get newSkill => 'New Skill';
+
+	/// en: 'Invalid JSON format'
+	String get invalidJson => 'Invalid JSON format';
+
+	/// en: 'Provider Key'
+	String get providerKey => 'Provider Key';
+
+	/// en: 'e.g. my-provider'
+	String get providerKeyHint => 'e.g. my-provider';
+
+	/// en: 'Provider key already exists. Please change it.'
+	String get providerKeyExists => 'Provider key already exists. Please change it.';
+
+	/// en: 'Default Model'
+	String get defaultModel => 'Default Model';
+
+	/// en: 'Supports vision'
+	String get supportsVision => 'Supports vision';
+
+	/// en: 'Supports tool calling'
+	String get supportsTools => 'Supports tool calling';
+
+	/// en: 'Enable vision'
+	String get enableVision => 'Enable vision';
+
+	/// en: 'Disable vision'
+	String get disableVision => 'Disable vision';
+
+	/// en: 'Enable tool calling'
+	String get enableTools => 'Enable tool calling';
+
+	/// en: 'Disable tool calling'
+	String get disableTools => 'Disable tool calling';
+
+	/// en: 'Enter the provider key above to add models'
+	String get enterProviderKeyToAddModel => 'Enter the provider key above to add models';
+
+	/// en: 'MCP Servers'
+	String get mcpServers => 'MCP Servers';
+
+	/// en: 'No MCP servers yet'
+	String get noMcpServers => 'No MCP servers yet';
+
+	/// en: 'Server Name'
+	String get serverName => 'Server Name';
+
+	/// en: 'Transport'
+	String get transport => 'Transport';
+
+	/// en: 'stdio'
+	String get stdio => 'stdio';
+
+	/// en: 'HTTP'
+	String get http => 'HTTP';
+
+	/// en: 'SSE'
+	String get sse => 'SSE';
+
+	/// en: 'Command'
+	String get command => 'Command';
+
+	/// en: 'Arguments (JSON)'
+	String get args => 'Arguments (JSON)';
+
+	/// en: 'Environment (JSON)'
+	String get env => 'Environment (JSON)';
+
+	/// en: 'Server URL'
+	String get serverUrl => 'Server URL';
+
+	/// en: 'Headers (JSON)'
+	String get headers => 'Headers (JSON)';
+
+	/// en: 'No skills yet'
+	String get noSkillsYet => 'No skills yet';
+
+	/// en: 'Skill Name'
+	String get skillName => 'Skill Name';
+
+	/// en: 'Skill Key'
+	String get skillKey => 'Skill Key';
+
+	/// en: 'Built-in'
+	String get builtin => 'Built-in';
+
+	/// en: 'Skills support Markdown'
+	String get skillMarkdownHint => 'Skills support Markdown';
+
+	/// en: 'Send message'
+	String get sendMessage => 'Send message';
+
+	/// en: 'Context too long, auto-compressed'
+	String get contextAutoCompressed => 'Context too long, auto-compressed';
+
+	/// en: 'How can I help you today?'
+	String get chatGreeting => 'How can I help you today?';
+
+	/// en: 'Summarize this text'
+	String get chatStart1 => 'Summarize this text';
+
+	/// en: 'Write a poem'
+	String get chatStart2 => 'Write a poem';
+
+	/// en: 'Explain a concept'
+	String get chatStart3 => 'Explain a concept';
+
+	/// en: 'Translate this'
+	String get chatStart4 => 'Translate this';
+
+	/// en: 'Import Skills'
+	String get importSkills => 'Import Skills';
+
+	/// en: 'Markdown file(s)'
+	String get importSkillsFromFiles => 'Markdown file(s)';
+
+	/// en: 'Import one or more .md skill files with YAML frontmatter'
+	String get importSkillsFromFilesHint => 'Import one or more .md skill files with YAML frontmatter';
+
+	/// en: 'Folder with SKILL.md'
+	String get importSkillsFromFolder => 'Folder with SKILL.md';
+
+	/// en: 'Import a folder containing a SKILL.md file'
+	String get importSkillsFromFolderHint => 'Import a folder containing a SKILL.md file';
+
+	/// en: 'Importing skills...'
+	String get importingSkills => 'Importing skills...';
+
+	/// en: 'No SKILL.md found in the selected folder'
+	String get noSkillFileFound => 'No SKILL.md found in the selected folder';
+
+	/// en: 'Imported ${count} skill(s)'
+	String importedSkillCount({required Object count}) => 'Imported ${count} skill(s)';
+
+	/// en: 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)'
+	String importedSkillCountSkipped({required Object imported, required Object skipped}) => 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)';
+
+	/// en: 'Assistant Profiles'
+	String get assistantProfiles => 'Assistant Profiles';
+
+	/// en: 'New Profile'
+	String get newProfile => 'New Profile';
+
+	/// en: 'Edit Profile'
+	String get editAssistantProfile => 'Edit Profile';
+
+	/// en: 'Profile Name'
+	String get profileName => 'Profile Name';
+
+	/// en: 'Icon'
+	String get profileIcon => 'Icon';
+
+	/// en: 'One emoji, e.g. 🤖'
+	String get profileIconHint => 'One emoji, e.g. 🤖';
+
+	/// en: 'Persona'
+	String get profilePersona => 'Persona';
+
+	/// en: 'Tone'
+	String get profileTone => 'Tone';
+
+	/// en: 'Prompt Fragments (one per line)'
+	String get profilePromptFragments => 'Prompt Fragments (one per line)';
+
+	/// en: 'Knowledge (one per line)'
+	String get profileKnowledge => 'Knowledge (one per line)';
+
+	/// en: 'Generation Parameters'
+	String get profileParams => 'Generation Parameters';
+
+	/// en: 'Behavior Preferences'
+	String get profileBehaviorPrefs => 'Behavior Preferences';
+
+	/// en: 'Leave empty to follow the provider default'
+	String get customParamsHint => 'Leave empty to follow the provider default';
+
+	/// en: 'Preview System Prompt'
+	String get previewSystemPrompt => 'Preview System Prompt';
+
+	/// en: 'Try Chatting'
+	String get tryChatting => 'Try Chatting';
+
+	/// en: 'Delete Profile'
+	String get deleteProfile => 'Delete Profile';
+
+	/// en: 'Are you sure you want to delete this profile?'
+	String get confirmDeleteProfile => 'Are you sure you want to delete this profile?';
+
+	/// en: 'No profiles yet'
+	String get noProfilesYet => 'No profiles yet';
+
+	/// en: 'Profile saved'
+	String get profileSaved => 'Profile saved';
+
+	/// en: 'Profile copied to clipboard'
+	String get profileCopiedToClipboard => 'Profile copied to clipboard';
+
+	/// en: 'Switched to ${name}'
+	String switchedToProfile({required Object name}) => 'Switched to ${name}';
+
+	/// en: 'Default'
+	String get defaultAssistant => 'Default';
+
+	/// en: 'Concise replies'
+	String get conciseReplies => 'Concise replies';
+
+	/// en: 'Use Markdown formatting'
+	String get useMarkdownFormatting => 'Use Markdown formatting';
+
+	/// en: 'Code first'
+	String get codeFirst => 'Code first';
+
+	/// en: 'Give actionable advice'
+	String get actionableAdvice => 'Give actionable advice';
+
+	/// en: 'Persona'
+	String get profileTabPersona => 'Persona';
+
+	/// en: 'Prompt'
+	String get profileTabPrompt => 'Prompt';
+
+	/// en: 'Skills'
+	String get profileTabSkills => 'Skills';
+
+	/// en: 'Params'
+	String get profileTabParams => 'Params';
+
+	/// en: 'Basic'
+	String get profileTabBasic => 'Basic';
+
+	/// en: 'Extensions'
+	String get profileTabExtensions => 'Extensions';
+
+	/// en: 'Memory'
+	String get profileTabMemory => 'Memory';
+
+	/// en: 'Request'
+	String get profileTabRequest => 'Request';
+
+	/// en: 'MCP'
+	String get profileTabMcp => 'MCP';
+
+	/// en: 'Bind MCP servers for this assistant (tools are imported on connection)'
+	String get profileMcpHint => 'Bind MCP servers for this assistant (tools are imported on connection)';
+
+	/// en: 'Tools'
+	String get profileTabLocalTools => 'Tools';
+
+	/// en: 'Available variables: '
+	String get templateVarHint => 'Available variables: ';
+
+	/// en: 'Please select a persona first'
+	String get profilePersonaRequired => 'Please select a persona first';
+
+	/// en: 'The system default assistant cannot be deleted'
+	String get defaultAssistantCannotDelete => 'The system default assistant cannot be deleted';
+
+	/// en: 'This assistant has image understanding disabled'
+	String get imageUnderstandingDisabled => 'This assistant has image understanding disabled';
+
+	/// en: 'Model type'
+	String get modelType => 'Model type';
+
+	/// en: 'Input modalities'
+	String get inputModality => 'Input modalities';
+
+	/// en: 'Output modalities'
+	String get outputModality => 'Output modalities';
+
+	/// en: 'Supports reasoning'
+	String get supportsReasoning => 'Supports reasoning';
+
+	/// en: 'API format'
+	String get apiFormat => 'API format';
+
+	/// en: 'OpenAI (chat)'
+	String get apiFormatOpenai => 'OpenAI (chat)';
+
+	/// en: 'OpenAI Responses'
+	String get apiFormatOpenaiResponses => 'OpenAI Responses';
+
+	/// en: 'Google (Gemini)'
+	String get apiFormatGemini => 'Google (Gemini)';
+
+	/// en: 'Claude (Anthropic)'
+	String get apiFormatClaude => 'Claude (Anthropic)';
+
+	/// en: 'Test connection'
+	String get testConnection => 'Test connection';
+
+	/// en: 'Test API key'
+	String get testApiKey => 'Test API key';
+
+	/// en: 'Enabled automatically when an API key is filled in'
+	String get enabledByApiKey => 'Enabled automatically when an API key is filled in';
+
+	/// en: 'Chat Completions'
+	String get endpointChatCompletions => 'Chat Completions';
+
+	/// en: 'Responses API'
+	String get endpointResponses => 'Responses API';
+
+	/// en: 'Connection OK'
+	String get connectionOk => 'Connection OK';
+
+	/// en: 'Models list API'
+	String get modelsUrl => 'Models list API';
+
+	/// en: 'Fetch models'
+	String get fetchModels => 'Fetch models';
+
+	/// en: 'No models returned'
+	String get noModelsReturned => 'No models returned';
+
+	/// en: 'Enable reasoning'
+	String get enableReasoning => 'Enable reasoning';
+
+	/// en: 'Disable reasoning'
+	String get disableReasoning => 'Disable reasoning';
+
+	/// en: 'Thinking level'
+	String get thinkingLevel => 'Thinking level';
+
+	/// en: 'Concise'
+	String get thinkingLow => 'Concise';
+
+	/// en: 'Standard'
+	String get thinkingStandard => 'Standard';
+
+	/// en: 'Deep'
+	String get thinkingDeep => 'Deep';
+
+	/// en: 'Assistant settings'
+	String get assistantSettings => 'Assistant settings';
+
+	/// en: 'Camera'
+	String get takePhoto => 'Camera';
+
+	/// en: 'Images'
+	String get pickImages => 'Images';
+
+	/// en: 'Upload file'
+	String get uploadFile => 'Upload file';
+
+	/// en: 'Compress history'
+	String get compressHistory => 'Compress history';
+
+	/// en: 'Compress this conversation's history to save tokens. Continue?'
+	String get compressHistoryConfirm => 'Compress this conversation\'s history to save tokens. Continue?';
+
+	/// en: 'Compressed'
+	String get compressed => 'Compressed';
+
+	/// en: 'Local tools'
+	String get profileLocalTools => 'Local tools';
+
+	/// en: 'Built-in tool chain toggles'
+	String get profileLocalToolsHint => 'Built-in tool chain toggles';
+
+	/// en: 'Skills'
+	String get profileSkills => 'Skills';
+
+	/// en: 'Bind skills imported in Extension Management'
+	String get profileSkillsHint => 'Bind skills imported in Extension Management';
+
+	/// en: 'Custom request'
+	String get profileRequest => 'Custom request';
+
+	/// en: 'Sensitive info (e.g. API Key) is persisted with the profile, fill in carefully'
+	String get profileRequestSensitiveHint => 'Sensitive info (e.g. API Key) is persisted with the profile, fill in carefully';
+
+	/// en: 'Base URL override'
+	String get profileRequestBaseUrl => 'Base URL override';
+
+	/// en: 'API Key override'
+	String get profileRequestApiKey => 'API Key override';
+
+	/// en: 'Custom headers (Key: Value per line)'
+	String get profileRequestHeaders => 'Custom headers (Key: Value per line)';
+
+	/// en: 'Extra body fields (JSON)'
+	String get profileRequestExtraBody => 'Extra body fields (JSON)';
+
+	/// en: 'Stop sequences (one per line)'
+	String get profileRequestStop => 'Stop sequences (one per line)';
+
+	/// en: 'Stop generating when this sequence is encountered'
+	String get profileRequestStopHint => 'Stop generating when this sequence is encountered';
+
+	/// en: 'App-level optional module toggles'
+	String get profileExtensionsHint => 'App-level optional module toggles';
+
+	/// en: 'Enable long-term memory'
+	String get profileMemoryEnabled => 'Enable long-term memory';
+
+	/// en: 'Records preferences, frequent topics and key conclusions; switches with the assistant'
+	String get profileMemoryHint => 'Records preferences, frequent topics and key conclusions; switches with the assistant';
+
+	/// en: 'Memory entry limit'
+	String get profileMemoryMaxEntries => 'Memory entry limit';
+
+	/// en: 'Memory entries'
+	String get profileMemoryEntries => 'Memory entries';
+
+	/// en: 'Clear'
+	String get profileMemoryClear => 'Clear';
+
+	/// en: 'No memory entries yet'
+	String get profileMemoryEmpty => 'No memory entries yet';
+
+	/// en: 'New memory entry'
+	String get profileMemoryAdd => 'New memory entry';
+
+	/// en: 'Duplicate'
+	String get profileCopy => 'Duplicate';
+
+	/// en: 'Export'
+	String get profileExport => 'Export';
+
+	/// en: 'Import'
+	String get profileImport => 'Import';
+
+	/// en: 'Exported to clipboard'
+	String get profileExported => 'Exported to clipboard';
+
+	/// en: 'Import failed'
+	String get profileImportFailed => 'Import failed';
+
+	/// en: 'Extension Management'
+	String get extensionManagement => 'Extension Management';
+
+	/// en: 'Auxiliary task models, role management, MCP servers and skills'
+	String get extensionManagementHint => 'Auxiliary task models, role management, MCP servers and skills';
+
+	/// en: 'Role Management'
+	String get roleManagement => 'Role Management';
+
+	/// en: 'Prompt'
+	String get promptManagement => 'Prompt';
+
+	/// en: 'Prompt Injection'
+	String get promptInjection => 'Prompt Injection';
+
+	/// en: 'Injection position decides where each fragment is inserted in the system prompt'
+	String get promptInjectionHint => 'Injection position decides where each fragment is inserted in the system prompt';
+
+	/// en: 'World Book'
+	String get worldBook => 'World Book';
+
+	/// en: 'World Book entries'
+	String get worldBookEntries => 'World Book entries';
+
+	/// en: 'New Injection'
+	String get newPromptInjection => 'New Injection';
+
+	/// en: 'Edit Injection'
+	String get editPromptInjection => 'Edit Injection';
+
+	/// en: 'Name'
+	String get injectionName => 'Name';
+
+	/// en: 'Content'
+	String get injectionContent => 'Content';
+
+	/// en: 'Injection position'
+	String get injectionPosition => 'Injection position';
+
+	/// en: 'After personality'
+	String get injectionPositionAfterPersonality => 'After personality';
+
+	/// en: 'After custom system prompt'
+	String get injectionPositionAfterSystemPrompt => 'After custom system prompt';
+
+	/// en: 'After knowledge'
+	String get injectionPositionAfterKnowledge => 'After knowledge';
+
+	/// en: 'After memory'
+	String get injectionPositionAfterMemory => 'After memory';
+
+	/// en: 'Before tool list'
+	String get injectionPositionBeforeTools => 'Before tool list';
+
+	/// en: 'Sort order'
+	String get injectionSortOrder => 'Sort order';
+
+	/// en: 'No prompt injections yet'
+	String get noInjectionsYet => 'No prompt injections yet';
+
+	/// en: 'Name'
+	String get worldBookName => 'Name';
+
+	/// en: 'Trigger words (one per line)'
+	String get worldBookTriggers => 'Trigger words (one per line)';
+
+	/// en: 'Injected when the user message contains any trigger word'
+	String get worldBookTriggersHint => 'Injected when the user message contains any trigger word';
+
+	/// en: 'Content'
+	String get worldBookContent => 'Content';
+
+	/// en: 'Priority (higher first)'
+	String get worldBookPriority => 'Priority (higher first)';
+
+	/// en: 'Higher priority entries are injected first'
+	String get worldBookPriorityHint => 'Higher priority entries are injected first';
+
+	/// en: 'New Entry'
+	String get newWorldBookEntry => 'New Entry';
+
+	/// en: 'Hit Test'
+	String get worldBookHitTest => 'Hit Test';
+
+	/// en: 'Type a sentence to see which entries will be triggered'
+	String get worldBookHitTestHint => 'Type a sentence to see which entries will be triggered';
+
+	/// en: 'Type a sentence...'
+	String get worldBookHitTestPlaceholder => 'Type a sentence...';
+
+	/// en: 'Matching entries'
+	String get worldBookHitsResult => 'Matching entries';
+
+	/// en: 'No entries matched'
+	String get worldBookNoHits => 'No entries matched';
+
+	/// en: 'No world book entries yet'
+	String get noWorldBookEntriesYet => 'No world book entries yet';
+
+	/// en: 'Temperature'
+	String get auxTemperature => 'Temperature';
+
+	/// en: 'Select an assistant'
+	String get selectAssistantProfile => 'Select an assistant';
+
+	/// en: 'Personality tags'
+	String get profilePersonalityTags => 'Personality tags';
+
+	/// en: 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle'
+	String get profilePersonalityTagsHint => 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle';
+
+	/// en: 'Catchphrases'
+	String get profileCatchphrases => 'Catchphrases';
+
+	/// en: 'One per line'
+	String get profileCatchphrasesHint => 'One per line';
+
+	/// en: 'Example dialogs (few-shot)'
+	String get profileExamples => 'Example dialogs (few-shot)';
+
+	/// en: 'One pair per line, format: 用户: xxx | 助手: xxx'
+	String get profileExamplesHint => 'One pair per line, format: 用户: xxx | 助手: xxx';
+
+	/// en: 'Reply style'
+	String get profileReplyStyle => 'Reply style';
+
+	/// en: 'Reply length'
+	String get replyLength => 'Reply length';
+
+	/// en: 'Concise'
+	String get replyLengthShort => 'Concise';
+
+	/// en: 'Normal'
+	String get replyLengthNormal => 'Normal';
+
+	/// en: 'Detailed'
+	String get replyLengthDetailed => 'Detailed';
+
+	/// en: 'Use emoji'
+	String get replyUseEmoji => 'Use emoji';
+
+	/// en: 'Use Markdown formatting'
+	String get replyUseMarkdown => 'Use Markdown formatting';
+
+	/// en: 'Ask back at the end'
+	String get replyAskBack => 'Ask back at the end';
+
+	/// en: 'Connection status'
+	String get mcpConnectionStatus => 'Connection status';
+
+	/// en: 'Connected'
+	String get mcpConnected => 'Connected';
+
+	/// en: 'Disconnected'
+	String get mcpDisconnected => 'Disconnected';
+
+	/// en: 'tools imported'
+	String get mcpToolsImported => 'tools imported';
+
+	/// en: 'Reconnect'
+	String get mcpReconnect => 'Reconnect';
+
+	/// en: 'Test connection'
+	String get mcpTestConnection => 'Test connection';
+
+	/// en: 'Connecting...'
+	String get mcpConnecting => 'Connecting...';
+
+	/// en: 'Connection failed'
+	String get mcpConnectionFailed => 'Connection failed';
 }
 
 // Path: colors
-class TranslationsColorsEn {
-	TranslationsColorsEn.internal(this._root);
+class Translations$colors$en {
+	Translations$colors$en.internal(this._root);
 
 	final Translations _root; // ignore: unused_field
 
@@ -4236,9 +5031,27 @@ extension on Translations {
 			'logOut' => 'Log out',
 			'log' => 'Log',
 			'manualTranslation' => 'Manual Translation',
+			'manualTranslationHint' => 'Translate text into your preferred language',
 			'enterTextToTranslate' => 'Enter text to translate',
 			'translate' => 'Translate',
+			'translationFailed' => 'Translation failed',
 			'translating' => 'Translating...',
+			'autoDetect' => 'Auto-detect',
+			'sourceLanguage' => 'Source language',
+			'targetLanguage' => 'Target language',
+			'noTranslationYet' => 'Enter text above and tap Translate to see the result here',
+			'pluginModules' => 'Plugin Modules',
+			'addPlugin' => 'Add Plugin',
+			'editPlugin' => 'Edit Plugin',
+			'noPluginsYet' => 'No plugin modules yet, tap + to add one',
+			'builtinPluginCannotDelete' => 'Built-in plugins cannot be deleted',
+			'pluginIcon' => 'Icon (emoji)',
+			'pluginDescription' => 'Description',
+			'pluginPrompt' => 'Prompt',
+			'pluginPromptHint' => 'The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt.',
+			'processing' => 'Processing...',
+			'run' => 'Run',
+			'output' => 'Output',
 			'translationResult' => 'Translation result',
 			'selectTranslationLanguage' => 'Select Translation Language',
 			'pleaseEnterTextToTranslate' => 'Please enter text to translate',
@@ -4545,6 +5358,8 @@ extension on Translations {
 			'endDateCannotBeEarlierThanStartDate' => 'End date cannot be earlier than start date',
 			'type' => 'Type',
 			'background' => 'Background',
+			_ => null,
+		} ?? switch (path) {
 			'emotion' => 'Emotion',
 			'source' => 'Source',
 			'audience' => 'Audience',
@@ -4563,8 +5378,6 @@ extension on Translations {
 			'colors.cloudyBlue' => 'Cloudy Blue',
 			'colors.darkPastelGreen' => 'Dark Pastel Green',
 			'colors.dust' => 'Dust',
-			_ => null,
-		} ?? switch (path) {
 			'colors.electricLime' => 'Electric Lime',
 			'colors.freshGreen' => 'Fresh Green',
 			'colors.lightEggplant' => 'Light Eggplant',
@@ -5059,6 +5872,9 @@ extension on Translations {
 			'baseUrl' => 'Base URL',
 			'optionalField' => 'Optional',
 			'model' => 'Model',
+			_ => null,
+		} ?? switch (path) {
+			'tokens' => 'tokens',
 			'addModel' => 'Add Model',
 			'modelId' => 'Model ID',
 			'displayName' => 'Display Name',
@@ -5077,8 +5893,6 @@ extension on Translations {
 			'manualSelect' => 'Manual Select',
 			'qrAndClipboard' => 'QR & Clipboard',
 			'go' => 'Go',
-			_ => null,
-		} ?? switch (path) {
 			'clipboard' => 'Clipboard',
 			'recognizeFromGallery' => 'Recognize from Gallery',
 			'scanQrCode' => 'Scan QR Code',
@@ -5106,6 +5920,13 @@ extension on Translations {
 			'monthlySummary' => 'Monthly Summary',
 			'tagCopied' => 'Tag copied',
 			'aiServiceConfig' => 'AI Service Configuration',
+			'auxModelSettings' => 'Auxiliary Task Models',
+			'auxProviderSelection' => 'Provider',
+			'auxFollowSession' => 'Follow session provider',
+			'auxFollowSessionHint' => 'This task will use the provider configured in the current chat session.',
+			'contextCompression' => 'Context Compression',
+			'followUpSuggestions' => 'Follow-up Suggestions',
+			'autoTitle' => 'Auto Title',
 			'connectionDisconnected' => 'Connection to server disconnected',
 			'enterServerAddress' => 'Please enter server address',
 			'tapToShare' => 'Tap to share',
@@ -5136,6 +5957,7 @@ extension on Translations {
 			'notConfigured' => 'Not configured',
 			'enabled' => 'Enabled',
 			'required' => 'Required',
+			'invalidNumber' => 'Invalid number',
 			'linkFormatErrorCannotParseAnimeInfo' => 'Link format error, cannot parse anime info',
 			'sourceNotFoundPleaseConfirmSourceInstalled' => 'Source not found, please confirm source is installed',
 			'linkFormatErrorCannotParseBangumiId' => 'Link format error, cannot parse Bangumi ID',
@@ -5385,6 +6207,246 @@ extension on Translations {
 			'noCategoryPages' => 'No Category Pages',
 			'videoTestLabel' => 'videoTestLabel',
 			'uploading' => 'uploading',
+			'addImage' => 'Add image',
+			'removeImage' => 'Remove image',
+			'compressingImage' => 'Compressing image...',
+			'skills' => 'Skills',
+			'selectSkills' => 'Select skills',
+			'noSkillsAvailable' => 'No skills available',
+			'usingTools' => 'Calling tools...',
+			'toolCallingTool' => ({required Object tool}) => 'Calling ${tool}...',
+			'toolCallLog' => ({required Object count}) => 'Tool calls: ${count}',
+			'generatingReply' => 'Generating reply...',
+			'stopGenerating' => 'Stop generating',
+			'thinking' => 'Thinking',
+			'streamInterrupted' => 'Generation interrupted',
+			'showThinking' => 'Show thinking',
+			'hideThinking' => 'Hide thinking',
+			'thinkingInProgress' => 'Thinking...',
+			'statsCached' => 'cached',
+			'jumpToBottom' => 'Back to bottom',
+			'modelDoesNotSupportVision' => 'The current model does not support image understanding',
+			'myMessage' => 'My message',
+			'aiMessage' => 'AI message',
+			'resendFromHere' => 'Resend from here',
+			'regenerateReply' => 'Regenerate this reply',
+			'noPersonality' => 'No personality',
+			'noSystemPromptUsed' => 'No system prompt used',
+			'queryBalance' => 'Query Balance',
+			'balance' => 'Balance',
+			'queryingBalance' => 'Querying balance...',
+			'balanceQueryUnsupported' => 'This provider does not support balance query',
+			'balanceQueryUrl' => 'Balance Query URL',
+			'balanceKeyPath' => 'Result field path',
+			'balanceQueryUrlHint' => 'Relative path or absolute URL',
+			'balanceKeyPathHint' => 'Dot notation, e.g. data.balance',
+			'balanceQueryConfig' => 'Balance Query Config',
+			'customProviders' => 'Custom Providers',
+			'noCustomProviders' => 'No custom providers yet',
+			'newCustomProvider' => 'New Custom Provider',
+			'newMcpServer' => 'New MCP Server',
+			'newSkill' => 'New Skill',
+			'invalidJson' => 'Invalid JSON format',
+			'providerKey' => 'Provider Key',
+			'providerKeyHint' => 'e.g. my-provider',
+			'providerKeyExists' => 'Provider key already exists. Please change it.',
+			'defaultModel' => 'Default Model',
+			'supportsVision' => 'Supports vision',
+			'supportsTools' => 'Supports tool calling',
+			'enableVision' => 'Enable vision',
+			'disableVision' => 'Disable vision',
+			'enableTools' => 'Enable tool calling',
+			'disableTools' => 'Disable tool calling',
+			'enterProviderKeyToAddModel' => 'Enter the provider key above to add models',
+			'mcpServers' => 'MCP Servers',
+			'noMcpServers' => 'No MCP servers yet',
+			'serverName' => 'Server Name',
+			'transport' => 'Transport',
+			'stdio' => 'stdio',
+			'http' => 'HTTP',
+			'sse' => 'SSE',
+			'command' => 'Command',
+			'args' => 'Arguments (JSON)',
+			'env' => 'Environment (JSON)',
+			'serverUrl' => 'Server URL',
+			'headers' => 'Headers (JSON)',
+			'noSkillsYet' => 'No skills yet',
+			'skillName' => 'Skill Name',
+			'skillKey' => 'Skill Key',
+			'builtin' => 'Built-in',
+			'skillMarkdownHint' => 'Skills support Markdown',
+			'sendMessage' => 'Send message',
+			'contextAutoCompressed' => 'Context too long, auto-compressed',
+			'chatGreeting' => 'How can I help you today?',
+			'chatStart1' => 'Summarize this text',
+			'chatStart2' => 'Write a poem',
+			'chatStart3' => 'Explain a concept',
+			'chatStart4' => 'Translate this',
+			'importSkills' => 'Import Skills',
+			'importSkillsFromFiles' => 'Markdown file(s)',
+			'importSkillsFromFilesHint' => 'Import one or more .md skill files with YAML frontmatter',
+			'importSkillsFromFolder' => 'Folder with SKILL.md',
+			'importSkillsFromFolderHint' => 'Import a folder containing a SKILL.md file',
+			'importingSkills' => 'Importing skills...',
+			'noSkillFileFound' => 'No SKILL.md found in the selected folder',
+			'importedSkillCount' => ({required Object count}) => 'Imported ${count} skill(s)',
+			'importedSkillCountSkipped' => ({required Object imported, required Object skipped}) => 'Imported ${imported} skill(s), skipped ${skipped} invalid file(s)',
+			'assistantProfiles' => 'Assistant Profiles',
+			'newProfile' => 'New Profile',
+			'editAssistantProfile' => 'Edit Profile',
+			'profileName' => 'Profile Name',
+			'profileIcon' => 'Icon',
+			'profileIconHint' => 'One emoji, e.g. 🤖',
+			'profilePersona' => 'Persona',
+			'profileTone' => 'Tone',
+			'profilePromptFragments' => 'Prompt Fragments (one per line)',
+			'profileKnowledge' => 'Knowledge (one per line)',
+			'profileParams' => 'Generation Parameters',
+			'profileBehaviorPrefs' => 'Behavior Preferences',
+			'customParamsHint' => 'Leave empty to follow the provider default',
+			'previewSystemPrompt' => 'Preview System Prompt',
+			'tryChatting' => 'Try Chatting',
+			'deleteProfile' => 'Delete Profile',
+			'confirmDeleteProfile' => 'Are you sure you want to delete this profile?',
+			'noProfilesYet' => 'No profiles yet',
+			'profileSaved' => 'Profile saved',
+			'profileCopiedToClipboard' => 'Profile copied to clipboard',
+			'switchedToProfile' => ({required Object name}) => 'Switched to ${name}',
+			'defaultAssistant' => 'Default',
+			'conciseReplies' => 'Concise replies',
+			'useMarkdownFormatting' => 'Use Markdown formatting',
+			'codeFirst' => 'Code first',
+			'actionableAdvice' => 'Give actionable advice',
+			'profileTabPersona' => 'Persona',
+			'profileTabPrompt' => 'Prompt',
+			'profileTabSkills' => 'Skills',
+			'profileTabParams' => 'Params',
+			'profileTabBasic' => 'Basic',
+			'profileTabExtensions' => 'Extensions',
+			'profileTabMemory' => 'Memory',
+			'profileTabRequest' => 'Request',
+			'profileTabMcp' => 'MCP',
+			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
+			'profileTabLocalTools' => 'Tools',
+			'templateVarHint' => 'Available variables: ',
+			'profilePersonaRequired' => 'Please select a persona first',
+			'defaultAssistantCannotDelete' => 'The system default assistant cannot be deleted',
+			'imageUnderstandingDisabled' => 'This assistant has image understanding disabled',
+			'modelType' => 'Model type',
+			'inputModality' => 'Input modalities',
+			'outputModality' => 'Output modalities',
+			'supportsReasoning' => 'Supports reasoning',
+			'apiFormat' => 'API format',
+			'apiFormatOpenai' => 'OpenAI (chat)',
+			'apiFormatOpenaiResponses' => 'OpenAI Responses',
+			'apiFormatGemini' => 'Google (Gemini)',
+			'apiFormatClaude' => 'Claude (Anthropic)',
+			'testConnection' => 'Test connection',
+			'testApiKey' => 'Test API key',
+			'enabledByApiKey' => 'Enabled automatically when an API key is filled in',
+			'endpointChatCompletions' => 'Chat Completions',
+			'endpointResponses' => 'Responses API',
+			'connectionOk' => 'Connection OK',
+			'modelsUrl' => 'Models list API',
+			'fetchModels' => 'Fetch models',
+			'noModelsReturned' => 'No models returned',
+			'enableReasoning' => 'Enable reasoning',
+			'disableReasoning' => 'Disable reasoning',
+			'thinkingLevel' => 'Thinking level',
+			'thinkingLow' => 'Concise',
+			'thinkingStandard' => 'Standard',
+			'thinkingDeep' => 'Deep',
+			'assistantSettings' => 'Assistant settings',
+			'takePhoto' => 'Camera',
+			'pickImages' => 'Images',
+			'uploadFile' => 'Upload file',
+			'compressHistory' => 'Compress history',
+			'compressHistoryConfirm' => 'Compress this conversation\'s history to save tokens. Continue?',
+			'compressed' => 'Compressed',
+			'profileLocalTools' => 'Local tools',
+			'profileLocalToolsHint' => 'Built-in tool chain toggles',
+			'profileSkills' => 'Skills',
+			'profileSkillsHint' => 'Bind skills imported in Extension Management',
+			'profileRequest' => 'Custom request',
+			'profileRequestSensitiveHint' => 'Sensitive info (e.g. API Key) is persisted with the profile, fill in carefully',
+			'profileRequestBaseUrl' => 'Base URL override',
+			'profileRequestApiKey' => 'API Key override',
+			'profileRequestHeaders' => 'Custom headers (Key: Value per line)',
+			'profileRequestExtraBody' => 'Extra body fields (JSON)',
+			'profileRequestStop' => 'Stop sequences (one per line)',
+			'profileRequestStopHint' => 'Stop generating when this sequence is encountered',
+			'profileExtensionsHint' => 'App-level optional module toggles',
+			'profileMemoryEnabled' => 'Enable long-term memory',
+			'profileMemoryHint' => 'Records preferences, frequent topics and key conclusions; switches with the assistant',
+			'profileMemoryMaxEntries' => 'Memory entry limit',
+			'profileMemoryEntries' => 'Memory entries',
+			'profileMemoryClear' => 'Clear',
+			'profileMemoryEmpty' => 'No memory entries yet',
+			'profileMemoryAdd' => 'New memory entry',
+			'profileCopy' => 'Duplicate',
+			'profileExport' => 'Export',
+			'profileImport' => 'Import',
+			_ => null,
+		} ?? switch (path) {
+			'profileExported' => 'Exported to clipboard',
+			'profileImportFailed' => 'Import failed',
+			'extensionManagement' => 'Extension Management',
+			'extensionManagementHint' => 'Auxiliary task models, role management, MCP servers and skills',
+			'roleManagement' => 'Role Management',
+			'promptManagement' => 'Prompt',
+			'promptInjection' => 'Prompt Injection',
+			'promptInjectionHint' => 'Injection position decides where each fragment is inserted in the system prompt',
+			'worldBook' => 'World Book',
+			'worldBookEntries' => 'World Book entries',
+			'newPromptInjection' => 'New Injection',
+			'editPromptInjection' => 'Edit Injection',
+			'injectionName' => 'Name',
+			'injectionContent' => 'Content',
+			'injectionPosition' => 'Injection position',
+			'injectionPositionAfterPersonality' => 'After personality',
+			'injectionPositionAfterSystemPrompt' => 'After custom system prompt',
+			'injectionPositionAfterKnowledge' => 'After knowledge',
+			'injectionPositionAfterMemory' => 'After memory',
+			'injectionPositionBeforeTools' => 'Before tool list',
+			'injectionSortOrder' => 'Sort order',
+			'noInjectionsYet' => 'No prompt injections yet',
+			'worldBookName' => 'Name',
+			'worldBookTriggers' => 'Trigger words (one per line)',
+			'worldBookTriggersHint' => 'Injected when the user message contains any trigger word',
+			'worldBookContent' => 'Content',
+			'worldBookPriority' => 'Priority (higher first)',
+			'worldBookPriorityHint' => 'Higher priority entries are injected first',
+			'newWorldBookEntry' => 'New Entry',
+			'worldBookHitTest' => 'Hit Test',
+			'worldBookHitTestHint' => 'Type a sentence to see which entries will be triggered',
+			'worldBookHitTestPlaceholder' => 'Type a sentence...',
+			'worldBookHitsResult' => 'Matching entries',
+			'worldBookNoHits' => 'No entries matched',
+			'noWorldBookEntriesYet' => 'No world book entries yet',
+			'auxTemperature' => 'Temperature',
+			'selectAssistantProfile' => 'Select an assistant',
+			'profilePersonalityTags' => 'Personality tags',
+			'profilePersonalityTagsHint' => 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle',
+			'profileCatchphrases' => 'Catchphrases',
+			'profileCatchphrasesHint' => 'One per line',
+			'profileExamples' => 'Example dialogs (few-shot)',
+			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
+			'profileReplyStyle' => 'Reply style',
+			'replyLength' => 'Reply length',
+			'replyLengthShort' => 'Concise',
+			'replyLengthNormal' => 'Normal',
+			'replyLengthDetailed' => 'Detailed',
+			'replyUseEmoji' => 'Use emoji',
+			'replyUseMarkdown' => 'Use Markdown formatting',
+			'replyAskBack' => 'Ask back at the end',
+			'mcpConnectionStatus' => 'Connection status',
+			'mcpConnected' => 'Connected',
+			'mcpDisconnected' => 'Disconnected',
+			'mcpToolsImported' => 'tools imported',
+			'mcpReconnect' => 'Reconnect',
+			'mcpTestConnection' => 'Test connection',
+			'mcpConnecting' => 'Connecting...',
+			'mcpConnectionFailed' => 'Connection failed',
 			_ => null,
 		};
 	}

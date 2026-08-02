@@ -123,12 +123,7 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    PageTransitionsBuilder builder;
-    if (App.isAndroid) {
-      builder = PredictiveBackPageTransitionsBuilder();
-    } else {
-      builder = SlidePageTransitionBuilder();
-    }
+    final builder = SlidePageTransitionBuilder();
 
     return builder.buildTransitions(
       this,

@@ -187,9 +187,27 @@ logIn: Log in
 logOut: Log out
 log: Log
 manualTranslation: Manual Translation
+manualTranslationHint: Translate text into your preferred language
 enterTextToTranslate: Enter text to translate
 translate: Translate
+translationFailed: Translation failed
 translating: Translating...
+autoDetect: Auto-detect
+sourceLanguage: Source language
+targetLanguage: Target language
+noTranslationYet: Enter text above and tap Translate to see the result here
+pluginModules: Plugin Modules
+addPlugin: Add Plugin
+editPlugin: Edit Plugin
+noPluginsYet: No plugin modules yet, tap + to add one
+builtinPluginCannotDelete: Built-in plugins cannot be deleted
+pluginIcon: Icon (emoji)
+pluginDescription: Description
+pluginPrompt: Prompt
+pluginPromptHint: "The prompt defines what this module does. The text you type is sent as the input; leave empty to use a generic prompt."
+processing: Processing...
+run: Run
+output: Output
 translationResult: Translation result
 selectTranslationLanguage: Select Translation Language
 pleaseEnterTextToTranslate: Please enter text to translate
@@ -1013,6 +1031,7 @@ areYouSureYouWantToDeleteGeneric: Are you sure you want to delete
 baseUrl: Base URL
 optionalField: Optional
 model: Model
+tokens: tokens
 addModel: Add Model
 modelId: Model ID
 displayName: Display Name
@@ -1058,6 +1077,13 @@ weeklySummary: Weekly Summary
 monthlySummary: Monthly Summary
 tagCopied: Tag copied
 aiServiceConfig: AI Service Configuration
+auxModelSettings: Auxiliary Task Models
+auxProviderSelection: Provider
+auxFollowSession: Follow session provider
+auxFollowSessionHint: This task will use the provider configured in the current chat session.
+contextCompression: Context Compression
+followUpSuggestions: Follow-up Suggestions
+autoTitle: Auto Title
 connectionDisconnected: Connection to server disconnected
 enterServerAddress: Please enter server address
 tapToShare: Tap to share
@@ -1088,6 +1114,7 @@ newPersona: New Persona
 notConfigured: Not configured
 enabled: Enabled
 required: Required
+invalidNumber: Invalid number
 linkFormatErrorCannotParseAnimeInfo: Link format error, cannot parse anime info
 sourceNotFoundPleaseConfirmSourceInstalled: Source not found, please confirm source is installed
 linkFormatErrorCannotParseBangumiId: Link format error, cannot parse Bangumi ID
@@ -1343,3 +1370,249 @@ pleaseAddSomeSources: Please add some sources
 noCategoryPages: No Category Pages
 videoTestLabel: videoTestLabel
 uploading: uploading
+
+# AI Chat enhancements
+addImage: Add image
+removeImage: Remove image
+compressingImage: Compressing image...
+skills: Skills
+selectSkills: Select skills
+noSkillsAvailable: No skills available
+usingTools: Calling tools...
+toolCallingTool: Calling ${tool}...
+toolCallLog: "Tool calls: ${count}"
+generatingReply: Generating reply...
+stopGenerating: Stop generating
+thinking: Thinking
+streamInterrupted: Generation interrupted
+showThinking: Show thinking
+hideThinking: Hide thinking
+thinkingInProgress: Thinking...
+statsCached: cached
+jumpToBottom: Back to bottom
+modelDoesNotSupportVision: The current model does not support image understanding
+myMessage: My message
+aiMessage: AI message
+resendFromHere: Resend from here
+regenerateReply: Regenerate this reply
+noPersonality: No personality
+noSystemPromptUsed: No system prompt used
+
+# AI Settings editors
+queryBalance: Query Balance
+balance: Balance
+queryingBalance: Querying balance...
+balanceQueryUnsupported: This provider does not support balance query
+balanceQueryUrl: Balance Query URL
+balanceKeyPath: Result field path
+balanceQueryUrlHint: Relative path or absolute URL
+balanceKeyPathHint: Dot notation, e.g. data.balance
+balanceQueryConfig: Balance Query Config
+customProviders: Custom Providers
+noCustomProviders: No custom providers yet
+newCustomProvider: New Custom Provider
+newMcpServer: New MCP Server
+newSkill: New Skill
+invalidJson: Invalid JSON format
+providerKey: Provider Key
+providerKeyHint: e.g. my-provider
+providerKeyExists: Provider key already exists. Please change it.
+defaultModel: Default Model
+supportsVision: Supports vision
+supportsTools: Supports tool calling
+enableVision: Enable vision
+disableVision: Disable vision
+enableTools: Enable tool calling
+disableTools: Disable tool calling
+enterProviderKeyToAddModel: Enter the provider key above to add models
+mcpServers: MCP Servers
+noMcpServers: No MCP servers yet
+serverName: Server Name
+transport: Transport
+stdio: stdio
+http: HTTP
+sse: SSE
+command: Command
+args: Arguments (JSON)
+env: Environment (JSON)
+serverUrl: Server URL
+headers: Headers (JSON)
+noSkillsYet: No skills yet
+skillName: Skill Name
+skillKey: Skill Key
+builtin: Built-in
+skillMarkdownHint: Skills support Markdown
+sendMessage: Send message
+contextAutoCompressed: Context too long, auto-compressed
+chatGreeting: How can I help you today?
+chatStart1: Summarize this text
+chatStart2: Write a poem
+chatStart3: Explain a concept
+chatStart4: Translate this
+importSkills: Import Skills
+importSkillsFromFiles: Markdown file(s)
+importSkillsFromFilesHint: Import one or more .md skill files with YAML frontmatter
+importSkillsFromFolder: Folder with SKILL.md
+importSkillsFromFolderHint: Import a folder containing a SKILL.md file
+importingSkills: Importing skills...
+noSkillFileFound: No SKILL.md found in the selected folder
+importedSkillCount: Imported ${count} skill(s)
+importedSkillCountSkipped: Imported ${imported} skill(s), skipped ${skipped} invalid file(s)
+
+# Assistant Profiles
+assistantProfiles: Assistant Profiles
+newProfile: New Profile
+editAssistantProfile: Edit Profile
+profileName: Profile Name
+profileIcon: Icon
+profileIconHint: One emoji, e.g. 🤖
+profilePersona: Persona
+profileTone: Tone
+profilePromptFragments: Prompt Fragments (one per line)
+profileKnowledge: Knowledge (one per line)
+profileParams: Generation Parameters
+profileBehaviorPrefs: Behavior Preferences
+customParamsHint: Leave empty to follow the provider default
+previewSystemPrompt: Preview System Prompt
+tryChatting: Try Chatting
+deleteProfile: Delete Profile
+confirmDeleteProfile: Are you sure you want to delete this profile?
+noProfilesYet: No profiles yet
+profileSaved: Profile saved
+profileCopiedToClipboard: Profile copied to clipboard
+switchedToProfile: "Switched to ${name}"
+defaultAssistant: Default
+conciseReplies: Concise replies
+useMarkdownFormatting: Use Markdown formatting
+codeFirst: Code first
+actionableAdvice: Give actionable advice
+profileTabPersona: Persona
+profileTabPrompt: Prompt
+profileTabSkills: Skills
+profileTabParams: Params
+profileTabBasic: Basic
+profileTabExtensions: Extensions
+profileTabMemory: Memory
+profileTabRequest: Request
+profileTabMcp: MCP
+profileMcpHint: Bind MCP servers for this assistant (tools are imported on connection)
+profileTabLocalTools: Tools
+templateVarHint: "Available variables: "
+profilePersonaRequired: Please select a persona first
+defaultAssistantCannotDelete: The system default assistant cannot be deleted
+imageUnderstandingDisabled: This assistant has image understanding disabled
+modelType: Model type
+inputModality: Input modalities
+outputModality: Output modalities
+supportsReasoning: Supports reasoning
+apiFormat: API format
+apiFormatOpenai: OpenAI (chat)
+apiFormatOpenaiResponses: OpenAI Responses
+apiFormatGemini: Google (Gemini)
+apiFormatClaude: Claude (Anthropic)
+testConnection: Test connection
+testApiKey: Test API key
+enabledByApiKey: Enabled automatically when an API key is filled in
+endpointChatCompletions: Chat Completions
+endpointResponses: Responses API
+connectionOk: Connection OK
+modelsUrl: Models list API
+fetchModels: Fetch models
+noModelsReturned: No models returned
+enableReasoning: Enable reasoning
+disableReasoning: Disable reasoning
+thinkingLevel: Thinking level
+thinkingLow: Concise
+thinkingStandard: Standard
+thinkingDeep: Deep
+assistantSettings: Assistant settings
+takePhoto: Camera
+pickImages: Images
+uploadFile: Upload file
+compressHistory: Compress history
+compressHistoryConfirm: Compress this conversation's history to save tokens. Continue?
+compressed: Compressed
+profileLocalTools: Local tools
+profileLocalToolsHint: Built-in tool chain toggles
+profileSkills: Skills
+profileSkillsHint: Bind skills imported in Extension Management
+profileRequest: Custom request
+profileRequestSensitiveHint: Sensitive info (e.g. API Key) is persisted with the profile, fill in carefully
+profileRequestBaseUrl: Base URL override
+profileRequestApiKey: API Key override
+profileRequestHeaders: "Custom headers (Key: Value per line)"
+profileRequestExtraBody: Extra body fields (JSON)
+profileRequestStop: Stop sequences (one per line)
+profileRequestStopHint: Stop generating when this sequence is encountered
+profileExtensionsHint: App-level optional module toggles
+profileMemoryEnabled: Enable long-term memory
+profileMemoryHint: Records preferences, frequent topics and key conclusions; switches with the assistant
+profileMemoryMaxEntries: Memory entry limit
+profileMemoryEntries: Memory entries
+profileMemoryClear: Clear
+profileMemoryEmpty: No memory entries yet
+profileMemoryAdd: New memory entry
+profileCopy: Duplicate
+profileExport: Export
+profileImport: Import
+profileExported: Exported to clipboard
+profileImportFailed: Import failed
+
+# 扩展管理设置（改造点 7 修订）
+extensionManagement: Extension Management
+extensionManagementHint: Auxiliary task models, role management, MCP servers and skills
+roleManagement: Role Management
+promptManagement: Prompt
+promptInjection: Prompt Injection
+promptInjectionHint: Injection position decides where each fragment is inserted in the system prompt
+worldBook: World Book
+worldBookEntries: World Book entries
+newPromptInjection: New Injection
+editPromptInjection: Edit Injection
+injectionName: Name
+injectionContent: Content
+injectionPosition: Injection position
+injectionPositionAfterPersonality: After personality
+injectionPositionAfterSystemPrompt: After custom system prompt
+injectionPositionAfterKnowledge: After knowledge
+injectionPositionAfterMemory: After memory
+injectionPositionBeforeTools: Before tool list
+injectionSortOrder: Sort order
+noInjectionsYet: No prompt injections yet
+worldBookName: Name
+worldBookTriggers: Trigger words (one per line)
+worldBookTriggersHint: "Injected when the user message contains any trigger word"
+worldBookContent: Content
+worldBookPriority: Priority (higher first)
+worldBookPriorityHint: Higher priority entries are injected first
+newWorldBookEntry: New Entry
+worldBookHitTest: Hit Test
+worldBookHitTestHint: Type a sentence to see which entries will be triggered
+worldBookHitTestPlaceholder: Type a sentence...
+worldBookHitsResult: Matching entries
+worldBookNoHits: No entries matched
+noWorldBookEntriesYet: No world book entries yet
+auxTemperature: Temperature
+selectAssistantProfile: Select an assistant
+profilePersonalityTags: Personality tags
+profilePersonalityTagsHint: "Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle"
+profileCatchphrases: Catchphrases
+profileCatchphrasesHint: One per line
+profileExamples: Example dialogs (few-shot)
+profileExamplesHint: "One pair per line, format: 用户: xxx | 助手: xxx"
+profileReplyStyle: Reply style
+replyLength: Reply length
+replyLengthShort: Concise
+replyLengthNormal: Normal
+replyLengthDetailed: Detailed
+replyUseEmoji: Use emoji
+replyUseMarkdown: Use Markdown formatting
+replyAskBack: Ask back at the end
+mcpConnectionStatus: Connection status
+mcpConnected: Connected
+mcpDisconnected: Disconnected
+mcpToolsImported: tools imported
+mcpReconnect: Reconnect
+mcpTestConnection: Test connection
+mcpConnecting: Connecting...
+mcpConnectionFailed: Connection failed

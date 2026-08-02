@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
+import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -52,6 +52,26 @@ class TranslationService {
         text,
         targetLanguage,
       ),
+      TranslationSource.deepseek => _translateWithAi(
+        'deepseek',
+        text,
+        targetLanguage,
+      ),
+      TranslationSource.qiniu => _translateWithAi(
+        'qiniu',
+        text,
+        targetLanguage,
+      ),
+      TranslationSource.openrouter => _translateWithAi(
+        'openrouter',
+        text,
+        targetLanguage,
+      ),
+      TranslationSource.ohmygpt => _translateWithAi(
+        'ohmygpt',
+        text,
+        targetLanguage,
+      ),
       _ => _translateWithBing(text, targetLanguage),
     };
   }
@@ -92,9 +112,11 @@ class TranslationService {
       final ai = AiFactory.create(provider);
       if (ai == null) return Res.error('未知服务商: $provider');
 
-      final config = await AiDatabase.instance.aiConfigDao.getById(1);
-
-      final baseSystemPrompt = config?.systemPrompt ?? '';
+      await PromptInjectionStore.instance.ensureLoaded();
+      final injection = PromptInjectionStore.instance.findById(
+        kInjectionTranslator,
+      );
+      final baseSystemPrompt = injection?.content ?? aiTranslatePrompt;
 
       final currentExtData = _getCurrentLanguage(targetLanguage);
       final currentLabel = translationSorts.labelByExtData(currentExtData);

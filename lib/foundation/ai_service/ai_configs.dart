@@ -27,12 +27,18 @@ abstract class AiProviderConfig {
 
 class OpenAiCompatibleConfig extends AiProviderConfig {
   final String source;
+  final Map<String, String> customHeaders;
+  final Map<String, dynamic> extraBodyFields;
+  final List<String> stopSequences;
 
   const OpenAiCompatibleConfig({
     required this.source,
     required super.apiKey,
     required super.model,
     required String baseUrl,
+    this.customHeaders = const {},
+    this.extraBodyFields = const {},
+    this.stopSequences = const [],
   }) : super(baseUrl: baseUrl);
 
   factory OpenAiCompatibleConfig.fromJson(Map<String, dynamic> json) =>
@@ -41,7 +47,39 @@ class OpenAiCompatibleConfig extends AiProviderConfig {
         apiKey: json['apiKey'] ?? '',
         model: json['model'] ?? '',
         baseUrl: json['baseUrl'] ?? '',
+        customHeaders: json['customHeaders'] is Map
+            ? (json['customHeaders'] as Map).map(
+                (k, v) => MapEntry(k.toString(), v.toString()),
+              )
+            : const {},
+        extraBodyFields: json['extraBodyFields'] is Map
+            ? (json['extraBodyFields'] as Map).cast<String, dynamic>()
+            : const {},
+        stopSequences: json['stopSequences'] is List
+            ? (json['stopSequences'] as List).whereType<String>().toList()
+            : const [],
       );
+
+  /// 应用助手档案的自定义请求设定（⑤），返回新的配置实例
+  OpenAiCompatibleConfig withRequestOverrides({
+    String? baseUrlOverride,
+    String? apiKeyOverride,
+    Map<String, String> customHeaders = const {},
+    Map<String, dynamic> extraBodyFields = const {},
+    List<String> stopSequences = const [],
+  }) => OpenAiCompatibleConfig(
+    source: source,
+    apiKey: (apiKeyOverride == null || apiKeyOverride.isEmpty)
+        ? apiKey
+        : apiKeyOverride,
+    model: model,
+    baseUrl: (baseUrlOverride == null || baseUrlOverride.isEmpty)
+        ? (baseUrl ?? '')
+        : baseUrlOverride,
+    customHeaders: {...this.customHeaders, ...customHeaders},
+    extraBodyFields: {...this.extraBodyFields, ...extraBodyFields},
+    stopSequences: [...this.stopSequences, ...stopSequences],
+  );
 
   @override
   Map<String, dynamic> toJson() => {
@@ -49,6 +87,9 @@ class OpenAiCompatibleConfig extends AiProviderConfig {
     'apiKey': apiKey,
     'model': model,
     'baseUrl': baseUrl,
+    if (customHeaders.isNotEmpty) 'customHeaders': customHeaders,
+    if (extraBodyFields.isNotEmpty) 'extraBodyFields': extraBodyFields,
+    if (stopSequences.isNotEmpty) 'stopSequences': stopSequences,
   };
 }
 

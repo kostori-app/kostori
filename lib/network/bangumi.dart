@@ -510,8 +510,12 @@ class Bangumi {
     List<BangumiItem> bangumiReviewsSubjects = [];
     try {
       var res = await _dio.request(
-        Api.formatUrl(Api.bangumiReviewsSubjectsByIDNext, [id]),
-        options: Options(method: 'GET', headers: bangumiHTTPHeader),
+        Api.checkBangumiDataUrl,
+        options: Options(
+          method: 'GET',
+          headers: bangumiHTTPHeader,
+          receiveTimeout: const Duration(seconds: 30),
+        ),
       );
       final jsonData = res.data;
       for (dynamic json in jsonData) {
@@ -698,6 +702,11 @@ class Bangumi {
     } catch (e, s) {
       if (e is DioException && e.response?.statusCode == 403) {
         NetLog.warning('checkBangumiData', 'Rate limit exceeded, skip');
+        return;
+      }
+      // 后台启动检查：网络不可达/超时等无响应错误静默失败，不打扰用户
+      if (e is DioException && e.response == null) {
+        NetLog.warning('checkBangumiData', '网络请求失败（超时/不可达）: $e');
         return;
       }
       App.rootContext.showMessage(
@@ -1028,7 +1037,11 @@ class Bangumi {
         }
       }
     } catch (e, s) {
-      NetLog.error('getBangumiTrendsList', '$e\n$s');
+      if (e is DioException && e.response == null) {
+        NetLog.warning('getBangumiTrendsList', '网络请求失败（超时/不可达）: $e');
+      } else {
+        NetLog.error('getBangumiTrendsList', '$e\n$s');
+      }
     }
     return bangumiList;
   }

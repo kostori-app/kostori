@@ -176,9 +176,27 @@ logIn: 登入
 logOut: 登出
 log: 日誌
 manualTranslation: 手動翻譯
+manualTranslationHint: 輸入文字，翻譯為你偏好的語言
 enterTextToTranslate: 輸入需要翻譯的內容
 translate: 翻譯
+translationFailed: 翻譯失敗
 translating: 翻譯中...
+autoDetect: 自動偵測
+sourceLanguage: 來源語言
+targetLanguage: 目標語言
+noTranslationYet: 在上方輸入文字，點擊翻譯即可在此查看結果
+pluginModules: 外掛模組
+addPlugin: 新增外掛
+editPlugin: 編輯外掛
+noPluginsYet: 暫無外掛模組，點擊 + 新增
+builtinPluginCannotDelete: 內建外掛不可刪除
+pluginIcon: 圖示（emoji）
+pluginDescription: 描述
+pluginPrompt: 提示詞
+pluginPromptHint: "提示詞定義該模組的功能，你輸入的文字會作為輸入發送；留空則使用通用提示詞。"
+processing: 處理中...
+run: 執行
+output: 輸出
 translationResult: 翻譯結果
 selectTranslationLanguage: 選擇翻譯語言
 pleaseEnterTextToTranslate: 請輸入需要翻譯的內容
@@ -1014,6 +1032,7 @@ areYouSureYouWantToDeleteGeneric: 確定要刪除嗎
 baseUrl: 基礎 URL
 optionalField: 選填
 model: 模型
+tokens: tokens
 addModel: 添加模型
 modelId: 模型 ID
 displayName: 顯示名稱
@@ -1059,6 +1078,13 @@ weeklySummary: 本週總結
 monthlySummary: 本月總結
 tagCopied: Tag 已複製
 aiServiceConfig: AI 服務配置
+auxModelSettings: 輔助任務模型
+auxProviderSelection: 服務商
+auxFollowSession: 跟隨會話服務商
+auxFollowSessionHint: 該任務將使用目前對話會話中配置的服務商。
+contextCompression: 上下文壓縮
+followUpSuggestions: 後續追問建議
+autoTitle: 自動標題
 connectionDisconnected: 連線已斷開
 enterServerAddress: 輸入伺服器位址
 tapToShare: 點擊分享
@@ -1091,6 +1117,7 @@ newPersona: 新建角色配置
 notConfigured: 未配置
 enabled: 已啟用
 required: 必填
+invalidNumber: 無效數字
 linkFormatErrorCannotParseAnimeInfo: Link format error, cannot parse anime info
 sourceNotFoundPleaseConfirmSourceInstalled: Source not found, please confirm source is installed
 linkFormatErrorCannotParseBangumiId: Link format error, cannot parse Bangumi ID
@@ -1345,3 +1372,249 @@ startPointPlus1s: 起點 +1s
 endPointPlus1s: 終點 +1s
 videoTestLabel: 影片測試
 uploading: 上傳中
+
+# AI Chat enhancements
+addImage: 新增圖片
+removeImage: 移除圖片
+compressingImage: 圖片壓縮中...
+skills: 技能
+selectSkills: 選擇技能
+noSkillsAvailable: 暫無可用技能
+usingTools: 呼叫工具中...
+toolCallingTool: "呼叫 ${tool}..."
+toolCallLog: "工具呼叫: ${count}"
+generatingReply: 生成回覆中...
+stopGenerating: 停止生成
+thinking: 思考中
+streamInterrupted: 生成已中斷
+showThinking: 查看思考過程
+hideThinking: 收起思考過程
+thinkingInProgress: 正在思考...
+statsCached: 快取
+jumpToBottom: 回到底部
+modelDoesNotSupportVision: 目前模型不支援圖片理解
+myMessage: 我的訊息
+aiMessage: AI 訊息
+resendFromHere: 從此處重新發送
+regenerateReply: 重新生成此回覆
+noPersonality: 無人格
+noSystemPromptUsed: 不使用系統提示詞
+
+# AI Settings editors
+queryBalance: 查詢餘額
+balance: 餘額
+queryingBalance: 查詢中...
+balanceQueryUnsupported: 該服務商不支援查詢餘額
+balanceQueryUrl: 餘額查詢位址
+balanceKeyPath: 結果欄位路徑
+balanceQueryUrlHint: 相對路徑或完整 URL
+balanceKeyPathHint: 點號路徑，如 data.balance
+balanceQueryConfig: 餘額查詢設定
+customProviders: 自訂服務商
+noCustomProviders: 暫無自訂服務商
+newCustomProvider: 新增自訂服務商
+newMcpServer: 新增 MCP 伺服器
+newSkill: 新增技能
+invalidJson: JSON 格式無效
+providerKey: 服務商 Key
+providerKeyHint: 例如 my-provider
+providerKeyExists: 服務商 Key 已存在，請更換
+defaultModel: 預設模型
+supportsVision: 支援圖片理解
+supportsTools: 支援工具呼叫
+enableVision: 啟用圖片理解
+disableVision: 停用圖片理解
+enableTools: 啟用工具呼叫
+disableTools: 停用工具呼叫
+enterProviderKeyToAddModel: 請先在上方填寫服務商 Key 再新增模型
+mcpServers: MCP 伺服器
+noMcpServers: 暫無 MCP 伺服器
+serverName: 伺服器名稱
+transport: 傳輸方式
+stdio: stdio
+http: HTTP
+sse: SSE
+command: 命令
+args: 參數（JSON）
+env: 環境變數（JSON）
+serverUrl: 伺服器位址
+headers: 請求標頭（JSON）
+noSkillsYet: 暫無技能
+skillName: 技能名稱
+skillKey: 技能 Key
+builtin: 內建
+skillMarkdownHint: 技能支援 Markdown 格式
+sendMessage: 發送訊息
+contextAutoCompressed: 上下文過長，已自動壓縮
+chatGreeting: 今天有什麼可以幫你？
+chatStart1: 總結這段文字
+chatStart2: 寫一首詩
+chatStart3: 解釋一個概念
+chatStart4: 翻譯這段內容
+importSkills: 匯入技能
+importSkillsFromFiles: Markdown 檔案
+importSkillsFromFilesHint: 匯入一個或多個帶 YAML frontmatter 的 .md 技能檔案
+importSkillsFromFolder: 含 SKILL.md 的資料夾
+importSkillsFromFolderHint: 匯入包含 SKILL.md 檔案的資料夾
+importingSkills: 正在匯入技能...
+noSkillFileFound: 所選資料夾中找不到 SKILL.md
+importedSkillCount: 已匯入 ${count} 個技能
+importedSkillCountSkipped: 已匯入 ${imported} 個技能，略過 ${skipped} 個無效檔案
+
+# Assistant Profiles
+assistantProfiles: 助手檔案
+newProfile: 新增檔案
+editAssistantProfile: 編輯檔案
+profileName: 檔案名稱
+profileIcon: 圖示
+profileIconHint: 一個 emoji，例如 🤖
+profilePersona: 人設
+profileTone: 語氣
+profilePromptFragments: 提示片段（每行一條）
+profileKnowledge: 知識（每行一條）
+profileParams: 生成參數
+profileBehaviorPrefs: 行為偏好
+customParamsHint: 留空表示跟隨服務商預設值
+previewSystemPrompt: 預覽系統提示
+tryChatting: 試聊
+deleteProfile: 刪除檔案
+confirmDeleteProfile: 確定要刪除該檔案嗎？
+noProfilesYet: 暫無檔案
+profileSaved: 檔案已儲存
+profileCopiedToClipboard: 檔案已複製到剪貼簿
+switchedToProfile: "已切換到 ${name}"
+defaultAssistant: 預設
+conciseReplies: 簡潔回覆
+useMarkdownFormatting: 使用 Markdown 排版
+codeFirst: 程式碼優先
+actionableAdvice: 給出可執行的建議
+profileTabPersona: 人設
+profileTabPrompt: 提示詞
+profileTabSkills: 技能
+profileTabParams: 參數
+profileTabBasic: 基礎
+profileTabExtensions: 擴充
+profileTabMemory: 記憶
+profileTabRequest: 請求
+profileTabMcp: MCP
+profileMcpHint: 綁定本助手的 MCP 伺服器（連線後自動匯入工具）
+profileTabLocalTools: 工具技能
+templateVarHint: "可用變數："
+profilePersonaRequired: 請先選擇人格
+defaultAssistantCannotDelete: 系統預設助手不可刪除
+imageUnderstandingDisabled: 該助手未啟用圖片理解
+modelType: 模型類型
+inputModality: 輸入模態
+outputModality: 輸出模態
+supportsReasoning: 支援推理
+apiFormat: 介面格式
+apiFormatOpenai: OpenAI（chat）
+apiFormatOpenaiResponses: OpenAI Responses
+apiFormatGemini: Google（Gemini）
+apiFormatClaude: Claude（Anthropic）
+testConnection: 測試連線
+testApiKey: 檢測 API Key
+enabledByApiKey: 填寫 API Key 後自動啟用
+endpointChatCompletions: Chat Completions
+endpointResponses: Responses API
+connectionOk: 連線成功
+modelsUrl: 查詢可用模型介面
+fetchModels: 拉取可用模型
+noModelsReturned: 未獲取到模型
+enableReasoning: 啟用推理
+disableReasoning: 停用推理
+thinkingLevel: 思考程度
+thinkingLow: 簡潔
+thinkingStandard: 標準
+thinkingDeep: 深度
+assistantSettings: 助手設定
+takePhoto: 拍照
+pickImages: 圖片
+uploadFile: 上傳檔案
+compressHistory: 壓縮歷史
+compressHistoryConfirm: 壓縮目前會話歷史以節省 token，確定繼續？
+compressed: 已壓縮
+profileLocalTools: 本地工具
+profileLocalToolsHint: 內建工具鏈開關
+profileSkills: 技能
+profileSkillsHint: 勾選擴充管理中的技能進行綁定
+profileRequest: 自訂請求
+profileRequestSensitiveHint: 敏感資訊（如 API Key）會隨檔案持久化，請謹慎填寫
+profileRequestBaseUrl: Base URL 覆寫
+profileRequestApiKey: API Key 覆寫
+profileRequestHeaders: "自訂請求頭（每行 Key: Value）"
+profileRequestExtraBody: 附加請求體欄位（JSON）
+profileRequestStop: 停止序列（每行一個）
+profileRequestStopHint: 遇此序列停止生成
+profileExtensionsHint: 應用級可選模組開關
+profileMemoryEnabled: 啟用長期記憶
+profileMemoryHint: 記錄使用者偏好/常問話題/關鍵結論，隨助手切換
+profileMemoryMaxEntries: 記憶條目上限
+profileMemoryEntries: 記憶條目
+profileMemoryClear: 清空
+profileMemoryEmpty: 暫無記憶條目
+profileMemoryAdd: 新增記憶
+profileCopy: 複製
+profileExport: 匯出
+profileImport: 匯入
+profileExported: 已匯出到剪貼簿
+profileImportFailed: 匯入失敗
+
+# 擴充管理設定（改造點 7 修訂）
+extensionManagement: 擴充管理設定
+extensionManagementHint: 輔助任務模型、角色管理、MCP 伺服器與技能的統一入口
+roleManagement: 角色管理
+promptManagement: 提示詞
+promptInjection: 提示詞注入
+promptInjectionHint: 注入位置決定片段在 System Prompt 中的插入點
+worldBook: 世界書
+worldBookEntries: 世界書條目
+newPromptInjection: 新增注入
+editPromptInjection: 編輯注入
+injectionName: 名稱
+injectionContent: 內容
+injectionPosition: 注入位置
+injectionPositionAfterPersonality: 人格之後
+injectionPositionAfterSystemPrompt: 自訂提示詞之後
+injectionPositionAfterKnowledge: 知識之後
+injectionPositionAfterMemory: 記憶之後
+injectionPositionBeforeTools: 工具清單之前
+injectionSortOrder: 排序號
+noInjectionsYet: 暫無提示詞注入
+worldBookName: 名稱
+worldBookTriggers: 觸發詞（每行一個）
+worldBookTriggersHint: 使用者訊息命中任一觸發詞時才注入
+worldBookContent: 內容
+worldBookPriority: 優先級（越大越靠前）
+worldBookPriorityHint: 優先級高的條目先注入
+newWorldBookEntry: 新增條目
+worldBookHitTest: 命中測試
+worldBookHitTestHint: 輸入一句話，查看哪些條目會被觸發
+worldBookHitTestPlaceholder: 輸入一句話...
+worldBookHitsResult: 命中條目
+worldBookNoHits: 沒有條目命中
+noWorldBookEntriesYet: 暫無世界書條目
+auxTemperature: Temperature
+selectAssistantProfile: 選擇助手檔案
+profilePersonalityTags: 性格標籤
+profilePersonalityTagsHint: 多選標籤，如 理性/幽默/毒舌/溫柔
+profileCatchphrases: 口頭禪
+profileCatchphrasesHint: 每行一個
+profileExamples: 對話示例（few-shot）
+profileExamplesHint: "每行一組，格式：使用者: xxx | 助手: xxx"
+profileReplyStyle: 回覆風格
+replyLength: 回覆長度
+replyLengthShort: 簡短
+replyLengthNormal: 適中
+replyLengthDetailed: 詳細
+replyUseEmoji: 使用 emoji
+replyUseMarkdown: 使用 Markdown 排版
+replyAskBack: 結尾反問使用者
+mcpConnectionStatus: 連線狀態
+mcpConnected: 已連線
+mcpDisconnected: 未連線
+mcpToolsImported: 個工具
+mcpReconnect: 重新連線
+mcpTestConnection: 測試連線
+mcpConnecting: 連線中...
+mcpConnectionFailed: 連線失敗

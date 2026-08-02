@@ -58,6 +58,21 @@ class AiApiKeyDao extends DatabaseAccessor<AiDatabase> with _$AiApiKeyDaoMixin {
     );
   }
 
+  /// 更新余额查询配置（可传 null 清空）
+  Future<void> updateBalance(
+    String provider, {
+    String? balanceUrl,
+    String? balanceKey,
+  }) {
+    return (update(aiApiKeys)..where((t) => t.provider.equals(provider))).write(
+      AiApiKeysCompanion(
+        balanceUrl: Value(balanceUrl),
+        balanceKey: Value(balanceKey),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   /// 切换启用状态
   Future<void> setEnabled(String provider, {required bool enabled}) {
     return (update(aiApiKeys)..where((t) => t.provider.equals(provider))).write(

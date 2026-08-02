@@ -12,6 +12,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/window_frame.dart';
+import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
@@ -38,6 +39,10 @@ void main(List<String> args) {
         MediaKit.ensureInitialized();
 
         await init();
+
+        OpenAiProviderRegistry.refreshCustomProviders().catchError(
+          (e) => Log.error("refreshCustomProviders", e),
+        );
 
         runApp(ProviderScope(child: MyApp()));
         if (App.isDesktop) {

@@ -59,3 +59,4 @@ app.*.map.json
 # Gradle and Android build reports
 **/build/reports/
 .gradle/
+/nul

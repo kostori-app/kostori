@@ -15,19 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SettingsData {
 
- String get animeDisplayMode; double get animeTileScale; String get color; String get themeMode;// 迁移自 theme_mode
- String get newFavoriteAddTo; String get moveFavoriteAfterRead; String get proxy; List<dynamic> get categories; List<dynamic> get favorites; List<String> get searchSources; bool get showFavoriteStatusOnTile; bool get showHistoryStatusOnTile; List<dynamic> get blockedWords; String? get defaultSearchTarget; bool get enableTapToTurnPages; bool get enablePageAnimation; String get language; int get cacheSize; int get downloadThreads; bool get enableLongPressToZoom; bool get checkUpdateOnStart; bool get limitImageWidth; List<dynamic> get webdav; int get dataVersion; String? get quickFavorite; bool get enableTurnPageByVolumeKey; bool get enableClockAndBatteryInfoInReader; bool get authorizationRequired; bool get enableDnsOverrides; Map<String, dynamic> get dnsOverrides; bool get sni; String get autoAddLanguageFilter; String? get bangumiDataVer; String? get getBangumiAllEpInfoTime; String get animeSourceListUrl; bool get gitMirror; String get initialPage; bool get debugInfo; String get bangumiUserName;// 迁移自 BangumiUserName
- int get favoritePageId; bool get amoled;// 迁移自 AMOLED
- bool get dynamicColor; bool get enableNoProxyOverrides; List<String> get noProxyOverrides; bool get ignoreBadCertificate; List<dynamic> get statsSelectors; String get favoriteTypeWish;// 迁移自 FavoriteTypeWish
- String get favoriteTypeDoing;// 迁移自 FavoriteTypeDoing
- String get favoriteTypeCollect;// 迁移自 FavoriteTypeCollect
- String get favoriteTypeOnHold;// 迁移自 FavoriteTypeOnHold
- String get favoriteTypeDropped;// 迁移自 FavoriteTypeDropped
- String get animeListDisplayMode; String get androidVideoRenderer; bool get haEnable;// 迁移自 hAenable
- String get hardwareDecoder; bool get audioOutType; String get videoSynchronizationMode; String get translationSource; bool get calendarFetchEpisodes; bool get enableNetLog; bool get enableHubLog; bool get enableStatsLog; bool get enableSourceLog; bool get enablePlayerLog; String get deeplKey;// 迁移自 deepleKey (并修正拼写)
- List<dynamic> get exploreSourcesOrder;// 迁移自 explore_sources_order
- bool get tileTitleMarquee; bool get m3u8AdFilterEnabled; bool get lanAutoDiscovery; Map<String, dynamic> get explorePagesV2;// 迁移自 explore_pages_v2
- String? get getCalendarDataTime; String? get getBangumiDataTime; bool get enableSkipUpdate; bool get exploreHorizontalLayout;
+ String get animeDisplayMode; double get animeTileScale; String get color; String get themeMode; String get newFavoriteAddTo; String get moveFavoriteAfterRead; String get proxy; List<dynamic> get categories; List<dynamic> get favorites; List<String> get searchSources; bool get showFavoriteStatusOnTile; bool get showHistoryStatusOnTile; List<dynamic> get blockedWords; String? get defaultSearchTarget; bool get enableTapToTurnPages; bool get enablePageAnimation; String get language; int get cacheSize; int get downloadThreads; bool get enableLongPressToZoom; bool get checkUpdateOnStart; bool get limitImageWidth; List<dynamic> get webdav; int get dataVersion; String? get quickFavorite; bool get enableTurnPageByVolumeKey; bool get enableClockAndBatteryInfoInReader; bool get authorizationRequired; bool get enableDnsOverrides; Map<String, dynamic> get dnsOverrides; bool get sni; String get autoAddLanguageFilter; String? get bangumiDataVer; String? get getBangumiAllEpInfoTime; String get animeSourceListUrl; bool get gitMirror; String get initialPage; bool get debugInfo; String get bangumiUserName; int get favoritePageId; bool get amoled; bool get dynamicColor; bool get enableNoProxyOverrides; List<String> get noProxyOverrides; bool get ignoreBadCertificate; List<dynamic> get statsSelectors; String get favoriteTypeWish; String get favoriteTypeDoing; String get favoriteTypeCollect; String get favoriteTypeOnHold; String get favoriteTypeDropped; String get animeListDisplayMode; String get androidVideoRenderer; bool get haEnable; String get hardwareDecoder; bool get audioOutType; String get videoSynchronizationMode; String get translationSource; bool get calendarFetchEpisodes; bool get enableNetLog; bool get enableHubLog; bool get enableStatsLog; bool get enableSourceLog; bool get enablePlayerLog; String get deeplKey; List<dynamic> get exploreSourcesOrder; bool get tileTitleMarquee; bool get m3u8AdFilterEnabled; bool get lanAutoDiscovery; Map<String, dynamic> get explorePagesV2; String? get getCalendarDataTime; String? get getBangumiDataTime; bool get enableSkipUpdate; bool get exploreHorizontalLayout;
 /// Create a copy of SettingsData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -301,7 +289,6 @@ class _SettingsData implements SettingsData {
 @override@JsonKey() final  double animeTileScale;
 @override@JsonKey() final  String color;
 @override@JsonKey() final  String themeMode;
-// 迁移自 theme_mode
 @override@JsonKey() final  String newFavoriteAddTo;
 @override@JsonKey() final  String moveFavoriteAfterRead;
 @override@JsonKey() final  String proxy;
@@ -337,29 +324,21 @@ class _SettingsData implements SettingsData {
 @override@JsonKey() final  String initialPage;
 @override@JsonKey() final  bool debugInfo;
 @override@JsonKey() final  String bangumiUserName;
-// 迁移自 BangumiUserName
 @override@JsonKey() final  int favoritePageId;
 @override@JsonKey() final  bool amoled;
-// 迁移自 AMOLED
 @override@JsonKey() final  bool dynamicColor;
 @override@JsonKey() final  bool enableNoProxyOverrides;
 @override@JsonKey() final  List<String> noProxyOverrides;
 @override@JsonKey() final  bool ignoreBadCertificate;
 @override@JsonKey() final  List<dynamic> statsSelectors;
 @override@JsonKey() final  String favoriteTypeWish;
-// 迁移自 FavoriteTypeWish
 @override@JsonKey() final  String favoriteTypeDoing;
-// 迁移自 FavoriteTypeDoing
 @override@JsonKey() final  String favoriteTypeCollect;
-// 迁移自 FavoriteTypeCollect
 @override@JsonKey() final  String favoriteTypeOnHold;
-// 迁移自 FavoriteTypeOnHold
 @override@JsonKey() final  String favoriteTypeDropped;
-// 迁移自 FavoriteTypeDropped
 @override@JsonKey() final  String animeListDisplayMode;
 @override@JsonKey() final  String androidVideoRenderer;
 @override@JsonKey() final  bool haEnable;
-// 迁移自 hAenable
 @override@JsonKey() final  String hardwareDecoder;
 @override@JsonKey() final  bool audioOutType;
 @override@JsonKey() final  String videoSynchronizationMode;
@@ -371,14 +350,11 @@ class _SettingsData implements SettingsData {
 @override@JsonKey() final  bool enableSourceLog;
 @override@JsonKey() final  bool enablePlayerLog;
 @override@JsonKey() final  String deeplKey;
-// 迁移自 deepleKey (并修正拼写)
 @override@JsonKey() final  List<dynamic> exploreSourcesOrder;
-// 迁移自 explore_sources_order
 @override@JsonKey() final  bool tileTitleMarquee;
 @override@JsonKey() final  bool m3u8AdFilterEnabled;
 @override@JsonKey() final  bool lanAutoDiscovery;
 @override@JsonKey() final  Map<String, dynamic> explorePagesV2;
-// 迁移自 explore_pages_v2
 @override final  String? getCalendarDataTime;
 @override final  String? getBangumiDataTime;
 @override@JsonKey() final  bool enableSkipUpdate;

@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter_absolute_path_provider/flutter_absolute_path_provider.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
@@ -22,7 +23,12 @@ import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
 import 'package:kostori/database/ai_database.dart';
+import 'package:kostori/foundation/ai_service/ai_base.dart';
+import 'package:kostori/foundation/ai_service/assistant_profile.dart';
+import 'package:kostori/foundation/ai_service/balance_helper.dart';
+import 'package:kostori/foundation/ai_service/mcp_client.dart';
 import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
+import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -35,6 +41,7 @@ import 'package:kostori/foundation/device_info.dart';
 import 'package:kostori/database/favorites.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/res.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/network/api.dart';
 import 'package:kostori/network/app_dio.dart';
@@ -45,7 +52,9 @@ import 'package:kostori/network/m3u8_ad_rule.dart';
 import 'package:kostori/pages/hub/hub_create_room_dialog.dart';
 import 'package:kostori/pages/hub/hub_page.dart';
 import 'package:kostori/pages/hub/hub_room_settings_sheet.dart';
+import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
 import 'package:kostori/pages/webview.dart';
+import 'package:kostori/skills/skill_registry.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/ext.dart';
@@ -93,6 +102,10 @@ part 'hub_upload_settings.dart';
 part 'log_settings.dart';
 
 part 'ai_settings.dart';
+
+part 'extension_settings.dart';
+
+part 'role_management_settings.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({this.initialPage = -1, super.key});
@@ -552,41 +565,52 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
   }
 }
 
-class _ManualTranslationCard extends StatefulWidget {
-  const _ManualTranslationCard();
+// ─────────────────────────────────────────────
+// 翻译页（聚合入口 → 翻译）
+// ─────────────────────────────────────────────
+
+class ManualTranslationPage extends StatefulWidget {
+  const ManualTranslationPage({super.key});
 
   @override
-  State<_ManualTranslationCard> createState() => _ManualTranslationCardState();
+  State<ManualTranslationPage> createState() => _ManualTranslationPageState();
 }
 
-class _ManualTranslationCardState extends State<_ManualTranslationCard> {
+class _ManualTranslationPageState extends State<ManualTranslationPage> {
   final TextEditingController _inputController = TextEditingController();
   final TranslationController _translationController = TranslationController();
   late Sort _selectedLanguage;
-
   String poweredName = '';
+
+  static const _quickTargets = ['zh-CN', 'en-US', 'ja', 'ko'];
 
   @override
   void initState() {
     super.initState();
-    String? savedLang = appdata.implicitData['currentLanguage'];
+    final savedLang = appdata.implicitData['currentLanguage'];
     _selectedLanguage = savedLang != null
         ? translationSorts.firstWhere(
             (s) => s.extData == savedLang,
             orElse: () => translationSorts.first,
           )
         : translationSorts.first;
+    _inputController.addListener(_onInputChanged);
+  }
+
+  void _onInputChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _inputController.removeListener(_onInputChanged);
     _inputController.dispose();
     _translationController.dispose();
     super.dispose();
   }
 
   Future<void> _translate() async {
-    if (_inputController.text.isEmpty) {
+    if (_inputController.text.trim().isEmpty) {
       App.rootContext.showMessage(message: t.pleaseEnterTextToTranslate);
       return;
     }
@@ -597,214 +621,371 @@ class _ManualTranslationCardState extends State<_ManualTranslationCard> {
     );
   }
 
-  void _showDialogSelector(BuildContext context) {
-    showDialog(
+  void _clear() {
+    _inputController.clear();
+    _translationController.clearTranslation();
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _copyResult() async {
+    final text = _translationController.translatedText;
+    if (text == null || text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (mounted) App.rootContext.showMessage(message: t.copied);
+  }
+
+  Future<void> _showLanguageSelector() async {
+    final selected = await showDialog<Sort>(
       context: context,
-      builder: (BuildContext context) {
-        return ContentDialog(
-          title: t.selectTranslationLanguage,
-          displayButton: false,
-          content: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
-            ),
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(
-                context,
-              ).copyWith(scrollbars: false),
-              child: SingleChildScrollView(
-                child: RadioGroup<SortId>(
-                  groupValue: _selectedLanguage.id,
-                  onChanged: (value) {
-                    if (value == null) return;
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: translationSorts.map((sort) {
-                      return ListTile(
-                        dense: true,
-                        title: Text(
-                          sort.label,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 24,
-                          ),
-                        ),
-                        trailing: Radio<SortId>(value: sort.id),
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          _translate();
-                          _selectedLanguage = sort;
-                        },
-                      );
-                    }).toList(),
-                  ),
-                ),
+      builder: (ctx) => ContentDialog(
+        title: t.selectTranslationLanguage,
+        displayButton: false,
+        content: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 400),
+          child: SingleChildScrollView(
+            child: RadioGroup<SortId>(
+              groupValue: _selectedLanguage.id,
+              onChanged: (_) {},
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final sort in translationSorts)
+                    ListTile(
+                      dense: true,
+                      title: Text(sort.label),
+                      trailing: Radio<SortId>(value: sort.id),
+                      onTap: () => Navigator.pop(ctx, sort),
+                    ),
+                ],
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
+    if (selected != null) setState(() => _selectedLanguage = selected);
   }
 
   @override
   Widget build(BuildContext context) {
-    return _SettingCard(
-      children: [
-        _SettingPartTitle(title: t.manualTranslation, icon: Icons.translate),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListenableBuilder(
-            listenable: _translationController,
-            builder: (context, _) {
-              return Column(
-                children: [
-                  Row(
+    final scheme = Theme.of(context).colorScheme;
+    return SmoothCustomScrollView(
+      slivers: [
+        SliverAppbar(
+          title: Text(t.translation),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new),
+            tooltip: t.back,
+            onPressed: () => context.canPop() ? context.pop() : App.pop(),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          sliver: SliverToBoxAdapter(
+            child: _SettingCard(
+              children: [
+                // ── 语言选择条 ──
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
                     children: [
-                      const Spacer(),
-                      IconButton(
-                        onPressed: _translationController.isTranslating
-                            ? null
-                            : _translate,
-                        icon: _translationController.isTranslating
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                Icons.translate,
-                                size: 24,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                      Expanded(
+                        child: _langPill(
+                          scheme,
+                          icon: Icons.auto_awesome,
+                          label: t.autoDetect,
+                          caption: t.sourceLanguage,
+                          onTap: null,
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        onPressed: () => _showDialogSelector(context),
-                        icon: Icon(
-                          Icons.keyboard_double_arrow_down_rounded,
-                          size: 24,
-                          color: Theme.of(context).colorScheme.primary,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Icon(
+                          Icons.arrow_forward,
+                          size: 18,
+                          color: scheme.outline,
+                        ),
+                      ),
+                      Expanded(
+                        child: _langPill(
+                          scheme,
+                          icon: Icons.flag_outlined,
+                          label: _selectedLanguage.label,
+                          caption: t.targetLanguage,
+                          onTap: _showLanguageSelector,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                // ── 常用目标语言快捷切换 ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final code in _quickTargets)
+                        if (translationSorts.any((s) => s.extData == code))
+                          ChoiceChip(
+                            label: Text(
+                              translationSorts
+                                  .firstWhere((s) => s.extData == code)
+                                  .label,
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            selected: _selectedLanguage.extData == code,
+                            visualDensity: VisualDensity.compact,
+                            onSelected: (_) => setState(() {
+                              _selectedLanguage = translationSorts.firstWhere(
+                                (s) => s.extData == code,
+                              );
+                            }),
+                          ),
+                    ],
+                  ),
+                ),
+                const Divider(indent: 16, endIndent: 16),
+                // ── 输入区 ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: TextField(
+                    controller: _inputController,
+                    maxLines: 7,
+                    minLines: 4,
+                    decoration: InputDecoration(
+                      hintText: t.enterTextToTranslate,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
                     ),
-                    child: SingleChildScrollView(
-                      reverse: true,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest
-                              .withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: const EdgeInsets.all(12),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${_inputController.text.length} ${t.characters}',
+                        style: TextStyle(fontSize: 12, color: scheme.outline),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.delete_sweep_outlined, size: 20),
+                        tooltip: t.clear,
+                        onPressed: _inputController.text.isEmpty
+                            ? null
+                            : _clear,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // ── 翻译按钮 ──
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          sliver: SliverToBoxAdapter(
+            child: ListenableBuilder(
+              listenable: _translationController,
+              builder: (context, _) {
+                final translating = _translationController.isTranslating;
+                return SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: translating ? null : _translate,
+                    icon: translating
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.translate),
+                    label: Text(translating ? t.translating : t.translate),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        // ── 结果区 ──
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          sliver: SliverToBoxAdapter(
+            child: ListenableBuilder(
+              listenable: _translationController,
+              builder: (context, _) {
+                final hasResult =
+                    _translationController.hasTranslation &&
+                    _translationController.translatedText != null;
+                if (!hasResult) {
+                  return _SettingCard(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(24),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            TextField(
-                              controller: _inputController,
-                              maxLines: 3,
-                              scrollPadding: EdgeInsets.only(
-                                bottom:
-                                    MediaQuery.of(context).viewInsets.bottom +
-                                    100,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: t.enterTextToTranslate,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                filled: true,
-                              ),
+                            Icon(
+                              Icons.translate,
+                              size: 40,
+                              color: scheme.outlineVariant,
                             ),
                             const SizedBox(height: 12),
-                            if (_translationController.hasTranslation) ...[
-                              const SizedBox(height: 12),
-                              Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.translate, size: 14),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          t.translationResult,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            color: Colors.grey.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            'Powered by $poweredName',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant
-                                                  .withValues(alpha: 0.8),
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    CustomMarkdownWidget(
-                                      data:
-                                          _translationController
-                                              .translatedText ??
-                                          '',
-                                    ),
-                                  ],
-                                ),
+                            Text(
+                              t.noTranslationYet,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: scheme.onSurfaceVariant,
                               ),
-                            ],
+                            ),
                           ],
                         ),
                       ),
+                    ],
+                  );
+                }
+                final result = _translationController.translatedText!;
+                return _SettingCard(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.translate, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            t.translationResult,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.copy_outlined, size: 18),
+                            tooltip: t.copy,
+                            onPressed: _copyResult,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                      child: SelectableText(
+                        result,
+                        style: const TextStyle(fontSize: 15, height: 1.6),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: scheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Powered by $poweredName',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: scheme.onSecondaryContainer,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '${result.length} ${t.characters}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: scheme.outline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _langPill(
+    ColorScheme scheme, {
+    required IconData icon,
+    required String label,
+    required String caption,
+    required VoidCallback? onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 14, color: scheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  caption,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (onTap != null)
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

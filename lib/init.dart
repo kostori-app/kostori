@@ -5,6 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_saf/flutter_saf.dart';
 import 'package:kostori/database/bangumi.dart';
+import 'package:kostori/foundation/ai_service/assistant_profile.dart';
+import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
+import 'package:kostori/foundation/ai_service/plugin_module.dart';
+import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
@@ -18,6 +22,13 @@ import 'package:kostori/i18n/i18n_utils.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/network/cookie_jar.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
+import 'package:kostori/skills/builtins/anime_info_skill.dart';
+import 'package:kostori/skills/builtins/bangumi_skill.dart';
+import 'package:kostori/skills/builtins/device_info_skill.dart';
+import 'package:kostori/skills/builtins/log_skill.dart';
+import 'package:kostori/skills/builtins/open_url_skill.dart';
+import 'package:kostori/skills/builtins/time_skill.dart';
+import 'package:kostori/skills/skill_registry.dart';
 import 'package:kostori/utils/app_links.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
@@ -50,6 +61,25 @@ Future<void> init() async {
     AnimeSourceManager().init().wait(),
   ];
   await Future.wait(futures);
+  SkillRegistry.instance.registerAll([
+    OpenUrlSkill(),
+    DeviceInfoSkill(),
+    GetTimeSkill(),
+    QueryWatchHistorySkill(),
+    SearchAnimeSkill(),
+    QueryFavoritesSkill(),
+    QueryWatchStatsSkill(),
+    SearchBangumiSkill(),
+    QueryBangumiCharactersSkill(),
+    SearchBangumiPersonSkill(),
+    QueryLogsSkill(),
+  ]);
+  await SkillRegistry.instance.syncMcp().wait();
+  await AssistantProfileStore.instance.init().wait();
+  await PromptInjectionStore.instance.init().wait();
+  await WorldBookStore.instance.init().wait();
+  await PluginStore.instance.init().wait();
+  await OpenAiProviderRegistry.refreshKeyFormats().wait();
   ApiKeyManager().init();
   CacheManager().setLimitSize(appdata.settings['cacheSize']);
   _checkOldConfigs();

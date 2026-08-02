@@ -64,6 +64,7 @@ class _TranslationSettingsState extends State<TranslationSettings> {
                             'qiniu',
                             'deepseek',
                             'openrouter',
+                            'ohmygpt',
                           ].contains(source);
 
                           return ListTile(
@@ -126,15 +127,6 @@ class _TranslationSettingsState extends State<TranslationSettings> {
               ],
             ),
           ),
-        ),
-        SliverPadding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 8,
-            bottom: context.padding.bottom + 80,
-          ),
-          sliver: SliverToBoxAdapter(child: _ManualTranslationCard()),
         ),
       ],
     );

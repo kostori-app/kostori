@@ -26,16 +26,18 @@ class Sheet extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      child: Container(
-        color: cs.surface,
+      child: SizedBox(
         height: height,
-        child: Column(
-          children: [
-            _SheetHandle(),
-            _SheetHeader(title: title, icon: icon, trailing: headerTrailing),
-            Expanded(child: builder(context, sc)),
-            if (footer != null) footer!,
-          ],
+        child: Material(
+          color: cs.surface,
+          child: Column(
+            children: [
+              _SheetHandle(),
+              _SheetHeader(title: title, icon: icon, trailing: headerTrailing),
+              Expanded(child: builder(context, sc)),
+              if (footer != null) footer!,
+            ],
+          ),
         ),
       ),
     );

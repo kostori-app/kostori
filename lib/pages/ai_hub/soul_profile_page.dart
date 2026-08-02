@@ -27,31 +27,20 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
         App.rootContext.showMessage(message: t.noLikedAnimeFound);
         return;
       }
-      final cfg = await AiDatabase.instance.aiConfigDao.getByKey(
-        _soulProfileConfigKey,
+      await PromptInjectionStore.instance.ensureLoaded();
+      final injection = PromptInjectionStore.instance.findById(
+        kInjectionSoulProfiler,
       );
-      if (cfg == null) {
-        App.rootContext.showMessage(message: t.aiConfigMissing);
-        return;
-      }
-      final systemPrompt = cfg.systemPrompt
+      final systemPrompt = (injection?.content ?? soulProfilerSystemPrompt)
           .replaceAll('{animeCount}', '${data.likedItems.length}')
           .replaceAll('{animeNames}', data.animeNames)
           .replaceAll('{topTags}', data.topTags);
-
-      await AiDatabase.instance.aiConfigDao.upsert(
-        AiConfigsCompanion.insert(
-          configKey: '${_soulProfileConfigKey}_runtime',
-          systemPrompt: systemPrompt,
-          temperature: const Value(0.9),
-        ),
-      );
 
       final result = await AiConversationService().runTask(
         provider: _source,
         taskType: 'soul_profile',
         prompt: '分析我的番剧品味，给出灵魂侧写',
-        configKey: '${_soulProfileConfigKey}_runtime',
+        systemPrompt: systemPrompt,
         sessionTitle: '灵魂侧写 ${DateTime.now().toString().substring(0, 10)}',
       );
       if (result.success) {
@@ -63,9 +52,6 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
       App.rootContext.showMessage(message: 'Error: $e');
       Log.error('SoulProfile', e.toString());
     } finally {
-      await AiDatabase.instance.aiConfigDao.deleteByKey(
-        '${_soulProfileConfigKey}_runtime',
-      );
       if (mounted) setState(() => _isLoading = false);
     }
   }
