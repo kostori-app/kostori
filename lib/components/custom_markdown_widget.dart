@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:markdown_widget/config/configs.dart';
+import 'package:markdown_widget/config/markdown_generator.dart';
 import 'package:markdown_widget/widget/blocks/container/blockquote.dart';
+import 'package:markdown_widget/widget/blocks/container/table.dart';
 import 'package:markdown_widget/widget/blocks/leaf/code_block.dart';
 import 'package:markdown_widget/widget/blocks/leaf/heading.dart';
 import 'package:markdown_widget/widget/blocks/leaf/paragraph.dart';
 import 'package:markdown_widget/widget/inlines/code.dart';
-import 'package:markdown_widget/widget/markdown_block.dart';
 
 class CustomMarkdownWidget extends StatelessWidget {
   const CustomMarkdownWidget({
@@ -16,6 +17,7 @@ class CustomMarkdownWidget extends StatelessWidget {
     this.selectable = true,
     this.padding = EdgeInsets.zero,
     this.textScaleFactor,
+    this.indentFirstLine = true,
   });
 
   final String data;
@@ -29,6 +31,9 @@ class CustomMarkdownWidget extends StatelessWidget {
   /// 文字缩放比例，默认跟随系统
   final double? textScaleFactor;
 
+  /// 是否对普通段落加首行缩进前缀（AI 聊天等场景设为 false 以保持正常 markdown）
+  final bool indentFirstLine;
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
@@ -36,6 +41,8 @@ class CustomMarkdownWidget extends StatelessWidget {
     final textColor = isDark ? Colors.white : Colors.black87;
     final codeBackground = isDark ? Colors.white10 : Colors.grey[100]!;
     final codeBorder = isDark ? Colors.white12 : Colors.grey[300]!;
+    final tableBorderColor = isDark ? Colors.white24 : Colors.grey[300]!;
+    final tableHeaderBg = isDark ? Colors.white10 : Colors.grey[100]!;
 
     final config = MarkdownConfig(
       configs: [
@@ -105,14 +112,56 @@ class CustomMarkdownWidget extends StatelessWidget {
           textColor: textColor.toOpacity(0.75),
           sideColor: colorScheme.primary,
         ),
+
+        // 表格：表头加粗带背景、细边框、单元格内边距、文字换行、
+        // 列宽自适应；窄屏时整表可横向滚动（不撑破气泡）。
+        TableConfig(
+          border: TableBorder.all(color: tableBorderColor, width: 0.6),
+          headerRowDecoration: BoxDecoration(color: tableHeaderBg),
+          headerStyle: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            height: 1.4,
+          ),
+          bodyStyle: TextStyle(color: textColor, fontSize: 13, height: 1.4),
+          headPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          bodyPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          wrapper: (child) => ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: child,
+            ),
+          ),
+        ),
       ],
     );
 
-    Widget markdown = MarkdownBlock(
-      data: Utils.normalizeData(data),
-      config: config,
-      selectable: selectable,
-    );
+    // 自行组装而非直接 MarkdownBlock，以便捕获解析异常：
+    // 流式输出中途（如表格未闭合）解析失败时回退为纯文本，避免闪崩；
+    // 输出完成后会自动渲染为完整表格。
+    Widget markdown;
+    try {
+      final generator = MarkdownGenerator();
+      final widgets = generator.buildWidgets(
+        Utils.normalizeData(data, indentFirstLine: indentFirstLine),
+        config: config,
+      );
+      final column = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      );
+      markdown = selectable ? SelectionArea(child: column) : column;
+    } catch (_) {
+      markdown = SelectionArea(
+        child: SelectableText(
+          data,
+          style: TextStyle(color: textColor, fontSize: 14, height: 1.6),
+        ),
+      );
+    }
 
     if (textScaleFactor != null) {
       markdown = MediaQuery(

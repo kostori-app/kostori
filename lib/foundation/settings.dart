@@ -81,6 +81,7 @@ abstract class SettingsData with _$SettingsData {
     String? getBangumiDataTime,
     @Default(true) bool enableSkipUpdate,
     @Default(false) bool exploreHorizontalLayout,
+    @Default('') String userNickname,
   }) = _SettingsData;
 
   factory SettingsData.fromJson(Map<String, dynamic> json) =>

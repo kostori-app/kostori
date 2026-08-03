@@ -18,9 +18,12 @@ import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/utils.dart';
 
 class BangumiSearchPage extends ConsumerStatefulWidget {
-  const BangumiSearchPage({super.key, this.tag});
+  const BangumiSearchPage({super.key, this.tag, this.keyword = ''});
 
   final String? tag;
+
+  /// 可选：进入页面后自动以该关键词搜索
+  final String keyword;
 
   @override
   ConsumerState<BangumiSearchPage> createState() => _BangumiSearchPageState();
@@ -46,7 +49,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
 
   String keyword = '';
 
-  String sort = 'rank';
+  String sort = 'match';
 
   bool _isLoading = false;
   bool _showFab = false;
@@ -71,7 +74,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     t.highestRating,
   ];
 
-  String selectedOption = t.topRank;
+  String selectedOption = t.bestMatch;
   final Map<String, String> optionToSortType = {
     t.bestMatch: 'match',
     t.topRank: 'rank',
@@ -98,6 +101,11 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
     final perRow = appdata.settings['bangumiCardPerRow'];
     if (perRow != null && perRow.toString().isNotEmpty) {
       fixedCrossAxisCount = int.tryParse(perRow.toString());
+    }
+    if (widget.keyword.isNotEmpty) {
+      keyword = widget.keyword;
+      _controller.text = widget.keyword;
+      _loadinitial();
     }
     if (widget.tag != null) {
       tags.add(widget.tag!);

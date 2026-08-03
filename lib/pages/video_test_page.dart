@@ -185,11 +185,31 @@ final videoTestProvider =
       (ref) => VideoTestNotifier(),
     );
 
-class VideoTestPage extends ConsumerWidget {
-  const VideoTestPage({super.key});
+class VideoTestPage extends ConsumerStatefulWidget {
+  const VideoTestPage({super.key, this.url});
+
+  /// 可选：进入页面后自动播放该视频地址
+  final String? url;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<VideoTestPage> createState() => _VideoTestPageState();
+}
+
+class _VideoTestPageState extends ConsumerState<VideoTestPage> {
+  @override
+  void initState() {
+    super.initState();
+    final url = widget.url;
+    if (url != null && url.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(videoTestProvider.notifier).load(url, const []);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notifier = ref.read(videoTestProvider.notifier);
 
     return Scaffold(

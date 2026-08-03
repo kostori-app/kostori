@@ -19,11 +19,26 @@ import 'package:path_provider/path_provider.dart';
 class Utils {
   Utils._();
 
-  static String normalizeData(String raw) {
+  static String normalizeData(String raw, {bool indentFirstLine = true}) {
     final lines = raw.split('\n').map((line) => line.trimLeft()).toList();
 
-    final buffer = StringBuffer();
+    final out = <String>[];
     bool inCodeBlock = false;
+    bool inTable = false;
+
+    bool isTableLine(String line) {
+      final t = line.trim();
+      if (t.isEmpty) return false;
+      // 以 | 开头并含 |（单元格行或 |---| 分隔行）
+      if (t.startsWith('|') && t.contains('|') && t.length > 1) return true;
+      // 无前导 | 的 GFM 分隔行，如 `--- | ---` / `:---: | :---:`
+      if (t.contains('|') && RegExp(r'^[\s:|-]+\|[\s:|-]+$').hasMatch(t)) {
+        return true;
+      }
+      // 表格延续（前一行是表格、当前行含 |）
+      if (inTable && t.contains('|')) return true;
+      return false;
+    }
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
@@ -33,16 +48,30 @@ class Utils {
       // 追踪代码块状态
       if (isCodeFence) {
         inCodeBlock = !inCodeBlock;
-        buffer.writeln(line);
+        out.add(line);
         continue;
       }
 
       // 代码块内部原样输出，不处理
       if (inCodeBlock) {
-        buffer.writeln(line);
+        out.add(line);
         continue;
       }
 
+      if (isBlank) {
+        inTable = false;
+        out.add(line);
+        continue;
+      }
+
+      // 表格行原样输出（不加缩进前缀，保持 GFM 表格语法完整）
+      if (isTableLine(line)) {
+        inTable = true;
+        out.add(line);
+        continue;
+      }
+
+      inTable = false;
       final isHeading = line.startsWith('#');
       final isList =
           line.startsWith('- ') ||
@@ -51,27 +80,41 @@ class Utils {
       final isBlockquote = line.startsWith('>');
       final isHr = RegExp(r'^[-*_]{3,}$').hasMatch(line.trim());
 
-      if (isBlank || isHeading || isList || isBlockquote || isHr) {
-        buffer.writeln(line);
-      } else {
+      if (isHeading || isList || isBlockquote || isHr) {
+        out.add(line);
+      } else if (indentFirstLine) {
         // 零宽空格 + 两个全角空格，确保首行缩进在 markdown_widget 中生效
-        buffer.writeln('\u200b\u3000\u3000$line');
+        out.add('\u200b\u3000\u3000$line');
+      } else {
+        // 正常 markdown 排布：不加缩进前缀
+        out.add(line);
       }
     }
 
-    // 每个非空行后插入空行
-    final withSpacing = buffer
-        .toString()
-        .split('\n')
-        .fold<List<String>>([], (acc, line) {
-          acc.add(line);
-          if (line.trim().isNotEmpty && line.trim() != '\u200b') acc.add('');
-          return acc;
-        })
-        .join('\n');
+    // 非空行后插入空行；表格行之间不插（保持表头/分隔行/内容行连续）
+    final withSpacing = <String>[];
+    for (var i = 0; i < out.length; i++) {
+      final line = out[i];
+      withSpacing.add(line);
+      if (line.trim().isEmpty) continue;
+      final next = i + 1 < out.length ? out[i + 1] : '';
+      if (_isTableSyntaxLine(line) && _isTableSyntaxLine(next)) continue;
+      withSpacing.add('');
+    }
 
     // 合并多余空行
-    return withSpacing.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+    return withSpacing.join('\n').replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
+
+  /// 判断是否为 GFM 表格行（表头/分隔/内容行）
+  static bool _isTableSyntaxLine(String line) {
+    final t = line.trim();
+    if (t.isEmpty) return false;
+    if (t.startsWith('|') && t.contains('|') && t.length > 1) return true;
+    if (t.contains('|') && RegExp(r'^[\s:|-]+\|[\s:|-]+$').hasMatch(t)) {
+      return true;
+    }
+    return false;
   }
 
   static String colorToHex(Color color) {

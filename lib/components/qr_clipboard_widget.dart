@@ -318,6 +318,8 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
     BuildContext context,
     DropDoneDetails details,
   ) async {
+    // 动漫识别页激活时跳过，避免干扰其拖图识别
+    if (App.animeRecognizeActive) return;
     final file = details.files.firstOrNull;
     if (file == null) return;
 
@@ -337,6 +339,7 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
   }
 
   Future<void> _handleDroppedUrl(BuildContext context, String url) async {
+    if (App.animeRecognizeActive) return;
     if (!url.startsWith('http')) return;
 
     setState(() => _isAnalyzing = true);

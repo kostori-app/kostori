@@ -101,6 +101,9 @@ class AiTasks extends Table {
 
   TextColumn get inputContent => text()();
 
+  /// 用户消息附带的图片（data URL 的 JSON 数组），用于聊天界面展示
+  TextColumn get inputImages => text().nullable()();
+
   TextColumn get outputContent => text().nullable()();
 
   TextColumn get thought => text().nullable()();
@@ -308,7 +311,7 @@ class AiDatabase extends _$AiDatabase {
   AiDatabase._() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -421,6 +424,10 @@ class AiDatabase extends _$AiDatabase {
         await _addColumnIfMissing(m, aiModels, aiModels.inputModality);
         await _addColumnIfMissing(m, aiModels, aiModels.outputModality);
         await _addColumnIfMissing(m, aiModels, aiModels.supportsReasoning);
+      }
+      if (from < 11) {
+        // 用户消息附带图片（聊天界面展示）
+        await _addColumnIfMissing(m, aiTasks, aiTasks.inputImages);
       }
     },
     beforeOpen: (details) async {

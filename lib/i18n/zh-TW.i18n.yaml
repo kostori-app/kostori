@@ -1389,6 +1389,9 @@ thinking: 思考中
 streamInterrupted: 生成已中斷
 showThinking: 查看思考過程
 hideThinking: 收起思考過程
+viewProcess: 查看過程
+stepThinking: 思考
+stepTool: 工具
 thinkingInProgress: 正在思考...
 statsCached: 快取
 jumpToBottom: 回到底部
@@ -1499,6 +1502,21 @@ profileTabRequest: 請求
 profileTabMcp: MCP
 profileMcpHint: 綁定本助手的 MCP 伺服器（連線後自動匯入工具）
 profileTabLocalTools: 工具技能
+userNickname: 使用者暱稱
+userNicknameHint: 聊天中顯示的使用者名稱，並注入 {{user_nickname}}
+animeRecognize: 動漫識別
+chooseImageToRecognize: 選擇一張圖片，識別動漫來源
+chooseImage: 選擇圖片
+recognizing: 識別中...
+noAnimeFound: 未識別到動漫，可能不是動漫圖片
+chooseAnotherImage: 換一張圖片試試
+recognizeResult: 識別結果
+episodeLabel: "第"
+unknownEpisode: 未知集數
+openVideoPreview: 影片預覽
+discussInAi: AI 討論
+dropImageToRecognize: 放開即可識別圖片
+viewOnBangumi: 查看 Bangumi
 templateVarHint: "可用變數："
 profilePersonaRequired: 請先選擇人格
 defaultAssistantCannotDelete: 系統預設助手不可刪除
@@ -1596,6 +1614,7 @@ worldBookNoHits: 沒有條目命中
 noWorldBookEntriesYet: 暫無世界書條目
 auxTemperature: Temperature
 selectAssistantProfile: 選擇助手檔案
+selectModel: 選擇模型
 profilePersonalityTags: 性格標籤
 profilePersonalityTagsHint: 多選標籤，如 理性/幽默/毒舌/溫柔
 profileCatchphrases: 口頭禪

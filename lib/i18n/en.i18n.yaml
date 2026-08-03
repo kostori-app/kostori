@@ -1387,6 +1387,9 @@ thinking: Thinking
 streamInterrupted: Generation interrupted
 showThinking: Show thinking
 hideThinking: Hide thinking
+viewProcess: View process
+stepThinking: Thinking
+stepTool: Tool
 thinkingInProgress: Thinking...
 statsCached: cached
 jumpToBottom: Back to bottom
@@ -1497,6 +1500,21 @@ profileTabRequest: Request
 profileTabMcp: MCP
 profileMcpHint: Bind MCP servers for this assistant (tools are imported on connection)
 profileTabLocalTools: Tools
+userNickname: User nickname
+userNicknameHint: Shown as the user name and injected into {{user_nickname}}
+animeRecognize: Anime recognition
+chooseImageToRecognize: Pick an image to identify the anime source
+chooseImage: Choose image
+recognizing: Recognizing...
+noAnimeFound: No anime recognized, this may not be an anime image
+chooseAnotherImage: Try another image
+recognizeResult: Recognition results
+episodeLabel: "EP"
+unknownEpisode: Unknown episode
+openVideoPreview: Video preview
+discussInAi: Discuss in AI
+dropImageToRecognize: Drop an image to recognize
+viewOnBangumi: View on Bangumi
 templateVarHint: "Available variables: "
 profilePersonaRequired: Please select a persona first
 defaultAssistantCannotDelete: The system default assistant cannot be deleted
@@ -1594,6 +1612,7 @@ worldBookNoHits: No entries matched
 noWorldBookEntriesYet: No world book entries yet
 auxTemperature: Temperature
 selectAssistantProfile: Select an assistant
+selectModel: Select model
 profilePersonalityTags: Personality tags
 profilePersonalityTagsHint: "Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle"
 profileCatchphrases: Catchphrases

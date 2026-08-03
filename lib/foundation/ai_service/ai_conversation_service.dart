@@ -35,6 +35,86 @@ const _kAuxTitleProvider = 'titleProvider';
 const _kAuxTitleModel = 'titleModel';
 
 /// 流式对话的进度更新（各文本字段为当前轮次累计值）
+/// 步骤类型：思考 / 工具调用
+enum AiStepType { thinking, toolCall }
+
+/// 步骤状态：进行中 / 完成 / 出错
+enum AiStepStatus { running, done, error }
+
+/// 思考/工具调用步骤（StepList 的单个数据单元）
+class AiStep {
+  final AiStepType type;
+  final AiStepStatus status;
+  final String title;
+  final String content;
+  final String? toolName;
+  final Map<String, dynamic>? args;
+  final String? result;
+  final DateTime startTime;
+  final int? durationMs;
+
+  const AiStep({
+    required this.type,
+    required this.status,
+    required this.title,
+    this.content = '',
+    this.toolName,
+    this.args,
+    this.result,
+    required this.startTime,
+    this.durationMs,
+  });
+
+  AiStep copyWith({
+    AiStepStatus? status,
+    String? title,
+    String? content,
+    String? toolName,
+    Map<String, dynamic>? args,
+    String? result,
+    int? durationMs,
+  }) => AiStep(
+    type: type,
+    status: status ?? this.status,
+    title: title ?? this.title,
+    content: content ?? this.content,
+    toolName: toolName ?? this.toolName,
+    args: args ?? this.args,
+    result: result ?? this.result,
+    startTime: startTime,
+    durationMs: durationMs ?? this.durationMs,
+  );
+
+  factory AiStep.fromJson(Map<String, dynamic> json) => AiStep(
+    type: AiStepType.values.asNameMap()[json['type']] ?? AiStepType.thinking,
+    status:
+        AiStepStatus.values.asNameMap()[json['status']] ?? AiStepStatus.done,
+    title: (json['title'] as String?) ?? '',
+    content: (json['content'] as String?) ?? '',
+    toolName: json['toolName'] as String?,
+    args: json['args'] is Map
+        ? (json['args'] as Map).cast<String, dynamic>()
+        : null,
+    result: json['result'] as String?,
+    startTime:
+        DateTime.tryParse((json['startTime'] as String?) ?? '') ??
+        DateTime.now(),
+    durationMs: (json['durationMs'] as num?)?.toInt(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'status': status.name,
+    'title': title,
+    'content': content,
+    if (toolName != null) 'toolName': toolName,
+    if (args != null) 'args': args,
+    if (result != null) 'result': result,
+    'startTime': startTime.toIso8601String(),
+    if (durationMs != null) 'durationMs': durationMs,
+  };
+}
+
 class AiChatUpdate {
   /// 当前已生成的回复文本
   final String text;
@@ -44,6 +124,9 @@ class AiChatUpdate {
 
   /// 正在执行的工具名（无则 null）
   final String? toolStatus;
+
+  /// 思考/工具调用步骤列表（按时间顺序，流式增量）
+  final List<AiStep> steps;
 
   /// 是否已完成（最终答案已落库）
   final bool done;
@@ -59,6 +142,7 @@ class AiChatUpdate {
     this.text = '',
     this.reasoning = '',
     this.toolStatus,
+    this.steps = const [],
     this.done = false,
     this.errorMessage,
     this.usage,
@@ -138,6 +222,20 @@ class AiConversationService {
       //
     }
     return const [];
+  }
+
+  /// 去除工具结果中的 UI 专用候选卡片标记（模型可见文本不携带原始 JSON）
+  static String _stripCardMarkers(String text) {
+    var result = text;
+    for (final marker in <RegExp>[
+      RegExp(r'\[KOSTORI_BANGUMI_CARDS\][\s\S]*?\[/KOSTORI_BANGUMI_CARDS\]'),
+      RegExp(
+        r'\[KOSTORI_CHARACTER_CARDS\][\s\S]*?\[/KOSTORI_CHARACTER_CARDS\]',
+      ),
+    ]) {
+      result = result.replaceAll(marker, '');
+    }
+    return result.trim();
   }
 
   /// 会话已生成的后续追问建议
@@ -221,13 +319,20 @@ class AiConversationService {
         ? contextMessages.sublist(contextMessages.length - maxContextMessages)
         : contextMessages;
 
+    // 图片不直接塞给模型（部分服务商不支持图片，如 DeepSeek），
+    // 由 recognize_anime 技能读取上下文图片处理；并给模型一条提示。
+    final hasImages = images != null && images.isNotEmpty;
+    final modelUserText = hasImages
+        ? '$userMessage\n\n【提示】用户附带了一张图片。如需识别图片内容/来源，'
+              '请调用"识别动漫"（recognize_anime）技能，不要尝试直接读取图片。'
+        : userMessage;
     final messages = <AiMessage>[
       for (final m in trimmed)
         if (m.role == 'user')
           AiUserMessage(content: m.inputContent)
         else
           AiAssistantMessage(content: m.outputContent ?? ''),
-      AiUserMessage(content: userMessage, parts: images),
+      AiUserMessage(content: modelUserText, parts: null),
     ];
 
     // 4. 记录用户消息
@@ -237,13 +342,37 @@ class AiConversationService {
         taskType: taskType,
         role: const Value('user'),
         inputContent: userMessage,
+        inputImages: hasImages
+            ? Value(jsonEncode([for (final img in images) img.dataUrl]))
+            : const Value.absent(),
         provider: provider,
       ),
     );
 
+    // 每轮发送重置/设置上下文图片（供 recognize_anime 等技能使用，避免残留上一张）
+    if (images != null && images.isNotEmpty) {
+      final parsed = parseDataUrl(images.first.dataUrl);
+      if (parsed != null) {
+        SkillRegistry.instance.setContextImage(base64Decode(parsed.data));
+      } else {
+        SkillRegistry.instance.setContextImage(null);
+      }
+    } else {
+      SkillRegistry.instance.setContextImage(null);
+    }
+
     // 5. 调用 AI（支持 SkillRegistry 工具）
     if (useTools && profile != null && profile.enabledSkillIds.isNotEmpty) {
       SkillRegistry.instance.setEnabled(profile.enabledSkillIds);
+    }
+    // 设置上下文图片供 recognize_anime 等技能使用（结束后清空）
+    if (images != null && images.isNotEmpty) {
+      final parsed = parseDataUrl(images.first.dataUrl);
+      SkillRegistry.instance.setContextImage(
+        parsed == null ? null : base64Decode(parsed.data),
+      );
+    } else {
+      SkillRegistry.instance.setContextImage(null);
     }
     final result = await _chat(
       ai,
@@ -255,6 +384,7 @@ class AiConversationService {
       params: _profileParams(profile),
       configOverride: await _configOverrideFor(ai, provider, profile),
     );
+    SkillRegistry.instance.setContextImage(null);
 
     // 6. 记录 AI 回复
     if (result.success) {
@@ -357,13 +487,19 @@ class AiConversationService {
         ? contextMessages.sublist(contextMessages.length - maxContextMessages)
         : contextMessages;
 
+    // 图片不直接塞给模型（部分服务商不支持图片），由 recognize_anime 技能处理
+    final hasImages = images != null && images.isNotEmpty;
+    final modelUserText = hasImages
+        ? '$userMessage\n\n【提示】用户附带了一张图片。如需识别图片内容/来源，'
+              '请调用"识别动漫"（recognize_anime）技能，不要尝试直接读取图片。'
+        : userMessage;
     var aiMessages = <AiMessage>[
       for (final m in trimmed)
         if (m.role == 'user')
           AiUserMessage(content: m.inputContent)
         else
           AiAssistantMessage(content: m.outputContent ?? ''),
-      AiUserMessage(content: userMessage, parts: images),
+      AiUserMessage(content: modelUserText, parts: null),
     ];
 
     // 4. 记录用户消息
@@ -373,9 +509,22 @@ class AiConversationService {
         taskType: taskType,
         role: const Value('user'),
         inputContent: userMessage,
+        inputImages: hasImages
+            ? Value(jsonEncode([for (final img in images) img.dataUrl]))
+            : const Value.absent(),
         provider: provider,
       ),
     );
+
+    // 4.5 每轮发送重置/设置上下文图片（供 recognize_anime 等技能使用，避免残留上一张）
+    if (hasImages) {
+      final parsed = parseDataUrl(images.first.dataUrl);
+      SkillRegistry.instance.setContextImage(
+        parsed == null ? null : base64Decode(parsed.data),
+      );
+    } else {
+      SkillRegistry.instance.setContextImage(null);
+    }
 
     // 5. 工具能力（SkillRegistry 统一产出：内置技能 + MCP 适配器；
     //    会话关联助手档案时按其 enabledSkillIds 限定启用集合）
@@ -401,6 +550,17 @@ class AiConversationService {
     var finished = false;
     final startedAt = DateTime.now();
     final executedTools = <String>[];
+    // 步骤列表：思考/工具调用按时间顺序各成独立块
+    final steps = <AiStep>[];
+    var thinkingStepIndex = -1;
+    String thinkingTitle(String reasoning) {
+      final firstLine = reasoning.split('\n').first.trim();
+      if (firstLine.isEmpty) return '思考中...';
+      return firstLine.length > 18
+          ? '${firstLine.substring(0, 18)}...'
+          : firstLine;
+    }
+
     // 思考阶段计时：以首个推理分片为起点、推理内容停止增长为终点
     DateTime? thinkingStartedAt;
     DateTime? thinkingLastSeenAt;
@@ -411,6 +571,7 @@ class AiConversationService {
       var currentReasoning = '';
       var roundToolCalls = <AiToolCall>[];
       var roundDone = false;
+      thinkingStepIndex = -1;
 
       try {
         await for (final chunk in ai.chatStream(
@@ -426,6 +587,7 @@ class AiConversationService {
               text: currentText,
               reasoning: currentReasoning,
               errorMessage: chunk.errorMessage,
+              steps: List.unmodifiable(steps),
             );
             return;
           }
@@ -439,12 +601,31 @@ class AiConversationService {
             thinkingStartedAt ??= DateTime.now();
             thinkingLastSeenAt = DateTime.now();
           }
+          // 思考增量 → 新建/更新当前思考步骤（独立成块）
+          if (currentReasoning.isNotEmpty) {
+            if (thinkingStepIndex < 0) {
+              thinkingStepIndex = steps.length;
+              steps.add(
+                AiStep(
+                  type: AiStepType.thinking,
+                  status: AiStepStatus.running,
+                  title: '思考中...',
+                  startTime: DateTime.now(),
+                ),
+              );
+            }
+            steps[thinkingStepIndex] = steps[thinkingStepIndex].copyWith(
+              content: currentReasoning,
+              title: thinkingTitle(currentReasoning),
+            );
+          }
           yield AiChatUpdate(
             text: currentText,
             reasoning: currentReasoning,
             toolStatus: roundToolCalls.isEmpty
                 ? null
                 : roundToolCalls.last.name,
+            steps: List.unmodifiable(steps),
           );
           if (chunk.done) break;
         }
@@ -455,6 +636,7 @@ class AiConversationService {
           text: currentText,
           reasoning: currentReasoning,
           errorMessage: e.toString(),
+          steps: List.unmodifiable(steps),
         );
         return;
       }
@@ -466,6 +648,7 @@ class AiConversationService {
           text: currentText,
           reasoning: currentReasoning,
           errorMessage: '对话流意外中断',
+          steps: List.unmodifiable(steps),
         );
         return;
       }
@@ -481,18 +664,42 @@ class AiConversationService {
       allText.write(currentText);
       allReasoning.write(currentReasoning);
 
-      // 有工具调用：并行执行并继续下一轮
+      // 本轮思考结束 → 标记 done
+      if (thinkingStepIndex >= 0) {
+        final s = steps[thinkingStepIndex];
+        steps[thinkingStepIndex] = s.copyWith(
+          status: AiStepStatus.done,
+          durationMs: DateTime.now().difference(s.startTime).inMilliseconds,
+          title: thinkingTitle(s.content),
+        );
+        thinkingStepIndex = -1;
+      }
+
+      // 有工具调用：并行执行并继续下一轮（新建独立工具步骤）
       if (roundToolCalls.isNotEmpty && toolHandler != null) {
         final handler = toolHandler;
         for (final tc in roundToolCalls) {
           executedTools.add(tc.name);
         }
+        final toolStepIndex = steps.length;
+        final toolNames = roundToolCalls.map((tc) => tc.name).join('、');
+        steps.add(
+          AiStep(
+            type: AiStepType.toolCall,
+            status: AiStepStatus.running,
+            title: '调用 $toolNames',
+            toolName: roundToolCalls.first.name,
+            args: roundToolCalls.first.arguments,
+            startTime: DateTime.now(),
+          ),
+        );
         yield AiChatUpdate(
           text: currentText,
           reasoning: currentReasoning,
           toolStatus: roundToolCalls.length == 1
               ? roundToolCalls.first.name
               : '${roundToolCalls.length} 个工具',
+          steps: List.unmodifiable(steps),
         );
         final results = await Future.wait([
           for (final tc in roundToolCalls)
@@ -510,10 +717,29 @@ class AiConversationService {
             AiToolResultMessage(
               toolCallId: roundToolCalls[i].id,
               toolName: roundToolCalls[i].name,
-              result: results[i],
+              // 去除 UI 专用的候选卡片标记，避免模型看到原始 JSON
+              result: _stripCardMarkers(results[i]),
             ),
           ];
         }
+        // 工具步骤完成 → 标记 done/error
+        final toolStep = steps[toolStepIndex];
+        final allOk = results.every((r) => !r.startsWith('工具执行失败'));
+        steps[toolStepIndex] = toolStep.copyWith(
+          result: results.join('\n\n'),
+          status: allOk ? AiStepStatus.done : AiStepStatus.error,
+          durationMs: DateTime.now()
+              .difference(toolStep.startTime)
+              .inMilliseconds,
+        );
+        yield AiChatUpdate(
+          text: currentText,
+          reasoning: currentReasoning,
+          toolStatus: roundToolCalls.length == 1
+              ? roundToolCalls.first.name
+              : '${roundToolCalls.length} 个工具',
+          steps: List.unmodifiable(steps),
+        );
         continue;
       }
 
@@ -527,6 +753,9 @@ class AiConversationService {
     if (allReasoning.isNotEmpty) thought['reasoning'] = allReasoning.toString();
     if (usage != null) thought['usage'] = usage.toJson();
     if (executedTools.isNotEmpty) thought['toolCalls'] = executedTools;
+    if (steps.isNotEmpty) {
+      thought['steps'] = [for (final s in steps) s.toJson()];
+    }
     final durationMs = DateTime.now().difference(startedAt).inMilliseconds;
     if (durationMs > 0) thought['durationMs'] = durationMs;
     final thinkingStarted = thinkingStartedAt;
@@ -556,6 +785,7 @@ class AiConversationService {
     if (taskType == 'chat' && wasFirstMessage) {
       unawaited(_autoTitle(sessionId, provider, userMessage));
     }
+    SkillRegistry.instance.setContextImage(null);
 
     yield AiChatUpdate(
       text: allText.toString(),

@@ -36,6 +36,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   bool _showStreamBubble = false;
   String _streamText = '';
   String _streamReasoning = '';
+  List<AiStep> _streamSteps = const [];
   String? _streamModelName;
   CancelToken? _cancelToken;
 
@@ -188,36 +189,8 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
               .toList()
         : const <AiImagePart>[];
 
-    // ③ 扩展管理：助手未启用"图片理解"时不发送图片
-    if (images.isNotEmpty) {
-      final profile = AssistantProfileStore.instance.find(_profileId ?? '');
-      if (profile != null && !profile.extensionEnabled('image_understanding')) {
-        if (mounted) {
-          App.rootContext.showMessage(
-            message: t.imageUnderstandingDisabled,
-            level: LogLevel.warning,
-          );
-        }
-        return;
-      }
-    }
-
-    // 当前模型是否支持图片
-    if (images.isNotEmpty) {
-      final ai = AiFactory.create(_source);
-      if (ai != null) {
-        final keyRow = await ai.getKeyRow();
-        if (!await ai.modelSupportsVision(keyRow?.model)) {
-          if (mounted) {
-            App.rootContext.showMessage(
-              message: t.modelDoesNotSupportVision,
-              level: LogLevel.warning,
-            );
-          }
-          return;
-        }
-      }
-    }
+    // 图片不直接发送给模型（部分服务商不支持图片，如 DeepSeek 会 400），
+    // 由 recognize_anime 技能通过上下文图片识别处理。
 
     if (rollbackFromId != null) {
       await AiConversationService().rollbackToMessage(
@@ -233,6 +206,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
       _lastError = null;
       _streamText = '';
       _streamReasoning = '';
+      _streamSteps = const [];
       _streamModelName = null;
       _isFollowing = true;
       _reasoningStartedAt = null;
@@ -274,6 +248,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
         setState(() {
           _streamText = u.text;
           _streamReasoning = u.reasoning;
+          _streamSteps = u.steps;
           _toolStatus = u.toolStatus;
           if (u.modelName != null) _streamModelName = u.modelName;
           if (u.done) {
@@ -307,6 +282,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
             _showStreamBubble = false;
             _streamText = '';
             _streamReasoning = '';
+            _streamSteps = const [];
           }
         });
       }
@@ -445,6 +421,15 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     }
   }
 
+  /// 读取剪贴板图片并附加到待发送列表（Ctrl+V 粘贴图片）
+  Future<void> _pasteImage() async {
+    try {
+      final bytes = await Pasteboard.image;
+      if (bytes == null || bytes.isEmpty) return;
+      await _addImage(bytes, 'pasted.png');
+    } catch (_) {}
+  }
+
   Future<void> _addImage(Uint8List bytes, String fileName) async {
     if (!mounted) return;
     setState(() => _isCompressingImage = true);
@@ -554,17 +539,80 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     );
   }
 
-  Widget _buildProfileSettingsButton() {
-    return _buildOptionsIcon(
-      context,
-      icon: Icons.settings_outlined,
-      tooltip: t.assistantSettings,
-      onTap: () async {
-        final profile = _profileId == null
-            ? null
-            : AssistantProfileStore.instance.find(_profileId!);
-        showAssistantProfileEditor(profile: profile);
-      },
+  /// 右上角统一入口：选择助手档案 / 助手设置 / 话题列表
+  Widget _buildTopRightButton() {
+    final scheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: t.more,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: _showTopRightSheet,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            Icons.more_horiz,
+            size: 18,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showTopRightSheet() async {
+    final profile = _profileId == null
+        ? null
+        : AssistantProfileStore.instance.find(_profileId!);
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Sheet(
+        title: t.aiChat,
+        icon: Icons.more_horiz,
+        initialSize: 0.4,
+        builder: (sheetCtx, sc) => ListView(
+          controller: sc,
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.badge_outlined),
+              title: Text(t.selectAssistantProfile),
+              subtitle: Text(
+                profile?.name ?? t.noPersonality,
+                style: const TextStyle(fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showAssistantPicker();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: Text(t.assistantSettings),
+              onTap: () {
+                Navigator.pop(ctx);
+                showAssistantProfileEditor(profile: profile);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.forum_outlined),
+              title: Text(t.topicList),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showSessionDrawer();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -836,51 +884,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   }
 
   Widget _buildModelProviderButton() {
-    final scheme = Theme.of(context).colorScheme;
-    final meta = OpenAiProviderRegistry.allProviders[_source];
-    return StreamBuilder<AiApiKey?>(
-      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(_source),
-      builder: (ctx, snap) {
-        final currentModel = snap.data?.model ?? (meta?.defaultModel ?? '...');
-        final displayName = currentModel.contains('/')
-            ? currentModel.split('/').last
-            : currentModel;
-        return InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: _showProviderModelSheet,
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 190),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.psychology, size: 14, color: scheme.primary),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    '${meta?.name ?? _source} · $displayName',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                Icon(
-                  Icons.expand_more,
-                  size: 14,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    return _buildOptionsIcon(
+      context,
+      icon: Icons.psychology,
+      tooltip: t.selectModel,
+      onTap: _showProviderModelSheet,
     );
   }
 
@@ -953,58 +961,6 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     await _switchProfile(selected);
   }
 
-  Widget _buildProfileButton() {
-    final scheme = Theme.of(context).colorScheme;
-    return ListenableBuilder(
-      listenable: AssistantProfileStore.instance,
-      builder: (context, _) {
-        final store = AssistantProfileStore.instance;
-        final profile = store.find(_profileId ?? '');
-        return Tooltip(
-          message: t.selectAssistantProfile,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: _showAssistantPicker,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 160),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    profile?.icon ?? '🤖',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      profile?.name ?? t.noPersonality,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  Icon(
-                    Icons.expand_more,
-                    size: 14,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildOptionsIcon(
     BuildContext context, {
     required IconData icon,
@@ -1064,15 +1020,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                 },
               ),
         actions: [
-          if (_sessionId != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: Center(child: _buildProfileButton()),
-            ),
-          IconButton(
-            icon: const Icon(Icons.forum_outlined),
-            tooltip: t.topicList,
-            onPressed: _showSessionDrawer,
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Center(child: _buildTopRightButton()),
           ),
         ],
       ),
@@ -1133,7 +1083,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                                               return _StreamingBubble(
                                                 text: _streamText,
                                                 reasoning: _streamReasoning,
-                                                toolStatus: _toolStatus,
+                                                steps: _streamSteps,
                                                 errorText: _lastError,
                                                 modelName: _streamModelName,
                                                 thinkingElapsed:
@@ -1317,7 +1267,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                         ),
                       // 输入行：文本框（图片/文件等入口移入右下"+"面板）
                       Padding(
-                        padding: const EdgeInsets.only(top: 2),
+                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
@@ -1337,6 +1287,14 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                                       return KeyEventResult.handled;
                                     }
                                   }
+                                  // 支持粘贴剪贴板图片（Ctrl+V）
+                                  if (event.logicalKey ==
+                                          LogicalKeyboardKey.keyV &&
+                                      HardwareKeyboard
+                                          .instance
+                                          .isControlPressed) {
+                                    unawaited(_pasteImage());
+                                  }
                                   return KeyEventResult.ignored;
                                 },
                                 child: TextField(
@@ -1350,7 +1308,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                                     hintText: t.inputMessage,
                                     border: InputBorder.none,
                                     contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
+                                      horizontal: 12,
                                       vertical: 12,
                                     ),
                                     isDense: true,
@@ -1361,13 +1319,11 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
                           ],
                         ),
                       ),
-                      // 选项行：助手设置 + 思考程度 + 模型 + 新对话 + "+" + 发送（右下）
+                      // 选项行：思考程度 + 模型 + 新对话 + "+" + 发送（右下）
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 2, 8, 6),
+                        padding: const EdgeInsets.fromLTRB(12, 2, 12, 6),
                         child: Row(
                           children: [
-                            _buildProfileSettingsButton(),
-                            const SizedBox(width: 6),
                             _buildThinkingLevelButton(),
                             const SizedBox(width: 6),
                             _buildModelProviderButton(),
@@ -1879,98 +1835,405 @@ class _ProviderModelList extends StatelessWidget {
 }
 
 /// AI 消息顶部行：模型名 + 思考状态标签（位于 "查看思考" / 思考区正上方）
-class _AiMessageHeader extends StatelessWidget {
-  const _AiMessageHeader({
-    this.modelName,
+/// 格式化消息时间为 HH:mm
+String _fmtTime(DateTime t) {
+  final h = t.hour.toString().padLeft(2, '0');
+  final m = t.minute.toString().padLeft(2, '0');
+  final s = t.second.toString().padLeft(2, '0');
+  return '${t.year}-${t.month.toString().padLeft(2, '0')}-'
+      '${t.day.toString().padLeft(2, '0')} $h:$m:$s';
+}
+
+/// 消息头部：头像 + 名称 + 时间（AI/用户镜像对称）
+class _MessageHeader extends StatelessWidget {
+  const _MessageHeader({
+    required this.name,
+    required this.time,
+    required this.isUser,
     this.isThinking = false,
     this.thinkingElapsed,
   });
 
-  final String? modelName;
+  final String name;
+  final String time;
+  final bool isUser;
   final bool isThinking;
-
-  /// 流式思考中的实时耗时文本（如 "3.2s"），仅在思考中展示
   final String? thinkingElapsed;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final hasModel = modelName != null && modelName!.isNotEmpty;
-    if (!hasModel && !isThinking) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(left: 2, bottom: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (hasModel) ...[
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  modelName!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-              ),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final avatar = CircleAvatar(
+      radius: 14,
+      backgroundColor: isUser
+          ? scheme.tertiaryContainer
+          : scheme.primaryContainer,
+      child: Icon(
+        isUser ? Icons.person_outline : Icons.auto_awesome,
+        size: 14,
+        color: isUser ? scheme.onTertiaryContainer : scheme.primary,
+      ),
+    );
+
+    final nameLine = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
             ),
-            if (isThinking) const SizedBox(width: 6),
+          ),
+        ),
+        if (isThinking) ...[
+          const SizedBox(width: 6),
+          const SizedBox(
+            width: 10,
+            height: 10,
+            child: PolygonRefreshIndicator(),
+          ),
+          if (thinkingElapsed != null) ...[
+            const SizedBox(width: 4),
+            Text(
+              thinkingElapsed!,
+              style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant),
+            ),
           ],
-          if (isThinking)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: scheme.primaryContainer.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
+        ],
+      ],
+    );
+
+    final info = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: isUser
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        nameLine,
+        Text(time, style: TextStyle(fontSize: 11, color: scheme.outline)),
+      ],
+    );
+
+    // 镜像对称：AI = [头像][名称/时间] 靠左；用户 = [名称/时间][头像] 靠右
+    final row = isUser
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [info, const SizedBox(width: 8), avatar],
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [avatar, const SizedBox(width: 8), info],
+          );
+
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: row,
+    );
+  }
+}
+
+class _StepProcessArea extends StatefulWidget {
+  const _StepProcessArea({required this.steps, required this.isStreaming});
+
+  final List<AiStep> steps;
+
+  /// 流式中：过程区自动展开、进行中的步骤实时展开
+  final bool isStreaming;
+
+  @override
+  State<_StepProcessArea> createState() => _StepProcessAreaState();
+}
+
+class _StepProcessAreaState extends State<_StepProcessArea> {
+  bool _areaExpanded = false;
+  List<bool> _cardExpanded = [];
+  final Map<int, AiStepStatus> _prevStatuses = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _areaExpanded = widget.isStreaming;
+    _cardExpanded = List.generate(widget.steps.length, (_) => false);
+    for (var i = 0; i < widget.steps.length; i++) {
+      _prevStatuses[i] = widget.steps[i].status;
+    }
+  }
+
+  @override
+  void didUpdateWidget(_StepProcessArea oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.steps.length != widget.steps.length) {
+      _cardExpanded = List.generate(widget.steps.length, (i) {
+        return _cardExpanded.length > i && _cardExpanded[i];
+      });
+    }
+    if (widget.isStreaming) {
+      _areaExpanded = true;
+      for (var i = 0; i < widget.steps.length; i++) {
+        final prev = _prevStatuses[i];
+        final cur = widget.steps[i].status;
+        if (cur == AiStepStatus.running) {
+          // 进行中的步骤保持展开实时更新
+          _cardExpanded[i] = true;
+        } else if (prev == AiStepStatus.running &&
+            cur != AiStepStatus.running) {
+          // 完成后自动收起
+          _cardExpanded[i] = false;
+        }
+        _prevStatuses[i] = cur;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = widget.steps;
+    if (steps.isEmpty) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    final running = steps.any((s) => s.status == AiStepStatus.running);
+
+    // 全部步骤完成：整体折叠为一行（点击展开）
+    if (!_areaExpanded) {
+      return InkWell(
+        onTap: () => setState(() => _areaExpanded = true),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.hub_outlined, size: 13),
+              const SizedBox(width: 4),
+              Text(
+                '${t.viewProcess} ▾ · ${steps.length} 步',
+                style: TextStyle(fontSize: 11, color: scheme.outline),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _areaExpanded = false),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (running)
                   const SizedBox(
                     width: 10,
                     height: 10,
                     child: PolygonRefreshIndicator(),
-                  ),
-                  const SizedBox(width: 4),
+                  )
+                else
+                  const Icon(Icons.hub_outlined, size: 13),
+                const SizedBox(width: 4),
+                Text(
+                  '${t.viewProcess} ▴ · ${steps.length} 步',
+                  style: TextStyle(fontSize: 11, color: scheme.outline),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        for (var i = 0; i < steps.length; i++) ...[
+          _StepCard(
+            step: steps[i],
+            expanded: _cardExpanded[i],
+            autoExpand:
+                widget.isStreaming && steps[i].status == AiStepStatus.running,
+            onToggle: () =>
+                setState(() => _cardExpanded[i] = !_cardExpanded[i]),
+          ),
+          const SizedBox(height: 6),
+        ],
+      ],
+    );
+  }
+}
+
+/// 单个步骤卡片：独立可展开
+class _StepCard extends StatelessWidget {
+  const _StepCard({
+    required this.step,
+    required this.expanded,
+    required this.autoExpand,
+    required this.onToggle,
+  });
+
+  final AiStep step;
+  final bool expanded;
+  final bool autoExpand;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isThinking = step.type == AiStepType.thinking;
+    final isError = step.status == AiStepStatus.error;
+    final isRunning = step.status == AiStepStatus.running;
+    final icon = isThinking ? Icons.psychology : Icons.handyman;
+    final iconColor = isThinking
+        ? const Color(0xFF4C8BF5)
+        : const Color(0xFFFF8F00);
+    final typeLabel = isThinking ? t.stepThinking : t.stepTool;
+
+    final bg = isError
+        ? scheme.errorContainer.withValues(alpha: 0.45)
+        : isThinking
+        ? scheme.primaryContainer.withValues(alpha: 0.35)
+        : scheme.tertiaryContainer.withValues(alpha: 0.45);
+    final borderColor = isError
+        ? scheme.error.withValues(alpha: 0.5)
+        : isThinking
+        ? scheme.primary.withValues(alpha: 0.35)
+        : scheme.tertiary.withValues(alpha: 0.35);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: bg,
+        border: Border.all(color: borderColor, width: 0.6),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                children: [
+                  Icon(icon, size: 14, color: iconColor),
+                  const SizedBox(width: 6),
                   Text(
-                    thinkingElapsed == null
-                        ? t.thinkingInProgress
-                        : '${t.thinkingInProgress} ${thinkingElapsed!}',
-                    style: TextStyle(fontSize: 11, color: scheme.primary),
+                    '$typeLabel · ',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
+                    ),
                   ),
+                  Expanded(
+                    child: Text(
+                      step.title,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isRunning)
+                    const SizedBox(
+                      width: 10,
+                      height: 10,
+                      child: PolygonRefreshIndicator(),
+                    )
+                  else if (isError)
+                    Icon(Icons.error_outline, size: 13, color: scheme.error)
+                  else
+                    Icon(
+                      expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 14,
+                      color: scheme.onSurfaceVariant,
+                    ),
                 ],
               ),
             ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: expanded
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                    child: _StepContent(step: step),
+                  )
+                : const SizedBox.shrink(),
+          ),
         ],
       ),
     );
   }
 }
 
-/// 可折叠的思考过程展示（气泡与流式幽灵共用）
-///
-/// 状态机：
-/// - [isStreaming] 为 true（思考中）→ 默认展开，实时显示思考文字；用户手动折叠后，
-///   下一个思考增量到来时自动重新展开。
-/// - [isStreaming] 为 false（已完成）→ 默认折叠为一行 "查看思考" 按钮；done 后无新事件，
-///   手动展开/折叠状态不会被覆盖。
+/// 步骤展开内容：思考正文 / 工具名+参数+结果
+class _StepContent extends StatelessWidget {
+  const _StepContent({required this.step});
+
+  final AiStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    if (step.type == AiStepType.thinking) {
+      return SelectableText(
+        step.content.isEmpty ? t.thinkingInProgress : step.content,
+        style: const TextStyle(fontSize: 12, height: 1.5),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (step.toolName != null)
+          Text(
+            '${t.stepTool}：${step.toolName}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+            ),
+          ),
+        if (step.args != null && step.args!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          SelectableText(
+            const JsonEncoder.withIndent('  ').convert(step.args),
+            style: TextStyle(
+              fontSize: 11,
+              fontFamily: 'monospace',
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (step.result != null && step.result!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          SelectableText(
+            step.result!,
+            style: TextStyle(
+              fontSize: 11,
+              color: scheme.onSurfaceVariant,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _ReasoningToggle extends StatefulWidget {
-  const _ReasoningToggle({
-    required this.reasoning,
-    this.isStreaming = false,
-    this.durationMs,
-  });
+  const _ReasoningToggle({required this.reasoning, this.durationMs});
 
   final String reasoning;
-  final bool isStreaming;
 
   /// 已完成消息的思考总耗时（毫秒），展示在 "查看思考 ▾" 旁
   final int? durationMs;
@@ -1980,25 +2243,13 @@ class _ReasoningToggle extends StatefulWidget {
 }
 
 class _ReasoningToggleState extends State<_ReasoningToggle> {
-  late bool _expanded = widget.isStreaming;
-
-  @override
-  void didUpdateWidget(_ReasoningToggle oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isStreaming &&
-        !_expanded &&
-        widget.reasoning != oldWidget.reasoning) {
-      setState(() => _expanded = true);
-    }
-  }
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final String toggleLabel;
-    if (widget.isStreaming && _expanded) {
-      toggleLabel = t.hideThinking;
-    } else if (!widget.isStreaming && (widget.durationMs ?? 0) > 0) {
+    if ((widget.durationMs ?? 0) > 0) {
       toggleLabel =
           '${t.showThinking} ${(widget.durationMs! / 1000).toStringAsFixed(1)}s';
     } else {
@@ -2015,17 +2266,8 @@ class _ReasoningToggleState extends State<_ReasoningToggle> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (widget.isStreaming) ...[
-                  const SizedBox(
-                    width: 10,
-                    height: 10,
-                    child: PolygonRefreshIndicator(),
-                  ),
-                  const SizedBox(width: 4),
-                ] else ...[
-                  Icon(Icons.psychology, size: 13, color: scheme.outline),
-                  const SizedBox(width: 4),
-                ],
+                Icon(Icons.psychology, size: 13, color: scheme.outline),
+                const SizedBox(width: 4),
                 Text(
                   toggleLabel,
                   style: TextStyle(fontSize: 11, color: scheme.outline),
@@ -2071,16 +2313,11 @@ class _ReasoningToggleState extends State<_ReasoningToggle> {
 
 /// 流式生成中的幽灵气泡
 /// 工具调用日志：折叠式展示一次回复调用的工具列表。
-/// 流式期间常驻展开并显示进度指示器；落库后默认折叠，仅最后一条展开。
+/// 旧消息（无步骤数据）的兼容工具日志区：落库后默认折叠，仅最后一条展开。
 class _ToolLogSection extends StatefulWidget {
-  const _ToolLogSection({
-    required this.tools,
-    this.streaming = false,
-    this.defaultExpanded = false,
-  });
+  const _ToolLogSection({required this.tools, this.defaultExpanded = false});
 
   final List<String> tools;
-  final bool streaming;
   final bool defaultExpanded;
 
   @override
@@ -2093,22 +2330,14 @@ class _ToolLogSectionState extends State<_ToolLogSection> {
   @override
   void initState() {
     super.initState();
-    _expanded = widget.streaming || widget.defaultExpanded;
-  }
-
-  @override
-  void didUpdateWidget(_ToolLogSection old) {
-    super.didUpdateWidget(old);
-    if (widget.tools.length != old.tools.length) _expanded = true;
+    _expanded = widget.defaultExpanded;
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tools = widget.tools;
-    final subtitle = widget.streaming
-        ? t.toolCallingTool(tool: tools.isEmpty ? '' : tools.last)
-        : t.toolCallLog(count: tools.length);
+    final subtitle = t.toolCallLog(count: tools.length);
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Column(
@@ -2116,26 +2345,17 @@ class _ToolLogSectionState extends State<_ToolLogSection> {
         children: [
           InkWell(
             borderRadius: BorderRadius.circular(6),
-            onTap: widget.streaming
-                ? null
-                : () => setState(() => _expanded = !_expanded),
+            onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (widget.streaming) ...[
-                    const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: PolygonRefreshIndicator(),
-                    ),
-                  ] else
-                    Icon(
-                      Icons.handyman,
-                      size: 12,
-                      color: scheme.onSurfaceVariant,
-                    ),
+                  Icon(
+                    Icons.handyman,
+                    size: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
@@ -2146,12 +2366,11 @@ class _ToolLogSectionState extends State<_ToolLogSection> {
                       ),
                     ),
                   ),
-                  if (!widget.streaming)
-                    Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 14,
-                      color: scheme.onSurfaceVariant,
-                    ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 14,
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ],
               ),
             ),
@@ -2194,7 +2413,7 @@ class _StreamingBubble extends StatelessWidget {
   const _StreamingBubble({
     required this.text,
     required this.reasoning,
-    this.toolStatus,
+    this.steps = const [],
     this.errorText,
     this.modelName,
     this.thinkingElapsed,
@@ -2203,7 +2422,7 @@ class _StreamingBubble extends StatelessWidget {
 
   final String text;
   final String reasoning;
-  final String? toolStatus;
+  final List<AiStep> steps;
   final String? errorText;
   final String? modelName;
   final String? thinkingElapsed;
@@ -2217,56 +2436,40 @@ class _StreamingBubble extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: scheme.primaryContainer,
-            child: Icon(Icons.auto_awesome, size: 14, color: scheme.primary),
+          _MessageHeader(
+            name: modelName?.isNotEmpty == true ? modelName! : t.aiLabel,
+            time: _fmtTime(DateTime.now()),
+            isUser: false,
+            isThinking: hasReasoning || steps.isNotEmpty,
+            thinkingElapsed: thinkingElapsed,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _AiMessageHeader(
-                  modelName: modelName,
-                  isThinking: hasReasoning,
-                  thinkingElapsed: thinkingElapsed,
-                ),
-                if (hasReasoning)
-                  _ReasoningToggle(reasoning: reasoning, isStreaming: true),
-                if (hasText)
-                  useMarkdown
-                      ? CustomMarkdownWidget(data: text)
-                      : SelectableText(text),
-                if (toolStatus != null)
-                  _ToolLogSection(tools: [toolStatus!], streaming: true),
-                if (errorText != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 14,
-                          color: scheme.error,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            errorText!,
-                            style: TextStyle(fontSize: 11, color: scheme.error),
-                          ),
-                        ),
-                      ],
+          const SizedBox(height: 6),
+          if (hasReasoning || steps.isNotEmpty)
+            _StepProcessArea(steps: steps, isStreaming: true),
+          if (hasText)
+            useMarkdown
+                ? CustomMarkdownWidget(data: text, indentFirstLine: false)
+                : SelectableText(text),
+          if (errorText != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, size: 14, color: scheme.error),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      errorText!,
+                      style: TextStyle(fontSize: 11, color: scheme.error),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -2366,32 +2569,166 @@ class _ChatBubble extends StatelessWidget {
     return const [];
   }
 
+  /// 步骤列表（新格式：thinking/tool_call 按顺序独立成块）
+  List<AiStep> get _savedSteps {
+    final map = _thoughtMap;
+    if (map == null) return const [];
+    final steps = map['steps'];
+    if (steps is List) {
+      return [
+        for (final s in steps)
+          if (s is Map) AiStep.fromJson(s.cast<String, dynamic>()),
+      ];
+    }
+    return const [];
+  }
+
+  /// 用户消息图片解码缓存：流式回复期间消息列表高频重建，
+  /// 若每次 build 都 base64Decode 会产生新的 Uint8List，
+  /// 导致 Image.memory 的 MemoryImage 引用不同而缓存失效、图片反复解码闪烁。
+  static final Map<int, List<Uint8List>> _userImageCache = {};
+
+  /// 用户消息附带的图片字节（从 task.inputImages 解析）
+  List<Uint8List> get _userImages {
+    final cached = _ChatBubble._userImageCache[task.id];
+    if (cached != null) return cached;
+    final raw = task.inputImages;
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        final bytes = [
+          for (final e in decoded)
+            if (e is String && e.contains(',')) base64Decode(e.split(',').last),
+        ];
+        if (bytes.isNotEmpty) {
+          _ChatBubble._userImageCache[task.id] = bytes;
+          if (_ChatBubble._userImageCache.length > 100) {
+            _ChatBubble._userImageCache.remove(
+              _ChatBubble._userImageCache.keys.first,
+            );
+          }
+        }
+        return bytes;
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  /// 本回复中 search_bangumi 返回的候选条目（UI 渲染卡片供选择跳转）
+  List<BangumiItem> get _bangumiCandidates {
+    for (final s in _savedSteps) {
+      if (s.toolName != 'search_bangumi' || s.result == null) continue;
+      final marker = RegExp(
+        r'\[KOSTORI_BANGUMI_CARDS\]([\s\S]*?)\[/KOSTORI_BANGUMI_CARDS\]',
+      ).firstMatch(s.result!);
+      if (marker == null) continue;
+      try {
+        final decoded = jsonDecode(marker.group(1)!);
+        if (decoded is List) {
+          return [
+            for (final e in decoded)
+              if (e is Map) BangumiItem.fromJson(e.cast<String, dynamic>()),
+          ];
+        }
+      } catch (_) {}
+    }
+    return const [];
+  }
+
+  /// 本回复中查询角色/声优返回的候选（UI 渲染卡片供选择跳转）。
+  /// [isCharacter] 决定点击后进入角色页还是声优（人物）页。
+  ({bool isCharacter, List<CharacterActor> items})? get _characterCandidates {
+    for (final s in _savedSteps) {
+      if (s.result == null) continue;
+      final marker = RegExp(
+        r'\[KOSTORI_CHARACTER_CARDS\]([\s\S]*?)\[/KOSTORI_CHARACTER_CARDS\]',
+      ).firstMatch(s.result!);
+      if (marker == null) continue;
+      try {
+        final decoded = jsonDecode(marker.group(1)!);
+        if (decoded is Map<String, dynamic>) {
+          final items = decoded['items'];
+          if (items is List) {
+            return (
+              isCharacter: decoded['isCharacter'] == true,
+              items: [
+                for (final e in items)
+                  if (e is Map)
+                    CharacterActor.fromJson(e.cast<String, dynamic>()),
+              ],
+            );
+          }
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final Widget contentWidget;
+    // 第一层：头部（头像 + 名称 + 时间，AI/用户镜像对称）
+    final header = _MessageHeader(
+      name: isUser
+          ? currentUserNickname
+          : (task.modelName?.isNotEmpty == true ? task.modelName! : t.aiLabel),
+      time: _fmtTime(task.createdAt),
+      isUser: isUser,
+    );
+
+    // 第二层起：内容（占满整行，不被头像挤到右侧）
+    final Widget body;
     if (isUser) {
-      contentWidget = Align(
-        alignment: Alignment.centerRight,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: _chatContentMaxWidth(context)),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: scheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(16),
+      final userImages = _userImages;
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // 用户附带的图片：按原图比例自适应尺寸并右对齐，右缘与文字气泡对齐
+          for (final bytes in userImages) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: _chatContentMaxWidth(context),
+                  maxHeight: 220,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(bytes, fit: BoxFit.contain),
+                ),
+              ),
             ),
-            child: SelectableText(
-              content,
-              style: TextStyle(
-                color: scheme.onSecondaryContainer,
-                fontSize: 14,
-                height: 1.5,
+            const SizedBox(height: 6),
+          ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: _chatContentMaxWidth(context),
+              ),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: SelectableText(
+                  content,
+                  style: TextStyle(
+                    color: scheme.onSecondaryContainer,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+        ],
       );
     } else {
       final reasoning = _reasoningText;
@@ -2399,23 +2736,75 @@ class _ChatBubble extends StatelessWidget {
       final effectiveContent = (content.isEmpty && hasReasoning)
           ? reasoning
           : content;
-      contentWidget = Column(
+      body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _AiMessageHeader(modelName: task.modelName),
-          if (hasReasoning && content.isNotEmpty)
-            _ReasoningToggle(
-              reasoning: reasoning,
-              durationMs: _thinkingMs ?? _durationMs,
-            ),
+          if (_savedSteps.isNotEmpty)
+            _StepProcessArea(steps: _savedSteps, isStreaming: false)
+          else ...[
+            if (hasReasoning && content.isNotEmpty)
+              _ReasoningToggle(
+                reasoning: reasoning,
+                durationMs: _thinkingMs ?? _durationMs,
+              ),
+            if (_toolCalls.isNotEmpty)
+              _ToolLogSection(
+                tools: _toolCalls,
+                defaultExpanded: defaultExpandedToolLog,
+              ),
+          ],
           useMarkdown
-              ? CustomMarkdownWidget(data: effectiveContent)
+              ? CustomMarkdownWidget(
+                  data: effectiveContent,
+                  indentFirstLine: false,
+                )
               : SelectableText(effectiveContent),
-          if (_toolCalls.isNotEmpty)
-            _ToolLogSection(
-              tools: _toolCalls,
-              defaultExpanded: defaultExpandedToolLog,
+          // 多个候选：横向排列 BangumiBriefCard，供用户左右滑动选择跳转
+          if (_bangumiCandidates.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 220,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _bangumiCandidates.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final candidate = _bangumiCandidates[i];
+                  return SizedBox(
+                    width: 160,
+                    child: BangumiBriefCard(
+                      bangumiItem: candidate,
+                      heroTag: 'chat_bangumi_${candidate.id}_${task.id}_$i',
+                    ),
+                  );
+                },
+              ),
             ),
+          ],
+          // 多个候选：横向排列 BangumiCharacterCard（角色/声优），供用户左右滑动选择跳转
+          if (_characterCandidates case final candidates?
+              when candidates.items.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 220,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: candidates.items.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final candidate = candidates.items[i];
+                  return SizedBox(
+                    width: 160,
+                    child: BangumiCharacterCard(
+                      character: candidate,
+                      heroTag: 'chat_character_${candidate.id}_${task.id}_$i',
+                      isCharacter: candidates.isCharacter,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       );
     }
@@ -2425,29 +2814,13 @@ class _ChatBubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (isUser)
-            contentWidget
-          else
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: scheme.primaryContainer,
-                  child: Icon(
-                    Icons.auto_awesome,
-                    size: 14,
-                    color: scheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: contentWidget),
-              ],
-            ),
+          header,
+          const SizedBox(height: 6),
+          body,
           // 错误提示 + 重试
           if (errorText != null)
             Padding(
-              padding: const EdgeInsets.only(top: 4, left: 40),
+              padding: const EdgeInsets.only(top: 4),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -2537,7 +2910,7 @@ class _ChatBubble extends StatelessWidget {
 
   Widget _aiFooter(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 40, top: 2),
+      padding: const EdgeInsets.only(left: 4, top: 2),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

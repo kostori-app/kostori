@@ -98,6 +98,7 @@ _SettingsData _$SettingsDataFromJson(
   getBangumiDataTime: json['getBangumiDataTime'] as String?,
   enableSkipUpdate: json['enableSkipUpdate'] as bool? ?? true,
   exploreHorizontalLayout: json['exploreHorizontalLayout'] as bool? ?? false,
+  userNickname: json['userNickname'] as String? ?? '',
 );
 
 Map<String, dynamic> _$SettingsDataToJson(_SettingsData instance) =>
@@ -177,4 +178,5 @@ Map<String, dynamic> _$SettingsDataToJson(_SettingsData instance) =>
       'getBangumiDataTime': instance.getBangumiDataTime,
       'enableSkipUpdate': instance.enableSkipUpdate,
       'exploreHorizontalLayout': instance.exploreHorizontalLayout,
+      'userNickname': instance.userNickname,
     };

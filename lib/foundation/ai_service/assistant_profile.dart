@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 生成参数（可空表示跟随服务商默认值）
@@ -537,8 +538,11 @@ final AssistantProfile defaultProfile = AssistantProfile(
     'query_watch_stats',
     'search_bangumi',
     'query_bangumi_characters',
+    'search_bangumi_character',
     'search_bangumi_person',
+    'analyze_bangumi',
     'query_logs',
+    'recognize_anime',
   },
   params: const AssistantParams(),
   isBuiltin: true,
@@ -896,6 +900,13 @@ const templateVarEntries = [
   (token: '{{app_version}}', label: '应用版本'),
 ];
 
+/// 当前用户昵称（与 {{user_nickname}} 占位符同源，勿另造名字）
+String get currentUserNickname {
+  final v = appdata.settings['userNickname'];
+  if (v is String && v.trim().isNotEmpty) return v.trim();
+  return '用户';
+}
+
 /// 模板变量取值（占位符 → 真实值）。
 /// 未注册的占位符保持不变、不报错（由 [replaceTemplateVars] 保证）。
 Map<String, String> templateVarValues({
@@ -914,7 +925,7 @@ Map<String, String> templateVarValues({
     '{{device_model}}': _deviceModel(),
     '{{system_version}}': _systemVersion(),
     '{{user_nickname}}': (userNickname == null || userNickname.isEmpty)
-        ? '用户'
+        ? currentUserNickname
         : userNickname,
     '{{app_version}}': App.version,
   };

@@ -322,19 +322,23 @@ class SearchAnimeSkill extends Skill {
   String get id => 'search_anime';
 
   @override
-  String get name => '搜索番剧';
+  String get name => '打开番剧详情';
 
   @override
   String get description =>
-      '在软件内的本地数据（收藏、观看历史）中按名称搜索番剧。当用户提到一个番名、想了解或打开它时调用。'
-      '若用户明确要求"打开 / 跳转 / 查看详情页"，将 open 设为 true，会直接打开番剧详情页。';
+      '在软件内的本地数据（收藏、观看历史）中按名称搜索番剧，并打开**软件内番剧详情页（AnimePage）**。'
+      '当用户提到一个番名、想查看或直接打开它时调用。'
+      '若用户明确要求"打开 / 跳转 / 查看详情页"，将 open 设为 true，会打开软件内番剧详情页（区别于 Bangumi 页面）。';
 
   @override
   Map<String, dynamic> get inputSchema => {
     'type': 'object',
     'properties': {
       'name': {'type': 'string', 'description': '番剧名称'},
-      'open': {'type': 'boolean', 'description': '是否打开该番剧的详情页'},
+      'open': {
+        'type': 'boolean',
+        'description': '是否打开软件内番剧详情页（AnimePage，区别于 Bangumi 页面）',
+      },
     },
     'required': ['name'],
   };

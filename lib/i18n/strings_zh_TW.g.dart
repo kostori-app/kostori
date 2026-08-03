@@ -2797,6 +2797,12 @@ class TranslationsZhTw extends Translations
 
   @override String get hideThinking => '收起思考過程';
 
+  @override String get viewProcess => '查看過程';
+
+  @override String get stepThinking => '思考';
+
+  @override String get stepTool => '工具';
+
   @override String get thinkingInProgress => '正在思考...';
 
   @override String get statsCached => '快取';
@@ -3017,6 +3023,37 @@ class TranslationsZhTw extends Translations
 
   @override String get profileTabLocalTools => '工具技能';
 
+  @override String get userNickname => '使用者暱稱';
+
+  @override String get userNicknameHint =>
+      '聊天中顯示的使用者名稱，並注入 {{user_nickname}}';
+
+  @override String get animeRecognize => '動漫識別';
+
+  @override String get chooseImageToRecognize => '選擇一張圖片，識別動漫來源';
+
+  @override String get chooseImage => '選擇圖片';
+
+  @override String get recognizing => '識別中...';
+
+  @override String get noAnimeFound => '未識別到動漫，可能不是動漫圖片';
+
+  @override String get chooseAnotherImage => '換一張圖片試試';
+
+  @override String get recognizeResult => '識別結果';
+
+  @override String get episodeLabel => '第';
+
+  @override String get unknownEpisode => '未知集數';
+
+  @override String get openVideoPreview => '影片預覽';
+
+  @override String get discussInAi => 'AI 討論';
+
+  @override String get dropImageToRecognize => '放開即可識別圖片';
+
+  @override String get viewOnBangumi => '查看 Bangumi';
+
   @override String get templateVarHint => '可用變數：';
 
   @override String get profilePersonaRequired => '請先選擇人格';
@@ -3213,6 +3250,8 @@ class TranslationsZhTw extends Translations
   @override String get auxTemperature => 'Temperature';
 
   @override String get selectAssistantProfile => '選擇助手檔案';
+
+  @override String get selectModel => '選擇模型';
 
   @override String get profilePersonalityTags => '性格標籤';
 
@@ -4766,6 +4805,9 @@ extension on TranslationsZhTw {
       'streamInterrupted' => '生成已中斷',
       'showThinking' => '查看思考過程',
       'hideThinking' => '收起思考過程',
+      'viewProcess' => '查看過程',
+      'stepThinking' => '思考',
+      'stepTool' => '工具',
       'thinkingInProgress' => '正在思考...',
       'statsCached' => '快取',
       'jumpToBottom' => '回到底部',
@@ -4875,6 +4917,21 @@ extension on TranslationsZhTw {
       'profileTabMcp' => 'MCP',
       'profileMcpHint' => '綁定本助手的 MCP 伺服器（連線後自動匯入工具）',
       'profileTabLocalTools' => '工具技能',
+      'userNickname' => '使用者暱稱',
+      'userNicknameHint' => '聊天中顯示的使用者名稱，並注入 {{user_nickname}}',
+      'animeRecognize' => '動漫識別',
+      'chooseImageToRecognize' => '選擇一張圖片，識別動漫來源',
+      'chooseImage' => '選擇圖片',
+      'recognizing' => '識別中...',
+      'noAnimeFound' => '未識別到動漫，可能不是動漫圖片',
+      'chooseAnotherImage' => '換一張圖片試試',
+      'recognizeResult' => '識別結果',
+      'episodeLabel' => '第',
+      'unknownEpisode' => '未知集數',
+      'openVideoPreview' => '影片預覽',
+      'discussInAi' => 'AI 討論',
+      'dropImageToRecognize' => '放開即可識別圖片',
+      'viewOnBangumi' => '查看 Bangumi',
       'templateVarHint' => '可用變數：',
       'profilePersonaRequired' => '請先選擇人格',
       'defaultAssistantCannotDelete' => '系統預設助手不可刪除',
@@ -4915,6 +4972,8 @@ extension on TranslationsZhTw {
       'profileSkills' => '技能',
       'profileSkillsHint' => '勾選擴充管理中的技能進行綁定',
       'profileRequest' => '自訂請求',
+      _ => null,
+    } ?? switch (path) {
       'profileRequestSensitiveHint' => '敏感資訊（如 API Key）會隨檔案持久化，請謹慎填寫',
       'profileRequestBaseUrl' => 'Base URL 覆寫',
       'profileRequestApiKey' => 'API Key 覆寫',
@@ -4933,8 +4992,6 @@ extension on TranslationsZhTw {
       'profileCopy' => '複製',
       'profileExport' => '匯出',
       'profileImport' => '匯入',
-      _ => null,
-    } ?? switch (path) {
       'profileExported' => '已匯出到剪貼簿',
       'profileImportFailed' => '匯入失敗',
       'extensionManagement' => '擴充管理設定',
@@ -4972,6 +5029,7 @@ extension on TranslationsZhTw {
       'noWorldBookEntriesYet' => '暫無世界書條目',
       'auxTemperature' => 'Temperature',
       'selectAssistantProfile' => '選擇助手檔案',
+      'selectModel' => '選擇模型',
       'profilePersonalityTags' => '性格標籤',
       'profilePersonalityTagsHint' => '多選標籤，如 理性/幽默/毒舌/溫柔',
       'profileCatchphrases' => '口頭禪',

@@ -4030,6 +4030,15 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Hide thinking'
 	String get hideThinking => 'Hide thinking';
 
+	/// en: 'View process'
+	String get viewProcess => 'View process';
+
+	/// en: 'Thinking'
+	String get stepThinking => 'Thinking';
+
+	/// en: 'Tool'
+	String get stepTool => 'Tool';
+
 	/// en: 'Thinking...'
 	String get thinkingInProgress => 'Thinking...';
 
@@ -4348,6 +4357,51 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'Tools'
 	String get profileTabLocalTools => 'Tools';
 
+	/// en: 'User nickname'
+	String get userNickname => 'User nickname';
+
+	/// en: 'Shown as the user name and injected into {{user_nickname}}'
+	String get userNicknameHint => 'Shown as the user name and injected into {{user_nickname}}';
+
+	/// en: 'Anime recognition'
+	String get animeRecognize => 'Anime recognition';
+
+	/// en: 'Pick an image to identify the anime source'
+	String get chooseImageToRecognize => 'Pick an image to identify the anime source';
+
+	/// en: 'Choose image'
+	String get chooseImage => 'Choose image';
+
+	/// en: 'Recognizing...'
+	String get recognizing => 'Recognizing...';
+
+	/// en: 'No anime recognized, this may not be an anime image'
+	String get noAnimeFound => 'No anime recognized, this may not be an anime image';
+
+	/// en: 'Try another image'
+	String get chooseAnotherImage => 'Try another image';
+
+	/// en: 'Recognition results'
+	String get recognizeResult => 'Recognition results';
+
+	/// en: 'EP'
+	String get episodeLabel => 'EP';
+
+	/// en: 'Unknown episode'
+	String get unknownEpisode => 'Unknown episode';
+
+	/// en: 'Video preview'
+	String get openVideoPreview => 'Video preview';
+
+	/// en: 'Discuss in AI'
+	String get discussInAi => 'Discuss in AI';
+
+	/// en: 'Drop an image to recognize'
+	String get dropImageToRecognize => 'Drop an image to recognize';
+
+	/// en: 'View on Bangumi'
+	String get viewOnBangumi => 'View on Bangumi';
+
 	/// en: 'Available variables: '
 	String get templateVarHint => 'Available variables: ';
 
@@ -4632,6 +4686,9 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 
 	/// en: 'Select an assistant'
 	String get selectAssistantProfile => 'Select an assistant';
+
+	/// en: 'Select model'
+	String get selectModel => 'Select model';
 
 	/// en: 'Personality tags'
 	String get profilePersonalityTags => 'Personality tags';
@@ -6222,6 +6279,9 @@ extension on Translations {
 			'streamInterrupted' => 'Generation interrupted',
 			'showThinking' => 'Show thinking',
 			'hideThinking' => 'Hide thinking',
+			'viewProcess' => 'View process',
+			'stepThinking' => 'Thinking',
+			'stepTool' => 'Tool',
 			'thinkingInProgress' => 'Thinking...',
 			'statsCached' => 'cached',
 			'jumpToBottom' => 'Back to bottom',
@@ -6328,6 +6388,21 @@ extension on Translations {
 			'profileTabMcp' => 'MCP',
 			'profileMcpHint' => 'Bind MCP servers for this assistant (tools are imported on connection)',
 			'profileTabLocalTools' => 'Tools',
+			'userNickname' => 'User nickname',
+			'userNicknameHint' => 'Shown as the user name and injected into {{user_nickname}}',
+			'animeRecognize' => 'Anime recognition',
+			'chooseImageToRecognize' => 'Pick an image to identify the anime source',
+			'chooseImage' => 'Choose image',
+			'recognizing' => 'Recognizing...',
+			'noAnimeFound' => 'No anime recognized, this may not be an anime image',
+			'chooseAnotherImage' => 'Try another image',
+			'recognizeResult' => 'Recognition results',
+			'episodeLabel' => 'EP',
+			'unknownEpisode' => 'Unknown episode',
+			'openVideoPreview' => 'Video preview',
+			'discussInAi' => 'Discuss in AI',
+			'dropImageToRecognize' => 'Drop an image to recognize',
+			'viewOnBangumi' => 'View on Bangumi',
 			'templateVarHint' => 'Available variables: ',
 			'profilePersonaRequired' => 'Please select a persona first',
 			'defaultAssistantCannotDelete' => 'The system default assistant cannot be deleted',
@@ -6368,6 +6443,8 @@ extension on Translations {
 			'profileSkills' => 'Skills',
 			'profileSkillsHint' => 'Bind skills imported in Extension Management',
 			'profileRequest' => 'Custom request',
+			_ => null,
+		} ?? switch (path) {
 			'profileRequestSensitiveHint' => 'Sensitive info (e.g. API Key) is persisted with the profile, fill in carefully',
 			'profileRequestBaseUrl' => 'Base URL override',
 			'profileRequestApiKey' => 'API Key override',
@@ -6386,8 +6463,6 @@ extension on Translations {
 			'profileCopy' => 'Duplicate',
 			'profileExport' => 'Export',
 			'profileImport' => 'Import',
-			_ => null,
-		} ?? switch (path) {
 			'profileExported' => 'Exported to clipboard',
 			'profileImportFailed' => 'Import failed',
 			'extensionManagement' => 'Extension Management',
@@ -6425,6 +6500,7 @@ extension on Translations {
 			'noWorldBookEntriesYet' => 'No world book entries yet',
 			'auxTemperature' => 'Temperature',
 			'selectAssistantProfile' => 'Select an assistant',
+			'selectModel' => 'Select model',
 			'profilePersonalityTags' => 'Personality tags',
 			'profilePersonalityTagsHint' => 'Multi-select tags, e.g. Rational / Humorous / Sharp-tongued / Gentle',
 			'profileCatchphrases' => 'Catchphrases',

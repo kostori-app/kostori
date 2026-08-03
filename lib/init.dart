@@ -27,6 +27,7 @@ import 'package:kostori/skills/builtins/bangumi_skill.dart';
 import 'package:kostori/skills/builtins/device_info_skill.dart';
 import 'package:kostori/skills/builtins/log_skill.dart';
 import 'package:kostori/skills/builtins/open_url_skill.dart';
+import 'package:kostori/skills/builtins/recognize_anime_skill.dart';
 import 'package:kostori/skills/builtins/time_skill.dart';
 import 'package:kostori/skills/skill_registry.dart';
 import 'package:kostori/utils/app_links.dart';
@@ -71,8 +72,11 @@ Future<void> init() async {
     QueryWatchStatsSkill(),
     SearchBangumiSkill(),
     QueryBangumiCharactersSkill(),
+    SearchBangumiCharacterSkill(),
     SearchBangumiPersonSkill(),
+    AnalyzeBangumiSkill(),
     QueryLogsSkill(),
+    RecognizeAnimeSkill(),
   ]);
   await SkillRegistry.instance.syncMcp().wait();
   await AssistantProfileStore.instance.init().wait();

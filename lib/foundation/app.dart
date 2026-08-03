@@ -17,6 +17,9 @@ export "widget_utils.dart";
 class _App {
   final version = "1.3.0";
 
+  /// 动漫识别页是否处于激活状态（用于屏蔽全局二维码拖拽识别等干扰）
+  bool animeRecognizeActive = false;
+
   bool get isAndroid => Platform.isAndroid;
 
   bool get isIOS => Platform.isIOS;

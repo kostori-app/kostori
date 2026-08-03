@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/mcp_client.dart';
@@ -16,6 +17,13 @@ class SkillRegistry {
   final Map<String, Skill> _skills = {};
   final Map<String, bool> _enabled = {};
   final Set<String> _mcpSkills = {};
+
+  /// 当前消息附带的图片字节（供如 recognize_anime 等需要图片的技能使用）
+  Uint8List? _contextImage;
+
+  void setContextImage(Uint8List? bytes) => _contextImage = bytes;
+
+  Uint8List? get contextImage => _contextImage;
 
   /// 默认单技能执行超时
   static const Duration kDefaultTimeout = Duration(seconds: 10);

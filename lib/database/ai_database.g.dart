@@ -1381,6 +1381,17 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _inputImagesMeta = const VerificationMeta(
+    'inputImages',
+  );
+  @override
+  late final GeneratedColumn<String> inputImages = GeneratedColumn<String>(
+    'input_images',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _outputContentMeta = const VerificationMeta(
     'outputContent',
   );
@@ -1456,6 +1467,7 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
     taskType,
     role,
     inputContent,
+    inputImages,
     outputContent,
     thought,
     provider,
@@ -1510,6 +1522,15 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
       );
     } else if (isInserting) {
       context.missing(_inputContentMeta);
+    }
+    if (data.containsKey('input_images')) {
+      context.handle(
+        _inputImagesMeta,
+        inputImages.isAcceptableOrUnknown(
+          data['input_images']!,
+          _inputImagesMeta,
+        ),
+      );
     }
     if (data.containsKey('output_content')) {
       context.handle(
@@ -1584,6 +1605,10 @@ class $AiTasksTable extends AiTasks with TableInfo<$AiTasksTable, AiTask> {
         DriftSqlType.string,
         data['${effectivePrefix}input_content'],
       )!,
+      inputImages: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}input_images'],
+      ),
       outputContent: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}output_content'],
@@ -1623,6 +1648,9 @@ class AiTask extends DataClass implements Insertable<AiTask> {
   final String taskType;
   final String role;
   final String inputContent;
+
+  /// 用户消息附带的图片（data URL 的 JSON 数组），用于聊天界面展示
+  final String? inputImages;
   final String? outputContent;
   final String? thought;
   final String provider;
@@ -1635,6 +1663,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     required this.taskType,
     required this.role,
     required this.inputContent,
+    this.inputImages,
     this.outputContent,
     this.thought,
     required this.provider,
@@ -1650,6 +1679,9 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     map['task_type'] = Variable<String>(taskType);
     map['role'] = Variable<String>(role);
     map['input_content'] = Variable<String>(inputContent);
+    if (!nullToAbsent || inputImages != null) {
+      map['input_images'] = Variable<String>(inputImages);
+    }
     if (!nullToAbsent || outputContent != null) {
       map['output_content'] = Variable<String>(outputContent);
     }
@@ -1672,6 +1704,9 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       taskType: Value(taskType),
       role: Value(role),
       inputContent: Value(inputContent),
+      inputImages: inputImages == null && nullToAbsent
+          ? const Value.absent()
+          : Value(inputImages),
       outputContent: outputContent == null && nullToAbsent
           ? const Value.absent()
           : Value(outputContent),
@@ -1698,6 +1733,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       taskType: serializer.fromJson<String>(json['taskType']),
       role: serializer.fromJson<String>(json['role']),
       inputContent: serializer.fromJson<String>(json['inputContent']),
+      inputImages: serializer.fromJson<String?>(json['inputImages']),
       outputContent: serializer.fromJson<String?>(json['outputContent']),
       thought: serializer.fromJson<String?>(json['thought']),
       provider: serializer.fromJson<String>(json['provider']),
@@ -1715,6 +1751,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       'taskType': serializer.toJson<String>(taskType),
       'role': serializer.toJson<String>(role),
       'inputContent': serializer.toJson<String>(inputContent),
+      'inputImages': serializer.toJson<String?>(inputImages),
       'outputContent': serializer.toJson<String?>(outputContent),
       'thought': serializer.toJson<String?>(thought),
       'provider': serializer.toJson<String>(provider),
@@ -1730,6 +1767,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     String? taskType,
     String? role,
     String? inputContent,
+    Value<String?> inputImages = const Value.absent(),
     Value<String?> outputContent = const Value.absent(),
     Value<String?> thought = const Value.absent(),
     String? provider,
@@ -1742,6 +1780,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     taskType: taskType ?? this.taskType,
     role: role ?? this.role,
     inputContent: inputContent ?? this.inputContent,
+    inputImages: inputImages.present ? inputImages.value : this.inputImages,
     outputContent: outputContent.present
         ? outputContent.value
         : this.outputContent,
@@ -1760,6 +1799,9 @@ class AiTask extends DataClass implements Insertable<AiTask> {
       inputContent: data.inputContent.present
           ? data.inputContent.value
           : this.inputContent,
+      inputImages: data.inputImages.present
+          ? data.inputImages.value
+          : this.inputImages,
       outputContent: data.outputContent.present
           ? data.outputContent.value
           : this.outputContent,
@@ -1781,6 +1823,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
           ..write('taskType: $taskType, ')
           ..write('role: $role, ')
           ..write('inputContent: $inputContent, ')
+          ..write('inputImages: $inputImages, ')
           ..write('outputContent: $outputContent, ')
           ..write('thought: $thought, ')
           ..write('provider: $provider, ')
@@ -1798,6 +1841,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
     taskType,
     role,
     inputContent,
+    inputImages,
     outputContent,
     thought,
     provider,
@@ -1814,6 +1858,7 @@ class AiTask extends DataClass implements Insertable<AiTask> {
           other.taskType == this.taskType &&
           other.role == this.role &&
           other.inputContent == this.inputContent &&
+          other.inputImages == this.inputImages &&
           other.outputContent == this.outputContent &&
           other.thought == this.thought &&
           other.provider == this.provider &&
@@ -1828,6 +1873,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
   final Value<String> taskType;
   final Value<String> role;
   final Value<String> inputContent;
+  final Value<String?> inputImages;
   final Value<String?> outputContent;
   final Value<String?> thought;
   final Value<String> provider;
@@ -1840,6 +1886,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     this.taskType = const Value.absent(),
     this.role = const Value.absent(),
     this.inputContent = const Value.absent(),
+    this.inputImages = const Value.absent(),
     this.outputContent = const Value.absent(),
     this.thought = const Value.absent(),
     this.provider = const Value.absent(),
@@ -1853,6 +1900,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     required String taskType,
     this.role = const Value.absent(),
     required String inputContent,
+    this.inputImages = const Value.absent(),
     this.outputContent = const Value.absent(),
     this.thought = const Value.absent(),
     required String provider,
@@ -1869,6 +1917,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     Expression<String>? taskType,
     Expression<String>? role,
     Expression<String>? inputContent,
+    Expression<String>? inputImages,
     Expression<String>? outputContent,
     Expression<String>? thought,
     Expression<String>? provider,
@@ -1882,6 +1931,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
       if (taskType != null) 'task_type': taskType,
       if (role != null) 'role': role,
       if (inputContent != null) 'input_content': inputContent,
+      if (inputImages != null) 'input_images': inputImages,
       if (outputContent != null) 'output_content': outputContent,
       if (thought != null) 'thought': thought,
       if (provider != null) 'provider': provider,
@@ -1897,6 +1947,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     Value<String>? taskType,
     Value<String>? role,
     Value<String>? inputContent,
+    Value<String?>? inputImages,
     Value<String?>? outputContent,
     Value<String?>? thought,
     Value<String>? provider,
@@ -1910,6 +1961,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
       taskType: taskType ?? this.taskType,
       role: role ?? this.role,
       inputContent: inputContent ?? this.inputContent,
+      inputImages: inputImages ?? this.inputImages,
       outputContent: outputContent ?? this.outputContent,
       thought: thought ?? this.thought,
       provider: provider ?? this.provider,
@@ -1936,6 +1988,9 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
     }
     if (inputContent.present) {
       map['input_content'] = Variable<String>(inputContent.value);
+    }
+    if (inputImages.present) {
+      map['input_images'] = Variable<String>(inputImages.value);
     }
     if (outputContent.present) {
       map['output_content'] = Variable<String>(outputContent.value);
@@ -1966,6 +2021,7 @@ class AiTasksCompanion extends UpdateCompanion<AiTask> {
           ..write('taskType: $taskType, ')
           ..write('role: $role, ')
           ..write('inputContent: $inputContent, ')
+          ..write('inputImages: $inputImages, ')
           ..write('outputContent: $outputContent, ')
           ..write('thought: $thought, ')
           ..write('provider: $provider, ')
@@ -6123,6 +6179,7 @@ typedef $$AiTasksTableCreateCompanionBuilder =
       required String taskType,
       Value<String> role,
       required String inputContent,
+      Value<String?> inputImages,
       Value<String?> outputContent,
       Value<String?> thought,
       required String provider,
@@ -6137,6 +6194,7 @@ typedef $$AiTasksTableUpdateCompanionBuilder =
       Value<String> taskType,
       Value<String> role,
       Value<String> inputContent,
+      Value<String?> inputImages,
       Value<String?> outputContent,
       Value<String?> thought,
       Value<String> provider,
@@ -6176,6 +6234,11 @@ class $$AiTasksTableFilterComposer
 
   ColumnFilters<String> get inputContent => $composableBuilder(
     column: $table.inputContent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get inputImages => $composableBuilder(
+    column: $table.inputImages,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6244,6 +6307,11 @@ class $$AiTasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get inputImages => $composableBuilder(
+    column: $table.inputImages,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get outputContent => $composableBuilder(
     column: $table.outputContent,
     builder: (column) => ColumnOrderings(column),
@@ -6298,6 +6366,11 @@ class $$AiTasksTableAnnotationComposer
 
   GeneratedColumn<String> get inputContent => $composableBuilder(
     column: $table.inputContent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get inputImages => $composableBuilder(
+    column: $table.inputImages,
     builder: (column) => column,
   );
 
@@ -6357,6 +6430,7 @@ class $$AiTasksTableTableManager
                 Value<String> taskType = const Value.absent(),
                 Value<String> role = const Value.absent(),
                 Value<String> inputContent = const Value.absent(),
+                Value<String?> inputImages = const Value.absent(),
                 Value<String?> outputContent = const Value.absent(),
                 Value<String?> thought = const Value.absent(),
                 Value<String> provider = const Value.absent(),
@@ -6369,6 +6443,7 @@ class $$AiTasksTableTableManager
                 taskType: taskType,
                 role: role,
                 inputContent: inputContent,
+                inputImages: inputImages,
                 outputContent: outputContent,
                 thought: thought,
                 provider: provider,
@@ -6383,6 +6458,7 @@ class $$AiTasksTableTableManager
                 required String taskType,
                 Value<String> role = const Value.absent(),
                 required String inputContent,
+                Value<String?> inputImages = const Value.absent(),
                 Value<String?> outputContent = const Value.absent(),
                 Value<String?> thought = const Value.absent(),
                 required String provider,
@@ -6395,6 +6471,7 @@ class $$AiTasksTableTableManager
                 taskType: taskType,
                 role: role,
                 inputContent: inputContent,
+                inputImages: inputImages,
                 outputContent: outputContent,
                 thought: thought,
                 provider: provider,

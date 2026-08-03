@@ -16,10 +16,11 @@ import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/ai_hub/ai_hub_page.dart';
-import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/anime_details_page/anime_page.dart';
+import 'package:kostori/pages/anime_recognize_page.dart';
 import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/lan_discovery_page.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/pages/video_test_page.dart';
 import 'package:kostori/utils/data_sync.dart';
@@ -561,6 +562,13 @@ class _ToolEntryGrid extends StatelessWidget {
                     Icons.translate,
                     () => context.to(() => const ManualTranslationPage()),
                     t.translation,
+                  ),
+                  const SizedBox(width: 28),
+                  _iconBlock(
+                    context,
+                    Icons.image_search,
+                    () => context.to(() => const AnimeRecognizePage()),
+                    t.animeRecognize,
                   ),
                   const SizedBox(width: 28),
                   _iconBlock(
