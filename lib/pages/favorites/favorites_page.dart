@@ -404,8 +404,6 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
             title: t.local,
             trailing: _buildLocalCountBadge(),
           ),
-          // 分组切换已由右侧 TabBar 承担；仅弹窗（文件夹选择器）展示分组子导航
-          if (widget.withAppbar) _buildFolderList(),
           _buildNavTile(
             index: 1,
             icon: Icons.cloud_outlined,
@@ -560,20 +558,6 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
     );
   }
 
-  /// 本地收藏的文件夹子导航
-  Widget _buildFolderList() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 12, top: 2),
-      child: Column(
-        children: [
-          for (final name in folders) ...[
-            buildLocalFolder(name) ?? const SizedBox.shrink(),
-          ],
-        ],
-      ),
-    );
-  }
-
   void _showSwitchUserDialog() {
     showInputDialog(
       context: App.rootContext,
@@ -594,70 +578,6 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
         }
         return null;
       },
-    );
-  }
-
-  Widget? buildLocalFolder(String name) {
-    if (name == 'default') {
-      if (manager.getAllAnimes('default', FavoriteSortType.nameAsc).isEmpty) {
-        return const SizedBox.shrink();
-      }
-    }
-
-    final isSelected = name == favPage.folder && !favPage.isNetwork;
-    final count = manager.folderAnimes(name);
-
-    return InkWell(
-      onTap: isSelected
-          ? null
-          : () {
-              favPage.setFolder(false, name);
-              // 同步本地收藏的 Tab 到该文件夹
-              final idx = ref
-                  .read(favoritesControllerProvider)
-                  .folders
-                  .indexOf(name);
-              if (idx >= 0) {
-                try {
-                  favoritesController.tabController?.animateTo(idx);
-                } catch (_) {
-                  // 本地页尚未初始化时忽略
-                }
-              }
-              widget.onSelected?.call();
-            },
-      child: Container(
-        height: 42,
-        alignment: Alignment.centerLeft,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.colorScheme.primaryContainer.toOpacity(0.36)
-              : null,
-          border: Border(
-            left: BorderSide(
-              color: isSelected
-                  ? context.colorScheme.primary
-                  : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.only(left: 16),
-        child: Row(
-          children: [
-            Expanded(child: Text(name == 'default' ? t.kDefault : name)),
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(count.toString()),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
