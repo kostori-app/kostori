@@ -226,7 +226,7 @@ class AppScrollBar extends StatefulWidget {
 }
 
 class _AppScrollBarState extends State<AppScrollBar> {
-  bool showScrollbar = true;
+  bool showScrollbar = false;
   Timer? _hideTimer;
 
   double minExtent = 0;
@@ -376,59 +376,64 @@ class _AppScrollBarState extends State<AppScrollBar> {
                   right: 0,
                   bottom: widget.bottomPadding,
                   width: _scrollbarHeight,
-                  // 右侧整条轨道：点击跳转到对应位置
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTapUp: (details) {
-                      final target =
-                          minExtent +
-                          details.localPosition.dy / viewHeight * scrollExtent;
-                      _safeJumpTo(
-                        _outerPosition ?? _innerPosition,
-                        target.clamp(minExtent, maxExtent),
-                      );
-                      _restartHideTimer();
-                    },
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: top,
-                          right: 0,
-                          child: AnimatedOpacity(
-                            opacity: showScrollbar ? 1.0 : 0.0,
-                            duration: const Duration(milliseconds: 300),
-                            child: MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: Listener(
-                                behavior: HitTestBehavior.translucent,
-                                onPointerDown: (event) {
-                                  _dragGestureRecognizer.addPointer(event);
-                                  _restartHideTimer();
-                                },
-                                child: SizedBox(
-                                  width: _scrollbarHeight / 2,
-                                  height: _scrollbarHeight,
-                                  child: CustomPaint(
-                                    painter: _ScrollIndicatorPainter(
-                                      backgroundColor:
-                                          context.colorScheme.surface,
-                                      shadowColor: context.colorScheme.shadow,
+                  // 右侧整条轨道：点击跳转到对应位置（隐形时忽略触摸，不拦截内容）
+                  child: IgnorePointer(
+                    ignoring: !showScrollbar,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTapUp: (details) {
+                        final target =
+                            minExtent +
+                            details.localPosition.dy /
+                                viewHeight *
+                                scrollExtent;
+                        _safeJumpTo(
+                          _outerPosition ?? _innerPosition,
+                          target.clamp(minExtent, maxExtent),
+                        );
+                        _restartHideTimer();
+                      },
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: top,
+                            right: 0,
+                            child: AnimatedOpacity(
+                              opacity: showScrollbar ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 300),
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: Listener(
+                                  behavior: HitTestBehavior.translucent,
+                                  onPointerDown: (event) {
+                                    _dragGestureRecognizer.addPointer(event);
+                                    _restartHideTimer();
+                                  },
+                                  child: SizedBox(
+                                    width: _scrollbarHeight / 2,
+                                    height: _scrollbarHeight,
+                                    child: CustomPaint(
+                                      painter: _ScrollIndicatorPainter(
+                                        backgroundColor:
+                                            context.colorScheme.surface,
+                                        shadowColor: context.colorScheme.shadow,
+                                      ),
+                                      child: Column(
+                                        children: const [
+                                          Spacer(),
+                                          Icon(Icons.arrow_drop_up, size: 18),
+                                          Icon(Icons.arrow_drop_down, size: 18),
+                                          Spacer(),
+                                        ],
+                                      ).paddingLeft(4),
                                     ),
-                                    child: Column(
-                                      children: const [
-                                        Spacer(),
-                                        Icon(Icons.arrow_drop_up, size: 18),
-                                        Icon(Icons.arrow_drop_down, size: 18),
-                                        Spacer(),
-                                      ],
-                                    ).paddingLeft(4),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
