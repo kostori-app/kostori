@@ -4,7 +4,13 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 
-/// Bangumi 1~10 分投票分布柱状图
+class AppColors {
+  static const contentColorCyan = Color(0xFF00FFFF);
+  static const contentColorBlue = Color(0xFF0000FF);
+
+  static Color mainGridLineColor = Color(0x42A9A9A9).withAlpha(255);
+}
+
 class BangumiBarChartPage extends StatelessWidget {
   final BangumiItem bangumiItem;
 
@@ -12,10 +18,9 @@ class BangumiBarChartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final yInterval = _getYInterval(bangumiItem);
     final maxY = _ceilToInterval(
-      bangumiItem.total.toDouble() * 2 / 3,
+      (bangumiItem.total.toDouble() * 2 / 3),
       yInterval,
     );
 
@@ -23,27 +28,19 @@ class BangumiBarChartPage extends StatelessWidget {
       aspectRatio: 1.6,
       child: BarChart(
         BarChartData(
-          maxY: maxY > 0 ? maxY : 10,
+          maxY: maxY,
           alignment: BarChartAlignment.spaceAround,
-          barTouchData: barTouchData(cs),
+          barTouchData: barTouchData,
           titlesData: FlTitlesData(
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: _bottomTitles,
-                reservedSize: 30,
+                reservedSize: 28,
               ),
             ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: yInterval,
-                reservedSize: 42,
-                getTitlesWidget: (value, meta) => Text(
-                  value.toInt().toString(),
-                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                ),
-              ),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
             ),
             rightTitles: const AxisTitles(
               sideTitles: SideTitles(showTitles: false),
@@ -53,26 +50,18 @@ class BangumiBarChartPage extends StatelessWidget {
             ),
           ),
           borderData: FlBorderData(show: false),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: yInterval,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: cs.outlineVariant.withValues(alpha: 0.4),
-              strokeWidth: 1,
-            ),
-          ),
-          barGroups: _buildBarGroups(bangumiItem, cs),
+          gridData: FlGridData(show: true),
+          barGroups: _buildBarGroups(bangumiItem),
         ),
       ),
     );
   }
 
-  BarTouchData barTouchData(ColorScheme cs) => BarTouchData(
+  BarTouchData get barTouchData => BarTouchData(
     enabled: true,
     touchTooltipData: BarTouchTooltipData(
-      getTooltipColor: (_) => cs.surfaceContainerHighest,
-      tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      getTooltipColor: (group) => Colors.transparent,
+      tooltipPadding: EdgeInsets.zero,
       tooltipMargin: 8,
       getTooltipItem:
           (
@@ -80,30 +69,24 @@ class BangumiBarChartPage extends StatelessWidget {
             int groupIndex,
             BarChartRodData rod,
             int rodIndex,
-          ) => BarTooltipItem(
-            rod.toY.round().toString(),
-            TextStyle(
-              color: cs.onSurface,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
+          ) {
+            return BarTooltipItem(
+              rod.toY.round().toString(),
+              const TextStyle(
+                color: AppColors.contentColorCyan,
+                fontWeight: FontWeight.bold,
+              ),
+            );
+          },
     ),
   );
 
-  List<BarChartGroupData> _buildBarGroups(BangumiItem item, ColorScheme cs) {
+  List<BarChartGroupData> _buildBarGroups(BangumiItem item) {
     final gradient = LinearGradient(
-      colors: [cs.primaryContainer, cs.primary],
+      colors: [Colors.tealAccent, Colors.blueAccent],
       begin: Alignment.bottomCenter,
       end: Alignment.topCenter,
     );
-    final topGradient = LinearGradient(
-      colors: [cs.tertiaryContainer, cs.tertiary],
-      begin: Alignment.bottomCenter,
-      end: Alignment.topCenter,
-    );
-    final maxCount =
-        item.count?.values.fold<int>(0, (a, b) => b > a ? b : a) ?? 0;
 
     return List.generate(10, (index) {
       final scoreKey = (index + 1).toString();
@@ -115,10 +98,10 @@ class BangumiBarChartPage extends StatelessWidget {
         barRods: [
           BarChartRodData(
             toY: count,
-            gradient: (count > 0 && count == maxCount) ? topGradient : gradient,
-            width: 12,
+            gradient: gradient,
+            width: 9,
             borderSide: BorderSide.none,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
           ),
         ],
       );
@@ -128,10 +111,10 @@ class BangumiBarChartPage extends StatelessWidget {
   Widget _bottomTitles(double value, TitleMeta meta) {
     return SideTitleWidget(
       meta: meta,
-      space: 6,
+      space: 4,
       child: Text(
         '${value.toInt() + 1}',
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -159,7 +142,6 @@ class BangumiBarChartPage extends StatelessWidget {
   }
 }
 
-/// 通用整数列表柱状图
 class IntListBarChartPage extends StatelessWidget {
   final List<int> values;
 
@@ -167,7 +149,6 @@ class IntListBarChartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final maxValue = values.isEmpty ? 1.0 : values.reduce(max).toDouble();
     final yInterval = _calculateOptimalIntegerInterval(maxValue);
     final maxY = _ceilToInterval(maxValue + 1, yInterval);
@@ -178,25 +159,17 @@ class IntListBarChartPage extends StatelessWidget {
         BarChartData(
           maxY: maxY > 0 ? maxY : 1,
           alignment: BarChartAlignment.spaceAround,
-          barTouchData: barTouchData(cs),
+          barTouchData: barTouchData,
           titlesData: FlTitlesData(
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: _bottomTitles,
-                reservedSize: 30,
+                reservedSize: 28,
               ),
             ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: yInterval,
-                reservedSize: 42,
-                getTitlesWidget: (value, meta) => Text(
-                  value.toInt().toString(),
-                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                ),
-              ),
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
             ),
             rightTitles: const AxisTitles(
               sideTitles: SideTitles(showTitles: false),
@@ -206,26 +179,18 @@ class IntListBarChartPage extends StatelessWidget {
             ),
           ),
           borderData: FlBorderData(show: false),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: yInterval,
-            getDrawingHorizontalLine: (_) => FlLine(
-              color: cs.outlineVariant.withValues(alpha: 0.4),
-              strokeWidth: 1,
-            ),
-          ),
-          barGroups: _buildBarGroups(values, cs),
+          gridData: FlGridData(show: true),
+          barGroups: _buildBarGroups(values),
         ),
       ),
     );
   }
 
-  BarTouchData barTouchData(ColorScheme cs) => BarTouchData(
+  BarTouchData get barTouchData => BarTouchData(
     enabled: true,
     touchTooltipData: BarTouchTooltipData(
-      getTooltipColor: (_) => cs.surfaceContainerHighest,
-      tooltipPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      getTooltipColor: (group) => Colors.transparent,
+      tooltipPadding: EdgeInsets.zero,
       tooltipMargin: 8,
       getTooltipItem:
           (
@@ -233,20 +198,18 @@ class IntListBarChartPage extends StatelessWidget {
             int groupIndex,
             BarChartRodData rod,
             int rodIndex,
-          ) => BarTooltipItem(
-            rod.toY.round().toString(),
-            TextStyle(
-              color: cs.onSurface,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
+          ) {
+            return BarTooltipItem(
+              rod.toY.round().toString(),
+              const TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
+            );
+          },
     ),
   );
 
-  List<BarChartGroupData> _buildBarGroups(List<int> values, ColorScheme cs) {
-    final gradient = LinearGradient(
-      colors: [cs.primaryContainer, cs.primary],
+  List<BarChartGroupData> _buildBarGroups(List<int> values) {
+    final gradient = const LinearGradient(
+      colors: [Colors.tealAccent, Colors.blueAccent],
       begin: Alignment.bottomCenter,
       end: Alignment.topCenter,
     );
@@ -272,10 +235,10 @@ class IntListBarChartPage extends StatelessWidget {
   Widget _bottomTitles(double value, TitleMeta meta) {
     return SideTitleWidget(
       meta: meta,
-      space: 6,
+      space: 4,
       child: Text(
         '${value.toInt() + 1}',
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
       ),
     );
   }
