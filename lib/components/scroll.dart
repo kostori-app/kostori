@@ -282,13 +282,23 @@ class _AppScrollBarState extends State<AppScrollBar> {
       // 外层滚动范围
       double outerMax = _outerPosition!.maxScrollExtent;
       if (newPosition <= outerMax) {
-        _outerPosition!.jumpTo(newPosition);
+        _safeJumpTo(_outerPosition, newPosition);
       } else {
-        _outerPosition!.jumpTo(outerMax);
-        _innerPosition!.jumpTo(newPosition - outerMax);
+        _safeJumpTo(_outerPosition, outerMax);
+        _safeJumpTo(_innerPosition, newPosition - outerMax);
       }
-    } else if (_outerPosition != null) {
-      _outerPosition!.jumpTo(newPosition);
+    } else {
+      _safeJumpTo(_outerPosition, newPosition);
+    }
+  }
+
+  /// 安全跳转：滚动位置可能已被 dispose（滚动区被移除/重建），忽略即可
+  void _safeJumpTo(ScrollPosition? pos, double value) {
+    if (pos == null) return;
+    try {
+      pos.jumpTo(value);
+    } catch (_) {
+      // ScrollPositionWithSingleContext 已 dispose
     }
   }
 
@@ -373,7 +383,8 @@ class _AppScrollBarState extends State<AppScrollBar> {
                       final target =
                           minExtent +
                           details.localPosition.dy / viewHeight * scrollExtent;
-                      (_outerPosition ?? _innerPosition)?.jumpTo(
+                      _safeJumpTo(
+                        _outerPosition ?? _innerPosition,
                         target.clamp(minExtent, maxExtent),
                       );
                       _restartHideTimer();

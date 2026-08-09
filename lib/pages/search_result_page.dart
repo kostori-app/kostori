@@ -5,6 +5,7 @@ import 'package:kostori/database/search_history.dart';
 import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/search_page.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/translations.dart';
@@ -100,19 +101,19 @@ class _SearchResultPageState extends State<SearchResultPage> {
       loadPage: source!.searchPageData!.loadPage == null
           ? null
           : (i) {
-              return source.searchPageData!.loadPage!(text, i, options);
-            },
+        return source.searchPageData!.loadPage!(text, i, options);
+      },
       loadNext: source.searchPageData!.loadNext == null
           ? null
           : (i) {
-              return source.searchPageData!.loadNext!(text, i, options);
-            },
+        return source.searchPageData!.loadNext!(text, i, options);
+      },
     );
   }
 
   Widget buildAction() {
     return Tooltip(
-      message: "Settings".tl,
+      message: t.settings,
       child: IconButton(
         icon: const Icon(Icons.tune),
         onPressed: () async {
@@ -171,7 +172,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
       return !enabled.contains(e.key);
     });
     return ContentDialog(
-      title: "Settings".tl,
+      title: t.settings,
       content: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: 320),
         child: SingleChildScrollView(
@@ -179,7 +180,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
             children: [
               ListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                title: Text("Search in".tl),
+                title: Text(t.searchIn),
               ),
               Wrap(
                 spacing: 8,
@@ -196,7 +197,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
                             AnimeSource.find(
                               searchTarget,
                             )!.searchPageData!.searchOptions ??
-                            <SearchOptions>[];
+                                <SearchOptions>[];
                         options = searchOptions
                             .map((e) => e.defaultValue)
                             .toList();
@@ -213,7 +214,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
       ).fixWidth(double.infinity),
       actions: [
         FilledButton(
-          child: Text("Confirm".tl),
+          child: Text(t.confirm),
           onPressed: () {
             context.pop();
           },
@@ -227,7 +228,7 @@ class _SearchSettingsDialogState extends State<_SearchSettingsDialog> {
 
     final searchOptions =
         AnimeSource.find(searchTarget)!.searchPageData!.searchOptions ??
-        <SearchOptions>[];
+            <SearchOptions>[];
     if (searchOptions.length != options.length) {
       options = searchOptions.map((e) => e.defaultValue).toList();
     }

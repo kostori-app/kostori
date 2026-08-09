@@ -3,6 +3,7 @@ import "package:kostori/components/anime_list.dart";
 import 'package:kostori/components/components.dart';
 import "package:kostori/foundation/anime_source/anime_source.dart";
 import "package:kostori/foundation/app.dart";
+import "package:kostori/i18n/strings.g.dart";
 import "package:kostori/utils/translations.dart";
 
 class RankingPage extends StatefulWidget {
@@ -42,7 +43,7 @@ class _RankingPageState extends State<RankingPage> {
     var topPadding = context.padding.top + 56;
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: Appbar(title: Text("Ranking".tl)),
+      appBar: Appbar(title: Text(t.ranking)),
       body: AnimeList(
         key: Key(optionValue),
         errorLeading: SizedBox(height: topPadding),

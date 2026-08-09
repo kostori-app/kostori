@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:kostori/i18n/strings.g.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:local_auth/local_auth.dart';
 
 class AuthPage extends StatefulWidget {
@@ -42,7 +41,7 @@ class _AuthPageState extends State<AuthPage> {
             children: [
               const Icon(Icons.security, size: 36),
               const SizedBox(height: 16),
-              Text("Authentication Required".tl),
+              Text(t.authenticationRequired),
               const SizedBox(height: 16),
               FilledButton(onPressed: auth, child: Text(t.continueText)),
             ],
@@ -60,7 +59,7 @@ class _AuthPageState extends State<AuthPage> {
       return;
     }
     var isAuthorized = await localAuth.authenticate(
-      localizedReason: "Please authenticate to continue".tl,
+      localizedReason: t.pleaseAuthenticate,
     );
     if (isAuthorized) {
       widget.onSuccessfulAuth?.call();

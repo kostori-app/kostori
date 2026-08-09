@@ -115,9 +115,7 @@ class AnimeSourceParser {
     if (minAppVersion != null) {
       if (compareSemVer(minAppVersion, App.version.split('-').first)) {
         throw AnimeSourceParseException(
-          "minAppVersion @version is required".tlParams({
-            "version": minAppVersion,
-          }),
+          t.minAppVersionRequired(version: minAppVersion),
         );
       }
     }

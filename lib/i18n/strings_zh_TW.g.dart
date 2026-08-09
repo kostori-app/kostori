@@ -1491,6 +1491,14 @@ class TranslationsZhTw extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleteFailed => '刪除失敗';
 	@override String get deleteSuccessful => '刪除成功';
 	@override String get confirmDeleteImageHint => '刪除後將無法復原';
+	@override String get confirmDeleteAiProvider => '確定刪除該 AI 服務商設定？';
+	@override String get noTagData => '尚無標籤資料';
+	@override String get authenticationRequired => '需要身分驗證';
+	@override String get pleaseAuthenticate => '請繼續身分驗證';
+	@override String get shutDown => '關閉';
+	@override String get uploadingData => '正在上傳資料...';
+	@override String get glimmerModeEnabled => '微光模式:開';
+	@override String get glimmerModeDisabled => '微光模式:關';
 	@override String get savingImage => '正在儲存圖片...';
 	@override String get saveFailedPermission => '儲存失敗：權限或目錄異常';
 	@override String get bangumiDataUpdateFailed => 'Bangumi資料更新失敗';
@@ -3610,6 +3618,14 @@ extension on TranslationsZhTw {
 			'deleteFailed' => '刪除失敗',
 			'deleteSuccessful' => '刪除成功',
 			'confirmDeleteImageHint' => '刪除後將無法復原',
+			'confirmDeleteAiProvider' => '確定刪除該 AI 服務商設定？',
+			'noTagData' => '尚無標籤資料',
+			'authenticationRequired' => '需要身分驗證',
+			'pleaseAuthenticate' => '請繼續身分驗證',
+			'shutDown' => '關閉',
+			'uploadingData' => '正在上傳資料...',
+			'glimmerModeEnabled' => '微光模式:開',
+			'glimmerModeDisabled' => '微光模式:關',
 			'savingImage' => '正在儲存圖片...',
 			'saveFailedPermission' => '儲存失敗：權限或目錄異常',
 			'bangumiDataUpdateFailed' => 'Bangumi資料更新失敗',
@@ -3644,6 +3660,8 @@ extension on TranslationsZhTw {
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 廣告標記',
 			'ultraShortSegment' => '極短分片',
+			_ => null,
+		} ?? switch (path) {
 			'commonAdUrlPattern' => '常見廣告 URL 特徵',
 			'keywordMatch' => '關鍵字比對',
 			'keywordHint' => '子字串，如 advert 或 adservice',
@@ -3652,8 +3670,6 @@ extension on TranslationsZhTw {
 			'synopsis' => '簡介',
 			'currentEpisode' => '目前集數',
 			'playbackRoute' => '播放線路',
-			_ => null,
-		} ?? switch (path) {
 			'progress' => '進度',
 			'playbackSpeed' => '播放倍率',
 			'otherSettings' => '其他設定',
@@ -4158,6 +4174,8 @@ extension on TranslationsZhTw {
 			'profileReplyStyle' => '回覆風格',
 			'replyLength' => '回覆長度',
 			'replyLengthShort' => '簡短',
+			_ => null,
+		} ?? switch (path) {
 			'replyLengthNormal' => '適中',
 			'replyLengthDetailed' => '詳細',
 			'replyUseEmoji' => '使用 emoji',
@@ -4166,8 +4184,6 @@ extension on TranslationsZhTw {
 			'mcpConnectionStatus' => '連線狀態',
 			'mcpConnected' => '已連線',
 			'mcpDisconnected' => '未連線',
-			_ => null,
-		} ?? switch (path) {
 			'mcpToolsImported' => '個工具',
 			'mcpReconnect' => '重新連線',
 			'mcpTestConnection' => '測試連線',

@@ -20,7 +20,6 @@ import 'package:kostori/pages/watcher/player_item_panel.dart';
 import 'package:kostori/pages/watcher/player_item_portrait_panel.dart';
 import 'package:kostori/pages/watcher/player_item_surface.dart';
 import 'package:kostori/utils/remote.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness_platform_interface/screen_brightness_platform_interface.dart';
 import 'package:window_manager/window_manager.dart';
@@ -197,19 +196,19 @@ class _PlayerItemState extends State<PlayerItem>
 
   MenuButton _buildMenuItems() {
     return MenuButton(
-      message: "More".tl,
+      message: t.more,
       entries: [
         if (App.isAndroid)
           MenuEntry(
             text: (appdata.settings['audioOutType'] ?? true)
-                ? "Audio Option: \n Low Latency".tl
-                : "Audio Option: \n Compatibility".tl,
+                ? t.audioOptionLowLatency
+                : t.audioOptionCompatibility,
             onClick: () async {
               try {
                 await playerController.changeAudioOutType();
-                App.rootContext.showMessage(message: "Switch Successful".tl);
+                App.rootContext.showMessage(message: t.switchSuccessful);
               } catch (e) {
-                App.rootContext.showMessage(message: "Switch Failed".tl);
+                App.rootContext.showMessage(message: t.switchFailed);
               }
             },
           ),
@@ -231,7 +230,7 @@ class _PlayerItemState extends State<PlayerItem>
             },
           ),
         MenuEntry(
-          text: !playerController.glimmerEffect ? "微光模式:关".tl : "微光模式:开".tl,
+          text: !playerController.glimmerEffect ? t.glimmerModeDisabled : t.glimmerModeEnabled,
           onClick: () {
             glimmerEffectMode();
           },

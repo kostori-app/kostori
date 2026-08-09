@@ -10,7 +10,6 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:mobx/mobx.dart';
 
@@ -153,7 +152,7 @@ abstract class _StatsController with Store {
               ),
               actions: [
                 FilledButton(
-                  child: Text("Apply".tl),
+                  child: Text(t.apply),
                   onPressed: () async {
                     final selectedInts = activeList
                         .map((name) => AnimeType.fromKey(name).value)

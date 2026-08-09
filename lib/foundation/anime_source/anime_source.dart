@@ -12,6 +12,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/foundation/res.dart';
 import 'package:kostori/pages/category_animes_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
@@ -19,7 +20,6 @@ import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/init.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 
 part 'category.dart';
 

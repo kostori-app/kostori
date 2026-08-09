@@ -32,6 +32,7 @@ class _WordCloudWidgetState extends State<WordCloudWidget> {
           mapheight: h,
           mintextsize: minSize,
           maxtextsize: maxSize,
+          attempt: 8,
           colorlist: standardColorMap.keys.toList(),
         );
       },

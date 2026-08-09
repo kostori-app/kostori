@@ -9,9 +9,9 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/proxy.dart';
 import 'package:kostori/utils/ext.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 export 'package:flutter_inappwebview/flutter_inappwebview.dart'
@@ -131,27 +131,27 @@ class _AppWebviewState extends State<AppWebview> {
   Widget build(BuildContext context) {
     final actions = [
       Tooltip(
-        message: "More".tl,
+        message: t.more,
         child: IconButton(
           icon: const Icon(Icons.more_horiz),
           onPressed: () {
             showMenuX(context, Offset(context.width, context.padding.top), [
               MenuEntry(
                 icon: Icons.open_in_browser,
-                text: "Open in Browser".tl,
+                text: t.openInBrowser,
                 onClick: () async =>
                     launchUrlString((await controller?.getUrl())!.toString()),
               ),
               MenuEntry(
                 icon: Icons.copy,
-                text: "Copy link".tl,
+                text: t.copyLink,
                 onClick: () async => Clipboard.setData(
                   ClipboardData(text: (await controller?.getUrl())!.toString()),
                 ),
               ),
               MenuEntry(
                 icon: Icons.refresh,
-                text: "Reload".tl,
+                text: t.reload,
                 onClick: () => controller?.reload(),
               ),
             ]);

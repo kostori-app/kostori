@@ -305,6 +305,7 @@ class _WordCloud extends ConsumerStatefulWidget {
 
 class _WordCloudState extends ConsumerState<_WordCloud> {
   List<Map<String, dynamic>> wordCloudData = [];
+  bool _loading = true;
 
   @override
   void initState() {
@@ -313,6 +314,7 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
   }
 
   Future<void> _loadWordCloudData() async {
+    setState(() => _loading = true);
     final allStats = await StatsManager().getStatsAll();
 
     final seenIds = <int>{};
@@ -333,9 +335,10 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
     setState(() {
       wordCloudData = BangumiUtils.sortedTagItemMap(
         likedItems,
-        minTagCount: 20,
+        minTagCount: 2,
         minItemCount: 2,
-      ).take(60).toList();
+      );
+      _loading = false;
     });
   }
 
@@ -434,8 +437,23 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
 
   @override
   Widget build(BuildContext context) {
-    if (wordCloudData.length < 2) {
+    if (_loading) {
       return const Center(child: KostoriRefreshIndicator());
+    }
+    if (wordCloudData.length < 2) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 56, color: Colors.grey),
+            const SizedBox(height: 12),
+            Text(
+              t.noTagData,
+              style: const TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ],
+        ),
+      );
     }
     return Column(
       children: [
@@ -473,6 +491,7 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
                     mapheight: h,
                     mintextsize: minSize,
                     maxtextsize: maxSize,
+                    attempt: 8,
                     colorlist: standardColorMap.keys.toList(),
                     onWordTap: (word) {
                       final entry = wordCloudData.firstWhere(

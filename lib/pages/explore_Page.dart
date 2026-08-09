@@ -241,23 +241,23 @@ class _ExplorePageState extends State<ExplorePage>
   }
 
   Widget buildEmpty() {
-    var msg = "No Explore Pages".tl;
+    var msg = t.noExplorePages;
     msg += '\n';
     VoidCallback onTap;
     if (AnimeSource.isEmpty) {
-      msg += "Please add some sources".tl;
+      msg += t.pleaseAddSomeSources;
       onTap = () {
         context.to(() => AnimeSourceSettings());
       };
     } else {
-      msg += "Please check your settings".tl;
+      msg += t.pleaseCheckYourSettings;
       onTap = addPage;
     }
     return NetworkError(
       message: msg,
       retry: onTap,
       withAppbar: false,
-      buttonText: "Manage".tl,
+      buttonText: t.manage,
     );
   }
 
@@ -275,7 +275,7 @@ class _ExplorePageState extends State<ExplorePage>
         controller: sourceController,
         actionButton: TabActionButton(
           icon: const Icon(Icons.add),
-          text: "Add".tl,
+          text: t.add,
           onPressed: addPage,
         ),
       ),

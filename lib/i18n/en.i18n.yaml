@@ -1499,6 +1499,14 @@ addToFavoritesSuccess: Add to favorites success
 deleteFailed: Delete failed
 deleteSuccessful: Deleted
 confirmDeleteImageHint: This cannot be undone
+confirmDeleteAiProvider: Delete this AI provider configuration?
+noTagData: No tag data
+authenticationRequired: Authentication Required
+pleaseAuthenticate: Please authenticate to continue
+shutDown: Shut Down
+uploadingData: Uploading data...
+glimmerModeEnabled: "Glimmer mode: on"
+glimmerModeDisabled: "Glimmer mode: off"
 savingImage: Saving image...
 saveFailedPermission: "Save failed: permission or directory error"
 bangumiDataUpdateFailed: Bangumi data update failed...

@@ -4390,6 +4390,30 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	/// en: 'This cannot be undone'
 	String get confirmDeleteImageHint => 'This cannot be undone';
 
+	/// en: 'Delete this AI provider configuration?'
+	String get confirmDeleteAiProvider => 'Delete this AI provider configuration?';
+
+	/// en: 'No tag data'
+	String get noTagData => 'No tag data';
+
+	/// en: 'Authentication Required'
+	String get authenticationRequired => 'Authentication Required';
+
+	/// en: 'Please authenticate to continue'
+	String get pleaseAuthenticate => 'Please authenticate to continue';
+
+	/// en: 'Shut Down'
+	String get shutDown => 'Shut Down';
+
+	/// en: 'Uploading data...'
+	String get uploadingData => 'Uploading data...';
+
+	/// en: 'Glimmer mode: on'
+	String get glimmerModeEnabled => 'Glimmer mode: on';
+
+	/// en: 'Glimmer mode: off'
+	String get glimmerModeDisabled => 'Glimmer mode: off';
+
 	/// en: 'Saving image...'
 	String get savingImage => 'Saving image...';
 
@@ -7719,6 +7743,14 @@ extension on Translations {
 			'deleteFailed' => 'Delete failed',
 			'deleteSuccessful' => 'Deleted',
 			'confirmDeleteImageHint' => 'This cannot be undone',
+			'confirmDeleteAiProvider' => 'Delete this AI provider configuration?',
+			'noTagData' => 'No tag data',
+			'authenticationRequired' => 'Authentication Required',
+			'pleaseAuthenticate' => 'Please authenticate to continue',
+			'shutDown' => 'Shut Down',
+			'uploadingData' => 'Uploading data...',
+			'glimmerModeEnabled' => 'Glimmer mode: on',
+			'glimmerModeDisabled' => 'Glimmer mode: off',
 			'savingImage' => 'Saving image...',
 			'saveFailedPermission' => 'Save failed: permission or directory error',
 			'bangumiDataUpdateFailed' => 'Bangumi data update failed...',
@@ -7755,6 +7787,8 @@ extension on Translations {
 			'cueAdTag' => 'CUE Ad Tag',
 			'ultraShortSegment' => 'Ultra Short Segment',
 			'commonAdUrlPattern' => 'Common Ad URL Pattern',
+			_ => null,
+		} ?? switch (path) {
 			'keywordMatch' => 'Keyword Match',
 			'keywordHint' => 'Substring, e.g. advert or adservice',
 			'commonAdKeyword' => 'Common Ad Keyword',
@@ -7763,8 +7797,6 @@ extension on Translations {
 			'currentEpisode' => 'Current Episode',
 			'playbackRoute' => 'Playback Route',
 			'progress' => 'Progress',
-			_ => null,
-		} ?? switch (path) {
 			'playbackSpeed' => 'Playback Speed',
 			'otherSettings' => 'Other Settings',
 			'audioLowLatency' => 'Audio: Low Latency',
@@ -8269,6 +8301,8 @@ extension on Translations {
 			'profileExamplesHint' => 'One pair per line, format: 用户: xxx | 助手: xxx',
 			'profileReplyStyle' => 'Reply style',
 			'replyLength' => 'Reply length',
+			_ => null,
+		} ?? switch (path) {
 			'replyLengthShort' => 'Concise',
 			'replyLengthNormal' => 'Normal',
 			'replyLengthDetailed' => 'Detailed',
@@ -8277,8 +8311,6 @@ extension on Translations {
 			'replyAskBack' => 'Ask back at the end',
 			'mcpConnectionStatus' => 'Connection status',
 			'mcpConnected' => 'Connected',
-			_ => null,
-		} ?? switch (path) {
 			'mcpDisconnected' => 'Disconnected',
 			'mcpToolsImported' => 'tools imported',
 			'mcpReconnect' => 'Reconnect',

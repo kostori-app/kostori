@@ -1497,6 +1497,14 @@ addToFavoritesSuccess: 添加收藏成功
 deleteFailed: 删除失败
 deleteSuccessful: 删除成功
 confirmDeleteImageHint: 删除后将无法恢复
+confirmDeleteAiProvider: 确定删除该 AI 服务商配置？
+noTagData: 暂无标签数据
+authenticationRequired: 需要身份验证
+pleaseAuthenticate: 请继续身份验证
+shutDown: 关闭
+uploadingData: 正在上传数据...
+glimmerModeEnabled: 微光模式:开
+glimmerModeDisabled: 微光模式:关
 savingImage: 正在保存图片...
 saveFailedPermission: 保存失败：权限或目录异常
 bangumiDataUpdateFailed: Bangumi数据更新失败

@@ -649,8 +649,17 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
   );
 
   Future<void> _delete() async {
-    await AiDatabase.instance.aiApiKeyDao.deleteByProvider(widget.source);
-    if (mounted) App.rootContext.pop(context);
+    await showConfirmDialog(
+      context: context,
+      title: t.delete,
+      content: '${t.confirmDeleteAiProvider}\n${widget.name}',
+      confirmText: t.delete,
+      btnColor: Theme.of(context).colorScheme.error,
+      onConfirm: () async {
+        await AiDatabase.instance.aiApiKeyDao.deleteByProvider(widget.source);
+        if (mounted) App.rootContext.pop(context);
+      },
+    );
   }
 
   Future<void> _deleteModel(AiModel model) async {

@@ -11,11 +11,11 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/res.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/data.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:kostori/utils/translations.dart';
 import 'package:webdav_client/webdav_client.dart' hide File;
 
 class DataSync with ChangeNotifier {
@@ -116,10 +116,10 @@ class DataSync with ChangeNotifier {
   void _showWindowCloseDialog() async {
     showLoadingDialog(
       App.rootContext,
-      cancelButtonText: "Shut Down".tl,
+      cancelButtonText: t.shutDown,
       onCancel: () => exit(0),
       barrierDismissible: false,
-      message: "Uploading data...".tl,
+      message: t.uploadingData,
     );
     while (_isUploading) {
       await Future.delayed(const Duration(milliseconds: 50));

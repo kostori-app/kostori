@@ -1491,6 +1491,14 @@ class TranslationsZhCn extends Translations with BaseTranslations<AppLocale, Tra
 	@override String get deleteFailed => '删除失败';
 	@override String get deleteSuccessful => '删除成功';
 	@override String get confirmDeleteImageHint => '删除后将无法恢复';
+	@override String get confirmDeleteAiProvider => '确定删除该 AI 服务商配置？';
+	@override String get noTagData => '暂无标签数据';
+	@override String get authenticationRequired => '需要身份验证';
+	@override String get pleaseAuthenticate => '请继续身份验证';
+	@override String get shutDown => '关闭';
+	@override String get uploadingData => '正在上传数据...';
+	@override String get glimmerModeEnabled => '微光模式:开';
+	@override String get glimmerModeDisabled => '微光模式:关';
 	@override String get savingImage => '正在保存图片...';
 	@override String get saveFailedPermission => '保存失败：权限或目录异常';
 	@override String get bangumiDataUpdateFailed => 'Bangumi数据更新失败';
@@ -3611,6 +3619,14 @@ extension on TranslationsZhCn {
 			'deleteFailed' => '删除失败',
 			'deleteSuccessful' => '删除成功',
 			'confirmDeleteImageHint' => '删除后将无法恢复',
+			'confirmDeleteAiProvider' => '确定删除该 AI 服务商配置？',
+			'noTagData' => '暂无标签数据',
+			'authenticationRequired' => '需要身份验证',
+			'pleaseAuthenticate' => '请继续身份验证',
+			'shutDown' => '关闭',
+			'uploadingData' => '正在上传数据...',
+			'glimmerModeEnabled' => '微光模式:开',
+			'glimmerModeDisabled' => '微光模式:关',
 			'savingImage' => '正在保存图片...',
 			'saveFailedPermission' => '保存失败：权限或目录异常',
 			'bangumiDataUpdateFailed' => 'Bangumi数据更新失败',
@@ -3645,6 +3661,8 @@ extension on TranslationsZhCn {
 			'durationHint' => '秒数，如 4.0',
 			'tagHint' => '如',
 			'cueAdTag' => 'CUE 广告标记',
+			_ => null,
+		} ?? switch (path) {
 			'ultraShortSegment' => '极短分片',
 			'commonAdUrlPattern' => '常见广告 URL 特征',
 			'keywordMatch' => '关键字匹配',
@@ -3653,8 +3671,6 @@ extension on TranslationsZhCn {
 			'videoDetails' => '视频详情',
 			'synopsis' => '简介',
 			'currentEpisode' => '当前集数',
-			_ => null,
-		} ?? switch (path) {
 			'playbackRoute' => '播放线路',
 			'progress' => '进度',
 			'playbackSpeed' => '播放倍率',
@@ -4159,6 +4175,8 @@ extension on TranslationsZhCn {
 			'profileExamplesHint' => '每行一组，格式：用户: xxx | 助手: xxx',
 			'profileReplyStyle' => '回复风格',
 			'replyLength' => '回复长度',
+			_ => null,
+		} ?? switch (path) {
 			'replyLengthShort' => '简短',
 			'replyLengthNormal' => '适中',
 			'replyLengthDetailed' => '详细',
@@ -4167,8 +4185,6 @@ extension on TranslationsZhCn {
 			'replyAskBack' => '结尾反问用户',
 			'mcpConnectionStatus' => '连接状态',
 			'mcpConnected' => '已连接',
-			_ => null,
-		} ?? switch (path) {
 			'mcpDisconnected' => '未连接',
 			'mcpToolsImported' => '个工具',
 			'mcpReconnect' => '重连',
