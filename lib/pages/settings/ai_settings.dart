@@ -653,7 +653,6 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
       context: context,
       title: t.delete,
       content: '${t.confirmDeleteAiProvider}\n${widget.name}',
-      confirmText: t.delete,
       btnColor: Theme.of(context).colorScheme.error,
       onConfirm: () async {
         await AiDatabase.instance.aiApiKeyDao.deleteByProvider(widget.source);

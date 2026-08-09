@@ -125,7 +125,7 @@ abstract class _PlayerController with Store {
   @observable
   Duration currentPosition = Duration.zero;
   @observable
-  bool isBuffering = true;
+  bool isBuffering = false;
   @observable
   bool completed = false;
   @observable
