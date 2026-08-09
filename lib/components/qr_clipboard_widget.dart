@@ -131,6 +131,9 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
       } else if (parsed.type == KostoriRouteType.remote) {
         // 远程控制协议
         await _handleRemoteControl(context, parsed);
+      } else if (parsed.type == KostoriRouteType.hubRoom) {
+        // 一起看房间加入
+        await _handleHubRoom(context, parsed);
       } else {
         App.rootContext.showMessage(message: t.unrecognizedLink);
       }
@@ -222,6 +225,88 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
     }
   }
 
+  /// 处理一起看房间加入协议：连接 Hub 服务端并加入房间
+  Future<void> _handleHubRoom(
+    BuildContext context,
+    ParsedProtocol parsed,
+  ) async {
+    final info = parsed.hubRoomInfo;
+    if (info == null) {
+      App.rootContext.showMessage(message: t.invalidHubRoomLink);
+      return;
+    }
+
+    // 显示确认对话框
+    final navigator = Navigator.of(App.rootContext, rootNavigator: true);
+    final result = await showDialog<bool>(
+      context: App.rootContext,
+      builder: (ctx) => ContentDialog(
+        title: t.joinHubRoom,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.meeting_room_outlined,
+                  color: Theme.of(ctx).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    info.roomName.isEmpty
+                        ? t.hubRoomInvite
+                        : t.hubRoomInviteWithRoom(room: info.roomName),
+                    style: ts.s16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${t.hubAddress}: ${info.address}',
+              style: ts.s12.copyWith(color: Theme.of(ctx).colorScheme.outline),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => navigator.pop(true),
+            child: Text(t.join),
+          ),
+        ],
+      ),
+    );
+
+    if (result != true || !mounted) return;
+
+    App.rootContext.showMessage(message: t.connectingToHub);
+
+    try {
+      final client = ref.read(hubClientProvider);
+      if (!client.isConnected) {
+        await client.connect(
+          info.address,
+          info.token ?? client.savedToken ?? '',
+          name: client.savedName ?? '',
+        );
+      }
+      if (info.password != null && info.password!.isNotEmpty) {
+        client.joinRoom(info.roomId, password: info.password);
+      } else {
+        client.joinRoom(info.roomId);
+      }
+      App.rootContext.showMessage(message: t.joinedRoom);
+    } catch (e) {
+      DebugLog.error('HubRoom', '加入房间失败', e);
+      App.rootContext.showMessage(
+        message: t.connectionFailed,
+        level: LogLevel.warning,
+      );
+    }
+  }
+
   Future<void> _checkClipboard(BuildContext context) async {
     final cp = ref.read(clipboardNotifierProvider);
     await cp.checkClipboard();
@@ -287,6 +372,11 @@ class _QrClipboardWidgetState extends ConsumerState<QrClipboardWidget> {
           : parsed.payload;
     } else if (parsed.type == KostoriRouteType.bangumi) {
       detail = 'Bangumi ID：${parsed.payload}';
+    } else if (parsed.type == KostoriRouteType.hubRoom) {
+      final info = parsed.hubRoomInfo;
+      detail =
+          '一起看房间：${info?.roomName ?? parsed.payload}\n'
+          '服务端：${info?.address ?? ''}';
     } else {
       detail = parsed.payload;
     }

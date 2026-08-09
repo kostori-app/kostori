@@ -107,7 +107,7 @@ class _InfoTabViewState extends State<InfoTabView>
   Widget get infoBody {
     double standardDeviation = Utils.getDeviation(
       widget.bangumiItem.total,
-      widget.bangumiItem.count!.values.toList(),
+      widget.bangumiItem.count?.values.toList() ?? const [],
       widget.bangumiItem.score,
     );
     return Center(
@@ -480,7 +480,6 @@ class _InfoTabViewState extends State<InfoTabView>
                                           fit: BoxFit.cover,
                                         ),
                                       ),
-                                      // 标题
                                       Padding(
                                         padding: const EdgeInsets.all(4.0),
                                         child: Center(
@@ -585,22 +584,6 @@ class _InfoTabViewState extends State<InfoTabView>
                       ),
                       child: Text('${widget.bangumiItem.score}', style: ts.s12),
                     ),
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          infoController.showLineChart =
-                              !infoController.showLineChart;
-                        });
-                      },
-                      icon: Icon(
-                        infoController.showLineChart
-                            ? Icons.show_chart
-                            : Icons.bar_chart,
-                      ),
-                      label: Text(
-                        infoController.showLineChart ? t.lineChart : t.barChart,
-                      ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -628,9 +611,7 @@ class _InfoTabViewState extends State<InfoTabView>
                   ),
                 ),
                 const SizedBox(height: 8),
-                infoController.showLineChart
-                    ? LineChatPage(bangumiItem: widget.bangumiItem)
-                    : BangumiBarChartPage(bangumiItem: widget.bangumiItem),
+                BangumiBarChartPage(bangumiItem: widget.bangumiItem),
               ],
             ],
           ),

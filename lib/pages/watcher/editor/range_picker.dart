@@ -148,15 +148,13 @@ class _RangeOverlayState extends State<_RangeOverlay> {
               final dxTimeMs = (d.delta.dx / pxPerMs).round();
               setState(() {
                 final newStart = Duration(
-                  milliseconds: math
-                      .max(
-                        0,
-                        math.min(
-                          (_localStart.inMilliseconds + dxTimeMs).toDouble(),
-                          (_localEnd.inMilliseconds - 100).toDouble(),
-                        ),
-                      )
-                      .round(),
+                  milliseconds: max(
+                    0,
+                    min(
+                      (_localStart.inMilliseconds + dxTimeMs).toDouble(),
+                      (_localEnd.inMilliseconds - 100).toDouble(),
+                    ),
+                  ).round(),
                 );
 
                 final newDurMs =
@@ -203,15 +201,13 @@ class _RangeOverlayState extends State<_RangeOverlay> {
               final dxTimeMs = (d.delta.dx / pxPerMs).round();
               setState(() {
                 final newEnd = Duration(
-                  milliseconds: math
-                      .min(
-                        widget.totalDuration.inMilliseconds.toDouble(),
-                        math.max(
-                          (_localEnd.inMilliseconds + dxTimeMs).toDouble(),
-                          (_localStart.inMilliseconds + 100).toDouble(),
-                        ),
-                      )
-                      .round(),
+                  milliseconds: min(
+                    widget.totalDuration.inMilliseconds.toDouble(),
+                    max(
+                      (_localEnd.inMilliseconds + dxTimeMs).toDouble(),
+                      (_localStart.inMilliseconds + 100).toDouble(),
+                    ),
+                  ).round(),
                 );
 
                 final newDurMs =
@@ -261,7 +257,7 @@ class _RangeHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: '拖拽调整剪辑范围',
+      message: t.rangePickerDragHint,
       child: Container(
         width: radius * 2,
         height: 66.0,

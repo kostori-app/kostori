@@ -41,8 +41,7 @@ class CachedImageProvider
       DebugLog.error('CachedImageProvider', url);
     }
 
-    if (url.startsWith('data:') ||
-        (!url.contains('://') && !url.startsWith('/') && url.length > 100)) {
+    if (isBase64) {
       var raw = url;
       if (raw.contains(',')) {
         raw = raw.split(',').last;
@@ -74,6 +73,14 @@ class CachedImageProvider
         aid,
       )) {
         checkStop();
+        // 网络失败：直接抛出，由 ImageStream 显示占位；
+        // 不再报误导性的 "Empty response body"
+        if (progress.error != null) {
+          throw ImageLoadException(
+            url,
+            'Network error loading image: ${progress.error}',
+          );
+        }
         chunkEvents.add(
           ImageChunkEvent(
             cumulativeBytesLoaded: progress.currentBytes,
@@ -84,7 +91,7 @@ class CachedImageProvider
           return progress.imageBytes!;
         }
       }
-      throw "Error: Empty response body.";
+      throw ImageLoadException(url, 'Empty response body');
     } finally {
       loadingCount--;
     }
@@ -97,4 +104,15 @@ class CachedImageProvider
 
   @override
   String get key => url + (sourceKey ?? "") + (aid ?? "");
+}
+
+/// 图片加载失败异常（网络不可达/域名屏蔽/连接中断等）
+class ImageLoadException implements Exception {
+  final String url;
+  final String message;
+
+  ImageLoadException(this.url, this.message);
+
+  @override
+  String toString() => 'ImageLoadException: $message ($url)';
 }

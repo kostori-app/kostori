@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gif/gif.dart';
 import 'package:kostori/components/animated.dart';
@@ -29,7 +28,6 @@ import 'package:kostori/pages/anime_details_page/anime_page.dart';
 import 'package:kostori/pages/favorites/favorites_controller.dart';
 import 'package:kostori/utils/ext.dart';
 import 'package:kostori/utils/io.dart';
-import 'package:mobx/mobx.dart';
 
 part 'bangumi_favorites_page.dart';
 
@@ -58,13 +56,16 @@ class FavoritesPage extends ConsumerStatefulWidget {
 }
 
 class _FavoritesPageState extends ConsumerState<FavoritesPage> {
-  late final FavoritesController favoritesController;
-
   String? folder;
   bool isNetwork = false;
   int pageId = 0;
 
   FolderList? folderList;
+
+  FavoritesController get favoritesController =>
+      ref.read(favoritesControllerProvider.notifier);
+
+  FavoritesState get favState => ref.watch(favoritesControllerProvider);
 
   void setFolder(bool isNetwork, String? folder) {
     setState(() {
@@ -79,7 +80,11 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   }
 
   void setName(String name) {
-    setState(() => favoritesController.bangumiUserName = name);
+    setState(
+      () => ref
+          .read(favoritesControllerProvider.notifier)
+          .setBangumiUserName(name),
+    );
     folderList?.update();
     appdata.settings.update((s) => s.copyWith(bangumiUserName: name));
     appdata.saveData();
@@ -97,34 +102,72 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   @override
   void initState() {
     super.initState();
-    favoritesController = FavoritesController();
     pageId = appdata.settings['favoritePageId'] ?? 0;
-    favoritesController.bangumiUserName = appdata.settings.s.bangumiUserName;
 
-    // Ensure 'default' folder exists.
-    final mgr = LocalFavoritesManager();
-    if (!mgr.folderNames.contains('default')) {
-      mgr.createFolder('default');
-    }
+    // 初始化收藏数据。Riverpod 不允许在 widget 生命周期内直接修改
+    // provider，故延迟到首帧构建完成后执行。
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _initLocalFolder();
+    });
+  }
 
-    favoritesController.folders = mgr.folderNames.where((name) {
-      if (name == 'default') {
-        return mgr.getAllAnimes('default', FavoriteSortType.nameAsc).isNotEmpty;
+  /// 初始化当前选中分组（folders 已在 FavoritesController.build() 初始化）。
+  /// 从持久化恢复上次打开的分组；无历史或已失效时回退第一个分组。
+  void _initLocalFolder() {
+    try {
+      final mgr = LocalFavoritesManager();
+      final data = appdata.implicitData['favoriteFolder'];
+      Log.info(
+        'FavoritesPage',
+        '_initLocalFolder data=$data favFolder=${favState.folder} favFolders=${favState.folders}',
+      );
+      if (data != null) {
+        folder = data['name'] as String?;
+        isNetwork = (data['isNetwork'] as bool?) ?? false;
       }
-      return true;
-    }).toList();
 
-    final data = appdata.implicitData['favoriteFolder'];
-    if (data != null) {
-      folder = data['name'] as String?;
-      isNetwork = (data['isNetwork'] as bool?) ?? false;
-    }
-
-    if (folder != null && !isNetwork && !mgr.existsFolder(folder!)) {
-      folder = null;
-    }
-    if (folder == null && favoritesController.folders.isNotEmpty) {
-      setFolder(false, favoritesController.folders.first);
+      // 本地分组且不存在时失效
+      if (folder != null && !isNetwork && !mgr.existsFolder(folder!)) {
+        folder = null;
+      }
+      // 网络收藏分组但当前不是网络模式时，回退本地
+      if (folder != null && isNetwork && pageId != 2) {
+        folder = null;
+      }
+      if (folder == null) {
+        // 优先用 provider 的分组；为空时从 manager 实时读取（过滤空 default）
+        final list = favState.folders.isNotEmpty
+            ? favState.folders
+            : mgr.folderNames.where((name) {
+                if (name == 'default') {
+                  return mgr
+                      .getAllAnimes('default', FavoriteSortType.nameAsc)
+                      .isNotEmpty;
+                }
+                return true;
+              }).toList();
+        if (list.isNotEmpty) {
+          setFolder(false, list.first);
+          // 同步 provider，确保本地收藏 Tab 内容与选中分组一致
+          favoritesController.setFolder(list.first);
+        }
+      } else {
+        // 恢复持久化分组。用 setFolder 触发 setState 刷新 UI（仅改字段不会重建），
+        // 同时保持持久化不变、同步 provider 的 folder。
+        setFolder(false, folder);
+        favoritesController.setFolder(folder!);
+      }
+    } catch (e) {
+      Log.error('_initLocalFolder', '$e');
+      // 兜底：确保至少选中一个分组
+      if (folder == null) {
+        final list = favState.folders;
+        if (list.isNotEmpty) {
+          setFolder(false, list.first);
+          favoritesController.setFolder(list.first);
+        }
+      }
     }
   }
 
@@ -188,7 +231,8 @@ class _FavoritesPageState extends ConsumerState<FavoritesPage> {
   }
 
   Widget _buildBody() {
-    if (folder == null) {
+    // 本地收藏需要选中一个分组；其他页面（Bangumi 收藏等）不依赖 folder
+    if (pageId == 0 && folder == null) {
       return CustomScrollView(
         slivers: [
           SliverAppbar(
@@ -246,7 +290,8 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
 
   LocalFavoritesManager get manager => LocalFavoritesManager();
 
-  String get bangumiName => widget.favoritesController.bangumiUserName;
+  String get bangumiName =>
+      ref.watch(favoritesControllerProvider).bangumiUserName;
 
   var folders = <String>[];
   String nameAvatar = '';
@@ -291,18 +336,13 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colorScheme;
     return Container(
       width: double.infinity,
       height: double.infinity,
-      decoration: BoxDecoration(
-        border: Border(
-          right: BorderSide(
-            color: context.colorScheme.outlineVariant,
-            width: 0.6,
-          ),
-        ),
-      ),
+      color: cs.surfaceContainerLow,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (widget.withAppbar)
             SizedBox(
@@ -317,111 +357,218 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
               ),
             ).paddingTop(context.padding.top),
           Padding(
-            padding: widget.withAppbar
-                ? EdgeInsets.zero
-                : EdgeInsets.only(top: context.padding.top),
-            child: _buildNavCard(index: 0, child: _buildLocalTitle()),
-          ),
-          _buildNavCard(index: 1, child: _buildBangumiTitle()),
-          _buildNavCard(index: 2, child: _buildLocalBangumiTitle()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavCard({required int index, required Widget child}) {
-    final selected = favPage.pageId == index;
-    return Card(
-      color: selected
-          ? context.colorScheme.primaryContainer.toOpacity(0.36)
-          : null,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => favPage.setPage(index),
-        child: child,
-      ),
-    );
-  }
-
-  Widget _buildLocalTitle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          Icon(Icons.star, color: context.colorScheme.secondary),
-          const SizedBox(width: 12),
-          Text(t.local),
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.add),
-            color: context.colorScheme.primary,
-            onPressed: () async {
-              await newFolder();
-              if (mounted) {
-                setState(() => favoritesController.isRefreshEnabled = true);
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.reorder),
-            color: context.colorScheme.primary,
-            onPressed: () async {
-              await sortFolders();
-              if (mounted) {
-                setState(() => favoritesController.isRefreshEnabled = true);
-              }
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBangumiTitle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          if (nameAvatar.isNotEmpty) ...[
-            CircleAvatar(
-              radius: 18,
-              backgroundImage: NetworkImage(nameAvatar),
-              backgroundColor: Colors.transparent,
+            padding: EdgeInsets.fromLTRB(
+              20,
+              widget.withAppbar ? 8 : context.padding.top + 8,
+              20,
+              8,
             ),
-            const SizedBox(width: 12),
-            Text(bangumiName),
-          ] else ...[
-            Icon(Icons.star, color: context.colorScheme.secondary),
-            const SizedBox(width: 12),
-            Text(t.bangumiPlan),
-          ],
-          const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.edit),
-            color: context.colorScheme.primary,
-            onPressed: _showSwitchUserDialog,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.star_rounded, color: cs.onPrimaryContainer),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t.favorites,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      '${LocalFavoritesManager().totalAnimes} ${t.animes}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 16),
+          const Divider(height: 16),
+          _buildNavTile(
+            index: 0,
+            icon: Icons.star_rounded,
+            title: t.local,
+            trailing: _buildLocalCountBadge(),
+          ),
+          // 分组切换已由右侧 TabBar 承担；仅弹窗（文件夹选择器）展示分组子导航
+          if (widget.withAppbar) _buildFolderList(),
+          _buildNavTile(
+            index: 1,
+            icon: Icons.cloud_outlined,
+            title: t.bangumiPlan,
+            trailing: nameAvatar.isNotEmpty
+                ? BangumiAvatar(url: nameAvatar, radius: 14)
+                : Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+            actionIcon: Icons.edit_outlined,
+            actionTooltip: t.switchFavoriteUser,
+            onAction: _showSwitchUserDialog,
+          ),
+          _buildNavTile(
+            index: 2,
+            icon: Icons.folder_shared_outlined,
+            title: t.localFavoriteBinding,
+          ),
+          const Spacer(),
+          if (favPage.pageId == 0)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(
+                        Icons.create_new_folder_outlined,
+                        size: 18,
+                      ),
+                      label: Text(t.newFolder),
+                      onPressed: () async {
+                        await newFolder();
+                        if (mounted) {
+                          setState(
+                            () => favoritesController.setIsRefreshEnabled(true),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    tooltip: t.sort,
+                    icon: const Icon(Icons.sort),
+                    onPressed: () async {
+                      await sortFolders();
+                      if (mounted) {
+                        setState(
+                          () => favoritesController.setIsRefreshEnabled(true),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildLocalBangumiTitle() {
+  Widget _buildLocalCountBadge() {
+    final count = LocalFavoritesManager().totalAnimes;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          fontSize: 12,
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  /// 统一的现代导航项：图标容器 + 标题 + 可选操作/计数，选中态为胶囊高亮
+  Widget _buildNavTile({
+    required int index,
+    required IconData icon,
+    required String title,
+    Widget? trailing,
+    IconData? actionIcon,
+    String? actionTooltip,
+    VoidCallback? onAction,
+  }) {
+    final selected = favPage.pageId == index;
+    final cs = context.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+      child: Material(
+        color: selected
+            ? cs.secondaryContainer.withValues(alpha: 0.65)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => favPage.setPage(index),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? cs.primary.withValues(alpha: 0.15)
+                        : cs.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 20,
+                    color: selected ? cs.primary : cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: selected ? cs.onSurface : cs.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (actionIcon != null && onAction != null) ...[
+                  IconButton(
+                    tooltip: actionTooltip,
+                    visualDensity: VisualDensity.compact,
+                    icon: Icon(
+                      actionIcon,
+                      size: 18,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    onPressed: onAction,
+                  ),
+                  if (trailing != null) const SizedBox(width: 4),
+                ],
+                if (trailing != null) trailing,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 本地收藏的文件夹子导航
+  Widget _buildFolderList() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 18, right: 12, top: 2),
+      child: Column(
         children: [
-          const SizedBox(width: 16),
-          Icon(Icons.star, color: context.colorScheme.secondary),
-          const SizedBox(width: 12),
-          Text(t.localFavoriteBinding),
-          const Spacer(),
-          const SizedBox(width: 16),
+          for (final name in folders) ...[
+            buildLocalFolder(name) ?? const SizedBox.shrink(),
+          ],
         ],
       ),
     );
@@ -431,16 +578,18 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
     showInputDialog(
       context: App.rootContext,
       title: t.switchFavoriteUser,
-      hintText: t.newFolder,
+      hintText: t.enterBangumiUserName,
+      confirmText: t.confirm,
+      cancelText: t.cancel,
       onConfirm: (value) {
         if (value.isEmpty) {
-          favoritesController.bangumiUserName = '';
+          favoritesController.setBangumiUserName('');
           appdata.implicitData['nameAvatar'] = '';
           appdata.writeImplicitData();
           favPage.setName('');
         } else {
           favPage.setName(value.toString());
-          favoritesController.bangumiUserName = value.toString();
+          favoritesController.setBangumiUserName(value.toString());
           _fetchAvatar();
         }
         return null;
@@ -463,6 +612,18 @@ class _LeftBarState extends ConsumerState<_LeftBar> implements FolderList {
           ? null
           : () {
               favPage.setFolder(false, name);
+              // 同步本地收藏的 Tab 到该文件夹
+              final idx = ref
+                  .read(favoritesControllerProvider)
+                  .folders
+                  .indexOf(name);
+              if (idx >= 0) {
+                try {
+                  favoritesController.tabController?.animateTo(idx);
+                } catch (_) {
+                  // 本地页尚未初始化时忽略
+                }
+              }
               widget.onSelected?.call();
             },
       child: Container(

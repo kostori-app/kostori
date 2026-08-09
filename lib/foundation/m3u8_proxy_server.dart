@@ -57,21 +57,38 @@ class M3u8ProxyServer {
             ..write(cleaned)
             ..close();
         } else if (request.uri.path == '/proxy') {
-          // 代理 ts 片断请求
+          // 代理分片 / KEY / init 分片请求
           final segUrl = request.uri.queryParameters['url'];
           if (segUrl != null) {
-            final resp = await _dio.get<List<int>>(
-              segUrl,
-              options: Options(
-                responseType: ResponseType.bytes,
-                headers: _headers,
-              ),
-            );
-            request.response
-              ..statusCode = 200
-              ..headers.contentType = ContentType('video', 'MP2T')
-              ..add(resp.data!)
-              ..close();
+            final isPlaylist =
+                Uri.tryParse(segUrl)?.path.endsWith('.m3u8') == true ||
+                segUrl.contains('mpegurl');
+            if (isPlaylist) {
+              // 变体/嵌套播放列表：递归过滤后再返回
+              final cleaned = await _fetchAndFilter(segUrl, _headers);
+              request.response
+                ..statusCode = 200
+                ..headers.contentType = ContentType(
+                  'application',
+                  'vnd.apple.mpegurl',
+                )
+                ..write(cleaned)
+                ..close();
+            } else {
+              final resp = await _dio.get<List<int>>(
+                segUrl,
+                options: Options(
+                  responseType: ResponseType.bytes,
+                  headers: _headers,
+                ),
+              );
+              final bytes = resp.data ?? const <int>[];
+              request.response
+                ..statusCode = 200
+                ..headers.contentType = _contentTypeFor(segUrl, bytes)
+                ..add(bytes)
+                ..close();
+            }
           } else {
             request.response
               ..statusCode = 400
@@ -90,6 +107,28 @@ class M3u8ProxyServer {
     });
   }
 
+  ContentType _contentTypeFor(String url, List<int> bytes) {
+    final path = Uri.tryParse(url)?.path ?? url;
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.key') || lower.endsWith('.bin')) {
+      return ContentType('application', 'octet-stream');
+    }
+    if (lower.endsWith('.m4s') ||
+        lower.endsWith('.mp4') ||
+        lower.endsWith('.cmfv') ||
+        lower.endsWith('.cmfs')) {
+      return ContentType('video', 'mp4');
+    }
+    if (lower.endsWith('.ts') || lower.endsWith('.m2ts')) {
+      return ContentType('video', 'MP2T');
+    }
+    // 回退：按字节嗅探（分片多以 0x47 同步字节开头）
+    if (bytes.isNotEmpty && bytes.first == 0x47) {
+      return ContentType('video', 'MP2T');
+    }
+    return ContentType('application', 'octet-stream');
+  }
+
   Future<String> _fetchAndFilter(
     String url,
     Map<String, String>? headers,
@@ -105,50 +144,65 @@ class M3u8ProxyServer {
       if (subUrl != null) return _fetchAndFilter(subUrl, headers);
     }
 
-    // 转换相对路径为代理路径
-    content = _convertToProxyUrls(url, content);
-
-    if (appdata.settings['m3u8AdFilterEnabled'] != true) {
-      return content;
+    // 先过滤广告（此时分片仍是原始 URL，域名/正则规则能正确匹配），
+    // 再把剩余分片重写为本地代理地址。
+    if (appdata.settings['m3u8AdFilterEnabled'] == true) {
+      content = _filterAds(url, content);
     }
-
-    return _filterAds(url, content);
+    return _convertToProxyUrls(url, content);
   }
 
-  /// 将 m3u8 中的相对路径转换为代理 URL
+  /// 将 m3u8 中的相对路径转换为代理 URL。
+  /// 除分片外，还会重写 `#EXT-X-KEY` / `#EXT-X-MAP` 的 URI，
+  /// 否则 AES-128 加密流 / fMP4 的 KEY 与 init 分片会按本地相对路径请求而失败。
   String _convertToProxyUrls(String baseUrl, String content) {
     final basePath = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
+
+    String proxyFor(String uri) {
+      final resolved = uri.startsWith('http')
+          ? uri
+          : Uri.parse(basePath).resolve(uri).toString();
+      final proxy = Uri(
+        scheme: 'http',
+        host: '127.0.0.1',
+        port: _port,
+        path: '/proxy',
+        queryParameters: {'url': resolved},
+      );
+      return proxy.toString();
+    }
 
     final lines = content.split('\n');
     final output = <String>[];
 
     for (final line in lines) {
       final trimmed = line.trim();
-      // 跳过空行和 tag 行
-      if (trimmed.isEmpty || trimmed.startsWith('#')) {
+      if (trimmed.isEmpty) {
         output.add(line);
         continue;
       }
 
-      // 处理相对路径
-      Uri segmentUri;
-      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-        segmentUri = Uri.parse(trimmed);
-      } else {
-        // 相对路径
-        segmentUri = Uri.parse(basePath + trimmed);
+      // 重写 KEY / MAP 标签里的 URI="..."
+      if (trimmed.startsWith('#EXT-X-KEY:') ||
+          trimmed.startsWith('#EXT-X-MAP:')) {
+        final uriMatch = RegExp(r'URI="([^"]+)"').firstMatch(trimmed);
+        if (uriMatch != null) {
+          final proxy = proxyFor(uriMatch.group(1)!);
+          output.add(
+            trimmed.replaceFirst(RegExp(r'URI="([^"]+)"'), 'URI="$proxy"'),
+          );
+          continue;
+        }
       }
 
-      // 转换为代理 URL - 使用本地代理
-      final proxySegUrl = Uri(
-        scheme: 'http',
-        host: '127.0.0.1',
-        port: _port,
-        path: '/proxy',
-        queryParameters: {'url': segmentUri.toString()},
-      );
+      // 其他 tag 行或空行原样保留
+      if (trimmed.startsWith('#')) {
+        output.add(line);
+        continue;
+      }
 
-      output.add(proxySegUrl.toString());
+      // 分片 URI
+      output.add(proxyFor(trimmed));
     }
 
     return output.join('\n');
@@ -168,6 +222,8 @@ class M3u8ProxyServer {
     final output = <String>[];
     final mainHost = Uri.parse(baseUrl).host;
     bool inAdBlock = false;
+    // 处理 SCTE-35 续播标签：进入广告后 CUE-OUT-CONT 继续停留广告区
+    bool inCueOutCont = false;
 
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
@@ -175,10 +231,18 @@ class M3u8ProxyServer {
       // tag 规则：匹配到对应 tag 则进入广告块
       if (tagRules.any((tag) => line.startsWith(tag))) {
         inAdBlock = true;
+        inCueOutCont = line.startsWith('#EXT-X-CUE-OUT-CONT');
         continue;
       }
       if (line == '#EXT-X-CUE-IN') {
         inAdBlock = false;
+        inCueOutCont = false;
+        continue;
+      }
+
+      // 广告标签的独立处理（不含 CUE-OUT 本身，避免重复标记）
+      if (inCueOutCont && line == '#EXT-X-CUE-OUT-CONT') {
+        inAdBlock = true;
         continue;
       }
 
@@ -225,12 +289,27 @@ class M3u8ProxyServer {
 
   String? _parseMasterFirst(String baseUrl, String content) {
     final lines = content.split('\n');
+    String? best;
+    int bestBandwidth = -1;
     for (int i = 0; i < lines.length; i++) {
       if (lines[i].startsWith('#EXT-X-STREAM-INF') && i + 1 < lines.length) {
-        return _resolveUrl(baseUrl, lines[i + 1].trim());
+        // 尽量选带宽最高的画质，避免选中 4K 超清流
+        int? bw;
+        final bwMatch = RegExp(
+          r'BANDWIDTH=(\d+)',
+          caseSensitive: false,
+        ).firstMatch(lines[i]);
+        if (bwMatch != null) bw = int.tryParse(bwMatch.group(1)!);
+        final url = _resolveUrl(baseUrl, lines[i + 1].trim());
+        if (bw != null && bw > bestBandwidth) {
+          bestBandwidth = bw;
+          best = url;
+        } else {
+          best ??= url;
+        }
       }
     }
-    return null;
+    return best;
   }
 
   String? _peekNextUri(List<String> lines, int from) {
@@ -258,29 +337,7 @@ class M3u8ProxyServer {
   ) {
     for (final rule in rules) {
       if (!rule.enabled) continue;
-      switch (rule.type) {
-        case M3u8RuleType.urlPattern:
-          if (rule.pattern != null) {
-            final reg = RegExp(rule.pattern!, caseSensitive: false);
-            if (reg.hasMatch(segUri)) return true;
-          }
-        case M3u8RuleType.domainBlock:
-          final host = Uri.tryParse(segUri)?.host ?? '';
-          if (rule.blockedDomains?.any(
-                (d) => host == d || host.endsWith('.$d'),
-              ) ??
-              false) {
-            return true;
-          }
-        case M3u8RuleType.maxDuration:
-          if (rule.maxDuration != null &&
-              duration > 0 &&
-              duration < rule.maxDuration!) {
-            return true;
-          }
-        case M3u8RuleType.tagPresent:
-          break;
-      }
+      if (rule.matches(segUri, duration)) return true;
     }
     return false;
   }

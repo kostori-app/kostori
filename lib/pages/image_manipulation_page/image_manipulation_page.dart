@@ -2,11 +2,13 @@ library;
 
 import 'dart:ui' as ui;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
@@ -14,6 +16,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/consts.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/i18n/strings.g.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -112,17 +115,37 @@ final multiSelectModeProvider = StateProvider<bool>((ref) => false);
 final selectedIndexesProvider = StateProvider<Set<int>>((ref) => {});
 final lastSelectedIndexProvider = StateProvider<int?>((ref) => null);
 
-class ImageManipulationPage extends ConsumerStatefulWidget {
+class ImageManipulationPage extends StatelessWidget {
   final List<File>? initialImages;
 
   const ImageManipulationPage({this.initialImages, super.key});
 
   @override
-  ConsumerState<ImageManipulationPage> createState() =>
-      _ImageManipulationPageState();
+  Widget build(BuildContext context) {
+    return Scaffold(body: ImageManipulationBody(initialImages: initialImages));
+  }
 }
 
-class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
+/// 可嵌入的图片操作内容：主页 / 番剧详情页 Tab 均复用此实现。
+/// [embedded] 为 true 时不渲染返回按钮，用于嵌入到 Tab 等已有导航结构中。
+class ImageManipulationBody extends ConsumerStatefulWidget {
+  final List<File>? initialImages;
+  final bool embedded;
+
+  const ImageManipulationBody({
+    this.initialImages,
+    this.embedded = false,
+    super.key,
+  });
+
+  @override
+  ConsumerState<ImageManipulationBody> createState() =>
+      _ImageManipulationBodyState();
+}
+
+class _ImageManipulationBodyState extends ConsumerState<ImageManipulationBody> {
+  final ScrollController _scrollCtrl = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -134,6 +157,12 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
         await notifier.loadImages();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
   }
 
   void _onTapImage(int index) {
@@ -207,6 +236,47 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
     ref.read(imagesProvider.notifier).deleteIndexes(selected);
     ref.read(selectedIndexesProvider.notifier).state = {};
     ref.read(multiSelectModeProvider.notifier).state = false;
+  }
+
+  /// 从设备导入图片到 Kostori 截图文件夹，随后刷新列表
+  Future<void> _importImages() async {
+    try {
+      final folderPath = await ImageSaver.resolveFolderPath();
+      if (folderPath == null) {
+        App.rootContext.showMessage(
+          message: t.failedToPickImage,
+          level: LogLevel.warning,
+        );
+        return;
+      }
+      var imported = 0;
+      if (App.isDesktop) {
+        final result = await FilePicker.pickFiles(type: FileType.image);
+        if (result == null || result.files.isEmpty) return;
+        for (final f in result.files) {
+          final bytes = await f.readAsBytes();
+          await File('$folderPath/${f.name}').writeAsBytes(bytes);
+          imported++;
+        }
+      } else {
+        final picker = ImagePicker();
+        final picked = await picker.pickMultiImage(imageQuality: 90);
+        for (final f in picked) {
+          final bytes = await f.readAsBytes();
+          final name = '${DateTime.now().millisecondsSinceEpoch}_${f.name}';
+          await File('$folderPath/$name').writeAsBytes(bytes);
+          imported++;
+        }
+      }
+      if (imported == 0) return;
+      await ref.read(imagesProvider.notifier).loadImages();
+      App.rootContext.showMessage(message: t.importedCountI(i: imported));
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: '${t.failedToPickImage}: $e',
+        level: LogLevel.warning,
+      );
+    }
   }
 
   Widget _buildCard({
@@ -290,7 +360,11 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
                         tag: App.isAndroid
                             ? file.path.split('/').last
                             : file.path.split('\\').last,
-                        child: Image.file(file, fit: BoxFit.cover),
+                        child: Image.file(
+                          file,
+                          fit: BoxFit.cover,
+                          cacheWidth: 360,
+                        ),
                       ),
                     ),
                   ),
@@ -308,128 +382,295 @@ class _ImageManipulationPageState extends ConsumerState<ImageManipulationPage> {
     final multiSelect = ref.watch(multiSelectModeProvider);
     final selectedIndexes = ref.watch(selectedIndexesProvider);
     final images = ref.watch(imagesProvider);
+    final tabMode = super.widget.embedded;
 
-    var widget = SmoothCustomScrollView(
-      slivers: [
-        SliverAppbar(
-          title: multiSelect
-              ? Text(t.sSelected(s: selectedIndexes.length))
-              : Text(t.imageOperationsI(i: images.length)),
-          actions: [
-            if (multiSelect) ...[
-              IconButton(
-                onPressed: () {
-                  final allIndexes = Set<int>.from(
-                    List.generate(images.length, (i) => i),
-                  );
-                  ref.read(selectedIndexesProvider.notifier).state = allIndexes;
+    final title = multiSelect
+        ? Text(t.sSelected(s: selectedIndexes.length))
+        : Text(t.imageOperationsI(i: images.length));
+
+    final slivers = <Widget>[
+      SliverToBoxAdapter(
+        child: _buildCard(
+          icon: Icons.photo,
+          title: t.stitchLongImage,
+          onTap: () {
+            context.to(
+              () => SelectImagesPage(
+                maxSelection: 9,
+                onSelected: (selectedImages) {
+                  context.to(() => RenderLongPicPage(images: selectedImages));
                 },
-                tooltip: t.selectAll,
-                icon: const Icon(Icons.select_all),
               ),
-
-              IconButton(
-                onPressed: () {
-                  final images = ref.read(imagesProvider);
-                  final current = ref.read(selectedIndexesProvider);
-                  final toggled = {
-                    for (int i = 0; i < images.length; i++)
-                      if (!current.contains(i)) i,
-                  };
-
-                  if (toggled.isEmpty) {
-                    ref.read(multiSelectModeProvider.notifier).state = false;
-                  }
-                  ref.read(selectedIndexesProvider.notifier).state = toggled;
-                },
-                tooltip: t.invertSelection,
-                icon: const Icon(Icons.flip),
-              ),
-
-              IconButton(
-                onPressed: () {
-                  ref.read(multiSelectModeProvider.notifier).state = false;
-                  ref.read(selectedIndexesProvider.notifier).state = {};
-                },
-                tooltip: t.deselect,
-                icon: const Icon(Icons.deselect),
-              ),
-              IconButton(
-                onPressed: () {
-                  showConfirmDialog(
-                    context: App.rootContext,
-                    title: t.delete,
-                    content: '删除${selectedIndexes.length}张图片',
-                    btnColor: context.colorScheme.error,
-                    onConfirm: _deleteSelected,
+            );
+          },
+        ),
+      ),
+      SliverToBoxAdapter(
+        child: _buildCard(
+          icon: Icons.image,
+          title: t.stitchHorizontalImage,
+          onTap: () {
+            context.to(
+              () => SelectImagesPage(
+                maxSelection: 9,
+                onSelected: (selectedImages) {
+                  context.to(
+                    () => RenderHorizontalPicPage(images: selectedImages),
                   );
                 },
-                tooltip: t.delete,
-                icon: const Icon(Icons.delete, color: Colors.red),
               ),
-            ],
-          ],
+            );
+          },
         ),
-        SliverToBoxAdapter(
-          child: _buildCard(
-            icon: Icons.photo,
-            title: t.stitchLongImage,
-            onTap: () {
-              context.to(
-                () => SelectImagesPage(
-                  maxSelection: 9,
-                  onSelected: (selectedImages) {
-                    context.to(() => RenderLongPicPage(images: selectedImages));
-                  },
+      ),
+      SliverToBoxAdapter(
+        child: _buildCard(
+          icon: Icons.extension,
+          title: t.stitchSubtitles,
+          onTap: () {
+            context.to(
+              () => SelectImagesPage(
+                maxSelection: 9,
+                onSelected: (selectedImages) {
+                  context.to(
+                    () => RenderDialogueComposePage(images: selectedImages),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+      _buildGrid(),
+    ];
+
+    Widget content;
+    if (tabMode) {
+      // 适配 Tab：用普通头部 + 普通滚动，不套 SliverAppbar，
+      // 避免与详情页 NestedScrollView 冲突、避免 SliverAppbar 的
+      // topPadding 导致内容被拉出很长距离。
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: title,
+                  ),
                 ),
-              );
-            },
+                ..._buildActions(context, multiSelect, selectedIndexes),
+              ],
+            ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: _buildCard(
-            icon: Icons.image,
-            title: t.stitchHorizontalImage,
-            onTap: () {
-              context.to(
-                () => SelectImagesPage(
-                  maxSelection: 9,
-                  onSelected: (selectedImages) {
-                    context.to(
-                      () => RenderHorizontalPicPage(images: selectedImages),
-                    );
-                  },
-                ),
-              );
-            },
+          Expanded(
+            child: AppScrollBar(
+              controller: _scrollCtrl,
+              child: CustomScrollView(
+                controller: _scrollCtrl,
+                physics: App.isDesktop
+                    ? const ClampingScrollPhysics()
+                    : const BouncingScrollPhysics(),
+                slivers: slivers,
+              ),
+            ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: _buildCard(
-            icon: Icons.extension,
-            title: t.stitchSubtitles,
-            onTap: () {
-              context.to(
-                () => SelectImagesPage(
-                  maxSelection: 9,
-                  onSelected: (selectedImages) {
-                    context.to(
-                      () => RenderDialogueComposePage(images: selectedImages),
-                    );
-                  },
-                ),
-              );
-            },
+        ],
+      );
+    } else {
+      content = SmoothCustomScrollView(
+        slivers: [
+          SliverAppbar(
+            title: title,
+            actions: _buildActions(context, multiSelect, selectedIndexes),
           ),
+          ...slivers,
+        ],
+      );
+    }
+    return context.width > changePoint ? content.paddingHorizontal(8) : content;
+  }
+
+  List<Widget> _buildActions(
+    BuildContext context,
+    bool multiSelect,
+    Set<int> selectedIndexes,
+  ) {
+    return [
+      if (!multiSelect)
+        IconButton(
+          onPressed: _importImages,
+          tooltip: t.addImages,
+          icon: const Icon(Icons.add_photo_alternate_outlined),
         ),
-        _buildGrid(),
+      if (multiSelect) ...[
+        IconButton(
+          onPressed: () {
+            final allIndexes = Set<int>.from(
+              List.generate(ref.read(imagesProvider).length, (i) => i),
+            );
+            ref.read(selectedIndexesProvider.notifier).state = allIndexes;
+          },
+          tooltip: t.selectAll,
+          icon: const Icon(Icons.select_all),
+        ),
+        IconButton(
+          onPressed: () {
+            final images = ref.read(imagesProvider);
+            final current = ref.read(selectedIndexesProvider);
+            final toggled = {
+              for (int i = 0; i < images.length; i++)
+                if (!current.contains(i)) i,
+            };
+
+            if (toggled.isEmpty) {
+              ref.read(multiSelectModeProvider.notifier).state = false;
+            }
+            ref.read(selectedIndexesProvider.notifier).state = toggled;
+          },
+          tooltip: t.invertSelection,
+          icon: const Icon(Icons.flip),
+        ),
+        IconButton(
+          onPressed: () {
+            ref.read(multiSelectModeProvider.notifier).state = false;
+            ref.read(selectedIndexesProvider.notifier).state = {};
+          },
+          tooltip: t.deselect,
+          icon: const Icon(Icons.deselect),
+        ),
+        IconButton(
+          onPressed: () {
+            showConfirmDialog(
+              context: App.rootContext,
+              title: t.delete,
+              content: t.deleteImagesCount(n: selectedIndexes.length),
+              btnColor: context.colorScheme.error,
+              onConfirm: _deleteSelected,
+            );
+          },
+          tooltip: t.delete,
+          icon: const Icon(Icons.delete, color: Colors.red),
+        ),
       ],
-    );
-    return context.width > changePoint ? widget.paddingHorizontal(8) : widget;
+    ];
   }
 }
 
 typedef OnImagesSelected = void Function(List<File> selectedImages);
+
+/// 底部毛玻璃操作栏（图标按钮 + tooltip）
+class _FrostedBottomBar extends StatelessWidget {
+  final List<Widget> children;
+
+  const _FrostedBottomBar({required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black.toOpacity(0.35),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: children,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 底部操作图标按钮（带 tooltip）
+class _BottomIconAction extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  const _BottomIconAction({
+    required this.icon,
+    required this.tooltip,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, color: cs.onSurface),
+        style: IconButton.styleFrom(
+          backgroundColor: Colors.white.toOpacity(0.15),
+        ),
+      ),
+    );
+  }
+}
+
+/// 进入排序/裁剪模式时，返回优先退出模式而不退出页面
+class _ModeAwareBackButton extends StatelessWidget {
+  final bool reorderMode;
+  final bool cropMode;
+  final VoidCallback onExitMode;
+
+  const _ModeAwareBackButton({
+    required this.reorderMode,
+    required this.cropMode,
+    required this.onExitMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.arrow_back_ios_new),
+      onPressed: () {
+        if (reorderMode || cropMode) {
+          onExitMode();
+        } else {
+          Navigator.maybePop(context);
+        }
+      },
+    );
+  }
+}
+
+/// 将 [painter] 绘制到 [size] 画布并导出为 PNG 字节。
+/// [dpr] > 1 时先缩放画布再导出，保证高清晰度。
+Future<Uint8List> composePainterToPng({
+  required CustomPainter painter,
+  required Size size,
+  double dpr = 1.0,
+}) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  if (dpr != 1.0) canvas.scale(dpr);
+  painter.paint(canvas, size);
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(
+    (size.width * dpr).ceil(),
+    (size.height * dpr).ceil(),
+  );
+  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  if (byteData == null) throw Exception('生成图片数据失败');
+  return byteData.buffer.asUint8List();
+}
 
 class SelectImagesPage extends StatefulWidget {
   final int maxSelection;
@@ -511,7 +752,7 @@ class _SelectImagesPageState extends State<SelectImagesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Appbar(
-        title: const Text('选择图片'),
+        title: Text(t.selectImages),
         backgroundColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
@@ -613,11 +854,13 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
             const SizedBox(height: 16),
 
             /// 外边框设置
-            SwitchListTile(
+            ListTile(
               title: Text(t.showOuterBorder),
-              value: showOuterBorder,
-              onChanged: (v) =>
-                  ref.read(showOuterBorderProvider.notifier).state = v,
+              trailing: CustomSwitch(
+                value: showOuterBorder,
+                onChanged: (v) =>
+                    ref.read(showOuterBorderProvider.notifier).state = v,
+              ),
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
@@ -663,11 +906,13 @@ class _BorderSettingsSheetState extends ConsumerState<BorderSettingsSheet> {
             const SizedBox(height: 16),
 
             /// 内边框设置
-            SwitchListTile(
+            ListTile(
               title: Text(t.showImageBorders),
-              value: showInnerBorders,
-              onChanged: (v) =>
-                  ref.read(showInnerBordersProvider.notifier).state = v,
+              trailing: CustomSwitch(
+                value: showInnerBorders,
+                onChanged: (v) =>
+                    ref.read(showInnerBordersProvider.notifier).state = v,
+              ),
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 300),

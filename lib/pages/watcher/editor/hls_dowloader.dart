@@ -12,7 +12,7 @@ class _HlsDownloader {
 
     try {
       final dio = AppDio();
-      onProgress?.call(0, '解析播放列表…');
+      onProgress?.call(0, t.hlsParsing);
 
       final rootResp = await dio.get<String>(
         url,
@@ -133,7 +133,10 @@ class _HlsDownloader {
               await File(segPath).writeAsBytes(resp.data!, flush: true);
             }
             completed++;
-            onProgress?.call(completed / total, '下载分片 $completed/$total…');
+            onProgress?.call(
+              completed / total,
+              t.hlsDownloadingChunks(done: completed, total: total),
+            );
           } catch (e) {
             errors.add('Segment ${entry.key}: $e');
             Log.error(

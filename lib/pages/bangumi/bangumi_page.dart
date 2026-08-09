@@ -113,7 +113,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
   }
 
   int? _getFixedCrossAxisCount() {
-    final perRow = appdata.settings['bangumiCardPerRow'];
+    final perRow = appdata.implicitData['bangumiCardPerRow'];
     if (perRow != null && perRow.toString().isNotEmpty) {
       return int.tryParse(perRow.toString());
     }
@@ -274,7 +274,7 @@ class _BangumiPageState extends ConsumerState<BangumiPage>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${bangumiItems.length} 个条目',
+                            t.itemsCount(n: bangumiItems.length),
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(

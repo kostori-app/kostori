@@ -60,6 +60,94 @@ Future<Uint8List> hubCompressImage(
   }
 }
 
+// ── 播放进度同步（一起看）─────────────────────────────────────────────────────
+// 通过带标记的广播消息在房间内同步房主播放进度，客户端过滤后不渲染为聊天气泡。
+
+/// 播放同步消息前缀（聊天气泡渲染时据此过滤）
+const String hubSyncPrefix = 'KOSTORI_SYNC:';
+
+/// 是否是一条播放进度同步消息（不渲染为普通聊天气泡）
+bool isHubSyncMessage(HubMessage msg) {
+  final text = msg.segments.whereType<TextSegment>().firstOrNull?.text ?? '';
+  return text.startsWith(hubSyncPrefix);
+}
+
+/// 编码播放同步广播文本
+String encodeHubSync({
+  required int episode,
+  required int positionMs,
+  required bool playing,
+  String animeId = '',
+  String title = '',
+  String sourceKey = '',
+  String cover = '',
+  String senderId = '',
+}) =>
+    '$hubSyncPrefix${jsonEncode({'episode': episode, 'position': positionMs, 'playing': playing, 'animeId': animeId, 'title': title, 'sourceKey': sourceKey, 'cover': cover, 'senderId': senderId, 'sentAt': DateTime.now().millisecondsSinceEpoch})}';
+
+/// 从一条同步消息中解析播放进度
+class HubPlaybackSync {
+  final String senderId;
+  final int episode;
+  final int positionMs;
+  final bool playing;
+  final String animeId;
+  final String title;
+  final String sourceKey;
+  final String cover;
+  final int sentAt;
+
+  const HubPlaybackSync({
+    required this.senderId,
+    required this.episode,
+    required this.positionMs,
+    required this.playing,
+    required this.animeId,
+    required this.title,
+    this.sourceKey = '',
+    this.cover = '',
+    required this.sentAt,
+  });
+
+  static HubPlaybackSync? fromText(String text) {
+    if (!text.startsWith(hubSyncPrefix)) return null;
+    try {
+      final json = jsonDecode(text.substring(hubSyncPrefix.length));
+      if (json is! Map<String, dynamic>) return null;
+      return HubPlaybackSync(
+        senderId: json['senderId'] as String? ?? '',
+        episode: (json['episode'] as num?)?.toInt() ?? 0,
+        positionMs: (json['position'] as num?)?.toInt() ?? 0,
+        playing: json['playing'] as bool? ?? false,
+        animeId: json['animeId'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        sourceKey: json['sourceKey'] as String? ?? '',
+        cover: json['cover'] as String? ?? '',
+        sentAt: (json['sentAt'] as num?)?.toInt() ?? 0,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static HubPlaybackSync? fromMessage(HubMessage msg) {
+    final text = msg.segments.whereType<TextSegment>().firstOrNull?.text ?? '';
+    final parsed = fromText(text);
+    if (parsed == null) return null;
+    return HubPlaybackSync(
+      senderId: msg.sender.userId,
+      episode: parsed.episode,
+      positionMs: parsed.positionMs,
+      playing: parsed.playing,
+      animeId: parsed.animeId,
+      title: parsed.title,
+      sourceKey: parsed.sourceKey,
+      cover: parsed.cover,
+      sentAt: parsed.sentAt,
+    );
+  }
+}
+
 // ── 时间分割线 ────────────────────────────────────────────────────────────────
 
 class HubTimeDivider extends StatelessWidget {

@@ -21,6 +21,7 @@ imageFormat: 格式
 confirmDeleteImage: 确认删除图片？
 bangumiPlan: Bangumi 计划
 switchFavoriteUser: 切换收藏用户
+enterBangumiUserName: 输入 Bangumi 用户名
 add: 添加
 addedCountAnimesToDownloadQueue: 已将 ${count} 部番剧加入下载队列
 added: 已添加
@@ -76,6 +77,7 @@ comments: 评论
 confirm: 确认
 continueText: 继续
 copied: 已复制
+captchaHint: 请输入验证码
 analyze: 分析
 analyzing: 分析中...
 analysisResult: 分析结果
@@ -140,6 +142,7 @@ fanyuan: 番源
 favoriteActions: 收藏操作
 favorite: 收藏
 favorites: 收藏
+animes: 部
 finished: 已完结
 folderName: 文件夹名称
 folder: 文件夹
@@ -159,6 +162,8 @@ importAnimes: 导入番剧
 importAppData: 导入应用数据
 importFromFile: 从文件导入
 import: 导入
+importAll: 全部导入
+importSelected: 导入所选
 importedAAnimes: 已导入 ${a} 部番剧
 information: 信息
 myRating: 我的评分
@@ -226,8 +231,12 @@ noLikedAnimeFound: 找不到喜欢的番剧
 noUpdates: 暂无更新
 ok: 确定
 onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer: 一旦操作成功，应用将自动与服务器同步数据。
+playerLoadingImage: 自定义加载图
+inputImagePath: '输入图片路径或 data: base64（支持 GIF/PNG/JPG/WebP 动图）'
+loadingVideo: 正在加载视频
 openLog: 打开日志
 openAnime: 打开番剧
+sourceNotInstalled: 番剧源「${source}」未安装，请到源设置中添加后再打开
 openHelp: 打开帮助
 openInBrowser: 在浏览器中打开
 openLink: 打开链接
@@ -297,6 +306,9 @@ storagePathForLocalAnimes: 本地番剧存储路径
 submit: 提交
 suggestions: 建议
 syncData: 同步数据
+lastSyncTime: 上次同步
+neverSynced: 从未同步
+configured: 已配置
 sync: 同步
 syncingData: 正在同步数据
 system: 系统
@@ -311,6 +323,11 @@ topicsLatest: 最新话题
 topicsTrending: 热门话题
 turnPageByVolumeKeys: 使用音量键翻页
 unselected: 未选中
+weekTotal: 本周总计
+todayTotal: 今日总计
+todayBroadcast: 今日播出
+broadcastDays: 播出天数
+generatedBy: 由 Kostori v${version} 生成
 updateAnimesInfo: 更新番剧信息
 updateTime: 更新时间
 update: 更新
@@ -328,6 +345,7 @@ viewMore: 查看更多
 view: 查看
 webDavAutoSync: WebDAV 自动同步
 default: 默认
+defaultValue: '默认：${v}'
 lastWatchTimeTime: 上次观看时间：${time}
 minAppVersionRequired: 需要最低应用版本 ${version}
 more: 更多
@@ -427,7 +445,13 @@ finishCropping: 完成裁剪
 sortImages: 图片排序
 finishSorting: 完成排序
 noImages: 无图片
+selectImages: 选择图片
+addImages: 添加图片
+importedCountI: 已导入 ${i} 张图片
+exportImage: 复制/分享
+saveAndShare: 保存并分享
 cropHeightCPx: 裁剪高度：${c} px
+firstImageFullHeight: 首张全高显示
 enterHexColorCode: "输入十六进制颜色代码，例如 #FF000000"
 showImageBorders: 显示图片边框
 outerBorderRadius: 外边框圆角
@@ -468,6 +492,183 @@ overview: 概览
 discussion: 讨论
 logs: 日志
 playerDetails: 播放器详情
+watcherPlayingNext: 正在播放下一集
+watcherEpisodeLoadError: "加载剧集时出错 ${error}"
+watcherNoMoreEpisodes: 没有更多剧集可播放
+watcherRouteNotFound: 线路不存在
+watcherDuplicateEpisode: 加载重复集数
+vceEstimating: 估算中…
+vceReloadPreview: 重新加载预览片段
+vceReload: 重载
+vceTimelineThumbnails: 视频时间轴缩略图
+vceStart: 起点
+vceEnd: 终点
+vceModifyStart: 修改起点
+vceModifyEnd: 修改终点
+vceTimeFormatHint: "支持格式: 90, 01:30, 1.5..."
+vcePureNumberIsSeconds: 输入纯数字视为秒数
+vceExportSettings: 导出设置
+vceQualityCrf: 质量 (CRF)
+vceHighQuality: 高质量
+vceStandard: 标准
+vceCompressed: 压缩
+vceOriginal: 原始
+vceFixedBitrateOptional: 固定码率（可选，覆盖 CRF）
+vceFixedBitrateKbps: "固定码率  ${kbps}kbps"
+vceIncludeAudio: 包含音频
+vceFrameRate: "帧率  ${fps} fps"
+vcePaletteColors: "调色板颜色数  ${n}  （越少体积越小）"
+vceColorCount: "${n} 色"
+vceEnableDithering: 启用抖动（画质更好，体积稍大）
+vceWebpQuality: "WebP 质量  ${n}"
+vceWithAudio: 含音频
+vceWithoutAudio: 无音频
+vceDitherOn: 抖动开
+vceDitherOff: 抖动关
+vceH264Summary: "H.264 · ${bitrate}kbps · ${audio}"
+vceH264CrfSummary: "H.264 · CRF ${crf} · ${audio}"
+vceGifSummary: "GIF · ${fps} fps · ${colors}色 · ${dither} · ${audio}"
+vceApngSummary: "APNG · ${fps} fps · ${audio} · 浏览器兼容好"
+vceWebpSummary: "WebP · ${fps} fps · 质量${quality} · 体积最小"
+vceCrop: 裁剪
+vceAspectPresets: 宽高比快速预设
+vceHideCropOverlay: 隐藏裁剪框
+vceShowCropOverlay: 显示裁剪框（可拖拽）
+vceCropDragHint: 开启后可通过拖拽选择导出区域
+vceCropInfo: "${w}×${h}px  起点(${x}, ${y})  [${pct}]"
+watcherDetailsLogs: 详情 & 日志
+watcherMiniWindow: 小窗模式
+rangePickerDragHint: 拖拽调整剪辑范围
+hlsParsing: 解析播放列表…
+hlsDownloadingChunks: "下载分片 ${done}/${total}…"
+bangumiStartWatch: 开始观看
+bangumiLastSeen: "上次看到: 第 ${episode} 话"
+bangumiMyRating: "我的评分: ${score}"
+animeWatching: 在看
+animeCompleted: 看过
+animeDropped: 抛弃
+animeWatchingCount: "${n} 在看"
+animeCompletedCount: "${n} 看过"
+animeDroppedCount: "${n} 抛弃"
+animeAirDate: "放送日期: ${date}"
+remoteSendFailed: "发送失败: ${error}"
+hubAiBotTriggerMention: "@ 提及"
+hubAiBotTriggerPrefix: 前缀
+hubAiBotTriggerKeyword: 关键字
+hubAiBotTriggerAll: 全部
+hubAiBotDefaultName: AI 助手
+addTag: 增加标签
+searchMonthSuffix: "${month}月"
+searchYearMonth: "${year}年 ${month}月"
+searchUseCount: "${n} 次"
+addAddress: 添加地址
+noAddress: 暂无地址
+newChatTitle: "新对话 ${time}"
+auto: 自动
+lengthShort: 简短
+lengthMedium: 适中
+deleteImagesCount: "删除${n}张图片"
+noSearchResults: 暂无搜索结果
+itemsCount: "${n} 个条目"
+enableSkipBangumiSchedule: 启用跳过bangumi日程
+recognizeImageFailed: 图片读取失败，请重试
+recognizeFailed: 识别失败
+newChat: 新对话
+recognizeEpisodeSuffix: "第${n}集"
+recognizePrompt: "我上传了一张截图，识别结果为《${title}》${episode}（${from} → ${to}，相似度 ${similarity}）。请介绍一下这部番剧。"
+aiStepsSuffix: " · ${n} 步"
+bangumiCommentsTitle: 吐槽
+aiExtMarkdown: Markdown 渲染
+aiExtMarkdownHint: 回复气泡是否启用 Markdown 排版
+aiExtImageUnderstanding: 图片理解
+aiExtImageUnderstandingHint: 是否允许向模型发送图片
+lanPlayerNotOpen: 播放器未打开
+lanNoEpisodes: 无集数信息
+lanBeingControlled: 设备正在被远程控制
+lanDesktopConnected: 桌面端已连接并可控制此设备
+lanDisconnect: 断开
+lanSelfTest: 网络自检
+lanCancelConnect: 取消连接
+lanIpHint: IP 地址
+lanPortHint: 端口
+lanManualConnect: 手动连接
+lanDeviceName: 设备名称
+lanNameEmptyHint: 留空则使用默认名称
+lanNameDisplayHint: 其他设备发现此设备时显示的名称
+lanPortRangeError: 端口号必须在 1024-65535 之间
+summaryThisWeek: 本周
+summaryThisMonth: 本月
+summaryThisWeekTitle: 本周总结
+summaryThisMonthTitle: 本月总结
+soulProfileTitle: 灵魂侧写
+vtPlaybackComplete: 播放完毕
+vtReplay: 重播
+vtInputUrlHint: 输入播放链接…
+vtLoad: 加载
+vtHeaders: 请求头 (Headers)
+vtNoHeaders: 暂无请求头，点击"添加"新增
+vtApplyAndLoad: 应用并加载
+aiTagRational: 理性
+aiTagHumorous: 幽默
+aiTagSarcastic: 毒舌
+aiTagGentle: 温柔
+aiTagRigorous: 严谨
+aiTagPassionate: 热情
+aiTagCalm: 冷静
+aiTagCool: 高冷
+aiTagEnergetic: 元气
+aiTagChuuni: 中二
+aiTagCunning: 腹黑
+aiTagFriendly: 亲切
+aiToneFormal: 正式
+aiToneConcise: 简洁
+aiToneNatural: 自然
+aiPersonaGeneral: 通用助手
+aiPersonaGeneralDesc: 友好可靠，乐于以清晰、有条理的方式帮助用户解决各类问题。
+aiPersonaEngineer: 资深工程师
+aiPersonaEngineerDesc: 精通多种编程语言与主流框架，擅长代码评审、调试与架构设计。
+aiPersonaButler: 生活管家
+aiPersonaButlerDesc: 贴心细致的生活助理，熟悉日常事务安排、健康饮食与出行规划。
+aiPersonaWriter: 写作灵感
+aiPersonaWriterDesc: 富有想象力的文字创作者，擅长小说、散文、文案与创意脑暴。
+aiPersonaAdvisor: 知识顾问
+aiPersonaAdvisorDesc: 博学严谨，擅长讲解概念、答疑解惑与深度研究。
+aiPersonaFriend: 贴心好友
+aiPersonaFriendDesc: 温暖亲切，像朋友一样倾听、陪伴与鼓励。
+qrRecognizing: 正在识别图片中的二维码…
+qrScanHint: 将二维码放入框内自动识别
+networkRequestFailed: 网络请求失败
+calNoAnimeToday: 这一天没有番剧
+calRefreshStatus: 刷新状态
+calScreenshotSave: 截图保存
+calLoadingSchedule: 正在加载时间表数据...
+calDataNotUpdated: 数据还没有更新 (´;ω;`)
+calScreenshotPreview: 截图预览
+calThisWeek: 本周
+calToday: 今天
+calLoadingImage: 正在加载图片...
+calGeneratingScreenshot: 正在生成截图...
+calDateDay: "${month}月${day}日"
+personTabVoice: 声优资料
+personTabChat: 吐槽箱
+personTabRelation: 角色关联
+personTabProfile: 角色资料
+personSubtitle: 人物
+lanUdpPortHint: UDP 广播端口用于设备发现，WebSocket 端口用于远程控制连接
+lanMulticastTitle: 组播地址（多线程广播）
+lanMulticastInvalid: 请输入合法的组播地址（224.0.0.0 - 239.255.255.255）
+lanMulticastHint: 组播（多线程广播）用于设备发现；自定义地址可避开路由器/防火墙对默认组播地址的特殊过滤
+lanPinTitle: 连接 PIN 码验证
+lanPinLengthHint: 4-6 位数字
+lanPinInvalid: 请输入 4-6 位数字 PIN
+lanPinEnableHint: 开启后，其他设备连接时需输入此 PIN 码
+lanSelfTestFailed: "自检失败: ${error}"
+lanSelfTestDetail: "设备: ${platform}  UDP端口: ${udpPort}  发现状态: ${state}"
+lanPinStatus: "连接PIN验证: ${status}"
+lanEnabled: 已开启
+lanDisabled: 已关闭
+lanRetest: 重新自检
+lanTroubleshoot: "排查要点: 两端连接同一 Wi-Fi/路由器；路由器关闭\"AP隔离/客户端隔离\"；两端均为最新代码。"
 status: 状态
 audioOptionLowLatency: "音频: 低延迟"
 audioOptionCompatibility: "音频: 兼容模式"
@@ -718,6 +919,21 @@ koreanDub: 韩配
 selectedACharacter: 已选择 ${a} 位角色
 searchOptions: 搜索选项
 searchSources: 搜索源
+searchGroupAll: 全部
+searchGroupBangumi: 番组
+searchGroupDefault: 默认
+chooseSearchSource: 选择搜索源
+singleSourceSearch: 单源
+searchGroupBuiltIn: 内置分组
+searchGroupCustom: 我的分组
+manageGroups: 管理分组
+newGroup: 新建分组
+groupName: 分组名称
+groupExists: 分组名称已存在
+groupSources: 分组内源
+assignSources: 分配源
+deleteGroup: 删除分组
+deleteGroupConfirm: 确定删除该分组？
 translation: 翻译
 translationService: 翻译服务
 apiKeyCannotBeEmpty: API Key 不能为空
@@ -778,6 +994,31 @@ connectedAt: 连接时间
 messageHistory: 消息记录
 hubClient: Hub 客户端
 connectToHub: 连接到 Hub
+disconnect: 断开
+savedServers: 已保存的服务器
+noSavedServers: 暂无已保存的服务器
+saveCurrentConfig: 保存当前配置
+serverName: 伺服器名稱
+selectServer: 選擇一個伺服器
+exportRooms: 匯出房間
+importRooms: 匯入房間
+connect: 连接
+watchTogether: 一起看
+watchTogetherDesc: 和朋友一起看番：创建或加入房间，边看边聊，分享截图与字幕。
+selectRoomToStart: 选择房间开始一起看
+syncToOwner: 同步到房主
+syncedToOwner: 已同步到房主进度
+ownerNotSharing: 房主未分享进度
+syncRequiresSameAnime: 当前未在观看「${title}」，请先打开该番剧再同步
+sharingAsOwner: 你是房主，正在分享播放进度
+episodeNEp: 第${n}集
+joinHubRoom: 加入一起看房间
+hubRoomInvite: 加入一起看房间
+hubRoomInviteWithRoom: 加入「${room}」一起看
+invalidHubRoomLink: 无效的一起看房间链接
+connectingToHub: 正在连接 Hub...
+joinedRoom: 已加入房间
+shareRoomQr: 分享房间二维码
 connected: 已连接
 notConnected: 未连接
 hubAddress: Hub 地址
@@ -813,8 +1054,90 @@ joinedEvent: 加入了
 leftEvent: 离开了
 newRoom: 新房间
 portAndBindMode: 端口与绑定模式
+seekForward: 快进 ${s} 秒
+seekBackward: 快退 ${s} 秒
+notBroadcast: 尚未播出
+items: 项
+wsBotConnections: WS 机器人连接
+subscriptionManagement: 订阅管理
+addSubscription: 添加订阅
+noSubscriptions: 暂无订阅，点击右上角 + 添加
+connectionType: 连接方式
+wsForward: WS 正向（Hub 监听）
+wsReverse: WS 反向（连接目标）
+webhookConnection: Webhook（URL 推送）
+httpServer: HTTP 服务端（监听）
+forward: 正向
+reverse: 反向
+listenAddress: 监听地址
+listenPort: 监听端口
+targetUrl: 目标 URL
+heartbeat: 心跳间隔（毫秒，可选）
+token: token（可选）
+note: 备注
+running: 运行中
+stopped: 未运行
+wsBotDescription: Hub 作为客户端主动连接你机器人的 WebSocket 服务器，实时推送房间消息与系统事件。机器人侧维护一个 WS 监听端即可接收。
+wsBotUrl: 机器人 WebSocket 地址
+wsBotSecret: 握手密钥（可选）
+wsBotMessageEvents: 消息事件
+wsBotSystemEvents: 系统事件
+wsReverseTitle: 反向：机器人连接 Hub
+wsReverseInfo: '机器人也可作为 WebSocket 客户端连接本 Hub：ws://${host}/hub，然后用 Hub API Key 鉴权（type: auth, token: <key>），实现完整双向通信。协议详见 HUB_BOT_API.md。'
 hubManagement: Hub 管理
 chatRoom: 聊天室
+roomType: 房间类型
+webhooks: Webhook
+inboundWebhooks: 入站 Webhook
+outboundWebhooks: 出站 Webhook
+createWebhook: 创建 Webhook
+webhookName: Webhook 名称
+webhookUrl: Webhook 地址
+webhookSecret: Webhook 密钥（HMAC-SHA256）
+webhookUsageHint: '发送 POST 请求 {"text": "..."} 即可向房间推送消息：'
+webhookMessageEvents: 消息事件
+webhookSystemEvents: 系统事件
+noWebhooks: 尚未配置 Webhook
+hubAiBot: AI 陪聊机器人
+hubAiBotEnabled: 启用 AI 机器人
+hubAiBotStatus: 已启用
+hubAiBotStatusDisabled: 已停用
+hubAiBotConfigure: 配置
+hubAiBotConfigureDesc: 名称、服务商、模型与人设
+hubAiBotConfigTitle: AI 陪聊机器人设置
+hubAiBotName: 机器人名称
+hubAiBotProvider: AI 服务商
+hubAiBotProviderHint: 例如 deepseek
+hubAiBotProviderHelper: AI 设置中的服务商源 key，需已配置可用 API Key
+hubAiBotModel: 模型（可选）
+hubAiBotModelHint: 留空使用服务商默认模型
+hubAiBotModelDefault: 使用服务商默认模型
+hubAiBotSystemPrompt: 人设 / 系统提示词
+hubAiBotContextMessages: 上下文消息数
+hubAiBotTriggerMode: 触发方式
+hubAiBotTriggerPattern: 触发前缀 / 关键字
+hubAiBotKeywordHint: 例如 #bot
+hubAiBotMinInterval: 最小回复间隔（秒）
+hubAiBotReplyDm: 回复私聊消息
+webAdminSettings: Web 管理设置
+webAdminWhatIs: 什么是 Web 管理？
+webAdminDescription: Web 管理提供基于浏览器的 Hub 管理面板。在任意设备浏览器打开地址，可查看服务器状态、管理房间与客户端、浏览日志、修改配置、控制 AI 机器人与 Webhook、重启 Hub。使用现有的 Hub API Key 进行鉴权。
+webAdminFeatures: 可用功能
+webAdminFeatureOverview: 状态总览
+webAdminFeatureRooms: 房间管理与发消息
+webAdminFeatureClients: 在线客户端
+webAdminFeatureLogs: 日志
+webAdminFeatureConfig: 配置
+webAdminFeatureAi: AI 机器人
+webAdminFeatureWebhooks: Webhook
+webAdminFeatureRestart: 重启 Hub
+webAdminDashboard: Web 管理后台
+webAdminEnabled: 启用 Web 管理
+webAdminOnPort: 端口
+webAdminPort: Web 管理端口
+webAdminUrl: 在浏览器打开
+restartHubToApply: 重启 Hub 后生效
+watchingAnime: '正在看：${a}'
 openChatDialog: 打开聊天窗口
 hubDetails: Hub 详情
 connectionSettings: 连接设置
@@ -891,7 +1214,7 @@ bucketCannotBeEmpty: 存储桶 (Bucket) 不能为空
 accessKeyIdCannotBeEmpty: Access Key ID 不能为空
 accessKeySecretCannotBeEmpty: Access Key Secret 不能为空
 cdnDomainMustBeAValidUrl: CDN 域名必须是有效的 URL
-maxSizeMustBe1to100Mb: 最大容量必须在 1–100 MB 之间
+maxSizeMustBe1to100Mb: 单文件上传大小上限须为 1–100 MB
 cleared: 已清除
 imageUpload: 图片上传
 clientImageUpload: 客户端图片上传
@@ -900,7 +1223,7 @@ clientOss: 客户端 OSS
 imagesStoredOnServerDisk: 图片存储在服务器磁盘中，通过 /hub/files/ 提供服务
 serverReceivesAndProxiesImageToOss: 服务器接收并代理图片到 OSS。Key 仅保存在服务器。
 clientUploadsDirectlyToOss: 客户端直接上传到 OSS。服务器仅获取最终 URL。
-maxSizeMb: 最大容量 (MB)
+maxSizeMb: 单文件上传大小上限 (MB)
 storePath: 存储路径
 leaveEmptyForDefault: 留空以使用默认路径
 notConfiguredWillUseServerOrBase64: 未配置 · 将使用服务器或 Base64
@@ -988,6 +1311,8 @@ statsInfo: 统计信息
 ratingDetails: 评分详情
 sourceInfo: 源信息
 playerInfo: 播放信息
+logPrivacyProtection: 日志隐私保护
+logPrivacyProtectionDesc: 对日志中的 token、密钥、密码等敏感信息打码
 hideLabel: 隐藏
 showLabel: 显示
 personaManagement: 角色管理
@@ -1090,6 +1415,11 @@ invalidCookies: 无效的 Cookies
 webviewIsNotAvailable: Webview 不可用
 sources: 数据源
 translationFailedPleaseTryAgainLater: 翻译失败，请稍后重试
+translationErrorRegionNotSupported: AI 翻译源不支持当前网络地区，请更换翻译源或使用其他地区的网络
+translationErrorModelNotSupported: 当前配置的模型不被该服务商支持，请到 AI 设置更换模型
+translationErrorApiKeyInvalid: API Key 无效或无权限，请检查 AI 设置中的密钥
+translationErrorRateLimited: 请求过于频繁或额度不足，请稍后再试
+translationErrorRequestFailed: 翻译请求失败
 writeYourReview: 写下你的评价
 draft: 草稿
 content: 内容
@@ -1149,6 +1479,7 @@ pleaseEnableAtLeastOneAddress: 请先开启至少一个地址
 requestFailed: 请求失败
 allCopiedSuccess: 全部复制成功
 bindBangumiIdSuccess: 绑定Bangumi ID成功
+notBoundToBangumi: 该番剧尚未绑定 Bangumi 条目
 applySuccess: 应用成功
 noChanges: 没有更改
 applyFailed: 应用失败
@@ -1202,6 +1533,9 @@ tagHint: 如 #EXT-X-CUE-OUT
 cueAdTag: CUE 广告标记
 ultraShortSegment: 极短分片
 commonAdUrlPattern: 常见广告 URL 特征
+keywordMatch: 关键字匹配
+keywordHint: 子串，如 advert 或 adservice
+commonAdKeyword: 常见广告关键字
 
 # Video page
 videoDetails: 视频详情
@@ -1284,6 +1618,9 @@ lanSelectEpisode: 选择集数
 lanNextEpisode: 下一集
 lanPreviousEpisode: 上一集
 lanToggleFullscreen: 切换全屏
+lanVolumeUp: 音量加
+lanVolumeDown: 音量减
+lanWaitingForEpisodeInfo: 等待被控制端发送剧集信息...
 lanSyncStatus: 同步状态
 lanSyncing: 同步中...
 lanLastSyncTime: 上次同步时间
@@ -1391,6 +1728,88 @@ stepThinking: 思考
 stepTool: 工具
 thinkingInProgress: 正在思考...
 statsCached: 缓存
+statsNoRecords: 暂无活动记录
+statsActivityOverview: 活动统计
+statsWatchDuration: 观看时长
+statsClicks: 点击次数
+statsRatings: 评级
+statsComments: 评论
+statsFavorites: 收藏
+statsActiveItems: 活跃条目
+statsActiveHeatmap: 活跃热力图
+statsWatchTrend: 观看趋势
+statsActiveItemsTop: "活跃条目 (前 ${shown}/${total}个)"
+statsWatchDistribution: 观看时长分布
+statsFrequentTags: 常看标签
+statsTagCloud: 标签词云
+statsUnknown: 未知
+statsCountTimes: "${n} 次"
+statsCountComments: "${n} 条"
+statsCountItems: "${n} 个"
+statsDateFull: "${year}年${month}月${day}日"
+statsDateRangeWeek: "${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日"
+statsDateMonth: "${year}年${month}月"
+statsYearMonthName: "${year}年${month}"
+statsDateRangeHalf: "${year}年${startMonth}月 ~ ${endMonth}月"
+statsDateYear: "${year}年"
+statsDateDay: "${day}日"
+statsDateMonthOnly: "${month}月"
+statsWeekdayMon: 一
+statsWeekdayTue: 二
+statsWeekdayWed: 三
+statsWeekdayThu: 四
+statsWeekdayFri: 五
+statsWeekdaySat: 六
+statsWeekdaySun: 日
+statsYearlyOverview: 年度总览
+statsRangeOverview: 时间范围统计
+statsWeekly: 周统计
+statsMonthly: 月统计
+statsQuarterly: 季统计
+statsHalfYearly: 半年统计
+statsYearly: 年统计
+statsDaily: 天统计
+statsSourceList: 来源清单
+statsSelectDate: 选择日期
+statsDayRecords: 当天的记录
+statsYearSuffix: "${year} 年"
+statsCopiedToClipboard: 已复制到剪贴板
+statsFuture: 未来
+statsNoRecordsOnDay: 暂无记录
+statsMonth1: 一月
+statsMonth2: 二月
+statsMonth3: 三月
+statsMonth4: 四月
+statsMonth5: 五月
+statsMonth6: 六月
+statsMonth7: 七月
+statsMonth8: 八月
+statsMonth9: 九月
+statsMonth10: 十月
+statsMonth11: 十一月
+statsMonth12: 十二月
+statsRatedAt: "(评价时 ${duration})"
+statsCreatedComment: "${time} 创建了评论 ${duration}:"
+statsModifiedComment: "${time} 第${n}次修改了评论 ${duration}:"
+statsCreatedRating: "${time} 创建了评级 ${duration}:"
+statsModifiedRating: "${time} 第${n}次修改了评级 ${duration}:"
+statsClickAt: "[${source}] ${platform}点击${value}次"
+statsDailyClicks: "本日点击次数: ${total}"
+statsWatchAt: "[${source}] ${platform}观看: ${duration}"
+statsDailyWatch: "本日观看时长: ${duration}"
+statsRecords: 记录
+statsLastClickAt: "当日最后点击: \n${time}"
+statsLastWatchAt: "当日最后观看: \n${time}"
+statsFavoritesTotal: "收藏: ${n}"
+statsCompletedCount: "完成: ${n}"
+statsCompletionRate: "完成率: ${n}"
+statsAverageScore: "平均分: ${n}"
+statsStdDev: "标准差: ${n}"
+statsRatingCount: "评分数: ${n}"
+statsDefault: 默认
+statsItemCountSuffix: "${n} 部"
+statsNoRatingItems: "暂无 ${score} 分的作品"
+statsScoreCount: "${score}分 (${count})"
 jumpToBottom: 回到底部
 modelDoesNotSupportVision: 当前模型不支持图片理解
 myMessage: 我的消息
@@ -1420,6 +1839,12 @@ providerKey: 服务商 Key
 providerKeyHint: 例如 my-provider
 providerKeyExists: 服务商 Key 已存在，请更换
 defaultModel: 默认模型
+mainSettings: 主设置
+modelSettings: 模型设置
+editModel: 编辑模型
+openModelSettings: 打开设置
+setAsDefaultModel: 设为默认模型
+effectiveAddress: 生效地址
 supportsVision: 支持图片理解
 supportsTools: 支持工具调用
 enableVision: 启用图片理解
@@ -1429,7 +1854,7 @@ disableTools: 禁用工具调用
 enterProviderKeyToAddModel: 请先在上方填写服务商 Key 再添加模型
 mcpServers: MCP 服务器
 noMcpServers: 暂无 MCP 服务器
-serverName: 服务器名称
+mcpServerName: 服务器名称
 transport: 传输方式
 stdio: stdio
 http: HTTP
@@ -1522,6 +1947,19 @@ modelType: 模型类型
 inputModality: 输入模态
 outputModality: 输出模态
 supportsReasoning: 支持推理
+capabilities: 能力
+modelTypeChat: 聊天
+modelTypeImage: 图像
+modelTypeEmbedding: 嵌入
+modelTypeAudio: 音频
+modelTypeRerank: 重排序
+modelTypeOther: 其他
+modalityText: 文本
+modalityImage: 图片
+modalityAudio: 音频
+modalityVideo: 视频
+capabilityTools: 工具
+capabilityReasoning: 推理
 apiFormat: 接口格式
 apiFormatOpenai: OpenAI（chat）
 apiFormatOpenaiResponses: OpenAI Responses

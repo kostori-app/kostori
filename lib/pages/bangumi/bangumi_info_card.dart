@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -46,7 +45,8 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
 
   List<EpisodeInfo> get allEpisodes => infoController.allEpisodes;
 
-  Widget get voteBarChart => LineChatPage(bangumiItem: widget.bangumiItem);
+  Widget get voteBarChart =>
+      BangumiBarChartPage(bangumiItem: widget.bangumiItem);
 
   void showBangumiHistoryPagePickerDialog(BuildContext context) {
     final scrollController = ScrollController();
@@ -121,7 +121,10 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                         Text(history.sourceKey),
                                         const SizedBox(height: 4),
                                         Text(
-                                          '上次看到: 第 ${history.lastWatchEpisode} 话',
+                                          t.bangumiLastSeen(
+                                            episode:
+                                                history.lastWatchEpisode ?? 0,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -250,7 +253,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
             ),
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
           ),
-          child: const Text('搜索'),
+          child: Text(t.search),
         ),
 
         const SizedBox(width: 8),
@@ -267,7 +270,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('开始观看'),
+            child: Text(t.bangumiStartWatch),
           ),
       ],
     );
@@ -490,39 +493,35 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                               ),
                                             ),
                                           SizedBox(width: 4.0),
-                                          Observer(
-                                            builder: (_) {
-                                              final currentWeekEp =
-                                                  infoController.currentWeekEp;
-                                              final type0Episodes =
-                                                  infoController.allEpisodes
-                                                      .where(
-                                                        (ep) => ep.type == 0,
-                                                      )
-                                                      .toList();
-                                              final lastSort =
-                                                  type0Episodes.isNotEmpty
-                                                  ? type0Episodes.last.sort
-                                                  : null;
-                                              final currentSort =
-                                                  currentWeekEp.isEmpty
-                                                  ? null
-                                                  : currentWeekEp
-                                                        .values
-                                                        .first
-                                                        ?.sort;
-                                              final isCompleted =
-                                                  currentSort != null &&
-                                                  lastSort != null &&
-                                                  currentSort.toDouble() ==
-                                                      lastSort.toDouble();
-                                              return BangumiWidget.bangumiTimeText(
-                                                bangumiItem,
-                                                currentWeekEp,
-                                                isCompleted,
-                                              );
-                                            },
-                                          ),
+                                          () {
+                                            final currentWeekEp =
+                                                infoController.currentWeekEp;
+                                            final type0Episodes = infoController
+                                                .allEpisodes
+                                                .where((ep) => ep.type == 0)
+                                                .toList();
+                                            final lastSort =
+                                                type0Episodes.isNotEmpty
+                                                ? type0Episodes.last.sort
+                                                : null;
+                                            final currentSort =
+                                                currentWeekEp.isEmpty
+                                                ? null
+                                                : currentWeekEp
+                                                      .values
+                                                      .first
+                                                      ?.sort;
+                                            final isCompleted =
+                                                currentSort != null &&
+                                                lastSort != null &&
+                                                currentSort.toDouble() ==
+                                                    lastSort.toDouble();
+                                            return BangumiWidget.bangumiTimeText(
+                                              bangumiItem,
+                                              currentWeekEp,
+                                              isCompleted,
+                                            );
+                                          }(),
                                         ],
                                       )
                                     : Padding(
@@ -570,7 +569,9 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                               children: [
                                                 if (latestRating != null)
                                                   Text(
-                                                    '我的评分: $latestRating',
+                                                    t.bangumiMyRating(
+                                                      score: latestRating ?? 0,
+                                                    ),
                                                     style: TextStyle(
                                                       fontSize: 12.0,
                                                     ),
@@ -654,7 +655,9 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                                           itemSize: 20.0,
                                                         ),
                                                         Text(
-                                                          Translations.of(context).tReviewsR(
+                                                          Translations.of(
+                                                            context,
+                                                          ).tReviewsR(
                                                             t: bangumiItem
                                                                 .total,
                                                             r: bangumiItem.rank,
@@ -745,7 +748,7 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                           ? Align(
                               child: BangumiWidget.buildStatsRow(
                                 context: context,
-                                bangumiItem: infoController.bangumiItem,
+                                bangumiItem: bangumiItem,
                               ),
                             )
                           : Padding(
@@ -844,24 +847,6 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                                   style: ts.s12,
                                 ),
                               ),
-                              TextButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    infoController.showLineChart =
-                                        !infoController.showLineChart;
-                                  });
-                                },
-                                icon: Icon(
-                                  infoController.showLineChart
-                                      ? Icons.show_chart
-                                      : Icons.bar_chart,
-                                ),
-                                label: Text(
-                                  infoController.showLineChart
-                                      ? t.lineChart
-                                      : t.barChart,
-                                ),
-                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -873,7 +858,9 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                             child: Row(
                               children: [
                                 Text(
-                                  t.standardDeviationS(s: standardDeviation.toStringAsFixed(2)),
+                                  t.standardDeviationS(
+                                    s: standardDeviation.toStringAsFixed(2),
+                                  ),
                                   style: TextStyle(fontSize: 12),
                                 ),
                                 const SizedBox(width: 8),
@@ -889,11 +876,9 @@ class _BangumiInfoCardVState extends ConsumerState<BangumiInfoCardV> {
                           const SizedBox(height: 8),
                           // Spacer(),
                           Expanded(
-                            child: infoController.showLineChart
-                                ? LineChatPage(bangumiItem: widget.bangumiItem)
-                                : BangumiBarChartPage(
-                                    bangumiItem: widget.bangumiItem,
-                                  ),
+                            child: BangumiBarChartPage(
+                              bangumiItem: widget.bangumiItem,
+                            ),
                           ),
                         ],
                       ),

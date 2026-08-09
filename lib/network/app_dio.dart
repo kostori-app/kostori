@@ -133,16 +133,30 @@ class MyLogInterceptor extends Interceptor {
 }
 
 class AppDio with DioMixin {
-  AppDio([BaseOptions? options]) {
+  /// 是否打印请求/响应/错误日志。静默模式用于图片缩略图、
+  /// 后台轮询等失败属正常场景的请求，避免 error 日志刷屏。
+  final bool verboseLog;
+
+  AppDio([
+    // ignore: prefer_initializing_formals
+    BaseOptions? options,
+    bool verboseLog = true,
+  ]) : verboseLog = verboseLog {
     this.options = options ?? BaseOptions();
     httpClientAdapter = RHttpAdapter();
     if (App.isInitialized) {
       interceptors.add(CookieManagerSql());
       interceptors.add(NetworkCacheManager());
       interceptors.add(CloudflareInterceptor());
-      interceptors.add(MyLogInterceptor());
+      // 图片缩略图等高频、可恢复的请求不打 error 日志，避免刷屏
+      if (verboseLog) {
+        interceptors.add(MyLogInterceptor());
+      }
     }
   }
+
+  /// 静默模式：不打印请求/响应/错误日志。
+  AppDio.quiet([BaseOptions? options]) : this(options, false);
 
   static final Map<String, bool> _requests = {};
 

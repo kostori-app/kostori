@@ -16,6 +16,7 @@ import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
 import 'package:kostori/foundation/m3u8_proxy_server.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/video_page.dart';
@@ -57,6 +58,7 @@ class WatcherState extends State<Watcher>
 
   final stats = StatsManager();
 
+  StreamSubscription<bool>? _completedSub;
   // 当前播放列表
   late int currentRoad;
 
@@ -88,7 +90,9 @@ class WatcherState extends State<Watcher>
     epIndex = 1;
     currentRoad = 0;
     updateStats(init: true);
-    playerController.player.stream.completed.listen((completed) {
+    _completedSub = playerController.player.stream.completed.listen((
+      completed,
+    ) {
       if (completed) {
         playNextEpisode();
       }
@@ -113,6 +117,7 @@ class WatcherState extends State<Watcher>
   @override
   void dispose() {
     currentState = null;
+    _completedSub?.cancel();
     updateHistoryTimer?.cancel();
     playerController.dispose();
     playerController.disposeWindow();
@@ -144,7 +149,7 @@ class WatcherState extends State<Watcher>
               color: Theme.of(context).colorScheme.primary,
               autostart: Autostart.once,
             ),
-            message: '正在播放下一集',
+            message: t.watcherPlayingNext,
             context: context,
           );
         } catch (e) {
@@ -156,7 +161,7 @@ class WatcherState extends State<Watcher>
               fps: 120,
               autostart: Autostart.once,
             ),
-            message: '加载剧集时出错 ${e.toString()}',
+            message: t.watcherEpisodeLoadError(error: e.toString()),
             context: context,
           );
           PlayLog.info("playNextEpisode", "加载剧集时出错");
@@ -170,7 +175,7 @@ class WatcherState extends State<Watcher>
             fps: 120,
             autostart: Autostart.once,
           ),
-          message: '没有更多剧集可播放',
+          message: t.watcherNoMoreEpisodes,
           context: context,
         );
         PlayLog.info("下一集", "没有更多剧集可播放");
@@ -194,12 +199,12 @@ class WatcherState extends State<Watcher>
     required int road,
   }) async {
     if (anime.episode == null || road >= anime.episode!.length) {
-      App.rootContext.showMessage(message: '线路不存在');
+      App.rootContext.showMessage(message: t.watcherRouteNotFound);
       return;
     }
 
     if (episodeIndex == loaded && road == playerController.currentRoad) {
-      App.rootContext.showMessage(message: '加载重复集数');
+      App.rootContext.showMessage(message: t.watcherDuplicateEpisode);
       return;
     }
     epIndex = episodeIndex;

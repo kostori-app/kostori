@@ -75,24 +75,66 @@ class _ExplorePageState extends State<ExplorePage>
       }
     }
 
+    // 探索页的源/页配置没变化（如从详情页返回时的无关设置写入）：
+    // 不重建 TabController，避免选中 Tab 被重置
+    if (_sameSources(newSources, sources) &&
+        _samePages(newSourcePages, sourcePages)) {
+      return;
+    }
+
     setState(() {
+      // 重建前记录当前选中的源与各源的页索引，按 key 恢复
+      final prevSourceKey =
+          sources.isNotEmpty && sourceController.index < sources.length
+          ? sources[sourceController.index]
+          : null;
+      final prevPageIndices = <String, int>{
+        for (var s in pageControllers.keys) s: pageControllers[s]?.index ?? 0,
+      };
+
       sources = newSources;
       sourcePages = newSourcePages;
-      _rebuildPageControllers();
+      _rebuildPageControllers(prevPageIndices);
+
+      final old = sourceController;
       sourceController = TabController(length: sources.length, vsync: this);
+      old.dispose();
+      if (prevSourceKey != null) {
+        final idx = sources.indexOf(prevSourceKey);
+        if (idx != -1) sourceController.index = idx;
+      }
     });
   }
 
-  void _rebuildPageControllers() {
+  bool _sameSources(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  bool _samePages(Map<String, List<String>> a, Map<String, List<String>> b) {
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      final other = b[entry.key];
+      if (other == null || !_sameSources(entry.value, other)) return false;
+    }
+    return true;
+  }
+
+  void _rebuildPageControllers([Map<String, int>? prevIndices]) {
     for (var source in sourcePages.keys) {
       var pages = sourcePages[source] ?? [];
-      if (!pageControllers.containsKey(source) ||
-          pageControllers[source]?.length != pages.length) {
-        pageControllers[source]?.dispose();
-        pageControllers[source] = TabController(
-          length: pages.length,
-          vsync: this,
-        );
+      var prevIndex =
+          prevIndices?[source] ?? pageControllers[source]?.index ?? 0;
+      pageControllers[source]?.dispose();
+      pageControllers[source] = TabController(
+        length: pages.length,
+        vsync: this,
+      );
+      if (pages.isNotEmpty && prevIndex < pages.length) {
+        pageControllers[source]!.index = prevIndex;
       }
     }
   }

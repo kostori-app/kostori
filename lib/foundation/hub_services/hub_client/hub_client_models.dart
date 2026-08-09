@@ -14,6 +14,9 @@ class HubClientDto {
   final String currentRoomId;
   final bool isBot;
 
+  /// 该客户端可直连的候选地址（一起看 P2P）
+  final List<String> peerCandidates;
+
   HubClientDto({
     required this.userId,
     required this.displayName,
@@ -25,6 +28,7 @@ class HubClientDto {
     required this.connectedAt,
     this.currentRoomId = 'lobby',
     this.isBot = false,
+    this.peerCandidates = const [],
   });
 
   factory HubClientDto.fromJson(Map<String, dynamic> json) {
@@ -45,6 +49,9 @@ class HubClientDto {
           : DateTime.now(),
       currentRoomId: json['currentRoomId'] as String? ?? 'lobby',
       isBot: json['isBot'] as bool? ?? false,
+      peerCandidates: List<String>.from(
+        json['peerCandidates'] as List? ?? const [],
+      ),
     );
   }
 
@@ -59,6 +66,7 @@ class HubClientDto {
     'connectedAt': connectedAt.toIso8601String(),
     'currentRoomId': currentRoomId,
     'isBot': isBot,
+    'peerCandidates': peerCandidates,
   };
 }
 
@@ -81,6 +89,15 @@ class HubRoomDto {
   final List<HubMessage> pinnedMessages;
   final List<HubMessage> messageHistory;
 
+  /// 房间类型（chat / watch）
+  final HubRoomType roomType;
+
+  /// 一起看房间的番剧信息（普通聊天房为空）
+  final String? animeId;
+  final String? animeTitle;
+  final String? animeSourceKey;
+  final String? animeCover;
+
   HubRoomDto({
     required this.roomId,
     required this.roomName,
@@ -97,7 +114,15 @@ class HubRoomDto {
     required this.pinnedMessages,
     List<HubMessage>? messageHistory,
     this.welcomeMessage,
+    this.roomType = HubRoomType.chat,
+    this.animeId,
+    this.animeTitle,
+    this.animeSourceKey,
+    this.animeCover,
   }) : messageHistory = messageHistory ?? [];
+
+  /// 是否一起看房间
+  bool get isWatchRoom => roomType == HubRoomType.watch;
 
   int get participantCount => participants.length;
 
@@ -122,6 +147,11 @@ class HubRoomDto {
     'bannedUserIds': bannedUserIds,
     'pinnedMessages': pinnedMessages.map((m) => m.toJson()).toList(),
     'welcomeMessage': welcomeMessage,
+    'roomType': roomType.name,
+    if (animeId != null) 'animeId': animeId,
+    if (animeTitle != null) 'animeTitle': animeTitle,
+    if (animeSourceKey != null) 'animeSourceKey': animeSourceKey,
+    if (animeCover != null) 'animeCover': animeCover,
   };
 
   factory HubRoomDto.fromJson(Map<String, dynamic> json) => HubRoomDto(
@@ -146,6 +176,15 @@ class HubRoomDto {
         .map((m) => HubMessage.fromJson(m as Map<String, dynamic>))
         .toList(),
     welcomeMessage: json['welcomeMessage'] as String?,
+    roomType:
+        HubRoomType.values.firstWhereOrNull(
+          (e) => e.name == json['roomType'],
+        ) ??
+        HubRoomType.chat,
+    animeId: json['animeId'] as String?,
+    animeTitle: json['animeTitle'] as String?,
+    animeSourceKey: json['animeSourceKey'] as String?,
+    animeCover: json['animeCover'] as String?,
   );
 
   HubRoomDto copyWith({
@@ -164,6 +203,11 @@ class HubRoomDto {
     List<String>? bannedUserIds,
     List<HubMessage>? pinnedMessages,
     List<HubMessage>? messageHistory,
+    HubRoomType? roomType,
+    String? animeId,
+    String? animeTitle,
+    String? animeSourceKey,
+    String? animeCover,
   }) => HubRoomDto(
     roomId: roomId ?? this.roomId,
     roomName: roomName ?? this.roomName,
@@ -180,5 +224,10 @@ class HubRoomDto {
     bannedUserIds: bannedUserIds ?? this.bannedUserIds,
     pinnedMessages: pinnedMessages ?? this.pinnedMessages,
     messageHistory: messageHistory ?? this.messageHistory,
+    roomType: roomType ?? this.roomType,
+    animeId: animeId ?? this.animeId,
+    animeTitle: animeTitle ?? this.animeTitle,
+    animeSourceKey: animeSourceKey ?? this.animeSourceKey,
+    animeCover: animeCover ?? this.animeCover,
   );
 }

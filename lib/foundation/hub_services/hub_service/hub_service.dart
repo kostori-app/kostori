@@ -11,6 +11,9 @@ class HubService extends BaseHttpService {
   final Set<String> _blacklist = {};
   final Set<String> _adminIds = {};
   final List<String> eventLog = [];
+
+  /// 已与房主建立直连同步的成员（一起看 P2P），广播时跳过这些成员
+  final Map<String, bool> _directSyncMembers = {};
   static const String _lobbyIdValue = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
   HubClientDto get _serverDto => HubClientDto(
@@ -21,11 +24,90 @@ class HubService extends BaseHttpService {
 
   String get _lobbyId => _lobbyIdValue;
 
+  /// 大厅房间 ID（对外暴露）
+  String get lobbyRoomId => _lobbyIdValue;
+
   VoidCallback? onMessageReceived;
   VoidCallback? onClientsChanged;
   VoidCallback? onRoomsChanged;
 
   Timer? _heartbeatTimer;
+
+  final DateTime startedAt = DateTime.now();
+
+  int get directSyncMemberCount =>
+      _directSyncMembers.values.where((v) => v).length;
+
+  /// 通过客户端 ID 查显示名
+  String clientName(String? userId) {
+    if (userId == null || userId == 'server') return 'Server';
+    return _clients[userId]?.displayName ?? userId;
+  }
+
+  HubRoom? findRoom(String roomId) => _rooms[roomId];
+
+  /// 广播一条已构造好的消息（供 Web 管理后台等注入）
+  void broadcastToRoomFrom(String roomId, HubMessage msg) =>
+      _broadcastToRoom(roomId, msg);
+
+  /// 解析文本为消息 segments
+  List<MessageSegment> parseSegments(String text) => _parseSegments(text);
+
+  /// 构造一个"Server"身份的机器人发送者
+  HubClientInfo serverBotClient(String roomId) => HubClientInfo(
+    userId: 'server',
+    displayName: 'Server',
+    connection: null,
+    currentRoomId: roomId,
+    isBot: true,
+  );
+
+  /// 管理员删除任意房间（不可删大厅）
+  bool deleteRoomByAdmin(String roomId) {
+    if (roomId == _lobbyId) return false;
+    final room = _rooms.remove(roomId);
+    if (room == null) return false;
+    for (final member in room.participants.values) {
+      _moveToLobby(member);
+    }
+    onRoomsChanged?.call();
+    _broadcastSystem(HubSystemEvent.roomDeleted, {'roomId': roomId});
+    unawaited(_saveRooms());
+    return true;
+  }
+
+  /// 重启服务（先停后启）
+  Future<void> restart() async {
+    await stopWebAdmin();
+    await stopServer();
+    await init();
+  }
+
+  /// 停止 Web 管理服务
+  Future<void> stopWebAdmin() async {
+    await _webAdmin?.dispose();
+    _webAdmin = null;
+  }
+
+  /// 若启用则启动/更新 Web 管理服务
+  Future<void> startWebAdmin() async {
+    final wantEnabled = HubWebAdminService._enabled();
+    if (!wantEnabled) {
+      await stopWebAdmin();
+      return;
+    }
+    if (_webAdmin != null && _webAdmin!.isRunning) {
+      return;
+    }
+    final admin = HubWebAdminService(this);
+    await admin.startServer(
+      preferredPort: admin.webAdminPort,
+      mode: admin.webAdminBindMode,
+    );
+    _webAdmin = admin;
+  }
+
+  HubWebAdminService? _webAdmin;
 
   List<HubClientInfo> get clients => _clients.values.toList();
 
@@ -78,6 +160,111 @@ class HubService extends BaseHttpService {
       _clients[clientId]?.isGlobalAdmin == true ||
       _rooms[roomId]?.isModerator(clientId) == true;
 
+  // ── 房间持久化（本地文件，不参与 WebDAV 同步）─────────────────────────────
+
+  Future<File> _roomsFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/hub/hub_rooms.json');
+  }
+
+  /// 房间元数据。
+  /// [encryptPassword] 为 true 时密码加密存储（本地磁盘）；
+  /// 为 false 时明文输出（用户主动导出的可移植文件）。
+  Map<String, dynamic> _roomMeta(HubRoom r, {bool encryptPassword = false}) => {
+    'roomId': r.roomId,
+    'roomName': r.roomName,
+    'ownerUserId': r.ownerUserId,
+    'password': r.password == null
+        ? null
+        : (encryptPassword ? SecretVault.encrypt(r.password!) : r.password),
+    'announcements': r.announcements,
+    'maxParticipants': r.maxParticipants,
+    'moderatorIds': r.moderatorIds.toList(),
+    'welcomeMessage': r.welcomeMessage,
+    'allowMemberInvite': r.allowMemberInvite,
+    'roomType': r.roomType.name,
+    if (r.animeId != null) 'animeId': r.animeId,
+    if (r.animeTitle != null) 'animeTitle': r.animeTitle,
+    if (r.animeSourceKey != null) 'animeSourceKey': r.animeSourceKey,
+    if (r.animeCover != null) 'animeCover': r.animeCover,
+  };
+
+  /// 导出房间配置 JSON（供导入/导出，密码明文可移植）
+  String exportRoomsJson() =>
+      jsonEncode(_rooms.values.map((r) => _roomMeta(r)).toList());
+
+  /// 导入房间配置 JSON（覆盖式合并到内存，并持久化）。
+  /// 兼容明文导入与加密导入。
+  void importRoomsJson(String json) {
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is! List) return;
+      for (final raw in decoded) {
+        if (raw is! Map) continue;
+        final m = Map<String, dynamic>.from(raw);
+        final room = HubRoom(
+          roomId: m['roomId'] as String?,
+          roomName: m['roomName'] as String? ?? '未命名房间',
+          ownerUserId: m['ownerUserId'] as String? ?? 'server',
+          password: _decryptRoomPassword(m['password'] as String?),
+          announcements:
+              (m['announcements'] as List?)?.cast<String>() ?? const [],
+          maxParticipants: m['maxParticipants'] as int?,
+          welcomeMessage: m['welcomeMessage'] as String?,
+          allowMemberInvite: m['allowMemberInvite'] as bool? ?? false,
+          roomType:
+              HubRoomType.values.firstWhereOrNull(
+                (e) => e.name == m['roomType'],
+              ) ??
+              HubRoomType.chat,
+          animeId: m['animeId'] as String?,
+          animeTitle: m['animeTitle'] as String?,
+          animeSourceKey: m['animeSourceKey'] as String?,
+          animeCover: m['animeCover'] as String?,
+        );
+        room.moderatorIds.addAll(
+          (m['moderatorIds'] as List?)?.cast<String>() ?? const [],
+        );
+        _rooms[room.roomId] = room;
+      }
+      _ensureLobby();
+      onRoomsChanged?.call();
+      unawaited(_saveRooms());
+    } catch (e) {
+      HubLog.error('HubService', '导入房间失败: $e');
+    }
+  }
+
+  String? _decryptRoomPassword(String? stored) {
+    if (stored == null || stored.isEmpty) return null;
+    final decrypted = SecretVault.decrypt(stored);
+    return decrypted.isEmpty ? null : decrypted;
+  }
+
+  Future<void> _saveRooms() async {
+    try {
+      final file = await _roomsFile();
+      await file.parent.create(recursive: true);
+      // 本地文件加密存储密码，导出走 exportRoomsJson() 明文
+      final json = jsonEncode(
+        _rooms.values.map((r) => _roomMeta(r, encryptPassword: true)).toList(),
+      );
+      await file.writeAsString(json);
+    } catch (e) {
+      HubLog.error('HubService', '保存房间失败: $e');
+    }
+  }
+
+  Future<void> _loadRooms() async {
+    try {
+      final file = await _roomsFile();
+      if (!file.existsSync()) return;
+      importRoomsJson(await file.readAsString());
+    } catch (e) {
+      HubLog.error('HubService', '加载房间失败: $e');
+    }
+  }
+
   String _generateId() => const Uuid().v4();
 
   String _resolveClientName(String name) {
@@ -111,12 +298,27 @@ class HubService extends BaseHttpService {
     if (room == null) return;
     room.addMessage(msg);
     onMessageReceived?.call();
+    unawaited(_dispatchOutboundMessage(room, msg));
+    // AI 陪聊：房间内 @提及机器人时生成回复
+    maybeAiBotReply(msg, room);
+    // 一起看同步消息：已直连房主的成员跳过服务器转发（避免带宽浪费）
+    final isSyncMsg = msg.segments.whereType<TextSegment>().any(
+      (s) => isHubSyncText(s.text),
+    );
     for (final member in room.participants.values) {
       if (member.userId == exclude) continue;
+      if (isSyncMsg && _directSyncMembers[member.userId] == true) continue;
       final json = msg.toJson();
-      if (HubCrypto.isInitialized && json['segments'] != null) {
-        json['segments'] = HubCrypto.encrypt(jsonEncode(json['segments']));
-        json['encrypted'] = true;
+      // 逐人加密：用该成员自己的 token 派生密钥，避免多客户端互相污染全局密钥
+      if (json['segments'] != null) {
+        final token = member.authToken;
+        if (token != null && token.isNotEmpty) {
+          json['segments'] = HubCrypto.encryptWith(
+            token,
+            jsonEncode(json['segments']),
+          );
+          json['encrypted'] = true;
+        }
       }
       json['type'] = 'message';
       member.send(json);
@@ -125,6 +327,129 @@ class HubService extends BaseHttpService {
       'HubService',
       '📢 广播[${room.roomName}] from:${msg.sender.userId} to:${room.participants.length}个',
     );
+  }
+
+  /// 出站 webhook：将房间消息推送到配置的 URL（带 HMAC 签名）
+  Future<void> _dispatchOutboundMessage(HubRoom room, HubMessage msg) async {
+    try {
+      final webhooks = HubWebhookManager.instance.loadOutbound();
+      final text = msg.segments
+          .whereType<TextSegment>()
+          .map((s) => s.text)
+          .join('\n');
+      if (text.isEmpty) return;
+      final event = {
+        'event': 'message',
+        'roomId': room.roomId,
+        'roomName': room.roomName,
+        'senderId': msg.sender.userId,
+        'senderName': msg.sender.displayName,
+        'text': text,
+        'sentAt': DateTime.now().toIso8601String(),
+      };
+      // 订阅管理分发（webhook / ws 反向推送 / ws 正向广播）
+      HubSubscriptionService.instance.dispatch(event);
+      final body = jsonEncode(event);
+      // HTTP 出站 webhook
+      for (final webhook in webhooks) {
+        if (!webhook.messageEvents) continue;
+        unawaited(_postWebhook(webhook, body));
+      }
+      // WS 正向连接：推送给机器人
+      for (final bot in HubWebhookManager.instance.loadWsBots()) {
+        if (!bot.messageEvents) continue;
+        unawaited(_wsBotSend(bot, body));
+      }
+    } catch (e) {
+      HubLog.warning('HubWebhook', '出站消息推送解析失败：$e');
+    }
+  }
+
+  /// 出站 webhook：将系统事件推送到配置的 URL
+  Future<void> _dispatchOutboundSystem(
+    String event,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      final webhooks = HubWebhookManager.instance.loadOutbound();
+      final eventMap = {'event': event, ...data};
+      // 订阅管理分发（webhook / ws 反向推送 / ws 正向广播）
+      HubSubscriptionService.instance.dispatch(eventMap);
+      final body = jsonEncode(eventMap);
+      for (final webhook in webhooks) {
+        if (!webhook.systemEvents) continue;
+        unawaited(_postWebhook(webhook, body));
+      }
+      // WS 正向连接：推送给机器人
+      for (final bot in HubWebhookManager.instance.loadWsBots()) {
+        if (!bot.systemEvents) continue;
+        unawaited(_wsBotSend(bot, body));
+      }
+    } catch (e) {
+      HubLog.warning('HubWebhook', '出站系统事件推送解析失败：$e');
+    }
+  }
+
+  Future<void> _postWebhook(HubOutboundWebhook webhook, String body) async {
+    try {
+      final headers = <String, String>{'Content-Type': 'application/json'};
+      if (webhook.secret.isNotEmpty) {
+        headers['X-Hub-Signature'] =
+            'sha256=${HubWebhookManager.sign(webhook.secret, body)}';
+      }
+      await AppDio().post(
+        webhook.url,
+        data: body,
+        options: Options(
+          headers: headers,
+          sendTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      HubLog.warning('HubWebhook', '出站 webhook 推送失败（${webhook.name}）：$e');
+    }
+  }
+
+  /// 已建立的 WS 机器人连接（url -> socket）
+  final Map<String, WebSocket> _wsBotSockets = {};
+
+  /// 通过 WS 正向连接推送给机器人。
+  /// 惰性建立连接：发送前若无连接则连上并握手，发送后保留连接复用。
+  Future<void> _wsBotSend(HubWsBotConnection bot, String body) async {
+    try {
+      var socket = _wsBotSockets[bot.url];
+      if (socket == null || socket.readyState != WebSocket.open) {
+        socket = await connectTo(bot.url);
+        if (socket == null) return;
+        _wsBotSockets[bot.url] = socket;
+        // 简单握手：报告来源与可选密钥（机器人侧可校验）
+        try {
+          socket.add(
+            jsonEncode({
+              'type': 'hub_bot_handshake',
+              'source': 'kostori-hub',
+              if (bot.secret.isNotEmpty) 'secret': bot.secret,
+              'time': DateTime.now().toIso8601String(),
+            }),
+          );
+        } catch (_) {}
+      }
+      socket.add(body);
+    } catch (e) {
+      _wsBotSockets.remove(bot.url);
+      HubLog.warning('HubWsBot', 'WS 推送失败（${bot.name}）：$e');
+    }
+  }
+
+  /// 关闭所有 WS 机器人连接（dispose 时调用）
+  void _closeWsBots() {
+    for (final ws in _wsBotSockets.values) {
+      try {
+        ws.close();
+      } catch (_) {}
+    }
+    _wsBotSockets.clear();
   }
 
   void _broadcastSystemToRoom(
@@ -136,6 +461,7 @@ class HubService extends BaseHttpService {
     final room = _rooms[roomId];
     if (room == null) return;
     final payload = {'type': 'system', 'event': event.value, ...data};
+    unawaited(_dispatchOutboundSystem(event.value, data));
     for (final member in room.participants.values) {
       if (member.userId == exclude) continue;
       member.send(payload);
@@ -148,6 +474,7 @@ class HubService extends BaseHttpService {
     String? exclude,
   }) {
     final payload = {'type': 'system', 'event': event.value, ...data};
+    unawaited(_dispatchOutboundSystem(event.value, data));
     for (final client in _clients.values) {
       if (client.userId != exclude) client.send(payload);
     }
@@ -170,11 +497,20 @@ class HubService extends BaseHttpService {
     }
     _rooms[roomId]?.addMessage(msg);
     onMessageReceived?.call();
+    // AI 陪聊：收到私聊时机器人回复（若启用）
+    final room = _rooms[roomId];
+    if (room != null) maybeAiBotReply(msg, room, dmTargetUserId: targetUserId);
     Map<String, dynamic> buildJson() {
       final json = {'type': 'unicast', ...msg.toJson()};
-      if (HubCrypto.isInitialized && json['segments'] != null) {
-        json['segments'] = HubCrypto.encrypt(jsonEncode(json['segments']));
-        json['encrypted'] = true;
+      if (json['segments'] != null) {
+        final token = target.authToken;
+        if (token != null && token.isNotEmpty) {
+          json['segments'] = HubCrypto.encryptWith(
+            token,
+            jsonEncode(json['segments']),
+          );
+          json['encrypted'] = true;
+        }
       }
       return json;
     }
@@ -231,7 +567,7 @@ class HubService extends BaseHttpService {
       'operatorName': operatorName ?? 'server',
     });
     await Future.delayed(const Duration(milliseconds: 100));
-    await _clients[id]?.connection.close(
+    await _clients[id]?.connection?.close(
       WebSocketStatus.policyViolation,
       reasonStr,
     );
@@ -315,6 +651,7 @@ class HubService extends BaseHttpService {
       room.moderatorIds.remove(id);
     }
     onClientsChanged?.call();
+    unawaited(_saveRooms());
   }
 
   void clearHistory({String? roomId}) {
@@ -338,6 +675,7 @@ class HubService extends BaseHttpService {
     );
     _rooms[room.roomId] = room;
     onRoomsChanged?.call();
+    unawaited(_saveRooms());
     _logEvent(
       '🏠 Room created: "${room.roomName}" (${room.roomId}) by ${creatorId ?? "server"}',
     );
@@ -361,6 +699,7 @@ class HubService extends BaseHttpService {
     }
     _rooms.remove(roomId);
     onRoomsChanged?.call();
+    unawaited(_saveRooms());
     _broadcastSystem(HubSystemEvent.roomDeleted, {'roomId': roomId});
   }
 
@@ -429,16 +768,24 @@ class HubService extends BaseHttpService {
     _loadAdmins();
     _loadBlacklist();
     _ensureLobby();
+    await _loadRooms(); // 恢复上次持久化的房间（名称/公告/密码等）
     _startHeartbeatCheck();
-    return startServer(
+    await startServer(
       preferredPort: preferredPort ?? savedHubPort,
       mode: mode ?? savedHubBindMode,
     );
+    await startWebAdmin(); // 独立端口的管理网页
+    HubSubscriptionManager.instance.migrateLegacy();
+    await HubSubscriptionService.instance.startAll();
   }
 
   @override
   Future<void> dispose() async {
     _heartbeatTimer?.cancel();
+    await stopWebAdmin();
+    _closeWsBots();
+    await HubSubscriptionService.instance.stopAll();
+    await _saveRooms(); // 停止服务前持久化当前房间状态
     for (final client in _clients.values.toList()) {
       try {
         _sendSystemTo(client, HubSystemEvent.serverShutdown, {});
@@ -447,7 +794,7 @@ class HubService extends BaseHttpService {
     await Future.delayed(const Duration(milliseconds: 300));
     for (final client in _clients.values.toList()) {
       try {
-        await client.connection.close(
+        await client.connection?.close(
           WebSocketStatus.goingAway,
           'Server shutdown',
         );

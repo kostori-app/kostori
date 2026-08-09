@@ -105,12 +105,18 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
   late List<File> imageList;
   bool isReorderMode = false;
 
+  /// 解码后的图片缓存：避免每次 build 都重新解码（性能关键）
+  List<ui.Image>? _uiImages;
+
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     imageList = List.of(widget.images);
+    _ensureImages().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<List<ui.Image>> _loadUiImages() async {
@@ -124,70 +130,79 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
     return images;
   }
 
+  Future<List<ui.Image>> _ensureImages() async {
+    var images = _uiImages;
+    if (images == null) {
+      images = await _loadUiImages();
+      _uiImages = images;
+    }
+    return images;
+  }
+
   void _onReorder(int oldIndex, int newIndex) {
     setState(() {
       if (oldIndex < newIndex) newIndex--;
       final item = imageList.removeAt(oldIndex);
       imageList.insert(newIndex, item);
+      final images = _uiImages;
+      if (images != null) {
+        final img = images.removeAt(oldIndex);
+        images.insert(newIndex, img);
+      }
     });
   }
 
-  Future<void> _captureAndSaveLongImage(BuildContext context) async {
-    App.rootContext.showMessage(message: t.saving);
-    try {
-      final outerBorderColor = ref.read(outerBorderColorProvider);
-      final outerBorderWidth = ref.read(outerBorderWidthProvider);
-      final outerBorderRadius = ref.read(outerBorderRadiusProvider);
+  void _removeImage(int index) {
+    if (index < 0 || index >= imageList.length) return;
+    setState(() {
+      imageList.removeAt(index);
+      _uiImages?.removeAt(index);
+    });
+  }
 
-      final innerBorderColor = ref.read(innerBorderColorProvider);
-      final innerBorderWidth = ref.read(innerBorderWidthProvider);
-      final showInnerBorders = ref.read(showInnerBordersProvider);
-      final showOuterBorder = ref.read(showOuterBorderProvider);
+  /// 渲染并导出长图为 PNG 字节
+  Future<Uint8List?> _renderLongBytes() async {
+    final outerBorderColor = ref.read(outerBorderColorProvider);
+    final outerBorderWidth = ref.read(outerBorderWidthProvider);
+    final outerBorderRadius = ref.read(outerBorderRadiusProvider);
 
-      final images = <ui.Image>[];
+    final innerBorderColor = ref.read(innerBorderColorProvider);
+    final innerBorderWidth = ref.read(innerBorderWidthProvider);
+    final showInnerBorders = ref.read(showInnerBordersProvider);
+    final showOuterBorder = ref.read(showOuterBorderProvider);
 
-      for (File file in imageList) {
-        final bytes = await file.readAsBytes();
-        final codec = await ui.instantiateImageCodec(bytes);
-        final frame = await codec.getNextFrame();
-        images.add(frame.image);
-      }
+    final images = await _ensureImages();
+    if (images.isEmpty) return null;
 
-      if (images.isEmpty) return;
+    // 计算 contentWidth（图片宽度最小值）
+    final contentWidth = images
+        .map((img) => img.width)
+        .reduce((a, b) => a < b ? a : b)
+        .toDouble();
 
-      // 计算 contentWidth（图片宽度最小值）
-      final contentWidth = images
-          .map((img) => img.width)
-          .reduce((a, b) => a < b ? a : b)
-          .toDouble();
+    // 计算每张图片按contentWidth缩放后的高度列表
+    final contentHeights = images
+        .map((img) => img.height * (contentWidth / img.width))
+        .toList();
 
-      // 计算每张图片按contentWidth缩放后的高度列表
-      final contentHeights = images
-          .map((img) => img.height * (contentWidth / img.width))
-          .toList();
+    // 计算总高度（所有图片高 + 内边框总和）
+    final totalInnerBorders = showInnerBorders
+        ? (images.length - 1) * innerBorderWidth
+        : 0.0;
 
-      // 计算总高度（所有图片高 + 内边框总和）
-      final totalInnerBorders = showInnerBorders
-          ? (images.length - 1) * innerBorderWidth
-          : 0.0;
+    final totalHeight =
+        contentHeights.fold(0.0, (a, b) => a + b) + totalInnerBorders;
 
-      final totalHeight =
-          contentHeights.fold(0.0, (a, b) => a + b) + totalInnerBorders;
+    // 总宽高考虑外边框
+    final fullWidth = showOuterBorder
+        ? contentWidth + outerBorderWidth * 2
+        : contentWidth;
+    final fullHeight = showOuterBorder
+        ? totalHeight + outerBorderWidth * 2
+        : totalHeight;
 
-      // 总宽高考虑外边框
-      final fullWidth = showOuterBorder
-          ? contentWidth + outerBorderWidth * 2
-          : contentWidth;
-      final fullHeight = showOuterBorder
-          ? totalHeight + outerBorderWidth * 2
-          : totalHeight;
-
-      // 创建PictureRecorder和Canvas
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-
-      // 用LongImagePainter绘制
-      final painter = LongImagePainter(
+    return composePainterToPng(
+      painter: LongImagePainter(
         images: images,
         showOuterBorder: showOuterBorder,
         outerBorderColor: outerBorderColor,
@@ -196,30 +211,21 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
         showInnerBorders: showInnerBorders,
         innerBorderColor: innerBorderColor,
         innerBorderWidth: innerBorderWidth,
+      ),
+      size: Size(fullWidth, fullHeight),
+      dpr: MediaQuery.of(context).devicePixelRatio,
+    );
+  }
+
+  Future<void> _copyOrShareLongImage() async {
+    try {
+      final bytes = await _renderLongBytes();
+      if (bytes == null) return;
+      await ImageSaver.saveOrShareImage(
+        bytes: bytes,
+        filename: '拼图_${DateTime.now().millisecondsSinceEpoch}.png',
       );
-
-      painter.paint(canvas, Size(fullWidth, fullHeight));
-
-      // 结束绘制，生成图片
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(
-        fullWidth.toInt(),
-        fullHeight.toInt(),
-      );
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-
-      if (byteData != null) {
-        final bytes = byteData.buffer.asUint8List();
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        await ImageSaver.saveImage(
-          bytes: bytes,
-          filename: '拼图_$timestamp.png',
-          ref: ref,
-        );
-        final notifier = ref.read(imagesProvider.notifier);
-        await notifier.loadImages();
-        App.rootContext.showMessage(message: t.saveSuccessful);
-      }
+      await ref.read(imagesProvider.notifier).loadImages();
     } catch (e) {
       App.rootContext.showMessage(message: t.saveFailedE(e: e.toString()));
     }
@@ -236,7 +242,30 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
           ReorderableDragStartListener(
             key: ValueKey(imageList[i].path),
             index: i,
-            child: Image.file(imageList[i], fit: BoxFit.fitWidth),
+            child: Stack(
+              children: [
+                Image.file(imageList[i], fit: BoxFit.fitWidth),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () => _removeImage(i),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );
@@ -270,144 +299,128 @@ class _RenderLongPicPageState extends ConsumerState<RenderLongPicPage> {
     final innerBorderColor = ref.watch(innerBorderColorProvider);
     final innerBorderWidth = ref.watch(innerBorderWidthProvider);
 
-    return FutureBuilder<List<ui.Image>>(
-      future: _loadUiImages(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError ||
-            snapshot.data == null ||
-            snapshot.data!.isEmpty) {
-          return Center(child: Text(t.failedToLoadImagesOrNoImages));
-        }
+    final images = _uiImages;
+    if (images == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (images.isEmpty) {
+      return Center(child: Text(t.failedToLoadImagesOrNoImages));
+    }
 
-        final images = snapshot.data!;
+    // 原地计算尺寸逻辑（与 _renderLongBytes 相同）
+    final contentWidth = images
+        .map((img) => img.width)
+        .reduce((a, b) => a < b ? a : b)
+        .toDouble();
+    final contentHeights = images
+        .map((img) => img.height * (contentWidth / img.width))
+        .toList();
+    final totalInnerBorders = showInnerBorders
+        ? (images.length - 1) * innerBorderWidth
+        : 0.0;
+    final totalHeight =
+        contentHeights.fold(0.0, (a, b) => a + b) + totalInnerBorders;
 
-        // 原地计算尺寸逻辑（与 _captureAndSaveLongImage 相同）
-        final contentWidth = images
-            .map((img) => img.width)
-            .reduce((a, b) => a < b ? a : b)
-            .toDouble();
-        final contentHeights = images
-            .map((img) => img.height * (contentWidth / img.width))
-            .toList();
-        final totalInnerBorders = showInnerBorders
-            ? (images.length - 1) * innerBorderWidth
-            : 0.0;
-        final totalHeight =
-            contentHeights.fold(0.0, (a, b) => a + b) + totalInnerBorders;
+    final fullWidth = showOuterBorder
+        ? contentWidth + outerBorderWidth * 2
+        : contentWidth;
+    final fullHeight = showOuterBorder
+        ? totalHeight + outerBorderWidth * 2
+        : totalHeight;
 
-        final fullWidth = showOuterBorder
-            ? contentWidth + outerBorderWidth * 2
-            : contentWidth;
-        final fullHeight = showOuterBorder
-            ? totalHeight + outerBorderWidth * 2
-            : totalHeight;
-
-        return SingleChildScrollView(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 650),
-              child: FittedBox(
-                fit: BoxFit.contain,
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: fullWidth,
-                  height: fullHeight,
-                  child: CustomPaint(
-                    size: Size(fullWidth, fullHeight),
-                    painter: LongImagePainter(
-                      images: images,
-                      showOuterBorder: showOuterBorder,
-                      outerBorderColor: outerBorderColor,
-                      outerBorderWidth: outerBorderWidth,
-                      outerBorderRadius: outerBorderRadius,
-                      showInnerBorders: showInnerBorders,
-                      innerBorderColor: innerBorderColor,
-                      innerBorderWidth: innerBorderWidth,
-                    ),
-                  ),
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 650),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: fullWidth,
+              height: fullHeight,
+              child: CustomPaint(
+                size: Size(fullWidth, fullHeight),
+                painter: LongImagePainter(
+                  images: images,
+                  showOuterBorder: showOuterBorder,
+                  outerBorderColor: outerBorderColor,
+                  outerBorderWidth: outerBorderWidth,
+                  outerBorderRadius: outerBorderRadius,
+                  showInnerBorders: showInnerBorders,
+                  innerBorderColor: innerBorderColor,
+                  innerBorderWidth: innerBorderWidth,
                 ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBottomButtons() {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.toOpacity(0.35),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (!isReorderMode)
-                    ElevatedButton(
-                      onPressed: _showBorderSettings,
-                      child: Text(t.borderColor),
-                    ),
-                  const SizedBox(width: 20),
-                  ElevatedButton.icon(
-                    icon: Icon(isReorderMode ? Icons.check : Icons.sort),
-                    onPressed: () {
-                      setState(() => isReorderMode = !isReorderMode);
-                    },
-                    label: Text(isReorderMode ? t.finishSorting : t.sortImages),
-                  ),
-                  const SizedBox(width: 20),
-                  if (!isReorderMode)
-                    ElevatedButton(
-                      onPressed: () => _captureAndSaveLongImage(context),
-                      child: Text(t.saveLongImage),
-                    ),
-                ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBottomButtons() {
+    return _FrostedBottomBar(
+      children: [
+        if (isReorderMode)
+          _BottomIconAction(
+            icon: Icons.check,
+            tooltip: t.finishSorting,
+            onPressed: () => setState(() => isReorderMode = false),
+          )
+        else ...[
+          _BottomIconAction(
+            icon: Icons.color_lens,
+            tooltip: t.borderColor,
+            onPressed: _showBorderSettings,
+          ),
+          _BottomIconAction(
+            icon: Icons.sort,
+            tooltip: t.sortImages,
+            onPressed: () => setState(() => isReorderMode = true),
+          ),
+          _BottomIconAction(
+            icon: Icons.save_alt,
+            tooltip: t.saveAndShare,
+            onPressed: _copyOrShareLongImage,
+          ),
+        ],
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: Appbar(
-        title: Text(t.stitchLongImage),
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.maybePop(context),
+    return PopScope(
+      canPop: !isReorderMode,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && isReorderMode) {
+          setState(() => isReorderMode = false);
+        }
+      },
+      child: Scaffold(
+        appBar: Appbar(
+          title: Text(t.stitchLongImage),
+          backgroundColor: Colors.transparent,
+          leading: _ModeAwareBackButton(
+            reorderMode: isReorderMode,
+            cropMode: false,
+            onExitMode: () => setState(() => isReorderMode = false),
+          ),
         ),
-      ),
-      body: Stack(
-        children: [
-          if (isReorderMode)
-            Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: 650),
-                child: _buildReorderView(),
+        body: Stack(
+          children: [
+            if (isReorderMode)
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 650),
+                  child: _buildReorderView(),
+                ),
               ),
-            ),
-          if (!isReorderMode) Positioned.fill(child: _buildMainCanvasPreview()),
-          _buildBottomButtons(),
-        ],
+            if (!isReorderMode)
+              Positioned.fill(child: _buildMainCanvasPreview()),
+            _buildBottomButtons(),
+          ],
+        ),
       ),
     );
   }

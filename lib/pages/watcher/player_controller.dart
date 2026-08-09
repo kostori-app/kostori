@@ -235,6 +235,8 @@ abstract class _PlayerController with Store {
   Timer? _overlayTimer;
 
   void startPlayerStreams() {
+    // 先清理旧订阅，避免重复监听导致泄漏与重复 setState
+    stopPlayerStreams();
     _positionSub = player.stream.position.listen((pos) {
       currentPosition = pos;
     });
@@ -516,11 +518,22 @@ abstract class _PlayerController with Store {
   }
 
   Future<void> dispose() async {
+    // 先取消所有流订阅与定时器，避免播放器销毁后继续回调/泄漏
+    stopPlayerStreams();
+    _positionSub = null;
+    _bufferSub = null;
+    _durationSub = null;
+    _playingSub = null;
+    _bufferingSub = null;
+    _completedSub = null;
     _overlayEntry?.remove();
     _overlayEntry = null;
+    _overlayTimer?.cancel();
+    _overlayTimer = null;
     try {
       await playerLogSubscription?.cancel();
     } catch (_) {}
+    playerLogSubscription = null;
     if (App.isAndroid) {
       try {
         audioHandler.clearController();
@@ -533,14 +546,13 @@ abstract class _PlayerController with Store {
       TaskbarManager.instance.dispose();
     }
     _pipStatusSubscription?.cancel();
+    _pipStatusSubscription = null;
     await player.dispose();
   }
 
   void fullscreen() async {
     if (!App.isDesktop) return;
-    // await windowManager.hide();
     await windowManager.setFullScreen(!isFullScreen);
-    // await windowManager.show();
     isFullScreen = !isFullScreen;
     WindowFrame.of(App.rootContext).setWindowFrame(!isFullScreen);
   }
@@ -573,8 +585,6 @@ abstract class _PlayerController with Store {
   }) async {
     if (App.isDesktop) {
       // --- PC 端逻辑 ---
-      await windowManager.setFullScreen(!isFullScreen);
-
       if (isFullScreen) {
         // 退出全屏
         App.pop();
@@ -587,40 +597,38 @@ abstract class _PlayerController with Store {
           );
         });
       }
-    } else {
-      // --- 移动端逻辑 ---
-
-      if (isFullScreen) {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        App.pop();
-        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-        isPortraitFullscreen = false;
-        WakelockPlus.disable();
-      } else {
-        WakelockPlus.enable();
-        await SystemChrome.setEnabledSystemUIMode(
-          SystemUiMode.immersiveSticky,
-          overlays: SystemUiOverlay.values,
-        );
-        if (isPortraitFullScreen) {
-          SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-        } else {
-          SystemChrome.setPreferredOrientations([
-            DeviceOrientation.landscapeLeft,
-            DeviceOrientation.landscapeRight,
-          ]);
-        }
-
-        App.rootContext.toFadeScale(
-          () => FullscreenVideoPage(playerController: this as PlayerController),
-        );
-      }
-    }
-
-    if (App.isDesktop) {
+      // fullscreen() 统一处理窗口全屏切换 + isFullScreen 状态 + 窗口框架
       fullscreen();
       return;
     }
+
+    // --- 移动端逻辑 ---
+    if (isFullScreen) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      App.pop();
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      isPortraitFullscreen = false;
+      WakelockPlus.disable();
+    } else {
+      WakelockPlus.enable();
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.immersiveSticky,
+        overlays: SystemUiOverlay.values,
+      );
+      if (isPortraitFullScreen) {
+        SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      } else {
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]);
+      }
+      App.rootContext.toFadeScale(
+        () => FullscreenVideoPage(playerController: this as PlayerController),
+      );
+    }
+
+    // 移动端全屏状态翻转
     isFullScreen = !isFullScreen;
     if (isPortraitFullScreen) {
       isPortraitFullscreen = !isPortraitFullscreen;

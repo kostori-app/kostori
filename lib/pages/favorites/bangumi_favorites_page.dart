@@ -1,24 +1,28 @@
 part of 'favorites_page.dart';
 
-class BangumiFavoritesPage extends StatefulWidget {
+class BangumiFavoritesPage extends ConsumerStatefulWidget {
   const BangumiFavoritesPage({super.key, required this.favoritesController});
 
   final FavoritesController favoritesController;
 
   @override
-  State<BangumiFavoritesPage> createState() => _BangumiFavoritesPageState();
+  ConsumerState<BangumiFavoritesPage> createState() =>
+      _BangumiFavoritesPageState();
 }
 
-class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
+class _BangumiFavoritesPageState extends ConsumerState<BangumiFavoritesPage>
     with
         TickerProviderStateMixin,
         AutomaticKeepAliveClientMixin<BangumiFavoritesPage> {
   late TabController controller;
   late _FavoritesPageState favPage;
 
-  FavoritesController get favoritesController => widget.favoritesController;
+  FavoritesController get favoritesController =>
+      ref.read(favoritesControllerProvider.notifier);
 
-  String get name => widget.favoritesController.bangumiUserName;
+  FavoritesState get favState => ref.watch(favoritesControllerProvider);
+
+  String get name => favState.bangumiUserName;
 
   final List<String> tab = ['抛弃', '想看', '在看', '搁置', '看过'];
 
@@ -40,39 +44,26 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
   void initState() {
     super.initState();
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
-    favoritesController.doingList.clear();
-    favoritesController.collectList.clear();
-    favoritesController.droppedList.clear();
-    favoritesController.wishList.clear();
-    favoritesController.onHoldList.clear();
     useBriefMode = appdata.settings['animeDisplayMode'] == 'brief';
     controller = TabController(length: 5, vsync: this, initialIndex: 2);
     controller.addListener(() {
       int index = controller.index;
-      if (index == 0 &&
-          favoritesController.droppedList.isEmpty &&
-          !droppedIsLoading) {
+      if (index == 0 && favState.droppedList.isEmpty && !droppedIsLoading) {
         if (name.isNotEmpty) {
           loadDroppedList();
         }
       }
-      if (index == 1 &&
-          favoritesController.wishList.isEmpty &&
-          !wishIsLoading) {
+      if (index == 1 && favState.wishList.isEmpty && !wishIsLoading) {
         if (name.isNotEmpty) {
           loadWishList();
         }
       }
-      if (index == 3 &&
-          favoritesController.onHoldList.isEmpty &&
-          !onHoldIsLoading) {
+      if (index == 3 && favState.onHoldList.isEmpty && !onHoldIsLoading) {
         if (name.isNotEmpty) {
           loadOnHoldList();
         }
       }
-      if (index == 4 &&
-          favoritesController.collectList.isEmpty &&
-          !collectIsLoading) {
+      if (index == 4 && favState.collectList.isEmpty && !collectIsLoading) {
         if (name.isNotEmpty) {
           loadCollectList();
         }
@@ -83,80 +74,52 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
     }
   }
 
-  @override
-  void dispose() {
-    favoritesController.doingList.clear();
-    favoritesController.collectList.clear();
-    favoritesController.droppedList.clear();
-    favoritesController.wishList.clear();
-    favoritesController.onHoldList.clear();
-    super.dispose();
-  }
-
   Future<void> _loadList({
     required int offset,
     required bool Function() isLoading,
     required void Function(bool) setLoading,
-    required void Function(bool) setTimeout,
     required Future<void> Function({int offset, required String name}) query,
-    required ObservableList list,
   }) async {
     if (isLoading()) return;
-    setState(() {
-      setLoading(true);
-      setTimeout(false);
-    });
+    setState(() => setLoading(true));
     await query(name: name, offset: offset);
     if (!mounted) return;
-    setState(() {
-      setLoading(false);
-      if (list.isEmpty) setTimeout(true);
-    });
+    setState(() => setLoading(false));
   }
 
   Future<void> loadDoingList({int offset = 0}) => _loadList(
     offset: offset,
     isLoading: () => doingIsLoading,
     setLoading: (v) => doingIsLoading = v,
-    setTimeout: (v) => doingQueryTimeout = v,
     query: favoritesController.queryBangumiDoing,
-    list: favoritesController.doingList,
   );
 
   Future<void> loadCollectList({int offset = 0}) => _loadList(
     offset: offset,
     isLoading: () => collectIsLoading,
     setLoading: (v) => collectIsLoading = v,
-    setTimeout: (v) => collectQueryTimeout = v,
     query: favoritesController.queryBangumiCollect,
-    list: favoritesController.collectList,
   );
 
   Future<void> loadWishList({int offset = 0}) => _loadList(
     offset: offset,
     isLoading: () => wishIsLoading,
     setLoading: (v) => wishIsLoading = v,
-    setTimeout: (v) => wishQueryTimeout = v,
     query: favoritesController.queryBangumiWish,
-    list: favoritesController.wishList,
   );
 
   Future<void> loadOnHoldList({int offset = 0}) => _loadList(
     offset: offset,
     isLoading: () => onHoldIsLoading,
     setLoading: (v) => onHoldIsLoading = v,
-    setTimeout: (v) => onHoldQueryTimeout = v,
     query: favoritesController.queryBangumiOnHold,
-    list: favoritesController.onHoldList,
   );
 
   Future<void> loadDroppedList({int offset = 0}) => _loadList(
     offset: offset,
     isLoading: () => droppedIsLoading,
     setLoading: (v) => droppedIsLoading = v,
-    setTimeout: (v) => droppedQueryTimeout = v,
     query: favoritesController.queryBangumiDropped,
-    list: favoritesController.droppedList,
   );
 
   Widget _bangumiListSliver(List<BangumiItem> bangumiItems) {
@@ -177,220 +140,77 @@ class _BangumiFavoritesPageState extends State<BangumiFavoritesPage>
     );
   }
 
-  Widget get doingListBody {
-    return Observer(
-      builder: (context) {
-        final doingList = favoritesController.doingList;
-        return Builder(
-          builder: (BuildContext context) {
-            return NotificationListener<ScrollEndNotification>(
-              onNotification: (scrollEnd) {
-                final metrics = scrollEnd.metrics;
-                if (metrics.pixels >= metrics.maxScrollExtent - 200) {
-                  if (name.isNotEmpty) {
-                    loadDoingList(offset: doingList.length);
-                  }
-                }
-                return true;
-              },
-              child: CustomScrollView(
-                scrollBehavior: const ScrollBehavior().copyWith(
-                  scrollbars: false,
-                ),
-                key: const PageStorageKey<String>('doing'),
-                slivers: <Widget>[
-                  doingList.isEmpty
-                      ? (useBriefMode
-                            ? BangumiWidget.bangumiSkeletonSliverBrief()
-                            : BangumiWidget.bangumiSkeletonSliverDetailed())
-                      : _bangumiListSliver(doingList),
-                  if (doingIsLoading)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(child: PolygonRefreshIndicator(size: 40)),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
+  Widget _listBody({
+    required String storageKey,
+    required List<BangumiItem> list,
+    required bool isLoading,
+    required Future<void> Function(int offset) loadMore,
+  }) {
+    return NotificationListener<ScrollEndNotification>(
+      onNotification: (scrollEnd) {
+        final metrics = scrollEnd.metrics;
+        if (metrics.pixels >= metrics.maxScrollExtent - 200) {
+          if (name.isNotEmpty) {
+            loadMore(list.length);
+          }
+        }
+        return true;
       },
+      child: CustomScrollView(
+        scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
+        key: PageStorageKey<String>(storageKey),
+        slivers: <Widget>[
+          list.isEmpty
+              ? (useBriefMode
+                    ? BangumiWidget.bangumiSkeletonSliverBrief()
+                    : BangumiWidget.bangumiSkeletonSliverDetailed())
+              : _bangumiListSliver(list),
+          if (isLoading)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(child: PolygonRefreshIndicator(size: 40)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Widget get collectListBody {
-    return Observer(
-      builder: (context) {
-        final collectList = favoritesController.collectList;
-        return Builder(
-          builder: (BuildContext context) {
-            return NotificationListener<ScrollEndNotification>(
-              onNotification: (scrollEnd) {
-                final metrics = scrollEnd.metrics;
-                if (metrics.pixels >= metrics.maxScrollExtent - 200) {
-                  if (name.isNotEmpty) {
-                    loadCollectList(offset: collectList.length);
-                  }
-                }
-                return true;
-              },
-              child: CustomScrollView(
-                scrollBehavior: const ScrollBehavior().copyWith(
-                  scrollbars: false,
-                ),
-                key: PageStorageKey<String>('collect'),
-                slivers: <Widget>[
-                  collectList.isEmpty
-                      ? (useBriefMode
-                            ? BangumiWidget.bangumiSkeletonSliverBrief()
-                            : BangumiWidget.bangumiSkeletonSliverDetailed())
-                      : _bangumiListSliver(collectList),
-                  if (collectIsLoading)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(child: PolygonRefreshIndicator(size: 40)),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  Widget get doingListBody => _listBody(
+    storageKey: 'doing',
+    list: favState.doingList,
+    isLoading: doingIsLoading,
+    loadMore: (o) => loadDoingList(offset: o),
+  );
 
-  Widget get wishListBody {
-    return Observer(
-      builder: (context) {
-        final wishList = favoritesController.wishList;
-        return Builder(
-          builder: (BuildContext context) {
-            return NotificationListener<ScrollEndNotification>(
-              onNotification: (scrollEnd) {
-                final metrics = scrollEnd.metrics;
-                if (metrics.pixels >= metrics.maxScrollExtent - 200) {
-                  if (name.isNotEmpty) {
-                    loadWishList(offset: wishList.length);
-                  }
-                }
-                return true;
-              },
-              child: CustomScrollView(
-                scrollBehavior: const ScrollBehavior().copyWith(
-                  scrollbars: false,
-                ),
-                key: PageStorageKey<String>('wish'),
-                slivers: <Widget>[
-                  wishList.isEmpty
-                      ? (useBriefMode
-                            ? BangumiWidget.bangumiSkeletonSliverBrief()
-                            : BangumiWidget.bangumiSkeletonSliverDetailed())
-                      : _bangumiListSliver(wishList),
-                  if (wishIsLoading)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(child: PolygonRefreshIndicator(size: 40)),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  Widget get collectListBody => _listBody(
+    storageKey: 'collect',
+    list: favState.collectList,
+    isLoading: collectIsLoading,
+    loadMore: (o) => loadCollectList(offset: o),
+  );
 
-  Widget get onHoldListBody {
-    return Observer(
-      builder: (context) {
-        final onHoldList = favoritesController.onHoldList;
-        return Builder(
-          builder: (BuildContext context) {
-            return NotificationListener<ScrollEndNotification>(
-              onNotification: (scrollEnd) {
-                final metrics = scrollEnd.metrics;
-                if (metrics.pixels >= metrics.maxScrollExtent - 200) {
-                  if (name.isNotEmpty) {
-                    loadOnHoldList(offset: onHoldList.length);
-                  }
-                }
-                return true;
-              },
-              child: CustomScrollView(
-                scrollBehavior: const ScrollBehavior().copyWith(
-                  scrollbars: false,
-                ),
-                key: PageStorageKey<String>('onHold'),
-                slivers: <Widget>[
-                  onHoldList.isEmpty
-                      ? (useBriefMode
-                            ? BangumiWidget.bangumiSkeletonSliverBrief()
-                            : BangumiWidget.bangumiSkeletonSliverDetailed())
-                      : _bangumiListSliver(onHoldList),
-                  if (onHoldIsLoading)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(child: PolygonRefreshIndicator(size: 40)),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  Widget get wishListBody => _listBody(
+    storageKey: 'wish',
+    list: favState.wishList,
+    isLoading: wishIsLoading,
+    loadMore: (o) => loadWishList(offset: o),
+  );
 
-  Widget get droppedListBody {
-    return Observer(
-      builder: (context) {
-        final droppedList = favoritesController.droppedList;
-        return Builder(
-          builder: (BuildContext context) {
-            return NotificationListener<ScrollEndNotification>(
-              onNotification: (scrollEnd) {
-                final metrics = scrollEnd.metrics;
-                if (metrics.pixels >= metrics.maxScrollExtent - 200) {
-                  if (name.isNotEmpty) {
-                    loadDroppedList(offset: droppedList.length);
-                  }
-                }
-                return true;
-              },
-              child: CustomScrollView(
-                scrollBehavior: const ScrollBehavior().copyWith(
-                  scrollbars: false,
-                ),
-                key: PageStorageKey<String>('dropped'),
-                slivers: <Widget>[
-                  droppedList.isEmpty
-                      ? (useBriefMode
-                            ? BangumiWidget.bangumiSkeletonSliverBrief()
-                            : BangumiWidget.bangumiSkeletonSliverDetailed())
-                      : _bangumiListSliver(droppedList),
-                  if (droppedIsLoading)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Center(child: PolygonRefreshIndicator(size: 40)),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
+  Widget get onHoldListBody => _listBody(
+    storageKey: 'onHold',
+    list: favState.onHoldList,
+    isLoading: onHoldIsLoading,
+    loadMore: (o) => loadOnHoldList(offset: o),
+  );
+
+  Widget get droppedListBody => _listBody(
+    storageKey: 'dropped',
+    list: favState.droppedList,
+    isLoading: droppedIsLoading,
+    loadMore: (o) => loadDroppedList(offset: o),
+  );
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
@@ -80,13 +79,17 @@ class BottomInfoState extends State<BottomInfo>
     currentState = this;
     _translationController = TranslationController();
     infoController = widget.infoController;
-    infoController.bangumiId = widget.bangumiId!;
-    queryBangumiInfoByID(infoController.bangumiId);
-    queryBangumiEpisodeByID(infoController.bangumiId);
-    infoController.characterList.clear();
-    infoController.commentsList.clear();
-    infoController.staffList.clear();
-    infoController.episodeCommentsList.clear();
+    // Riverpod 不允许在 initState 同步修改 provider，延迟到 microtask 后。
+    // 全局单例在二次进入时残留上次的 isLoading=false，先强制为 true 触发骨架。
+    Future(() => infoController.setIsLoading(true));
+    // Riverpod 不允许在 initState 同步修改 provider，延迟到首帧后
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      infoController.clearBangumiLists();
+      infoController.bangumiId = widget.bangumiId!;
+      queryBangumiInfoByID(infoController.bangumiId);
+      queryBangumiEpisodeByID(infoController.bangumiId);
+    });
     infoTabController = TabController(
       length: infoController.tabs.length + 1,
       vsync: this,
@@ -119,10 +122,6 @@ class BottomInfoState extends State<BottomInfo>
 
   @override
   void dispose() {
-    infoController.characterList.clear();
-    infoController.commentsList.clear();
-    infoController.staffList.clear();
-    infoController.episodeCommentsList.clear();
     infoTabController.dispose();
     _translationController.dispose();
     super.dispose();
@@ -169,97 +168,80 @@ class BottomInfoState extends State<BottomInfo>
     }
   }
 
-  Future<void> loadCharacters() async {
-    if (charactersIsLoading) return;
+  /// 通用加载：并发防重入 + 空结果超时标记。
+  Future<void> _loadSection({
+    required bool isLoading,
+    required void Function(bool) setLoading,
+    required void Function(bool) setTimeoutFlag,
+    required bool Function() isListEmpty,
+    required Future<void> Function() load,
+  }) async {
+    if (isLoading) return;
     setState(() {
-      charactersIsLoading = true;
-      charactersQueryTimeout = false;
+      setLoading(true);
+      setTimeoutFlag(false);
     });
-    infoController.queryBangumiCharactersByID(infoController.bangumiId).then((
-      _,
-    ) {
-      if (infoController.characterList.isEmpty && mounted) {
-        setState(() {
-          charactersIsLoading = false;
-          charactersQueryTimeout = true;
-        });
-      }
-      if (infoController.characterList.isNotEmpty && mounted) {
-        setState(() {
-          charactersIsLoading = false;
-        });
-      }
+    try {
+      await load();
+    } catch (e) {
+      Log.error('loadSection', e.toString());
+    }
+    if (!mounted) return;
+    setState(() {
+      setLoading(false);
+      if (isListEmpty()) setTimeoutFlag(true);
     });
   }
 
-  Future<void> loadMoreComments({int offset = 0}) async {
-    if (commentsIsLoading) return;
-    setState(() {
-      commentsIsLoading = true;
-      commentsQueryTimeout = false;
-    });
-    infoController
-        .queryBangumiCommentsByID(infoController.bangumiId, offset: offset)
-        .then((_) {
-          if (infoController.commentsList.isEmpty && mounted) {
-            setState(() {
-              commentsIsLoading = false;
-              commentsQueryTimeout = true;
-            });
-          }
-          if (infoController.commentsList.isNotEmpty && mounted) {
-            setState(() {
-              commentsIsLoading = false;
-            });
-          }
-        });
-  }
+  Future<void> loadCharacters() => _loadSection(
+    isLoading: charactersIsLoading,
+    setLoading: (v) => charactersIsLoading = v,
+    setTimeoutFlag: (v) => charactersQueryTimeout = v,
+    isListEmpty: () => infoController.characterList.isEmpty,
+    load: () =>
+        infoController.queryBangumiCharactersByID(infoController.bangumiId),
+  );
 
-  Future<void> loadMoreTopics({int offset = 0}) async {
-    if (topicsIsLoading) return;
-    setState(() {
-      topicsIsLoading = true;
-      topicsQueryTimeout = false;
-    });
-    infoController
-        .queryBangumiTopicsByID(infoController.bangumiItem.id, offset: offset)
-        .then((_) {
-          if (infoController.topicsList.isEmpty && mounted) {
-            setState(() {
-              topicsIsLoading = false;
-              topicsQueryTimeout = true;
-            });
-          }
-          if (infoController.topicsList.isNotEmpty && mounted) {
-            setState(() {
-              topicsIsLoading = false;
-            });
-          }
-        });
-  }
+  Future<void> loadMoreComments({int offset = 0}) => _loadSection(
+    isLoading: commentsIsLoading,
+    setLoading: (v) => commentsIsLoading = v,
+    setTimeoutFlag: (v) => commentsQueryTimeout = v,
+    isListEmpty: () => infoController.commentsList.isEmpty,
+    load: () => infoController.queryBangumiCommentsByID(
+      infoController.bangumiId,
+      offset: offset,
+    ),
+  );
 
-  Future<void> loadMoreReviews({int offset = 0}) async {
-    if (reviewsIsLoading) return;
-    setState(() {
-      reviewsIsLoading = true;
-      reviewsQueryTimeout = false;
-    });
-    infoController
-        .queryBangumiReviewsByID(infoController.bangumiItem.id, offset: offset)
-        .then((_) {
-          if (infoController.reviewsList.isEmpty && mounted) {
-            setState(() {
-              reviewsIsLoading = false;
-              reviewsQueryTimeout = true;
-            });
-          }
-          if (infoController.reviewsList.isNotEmpty && mounted) {
-            setState(() {
-              reviewsIsLoading = false;
-            });
-          }
-        });
-  }
+  Future<void> loadMoreTopics({int offset = 0}) => _loadSection(
+    isLoading: topicsIsLoading,
+    setLoading: (v) => topicsIsLoading = v,
+    setTimeoutFlag: (v) => topicsQueryTimeout = v,
+    isListEmpty: () => infoController.topicsList.isEmpty,
+    load: () => infoController.queryBangumiTopicsByID(
+      infoController.bangumiItem.id,
+      offset: offset,
+    ),
+  );
+
+  Future<void> loadMoreReviews({int offset = 0}) => _loadSection(
+    isLoading: reviewsIsLoading,
+    setLoading: (v) => reviewsIsLoading = v,
+    setTimeoutFlag: (v) => reviewsQueryTimeout = v,
+    isListEmpty: () => infoController.reviewsList.isEmpty,
+    load: () => infoController.queryBangumiReviewsByID(
+      infoController.bangumiItem.id,
+      offset: offset,
+    ),
+  );
+
+  Future<void> loadStaff() => _loadSection(
+    isLoading: staffIsLoading,
+    setLoading: (v) => staffIsLoading = v,
+    setTimeoutFlag: (v) => staffQueryTimeout = v,
+    isListEmpty: () => infoController.staffList.isEmpty,
+    load: () => infoController.queryBangumiStaffsByID(infoController.bangumiId),
+  );
 
   Future<void> loadComments(int episode, {int offset = 0}) async {
     commentsQueryTimeout = false;
@@ -276,39 +258,58 @@ class BottomInfoState extends State<BottomInfo>
     });
   }
 
-  Future<void> loadStaff() async {
-    if (staffIsLoading) return;
-    setState(() {
-      staffIsLoading = true;
-      staffQueryTimeout = false;
-    });
-    infoController.queryBangumiStaffsByID(infoController.bangumiId).then((_) {
-      if (infoController.staffList.isEmpty && mounted) {
-        setState(() {
-          staffIsLoading = false;
-          staffQueryTimeout = true;
-        });
-      }
-      if (infoController.staffList.isNotEmpty && mounted) {
-        setState(() {
-          staffIsLoading = false;
-        });
-      }
-    });
-  }
-
   Widget get infoBodyBone {
     return KostoriRefreshIndicator();
+  }
+
+  /// 区块分隔线（infoBody 中重复出现多次）
+  Widget _sectionDivider() {
+    return Center(
+      child: Container(
+        width: 120,
+        height: 2,
+        decoration: BoxDecoration(
+          color: Colors.grey.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+    );
+  }
+
+  /// 区块标题 + 计数徽章（infoBody 中多处重复）
+  Widget _sectionTitle(BuildContext context, String title, num count) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text('$count', style: ts.s12),
+        ),
+      ],
+    );
   }
 
   Widget get infoBody {
     if (bangumiId == null) {
       return Center(child: infoBodyBone);
     }
-    var bangumiItem = infoController.bangumiItem;
+    final loaded = infoController.bangumiItemOrNull;
+    if (loaded == null) {
+      return Center(child: infoBodyBone);
+    }
+    var bangumiItem = loaded;
     double standardDeviation = Utils.getDeviation(
       bangumiItem.total,
-      bangumiItem.count!.values.toList(),
+      bangumiItem.count?.values.toList() ?? const [],
       bangumiItem.score,
     );
     return Padding(
@@ -381,32 +382,30 @@ class BottomInfoState extends State<BottomInfo>
                                   child: Text(bangumiItem.airDate),
                                 ),
                                 SizedBox(height: 12.0),
-                                Observer(
-                                  builder: (_) {
-                                    final currentWeekEp =
-                                        infoController.currentWeekEp;
-                                    final type0Episodes = infoController
-                                        .allEpisodes
-                                        .where((ep) => ep.type == 0)
-                                        .toList();
-                                    final lastSort = type0Episodes.isNotEmpty
-                                        ? type0Episodes.last.sort
-                                        : null;
-                                    final currentSort = currentWeekEp.isEmpty
-                                        ? null
-                                        : currentWeekEp.values.first?.sort;
-                                    final isCompleted =
-                                        currentSort != null &&
-                                        lastSort != null &&
-                                        currentSort.toDouble() ==
-                                            lastSort.toDouble();
-                                    return BangumiWidget.bangumiTimeText(
-                                      bangumiItem,
-                                      currentWeekEp,
-                                      isCompleted,
-                                    );
-                                  },
-                                ),
+                                () {
+                                  final currentWeekEp =
+                                      infoController.currentWeekEp;
+                                  final type0Episodes = infoController
+                                      .allEpisodes
+                                      .where((ep) => ep.type == 0)
+                                      .toList();
+                                  final lastSort = type0Episodes.isNotEmpty
+                                      ? type0Episodes.last.sort
+                                      : null;
+                                  final currentSort = currentWeekEp.isEmpty
+                                      ? null
+                                      : currentWeekEp.values.first?.sort;
+                                  final isCompleted =
+                                      currentSort != null &&
+                                      lastSort != null &&
+                                      currentSort.toDouble() ==
+                                          lastSort.toDouble();
+                                  return BangumiWidget.bangumiTimeText(
+                                    bangumiItem,
+                                    currentWeekEp,
+                                    isCompleted,
+                                  );
+                                }(),
                                 Spacer(),
                                 Align(
                                   alignment: Alignment.bottomRight,
@@ -487,16 +486,7 @@ class BottomInfoState extends State<BottomInfo>
               ),
             ),
             const SizedBox(height: 8),
-            Center(
-              child: Container(
-                width: 120,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.grey.toOpacity(0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
+            _sectionDivider(),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
@@ -555,6 +545,7 @@ class BottomInfoState extends State<BottomInfo>
                             child: ExpandableText(
                               text: bangumiItem.summary,
                               translationController: _translationController,
+                              isLoading: infoController.isLoading,
                             ),
                           ),
                         ],
@@ -565,52 +556,14 @@ class BottomInfoState extends State<BottomInfo>
               ),
             ),
             const SizedBox(height: 8),
-            Center(
-              child: Container(
-                width: 120,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.grey.toOpacity(0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
+            _sectionDivider(),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        t.tags,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${bangumiItem.tags.length}',
-                          style: ts.s12,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _sectionTitle(context, t.tags, bangumiItem.tags.length),
                   SizedBox(height: 12),
                   ExpandableTags(
                     tags: bangumiItem.tags,
@@ -629,47 +582,17 @@ class BottomInfoState extends State<BottomInfo>
             ),
             if (infoController.bangumiSRI.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Center(
-                child: Container(
-                  width: 120,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.toOpacity(0.4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
+              _sectionDivider(),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 6,
                   horizontal: 16,
                 ),
-                child: Row(
-                  children: [
-                    Text(
-                      t.linkedItems,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${infoController.bangumiSRI.length}',
-                        style: ts.s12,
-                      ),
-                    ),
-                  ],
+                child: _sectionTitle(
+                  context,
+                  t.linkedItems,
+                  infoController.bangumiSRI.length,
                 ),
               ),
               Padding(
@@ -739,8 +662,6 @@ class BottomInfoState extends State<BottomInfo>
                                   height: 180,
                                   fit: BoxFit.cover,
                                 ),
-
-                                // 标题
                                 Padding(
                                   padding: const EdgeInsets.all(4.0),
                                   child: Center(
@@ -791,68 +712,11 @@ class BottomInfoState extends State<BottomInfo>
               ),
             ],
             const SizedBox(height: 8),
-            Center(
-              child: Container(
-                width: 120,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.grey.toOpacity(0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
+            _sectionDivider(),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        t.ratingChart,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text('${bangumiItem.score}', style: ts.s12),
-                      ),
-                      TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            infoController.showLineChart =
-                                !infoController.showLineChart;
-                          });
-                        },
-                        icon: Icon(
-                          infoController.showLineChart
-                              ? Icons.show_chart
-                              : Icons.bar_chart,
-                        ),
-                        label: Text(
-                          infoController.showLineChart
-                              ? t.lineChart
-                              : t.barChart,
-                        ),
-                      ),
-                      Text('${bangumiItem.total} votes'),
-                    ],
-                  ),
-                ],
-              ),
+              child: _sectionTitle(context, t.ratingChart, bangumiItem.score),
             ),
             const SizedBox(height: 12),
             Padding(
@@ -876,21 +740,10 @@ class BottomInfoState extends State<BottomInfo>
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-              child: infoController.showLineChart
-                  ? LineChatPage(bangumiItem: bangumiItem)
-                  : BangumiBarChartPage(bangumiItem: bangumiItem),
+              child: BangumiBarChartPage(bangumiItem: bangumiItem),
             ),
             const SizedBox(height: 16),
-            Center(
-              child: Container(
-                width: 120,
-                height: 2,
-                decoration: BoxDecoration(
-                  color: Colors.grey.toOpacity(0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
+            _sectionDivider(),
             const SizedBox(height: 16),
           ],
         ),
@@ -898,439 +751,158 @@ class BottomInfoState extends State<BottomInfo>
     );
   }
 
-  Widget get commentsListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return NotificationListener<ScrollEndNotification>(
-          onNotification: (scrollEnd) {
-            final metrics = scrollEnd.metrics;
-            if (metrics.pixels >= metrics.maxScrollExtent - 200) {
-              loadMoreComments(offset: infoController.commentsList.length);
-            }
-            return true;
-          },
-          child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('吐槽'),
-            slivers: <Widget>[
-              SliverLayoutBuilder(
-                builder: (context, _) {
-                  if (infoController.commentsList.isNotEmpty) {
-                    return SliverList.separated(
-                      addAutomaticKeepAlives: false,
-                      itemCount: infoController.commentsList.length,
-                      itemBuilder: (context, index) {
-                        return SafeArea(
-                          top: false,
-                          bottom: false,
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
-                              child: SizedBox(
-                                width:
-                                    MediaQuery.sizeOf(context).width > maxWidth
-                                    ? maxWidth
-                                    : MediaQuery.sizeOf(context).width - 32,
-                                child: CommentsCard(
-                                  commentItem:
-                                      infoController.commentsList[index],
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      separatorBuilder: (BuildContext context, int index) {
-                        return SafeArea(
-                          top: false,
-                          bottom: false,
-                          child: Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16.0,
-                              ),
-                              child: SizedBox(
-                                width:
-                                    MediaQuery.sizeOf(context).width > maxWidth
-                                    ? maxWidth
-                                    : MediaQuery.sizeOf(context).width - 32,
-                                child: Divider(
-                                  thickness: 0.5,
-                                  indent: 10,
-                                  endIndent: 10,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-                  if (commentsQueryTimeout) {
-                    return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: t.nobodysPostedAnythingYet,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: () {
-                              loadMoreComments(
-                                offset: infoController.commentsList.length,
-                              );
-                            },
-                            text: t.reload,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return SliverList.builder(
-                    itemCount: 4,
-                    itemBuilder: (context, _) {
-                      return SafeArea(
-                        top: false,
-                        bottom: false,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > maxWidth
-                                  ? maxWidth
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: CommentsCard.bone(),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              if (commentsIsLoading)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(child: PolygonRefreshIndicator(size: 40)),
-                  ),
-                ),
-            ],
-          ),
-        );
+  /// 通用列表体：滚动加载更多 + 数据/超时/骨架屏三态。
+  /// 由五个几乎相同的 listBody getter 合并而来。
+  Widget _listBody<T>({
+    required String storageKey,
+    required List<T> list,
+    required bool isLoading,
+    required bool queryTimeout,
+    required int boneCount,
+    required Future<void> Function(int offset) loadMore,
+    required Future<void> Function() retry,
+    required Widget Function(int index) itemBuilder,
+    required Widget Function() boneBuilder,
+  }) {
+    return NotificationListener<ScrollEndNotification>(
+      onNotification: (scrollEnd) {
+        final metrics = scrollEnd.metrics;
+        final isScrollingDown = metrics.pixels > _previousPixels;
+        _previousPixels = metrics.pixels;
+        if (isScrollingDown &&
+            metrics.pixels >= metrics.maxScrollExtent - 200) {
+          loadMore(list.length);
+        }
+        return true;
       },
-    );
-  }
-
-  Widget get topicsListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return NotificationListener<ScrollEndNotification>(
-          onNotification: (scrollEnd) {
-            final metrics = scrollEnd.metrics;
-            final isScrollingDown = metrics.pixels > _previousPixels;
-            _previousPixels = metrics.pixels;
-
-            if (isScrollingDown &&
-                metrics.pixels >= metrics.maxScrollExtent - 200) {
-              loadMoreTopics(offset: infoController.topicsList.length);
-            }
-            return true;
-          },
-          child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('讨论'),
-            slivers: <Widget>[
-              SliverLayoutBuilder(
-                builder: (context, _) {
-                  if (topicsList.isNotEmpty) {
-                    return SliverList.builder(
-                      itemCount: topicsList.length,
-                      itemBuilder: (context, index) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                            ),
-                            child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > maxWidth
-                                  ? maxWidth
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: TopicsCard(
-                                topicsItem: topicsList[index],
-                                isBottom: true,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-                  if (topicsQueryTimeout) {
-                    return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: t.nobodysPostedAnythingYet,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: () {
-                              loadMoreTopics();
-                            },
-                            text: t.reload,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return SliverList.builder(
-                    itemCount: 4,
-                    itemBuilder: (context, _) {
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: TopicsCard.bone(),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              if (topicsIsLoading)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(child: PolygonRefreshIndicator(size: 40)),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget get reviewsListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return NotificationListener<ScrollEndNotification>(
-          onNotification: (scrollEnd) {
-            final metrics = scrollEnd.metrics;
-            final isScrollingDown = metrics.pixels > _previousPixels;
-            _previousPixels = metrics.pixels;
-
-            if (isScrollingDown &&
-                metrics.pixels >= metrics.maxScrollExtent - 200) {
-              loadMoreReviews(offset: infoController.reviewsList.length);
-            }
-            return true;
-          },
-          child: CustomScrollView(
-            scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-            key: PageStorageKey<String>('日志'),
-            slivers: <Widget>[
-              SliverLayoutBuilder(
-                builder: (context, _) {
-                  if (reviewsList.isNotEmpty) {
-                    return SliverList.builder(
-                      itemCount: reviewsList.length,
-                      itemBuilder: (context, index) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                            ),
-                            child: SizedBox(
-                              width: MediaQuery.sizeOf(context).width > maxWidth
-                                  ? maxWidth
-                                  : MediaQuery.sizeOf(context).width - 32,
-                              child: ReviewsCard(
-                                reviewsItem: reviewsList[index],
-                                isBottom: true,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  }
-                  if (reviewsQueryTimeout) {
-                    return SliverFillRemaining(
-                      child: GeneralErrorWidget(
-                        errMsg: t.nobodysPostedAnythingYet,
-                        actions: [
-                          GeneralErrorButton(
-                            onPressed: () {
-                              loadMoreReviews();
-                            },
-                            text: t.reload,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return SliverList.builder(
-                    itemCount: 4,
-                    itemBuilder: (context, _) {
-                      return Align(
-                        alignment: Alignment.topCenter,
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width > maxWidth
-                              ? maxWidth
-                              : MediaQuery.sizeOf(context).width - 32,
-                          child: ReviewsCard.bone(),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              if (reviewsIsLoading)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(child: PolygonRefreshIndicator(size: 40)),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget get charactersListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-          key: PageStorageKey<String>('角色'),
-          slivers: <Widget>[
-            SliverLayoutBuilder(
-              builder: (context, _) {
-                if (infoController.characterList.isNotEmpty) {
-                  return SliverList.builder(
-                    itemCount: infoController.characterList.length,
-                    itemBuilder: (context, index) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > maxWidth
-                                ? maxWidth
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: CharacterCard(
-                              characterItem:
-                                  infoController.characterList[index],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
-                if (charactersQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: t.failedToLoadPleaseTryAgain,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadCharacters();
-                          },
-                          text: t.reload,
-                        ),
-                      ],
-                    ),
-                  );
-                }
+      child: CustomScrollView(
+        scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
+        key: PageStorageKey<String>(storageKey),
+        slivers: <Widget>[
+          SliverLayoutBuilder(
+            builder: (context, _) {
+              if (list.isNotEmpty) {
                 return SliverList.builder(
-                  itemCount: 4,
-                  itemBuilder: (context, _) {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width > maxWidth
-                            ? maxWidth
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: CharacterCard.bone(),
-                      ),
-                    );
-                  },
+                  itemCount: list.length,
+                  itemBuilder: (context, index) => _centeredWidthCard(
+                    child: itemBuilder(index),
+                    width: MediaQuery.sizeOf(context).width,
+                  ),
                 );
-              },
+              }
+              if (queryTimeout) {
+                return SliverFillRemaining(
+                  child: GeneralErrorWidget(
+                    errMsg: t.nobodysPostedAnythingYet,
+                    actions: [
+                      GeneralErrorButton(onPressed: retry, text: t.reload),
+                    ],
+                  ),
+                );
+              }
+              return SliverList.builder(
+                itemCount: boneCount,
+                itemBuilder: (context, index) => _centeredWidthCard(
+                  child: boneBuilder(),
+                  width: MediaQuery.sizeOf(context).width,
+                ),
+              );
+            },
+          ),
+          if (isLoading)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(child: PolygonRefreshIndicator(size: 40)),
+              ),
             ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
-  Widget get staffListBody {
-    return Builder(
-      builder: (BuildContext context) {
-        return CustomScrollView(
-          scrollBehavior: const ScrollBehavior().copyWith(scrollbars: false),
-          key: PageStorageKey<String>('制作人员'),
-          slivers: <Widget>[
-            SliverLayoutBuilder(
-              builder: (context, _) {
-                if (infoController.staffList.isNotEmpty) {
-                  return SliverList.builder(
-                    itemCount: infoController.staffList.length,
-                    itemBuilder: (context, index) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                          child: SizedBox(
-                            width: MediaQuery.sizeOf(context).width > maxWidth
-                                ? maxWidth
-                                : MediaQuery.sizeOf(context).width - 32,
-                            child: StaffCard(
-                              staffFullItem: infoController.staffList[index],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
-                if (staffQueryTimeout) {
-                  return SliverFillRemaining(
-                    child: GeneralErrorWidget(
-                      errMsg: t.failedToLoadPleaseTryAgain,
-                      actions: [
-                        GeneralErrorButton(
-                          onPressed: () {
-                            loadStaff();
-                          },
-                          text: t.reload,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return SliverList.builder(
-                  itemCount: 8,
-                  itemBuilder: (context, _) {
-                    return Align(
-                      alignment: Alignment.topCenter,
-                      child: SizedBox(
-                        width: MediaQuery.sizeOf(context).width > maxWidth
-                            ? maxWidth
-                            : MediaQuery.sizeOf(context).width - 32,
-                        child: StaffCard.bone(),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
-        );
-      },
+  /// 居中 + 限宽包裹卡片（桌面端限制内容宽度）
+  Widget _centeredWidthCard({required Widget child, required double width}) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: SizedBox(
+          width: width > maxWidth ? maxWidth : width - 32,
+          child: child,
+        ),
+      ),
     );
   }
+
+  Widget get commentsListBody => _listBody<dynamic>(
+    storageKey: '吐槽',
+    list: infoController.commentsList,
+    isLoading: commentsIsLoading,
+    queryTimeout: commentsQueryTimeout,
+    boneCount: 4,
+    loadMore: (o) => loadMoreComments(offset: o),
+    retry: () => loadMoreComments(offset: infoController.commentsList.length),
+    itemBuilder: (index) =>
+        CommentsCard(commentItem: infoController.commentsList[index]),
+    boneBuilder: () => CommentsCard.bone(),
+  );
+
+  Widget get topicsListBody => _listBody<dynamic>(
+    storageKey: '讨论',
+    list: infoController.topicsList,
+    isLoading: topicsIsLoading,
+    queryTimeout: topicsQueryTimeout,
+    boneCount: 4,
+    loadMore: (o) => loadMoreTopics(offset: o),
+    retry: loadMoreTopics,
+    itemBuilder: (index) => TopicsCard(
+      topicsItem: infoController.topicsList[index],
+      isBottom: true,
+    ),
+    boneBuilder: () => TopicsCard.bone(),
+  );
+
+  Widget get reviewsListBody => _listBody<dynamic>(
+    storageKey: '日志',
+    list: infoController.reviewsList,
+    isLoading: reviewsIsLoading,
+    queryTimeout: reviewsQueryTimeout,
+    boneCount: 4,
+    loadMore: (o) => loadMoreReviews(offset: o),
+    retry: loadMoreReviews,
+    itemBuilder: (index) => ReviewsCard(
+      reviewsItem: infoController.reviewsList[index],
+      isBottom: true,
+    ),
+    boneBuilder: () => ReviewsCard.bone(),
+  );
+
+  Widget get charactersListBody => _listBody<dynamic>(
+    storageKey: '角色',
+    list: infoController.characterList,
+    isLoading: charactersIsLoading,
+    queryTimeout: charactersQueryTimeout,
+    boneCount: 4,
+    loadMore: (o) => loadCharacters(),
+    retry: loadCharacters,
+    itemBuilder: (index) =>
+        CharacterCard(characterItem: infoController.characterList[index]),
+    boneBuilder: () => CharacterCard.bone(),
+  );
+
+  Widget get staffListBody => _listBody<dynamic>(
+    storageKey: '制作人员',
+    list: infoController.staffList,
+    isLoading: staffIsLoading,
+    queryTimeout: staffQueryTimeout,
+    boneCount: 8,
+    loadMore: (o) => loadStaff(),
+    retry: loadStaff,
+    itemBuilder: (index) =>
+        StaffCard(staffFullItem: infoController.staffList[index]),
+    boneBuilder: () => StaffCard.bone(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -1366,7 +938,10 @@ class BottomInfoState extends State<BottomInfo>
                       return SafeArea(
                         top: false,
                         bottom: false,
-                        child: infoController.isLoading
+                        child:
+                            infoController.isLoading ||
+                                infoController.bangumiId != widget.bangumiId ||
+                                infoController.bangumiItemOrNull == null
                             ? infoBodyBone
                             : infoBody,
                       );

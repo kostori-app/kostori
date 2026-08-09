@@ -130,7 +130,7 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
     final id = await AiConversationService().createSession(
       type: 'chat',
       provider: _source,
-      title: '新对话 ${DateTime.now().toString().substring(0, 16)}',
+      title: t.newChatTitle(time: DateTime.now().toString().substring(0, 16)),
       configKey: null,
     );
     await AiConversationService().updateSessionProfile(id, assistantId);
@@ -344,6 +344,9 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   /// 滚动状态机：仅 [UserScrollNotification]（用户手势触发）可取消跟随；
   /// 程序滚动不触发该通知，不会误伤跟随状态。回到底部时恢复跟随。
   bool _onScrollNotification(ScrollNotification notification) {
+    // 忽略子级横向列表（候选卡片横向滑动）的滚动通知，
+    // 否则卡片滑到最右端会被误判为"贴近底部"而自动滚动到底
+    if (notification.metrics.axis == Axis.horizontal) return false;
     if (notification is UserScrollNotification) {
       if (notification.direction == ScrollDirection.reverse &&
           !_isNearBottom(notification.metrics) &&
@@ -884,11 +887,51 @@ class _AiChatPageState extends ConsumerState<AiChatPage> {
   }
 
   Widget _buildModelProviderButton() {
-    return _buildOptionsIcon(
-      context,
-      icon: Icons.psychology,
-      tooltip: t.selectModel,
-      onTap: _showProviderModelSheet,
+    final scheme = Theme.of(context).colorScheme;
+    return StreamBuilder<AiApiKey?>(
+      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(_source),
+      builder: (ctx, snap) {
+        final model = snap.data?.model;
+        final meta = OpenAiProviderRegistry.allProviders[_source];
+        final label = model ?? meta?.name ?? _source;
+        return Tooltip(
+          message: t.selectModel,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: _showProviderModelSheet,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              constraints: const BoxConstraints(maxWidth: 160),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.psychology,
+                    size: 15,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1763,22 +1806,33 @@ class _ProviderModelSheetState extends State<_ProviderModelSheet> {
   }
 }
 
-class _ProviderModelList extends StatelessWidget {
+class _ProviderModelList extends StatefulWidget {
   const _ProviderModelList({required this.provider});
 
   final String provider;
 
   @override
+  State<_ProviderModelList> createState() => _ProviderModelListState();
+}
+
+class _ProviderModelListState extends State<_ProviderModelList> {
+  /// 当前类型筛选（null = 全部）
+  String? _typeFilter;
+
+  /// 已折叠的基名分组
+  final Set<String> _collapsed = {};
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return StreamBuilder<AiApiKey?>(
-      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(provider),
+      stream: AiDatabase.instance.aiApiKeyDao.watchByProvider(widget.provider),
       builder: (ctx, keySnap) {
         final currentModel = keySnap.data?.model;
         return StreamBuilder<List<AiModel>>(
           stream: (AiDatabase.instance.select(
             AiDatabase.instance.aiModels,
-          )..where((t) => t.provider.equals(provider))).watch(),
+          )..where((t) => t.provider.equals(widget.provider))).watch(),
           builder: (ctx, modelSnap) {
             final models = modelSnap.data ?? [];
             if (models.isEmpty) {
@@ -1793,43 +1847,134 @@ class _ProviderModelList extends StatelessWidget {
               );
             }
             return ListView(
-              children: [
-                for (final m in models)
-                  ListTile(
-                    dense: true,
-                    selected: m.modelId == currentModel,
-                    selectedTileColor: scheme.primaryContainer.withValues(
-                      alpha: 0.3,
-                    ),
-                    leading: Icon(
-                      m.modelId == currentModel
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_unchecked,
-                      color: m.modelId == currentModel
-                          ? scheme.primary
-                          : scheme.outline,
-                      size: 20,
-                    ),
-                    title: Text(m.label, style: const TextStyle(fontSize: 13)),
-                    subtitle: Text(
-                      m.modelId,
-                      style: TextStyle(fontSize: 11, color: scheme.outline),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    onTap: () {
-                      if (m.modelId != currentModel) {
-                        AiDatabase.instance.aiApiKeyDao.updateModel(
-                          provider,
-                          m.modelId,
-                        );
-                      }
-                    },
-                  ),
-              ],
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              children: _buildRows(scheme, models, currentModel),
             );
           },
         );
       },
+    );
+  }
+
+  List<Widget> _buildRows(
+    ColorScheme scheme,
+    List<AiModel> models,
+    String? currentModel,
+  ) {
+    // ── 类型筛选 chips ─────────────────────────
+    final types = <String>[];
+    for (final m in models) {
+      final t = m.modelType.isEmpty ? 'chat' : m.modelType;
+      if (!types.contains(t)) types.add(t);
+    }
+    final filterRow = Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            ChoiceChip(
+              label: Text(t.all),
+              selected: _typeFilter == null,
+              visualDensity: VisualDensity.compact,
+              onSelected: (_) => setState(() => _typeFilter = null),
+            ),
+            const SizedBox(width: 6),
+            for (final type in types) ...[
+              ChoiceChip(
+                label: Text(modelTypeLabel(type)),
+                selected: _typeFilter == type,
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => setState(
+                  () => _typeFilter = _typeFilter == type ? null : type,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    // ── 按基名分组 ─────────────────────────────
+    final filtered = _typeFilter == null
+        ? models
+        : models
+              .where(
+                (m) =>
+                    (m.modelType.isEmpty ? 'chat' : m.modelType) == _typeFilter,
+              )
+              .toList();
+    final groups = <String, List<AiModel>>{};
+    for (final m in filtered) {
+      groups.putIfAbsent(baseModelName(m.modelId), () => []).add(m);
+    }
+    final bases = groups.keys.toList()..sort();
+
+    return [
+      filterRow,
+      for (final base in bases) ...[
+        _groupHeader(base, groups[base]!),
+        if (!_collapsed.contains(base))
+          for (final m in groups[base]!)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: AiModelCard(
+                model: m,
+                isSelected: m.modelId == currentModel,
+                onTap: () {
+                  if (m.modelId != currentModel) {
+                    AiDatabase.instance.aiApiKeyDao.updateModel(
+                      widget.provider,
+                      m.modelId,
+                    );
+                  }
+                },
+              ),
+            ),
+      ],
+    ];
+  }
+
+  Widget _groupHeader(String base, List<AiModel> group) {
+    final scheme = Theme.of(context).colorScheme;
+    final collapsed = _collapsed.contains(base);
+    return InkWell(
+      onTap: () => setState(() {
+        if (collapsed) {
+          _collapsed.remove(base);
+        } else {
+          _collapsed.add(base);
+        }
+      }),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 6, 0, 4),
+        child: Row(
+          children: [
+            Icon(
+              collapsed ? Icons.chevron_right : Icons.expand_more,
+              size: 18,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                base,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Text(
+              '${group.length}',
+              style: TextStyle(fontSize: 11, color: scheme.outline),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2012,7 +2157,7 @@ class _StepProcessAreaState extends State<_StepProcessArea> {
               const Icon(Icons.hub_outlined, size: 13),
               const SizedBox(width: 4),
               Text(
-                '${t.viewProcess} ▾ · ${steps.length} 步',
+                '${t.viewProcess} ▾${t.aiStepsSuffix(n: steps.length)}',
                 style: TextStyle(fontSize: 11, color: scheme.outline),
               ),
             ],
@@ -2042,7 +2187,7 @@ class _StepProcessAreaState extends State<_StepProcessArea> {
                   const Icon(Icons.hub_outlined, size: 13),
                 const SizedBox(width: 4),
                 Text(
-                  '${t.viewProcess} ▴ · ${steps.length} 步',
+                  '${t.viewProcess} ▴${t.aiStepsSuffix(n: steps.length)}',
                   style: TextStyle(fontSize: 11, color: scheme.outline),
                 ),
               ],

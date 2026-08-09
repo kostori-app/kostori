@@ -154,10 +154,10 @@ class _PersonPageState extends ConsumerState<PersonPage>
             child: Material(
               child: TabBar(
                 controller: _tabController,
-                tabs: const [
-                  Tab(text: '声优资料'),
-                  Tab(text: '吐槽箱'),
-                  Tab(text: '角色关联'),
+                tabs: [
+                  Tab(text: t.personTabVoice),
+                  Tab(text: t.personTabChat),
+                  Tab(text: t.personTabRelation),
                 ],
               ),
             ),
@@ -192,8 +192,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
                           ? Center(child: KostoriRefreshIndicator())
                           : (characterFullItem.id == 0
                                 ? GeneralErrorWidget(
-                                    errMsg:
-                                        t.nobodysPostedAnythingYet,
+                                    errMsg: t.nobodysPostedAnythingYet,
                                     actions: [
                                       GeneralErrorButton(
                                         onPressed: () {
@@ -306,7 +305,7 @@ class _PersonPageState extends ConsumerState<PersonPage>
                                                     const EdgeInsets.symmetric(
                                                       vertical: 8.0,
                                                     ),
-child: Text(
+                                                child: Text(
                                                   t.profileInformation,
                                                   style: Theme.of(context)
                                                       .textTheme
@@ -339,7 +338,7 @@ child: Text(
                                                       const EdgeInsets.symmetric(
                                                         vertical: 8.0,
                                                       ),
-child: Text(
+                                                  child: Text(
                                                     t.characterIntroduction,
                                                     style: Theme.of(context)
                                                         .textTheme
@@ -408,7 +407,7 @@ child: Text(
                     payload: id,
                     title: characterFullItem.nameCN,
                     backgroundImagePath: characterFullItem.image,
-                    subtitle: '人物',
+                    subtitle: t.personSubtitle,
                   );
                 },
                 child: Padding(
@@ -924,9 +923,7 @@ child: Text(
               onPressed: null,
               label: Row(
                 children: [
-                  Text(
-                    currentType == 0 ? t.all : getRelationName(currentType),
-                  ),
+                  Text(currentType == 0 ? t.all : getRelationName(currentType)),
                   Text('(${characterPersonCastsList.length})'),
                 ],
               ),

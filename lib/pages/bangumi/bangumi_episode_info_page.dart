@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
 import 'package:kostori/components/bean/card/episode_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/bangumi/episode/episode_item.dart';
 import 'package:kostori/foundation/widget_utils.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -127,7 +127,7 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
                         Row(
                           children: [
                             Text(
-                              '评论',
+                              t.comments,
                               style: const TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -158,16 +158,12 @@ class _BangumiEpisodeInfoPageState extends State<BangumiEpisodeInfoPage> {
             (infoController.episodeCommentsList.isNotEmpty)
                 ? SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    sliver: Observer(
-                      builder: (context) {
-                        return SliverList.separated(
-                          itemCount: infoController.episodeCommentsList.length,
-                          separatorBuilder: (context, index) =>
-                              _buildDivider(context),
-                          itemBuilder: (context, index) =>
-                              _buildReplyCard(context, index),
-                        );
-                      },
+                    sliver: SliverList.separated(
+                      itemCount: infoController.episodeCommentsList.length,
+                      separatorBuilder: (context, index) =>
+                          _buildDivider(context),
+                      itemBuilder: (context, index) =>
+                          _buildReplyCard(context, index),
                     ),
                   )
                 : SliverList.builder(

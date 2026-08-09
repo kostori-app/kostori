@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -64,11 +65,7 @@ class EpisodeCommentsCard extends StatelessWidget {
             if (commentItem!.comment.state == 0) ...[
               Row(
                 children: [
-                  CircleAvatar(
-                    backgroundImage: NetworkImage(
-                      commentItem!.comment.user.avatar.large,
-                    ),
-                  ),
+                  BangumiAvatar(url: commentItem!.comment.user.avatar.large),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,11 +102,9 @@ class EpisodeCommentsCard extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   child: Row(
                     children: [
-                      CircleAvatar(
+                      BangumiAvatar(
+                        url: commentItem!.comment.user.avatar.large,
                         radius: 20,
-                        backgroundImage: NetworkImage(
-                          commentItem!.comment.user.avatar.large,
-                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -178,9 +173,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                 Divider(color: Theme.of(context).dividerColor.withAlpha(60)),
                 Row(
                   children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(reply.user.avatar.large),
-                    ),
+                    BangumiAvatar(url: reply.user.avatar.large),
                     const SizedBox(width: 8),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

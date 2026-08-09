@@ -145,6 +145,16 @@ class MainActivity : AudioServiceFragmentActivity() {
                     res.success(null)
                 }
 
+                "startHubKeepAlive" -> {
+                    HubKeepAliveService.start(applicationContext)
+                    res.success(null)
+                }
+
+                "stopHubKeepAlive" -> {
+                    HubKeepAliveService.stop(applicationContext)
+                    res.success(null)
+                }
+
                 "getDirectoryPath" -> {
                     val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)

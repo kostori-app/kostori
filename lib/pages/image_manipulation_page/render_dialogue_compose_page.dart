@@ -75,8 +75,6 @@ class DialogueImagePainter extends CustomPainter {
       final cropHeight = cropHeights[i];
 
       // 计算图片缩放比例和裁剪区域
-      // final scale = contentWidth / image.width;
-
       final firstImage = images[0];
       final originalWidth = firstImage.width.toDouble();
       final originalHeight = firstImage.height.toDouble();
@@ -160,23 +158,34 @@ class _RenderDialogueComposePageState
   bool isReorderMode = false;
   bool isCroppingMode = false;
 
+  /// 解码后的图片缓存：避免每次 build 都重新解码（性能关键）
+  List<ui.Image>? _uiImages;
+
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     imageList = List.of(widget.images);
-    _initCropHeights();
+    // 先给默认值，避免异步加载尺寸前被访问导致 late 初始化异常
+    imageSizes = List.generate(imageList.length, (_) => const Size(0, 0));
+    cropHeights = List.filled(imageList.length, 125);
     _loadImagesInfo();
+    _ensureImages().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<void> _loadImagesInfo() async {
-    imageSizes = await getImageSizes(imageList);
-    cropHeights = List.generate(imageList.length, (index) {
-      final height = imageSizes[index].height;
-      return index == 0 ? height : 125;
+    final sizes = await getImageSizes(imageList);
+    if (!mounted) return;
+    setState(() {
+      imageSizes = sizes;
+      cropHeights = List.generate(imageList.length, (index) {
+        final height = sizes[index].height;
+        return index == 0 ? height : 125;
+      });
     });
-    setState(() {}); // 更新 UI
   }
 
   Future<List<Size>> getImageSizes(List<File> imageFiles) async {
@@ -199,29 +208,6 @@ class _RenderDialogueComposePageState
     return sizes;
   }
 
-  Future<void> _initCropHeights() async {
-    double firstImageHeight = 380.0;
-
-    if (imageList.isNotEmpty) {
-      try {
-        final bytes = await imageList.first.readAsBytes();
-        final codec = await ui.instantiateImageCodec(bytes);
-        final frame = await codec.getNextFrame();
-        firstImageHeight = frame.image.height.toDouble();
-      } catch (e) {
-        Log.warning('_initCropHeights', e.toString());
-      }
-    }
-
-    setState(() {
-      Log.info('firstImageHeight', firstImageHeight.toString());
-      cropHeights = List.generate(
-        imageList.length,
-        (index) => index == 0 ? firstImageHeight : 125.0,
-      );
-    });
-  }
-
   Future<List<ui.Image>> _loadUiImages() async {
     final images = <ui.Image>[];
     for (final file in imageList) {
@@ -233,79 +219,110 @@ class _RenderDialogueComposePageState
     return images;
   }
 
+  Future<List<ui.Image>> _ensureImages() async {
+    var images = _uiImages;
+    if (images == null) {
+      images = await _loadUiImages();
+      _uiImages = images;
+    }
+    return images;
+  }
+
+  /// 确保 cropHeights / imageSizes 与 imageList 同步（重排、移除后调用）
+  void _syncIndexedData() {
+    if (cropHeights.length > imageList.length) {
+      cropHeights = List.of(cropHeights.take(imageList.length));
+    }
+    if (imageSizes.length > imageList.length) {
+      imageSizes = List.of(imageSizes.take(imageList.length));
+    }
+    if (cropHeights.isNotEmpty && imageSizes.isNotEmpty) {
+      // 首位角色裁剪高度为新首图全高
+      cropHeights[0] = imageSizes[0].height;
+    }
+  }
+
   void _onReorder(int oldIndex, int newIndex) {
     setState(() {
       if (oldIndex < newIndex) newIndex--;
       final item = imageList.removeAt(oldIndex);
       imageList.insert(newIndex, item);
+      final images = _uiImages;
+      if (images != null) {
+        final img = images.removeAt(oldIndex);
+        images.insert(newIndex, img);
+      }
+      if (oldIndex < imageSizes.length) {
+        final size = imageSizes.removeAt(oldIndex);
+        imageSizes.insert(newIndex, size);
+      }
+      if (oldIndex < cropHeights.length) {
+        final crop = cropHeights.removeAt(oldIndex);
+        cropHeights.insert(newIndex, crop);
+      }
+      _syncIndexedData();
     });
   }
 
-  Future<void> _captureAndSaveLongImage(BuildContext context) async {
-    App.rootContext.showMessage(message: t.saving);
+  void _removeImage(int index) {
+    if (index < 0 || index >= imageList.length) return;
+    setState(() {
+      imageList.removeAt(index);
+      _uiImages?.removeAt(index);
+      if (index < imageSizes.length) imageSizes.removeAt(index);
+      if (index < cropHeights.length) cropHeights.removeAt(index);
+      _syncIndexedData();
+    });
+  }
 
-    try {
-      // 读取配置项
-      final outerBorderColor = ref.read(outerBorderColorProvider);
-      final outerBorderWidth = ref.read(outerBorderWidthProvider);
-      final outerBorderRadius = ref.read(outerBorderRadiusProvider);
-      final showOuterBorder = ref.read(showOuterBorderProvider);
+  /// 渲染并导出对话长图为 PNG 字节（保留原始高分辨率导出）
+  Future<Uint8List?> _renderDialogueBytes(BuildContext context) async {
+    // 读取配置项
+    final outerBorderColor = ref.read(outerBorderColorProvider);
+    final outerBorderWidth = ref.read(outerBorderWidthProvider);
+    final outerBorderRadius = ref.read(outerBorderRadiusProvider);
+    final showOuterBorder = ref.read(showOuterBorderProvider);
 
-      final showInnerBorders = ref.read(showInnerBordersProvider);
-      final innerBorderColor = ref.read(innerBorderColorProvider);
-      final innerBorderWidth = ref.read(innerBorderWidthProvider);
+    final showInnerBorders = ref.read(showInnerBordersProvider);
+    final innerBorderColor = ref.read(innerBorderColorProvider);
+    final innerBorderWidth = ref.read(innerBorderWidthProvider);
 
-      // 加载图片
-      final images = <ui.Image>[];
-      for (File file in imageList) {
-        final bytes = await file.readAsBytes();
-        final codec = await ui.instantiateImageCodec(bytes);
-        final frame = await codec.getNextFrame();
-        images.add(frame.image);
+    final images = await _ensureImages();
+    if (images.isEmpty) return null;
+
+    // 计算逻辑大小
+    final maxWidth = images.first.width.toDouble();
+    double totalCropHeight = 0.0;
+
+    if (cropHeights.isNotEmpty && images.isNotEmpty) {
+      // 先把第一张图片的高度赋值（单位是逻辑像素）
+      totalCropHeight = images.first.height.toDouble();
+
+      // 累加 cropHeights 中除了第一个之外的其他高度
+      for (int i = 1; i < cropHeights.length; i++) {
+        totalCropHeight += cropHeights[i];
       }
+    } else {
+      // 如果没有数据，仍然累加所有cropHeights
+      totalCropHeight = cropHeights.fold(0.0, (sum, h) => sum + h);
+    }
 
-      if (images.isEmpty) return;
+    if (showInnerBorders && images.length > 1) {
+      totalCropHeight += innerBorderWidth * (images.length - 1);
+    }
 
-      // 计算逻辑大小
-      final maxWidth = images.first.width.toDouble();
-      double totalCropHeight = 0.0;
+    if (showOuterBorder) {
+      totalCropHeight += 2 * outerBorderWidth;
+    }
 
-      if (cropHeights.isNotEmpty && images.isNotEmpty) {
-        // 先把第一张图片的高度赋值（单位是逻辑像素）
-        totalCropHeight = images.first.height.toDouble();
+    final totalWidth = maxWidth + (showOuterBorder ? 2 * outerBorderWidth : 0);
+    final fullSize = Size(totalWidth, totalCropHeight);
 
-        // 累加 cropHeights 中除了第一个之外的其他高度
-        for (int i = 1; i < cropHeights.length; i++) {
-          totalCropHeight += cropHeights[i];
-        }
-      } else {
-        // 如果没有数据，仍然累加所有cropHeights
-        totalCropHeight = cropHeights.fold(0.0, (sum, h) => sum + h);
-      }
+    // 获取设备像素比，缩放画布保证清晰度
+    final dpr = MediaQuery.of(context).devicePixelRatio;
 
-      if (showInnerBorders && images.length > 1) {
-        totalCropHeight += innerBorderWidth * (images.length - 1);
-      }
-
-      if (showOuterBorder) {
-        totalCropHeight += 2 * outerBorderWidth;
-      }
-
-      final totalWidth =
-          maxWidth + (showOuterBorder ? 2 * outerBorderWidth : 0);
-      final fullSize = Size(totalWidth, totalCropHeight);
-
-      // 获取设备像素比
-      final dpr = MediaQuery.of(context).devicePixelRatio;
-      final scaledSize = Size(fullSize.width * dpr, fullSize.height * dpr);
-
-      // 创建高分辨率画布
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
-      canvas.scale(dpr); // 缩放 Canvas，保证清晰度
-
-      // 绘制
-      final painter = DialogueImagePainter(
+    return composePainterToPng(
+      painter: DialogueImagePainter(
         images: images,
         cropHeights: cropHeights,
         showOuterBorder: showOuterBorder,
@@ -315,34 +332,24 @@ class _RenderDialogueComposePageState
         showInnerBorders: showInnerBorders,
         innerBorderColor: innerBorderColor,
         innerBorderWidth: innerBorderWidth,
-      );
-      painter.paint(canvas, fullSize);
+      ),
+      size: fullSize,
+      dpr: dpr,
+    );
+  }
 
-      // 导出图片
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(
-        scaledSize.width.ceil(),
-        scaledSize.height.ceil(),
-      );
-
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw Exception("生成图片数据失败");
-
-      final bytes = byteData.buffer.asUint8List();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      await ImageSaver.saveImage(
+  /// 复制到剪贴板（桌面）或分享（移动端），同时保存一份到 Kostori 文件夹
+  Future<void> _copyOrShareDialogueImage() async {
+    try {
+      final bytes = await _renderDialogueBytes(context);
+      if (bytes == null) return;
+      await ImageSaver.saveOrShareImage(
         bytes: bytes,
-        filename: '拼图_$timestamp.png',
-        ref: ref,
+        filename: '拼图_${DateTime.now().millisecondsSinceEpoch}.png',
       );
-
-      // 刷新图片列表（使用 Riverpod）
-      final notifier = ref.read(imagesProvider.notifier);
-      await notifier.loadImages();
-
-      App.rootContext.showMessage(message: t.saveSuccess);
+      await ref.read(imagesProvider.notifier).loadImages();
     } catch (e, st) {
-      debugPrint('保存长图异常: $e\n$st');
+      debugPrint('复制/分享长图异常: $e\n$st');
       App.rootContext.showMessage(
         message: t.saveFailedWithError(e: e.toString()),
       );
@@ -362,7 +369,30 @@ class _RenderDialogueComposePageState
             index: i,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Image.file(imageList[i], fit: BoxFit.fitWidth),
+              child: Stack(
+                children: [
+                  Image.file(imageList[i], fit: BoxFit.fitWidth),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(i),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
       ],
@@ -390,6 +420,12 @@ class _RenderDialogueComposePageState
   Widget _buildCropListView() {
     const double baseDisplayWidth = 650;
 
+    // 尺寸尚未加载完成时先显示加载态，避免越界
+    if (imageSizes.length != imageList.length ||
+        cropHeights.length != imageList.length) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 100),
       child: ListView.builder(
@@ -416,38 +452,51 @@ class _RenderDialogueComposePageState
                       height: displayHeight,
                       child: Image.file(image, fit: BoxFit.fill),
                     ),
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: cropDisplayHeight,
-                      child: Container(
-                        color: Colors.black26,
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            color: Colors.black54,
-                            child: Text(
-                              t.cropHeightCPx(c: crop.toStringAsFixed(0)),
-                              style: const TextStyle(color: Colors.white),
+                    if (index != 0)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: cropDisplayHeight,
+                        child: Container(
+                          color: Colors.black26,
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              color: Colors.black54,
+                              child: Text(
+                                t.cropHeightCPx(c: crop.toStringAsFixed(0)),
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
-                Slider(
-                  min: 0,
-                  max: imageSize.height,
-                  value: crop,
-                  onChanged: (value) {
-                    setState(() {
-                      cropHeights[index] = value;
-                    });
-                  },
-                ),
+                if (index == 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      t.firstImageFullHeight,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                else
+                  Slider(
+                    min: 0,
+                    max: imageSize.height,
+                    value: crop,
+                    onChanged: (value) {
+                      setState(() {
+                        cropHeights[index] = value;
+                      });
+                    },
+                  ),
               ],
             ),
           );
@@ -466,67 +515,161 @@ class _RenderDialogueComposePageState
     final innerBorderColor = ref.watch(innerBorderColorProvider);
     final innerBorderWidth = ref.watch(innerBorderWidthProvider);
 
-    return FutureBuilder<List<ui.Image>>(
-      future: _loadUiImages(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError ||
-            snapshot.data == null ||
-            snapshot.data!.isEmpty) {
-          return Center(child: Text(t.noImages));
-        }
+    final images = _uiImages;
+    if (images == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (images.isEmpty) {
+      return Center(child: Text(t.noImages));
+    }
 
-        final images = snapshot.data!;
+    final maxWidth = images.first.width.toDouble();
+    double totalCropHeight = 0.0;
 
-        final maxWidth = images.first.width.toDouble();
-        double totalCropHeight = 0.0;
+    if (cropHeights.isNotEmpty && images.isNotEmpty) {
+      totalCropHeight = images.first.height.toDouble();
 
-        if (cropHeights.isNotEmpty && images.isNotEmpty) {
-          totalCropHeight = images.first.height.toDouble();
+      for (int i = 1; i < cropHeights.length; i++) {
+        totalCropHeight += cropHeights[i];
+      }
+    } else {
+      totalCropHeight = cropHeights.fold(0.0, (sum, h) => sum + h);
+    }
 
-          for (int i = 1; i < cropHeights.length; i++) {
-            totalCropHeight += cropHeights[i];
-          }
-        } else {
-          totalCropHeight = cropHeights.fold(0.0, (sum, h) => sum + h);
-        }
+    if (showInnerBorders && images.length > 1) {
+      totalCropHeight += innerBorderWidth * (images.length - 1);
+    }
 
-        if (showInnerBorders && images.length > 1) {
-          totalCropHeight += innerBorderWidth * (images.length - 1);
-        }
+    if (showOuterBorder) {
+      totalCropHeight += 2 * outerBorderWidth;
+    }
 
-        if (showOuterBorder) {
-          totalCropHeight += 2 * outerBorderWidth;
-        }
+    final totalWidth = maxWidth + (showOuterBorder ? 2 * outerBorderWidth : 0);
 
-        final totalWidth =
-            maxWidth + (showOuterBorder ? 2 * outerBorderWidth : 0);
+    final fullSize = Size(totalWidth, totalCropHeight);
 
-        final fullSize = Size(totalWidth, totalCropHeight);
+    return Center(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: totalWidth / 2),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.topCenter,
+            child: CustomPaint(
+              size: fullSize,
+              painter: DialogueImagePainter(
+                images: images,
+                cropHeights: cropHeights,
+                showOuterBorder: showOuterBorder,
+                outerBorderColor: outerBorderColor,
+                outerBorderWidth: outerBorderWidth,
+                outerBorderRadius: outerBorderRadius,
+                showInnerBorders: showInnerBorders,
+                innerBorderColor: innerBorderColor,
+                innerBorderWidth: innerBorderWidth,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
+  /// 统一高度设置对话框
+  void _showUniformHeightDialog() {
+    double targetHeight = cropHeights.length > 1 ? cropHeights[1] : 120.0;
+    final controller = TextEditingController(
+      text: targetHeight.toStringAsFixed(0),
+    );
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: t.setUniformHeight,
+      barrierColor: Colors.black.toOpacity(0.3),
+      pageBuilder: (context, animation, secondaryAnimation) {
         return Center(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: totalWidth / 2),
-              child: FittedBox(
-                fit: BoxFit.contain,
-                alignment: Alignment.topCenter,
-                child: CustomPaint(
-                  size: fullSize,
-                  painter: DialogueImagePainter(
-                    images: images,
-                    cropHeights: cropHeights,
-                    showOuterBorder: showOuterBorder,
-                    outerBorderColor: outerBorderColor,
-                    outerBorderWidth: outerBorderWidth,
-                    outerBorderRadius: outerBorderRadius,
-                    showInnerBorders: showInnerBorders,
-                    innerBorderColor: innerBorderColor,
-                    innerBorderWidth: innerBorderWidth,
-                  ),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: Material(
+              color: Colors.black.toOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 650,
+                padding: const EdgeInsets.all(16),
+                child: StatefulBuilder(
+                  builder: (context, setStates) {
+                    void updateHeight(double value) {
+                      targetHeight = value.clamp(0.0, 5000.0);
+                      final newText = targetHeight.toStringAsFixed(0);
+                      if (controller.text != newText) {
+                        controller.text = newText;
+                        controller.selection = TextSelection.fromPosition(
+                          TextPosition(offset: newText.length),
+                        );
+                      }
+                    }
+
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          t.setUniformHeight,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 16),
+                        Slider(
+                          min: 10.0,
+                          max: 1080.0,
+                          value: targetHeight.clamp(50.0, 1080.0),
+                          onChanged: (value) {
+                            setStates(() => updateHeight(value));
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: controller,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: t.heightPx,
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          onChanged: (value) {
+                            final parsed = double.tryParse(value);
+                            if (parsed != null) {
+                              setStates(() => updateHeight(parsed));
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              child: Text(t.cancel),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                            ElevatedButton(
+                              child: Text(t.apply),
+                              onPressed: () {
+                                for (int i = 1; i < cropHeights.length; i++) {
+                                  cropHeights[i] = targetHeight;
+                                }
+                                setState(() {});
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -537,258 +680,102 @@ class _RenderDialogueComposePageState
   }
 
   Widget _buildBottomButtons() {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black.toOpacity(0.35),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (!isReorderMode && !isCroppingMode) ...[
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.color_lens),
-                      label: Text(t.borderColor),
-                      onPressed: _showBorderSettings,
-                    ),
-                    const SizedBox(width: 20),
-                  ],
-                  if (!isCroppingMode)
-                    ElevatedButton.icon(
-                      icon: Icon(isReorderMode ? Icons.check : Icons.sort),
-                      label: Text(
-                        isReorderMode ? t.finishSorting : t.sortImages,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          isReorderMode = !isReorderMode;
-                        });
-                      },
-                    ),
-                  if (!isReorderMode && !isCroppingMode)
-                    const SizedBox(width: 20),
-                  if (!isReorderMode) ...[
-                    ElevatedButton.icon(
-                      icon: Icon(isCroppingMode ? Icons.check : Icons.crop),
-                      label: Text(
-                        isCroppingMode ? t.finishCropping : t.cropImage,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          isCroppingMode = !isCroppingMode;
-                        });
-                      },
-                    ),
-                  ],
-                  if (isCroppingMode) ...[
-                    const SizedBox(width: 20),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.vertical_align_center),
-                      label: Text(t.uniformHeight),
-                      onPressed: () {
-                        double targetHeight = cropHeights.length > 1
-                            ? cropHeights[1]
-                            : 120.0;
-                        final controller = TextEditingController(
-                          text: targetHeight.toStringAsFixed(0),
-                        );
-
-                        showGeneralDialog(
-                          context: context,
-                          barrierDismissible: true,
-                          barrierLabel: t.setUniformHeight,
-                          barrierColor: Colors.black.toOpacity(0.3),
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) {
-                                return Center(
-                                  child: BackdropFilter(
-                                    filter: ui.ImageFilter.blur(
-                                      sigmaX: 8,
-                                      sigmaY: 8,
-                                    ),
-                                    child: Material(
-                                      color: Colors.black.toOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Container(
-                                        width: 650,
-                                        padding: const EdgeInsets.all(16),
-                                        child: StatefulBuilder(
-                                          builder: (context, setStates) {
-                                            void updateHeight(double value) {
-                                              targetHeight = value.clamp(
-                                                0.0,
-                                                5000.0,
-                                              );
-
-                                              final newText = targetHeight
-                                                  .toStringAsFixed(0);
-
-                                              if (controller.text != newText) {
-                                                controller.text = newText;
-                                                controller.selection =
-                                                    TextSelection.fromPosition(
-                                                      TextPosition(
-                                                        offset: newText.length,
-                                                      ),
-                                                    );
-                                              }
-                                            }
-
-                                            return Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  t.setUniformHeight,
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.titleLarge,
-                                                ),
-                                                const SizedBox(height: 16),
-                                                Slider(
-                                                  min: 10.0,
-                                                  max: 1080.0,
-                                                  value: targetHeight.clamp(
-                                                    50.0,
-                                                    1080.0,
-                                                  ),
-                                                  onChanged: (value) {
-                                                    setStates(
-                                                      () => updateHeight(value),
-                                                    );
-                                                  },
-                                                ),
-                                                const SizedBox(height: 20),
-                                                TextField(
-                                                  controller: controller,
-                                                  keyboardType:
-                                                      TextInputType.number,
-                                                  decoration: InputDecoration(
-                                                    labelText: t.heightPx,
-                                                    border:
-                                                        OutlineInputBorder(),
-                                                    isDense: true,
-                                                    contentPadding:
-                                                        EdgeInsets.symmetric(
-                                                          horizontal: 12,
-                                                          vertical: 8,
-                                                        ),
-                                                  ),
-                                                  onChanged: (value) {
-                                                    final parsed =
-                                                        double.tryParse(value);
-                                                    if (parsed != null) {
-                                                      setStates(
-                                                        () => updateHeight(
-                                                          parsed,
-                                                        ),
-                                                      );
-                                                    }
-                                                  },
-                                                ),
-                                                const SizedBox(height: 24),
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.end,
-                                                  children: [
-                                                    TextButton(
-                                                      child: Text(t.cancel),
-                                                      onPressed: () =>
-                                                          Navigator.of(
-                                                            context,
-                                                          ).pop(),
-                                                    ),
-                                                    ElevatedButton(
-                                                      child: Text(t.apply),
-                                                      onPressed: () {
-                                                        for (
-                                                          int i = 1;
-                                                          i <
-                                                              cropHeights
-                                                                  .length;
-                                                          i++
-                                                        ) {
-                                                          cropHeights[i] =
-                                                              targetHeight;
-                                                        }
-                                                        setState(() {});
-                                                        Navigator.of(
-                                                          context,
-                                                        ).pop();
-                                                      },
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                        );
-                      },
-                    ),
-                  ],
-                  if (!isReorderMode && !isCroppingMode) ...[
-                    const SizedBox(width: 20),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.save),
-                      label: Text(t.saveLongImage),
-                      onPressed: () => _captureAndSaveLongImage(context),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+    return _FrostedBottomBar(
+      children: [
+        if (isReorderMode)
+          _BottomIconAction(
+            icon: Icons.check,
+            tooltip: t.finishSorting,
+            onPressed: () => setState(() => isReorderMode = false),
+          )
+        else if (isCroppingMode) ...[
+          _BottomIconAction(
+            icon: Icons.vertical_align_center,
+            tooltip: t.uniformHeight,
+            onPressed: _showUniformHeightDialog,
           ),
-        ),
-      ),
+          _BottomIconAction(
+            icon: Icons.check,
+            tooltip: t.finishCropping,
+            onPressed: () => setState(() => isCroppingMode = false),
+          ),
+        ] else ...[
+          _BottomIconAction(
+            icon: Icons.color_lens,
+            tooltip: t.borderColor,
+            onPressed: _showBorderSettings,
+          ),
+          _BottomIconAction(
+            icon: Icons.sort,
+            tooltip: t.sortImages,
+            onPressed: () => setState(() => isReorderMode = true),
+          ),
+          _BottomIconAction(
+            icon: Icons.crop,
+            tooltip: t.cropImage,
+            onPressed: () => setState(() => isCroppingMode = true),
+          ),
+          _BottomIconAction(
+            icon: Icons.save_alt,
+            tooltip: t.saveAndShare,
+            onPressed: _copyOrShareDialogueImage,
+          ),
+        ],
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: Appbar(
-        title: Text(t.stitchSubtitles),
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.maybePop(context),
-        ),
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Center(
-              child: isReorderMode
-                  ? ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 650),
-                      child: _buildReorderView(),
-                    )
-                  : isCroppingMode
-                  ? ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: 650),
-                      child: _buildCropListView(),
-                    )
-                  : _buildMainCanvasPreview(),
-            ),
+    return PopScope(
+      canPop: !isReorderMode && !isCroppingMode,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          setState(() {
+            if (isReorderMode) {
+              isReorderMode = false;
+            } else if (isCroppingMode) {
+              isCroppingMode = false;
+            }
+          });
+        }
+      },
+      child: Scaffold(
+        appBar: Appbar(
+          title: Text(t.stitchSubtitles),
+          backgroundColor: Colors.transparent,
+          leading: _ModeAwareBackButton(
+            reorderMode: isReorderMode,
+            cropMode: isCroppingMode,
+            onExitMode: () => setState(() {
+              if (isReorderMode) {
+                isReorderMode = false;
+              } else if (isCroppingMode) {
+                isCroppingMode = false;
+              }
+            }),
           ),
-          _buildBottomButtons(),
-        ],
+        ),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Center(
+                child: isReorderMode
+                    ? ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 650),
+                        child: _buildReorderView(),
+                      )
+                    : isCroppingMode
+                    ? ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: 650),
+                        child: _buildCropListView(),
+                      )
+                    : _buildMainCanvasPreview(),
+              ),
+            ),
+            _buildBottomButtons(),
+          ],
+        ),
       ),
     );
   }

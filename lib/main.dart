@@ -16,11 +16,14 @@ import 'package:kostori/foundation/ai_service/openai_provider_registry.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/main_isolate_runner.dart';
+import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/headless.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/pages/auth_page.dart';
 import 'package:kostori/pages/main_page.dart';
+import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/io.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:media_kit/media_kit.dart';
@@ -37,6 +40,10 @@ void main(List<String> args) {
       () async {
         WidgetsFlutterBinding.ensureInitialized();
         MediaKit.ensureInitialized();
+
+        // 注册主 isolate 任务通道：WebView2 等平台操作需在主线程执行
+        MainIsolateRunner.register();
+        WebViewResolver.registerMainIsolateHandler();
 
         await init();
 
@@ -84,11 +91,16 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  DateTime _lastSyncCheck = DateTime.now();
+
   @override
   void initState() {
     App.registerForceRebuild(forceRebuild);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     WidgetsBinding.instance.addObserver(this);
+    // 幂等：热重载会重跑 initState，确保主 isolate 通道与 webview 处理器始终就位
+    MainIsolateRunner.register();
+    WebViewResolver.registerMainIsolateHandler();
     checkUpdates();
     super.initState();
   }
@@ -99,6 +111,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 应用级数据同步：回到前台超过 10 分钟则自动下载，不依赖个人页是否打开
+    if (state == AppLifecycleState.resumed) {
+      if (DateTime.now().difference(_lastSyncCheck) >
+          const Duration(minutes: 10)) {
+        _lastSyncCheck = DateTime.now();
+        DataSync().downloadData();
+      }
+    }
     if (!App.isMobile || !appdata.settings['authorizationRequired']) {
       return;
     }

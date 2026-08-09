@@ -22,6 +22,7 @@ class AnimatedImage extends StatefulWidget {
     this.filterQuality = FilterQuality.medium,
     this.isAntiAlias = false,
     this.part,
+    this.ink = false,
     Map<String, String>? headers,
     int? cacheWidth,
     int? cacheHeight,
@@ -30,6 +31,11 @@ class AnimatedImage extends StatefulWidget {
        assert(cacheHeight == null || cacheHeight > 0);
 
   final ImageProvider image;
+
+  /// 是否以 [Ink.image] 方式渲染（外层为 InkWell 时启用，
+  /// 使点击波纹能显示在图片之上）。
+  /// 启用后图片加载完成用 Ink.image 绘制；加载/错误态仍走骨架屏/错误图标。
+  final bool ink;
 
   final String? semanticLabel;
 
@@ -63,7 +69,8 @@ class AnimatedImage extends StatefulWidget {
 
   final ImagePart? part;
 
-  static void clear() => _AnimatedImageState.clear();
+  /// 保留的兼容 API：历史上用于清空内部缓存，现缓存由 Flutter ImageCache 管理。
+  static void clear() {}
 
   @override
   State<AnimatedImage> createState() => _AnimatedImageState();
@@ -82,10 +89,6 @@ class _AnimatedImageState extends State<AnimatedImage>
   Object? _lastException;
   ImageStreamCompleterHandle? _completerHandle;
 
-  static final Map<int, Size> _cache = {};
-
-  static void clear() => _cache.clear();
-
   @override
   void initState() {
     super.initState();
@@ -95,7 +98,6 @@ class _AnimatedImageState extends State<AnimatedImage>
 
   @override
   void dispose() {
-    assert(_imageStream != null);
     WidgetsBinding.instance.removeObserver(this);
     _stopListeningToStream();
     _completerHandle?.dispose();
@@ -191,10 +193,9 @@ class _AnimatedImageState extends State<AnimatedImage>
   }
 
   void _handleImageChunk(ImageChunkEvent event) {
-    setState(() {
-      _loadingProgress = event;
-      _lastException = null;
-    });
+    // 仅记录进度供调试，不触发重建（UI 不显示加载进度）
+    _loadingProgress = event;
+    _lastException = null;
   }
 
   void _replaceImage({required ImageInfo? info}) {
@@ -275,29 +276,55 @@ class _AnimatedImageState extends State<AnimatedImage>
 
     if (_imageInfo != null) {
       if (widget.part != null) {
-        return CustomPaint(
+        result = CustomPaint(
           painter: ImagePainter(image: _imageInfo!.image, part: widget.part!),
           child: SizedBox(width: widget.width, height: widget.height),
         );
+      } else if (widget.ink) {
+        // Ink.image 把图片作为 Material 的 decoration 绘制，
+        // 外层 InkWell 的波纹才能显示在图片之上。
+        // 用透明 Material 兜底，确保 Ink 始终有父级 Material。
+        result = Material(
+          type: MaterialType.transparency,
+          child: SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: Ink.image(
+              image: widget.image,
+              fit: widget.fit ?? BoxFit.cover,
+              alignment: widget.alignment,
+              repeat: widget.repeat,
+              centerSlice: widget.centerSlice,
+              matchTextDirection: widget.matchTextDirection,
+              colorFilter: widget.color != null
+                  ? ColorFilter.mode(
+                      widget.color!,
+                      widget.colorBlendMode ?? BlendMode.srcIn,
+                    )
+                  : null,
+            ),
+          ),
+        );
+      } else {
+        result = RawImage(
+          image: _imageInfo?.image,
+          width: widget.width,
+          height: widget.height,
+          debugImageLabel: _imageInfo?.debugLabel,
+          scale: _imageInfo?.scale ?? 1.0,
+          color: widget.color,
+          opacity: widget.opacity,
+          colorBlendMode: widget.colorBlendMode,
+          fit: widget.fit ?? BoxFit.cover,
+          alignment: widget.alignment,
+          repeat: widget.repeat,
+          centerSlice: widget.centerSlice,
+          matchTextDirection: widget.matchTextDirection,
+          invertColors: _invertColors,
+          isAntiAlias: widget.isAntiAlias,
+          filterQuality: widget.filterQuality,
+        );
       }
-      result = RawImage(
-        image: _imageInfo?.image,
-        width: widget.width,
-        height: widget.height,
-        debugImageLabel: _imageInfo?.debugLabel,
-        scale: _imageInfo?.scale ?? 1.0,
-        color: widget.color,
-        opacity: widget.opacity,
-        colorBlendMode: widget.colorBlendMode,
-        fit: BoxFit.cover,
-        alignment: widget.alignment,
-        repeat: widget.repeat,
-        centerSlice: widget.centerSlice,
-        matchTextDirection: widget.matchTextDirection,
-        invertColors: _invertColors,
-        isAntiAlias: widget.isAntiAlias,
-        filterQuality: widget.filterQuality,
-      );
     } else if (_lastException != null) {
       final is404 = _lastException.toString().contains('404');
       result = Center(
@@ -316,16 +343,28 @@ class _AnimatedImageState extends State<AnimatedImage>
         );
       }
     } else {
+      // 加载中显示骨架屏（不显示线性进度）
       result = Skeletonizer.zone(
         child: Bone(height: widget.height, width: widget.width ?? 100),
       );
     }
 
-    return AnimatedSwitcher(
+    final Widget animated = AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
       reverseDuration: const Duration(milliseconds: 200),
-      child: result,
+      child: KeyedSubtree(
+        // 以加载状态为 key，保证 骨架屏/错误/成图 之间有切换动画
+        key: ValueKey<String>(
+          _imageInfo != null
+              ? 'image:${widget.image}'
+              : (_lastException != null
+                    ? 'error:${_lastException.toString().contains('404')}'
+                    : 'loading'),
+        ),
+        child: result,
+      ),
     );
+    return animated;
   }
 
   @override

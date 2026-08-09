@@ -55,7 +55,12 @@ class Middleware {
       final ip = request.connectionInfo?.remoteAddress.address ?? '';
       final isLocal =
           ip == '127.0.0.1' || ip == '::1' || ip == '0:0:0:0:0:0:0:1';
-      if (isLocal) return true;
+      // 浏览器发起的跨源请求（带 Origin 头且非本站）即使来自本机也要求鉴权，
+      // 防止恶意网页对 localhost 服务做 CSRF / DNS-rebinding 攻击。
+      final origin = request.headers.value('Origin');
+      final isCrossOriginBrowserRequest =
+          origin != null && !origin.startsWith('http://localhost');
+      if (isLocal && !isCrossOriginBrowserRequest) return true;
       return next(request);
     };
   }

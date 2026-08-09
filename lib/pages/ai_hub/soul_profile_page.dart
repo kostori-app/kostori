@@ -68,7 +68,7 @@ class _SoulProfilePageState extends ConsumerState<SoulProfilePage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '灵魂侧写',
+                t.soulProfileTitle,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

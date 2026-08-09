@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
+import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/foundation/consts.dart';
@@ -151,73 +152,181 @@ class _TranslationWidgetState extends State<TranslationWidget> {
   void _showDialogSelector(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return ContentDialog(
+      builder: (dialogContext) => DefaultTabController(
+        length: 2,
+        child: ContentDialog(
           title: t.selectTranslationLanguage,
           displayButton: false,
-          titleActions: [
-            IconButton(
-              onPressed: () {
-                _showTranslationSource();
-              },
-              icon: Icon(Icons.language),
-            ),
-          ],
-          content: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.6,
-            ),
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(
-                context,
-              ).copyWith(scrollbars: false),
-              child: SingleChildScrollView(
-                child: RadioGroup<SortId>(
-                  groupValue: selectedLanguage.id,
-                  onChanged: (value) {
-                    if (value == null) return;
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: translationSorts.map((sort) {
-                      return ListTile(
-                        dense: true,
-                        title: Text(
-                          sort.label,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 24,
-                          ),
-                        ),
-                        trailing: Radio<SortId>(value: sort.id),
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          handleTranslation(
-                            widget.data,
-                            targetLanguage: sort.extData,
-                          );
-                          selectedLanguage = sort;
-                          appdata.implicitData['currentLanguage'] =
-                              sort.extData;
-                          appdata.writeImplicitData();
-                        },
-                      );
-                    }).toList(),
+          content: SizedBox(
+            width: 440,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 4),
+                // ── 语言 / 翻译源 切换 ───────────────
+                TabBar(
+                  tabAlignment: TabAlignment.center,
+                  tabs: [
+                    Tab(
+                      icon: const Icon(Icons.translate, size: 18),
+                      text: t.selectTranslationLanguage,
+                    ),
+                    Tab(
+                      icon: const Icon(Icons.sync_alt, size: 18),
+                      text: t.translationService,
+                    ),
+                  ],
+                ),
+                SizedBox(
+                  height: MediaQuery.of(dialogContext).size.height * 0.6,
+                  child: TabBarView(
+                    children: [
+                      _buildLanguageList(dialogContext),
+                      _buildSourceList(dialogContext),
+                    ],
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Future<void> _showTranslationSource() async {
-    showPopUpWidget(
-      App.rootContext,
-      PopUpWidgetScaffold(title: 'Translation', body: TranslationSettings()),
+  Widget _buildLanguageList(BuildContext dialogContext) {
+    final primary = Theme.of(dialogContext).colorScheme.primary;
+    final outlineVariant = Theme.of(dialogContext).colorScheme.outlineVariant;
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(
+        dialogContext,
+      ).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        child: RadioGroup<SortId>(
+          groupValue: selectedLanguage.id,
+          onChanged: (_) {},
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: translationSorts.map((sort) {
+              final isSelected = sort.id == selectedLanguage.id;
+              return ListTile(
+                dense: true,
+                leading: Icon(
+                  isSelected ? Icons.check_circle : Icons.translate,
+                  size: 20,
+                  color: isSelected ? primary : outlineVariant,
+                ),
+                title: Text(
+                  sort.label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: Radio<SortId>(value: sort.id),
+                onTap: () {
+                  Navigator.of(dialogContext).pop();
+                  handleTranslation(widget.data, targetLanguage: sort.extData);
+                  selectedLanguage = sort;
+                  appdata.implicitData['currentLanguage'] = sort.extData;
+                  appdata.writeImplicitData();
+                },
+              );
+            }).toList(),
+          ),
+        ),
+      ),
     );
+  }
+
+  Widget _buildSourceList(BuildContext dialogContext) {
+    final currentSource =
+        (appdata.settings['translationSource'] as String?) ?? 'bing';
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(
+        dialogContext,
+      ).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        child: RadioGroup<String>(
+          groupValue: currentSource,
+          onChanged: (_) {},
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: translationSourceList.entries.map((entry) {
+              final source = translationSourceDisplayMap[entry.key]!;
+              final isAi = [
+                'siliconFlow',
+                'doubao',
+                'gemini',
+                'qiniu',
+                'deepseek',
+                'openrouter',
+                'ohmygpt',
+              ].contains(source);
+              final isDeepL = source == 'deepl';
+              return ListTile(
+                dense: true,
+                leading: ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFF6B8DE3), Color(0xFF8B5CF6)],
+                  ).createShader(bounds),
+                  child: Icon(
+                    isAi ? Icons.auto_awesome : Icons.language,
+                    size: 24,
+                    color: Colors.white,
+                  ),
+                ),
+                title: Text(
+                  entry.key,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  entry.value,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: Radio<String>(value: source),
+                onTap: () =>
+                    _selectSource(dialogContext, source, isDeepL, isAi),
+              );
+            }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectSource(
+    BuildContext dialogContext,
+    String source,
+    bool isDeepL,
+    bool isAi,
+  ) async {
+    if (isDeepL) {
+      final key = appdata.settings['deeplKey'] as String?;
+      if (key == null || key.isEmpty) {
+        Navigator.of(dialogContext).pop();
+        await showPopUpWidget(App.rootContext, const DeepLConfigPage());
+        return;
+      }
+    }
+    if (isAi) {
+      final keyRow = await AiDatabase.instance.aiApiKeyDao.getByProvider(
+        source,
+      );
+      if (keyRow == null || keyRow.apiKey.isEmpty || !keyRow.isEnabled) {
+        App.rootContext.showMessage(
+          message: t.pleaseConfigureApiKeyInAiSettingsFirst,
+        );
+        return;
+      }
+    }
+    appdata.settings['translationSource'] = source;
+    appdata.saveData();
+    Navigator.of(dialogContext).pop();
+    App.rootContext.showMessage(message: t.saved);
   }
 
   @override

@@ -5,6 +5,9 @@ class PopUpWidget<T> extends PopupRoute<T> {
 
   final Widget widget;
 
+  /// 已开始关闭（防止双击区域外连续 pop 两次，弹掉底层页面变黑屏）
+  bool _dismissing = false;
+
   late final CurvedAnimation _curvedAnimation;
 
   @override
@@ -108,7 +111,11 @@ class PopUpWidget<T> extends PopupRoute<T> {
       animation: _curvedAnimation,
       builder: (context, _) {
         return GestureDetector(
-          onTap: () => navigator?.pop(),
+          onTap: () {
+            if (_dismissing) return;
+            _dismissing = true;
+            navigator?.pop();
+          },
           child: BackdropFilter(
             filter: ui.ImageFilter.blur(
               sigmaX: 0.001 + 6.0 * _curvedAnimation.value,

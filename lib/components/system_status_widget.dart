@@ -35,6 +35,7 @@ class BatteryWidgetState extends State<BatteryWidget>
   late AnimationController _controller;
   late Animation<double> _animation;
   double _displayLevel = 100;
+  bool _hasAnimationListener = false;
 
   @override
   void initState() {
@@ -72,7 +73,12 @@ class BatteryWidgetState extends State<BatteryWidget>
   }
 
   Future<void> _handleStateChange(BatteryState newState) async {
-    final newLevel = await _battery.batteryLevel;
+    int newLevel;
+    try {
+      newLevel = await _battery.batteryLevel;
+    } catch (_) {
+      return;
+    }
 
     if (mounted) {
       if (newLevel != _batteryLevel || newState != _batteryState) {
@@ -86,18 +92,21 @@ class BatteryWidgetState extends State<BatteryWidget>
   }
 
   void _startAnimation(double targetLevel) {
+    // 复用同一个监听器，避免多次调用时累积监听导致重复 setState
+    if (!_hasAnimationListener) {
+      _hasAnimationListener = true;
+      _animation.addListener(() {
+        if (mounted) {
+          setState(() {
+            _displayLevel = _animation.value;
+          });
+        }
+      });
+    }
     _animation = Tween<double>(
       begin: _displayLevel,
       end: targetLevel,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-
-    _animation.addListener(() {
-      if (mounted) {
-        setState(() {
-          _displayLevel = _animation.value;
-        });
-      }
-    });
 
     _controller.reset();
     _controller.forward();
@@ -119,13 +128,9 @@ class BatteryWidgetState extends State<BatteryWidget>
       batteryColor = Colors.red;
     }
 
-    final int argb =
-        (batteryColor.a * 255).toInt() << 24 |
-        (batteryColor.r * 255).toInt() << 16 |
-        (batteryColor.g * 255).toInt() << 8 |
-        (batteryColor.b * 255).toInt();
-
-    String colorHex = '#${argb.toRadixString(16).padLeft(8, '0').substring(2)}';
+    // toARGB32 返回 AARRGGBB，取低 24 位作为 #RRGGBB
+    final colorHex =
+        '#${(batteryColor.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 
     const double maxFillWidth = 11.0;
     double fillWidth = (level / 100.0) * maxFillWidth;
@@ -210,8 +215,9 @@ class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
           return;
         }
 
-        final downloadSpeed = rxBytes - _lastRxBytes;
-        final uploadSpeed = txBytes - _lastTxBytes;
+        // 网卡重启后计数器可能归零导致负值，clamp 到 0
+        final downloadSpeed = (rxBytes - _lastRxBytes).clamp(0, rxBytes);
+        final uploadSpeed = (txBytes - _lastTxBytes).clamp(0, txBytes);
 
         setState(() {
           _downloadSpeed = _formatSpeed(downloadSpeed);
@@ -220,20 +226,23 @@ class _SpeedMonitorWidgetState extends State<SpeedMonitorWidget> {
           _lastTxBytes = txBytes;
         });
       } catch (e) {
-        print("Error: $e");
+        debugPrint("getNetworkStats error: $e");
       }
     });
   }
 
   String _formatSpeed(int speed) {
-    if (speed < 1024 * 1024) {
-      // 显示 KB/s（即使低于 1KB 也强制为 0.1 KB/s 之类）
-      final kb = speed / 1024;
-      return '${kb < 0.1 ? '0.1' : kb.toStringAsFixed(1)} KB/s';
-    } else {
-      // 显示 MB/s
-      return '${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+    if (speed <= 0) return '0 B/s';
+    if (speed < 1024) {
+      // 低于 1KB 显示字节
+      return '$speed B/s';
     }
+    if (speed < 1024 * 1024) {
+      // 显示 KB/s
+      return '${(speed / 1024).toStringAsFixed(1)} KB/s';
+    }
+    // 显示 MB/s
+    return '${(speed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
   }
 
   @override
@@ -290,6 +299,7 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
   // 网络状态
   final Connectivity _connectivity = Connectivity();
   ConnectivityResult _connectivityResult = ConnectivityResult.none;
+  bool _initialized = false;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   // WiFi 信号强度 (Android: -100 到 0 dBm, iOS: 不支持)
@@ -298,6 +308,8 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
 
   // ignore: unused_field
   int? _wifiSignalStrength; // null 表示不支持或无法获取，预留用于未来扩展
+
+  Timer? _wifiPollTimer;
 
   @override
   void initState() {
@@ -308,6 +320,7 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
   @override
   void dispose() {
     _connectivitySubscription?.cancel();
+    _wifiPollTimer?.cancel();
     super.dispose();
   }
 
@@ -321,6 +334,7 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
       if (mounted) {
         setState(() {
           _connectivityResult = result;
+          _initialized = true;
         });
       }
 
@@ -353,7 +367,10 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
       });
 
       // 定期更新 WiFi 信号强度（如果是 WiFi）
-      Timer.periodic(const Duration(seconds: 5), (timer) async {
+      _wifiPollTimer?.cancel();
+      _wifiPollTimer = Timer.periodic(const Duration(seconds: 5), (
+        timer,
+      ) async {
         if (!mounted) {
           timer.cancel();
           return;
@@ -500,8 +517,10 @@ class _NetworkStatusWidgetState extends State<NetworkStatusWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // 未完成首次检测前不显示，避免闪烁断网图标
+    if (!_initialized) return const SizedBox.shrink();
     return _shouldShowNetworkStatus()
         ? _buildNetworkStatus()
-        : SizedBox.shrink();
+        : const SizedBox.shrink();
   }
 }

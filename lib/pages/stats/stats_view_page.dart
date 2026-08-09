@@ -199,33 +199,43 @@ class _StatsViewPageState extends State<StatsViewPage> {
       Widget content;
       switch (index) {
         case 0:
-          content = Text('收藏: $all');
+          content = Text(t.statsFavoritesTotal(n: all));
           break;
         case 1:
           content = Text(
-            '完成: ${appdata.settings.s.favoriteTypeCollect != 'none' ? LocalFavoritesManager().folderAnimes(appdata.settings.s.favoriteTypeCollect) : '0'}',
+            t.statsCompletedCount(
+              n: appdata.settings.s.favoriteTypeCollect != 'none'
+                  ? LocalFavoritesManager().folderAnimes(
+                      appdata.settings.s.favoriteTypeCollect,
+                    )
+                  : '0',
+            ),
           );
           break;
         case 2:
           content = Text(
-            '完成率: ${appdata.settings.s.favoriteTypeCollect != 'none' ? '${(LocalFavoritesManager().folderAnimes(appdata.settings.s.favoriteTypeCollect) / all * 100).toStringAsFixed(1)}%' : '0%'}',
+            t.statsCompletionRate(
+              n: appdata.settings.s.favoriteTypeCollect != 'none'
+                  ? '${(LocalFavoritesManager().folderAnimes(appdata.settings.s.favoriteTypeCollect) / all * 100).toStringAsFixed(1)}%'
+                  : '0%',
+            ),
           );
           break;
         case 3:
-          content = Text('平均分: ${average.toStringAsFixed(2)}');
+          content = Text(t.statsAverageScore(n: average.toStringAsFixed(2)));
           break;
         case 4:
-          content = Text('标准差: ${stdDev.toStringAsFixed(2)}');
+          content = Text(t.statsStdDev(n: stdDev.toStringAsFixed(2)));
           break;
         case 5:
           content = InkWell(
             borderRadius: BorderRadius.circular(16),
             onTap: () => _showRatingDetail(context),
-            child: Center(child: Text('评分数: $totalCount')),
+            child: Center(child: Text(t.statsRatingCount(n: totalCount))),
           );
           break;
         default:
-          content = const Text('默认');
+          content = Text(t.statsDefault);
       }
 
       return Card(
@@ -368,7 +378,7 @@ class _WordCloudState extends ConsumerState<_WordCloud> {
                     Text(word, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(width: 8),
                     Text(
-                      '${items.length} 部',
+                      t.statsItemCountSuffix(n: items.length),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.outline,
                       ),
@@ -545,7 +555,9 @@ class _RatingDetailPageState extends State<_RatingDetailPage>
             tabAlignment: TabAlignment.center,
             tabs: List.generate(10, (i) {
               final count = widget.ratingBangumiMap[i + 1]?.length ?? 0;
-              return Tab(text: '${i + 1}分 ($count)');
+              return Tab(
+                text: t.statsScoreCount(score: i + 1, count: count),
+              );
             }),
           ),
           Expanded(
@@ -554,7 +566,9 @@ class _RatingDetailPageState extends State<_RatingDetailPage>
               children: List.generate(10, (i) {
                 final items = widget.ratingBangumiMap[i + 1] ?? [];
                 if (items.isEmpty) {
-                  return Center(child: Text('暂无 ${i + 1} 分的作品'));
+                  return Center(
+                    child: Text(t.statsNoRatingItems(score: i + 1)),
+                  );
                 }
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),

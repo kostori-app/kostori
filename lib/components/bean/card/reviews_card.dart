@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_item.dart';
 import 'package:kostori/pages/bangumi/bangumi_reviews_page.dart';
@@ -110,14 +111,13 @@ class ReviewsCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
+                  BangumiAvatar(
+                    url:
+                        reviewsItem!.entry.icon ==
+                            'https://lain.bgm.tv/pic/photo/g/no_photo.png'
+                        ? reviewsItem!.user.avatar.large
+                        : reviewsItem!.entry.icon,
                     radius: 24,
-                    backgroundImage: NetworkImage(
-                      reviewsItem!.entry.icon ==
-                              'https://lain.bgm.tv/pic/photo/g/no_photo.png'
-                          ? reviewsItem!.user.avatar.large
-                          : reviewsItem!.entry.icon,
-                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

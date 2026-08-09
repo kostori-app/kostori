@@ -451,6 +451,8 @@ class AnimeTile extends ConsumerWidget {
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
+      // 以 Ink.image 渲染，使外层 InkWell 的波纹能显示在图片之上
+      ink: true,
     );
   }
 
@@ -967,16 +969,6 @@ class SliverGridAnimes extends ConsumerStatefulWidget {
 
 class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   List<Anime> animes = [];
-  List<int> heroIDs = [];
-
-  static int _nextHeroID = 0;
-
-  void generateHeroID() {
-    heroIDs.clear();
-    for (var i = 0; i < animes.length; i++) {
-      heroIDs.add(_nextHeroID++);
-    }
-  }
 
   @override
   void didUpdateWidget(covariant SliverGridAnimes oldWidget) {
@@ -987,7 +979,6 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
           animes.add(anime);
         }
       }
-      generateHeroID();
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -999,7 +990,6 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
         animes.add(anime);
       }
     }
-    generateHeroID();
     HistoryManager().addListener(update);
     super.initState();
   }
@@ -1025,7 +1015,6 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
   Widget build(BuildContext context) {
     return _SliverGridAnimes(
       animes: animes,
-      heroIDs: heroIDs,
       selection: widget.selections,
       onLastItemBuild: widget.onLastItemBuild,
       badgeBuilder: widget.badgeBuilder,
@@ -1044,9 +1033,12 @@ class _SliverGridAnimesState extends ConsumerState<SliverGridAnimes> {
 }
 
 class _SliverGridAnimes extends StatelessWidget {
+  /// 稳定 Hero 标识（id@sourceKey），与详情页/源页一致，实时计算避免首帧时序问题
+  static int heroIDOf(Anime a) =>
+      '${a.id}@${a.sourceKey}'.hashCode & 0x7fffffff;
+
   const _SliverGridAnimes({
     required this.animes,
-    required this.heroIDs,
     this.onLastItemBuild,
     this.badgeBuilder,
     this.menuBuilder,
@@ -1063,8 +1055,6 @@ class _SliverGridAnimes extends StatelessWidget {
   });
 
   final List<Anime> animes;
-
-  final List<int> heroIDs;
 
   final Map<Anime, bool>? selection;
 
@@ -1122,12 +1112,18 @@ class _SliverGridAnimes extends StatelessWidget {
                 badge: badge,
                 menuOptions: menuBuilder?.call(animes[index]),
                 onTap: onTap != null
-                    ? () => onTap!(animes[index], heroIDs[index])
+                    ? () => onTap!(
+                        animes[index],
+                        _SliverGridAnimes.heroIDOf(animes[index]),
+                      )
                     : null,
                 onLongPressed: onLongPressed != null
-                    ? () => onLongPressed!(animes[index], heroIDs[index])
+                    ? () => onLongPressed!(
+                        animes[index],
+                        _SliverGridAnimes.heroIDOf(animes[index]),
+                      )
                     : null,
-                heroID: heroIDs[index],
+                heroID: _SliverGridAnimes.heroIDOf(animes[index]),
               );
               if (selection == null) {
                 return Padding(
@@ -1180,12 +1176,18 @@ class _SliverGridAnimes extends StatelessWidget {
             badge: badge,
             menuOptions: menuBuilder?.call(animes[index]),
             onTap: onTap != null
-                ? () => onTap!(animes[index], heroIDs[index])
+                ? () => onTap!(
+                    animes[index],
+                    _SliverGridAnimes.heroIDOf(animes[index]),
+                  )
                 : null,
             onLongPressed: onLongPressed != null
-                ? () => onLongPressed!(animes[index], heroIDs[index])
+                ? () => onLongPressed!(
+                    animes[index],
+                    _SliverGridAnimes.heroIDOf(animes[index]),
+                  )
                 : null,
-            heroID: heroIDs[index],
+            heroID: _SliverGridAnimes.heroIDOf(animes[index]),
           );
           if (selection == null) return anime;
           return AnimatedContainer(
@@ -1232,12 +1234,18 @@ class _SliverGridAnimes extends StatelessWidget {
             badge: badge,
             menuOptions: menuBuilder?.call(animes[index]),
             onTap: onTap != null
-                ? () => onTap!(animes[index], heroIDs[index])
+                ? () => onTap!(
+                    animes[index],
+                    _SliverGridAnimes.heroIDOf(animes[index]),
+                  )
                 : null,
             onLongPressed: onLongPressed != null
-                ? () => onLongPressed!(animes[index], heroIDs[index])
+                ? () => onLongPressed!(
+                    animes[index],
+                    _SliverGridAnimes.heroIDOf(animes[index]),
+                  )
                 : null,
-            heroID: heroIDs[index],
+            heroID: _SliverGridAnimes.heroIDOf(animes[index]),
           );
           if (selection == null) return anime;
           return AnimatedContainer(

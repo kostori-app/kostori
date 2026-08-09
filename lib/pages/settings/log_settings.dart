@@ -26,13 +26,16 @@ class _LogSettingsState extends State<LogSettings> {
                 ),
                 _SwitchSetting(title: t.debugInfo, settingKey: "debugInfo"),
                 _SwitchSetting(
+                  title: t.logPrivacyProtection,
+                  subtitle: t.logPrivacyProtectionDesc,
+                  settingKey: "redactSensitiveLogs",
+                  dataSource: SwitchDataSource.implicit,
+                ),
+                _SwitchSetting(
                   title: t.networkInfo,
                   settingKey: "enableNetLog",
                 ),
-                _SwitchSetting(
-                  title: t.hubInfo,
-                  settingKey: "enableHubLog",
-                ),
+                _SwitchSetting(title: t.hubInfo, settingKey: "enableHubLog"),
                 _SwitchSetting(
                   title: t.statsInfo,
                   settingKey: "enableStatsLog",
@@ -101,9 +104,7 @@ class _LogsPageState extends State<LogsPage> {
                       child: Text(t.disableLengthLimitation),
                       onTap: () {
                         Log.ignoreLimitation = true;
-                        context.showMessage(
-                          message: t.onlyValidForThisRun,
-                        );
+                        context.showMessage(message: t.onlyValidForThisRun);
                       },
                     ),
                     PopupMenuItem(
@@ -136,9 +137,7 @@ class _LogsPageState extends State<LogsPage> {
                 final logs = logsByLevel[level]!;
 
                 if (logs.isEmpty) {
-                  return Center(
-                    child: Text(t.noLogsForL(l: level.name)),
-                  );
+                  return Center(child: Text(t.noLogsForL(l: level.name)));
                 }
 
                 return ListView.builder(

@@ -37,8 +37,12 @@ final GlobalKey repaintKey = GlobalKey();
 
 Future<void> captureAndSave(BuildContext context) async {
   try {
-    final boundary =
-        repaintKey.currentContext?.findRenderObject() as RenderRepaintBoundary;
+    final renderObject = repaintKey.currentContext?.findRenderObject();
+    if (renderObject == null) {
+      ImageSaver.showResult(success: false, message: t.screenshotFailed);
+      return;
+    }
+    final boundary = renderObject as RenderRepaintBoundary;
     final image = await boundary.toImage(pixelRatio: 3.0);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final bytes = byteData!.buffer.asUint8List();
@@ -93,7 +97,6 @@ class ShareWidget extends ConsumerStatefulWidget {
 }
 
 class _ShareWidgetState extends ConsumerState<ShareWidget> {
-  bool showLineChart = false;
   bool isLoding = true;
   Map<bool, EpisodeInfo?> _currentWeekEp = {false: null};
 
@@ -147,13 +150,37 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   }
 
   Future<void> queryBangumi() async {
-    bangumiItem = (await Bangumi.instance.bindFind(id))!;
-    allEpisodes = await Bangumi.instance.getBangumiEpisodeAllByID(id);
-    bangumiSRI = await Bangumi.instance.getBangumiSRIByID(id);
-    commentsList = (await Bangumi.instance.getBangumiCommentsByID(
-      id,
-      offset: 0,
-    )).commentList;
+    try {
+      final found = await Bangumi.instance.bindFind(id);
+      final item =
+          found ??
+          (await Bangumi.instance.getBangumiInfoByID(id)) ??
+          // 兜底：避免后续对未初始化 bangumiItem 的访问崩溃
+          BangumiItem(
+            id: id,
+            type: 2,
+            name: '$id',
+            nameCn: '',
+            summary: '',
+            airDate: '',
+            airWeekday: 0,
+            rank: 0,
+            total: 0,
+            totalEpisodes: 0,
+            score: 0,
+            images: {},
+            tags: [],
+          );
+      bangumiItem = item;
+      allEpisodes = await Bangumi.instance.getBangumiEpisodeAllByID(id);
+      bangumiSRI = await Bangumi.instance.getBangumiSRIByID(id);
+      commentsList = (await Bangumi.instance.getBangumiCommentsByID(
+        id,
+        offset: 0,
+      )).commentList;
+    } catch (e) {
+      Log.error('ShareWidget.queryBangumi', '$e');
+    }
     try {
       stats = (await StatsManager().getStatsByIdAndType(
         id: bangumiItem.id.toString(),
@@ -177,9 +204,11 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
               .lastOrNull
               ?.watchDuration;
     } catch (_) {}
-    setState(() {
-      isLoding = false;
-    });
+    if (mounted) {
+      setState(() {
+        isLoding = false;
+      });
+    }
   }
 
   Widget score(BuildContext context, BangumiItem bangumiItem) {
@@ -297,6 +326,41 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
     );
   }
 
+  /// 区块分隔线（重复出现多次）
+  Widget _sectionDivider() {
+    return Center(
+      child: Container(
+        width: 120,
+        height: 2,
+        decoration: BoxDecoration(
+          color: Colors.grey.toOpacity(0.4),
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+    );
+  }
+
+  /// 区块标题 + 计数徽章（重复出现多次）
+  Widget _sectionTitle(BuildContext context, String title, String count) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(count, style: ts.s12),
+        ),
+      ],
+    );
+  }
+
   Widget _animeInfoPage() {
     return RepaintBoundary(
       key: repaintKey,
@@ -355,7 +419,6 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              //标题
                               Text(anime.title, style: ts.s20),
                               if (anime.subTitle != null)
                                 SelectableText(
@@ -409,9 +472,10 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
   }
 
   Widget _bangumiInfoPage() {
+    final countMap = bangumiItem.count;
     double standardDeviation = Utils.getDeviation(
       bangumiItem.total,
-      bangumiItem.count!.values.toList(),
+      countMap != null ? countMap.values.toList() : [],
       bangumiItem.score,
     );
 
@@ -490,7 +554,6 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    //标题
                                     Text(
                                       bangumiItem.nameCn.isNotEmpty
                                           ? bangumiItem.nameCn
@@ -569,16 +632,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.toOpacity(0.4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
+                _sectionDivider(),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -615,16 +669,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                 ),
                 const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.toOpacity(0.4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
+                _sectionDivider(),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -635,29 +680,10 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Text(
+                      _sectionTitle(
+                        context,
                         t.tags,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${bangumiItem.tags.length}',
-                          style: ts.s12,
-                        ),
+                        '${bangumiItem.tags.length}',
                       ),
                     ],
                   ),
@@ -692,16 +718,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                 ),
                 if (bangumiSRI.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
+                  _sectionDivider(),
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -710,26 +727,10 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     ),
                     child: Row(
                       children: [
-                        Text(
+                        _sectionTitle(
+                          context,
                           t.linkedItems,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text('${bangumiSRI.length}', style: ts.s12),
+                          '${bangumiSRI.length}',
                         ),
                       ],
                     ),
@@ -768,16 +769,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                 ],
                 if (bangumiItem.total >= 20) ...[
                   const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
+                  _sectionDivider(),
                   const SizedBox(height: 8),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -811,21 +803,6 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                               child: Text(
                                 '${bangumiItem.score}',
                                 style: ts.s12,
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: () {
-                                setState(() {
-                                  showLineChart = !showLineChart;
-                                });
-                              },
-                              icon: Icon(
-                                showLineChart
-                                    ? Icons.show_chart
-                                    : Icons.bar_chart,
-                              ),
-                              label: Text(
-                                showLineChart ? t.lineChart : t.barChart,
                               ),
                             ),
                             Text('${bangumiItem.total} votes'),
@@ -862,23 +839,12 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                       horizontal: 16,
                       vertical: 2,
                     ),
-                    child: showLineChart
-                        ? LineChatPage(bangumiItem: bangumiItem)
-                        : BangumiBarChartPage(bangumiItem: bangumiItem),
+                    child: BangumiBarChartPage(bangumiItem: bangumiItem),
                   ),
                 ],
                 if (commentsList.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
+                  _sectionDivider(),
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -887,29 +853,10 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                     ),
                     child: Row(
                       children: [
-                        Text(
+                        _sectionTitle(
+                          context,
                           t.latestComments,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${commentsList.length >= 5 ? 5 : commentsList.length}',
-                            style: ts.s12,
-                          ),
+                          '${commentsList.length >= 5 ? 5 : commentsList.length}',
                         ),
                       ],
                     ),
@@ -932,16 +879,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                 ],
                 if (latestComment != null || latestRating != null) ...[
                   const SizedBox(height: 8),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
+                  _sectionDivider(),
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -1366,16 +1304,7 @@ class _ShareWidgetState extends ConsumerState<ShareWidget> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 120,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.toOpacity(0.4),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
+                _sectionDivider(),
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -1883,15 +1812,29 @@ class ShareQrCode extends StatefulWidget {
 
 class _ShareQrCodeState extends State<ShareQrCode> {
   bool _expanded = false;
+  String? _cachedContent;
+
+  String get _content {
+    if (!widget.showQrCode) return '';
+    return _cachedContent ??= ProtocolParser.encodeWithBase64Payload(
+      widget.type,
+      widget.payload,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant ShareQrCode oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.type != widget.type || oldWidget.payload != widget.payload) {
+      _cachedContent = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final qrBg = isDark ? cs.surfaceContainerHighest : cs.surface;
-    final content = widget.showQrCode
-        ? ProtocolParser.encodeWithBase64Payload(widget.type, widget.payload)
-        : '';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1921,7 +1864,7 @@ class _ShareQrCodeState extends State<ShareQrCode> {
                       width: 96,
                       height: 96,
                       child: PrettyQrView.data(
-                        data: content,
+                        data: _content,
                         errorCorrectLevel: QrErrorCorrectLevel.H,
 
                         decoration: PrettyQrDecoration(

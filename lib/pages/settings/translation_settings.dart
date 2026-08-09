@@ -1,150 +1,17 @@
 part of 'settings_page.dart';
 
-class TranslationSettings extends StatefulWidget {
-  const TranslationSettings({super.key});
-
-  @override
-  State<TranslationSettings> createState() => _TranslationSettingsState();
-}
-
-class _TranslationSettingsState extends State<TranslationSettings> {
-  String selectedValue = '';
-
-  @override
-  void initState() {
-    super.initState();
-    selectedValue = appdata.settings['translationSource'] ?? 'bing';
-  }
-
-  void _selectSource(String source) {
-    setState(() {
-      selectedValue = source;
-      appdata.settings['translationSource'] = source;
-      appdata.saveData();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SmoothCustomScrollView(
-      slivers: [
-        SliverAppbar(title: Text(t.translation)),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          sliver: SliverToBoxAdapter(
-            child: _SettingCard(
-              children: [
-                _SettingPartTitle(
-                  title: t.translationService,
-                  icon: Icons.translate_outlined,
-                ),
-                RadioGroup<String>(
-                  groupValue: selectedValue,
-                  onChanged: (value) {
-                    if (value == null) return;
-                  },
-                  child: ListView(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    children: translationSourceList.entries
-                        .where((e) {
-                          final source =
-                              translationSourceDisplayMap[e.key] as String;
-                          return source != 'ai';
-                        })
-                        .map((entry) {
-                          final source =
-                              translationSourceDisplayMap[entry.key]!;
-                          final isDeepL = source == 'deepl';
-                          final isAi = [
-                            'siliconFlow',
-                            'doubao',
-                            'gemini',
-                            'qiniu',
-                            'deepseek',
-                            'openrouter',
-                            'ohmygpt',
-                          ].contains(source);
-
-                          return ListTile(
-                            leading: ShaderMask(
-                              shaderCallback: (bounds) => const LinearGradient(
-                                colors: [Color(0xFF6B8DE3), Color(0xFF8B5CF6)],
-                              ).createShader(bounds),
-                              child: Icon(
-                                isAi ? Icons.auto_awesome : Icons.language,
-                                size: 24,
-                                color: Colors.white,
-                              ),
-                            ),
-                            title: Text(entry.key),
-                            subtitle: Text(entry.value),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [Radio<String>(value: source)],
-                            ),
-                            onTap: () async {
-                              if (isDeepL) {
-                                final key =
-                                    appdata.settings['deeplKey'] as String?;
-                                if (key == null || key.isEmpty) {
-                                  await showPopUpWidget(
-                                    App.rootContext,
-                                    const _DeepLConfigPage(),
-                                  );
-                                  return;
-                                }
-                              }
-                              if (isAi) {
-                                final keyRow = await AiDatabase
-                                    .instance
-                                    .aiApiKeyDao
-                                    .getByProvider(source);
-                                if (keyRow == null ||
-                                    keyRow.apiKey.isEmpty ||
-                                    !keyRow.isEnabled) {
-                                  App.rootContext.showMessage(
-                                    message: t
-                                        .pleaseConfigureApiKeyInAiSettingsFirst,
-                                  );
-                                  return;
-                                }
-                              }
-                              _selectSource(source);
-                            },
-                            onLongPress: isDeepL
-                                ? () => showPopUpWidget(
-                                    App.rootContext,
-                                    const _DeepLConfigPage(),
-                                  )
-                                : null,
-                          );
-                        })
-                        .toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ─────────────────────────────────────────────
-// DeepL 配置页（仅保留此 AI 配置）
+// DeepL 配置页（在翻译选择弹窗中点击 DeepL 时进入）
 // ─────────────────────────────────────────────
 
-class _DeepLConfigPage extends StatefulWidget {
-  const _DeepLConfigPage();
+class DeepLConfigPage extends StatefulWidget {
+  const DeepLConfigPage({super.key});
 
   @override
-  State<_DeepLConfigPage> createState() => _DeepLConfigPageState();
+  State<DeepLConfigPage> createState() => _DeepLConfigPageState();
 }
 
-class _DeepLConfigPageState extends State<_DeepLConfigPage> {
+class _DeepLConfigPageState extends State<DeepLConfigPage> {
   final _apiKeyCtrl = TextEditingController();
   bool _obscure = true;
   String _usage = '';

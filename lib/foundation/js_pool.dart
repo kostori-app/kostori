@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/foundation/js_engine.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/main_isolate_runner.dart';
 
 class JSPool {
   static final int _maxInstances = 4;
@@ -24,8 +25,10 @@ class JSPool {
     _isInitializing = true;
     var jsInitBuffer = await rootBundle.load("assets/init.js");
     var jsInit = jsInitBuffer.buffer.asUint8List();
+    // 主 isolate 的任务通道端口，随 isolate 一起传入后台
+    final mainPort = MainIsolateRunner.mainSendPort;
     for (int i = 0; i < _maxInstances; i++) {
-      _instances.add(IsolateJsEngine(jsInit));
+      _instances.add(IsolateJsEngine(jsInit, mainPort));
     }
     _isInitializing = false;
   }
@@ -47,7 +50,9 @@ class _IsolateJsEngineInitParam {
 
   final Uint8List jsInit;
 
-  _IsolateJsEngineInitParam(this.sendPort, this.jsInit);
+  final SendPort? mainSendPort;
+
+  _IsolateJsEngineInitParam(this.sendPort, this.jsInit, this.mainSendPort);
 }
 
 class IsolateJsEngine {
@@ -63,12 +68,12 @@ class IsolateJsEngine {
 
   int get pendingTasks => _tasks.length;
 
-  IsolateJsEngine(Uint8List jsInit) {
+  IsolateJsEngine(Uint8List jsInit, SendPort? mainSendPort) {
     _receivePort = ReceivePort();
     _receivePort!.listen(_onMessage);
     Isolate.spawn(
       _run,
-      _IsolateJsEngineInitParam(_receivePort!.sendPort, jsInit),
+      _IsolateJsEngineInitParam(_receivePort!.sendPort, jsInit, mainSendPort),
     );
   }
 
@@ -95,6 +100,8 @@ class IsolateJsEngine {
   }
 
   static void _run(_IsolateJsEngineInitParam params) async {
+    // 绑定主 isolate 通道端口，供 WebView 等平台操作切回主线程
+    MainIsolateRunner.bindMainPort(params.mainSendPort);
     var sendPort = params.sendPort;
     final port = ReceivePort();
     sendPort.send(port.sendPort);

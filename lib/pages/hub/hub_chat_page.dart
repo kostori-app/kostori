@@ -31,12 +31,16 @@ class HubChatPage extends ConsumerStatefulWidget {
   final String? dmUserId;
   final String? dmUserName;
 
+  /// 嵌入模式：不渲染标题栏 / 滚动容器，直接输出聊天主体，供页面 Tab 内嵌使用
+  final bool embedded;
+
   const HubChatPage({
     super.key,
     this.roomId,
     this.roomName,
     this.dmUserId,
     this.dmUserName,
+    this.embedded = false,
   }) : assert(roomId != null || dmUserId != null);
 
   bool get isDm => dmUserId != null;
@@ -46,7 +50,7 @@ class HubChatPage extends ConsumerStatefulWidget {
 }
 
 class _HubChatPageState extends ConsumerState<HubChatPage>
-    with _HubChatUploadMixin {
+    with _HubChatUploadMixin, AutomaticKeepAliveClientMixin {
   final _scroll = ScrollController();
   final _inputCtrl = TextEditingController();
   final _inputFocus = FocusNode();
@@ -61,6 +65,9 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
   bool _initialScrollDone = false;
 
   late final HubClient _client;
+
+  @override
+  bool get wantKeepAlive => true;
 
   String get _title =>
       widget.isDm ? (widget.dmUserName ?? 'DM') : (widget.roomName ?? 'Chat');
@@ -92,7 +99,9 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
       _client.clearDmUnread(dmId);
       _entries.addAll(ref.read(hubProvider).dmHistory[dmId] ?? []);
     } else {
-      _entries.addAll(ref.read(hubProvider).messageHistory);
+      _entries.addAll(
+        ref.read(hubProvider).messageHistory.where((m) => !isHubSyncMessage(m)),
+      );
     }
 
     _client.addMessageListener(_onMessage);
@@ -191,6 +200,8 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
       // ── chat / pin / 默认 ───────────────────────────────────────────────────
       default:
+        // 播放进度同步消息不进入聊天列表，由一起看 Tab 监听
+        if (isHubSyncMessage(msg)) return;
         _autoScroll = true;
         setState(() => _entries.add(msg));
         _scrollToBottom();
@@ -445,6 +456,7 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final hubState = ref.watch(hubProvider);
     final cs = Theme.of(context).colorScheme;
 
@@ -452,7 +464,10 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
       _initialScrollDone = true;
       _scrollToBottom();
     }
-    final room = ref.watch(hubProvider).currentRoom;
+    final chatStack = _buildChatStack(cs, hubState);
+    if (widget.embedded) {
+      return chatStack;
+    }
     return AppScrollBar(
       topPadding: 52,
       bottomPadding: 80,
@@ -462,65 +477,66 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
         child: PopUpWidgetScaffold(
           title: _title,
           tailing: widget.isDm ? _buildDmActions(context, hubState) : [],
-          body: DropTarget(
-            onDragDone: (d) => _onDragDone(d),
-            onDragEntered: (_) => setState(() => _isDragging = true),
-            onDragExited: (_) => setState(() => _isDragging = false),
-            child: Stack(
-              children: [
-                Column(
-                  children: [
-                    if (!widget.isDm) _buildRoomSubtitle(cs, hubState),
-                    if (!widget.isDm) _buildAnnouncementBar(cs, hubState),
-                    Expanded(child: _buildList(cs, hubState)),
-                    if (_replyToId != null) _buildReplyBanner(cs),
-                    if (_mentionCandidates.isNotEmpty) _buildMentionPopup(cs),
-                    HubInputBar(
-                      controller: _inputCtrl,
-                      focusNode: _inputFocus,
-                      onSend: _send,
-                      onPickImage: _pickAndSendImage,
-                      onOpenStickers: _openStickerSheet,
-                      isDesktop: App.isDesktop,
-                      uploading: _uploading,
-                      pendingImages: _pendingImages,
-                      onRemovePending: (i) =>
-                          setState(() => _pendingImages.removeAt(i)),
-                      room: room,
-                    ),
-                  ],
-                ),
-                if (_isDragging)
-                  Positioned.fill(
-                    child: Container(
-                      color: cs.primary.toOpacity(0.12),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.image_outlined,
-                              size: 48,
-                              color: cs.primary,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              t.dropToSendImage,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: cs.primary,
-                              ),
-                            ),
-                          ],
+          body: chatStack,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatStack(ColorScheme cs, HubState hubState) {
+    final room = ref.watch(hubProvider).currentRoom;
+    return DropTarget(
+      onDragDone: (d) => _onDragDone(d),
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              if (!widget.isDm) _buildRoomSubtitle(cs, hubState),
+              if (!widget.isDm) _buildAnnouncementBar(cs, hubState),
+              Expanded(child: _buildList(cs, hubState)),
+              if (_replyToId != null) _buildReplyBanner(cs),
+              if (_mentionCandidates.isNotEmpty) _buildMentionPopup(cs),
+              HubInputBar(
+                controller: _inputCtrl,
+                focusNode: _inputFocus,
+                onSend: _send,
+                onPickImage: _pickAndSendImage,
+                onOpenStickers: _openStickerSheet,
+                isDesktop: App.isDesktop,
+                uploading: _uploading,
+                pendingImages: _pendingImages,
+                onRemovePending: (i) =>
+                    setState(() => _pendingImages.removeAt(i)),
+                room: room,
+              ),
+            ],
+          ),
+          if (_isDragging)
+            Positioned.fill(
+              child: Container(
+                color: cs.primary.toOpacity(0.12),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.image_outlined, size: 48, color: cs.primary),
+                      const SizedBox(height: 12),
+                      Text(
+                        t.dropToSendImage,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
                         ),
                       ),
-                    ),
+                    ],
                   ),
-              ],
+                ),
+              ),
             ),
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -557,7 +573,10 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
   }
 
   Widget _buildRoomSubtitle(ColorScheme cs, HubState hubState) {
-    final count = hubState.currentRoomClients(hubState.lobbyRoomId).length;
+    final count = hubState.currentRoomClients(hubState.currentRoomId).length;
+    final room = hubState.currentRoom;
+    final isWatch = room?.isWatchRoom == true;
+    final watchTitle = room?.animeTitle;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
@@ -577,6 +596,22 @@ class _HubChatPageState extends ConsumerState<HubChatPage>
             '$count ${t.online}',
             style: TextStyle(fontSize: 12, color: cs.onSurface.toOpacity(0.5)),
           ),
+          if (isWatch && watchTitle != null && watchTitle.isNotEmpty) ...[
+            const SizedBox(width: 10),
+            Icon(Icons.play_circle_outline, size: 13, color: cs.primary),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                t.watchingAnime(a: watchTitle),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: cs.primary.toOpacity(0.85),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ],
       ),
     );

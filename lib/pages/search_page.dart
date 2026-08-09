@@ -11,8 +11,10 @@ import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
 import 'package:kostori/pages/search_result_page.dart';
+import 'package:kostori/pages/search_source_select_page.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
+import 'package:kostori/utils/search_source_groups.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:sliver_tools/sliver_tools.dart';
@@ -34,11 +36,21 @@ class _SearchPageState extends State<SearchPage> {
   SearchPageData get currentSearchPageData =>
       AnimeSource.find(searchTarget)!.searchPageData!;
 
+  /// 聚合搜索开关（由搜索源旁的图标切换）
   bool aggregatedSearch = false;
+
+  /// 当前选中的搜索源分组（'all' 表示全部）
+  String selectedGroup = 'all';
+
+  /// 聚合搜索时手动勾选的源子集（空表示使用分组内全部源）
+  Set<String> aggregatedSources = {};
 
   var focusNode = FocusNode();
 
   var options = <String>[];
+
+  /// 当前分组下的启用搜索源
+  List<AnimeSource> get groupSources => enabledSearchSources(selectedGroup);
 
   void update() {
     setState(() {});
@@ -46,10 +58,27 @@ class _SearchPageState extends State<SearchPage> {
 
   void search([String? text]) {
     if (aggregatedSearch) {
+      final keys = aggregatedSources.isNotEmpty
+          ? aggregatedSources.toList()
+          : groupSources.map((e) => e.key).toList();
+      if (keys.isEmpty) {
+        App.rootContext.showMessage(message: t.noSearchSources);
+        return;
+      }
       context
-          .to(() => AggregatedSearchPage(keyword: text ?? controller.text))
+          .to(
+            () => AggregatedSearchPage(
+              keyword: text ?? controller.text,
+              sourceKeys: keys,
+              group: selectedGroup,
+            ),
+          )
           .then((_) => update());
     } else {
+      if (searchTarget.isEmpty) {
+        App.rootContext.showMessage(message: t.noSearchSources);
+        return;
+      }
       context
           .to(
             () => SearchResultPage(
@@ -60,6 +89,39 @@ class _SearchPageState extends State<SearchPage> {
           )
           .then((_) => update());
     }
+  }
+
+  /// 持久化搜索目标（聚合开关 + 单源目标）到 defaultSearchTarget，
+  /// 与设置页"默认搜索目标"保持一致
+  void _persistTarget() {
+    appdata.settings['defaultSearchTarget'] = aggregatedSearch
+        ? '_aggregated_'
+        : searchTarget;
+    appdata.saveData();
+  }
+
+  /// 打开"选择搜索源"底部弹层（分组筛选 + 单源/聚合切换 + 源列表）
+  Future<void> _openSourceSelect() async {
+    final result = await showSearchSourceSheet(
+      context,
+      group: selectedGroup,
+      singleKey: aggregatedSearch ? null : searchTarget,
+      aggregatedKeys: aggregatedSearch ? aggregatedSources : null,
+      aggregated: aggregatedSearch,
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      selectedGroup = result.group;
+      saveSelectedSearchGroup(result.group);
+      aggregatedSearch = result.aggregated;
+      if (aggregatedSearch) {
+        aggregatedSources = result.aggregatedKeys ?? {};
+      } else if (result.singleKey != null && result.singleKey!.isNotEmpty) {
+        searchTarget = result.singleKey!;
+        useDefaultOptions();
+      }
+      _persistTarget();
+    });
   }
 
   bool canHandleUrl(String text) {
@@ -78,6 +140,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     findSearchSources();
+    selectedGroup = selectedSearchGroup();
     var defaultSearchTarget = appdata.settings['defaultSearchTarget'];
     if (defaultSearchTarget == "_aggregated_") {
       aggregatedSearch = true;
@@ -188,7 +251,15 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget buildSearchTarget() {
-    var sources = searchSources.map((e) => AnimeSource.find(e)!).toList();
+    final cs = Theme.of(context).colorScheme;
+    final sources = groupSources;
+    final currentSource = searchTarget.isNotEmpty
+        ? AnimeSource.find(searchTarget)
+        : null;
+    final countText = aggregatedSources.isNotEmpty
+        ? '${aggregatedSources.length} ${t.sources}'
+        : '${sources.length} ${t.sources}';
+
     return SliverToBoxAdapter(
       child: Container(
         width: double.infinity,
@@ -199,41 +270,50 @@ class _SearchPageState extends State<SearchPage> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.search),
-              title: Text(t.searchIn),
-              trailing: IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: manageSearchSources,
-                color: Theme.of(context).colorScheme.primary,
+              title: Text(
+                aggregatedSearch
+                    ? '${t.aggregatedSearch} · ${searchGroupLabel(selectedGroup)}'
+                    : (currentSource?.name ?? t.noSearchSources),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: sources.map((e) {
-                return OptionChip(
-                  text: e.name,
-                  isSelected: searchTarget == e.key || aggregatedSearch,
-                  onTap: () {
-                    if (aggregatedSearch) return;
-                    setState(() {
-                      searchTarget = e.key;
-                      useDefaultOptions();
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(t.aggregatedSearch),
-              leading: Checkbox(
-                value: aggregatedSearch,
-                onChanged: (value) {
-                  setState(() {
-                    aggregatedSearch = value ?? false;
-                  });
-                },
+              subtitle: Text(
+                aggregatedSearch
+                    ? countText
+                    : '${searchGroupLabel(selectedGroup)} · ${sources.length} ${t.sources}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: cs.onSurface.toOpacity(0.55),
+                ),
               ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: t.aggregatedSearch,
+                    icon: Icon(
+                      aggregatedSearch
+                          ? Icons.auto_awesome
+                          : Icons.auto_awesome_outlined,
+                      color: aggregatedSearch
+                          ? cs.primary
+                          : cs.onSurfaceVariant,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        aggregatedSearch = !aggregatedSearch;
+                        _persistTarget();
+                      });
+                    },
+                  ),
+                  IconButton(
+                    tooltip: t.searchSources,
+                    icon: Icon(Icons.settings, color: cs.primary),
+                    onPressed: manageSearchSources,
+                  ),
+                ],
+              ),
+              onTap: _openSourceSelect,
             ),
           ],
         ),
@@ -247,7 +327,7 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   Widget buildSearchOptions() {
-    if (aggregatedSearch) {
+    if (aggregatedSearch || searchTarget.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox());
     }
 
@@ -518,7 +598,7 @@ class SearchHistory extends ConsumerWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${item.useCount} 次',
+                      t.searchUseCount(n: item.useCount),
                       style: ts.s12.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),

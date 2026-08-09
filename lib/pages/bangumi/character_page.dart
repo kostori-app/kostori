@@ -137,10 +137,10 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
             child: Material(
               child: TabBar(
                 controller: _tabController,
-                tabs: const [
-                  Tab(text: '角色资料'),
-                  Tab(text: '吐槽箱'),
-                  Tab(text: '角色关联'),
+                tabs: [
+                  Tab(text: t.personTabProfile),
+                  Tab(text: t.personTabChat),
+                  Tab(text: t.personTabRelation),
                 ],
               ),
             ),
@@ -175,8 +175,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                           ? Center(child: KostoriRefreshIndicator())
                           : (characterFullItem.id == 0
                                 ? GeneralErrorWidget(
-                                    errMsg:
-                                        t.nobodysPostedAnythingYet,
+                                    errMsg: t.nobodysPostedAnythingYet,
                                     actions: [
                                       GeneralErrorButton(
                                         onPressed: () {
@@ -287,8 +286,8 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                     vertical: 8.0,
                                                   ),
                                               child: Text(
-                                                  t.profileInformation,
-                                                  style: Theme.of(context)
+                                                t.profileInformation,
+                                                style: Theme.of(context)
                                                     .textTheme
                                                     .titleLarge
                                                     ?.copyWith(
@@ -320,8 +319,8 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                       vertical: 8.0,
                                                     ),
                                                 child: Text(
-                                                    t.characterIntroduction,
-                                                    style: Theme.of(context)
+                                                  t.characterIntroduction,
+                                                  style: Theme.of(context)
                                                       .textTheme
                                                       .titleLarge
                                                       ?.copyWith(
@@ -387,7 +386,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                     payload: id,
                     title: characterFullItem.nameCN,
                     backgroundImagePath: characterFullItem.image,
-                    subtitle: '人物',
+                    subtitle: t.personSubtitle,
                   );
                 },
                 child: Padding(
@@ -642,7 +641,9 @@ class _CharacterPageState extends ConsumerState<CharacterPage>
                                                         child: Row(
                                                           children: [
                                                             Text(
-                                                              t.voiceActorC(c: name),
+                                                              t.voiceActorC(
+                                                                c: name,
+                                                              ),
                                                               style:
                                                                   const TextStyle(
                                                                     fontSize:

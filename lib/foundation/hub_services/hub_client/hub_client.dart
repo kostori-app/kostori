@@ -10,6 +10,7 @@ class HubClient {
   // ── WebSocket ────────────────────────────────────────────────────────────
 
   WebSocket? _socket;
+  int _socketGeneration = 0;
   String? _currentToken;
   bool _shouldReconnect = true;
   int _reconnectAttempts = 0;
@@ -150,7 +151,12 @@ class HubClient {
 
   String? get savedName => appdata.implicitData[_nameKey] as String?;
 
-  String? get savedToken => appdata.implicitData[_tokenKey] as String?;
+  String? get savedToken {
+    final raw = appdata.implicitData[_tokenKey] as String?;
+    if (raw == null || raw.isEmpty) return null;
+    final decrypted = SecretVault.decrypt(raw);
+    return decrypted.isEmpty ? null : decrypted;
+  }
 
   String? get savedAvatar => appdata.implicitData[_avatarKey] as String?;
 
@@ -169,7 +175,7 @@ class HubClient {
   }
 
   void saveToken(String v) {
-    appdata.implicitData[_tokenKey] = v;
+    appdata.implicitData[_tokenKey] = SecretVault.encrypt(v);
     appdata.writeImplicitData();
   }
 
@@ -181,6 +187,63 @@ class HubClient {
   void saveBio(String v) {
     appdata.implicitData[_bioKey] = v;
     appdata.writeImplicitData();
+  }
+
+  // ── 已保存的服务器配置（多记忆项，本地持久化，不参与 WebDAV 同步）──────────
+
+  static const _profilesKey = 'hub_profiles';
+
+  /// 已保存的服务器配置列表：[{name, address, token}]（token 已加密存储）。
+  /// 返回的 token 已解密，仅用于展示/连接。
+  List<Map<String, dynamic>> getProfiles() {
+    return _rawProfiles().map((m) {
+      return Map<String, dynamic>.from(m)
+        ..['token'] = SecretVault.decrypt((m['token'] as String?) ?? '');
+    }).toList();
+  }
+
+  /// 原始存储（token 保持加密），供内部增删改。
+  List<Map<String, dynamic>> _rawProfiles() {
+    final raw = appdata.implicitData[_profilesKey];
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+    }
+    return [];
+  }
+
+  /// 保存/更新一个服务器配置（按地址去重，token 加密存储）
+  void saveProfile({
+    required String name,
+    required String address,
+    String token = '',
+  }) {
+    final profiles = _rawProfiles()
+      ..removeWhere((p) => p['address'] == address)
+      ..add({
+        'name': name,
+        'address': address,
+        'token': SecretVault.encrypt(token),
+      });
+    appdata.implicitData[_profilesKey] = profiles;
+    appdata.writeImplicitData();
+  }
+
+  void deleteProfile(String address) {
+    final profiles = _rawProfiles()
+      ..removeWhere((p) => p['address'] == address);
+    appdata.implicitData[_profilesKey] = profiles;
+    appdata.writeImplicitData();
+  }
+
+  /// 激活某个已保存的配置（切换为当前地址/token）
+  void activateProfile(String address) {
+    final p = getProfiles().firstWhereOrNull((p) => p['address'] == address);
+    if (p == null) return;
+    saveAddress(address);
+    saveToken((p['token'] as String?) ?? '');
   }
 
   // ── 连接 ──────────────────────────────────────────────────────────────────
@@ -196,10 +259,12 @@ class HubClient {
     final displayName = name ?? savedName ?? await getDefaultDisplayName();
 
     HubLog.info('HubClient', '连接到 $url  deviceId=$deviceId');
-    _socket = await WebSocket.connect(url);
+    final socket = await WebSocket.connect(url);
+    final gen = ++_socketGeneration;
+    _socket = socket;
     HubLog.info('HubClient', '✅ 已连接，发送鉴权...');
 
-    _socket!.add(
+    socket.add(
       jsonEncode({
         'type': 'auth',
         'token': token,
@@ -210,20 +275,25 @@ class HubClient {
       }),
     );
 
-    _socket!.listen(
+    socket.listen(
       _handleRaw,
       onDone: () {
+        // 只处理最新一代 socket 的断开，避免旧 socket 回调清掉新连接
+        if (gen != _socketGeneration) return;
         HubLog.info('HubClient', '🔴 连接断开');
         _stopHeartbeat();
         _socket = null;
+        HubKeepAlive.stop();
         _setState((s) => s.copyWith(isConnected: false, myId: null));
         onDisconnected?.call();
         if (_shouldReconnect && autoReconnect) _scheduleReconnect();
       },
       onError: (e) {
+        if (gen != _socketGeneration) return;
         HubLog.error('HubClient', '❌ 错误：$e');
         _stopHeartbeat();
         _socket = null;
+        HubKeepAlive.stop();
         _setState((s) => s.copyWith(isConnected: false, myId: null));
         onDisconnected?.call();
         if (_shouldReconnect && autoReconnect) _scheduleReconnect();
@@ -233,10 +303,22 @@ class HubClient {
   }
 
   void _handleRaw(dynamic raw) {
-    final data = _decryptPayload(
-      jsonDecode(raw as String) as Map<String, dynamic>,
-    );
-    _handleMessage(data);
+    Map<String, dynamic>? data;
+    try {
+      final decoded = jsonDecode(raw as String);
+      data = decoded is Map<String, dynamic>
+          ? decoded
+          : Map<String, dynamic>.from(decoded as Map);
+    } catch (e) {
+      HubLog.warning('HubClient', '收到无法解析的帧，已忽略：$e');
+      return;
+    }
+    try {
+      final decrypted = _decryptPayload(data);
+      _handleMessage(decrypted);
+    } catch (e, st) {
+      HubLog.warning('HubClient', '处理消息失败：$e\n$st');
+    }
   }
 
   // ── 断开 ──────────────────────────────────────────────────────────────────
@@ -246,6 +328,7 @@ class HubClient {
     _reconnectTimer?.cancel();
     _pongTimeoutTimer?.cancel();
     _stopHeartbeat();
+    HubKeepAlive.stop();
     await _socket?.close();
     _socket = null;
     HubCrypto.clear();

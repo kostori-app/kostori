@@ -8,6 +8,7 @@ import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/anime_type.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:kostori/utils/utils.dart';
@@ -108,7 +109,7 @@ abstract class _StatsController with Store {
         return StatefulBuilder(
           builder: (context, setState) {
             return ContentDialog(
-              title: '选择清单',
+              title: t.statsSourceList,
               content: SizedBox(
                 width: double.maxFinite,
                 child: Wrap(

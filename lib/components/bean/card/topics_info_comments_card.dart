@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/utils/utils.dart';
 
@@ -25,10 +26,8 @@ class TopicsInfoCommentsCard extends StatelessWidget {
           if (topicsInfoItem.replies[replyIndex].state == 0) ...[
             Row(
               children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    topicsInfoItem.replies[replyIndex].creator.avatar.large,
-                  ),
+                BangumiAvatar(
+                  url: topicsInfoItem.replies[replyIndex].creator.avatar.large,
                 ),
                 const SizedBox(width: 8),
                 Column(
@@ -89,11 +88,13 @@ class TopicsInfoCommentsCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    CircleAvatar(
+                    BangumiAvatar(
+                      url: topicsInfoItem
+                          .replies[replyIndex]
+                          .creator
+                          .avatar
+                          .large,
                       radius: 20,
-                      backgroundImage: NetworkImage(
-                        topicsInfoItem.replies[replyIndex].creator.avatar.large,
-                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -204,11 +205,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                     ),
                     Row(
                       children: [
-                        CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            reply.creator.avatar.large,
-                          ),
-                        ),
+                        BangumiAvatar(url: reply.creator.avatar.large),
                         const SizedBox(width: 8),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

@@ -145,15 +145,30 @@ abstract class BaseHttpService implements BaseService {
     Duration reconnectDelay = const Duration(seconds: 5),
     bool autoReconnect = true,
   }) async {
+    // 日志中的 URL 去掉 token 等敏感参数
+    String safeUrl() {
+      try {
+        final uri = Uri.parse(url);
+        final params = Map<String, String>.from(uri.queryParameters);
+        if (params.isNotEmpty) {
+          for (final k in params.keys) {
+            params[k] = '***';
+          }
+          return uri.replace(queryParameters: params).toString();
+        }
+      } catch (_) {}
+      return url;
+    }
+
     try {
-      HubLog.info('$runtimeType', '🔌 连接到 $url');
+      HubLog.info('$runtimeType', '🔌 连接到 ${safeUrl()}');
       final socket = await WebSocket.connect(url);
       _wsConnections[url] = socket;
 
       socket.listen(
         (data) => onMessage?.call(data),
         onDone: () async {
-          HubLog.info('$runtimeType', '🔌 断开连接：$url');
+          HubLog.info('$runtimeType', '🔌 断开连接：${safeUrl()}');
           _wsConnections.remove(url);
           onDone?.call();
 
@@ -180,10 +195,10 @@ abstract class BaseHttpService implements BaseService {
         },
       );
 
-      HubLog.info('$runtimeType', '✅ 已连接到 $url');
+      HubLog.info('$runtimeType', '✅ 已连接到 ${safeUrl()}');
       return socket;
     } catch (e) {
-      HubLog.error('$runtimeType', '连接失败：$url  $e');
+      HubLog.error('$runtimeType', '连接失败：${safeUrl()}  $e');
       if (autoReconnect) {
         await Future.delayed(reconnectDelay);
         return connectTo(
@@ -582,8 +597,14 @@ abstract class BaseHttpService implements BaseService {
     registerRoutes();
     await _binder.bind(preferredPort, mode, _handleRequest);
     HubLog.info('$runtimeType', '✅ 启动完成：${boundAddresses.join(' | ')}');
-    HubLog.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
-    HubLog.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
+    HubLog.info(
+      '$runtimeType',
+      '🔑 用户层 Key：${SecretVault.mask(ApiKeyManager().activeKey)}',
+    );
+    HubLog.info(
+      '$runtimeType',
+      '🔐 管理层 Key：${SecretVault.mask(ApiKeyManager().adminActiveKey)}',
+    );
   }
 
   Future<void> startServerSecure({
@@ -605,8 +626,14 @@ abstract class BaseHttpService implements BaseService {
       password: password,
     );
     HubLog.info('$runtimeType', '🔒 HTTPS 启动完成：${boundAddresses.join(' | ')}');
-    HubLog.info('$runtimeType', '🔑 用户层 Key：${ApiKeyManager().activeKey}');
-    HubLog.info('$runtimeType', '🔐 管理层 Key：${ApiKeyManager().adminActiveKey}');
+    HubLog.info(
+      '$runtimeType',
+      '🔑 用户层 Key：${SecretVault.mask(ApiKeyManager().activeKey)}',
+    );
+    HubLog.info(
+      '$runtimeType',
+      '🔐 管理层 Key：${SecretVault.mask(ApiKeyManager().adminActiveKey)}',
+    );
   }
 
   Future<void> stopServer() async {
@@ -756,6 +783,21 @@ abstract class BaseHttpService implements BaseService {
     await req.response.close();
   }
 
+  /// 发送 HTML 页面
+  Future<void> sendHtml(
+    HttpRequest req,
+    String html, {
+    int status = HttpStatus.ok,
+  }) async {
+    final bytes = utf8.encode(html);
+    req.response
+      ..statusCode = status
+      ..headers.contentType = ContentType.html
+      ..headers.set('Content-Length', bytes.length.toString())
+      ..add(bytes);
+    await req.response.close();
+  }
+
   Future<void> sendBytes(
     HttpRequest req,
     List<int> bytes,
@@ -845,7 +887,21 @@ abstract class BaseHttpService implements BaseService {
   void serveStatic(String urlPrefix, String dirPath) {
     addGet('$urlPrefix/:filename', (req) async {
       final filename = pathParams(req)['filename'] ?? '';
-      final file = File('$dirPath/$filename');
+      // 防目录穿越：拒绝路径分隔符、空名与绝对路径
+      if (filename.isEmpty ||
+          filename.contains('..') ||
+          filename.contains('/') ||
+          filename.contains('\\') ||
+          filename.startsWith('.')) {
+        await sendError(
+          req,
+          HttpStatus.badRequest,
+          'INVALID_FILENAME',
+          'Invalid filename',
+        );
+        return;
+      }
+      final file = File(p.join(dirPath, filename));
 
       if (!await file.exists()) {
         await sendError(

@@ -253,7 +253,10 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
       final weekday = currentDate.add(
         Duration(days: i - currentDate.weekday + 1),
       );
-      final formattedDate = '${weekday.month}月${weekday.day}日';
+      final formattedDate = t.calDateDay(
+        month: weekday.month,
+        day: weekday.day,
+      );
       final dayOfWeek = switch (weekday.weekday) {
         1 => t.monday,
         2 => t.tuesday,
@@ -339,7 +342,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
       final bangumiList = bangumiCalendar[weekdayIndex];
       DebugLog.info('day[$weekdayIndex] count', bangumiList.length.toString());
       if (bangumiList.isEmpty) {
-        return const Center(child: Text('这一天没有番剧'));
+        return Center(child: Text(t.calNoAnimeToday));
       }
 
       final weekday = weekdayIndex + 1;
@@ -427,7 +430,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
                       });
                     },
                     icon: const Icon(Icons.restart_alt),
-                    tooltip: '刷新状态',
+                    tooltip: t.calRefreshStatus,
                   ),
                   IconButton(
                     onPressed: () => captureBangumiCalendarScreenshot(
@@ -435,7 +438,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
                       bangumiCalendar,
                     ),
                     icon: const Icon(Icons.share),
-                    tooltip: '截图保存',
+                    tooltip: t.calScreenshotSave,
                   ),
                 ],
                 bottom: TabBar(
@@ -459,7 +462,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
                                 PolygonRefreshIndicator(size: 100),
                                 const SizedBox(height: 16),
                                 Text(
-                                  '正在加载时间表数据...',
+                                  t.calLoadingSchedule,
                                   style: Theme.of(context).textTheme.bodyMedium,
                                 ),
                               ],
@@ -470,7 +473,7 @@ class _BangumiCalendarPageState extends ConsumerState<BangumiCalendarPage>
                             controller: controller,
                             children: contentList(bangumiCalendar, orientation),
                           )
-                        : const Center(child: Text('数据还没有更新 (´;ω;`)')),
+                        : Center(child: Text(t.calDataNotUpdated)),
                   ),
                 ),
               ),
@@ -676,21 +679,21 @@ class _ScreenshotPreviewSheetState extends State<_ScreenshotPreviewSheet> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             children: [
-              const Text(
-                '截图预览',
+              Text(
+                t.calScreenshotPreview,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('取消'),
+                child: Text(t.cancel),
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
                 onPressed: () =>
                     Navigator.pop(context, _showWeekly ? 'weekly' : 'today'),
                 icon: const Icon(Icons.save_alt, size: 18),
-                label: const Text('保存'),
+                label: Text(t.save),
               ),
             ],
           ),
@@ -699,15 +702,15 @@ class _ScreenshotPreviewSheetState extends State<_ScreenshotPreviewSheet> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: SegmentedButton<bool>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: true,
-                label: Text('本周'),
+                label: Text(t.calThisWeek),
                 icon: Icon(Icons.calendar_view_week),
               ),
               ButtonSegment(
                 value: false,
-                label: Text('今天'),
+                label: Text(t.calToday),
                 icon: Icon(Icons.today),
               ),
             ],
@@ -831,7 +834,7 @@ Future<void> captureBangumiCalendarScreenshot(
   }
 
   try {
-    showLoading('正在加载图片...');
+    showLoading(t.calLoadingImage);
 
     final imageUrls = bangumiCalendar
         .expand((day) => day)
@@ -878,7 +881,7 @@ Future<void> captureBangumiCalendarScreenshot(
 
     if (result == null || !context.mounted) return;
 
-    showLoading('正在生成截图...');
+    showLoading(t.calGeneratingScreenshot);
 
     final bytes = await generateBangumiCalendarPng(
       context: context,

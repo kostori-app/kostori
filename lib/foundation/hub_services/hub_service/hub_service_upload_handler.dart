@@ -39,9 +39,25 @@ extension HubServiceUploadHandler on HubService {
   // ── 注册路由 ──
 
   void registerUploadRoutes() {
-    addPost('/hub/upload', _handleUpload);
+    addPost(
+      '/hub/upload',
+      _handleUpload,
+      middlewares: [
+        ..._hubAuthMiddleware,
+        Middleware.rateLimit(
+          maxRequests: 30,
+          window: const Duration(minutes: 1),
+        ),
+      ],
+    );
+    // 文件读取保持公开：文件名是内容哈希（不可枚举、不可猜测），
+    // 且聊天图片由 <img> 加载无法携带 Authorization 头
     addGet('/hub/files/<filename>', _handleServeFile);
-    addGet('/hub/upload/config', _handleGetUploadConfig);
+    addGet(
+      '/hub/upload/config',
+      _handleGetUploadConfig,
+      middlewares: _hubAuthMiddleware,
+    );
   }
 
   // ═══════════════════════════════════════════════════════
@@ -79,10 +95,22 @@ extension HubServiceUploadHandler on HubService {
         return;
       }
 
-      // 读取全部 body
-      final bodyBytes = await _collectBytes(request);
+      // 读取全部 body（流式限界，防止超大请求占用内存）
+      final Uint8List bodyBytes;
+      try {
+        bodyBytes = await _collectBytes(
+          request,
+          maxBytes: config.maxSizeBytes + 4096,
+        );
+      } on _UploadTooLarge {
+        final maxMb = (config.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
+        await sendJson(request, {
+          'error': 'File too large (max ${maxMb}MB)',
+        }, status: HttpStatus.requestEntityTooLarge);
+        return;
+      }
 
-      // 大小预检（加点余量给 headers）
+      // 大小预检：multipart 总长需含 boundary/header 余量
       if (bodyBytes.length > config.maxSizeBytes + 4096) {
         final maxMb = (config.maxSizeBytes / (1024 * 1024)).toStringAsFixed(0);
         await sendJson(request, {
@@ -97,6 +125,15 @@ extension HubServiceUploadHandler on HubService {
         await sendJson(request, {
           'error': 'No file found in request',
         }, status: HttpStatus.badRequest);
+        return;
+      }
+
+      // 仅接受图片类型（防上传非图片文件被存储/分发）
+      final allowedMime = _isAllowedImageMime(parsed.mimeType);
+      if (!allowedMime) {
+        await sendJson(request, {
+          'error': 'Only image uploads are allowed',
+        }, status: HttpStatus.unsupportedMediaType);
         return;
       }
 
@@ -143,7 +180,11 @@ extension HubServiceUploadHandler on HubService {
           return; // 不会走到这里
       }
 
-      // ── 写缓存 & 返回 ─────────────────────────────────────────────────
+      // ── 写缓存（限量，防内存膨胀） & 返回 ──────────────────────────────
+      if (_uploadCache.length >= 500) {
+        final oldest = _uploadCache.keys.firstOrNull;
+        if (oldest != null) _uploadCache.remove(oldest);
+      }
       _uploadCache[hash] = url;
       HubLog.info(
         'HubUpload',
@@ -186,12 +227,16 @@ extension HubServiceUploadHandler on HubService {
     }
 
     final mime = _guessMimeType(filename);
-    final stat = await file.stat();
 
     request.response
       ..statusCode = HttpStatus.ok
       ..headers.set('Content-Type', mime)
-      ..headers.set('Content-Length', stat.size)
+      ..headers.set('X-Content-Type-Options', 'nosniff')
+      // SVG 可内联脚本，作为附件下载 + 禁止嗅探，防存储型 XSS
+      ..headers.set(
+        'Content-Disposition',
+        mime == 'image/svg+xml' ? 'attachment' : 'inline',
+      )
       ..headers.set('Cache-Control', 'public, max-age=31536000');
 
     await file.openRead().pipe(request.response);
@@ -282,11 +327,17 @@ extension HubServiceUploadHandler on HubService {
   //  Multipart 解析（二进制安全）
   // ═══════════════════════════════════════════════════════
 
-  /// 从 HttpRequest 收集全部字节
-  Future<Uint8List> _collectBytes(HttpRequest request) async {
+  /// 从 HttpRequest 收集全部字节，超过上限立即抛错，防止内存耗尽。
+  Future<Uint8List> _collectBytes(
+    HttpRequest request, {
+    int maxBytes = 5 * 1024 * 1024 + 4096,
+  }) async {
     final builder = BytesBuilder(copy: false);
     await for (final chunk in request) {
       builder.add(chunk);
+      if (builder.length > maxBytes) {
+        throw _UploadTooLarge();
+      }
     }
     return builder.takeBytes();
   }
@@ -296,85 +347,98 @@ extension HubServiceUploadHandler on HubService {
     final boundaryBytes = utf8.encode('--$boundary');
     final crlfCrlf = utf8.encode('\r\n\r\n');
 
-    // 找到所有 boundary 的位置
-    final positions = <int>[];
-    for (var i = 0; i <= body.length - boundaryBytes.length; i++) {
-      if (_bytesMatch(body, i, boundaryBytes)) {
-        positions.add(i);
-      }
+    // 只向前搜索，避免对整块 body 做全量扫描
+    var pos = 0;
+    // 1) 找首个 boundary（body 开头）
+    final firstBoundary = _indexOfSequence(body, boundaryBytes, pos);
+    if (firstBoundary < 0) return null;
+    pos = firstBoundary + boundaryBytes.length;
+
+    // 2) 跳过 boundary 后的 \r\n
+    if (pos + 2 <= body.length && body[pos] == 0x0D && body[pos + 1] == 0x0A) {
+      pos += 2;
     }
 
-    if (positions.length < 2) return null;
+    // 3) 逐 part 解析，直到遇到结束 boundary（--boundary--）
+    while (pos < body.length) {
+      // header 与 body 分界
+      final headerEndIdx = _indexOfSequence(body, crlfCrlf, pos);
+      if (headerEndIdx < 0) return null;
 
-    // 遍历每个 part
-    for (var p = 0; p < positions.length - 1; p++) {
-      final partStart = positions[p] + boundaryBytes.length;
-      final partEnd = positions[p + 1];
-
-      // 跳过 boundary 后的 \r\n
-      var headerStart = partStart;
-      if (headerStart + 2 <= body.length &&
-          body[headerStart] == 0x0D &&
-          body[headerStart + 1] == 0x0A) {
-        headerStart += 2;
-      }
-
-      // 找 header 和 body 的分界
-      final headerEndIdx = _indexOfBytes(body, crlfCrlf, headerStart);
-      if (headerEndIdx < 0 || headerEndIdx >= partEnd) continue;
-
-      final headerBytes = body.sublist(headerStart, headerEndIdx);
+      final headerBytes = body.sublist(pos, headerEndIdx);
       final headerStr = utf8.decode(headerBytes, allowMalformed: true);
 
-      // 必须包含 filename
-      if (!headerStr.contains('filename=')) continue;
+      // 该 part 是否带 filename
+      final hasFile = headerStr.contains('filename=');
 
-      // 提取 filename
-      final fnMatch = RegExp(r'filename="([^"]*)"').firstMatch(headerStr);
-      final filename = fnMatch?.group(1) ?? 'upload';
-
-      // 提取 Content-Type
-      final ctMatch = RegExp(
-        r'Content-Type:\s*(.+)',
-        caseSensitive: false,
-      ).firstMatch(headerStr);
-      final mimeType = ctMatch?.group(1)?.trim() ?? _guessMimeType(filename);
-
-      // body 数据：headerEnd + 4 (\r\n\r\n) 到 partEnd 前的 \r\n
+      // body 数据起点
       final dataStart = headerEndIdx + 4;
-      var dataEnd = partEnd;
-      // 去掉结尾的 \r\n（boundary 前面通常有 \r\n）
-      if (dataEnd >= 2 &&
-          body[dataEnd - 2] == 0x0D &&
-          body[dataEnd - 1] == 0x0A) {
-        dataEnd -= 2;
+
+      // 找下一个 boundary
+      final nextBoundary = _indexOfSequence(body, boundaryBytes, dataStart);
+      if (nextBoundary < 0) return null;
+
+      if (hasFile) {
+        final fnMatch = RegExp(r'filename="([^"]*)"').firstMatch(headerStr);
+        final filename = fnMatch?.group(1) ?? 'upload';
+
+        final ctMatch = RegExp(
+          r'Content-Type:\s*(.+)',
+          caseSensitive: false,
+        ).firstMatch(headerStr);
+        final mimeType = ctMatch?.group(1)?.trim() ?? _guessMimeType(filename);
+
+        // data：header 之后到 boundary 前（去掉结尾 \r\n）
+        var dataEnd = nextBoundary;
+        if (dataEnd >= 2 &&
+            body[dataEnd - 2] == 0x0D &&
+            body[dataEnd - 1] == 0x0A) {
+          dataEnd -= 2;
+        }
+
+        if (dataStart >= dataEnd) return null;
+
+        return _MultipartFile(
+          filename: filename,
+          mimeType: mimeType,
+          bytes: Uint8List.sublistView(body, dataStart, dataEnd),
+        );
       }
 
-      if (dataStart >= dataEnd) continue;
-
-      return _MultipartFile(
-        filename: filename,
-        mimeType: mimeType,
-        bytes: Uint8List.sublistView(body, dataStart, dataEnd),
-      );
+      // 无文件的 part（如普通字段），跳到下一个 boundary 后继续
+      pos = nextBoundary + boundaryBytes.length;
+      if (pos + 2 <= body.length &&
+          body[pos] == 0x0D &&
+          body[pos + 1] == 0x0A) {
+        pos += 2;
+      }
     }
 
     return null;
   }
 
-  /// 检查 body[offset..] 是否以 pattern 开头
-  bool _bytesMatch(Uint8List body, int offset, List<int> pattern) {
-    if (offset + pattern.length > body.length) return false;
-    for (var i = 0; i < pattern.length; i++) {
-      if (body[offset + i] != pattern[i]) return false;
-    }
-    return true;
-  }
+  /// 在 data 中从 start 开始搜索 pattern 首次出现位置（Boyer-Moore-Horspool）。
+  /// 找不到返回 -1。
+  int _indexOfSequence(Uint8List data, List<int> pattern, int start) {
+    final n = data.length;
+    final m = pattern.length;
+    if (m == 0 || m > n) return -1;
 
-  /// 在 body 中从 start 开始搜索 pattern
-  int _indexOfBytes(Uint8List data, List<int> pattern, [int start = 0]) {
-    for (var i = start; i <= data.length - pattern.length; i++) {
-      if (_bytesMatch(data, i, pattern)) return i;
+    // 坏字符跳表
+    final badChar = <int, int>{};
+    for (var i = 0; i < m - 1; i++) {
+      badChar[pattern[i]] = m - 1 - i;
+    }
+
+    var i = start + m - 1;
+    while (i < n) {
+      var k = m - 1;
+      while (k >= 0 && data[i - (m - 1 - k)] == pattern[k]) {
+        k--;
+      }
+      if (k < 0) return i - m + 1;
+      final shift = badChar[data[i]] ?? m;
+      i += shift;
     }
     return -1;
   }
@@ -401,6 +465,20 @@ extension HubServiceUploadHandler on HubService {
       _ => 'application/octet-stream',
     };
   }
+
+  static const _allowedImageMimes = {
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/bmp',
+    'image/svg+xml',
+  };
+
+  bool _isAllowedImageMime(String mime) {
+    final normalized = mime.toLowerCase().split(';').first.trim();
+    return _allowedImageMimes.contains(normalized);
+  }
 }
 
 class _MultipartFile {
@@ -414,3 +492,5 @@ class _MultipartFile {
     required this.bytes,
   });
 }
+
+class _UploadTooLarge implements Exception {}

@@ -316,6 +316,7 @@ extension HubServiceActions on HubService {
       room.moderatorIds.remove(targetId);
     }
     onClientsChanged?.call();
+    unawaited(_saveRooms());
     _broadcastSystemToRoom(roomId, HubSystemEvent.roomAdminChanged, {
       'clientId': targetId,
       'isRoomAdmin': value,
@@ -365,6 +366,15 @@ extension HubServiceActions on HubService {
           ? [data['announcement'] as String]
           : null,
       password: data['password'] as String?,
+      roomType:
+          HubRoomType.values.firstWhereOrNull(
+            (e) => e.name == data['roomType'],
+          ) ??
+          HubRoomType.chat,
+      animeId: data['animeId'] as String?,
+      animeTitle: data['animeTitle'] as String?,
+      animeSourceKey: data['animeSourceKey'] as String?,
+      animeCover: data['animeCover'] as String?,
     );
     _rooms[newRoom.roomId] = newRoom;
 
@@ -375,6 +385,7 @@ extension HubServiceActions on HubService {
     client.currentRoomId = newRoom.roomId;
     onRoomsChanged?.call();
     onClientsChanged?.call();
+    unawaited(_saveRooms());
     client.send({
       'type': 'room_joined',
       'room': newRoom.toJson(),
@@ -412,6 +423,7 @@ extension HubServiceActions on HubService {
     }
     _rooms.remove(targetRoomId);
     onRoomsChanged?.call();
+    unawaited(_saveRooms());
     _broadcastSystem(HubSystemEvent.roomDeleted, {'roomId': targetRoomId});
   }
 
@@ -578,6 +590,7 @@ extension HubServiceActions on HubService {
       if (announcement == null || announcement.isEmpty) return;
       room.addAnnouncement(announcement);
     }
+    unawaited(_saveRooms());
     _broadcastSystemToRoom(roomId, HubSystemEvent.roomAnnouncement, {
       'announcements': room.announcements,
       'setByUserId': fromId,
@@ -616,6 +629,7 @@ extension HubServiceActions on HubService {
     _logEvent(
       '📢 ${_name(fromId)} removed announcement[index=$index] in "${room.roomName}"',
     );
+    unawaited(_saveRooms());
     _broadcastSystemToRoom(roomId, HubSystemEvent.roomAnnouncement, {
       'announcements': room.announcements,
       'setByUserId': fromId,
@@ -638,6 +652,7 @@ extension HubServiceActions on HubService {
     }
     room.password = data['password'] as String?;
     onRoomsChanged?.call();
+    unawaited(_saveRooms());
     _broadcastSystem(HubSystemEvent.roomUpdated, {'room': room.toJson()});
   }
 
@@ -709,7 +724,7 @@ extension HubServiceActions on HubService {
     if (isGlobalAdmin) {
       // 全局管理员：给客户端一帧时间收到事件后关闭连接
       await Future.delayed(const Duration(milliseconds: 120));
-      await kickTarget.connection.close(
+      await kickTarget.connection?.close(
         WebSocketStatus.policyViolation,
         'Kicked',
       );

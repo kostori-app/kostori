@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -38,13 +39,7 @@ class StaffCard extends StatelessWidget {
               padding: const EdgeInsets.all(12.0),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundImage: avatarUrl != null
-                        ? NetworkImage(avatarUrl)
-                        : NetworkImage('https://bangumi.tv/img/info_only.png'),
-                    backgroundColor: Colors.grey[200],
-                  ),
+                  BangumiAvatar(url: avatarUrl ?? '', radius: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

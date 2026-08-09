@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/bean/card/topics_info_comments_card.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/bangumi/bangumi_info_page.dart';
 import 'package:kostori/utils/utils.dart';
@@ -103,11 +105,7 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                 secondChild: Row(
                   children: [
                     if (topicsInfoItem != null) ...[
-                      CircleAvatar(
-                        backgroundImage: NetworkImage(
-                          topicsInfoItem!.creator.avatar.large,
-                        ),
-                      ),
+                      BangumiAvatar(url: topicsInfoItem!.creator.avatar.large),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Column(
@@ -276,10 +274,8 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                                 const SizedBox(height: 16),
                                 Row(
                                   children: [
-                                    CircleAvatar(
-                                      backgroundImage: NetworkImage(
-                                        topicsInfoItem!.creator.avatar.large,
-                                      ),
+                                    BangumiAvatar(
+                                      url: topicsInfoItem!.creator.avatar.large,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
@@ -324,8 +320,8 @@ class _BangumiTopicsPageState extends ConsumerState<BangumiTopicsPage> {
                               const SizedBox(height: 16),
                               Row(
                                 children: [
-                                  const Text(
-                                    '吐槽',
+                                  Text(
+                                    t.bangumiCommentsTitle,
                                     style: TextStyle(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,

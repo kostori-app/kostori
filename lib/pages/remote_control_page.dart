@@ -59,9 +59,22 @@ class _DragNotifier extends StateNotifier<_DragState> {
     state = state.copyWith(position: pos, dragPosition: pos);
   }
 
+  /// 直接设置拖动位置（进度条拖动基于绝对时间）
+  void dragTo(Duration position) {
+    final clamped = Duration(
+      milliseconds: position.inMilliseconds.clamp(
+        0,
+        state.duration.inMilliseconds == 0 ? 0 : state.duration.inMilliseconds,
+      ),
+    );
+    state = state.copyWith(dragPosition: clamped);
+  }
+
   void dragUpdate(double deltaDx, double widthPx) {
     if (state.duration.inMilliseconds == 0 || widthPx == 0) return;
-    final deltaMs = (deltaDx * (180000 / widthPx)).round();
+    // 全程滑动映射到整个视频时长，避免长视频时拖不动
+    final deltaMs = (deltaDx * (state.duration.inMilliseconds / widthPx))
+        .round();
     final base = state.dragPosition ?? state.position;
     final next = Duration(
       milliseconds: (base.inMilliseconds + deltaMs).clamp(
@@ -107,6 +120,9 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
   // Playback speed state
   double _playbackSpeed = 1.0;
   double? _speedBeforeLongPress; // 长按前的速度，用于松开后恢复
+
+  // Fullscreen state (optimistic local tracking; server has no fullscreen field)
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -192,20 +208,27 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
     }
   }
 
+  final List<Future<void> Function()> _sendQueue = [];
+
   Future<void> _send(Future<void> Function() action) async {
-    if (!_isConnected || _isSending) return;
-    setState(() => _isSending = true);
-    try {
-      await action();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('发送失败: $e')));
+    if (!_isConnected) return;
+    _sendQueue.add(action);
+    if (_isSending) return;
+    _isSending = true;
+    if (mounted) setState(() {});
+    while (_sendQueue.isNotEmpty) {
+      final next = _sendQueue.removeAt(0);
+      try {
+        await next();
+      } catch (e) {
+        if (mounted) {
+          context.showMessage(message: t.remoteSendFailed(error: e.toString()));
+        }
+        break;
       }
-    } finally {
-      if (mounted) setState(() => _isSending = false);
     }
+    _isSending = false;
+    if (mounted) setState(() {});
   }
 
   Future<void> _play() => _send(
@@ -243,11 +266,12 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
     ),
   );
 
-  Future<void> _toggleFullscreen() => _send(
-    () => LanControlClient.instance.sendPlayerControl(
+  Future<void> _toggleFullscreen() => _send(() async {
+    await LanControlClient.instance.sendPlayerControl(
       PlayerControlAction.fullscreen,
-    ),
-  );
+    );
+    if (mounted) setState(() => _isFullscreen = !_isFullscreen);
+  });
 
   Future<void> _setPlaybackSpeed(double speed) => _send(() async {
     await LanControlClient.instance.sendPlayerControl(
@@ -257,6 +281,16 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
     if (mounted) {
       setState(() => _playbackSpeed = speed);
     }
+  });
+
+  Future<void> _adjustVolume(double delta) => _send(() async {
+    // media_kit 音量范围 0-100
+    final current = (_playerStatus?.volume ?? 1.0) * 100;
+    final next = (current + delta).clamp(0.0, 100.0);
+    await LanControlClient.instance.sendPlayerControl(
+      PlayerControlAction.setVolume,
+      next,
+    );
   });
 
   Future<void> _seekTo(Duration position) => _send(
@@ -433,6 +467,8 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
                 onSeekForward: _seekForward,
                 onPrevEpisode: _prevEpisode,
                 onNextEpisode: _nextEpisode,
+                onVolumeDown: () => _adjustVolume(-10),
+                onVolumeUp: () => _adjustVolume(10),
                 onLongPressStart: () {
                   _speedBeforeLongPress = _playbackSpeed;
                   _setPlaybackSpeed(_playbackSpeed * 2);
@@ -449,9 +485,7 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
               right: 10,
               bottom: 16,
               child: _CompactIconButton(
-                icon: _playerStatus?.isPlaying ?? false
-                    ? Icons.fullscreen_exit
-                    : Icons.fullscreen,
+                icon: _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
                 tooltip: t.lanToggleFullscreen,
                 onPressed: _toggleFullscreen,
               ),
@@ -462,8 +496,12 @@ class _RemoteControlPageState extends ConsumerState<RemoteControlPage> {
               child: _SpeedButton(
                 speed: _playbackSpeed,
                 onPressed: () {
-                  final newSpeed = _playbackSpeed < 2.0 ? 2.0 : 1.0;
-                  _setPlaybackSpeed(newSpeed);
+                  const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0];
+                  final idx = speeds.indexWhere(
+                    (s) => (_playbackSpeed - s).abs() < 0.001,
+                  );
+                  final next = speeds[(idx + 1) % speeds.length];
+                  _setPlaybackSpeed(next);
                 },
               ),
             ),
@@ -523,7 +561,7 @@ class _CurrentAnimeCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '第 ${anime.currentEpisode} 集',
+                    t.episodeNEp(n: anime.currentEpisode),
                     style: TextStyle(
                       fontSize: 14,
                       color: Theme.of(context).colorScheme.primary,
@@ -550,6 +588,8 @@ class _TimeProgressSection extends ConsumerStatefulWidget {
   final VoidCallback onSeekForward;
   final VoidCallback onPrevEpisode;
   final VoidCallback onNextEpisode;
+  final VoidCallback onVolumeDown;
+  final VoidCallback onVolumeUp;
   final VoidCallback onLongPressStart;
   final VoidCallback onLongPressEnd;
 
@@ -564,6 +604,8 @@ class _TimeProgressSection extends ConsumerStatefulWidget {
     required this.onSeekForward,
     required this.onPrevEpisode,
     required this.onNextEpisode,
+    required this.onVolumeDown,
+    required this.onVolumeUp,
     required this.onLongPressStart,
     required this.onLongPressEnd,
   });
@@ -636,19 +678,36 @@ class _TimeProgressSectionState extends ConsumerState<_TimeProgressSection> {
                 ),
               ),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: widget.isWaiting
-                      ? _WaitingProgressBar()
-                      : ProgressBar(
-                          thumbRadius: 8,
-                          thumbGlowRadius: 18,
-                          timeLabelLocation: TimeLabelLocation.none,
-                          progress: position,
-                          buffered: Duration.zero,
-                          total: total,
-                          onSeek: widget.onSeek,
-                        ),
+                child: LayoutBuilder(
+                  builder: (context, barConstraints) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: widget.isWaiting
+                        ? _WaitingProgressBar()
+                        : ProgressBar(
+                            thumbRadius: 8,
+                            thumbGlowRadius: 18,
+                            timeLabelLocation: TimeLabelLocation.none,
+                            progress: position,
+                            buffered: Duration.zero,
+                            total: total,
+                            onSeek: widget.onSeek,
+                            // 拖动进度条时走统一的拖动状态，避免每帧都发 seek
+                            onDragStart: (_) => ref
+                                .read(_dragProvider.notifier)
+                                .dragStart(position.inSeconds.toDouble()),
+                            onDragUpdate: (details) => ref
+                                .read(_dragProvider.notifier)
+                                .dragTo(details.timeStamp),
+                            onDragEnd: () {
+                              final wasPlaying =
+                                  widget.playerStatus?.isPlaying ?? false;
+                              final finalPos = ref
+                                  .read(_dragProvider.notifier)
+                                  .dragEnd();
+                              widget.onDragEnd(finalPos, wasPlaying);
+                            },
+                          ),
+                  ),
                 ),
               ),
               SizedBox(
@@ -670,6 +729,11 @@ class _TimeProgressSectionState extends ConsumerState<_TimeProgressSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              _CompactIconButton(
+                icon: Icons.volume_down,
+                tooltip: t.lanVolumeDown,
+                onPressed: widget.onVolumeDown,
+              ),
               _CompactIconButton(
                 icon: Icons.skip_previous,
                 tooltip: t.lanPreviousEpisode,
@@ -694,6 +758,11 @@ class _TimeProgressSectionState extends ConsumerState<_TimeProgressSection> {
                 icon: Icons.skip_next,
                 tooltip: t.lanNextEpisode,
                 onPressed: widget.onNextEpisode,
+              ),
+              _CompactIconButton(
+                icon: Icons.volume_up,
+                tooltip: t.lanVolumeUp,
+                onPressed: widget.onVolumeUp,
               ),
             ],
           ),
@@ -862,7 +931,7 @@ class _EpisodeSelectionSectionState extends State<_EpisodeSelectionSection> {
               Container(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  '等待被控制端发送剧集信息...',
+                  t.lanWaitingForEpisodeInfo,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.outline,
                   ),
@@ -1105,19 +1174,34 @@ class _SpeedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final label = speed == speed.roundToDouble()
+        ? '${speed.toInt()}X'
+        : '${speed}X';
     return Tooltip(
-      message: '播放速度',
-      child: InkWell(
-        onTap: onPressed,
+      message: t.lanPlaybackSpeed,
+      child: Material(
+        color: Colors.black45,
         borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Text(
-            '${speed}X',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.speed, size: 16, color: cs.primary),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
         ),

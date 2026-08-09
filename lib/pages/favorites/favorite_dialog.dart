@@ -12,7 +12,6 @@ class _FavoriteDialog extends StatefulWidget {
   final Map<Anime, bool> selectedAnimes;
   final _FavoritesPageState favPage;
 
-  // final VoidCallback updateAnimes;
   final VoidCallback cancel;
   final FavoritesController favoritesController;
 
@@ -259,7 +258,7 @@ class _FavoriteDialogState extends State<_FavoriteDialog>
           onPressed: () {
             newFolder().then((_) {
               setState(() {
-                favoritesController.isRefreshEnabled = true;
+                favoritesController.setIsRefreshEnabled(true);
               });
             });
             if (mounted) {

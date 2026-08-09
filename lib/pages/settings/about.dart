@@ -373,7 +373,7 @@ Future<void> updateLog(BuildContext context) async {
     releases = response.data as List;
   } on DioException catch (e) {
     final message =
-        e.response?.data?['message']?.toString() ?? e.message ?? '网络请求失败';
+        e.response?.data?['message']?.toString() ?? e.message ?? t.networkRequestFailed;
 
     App.rootContext.showMessage(message: message);
 

@@ -80,6 +80,9 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
 
   Widget? _child;
 
+  static final SlidePageTransitionBuilder _sharedSlideBuilder =
+      SlidePageTransitionBuilder();
+
   @override
   Widget buildPage(
     BuildContext context,
@@ -123,8 +126,8 @@ mixin _AppRouteTransitionMixin<T> on PageRoute<T> {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    final builder = SlidePageTransitionBuilder();
-
+    // 复用同一 builder 实例，避免每次过渡都分配
+    final builder = _sharedSlideBuilder;
     return builder.buildTransitions(
       this,
       context,
@@ -208,7 +211,8 @@ class IOSBackGestureController {
   }
 
   void dragUpdate(double delta) {
-    controller.value -= delta;
+    // clamp 防止手指拖出屏幕导致 controller.value 越界
+    controller.value = (controller.value - delta).clamp(0.0, 1.0);
   }
 }
 
@@ -274,11 +278,9 @@ class _IOSBackGestureDetectorState extends State<IOSBackGestureDetector> {
   bool _isPointerInHorizontalScrollable(Offset globalPosition) {
     final HitTestResult result = HitTestResult();
     final binding = WidgetsBinding.instance;
-    binding.hitTestInView(
-      result,
-      globalPosition,
-      binding.platformDispatcher.implicitView!.viewId,
-    );
+    final implicitView = binding.platformDispatcher.implicitView;
+    if (implicitView == null) return false;
+    binding.hitTestInView(result, globalPosition, implicitView.viewId);
 
     for (final entry in result.path) {
       final target = entry.target;
@@ -518,6 +520,8 @@ class FadeScalePageRoute<T> extends PageRoute<T> {
 
   FadeScalePageRoute({required this.builder}) : super();
 
+  Widget? _child;
+
   @override
   Duration get transitionDuration => const Duration(milliseconds: 350);
 
@@ -539,7 +543,8 @@ class FadeScalePageRoute<T> extends PageRoute<T> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
-    return builder(context);
+    // 缓存首帧构建的内容，避免过渡动画期间重复重建页面
+    return _child ??= builder(context);
   }
 
   @override

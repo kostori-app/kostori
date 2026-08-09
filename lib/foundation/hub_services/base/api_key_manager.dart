@@ -63,17 +63,30 @@ class ApiKeyManager {
 
   Future<void> init() async {
     // 用户层
-    _fixedKey = appdata.implicitData[_fixedKeyPref];
+    _fixedKey = _readEncryptedPref(_fixedKeyPref);
     _useFixed = appdata.implicitData[_useFixedPref] ?? false;
     _randomKey = _generateKey();
 
     // 管理层
-    _adminFixedKey = appdata.implicitData[_adminFixedKeyPref];
+    _adminFixedKey = _readEncryptedPref(_adminFixedKeyPref);
     _useAdminFixed = appdata.implicitData[_useAdminFixedPref] ?? false;
     _adminRandomKey = _generateKey();
 
-    HubLog.info('ApiKeyManager', '用户层 activeKey：$activeKey');
-    HubLog.info('ApiKeyManager', '管理层 activeKey：$adminActiveKey');
+    HubLog.info(
+      'ApiKeyManager',
+      '用户层 activeKey：${SecretVault.mask(activeKey)}',
+    );
+    HubLog.info(
+      'ApiKeyManager',
+      '管理层 activeKey：${SecretVault.mask(adminActiveKey)}',
+    );
+  }
+
+  /// 读取预置密钥；兼容旧版本未加密的明文存储。
+  String? _readEncryptedPref(String key) {
+    final raw = appdata.implicitData[key];
+    if (raw is! String || raw.isEmpty) return null;
+    return SecretVault.decrypt(raw);
   }
 
   // ─────────────────────────────────────────
@@ -115,7 +128,7 @@ class ApiKeyManager {
     if (err != null) return err;
 
     _fixedKey = key;
-    appdata.implicitData[_fixedKeyPref] = key;
+    appdata.implicitData[_fixedKeyPref] = SecretVault.encrypt(key);
     appdata.writeImplicitData();
     return null;
   }
@@ -149,7 +162,7 @@ class ApiKeyManager {
     if (err != null) return err;
 
     _adminFixedKey = key;
-    appdata.implicitData[_adminFixedKeyPref] = key;
+    appdata.implicitData[_adminFixedKeyPref] = SecretVault.encrypt(key);
     appdata.writeImplicitData();
     return null;
   }

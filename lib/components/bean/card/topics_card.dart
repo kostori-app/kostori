@@ -1,6 +1,7 @@
 // ignore_for_file: strict_top_level_inference
 
 import 'package:flutter/material.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
@@ -58,10 +59,7 @@ class TopicsCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundImage: NetworkImage(avatarUrl),
-                  ),
+                  BangumiAvatar(url: avatarUrl, radius: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

@@ -201,7 +201,7 @@ class BangumiWidget {
     required BangumiItem bangumiItem,
     bool isCenter = false,
   }) {
-    final collection = bangumiItem.collection!;
+    final collection = bangumiItem.collection ?? const {};
     final total = collection.values.fold<int>(0, (sum, val) => sum + val);
 
     String formatCount(int number) {
@@ -260,6 +260,15 @@ class BangumiWidget {
     bool isCompleted,
   ) {
     final now = DateTime.now();
+    if (currentWeekEp.isEmpty) {
+      return Expanded(
+        child: Text(
+          t.notBroadcast,
+          style: const TextStyle(fontSize: 12),
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
     final ep = currentWeekEp.values.first;
 
     if (ep?.sort != null) {
@@ -402,114 +411,185 @@ class ExpandableText extends StatefulWidget {
   final String text;
   final int maxLines;
   final TranslationController? translationController;
+  final bool isLoading;
 
   const ExpandableText({
     super.key,
     required this.text,
     this.maxLines = 7,
     this.translationController,
+    this.isLoading = false,
   });
 
   @override
   State<ExpandableText> createState() => _ExpandableTextState();
 }
 
-class _ExpandableTextState extends State<ExpandableText> {
+class _ExpandableTextState extends State<ExpandableText>
+    with SingleTickerProviderStateMixin {
   bool expanded = false;
-  double? collapsedHeight;
-  double? fullHeight;
+  late final AnimationController _controller;
+  double _fullHeight = 0; // 完整内容高度（真实测量或估算）
+  double _collapsedHeight = 0; // 折叠高度
+  final GlobalKey _contentKey = GlobalKey();
+  bool _measureScheduled = false;
 
-  double _computeHeight(String text, double maxWidth, {int? maxLines}) {
-    final tp = TextPainter(
-      text: TextSpan(text: text),
-      textDirection: TextDirection.ltr,
-      maxLines: maxLines,
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
     );
-    tp.layout(maxWidth: maxWidth);
-    return tp.height;
   }
 
-  int _computeNumLines(String text, double maxWidth) {
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => expanded = !expanded);
+    if (expanded) {
+      _controller.forward();
+    } else {
+      _controller.reverse();
+    }
+  }
+
+  // 测量 Markdown 完整渲染高度（post-frame），用于动画目标值
+  void _scheduleMeasure() {
+    if (_measureScheduled) return;
+    _measureScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measureScheduled = false;
+      if (!mounted) return;
+      final ctx = _contentKey.currentContext;
+      if (ctx == null) return;
+      final h = ctx.size?.height ?? 0;
+      if (h > 0 && h.isFinite && _fullHeight != h) {
+        setState(() => _fullHeight = h);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 加载中：显示简介骨架占位
+    if (widget.isLoading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Skeletonizer.zone(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < 3; i++) ...[
+                  Bone.text(fontSize: 14, width: 300 + (i % 3) * 40),
+                  const SizedBox(height: 8),
+                ],
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final text = widget.text;
+        final collapsedLines = widget.maxLines;
+
+        Widget content() => Column(
+          key: _contentKey,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CustomMarkdownWidget(data: text),
+            if (widget.translationController != null) ...[
+              const SizedBox(height: 4),
+              TranslationOutput(controller: widget.translationController!),
+            ],
+          ],
+        );
+
+        // 估算是否需要折叠：纯文本行数超限
+        final textLines = _estimateTextLines(text, maxWidth);
+        final initialNeedsCollapse = textLines > collapsedLines;
+
+        // 折叠高度估算（纯文本行高 × 行数；Markdown 额外高度由裁剪容忍）
+        double estCollapsedHeight() {
+          final tp = TextPainter(
+            text: TextSpan(text: text),
+            textDirection: TextDirection.ltr,
+          );
+          tp.layout(maxWidth: maxWidth);
+          final lines = tp.computeLineMetrics().length;
+          final lineHeight = tp.height / (lines > 0 ? lines : 1);
+          final h = lineHeight * collapsedLines * 1.3;
+          return h.isFinite && h > 0 ? h : 24.0 * collapsedLines;
+        }
+
+        final collapsedH = estCollapsedHeight();
+        if (_collapsedHeight == 0) _collapsedHeight = collapsedH;
+        if (_fullHeight == 0) _fullHeight = collapsedH * 3;
+        _scheduleMeasure();
+
+        // 内容区：无需折叠时直接完整显示；需要折叠时用 Stack + Positioned 让 child
+        // 以自身完整尺寸布局（不被钳制 → 无 overflow），Stack 尺寸固定为动画高度 h 并
+        // hardEdge 裁剪：文字顶部保留、从底部渐进收起；GlobalKey 测到的始终是完整高度。
+        Widget contentArea() => AnimatedBuilder(
+          animation: _controller,
+          builder: (context, _) {
+            if (!initialNeedsCollapse) {
+              return SizedBox(width: maxWidth, child: content());
+            }
+            // progress: 0=折叠, 1=展开
+            final progress = _controller.value;
+            final h =
+                _collapsedHeight + (_fullHeight - _collapsedHeight) * progress;
+            return SizedBox(
+              width: maxWidth,
+              height: h,
+              child: Stack(
+                clipBehavior: Clip.hardEdge,
+                children: [
+                  Positioned(top: 0, left: 0, right: 0, child: content()),
+                ],
+              ),
+            );
+          },
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            contentArea(),
+            if (initialNeedsCollapse)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: _toggle,
+                    child: Text(expanded ? t.showLess : t.showMore),
+                  ),
+                ],
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 估算是否需要折叠：纯文本行数超限
+  int _estimateTextLines(String text, double maxWidth) {
     final tp = TextPainter(
       text: TextSpan(text: text),
       textDirection: TextDirection.ltr,
     );
     tp.layout(maxWidth: maxWidth);
     return tp.computeLineMetrics().length;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxWidth = constraints.maxWidth;
-        final numLines = _computeNumLines(widget.text, maxWidth);
-        fullHeight ??= _computeHeight(widget.text, maxWidth);
-        if (numLines <= widget.maxLines) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CustomMarkdownWidget(data: widget.text),
-              TranslationOutput(
-                controller: widget.translationController!,
-                padding: const EdgeInsets.only(top: 16),
-              ),
-            ],
-          );
-        }
-        collapsedHeight ??= _computeHeight(
-          widget.text,
-          maxWidth,
-          maxLines: widget.maxLines,
-        );
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(
-                    begin: expanded ? fullHeight! : collapsedHeight!,
-                    end: expanded ? fullHeight! : collapsedHeight!,
-                  ),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  builder: (context, value, child) {
-                    return ClipRect(
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        heightFactor: value / fullHeight!,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomMarkdownWidget(data: widget.text),
-                      TranslationOutput(
-                        controller: widget.translationController!,
-                        padding: const EdgeInsets.only(top: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => setState(() => expanded = !expanded),
-                  child: Text(expanded ? t.showLess : t.showMore),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
   }
 }
 
@@ -1625,5 +1705,48 @@ class KeepAliveWrapperState extends State<KeepAliveWrapper>
   Widget build(BuildContext context) {
     super.build(context);
     return widget.child;
+  }
+}
+
+/// 安全加载 Bangumi 头像：走应用统一的 CachedImageProvider + AnimatedImage，
+/// 加载失败时展示占位图标而非抛出未处理的网络异常。
+class BangumiAvatar extends StatelessWidget {
+  final String url;
+  final double radius;
+  final IconData fallbackIcon;
+
+  const BangumiAvatar({
+    super.key,
+    required this.url,
+    this.radius = 20,
+    this.fallbackIcon = Icons.person,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    if (url.isEmpty) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: cs.surfaceContainerHighest,
+        child: Icon(
+          fallbackIcon,
+          size: radius * 1.1,
+          color: cs.onSurfaceVariant,
+        ),
+      );
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: cs.surfaceContainerHighest,
+      child: ClipOval(
+        child: AnimatedImage(
+          image: CachedImageProvider(url, sourceKey: 'bangumi'),
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
   }
 }

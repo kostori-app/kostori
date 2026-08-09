@@ -4,8 +4,13 @@ part of 'package:kostori/foundation/hub_services/services.dart';
 class HubImageUploader {
   final HubUploadConfig config;
   final String serverBaseUrl; // 必须是 http(s)://
+  final String? authToken; // 可选：上传时带上的鉴权 token
 
-  HubImageUploader({required this.config, required this.serverBaseUrl});
+  HubImageUploader({
+    required this.config,
+    required this.serverBaseUrl,
+    this.authToken,
+  });
 
   /// 上传图片，返回可访问的 URL。失败抛异常。
   Future<String> upload(
@@ -32,7 +37,7 @@ class HubImageUploader {
     String fileName, {
     ProgressCallback? onProgress,
   }) async {
-    final url = '${_httpUrl(serverBaseUrl)}/hub/upload';
+    final url = '${httpUrlOf(serverBaseUrl)}/hub/upload';
     HubLog.info(
       'HubUploader',
       '→ server upload  file=$fileName  size=${bytes.length}B  url=$url',
@@ -46,6 +51,11 @@ class HubImageUploader {
       ),
     });
 
+    final authHeaders = <String, String>{};
+    final token = authToken;
+    if (token != null && token.isNotEmpty) {
+      authHeaders['Authorization'] = 'Bearer $token';
+    }
     final response = await AppDio().request(
       url,
       data: formData,
@@ -53,6 +63,7 @@ class HubImageUploader {
         method: 'POST',
         sendTimeout: const Duration(seconds: 60),
         receiveTimeout: const Duration(seconds: 20),
+        headers: authHeaders,
       ),
     );
 
@@ -191,11 +202,12 @@ class HubImageUploader {
   //  工具
   // ═══════════════════════════════════════════════════════
 
-  /// ws:// → http://, wss:// → https://
-  static String _httpUrl(String url) {
+  /// ws:// → http://, wss:// → https://；无协议时补 http://
+  static String httpUrlOf(String url) {
     if (url.startsWith('wss://')) return 'https://${url.substring(6)}';
     if (url.startsWith('ws://')) return 'http://${url.substring(5)}';
-    return url;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return 'http://$url';
   }
 
   static String _guessMime(String name) {

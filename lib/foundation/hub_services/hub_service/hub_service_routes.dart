@@ -50,11 +50,17 @@ extension HubServiceRoutes on HubService {
 
           if (!authed) {
             final token = data['token'] as String?;
-            HubLog.info('HubService', '收到鉴权  token=$token');
-            HubLog.info('HubService', 'activeKey=${ApiKeyManager().activeKey}');
+            HubLog.info(
+              'HubService',
+              '收到鉴权  token=${token == null ? 'null' : SecretVault.mask(token)}',
+            );
 
             if (!_hubNoAuth) {
-              if (token == null || !ApiKeyManager().validate(token)) {
+              final validKey =
+                  token != null &&
+                  (ApiKeyManager().validate(token) ||
+                      ApiKeyManager().validateAdmin(token));
+              if (!validKey) {
                 HubLog.warning('HubService', '❌ 鉴权失败');
                 await socket.close(
                   WebSocketStatus.policyViolation,
@@ -100,7 +106,7 @@ extension HubServiceRoutes on HubService {
             }
 
             if (_clients.containsKey(clientId)) {
-              await _clients[clientId]?.connection.close(
+              await _clients[clientId]?.connection?.close(
                 WebSocketStatus.policyViolation,
                 'Replaced by new connection',
               );
@@ -120,6 +126,7 @@ extension HubServiceRoutes on HubService {
               biography: data['biography'] as String?,
               isGlobalAdmin: isAdmin,
             );
+            client.authToken = token;
 
             if (client.isGlobalAdmin) {
               HubLog.info('HubService', '👑 管理员上线：$clientName');
@@ -164,10 +171,16 @@ extension HubServiceRoutes on HubService {
       }
 
       if (clientId != null && _clients.containsKey(clientId)) {
-        final client = _clients[clientId];
-        final roomId = client?.currentRoomId ?? _lobbyId;
+        // 旧连接被同 deviceId 的新连接替换时，忽略旧 socket 的清理，避免误删新客户端
+        final registered = _clients[clientId];
+        if (registered == null || registered.connection != socket) {
+          return;
+        }
+        final client = registered;
+        final roomId = client.currentRoomId;
         _rooms[roomId]?.participants.remove(clientId);
         _clients.remove(clientId);
+        _directSyncMembers.remove(clientId);
         onClientsChanged?.call();
         _logEvent('🔴 $clientName left (${_clients.length} online)');
         HubLog.info(
@@ -408,6 +421,82 @@ extension HubServiceRoutes on HubService {
           ),
         ],
         response: 'JSON: keyword, count, results[]',
+      ),
+    );
+
+    // ── 入站 Webhook：外部服务以机器人身份向房间发消息 ────────────────────────
+    // POST /hub/webhook/<token>
+    addPost(
+      '/hub/webhook/:token',
+      (req) async {
+        final token = pathParams(req)['token'] ?? '';
+        final webhook = HubWebhookManager.instance.findByToken(token);
+        if (webhook == null) {
+          await sendJson(req, {
+            'error': 'Invalid webhook token',
+          }, status: HttpStatus.forbidden);
+          return;
+        }
+        final body = await readJson(req);
+        if (body == null) {
+          await sendJson(req, {
+            'error': 'Invalid JSON body',
+          }, status: HttpStatus.badRequest);
+          return;
+        }
+        final room = _rooms[webhook.roomId];
+        if (room == null) {
+          await sendJson(req, {
+            'error': 'Room not found',
+          }, status: HttpStatus.notFound);
+          return;
+        }
+
+        final text = body['text'] as String? ?? body['message'] as String?;
+        if (text == null || text.isEmpty) {
+          await sendJson(req, {
+            'error': 'text/message required',
+          }, status: HttpStatus.badRequest);
+          return;
+        }
+
+        // 构造机器人发送者（持久的内存客户端，不占连接数）
+        final bot = HubClientInfo(
+          userId: 'webhook:${webhook.id}',
+          displayName: webhook.name,
+          connection: null,
+          currentRoomId: webhook.roomId,
+          isBot: true,
+        );
+        bot.onlineStatus = UserStatus.online;
+
+        final message = HubMessage(
+          messageType: HubMessageType.chat,
+          sender: bot.toDto(),
+          targetRoomIds: [webhook.roomId],
+          segments: _parseSegments(text),
+        );
+        _broadcastToRoom(webhook.roomId, message);
+        await sendJson(req, {'sent': true, 'room': room.roomName});
+      },
+      doc: RouteDoc(
+        summary: '入站 Webhook',
+        description: '外部服务通过 webhook token 以机器人身份向指定房间发送消息',
+        params: [
+          DocParam(
+            name: 'token',
+            type: 'path',
+            description: 'Webhook token',
+            required: true,
+          ),
+          DocParam(
+            name: 'text',
+            type: 'body',
+            description: '消息文本',
+            required: true,
+          ),
+        ],
+        response: 'JSON: sent, room',
       ),
     );
   }

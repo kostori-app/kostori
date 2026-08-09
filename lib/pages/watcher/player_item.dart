@@ -188,7 +188,7 @@ class _PlayerItemState extends State<PlayerItem>
       clipBehavior: Clip.antiAlias,
       context: context,
       builder: (_) => Sheet(
-        title: '详情 & 日志',
+        title: t.watcherDetailsLogs,
         icon: Icons.info_outline_rounded,
         builder: (_, _) => VideoInfoSheet.fromController(playerController),
       ),
@@ -216,7 +216,7 @@ class _PlayerItemState extends State<PlayerItem>
         if (!playerController.isFullScreen && App.isAndroid)
           MenuEntry(
             icon: Icons.picture_in_picture_alt,
-            text: '小窗模式',
+            text: t.watcherMiniWindow,
             onClick: () async {
               final floating = Floating();
               if (await floating.isPipAvailable) {

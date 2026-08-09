@@ -247,13 +247,13 @@ class _QrScannerPageState extends State<QrScannerPage>
                 if (_isAnalyzing) ...[
                   const CircularProgressIndicator(color: Colors.white),
                   const SizedBox(height: 8),
-                  const Text(
-                    '正在识别图片中的二维码…',
+                  Text(
+                    t.qrRecognizing,
                     style: TextStyle(color: Colors.white70),
                   ),
                 ] else
-                  const Text(
-                    '将二维码放入框内自动识别',
+                  Text(
+                    t.qrScanHint,
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
               ],

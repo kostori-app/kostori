@@ -17,11 +17,13 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_reorderable_grid_view/widgets/reorderable_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:kostori/components/ai_model_card.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/custom_markdown_widget.dart';
 import 'package:kostori/components/translation_widget.dart';
 import 'package:kostori/components/ui_components.dart';
+import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/database/ai_database.dart';
 import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/assistant_profile.dart';
@@ -65,8 +67,10 @@ import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:yaml/yaml.dart';
 
 part 'about.dart';
@@ -128,7 +132,6 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     t.bangumi,
     t.fanyuan,
     t.player,
-    t.translation,
     t.appearance,
     t.localFavorites,
     t.app,
@@ -144,7 +147,6 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     Icons.account_balance,
     Icons.source,
     Icons.display_settings_rounded,
-    Icons.translate_rounded,
     Icons.color_lens,
     Icons.collections_bookmark_rounded,
     Icons.apps,
@@ -507,36 +509,42 @@ class _SettingsPageState extends State<SettingsPage> implements PopEntry {
     return switch (currentPage) {
       -1 =>
         enableTwoViews
-            ? SizedBox(
-                child: Center(
-                  child: Container(
-                    width: 136,
-                    height: 136,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(136),
+            ? LayoutBuilder(
+                builder: (context, constraints) {
+                  final side = (constraints.biggest.shortestSide * 0.26).clamp(
+                    96.0,
+                    300.0,
+                  );
+                  return Center(
+                    child: Container(
+                      width: side,
+                      height: side,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(side),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image(
+                        image: const AssetImage("images/app_logo.png"),
+                        filterQuality: FilterQuality.medium,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: const Image(
-                      image: AssetImage("images/app_icon.png"),
-                      filterQuality: FilterQuality.medium,
-                    ),
-                  ),
-                ),
+                  );
+                },
               )
             : SizedBox(),
       0 => const ExploreSettings(),
       1 => const BangumiSettings(),
       2 => const AnimeSourceSettings(),
       3 => const PlayerSettings(),
-      4 => const TranslationSettings(),
-      5 => const AppearanceSettings(),
-      6 => const LocalFavoritesSettings(),
-      7 => const AppSettings(),
-      8 => const NetworkSettings(),
-      9 => const AiSettings(),
-      10 => const ServiceSettings(),
-      11 => const LogSettings(),
-      12 => const AboutSettings(),
+      4 => const AppearanceSettings(),
+      5 => const LocalFavoritesSettings(),
+      6 => const AppSettings(),
+      7 => const NetworkSettings(),
+      8 => const AiSettings(),
+      9 => const ServiceSettings(),
+      10 => const LogSettings(),
+      11 => const AboutSettings(),
       _ => throw UnimplementedError(),
     };
   }

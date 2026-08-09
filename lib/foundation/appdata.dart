@@ -155,32 +155,50 @@ class Settings with ChangeNotifier {
 
   SettingsData _state = const SettingsData();
 
+  /// 缓存的 settings JSON（读写时缓存，避免每次 operator[] 全量序列化）
+  Map<String, dynamic>? _jsonCache;
+
   SettingsData get s => _state;
+
+  Map<String, dynamic> get _json {
+    final cached = _jsonCache;
+    if (cached != null) return cached;
+    final built = _state.toJson();
+    _jsonCache = built;
+    return built;
+  }
 
   /// 批量更新，freezed copyWith
   void update(SettingsData Function(SettingsData) updater) {
     final next = updater(_state);
     if (next == _state) return;
     _state = next;
+    _jsonCache = null;
     notifyListeners();
   }
 
   /// 从 json 全量替换（用于 doInit / syncData）
   void fromJson(Map<String, dynamic> json) {
     _state = SettingsData.fromJson(json);
+    _jsonCache = null;
     notifyListeners();
   }
 
   /// 导出 json（用于 saveData / syncData）
-  Map<String, dynamic> toJson() => _state.toJson();
+  Map<String, dynamic> toJson() {
+    final cached = _jsonCache;
+    if (cached != null) return Map<String, dynamic>.from(cached);
+    return _state.toJson();
+  }
 
-  dynamic operator [](String key) => _state.toJson()[key];
+  dynamic operator [](String key) => _json[key];
 
   void operator []=(String key, dynamic value) {
     final json = _state.toJson()..[key] = value;
     final next = SettingsData.fromJson(json);
     if (next == _state) return;
     _state = next;
+    _jsonCache = null;
     if (key != 'dataVersion') {
       Future.microtask(() => notifyListeners());
     }

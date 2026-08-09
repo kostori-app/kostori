@@ -956,7 +956,7 @@ class _SliverAnimeSourceState extends State<_SliverAnimeSource> {
           var current = source.data['settings'][key] ?? item.value['default'];
           yield ListTile(
             title: Text((item.value['title'] as String).ts(source.key)),
-            trailing: Switch(
+            trailing: CustomSwitch(
               value: current,
               onChanged: (v) {
                 source.data['settings'][key] = v;
@@ -1588,7 +1588,7 @@ class _PingTestPageState extends State<_PingTestPage> {
                       ),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.add),
-                        tooltip: '添加地址',
+                        tooltip: t.addAddress,
                         onPressed: _addCustomEndpoint,
                       ),
                     ),
@@ -1817,7 +1817,7 @@ class _PingListTile extends StatelessWidget {
       title: Text(name),
       subtitle: endpoint != null && endpoint!.isNotEmpty
           ? Text(endpoint!)
-          : Text('暂无地址', style: TextStyle(color: Colors.grey[500])),
+          : Text(t.noAddress, style: TextStyle(color: Colors.grey[500])),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1826,7 +1826,7 @@ class _PingListTile extends StatelessWidget {
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(Icons.close, size: 18),
-              tooltip: '删除',
+              tooltip: t.delete,
               onPressed: onDelete,
             ),
           ],

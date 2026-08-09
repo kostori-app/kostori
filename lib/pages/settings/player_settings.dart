@@ -8,6 +8,55 @@ class PlayerSettings extends StatefulWidget {
 }
 
 class _PlayerSettingsState extends State<PlayerSettings> {
+  String? _playerLoadingImage() {
+    final v = appdata.implicitData['playerLoadingImage'];
+    return v is String && v.isNotEmpty ? v : null;
+  }
+
+  bool _hasPlayerLoadingImage() => _playerLoadingImage() != null;
+
+  String _playerLoadingImageSubtitle() {
+    final v = _playerLoadingImage();
+    if (v == null) return t.notSet;
+    if (v.startsWith('data:')) return 'base64 · ${v.length ~/ 1024} KB';
+    if (v.startsWith('assets/')) return v;
+    if (v.startsWith('file://')) return v.split('/').last;
+    return v.length > 40 ? '${v.substring(0, 40)}…' : v;
+  }
+
+  Future<void> _showPlayerLoadingImageDialog() async {
+    if (_hasPlayerLoadingImage()) {
+      // 已设置：清除
+      showConfirmDialog(
+        context: context,
+        title: t.playerLoadingImage,
+        content: t.reset,
+        onConfirm: () {
+          appdata.implicitData.remove('playerLoadingImage');
+          appdata.writeImplicitData();
+          if (mounted) setState(() {});
+        },
+      );
+      return;
+    }
+    // 未设置：输入图片路径/URL/data
+    await showInputDialog(
+      context: context,
+      title: t.playerLoadingImage,
+      hintText: t.inputImagePath,
+      confirmText: t.confirm,
+      cancelText: t.cancel,
+      onConfirm: (value) {
+        final v = value.toString().trim();
+        if (v.isEmpty) return null;
+        appdata.implicitData['playerLoadingImage'] = v;
+        appdata.writeImplicitData();
+        if (mounted) setState(() {});
+        return null;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SmoothCustomScrollView(
@@ -75,6 +124,12 @@ class _PlayerSettingsState extends State<PlayerSettings> {
                       },
                     );
                   },
+                ),
+                _CallbackSetting(
+                  title: t.playerLoadingImage,
+                  subtitle: _playerLoadingImageSubtitle(),
+                  actionTitle: _hasPlayerLoadingImage() ? t.reset : t.set,
+                  callback: _showPlayerLoadingImageDialog,
                 ),
               ],
             ),
@@ -212,6 +267,7 @@ class _M3u8RulesPageState extends State<M3u8RulesPage> {
                       blockedDomains: rules[i].blockedDomains,
                       maxDuration: rules[i].maxDuration,
                       tag: rules[i].tag,
+                      caseSensitive: rules[i].caseSensitive,
                     );
                     _save();
                   },
@@ -234,6 +290,7 @@ class _M3u8RulesPageState extends State<M3u8RulesPage> {
 
   String _ruleSubtitle(M3u8AdRule rule) => switch (rule.type) {
     M3u8RuleType.urlPattern => '${t.urlRegex}: ${rule.pattern}',
+    M3u8RuleType.keyword => '${t.keywordMatch}: ${rule.pattern}',
     M3u8RuleType.domainBlock =>
       '${t.domainBlock}: ${rule.blockedDomains?.join(', ')}',
     M3u8RuleType.maxDuration => '${t.durationFilter} < ${rule.maxDuration}s',
@@ -283,7 +340,9 @@ class _M3u8RulesPageState extends State<M3u8RulesPage> {
               M3u8AdRule(
                 name: nameCtrl.text,
                 type: selectedType,
-                pattern: selectedType == M3u8RuleType.urlPattern
+                pattern:
+                    selectedType == M3u8RuleType.urlPattern ||
+                        selectedType == M3u8RuleType.keyword
                     ? valueCtrl.text
                     : null,
                 blockedDomains: selectedType == M3u8RuleType.domainBlock
@@ -308,6 +367,7 @@ class _M3u8RulesPageState extends State<M3u8RulesPage> {
 
   String _typeName(M3u8RuleType type) => switch (type) {
     M3u8RuleType.urlPattern => t.urlRegex,
+    M3u8RuleType.keyword => t.keywordMatch,
     M3u8RuleType.domainBlock => t.domainBlock,
     M3u8RuleType.maxDuration => t.durationFilter,
     M3u8RuleType.tagPresent => t.tagMark,
@@ -315,6 +375,7 @@ class _M3u8RulesPageState extends State<M3u8RulesPage> {
 
   String _typeHint(M3u8RuleType type) => switch (type) {
     M3u8RuleType.urlPattern => t.regexHint,
+    M3u8RuleType.keyword => t.keywordHint,
     M3u8RuleType.domainBlock => t.domainHint,
     M3u8RuleType.maxDuration => t.durationHint,
     M3u8RuleType.tagPresent => t.tagHint,

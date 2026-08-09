@@ -7,6 +7,7 @@ import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/image_loader/cached_image.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/hub/hub_chat_widgets.dart';
+import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/utils/ext.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -539,11 +540,8 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
           ),
         ],
         if (_cantEditLobby) ...[
-          HubSettingSection(
-            icon: Icons.person_add_outlined,
-            title: t.invite,
-          ),
-          SwitchListTile(
+          HubSettingSection(icon: Icons.person_add_outlined, title: t.invite),
+          ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20),
             title: Text(
               t.allowMemberInvites,
@@ -553,13 +551,19 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
               t.letAllMembersInviteOthers,
               style: const TextStyle(fontSize: 11),
             ),
-            value: _room.allowMemberInvite,
-            onChanged: _canEdit
-                ? (v) {
+            trailing: Opacity(
+              opacity: _canEdit ? 1 : 0.4,
+              child: IgnorePointer(
+                ignoring: !_canEdit,
+                child: CustomSwitch(
+                  value: _room.allowMemberInvite,
+                  onChanged: (v) {
                     _client.setAllowMemberInvite(v);
                     _patchRoom(_room.copyWith(allowMemberInvite: v));
-                  }
-                : null,
+                  },
+                ),
+              ),
+            ),
           ),
         ],
         if (_canEdit) ...[
@@ -660,9 +664,7 @@ class _RoomSettingsSheetState extends ConsumerState<_RoomSettingsSheet>
                       ),
                     ),
                     Text(
-                      _room.roomId == hs.lobbyRoomId
-                          ? t.lobby
-                          : _room.roomName,
+                      _room.roomId == hs.lobbyRoomId ? t.lobby : _room.roomName,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -1146,15 +1148,12 @@ class _InlineEditFieldState extends State<_InlineEditField> {
             ),
           ),
           const SizedBox(height: 8),
-            Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(onPressed: widget.onCancel, child: Text(t.cancel)),
               const SizedBox(width: 8),
-              FilledButton.tonal(
-                onPressed: widget.onSave,
-                child: Text(t.save),
-              ),
+              FilledButton.tonal(onPressed: widget.onSave, child: Text(t.save)),
             ],
           ),
         ],

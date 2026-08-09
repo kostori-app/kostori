@@ -380,6 +380,9 @@ class HistoryManager with ChangeNotifier {
   Map<String, bool>? _cachedHistoryIds;
   final cachedHistories = <String, History>{};
 
+  /// cachedHistories 的上限，超出时淘汰最久未更新的条目
+  static const _historyCacheCap = 200;
+
   Future<void> init() async {
     if (isInitialized) return;
     _db = _HistoryDb();
@@ -432,8 +435,13 @@ class HistoryManager with ChangeNotifier {
     await _db.into(_db.historyTable).insertOnConflictUpdate(item.toCompanion());
     _cachedHistoryIds ??= {};
     _cachedHistoryIds![item.id] = true;
+    // 更新缓存条目并把它移到最新（LinkedHashMap 保持插入顺序）
+    cachedHistories.remove(item.id);
     cachedHistories[item.id] = item;
-    cachedHistories.remove(cachedHistories.keys.first);
+    // 达到上限时淘汰最旧的条目
+    while (cachedHistories.length > _historyCacheCap) {
+      cachedHistories.remove(cachedHistories.keys.first);
+    }
     notifyListeners();
   }
 

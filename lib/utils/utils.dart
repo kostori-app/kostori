@@ -146,9 +146,7 @@ class Utils {
   static bool isSmallScreen(BuildContext context) =>
       MediaQuery.of(context).size.width < 850;
 
-  static String dur2str(Duration duration) {
-    return '${duration.inHours.toString().padLeft(2, '0')}:${duration.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(duration.inSeconds.remainder(60)).toString().padLeft(2, '0')}';
-  }
+  static String dur2str(Duration duration) => durationToString(duration);
 
   static String durationToString(Duration duration) {
     String pad(int n) => n.toString().padLeft(2, '0');
@@ -167,18 +165,20 @@ class Utils {
     return directory.path;
   }
 
-  ///检查字符串相似度
+  ///检查字符串相似度（字符集合重叠比例）
   static bool isHalfOverlap(String a, String b) {
     Set<String> setA = a.split('').toSet();
     Set<String> setB = b.split('').toSet();
-
+    if (setA.isEmpty || setB.isEmpty) return false;
     Set<String> common = setA.intersection(setB);
-    return common.length >= (setA.length / 2);
+    // 以较短的集合为基准计算重叠比例，避免长短悬殊时误判
+    final base = min(setA.length, setB.length);
+    return base > 0 && common.length / base >= 0.5;
   }
 
   ///检查字符串是否包含不该包含的部分
   static bool containsIllegalCharacters(String title) {
-    // 常规非法字符
+    // 常规非法字符（含下划线）
     final illegalPattern = RegExp(r'[_@#$%^&*()+={}\[\]\\|<>/~`]');
 
     // Emoji
@@ -191,21 +191,14 @@ class Utils {
       unicode: true,
     );
 
-    // 检查下划线或其他非法字符
-    if (title.contains('_') || illegalPattern.hasMatch(title)) {
-      return true;
-    }
+    if (illegalPattern.hasMatch(title)) return true;
 
     // 检查 emoji
-    if (emojiPattern.hasMatch(title)) {
-      return true;
-    }
+    if (emojiPattern.hasMatch(title)) return true;
 
-    // 检查 - 两边是否是数字或英文
+    // 检查 - 两边是否是数字或英文（含下划线风格标题）
     final dashPattern = RegExp(r'(?<=[a-zA-Z0-9])-(?=[a-zA-Z0-9])');
-    if (dashPattern.hasMatch(title)) {
-      return true;
-    }
+    if (dashPattern.hasMatch(title)) return true;
 
     return false;
   }
@@ -270,23 +263,11 @@ class Utils {
   /// 获取完整的 ISO 周信息 (year, weekNumber)
   /// 符合 ISO 8601 标准（周一到周日为一周，跨年周归属取决于周四所在的年份）
   static (int year, int week) getISOWeekNumber(DateTime date) {
-    // 原始计算逻辑（优化版）
-    final dayOfYear = int.parse(DateFormat("D").format(date));
+    // 计算一年中的第几天（1月1日为第1天）
+    final dayOfYear = date.difference(DateTime(date.year)).inDays + 1;
+    // ISO 周号：周一为一周开始
     final weekNumber = ((dayOfYear - date.weekday + 10) / 7).floor();
 
-    // === 处理跨年周的特殊情况 ===
-    DateTime thursday;
-
-    // 计算本周的周四（ISO 标准以周四所在年份决定周归属）
-    if (date.weekday <= DateTime.thursday) {
-      thursday = date.add(Duration(days: DateTime.thursday - date.weekday));
-    } else {
-      thursday = date.subtract(
-        Duration(days: date.weekday - DateTime.thursday),
-      );
-    }
-
-    // 如果计算的周数超出合理范围（1-53），调整年份
     if (weekNumber < 1) {
       // 属于前一年的最后一周（52或53周）
       final prevYearLastWeek = getISOWeekNumber(
@@ -296,9 +277,8 @@ class Utils {
     } else if (weekNumber > 52) {
       // 检查是否真的有53周（某些年份有53周）
       final dec28 = DateTime(date.year, 12, 28);
-      final weekOfDec28 =
-          ((int.parse(DateFormat("D").format(dec28)) - dec28.weekday + 10) ~/
-          7);
+      final dec28DayOfYear = dec28.difference(DateTime(date.year)).inDays + 1;
+      final weekOfDec28 = ((dec28DayOfYear - dec28.weekday + 10) ~/ 7);
 
       if (weekNumber > weekOfDec28) {
         // 属于下一年的第一周
@@ -306,8 +286,7 @@ class Utils {
       }
     }
 
-    // 正常情况返回
-    return (thursday.year, weekNumber);
+    return (date.year, weekNumber);
   }
 
   /// 获取标准格式的ISO周编号（如 "2023-W05"）
@@ -317,9 +296,9 @@ class Utils {
   }
 
   static String getRatingLabel(num score) {
-    int roundedScore = score.round();
-    roundedScore = roundedScore.clamp(1, 10);
-    return ratingLabels[roundedScore] ?? '暂无';
+    if (score <= 0) return '-';
+    int roundedScore = score.round().clamp(1, 10);
+    return ratingLabels[roundedScore] ?? '-';
   }
 
   static bool isSameWeek(DateTime date1, DateTime date2) {
@@ -350,10 +329,13 @@ class Utils {
 
   // 时间显示，刚刚，x分钟前
   static String dateFormat(int timeStamp, {formatType = 'list'}) {
-    // 当前时间
-    int time = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+    // 自动识别秒/毫秒：大于当前秒级时间戳视为毫秒
+    final nowSec = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+    if (timeStamp > nowSec) {
+      timeStamp = (timeStamp / 1000).round();
+    }
     // 对比
-    int distance = (time - timeStamp).toInt();
+    int distance = nowSec - timeStamp;
     // 当前年日期
     String currentYearStr = 'MM月DD日 hh:mm';
     String lastYearStr = 'YY年MM月DD日 hh:mm';
@@ -373,8 +355,8 @@ class Utils {
       return '${(distance / 60).floor()}分钟前';
     } else if (distance <= 43200) {
       return '${(distance / 60 / 60).floor()}小时前';
-    } else if (DateTime.fromMillisecondsSinceEpoch(time * 1000).year ==
-        DateTime.fromMillisecondsSinceEpoch(timeStamp * 1000).year) {
+    } else if (DateTime.fromMillisecondsSinceEpoch(timeStamp * 1000).year ==
+        DateTime.fromMillisecondsSinceEpoch(nowSec * 1000).year) {
       return CustomStamp_str(
         timestamp: timeStamp,
         date: currentYearStr,
@@ -399,22 +381,24 @@ class Utils {
     String? formatType,
   }) {
     timestamp ??= (DateTime.now().millisecondsSinceEpoch / 1000).round();
-    String timeStr = (DateTime.fromMillisecondsSinceEpoch(
-      timestamp * 1000,
-    )).toString();
+    final dt = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+    final timeStr = dt.toString();
 
-    dynamic dateArr = timeStr.split(' ')[0];
-    dynamic timeArr = timeStr.split(' ')[1];
+    final parts = timeStr.split(' ');
+    if (parts.length < 2) return timeStr;
+    final dateArr = parts[0];
+    final timeArr = parts[1];
 
-    String YY = dateArr.split('-')[0];
-    String MM = dateArr.split('-')[1];
-    String DD = dateArr.split('-')[2];
+    final dateParts = dateArr.split('-');
+    final timeParts = timeArr.split(':');
+    if (dateParts.length < 3 || timeParts.length < 3) return timeStr;
 
-    String hh = timeArr.split(':')[0];
-    String mm = timeArr.split(':')[1];
-    String ss = timeArr.split(':')[2];
-
-    ss = ss.split('.')[0];
+    String YY = dateParts[0];
+    String MM = dateParts[1];
+    String DD = dateParts[2];
+    String hh = timeParts[0];
+    String mm = timeParts[1];
+    String ss = timeParts[2].split('.')[0];
 
     // 去除0开头
     if (toInt) {
@@ -427,10 +411,6 @@ class Utils {
     if (date == null) {
       return timeStr;
     }
-
-    // if (formatType == 'list' && int.parse(DD) > DateTime.now().day - 2) {
-    //   return '昨天';
-    // }
 
     date = date
         .replaceAll('YY', YY)
@@ -526,12 +506,13 @@ class Utils {
   }
 
   //时间转换HH:mm显示
-  static Widget buildTimeIndicator(String? rawTime, dynamic sizes) {
+  static Widget buildTimeIndicator(String? rawTime, double? sizes) {
     if (rawTime == null || rawTime.isEmpty) return const SizedBox.shrink();
 
     try {
       final dateTime = DateTime.parse(rawTime).toLocal();
       final timeFormat = DateFormat('HH:mm');
+      final fontSize = (sizes ?? 14) * 2 / 14;
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0, left: 4),
         child: Row(
@@ -539,10 +520,7 @@ class Utils {
             SizedBox(width: 16),
             Text(
               timeFormat.format(dateTime),
-              style: TextStyle(
-                fontSize: sizes! * 2 / 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -554,19 +532,12 @@ class Utils {
   }
 
   //标准差
-  static double getDeviation(
-    dynamic total,
-    List<dynamic> count,
-    dynamic score,
-  ) {
+  static double getDeviation(num total, List<dynamic> count, num score) {
     if (total == 0 || count.isEmpty) return 0;
 
-    final scores = count.reversed.toList(); // 反转评分列表（从10分到1分）
-    return calculateSD(
-      scores,
-      double.parse(score.toString()),
-      double.parse(total.toString()),
-    );
+    // 反转评分列表（从10分到1分）
+    final scores = count.reversed.toList();
+    return calculateSD(scores, score.toDouble(), total.toDouble());
   }
 
   /// 计算标准差
@@ -575,7 +546,8 @@ class Utils {
     for (var i = 0; i < scores.length; i++) {
       final item = scores[i];
       if (item == 0) continue;
-      sd += (10 - i - score) * (10 - i - score) * item;
+      final diff = 10 - i - score;
+      sd += diff * diff * (item as num).toDouble();
     }
     return sqrt(sd / n);
   }
@@ -639,6 +611,7 @@ class BangumiUtils {
 
     EpisodeInfo? currentWeekEpisode;
     EpisodeInfo? lastPastEpisode;
+    DateTime? lastPastDate;
 
     try {
       for (final ep in targetEpisodes) {
@@ -662,17 +635,16 @@ class BangumiUtils {
             }
           }
 
-          // 记录所有年份中最接近当前日期的过去剧集
+          // 记录所有年份中最接近当前日期的过去剧集（解析结果缓存，避免重复 DateTime.parse）
           if (airDate.isBefore(now)) {
-            if (lastPastEpisode == null) {
+            if (lastPastEpisode == null || lastPastDate == null) {
               lastPastEpisode = ep;
-            } else {
-              final lastAirDate = DateTime.parse(lastPastEpisode.airDate);
-              if (airDate.isAfter(lastAirDate)) {
-                lastPastEpisode = ep;
-              } else if (airDate.isAtSameMomentAs(lastAirDate)) {
-                lastPastEpisode = ep;
-              }
+              lastPastDate = airDate;
+            } else if (airDate.isAfter(lastPastDate)) {
+              lastPastEpisode = ep;
+              lastPastDate = airDate;
+            } else if (airDate.isAtSameMomentAs(lastPastDate)) {
+              lastPastEpisode = ep;
             }
           }
         } catch (e) {

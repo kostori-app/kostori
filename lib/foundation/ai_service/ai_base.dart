@@ -242,6 +242,22 @@ Map<String, dynamic> parseToolArguments(String raw) {
 
 /// 从各服务商的错误结构中提取可读信息
 String aiErrorMessageOf(Object? error) {
+  if (error is DioException) {
+    final status = error.response?.statusCode;
+    final data = error.response?.data;
+    String? msg;
+    if (data is Map) {
+      final top = data['message'];
+      if (top is String && top.isNotEmpty) msg = top;
+      final err = data['error'];
+      if (err is Map) {
+        final em = err['message'];
+        if (em is String && em.isNotEmpty) msg = em;
+      }
+    }
+    msg ??= error.message ?? 'HTTP ${status ?? '?'}';
+    return status != null ? 'HTTP $status: $msg' : msg;
+  }
   if (error is Map) {
     final msg = error['message'];
     if (msg is String && msg.isNotEmpty) return msg;

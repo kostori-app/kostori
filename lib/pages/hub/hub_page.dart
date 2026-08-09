@@ -144,6 +144,7 @@ class _RoomsTab extends ConsumerWidget {
         final room = hubState.roomList[i];
         final isLobby = room.roomId == hubState.lobbyRoomId;
         final isCurrent = room.roomId == hubState.currentRoomId;
+        final isWatch = room.isWatchRoom;
         final canManage =
             !isLobby &&
             (hubState.isGlobalAdmin || client.isRoomAdminOf(room.roomId));
@@ -162,13 +163,38 @@ class _RoomsTab extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  room.isLocked
-                      ? Icons.lock_outlined
-                      : Icons.meeting_room_outlined,
+                  isWatch
+                      ? Icons.play_circle_outline
+                      : (room.isLocked
+                            ? Icons.lock_outlined
+                            : Icons.meeting_room_outlined),
                   size: 20,
                   color: isCurrent ? cs.primary : cs.onSurfaceVariant,
                 ),
               ),
+              if (isWatch)
+                Positioned(
+                  right: -3,
+                  top: -3,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: cs.primary,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      t.watchTogether,
+                      style: TextStyle(
+                        fontSize: 7,
+                        color: cs.onPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
               if (isCurrent)
                 Positioned(
                   right: -2,
@@ -185,11 +211,19 @@ class _RoomsTab extends ConsumerWidget {
                 ),
             ],
           ),
-          title: Text(
-            isLobby ? t.lobby : room.roomName,
-            style: TextStyle(
-              fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
-            ),
+          title: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  isLobby ? t.lobby : room.roomName,
+                  style: TextStyle(
+                    fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,6 +235,18 @@ class _RoomsTab extends ConsumerWidget {
                   color: cs.onSurface.toOpacity(0.5),
                 ),
               ),
+              if (isWatch &&
+                  room.animeTitle != null &&
+                  room.animeTitle!.isNotEmpty)
+                Text(
+                  t.watchingAnime(a: room.animeTitle!),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cs.primary.toOpacity(0.85),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               if (room.announcements.isNotEmpty)
                 Text(
                   room.announcements.first,
@@ -335,9 +381,7 @@ class _PeopleTab extends ConsumerWidget {
         );
         final roomLabel = room == null
             ? ''
-            : (room.roomId == hubState.lobbyRoomId
-                  ? t.lobby
-                  : room.roomName);
+            : (room.roomId == hubState.lobbyRoomId ? t.lobby : room.roomName);
         final client = ref.read(hubClientProvider);
         final unread = client.dmUnread[c.userId] ?? 0;
         return ListTile(

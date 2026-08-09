@@ -467,12 +467,17 @@ class _IntSliderSetting extends StatefulWidget {
     required this.title,
     required this.settingsIndex,
     required this.options,
+    this.dataSource = SwitchDataSource.settings,
     this.onChanged,
   });
 
   final String title;
 
   final String settingsIndex;
+
+  /// 数据源：settings 走 freezed SettingsData（需为模型字段）；
+  /// implicit 走 implicitData（任意键均可持久化）
+  final SwitchDataSource dataSource;
 
   /// 选项列表，如 [0, 2, 3, 4, 5]，0 表示自动
   final List<int> options;
@@ -484,10 +489,27 @@ class _IntSliderSetting extends StatefulWidget {
 }
 
 class _IntSliderSettingState extends State<_IntSliderSetting> {
+  dynamic _getValue() {
+    if (widget.dataSource == SwitchDataSource.implicit) {
+      return appdata.implicitData[widget.settingsIndex];
+    }
+    return appdata.settings[widget.settingsIndex];
+  }
+
+  void _setValue(dynamic value) {
+    if (widget.dataSource == SwitchDataSource.implicit) {
+      appdata.implicitData[widget.settingsIndex] = value;
+      appdata.writeImplicitData();
+    } else {
+      appdata.settings[widget.settingsIndex] = value;
+      appdata.saveData();
+    }
+  }
+
   String _getDisplayValue() {
-    final value = appdata.settings[widget.settingsIndex];
+    final value = _getValue();
     if (value == null || value.toString().isEmpty) {
-      return '自动';
+      return t.auto;
     }
     return value.toString();
   }
@@ -516,11 +538,10 @@ class _IntSliderSettingState extends State<_IntSliderSetting> {
           setState(() {
             final option = widget.options[index];
             if (option == 0) {
-              appdata.settings[widget.settingsIndex] = '';
+              _setValue('');
             } else {
-              appdata.settings[widget.settingsIndex] = option;
+              _setValue(option);
             }
-            appdata.saveData();
           });
           widget.onChanged?.call();
         },
@@ -532,7 +553,7 @@ class _IntSliderSettingState extends State<_IntSliderSetting> {
   }
 
   int _getCurrentIndex() {
-    final value = appdata.settings[widget.settingsIndex];
+    final value = _getValue();
     if (value == null || value.toString().isEmpty) {
       return 0; // 自动
     }

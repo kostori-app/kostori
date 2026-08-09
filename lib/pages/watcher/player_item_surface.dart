@@ -24,6 +24,9 @@ class _PlayerItemSurfaceState extends State<PlayerItemSurface> {
           child: Video(
             controller: playerController.playerController,
             fill: Colors.transparent,
+            // 禁用 media_kit 默认控件（含缓冲时居中的加载图标），
+            // 加载过程由 PlayerItemBasePanel 的自定义覆盖层接管
+            controls: NoVideoControls,
           ),
         );
       },

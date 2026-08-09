@@ -48,6 +48,10 @@
                 <action android:name="android.media.browse.MediaBrowserService"/>
             </intent-filter>
         </service>
+        <!-- Hub 连接保活前台服务 -->
+        <service android:name=".HubKeepAliveService"
+                 android:foregroundServiceType="dataSync"
+                 android:exported="false"/>
         <receiver android:name="com.ryanheise.audioservice.MediaButtonReceiver"
                   android:exported="true" ignore="Instantiatable">
             <intent-filter android:autoVerify="true">

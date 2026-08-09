@@ -24,6 +24,7 @@ import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/pages/stats/stats_page.dart';
 import 'package:kostori/pages/video_test_page.dart';
 import 'package:kostori/utils/data_sync.dart';
+import 'package:kostori/utils/utils.dart';
 import 'package:sliver_tools/sliver_tools.dart';
 
 class MePage extends StatefulWidget {
@@ -118,38 +119,21 @@ class _SyncDataWidget extends ConsumerStatefulWidget {
   ConsumerState<_SyncDataWidget> createState() => _SyncDataWidgetState();
 }
 
-class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
-    with WidgetsBindingObserver {
-  late DateTime lastCheck;
-
+class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget> {
   @override
   void initState() {
     super.initState();
     DataSync().addListener(_update);
-    WidgetsBinding.instance.addObserver(this);
-    lastCheck = DateTime.now();
   }
 
   @override
   void dispose() {
     DataSync().removeListener(_update);
-    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   void _update() {
     if (mounted) setState(() {});
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      if (DateTime.now().difference(lastCheck) > const Duration(minutes: 10)) {
-        lastCheck = DateTime.now();
-        DataSync().downloadData();
-      }
-    }
   }
 
   @override
@@ -218,6 +202,12 @@ class _SyncDataWidgetState extends ConsumerState<_SyncDataWidget>
           child: ListTile(
             leading: const Icon(Icons.sync),
             title: Text(t.syncData),
+            subtitle: DataSync().lastSyncTime != null
+                ? Text(
+                    '${t.lastSyncTime}: ${Utils.dateFormat(DataSync().lastSyncTime!.millisecondsSinceEpoch)}',
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  )
+                : null,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [

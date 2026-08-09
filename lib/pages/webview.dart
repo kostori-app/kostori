@@ -60,6 +60,7 @@ class AppWebview extends StatefulWidget {
     this.singlePage = false,
     this.onStarted,
     this.onLoadStop,
+    this.onClose,
     super.key,
   });
 
@@ -74,6 +75,9 @@ class AppWebview extends StatefulWidget {
   final void Function(InAppWebViewController controller)? onStarted;
 
   final void Function(InAppWebViewController controller)? onLoadStop;
+
+  /// webview 关闭时回调（用于清理/结束等待）
+  final VoidCallback? onClose;
 
   final bool singlePage;
 
@@ -186,6 +190,12 @@ class _AppWebviewState extends State<AppWebview> {
       ),
       body: body,
     );
+  }
+
+  @override
+  void dispose() {
+    widget.onClose?.call();
+    super.dispose();
   }
 
   Widget createWebviewWithEnvironment(WebViewEnvironment? e) {
@@ -343,6 +353,16 @@ class DesktopWebview {
       if (_cookieMatch(url, c.domain)) {
         res[_removeCode0(c.name)] = _removeCode0(c.value);
       }
+    }
+    return res;
+  }
+
+  /// 获取所有 cookie（不受域名过滤，供 CF 挑战等场景兜底）
+  Future<Map<String, String>> getAllCookies() async {
+    var allCookies = await _webview!.getAllCookies();
+    var res = <String, String>{};
+    for (var c in allCookies) {
+      res[_removeCode0(c.name)] = _removeCode0(c.value);
     }
     return res;
   }

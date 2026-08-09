@@ -1,8 +1,16 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' show ImageFilter;
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:gif/gif.dart';
 import 'package:kostori/components/animated.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/appdata.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 
 class PlayerItemBasePanel extends StatefulWidget {
@@ -72,7 +80,7 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                 ),
               ),
             ),
-            //底部进度条
+            // 底部进度条
             AnimatedOpacity(
               opacity:
                   ((!playerController.isFullScreen &&
@@ -105,34 +113,20 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                 ),
               ),
             ),
-            // 顶部进度条
+            // 视频加载信息覆盖层
+            _VideoLoadingOverlay(
+              playerController: playerController,
+              duration: widget.duration,
+            ),
+            // 快进/快退 HUD（左右滑动时显示）
             Positioned(
               top: playerController.isPortraitFullscreen ? 140 : 50,
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
                 child: playerController.showSeekTime
-                    ? Wrap(
-                        key: const ValueKey('seekTime'),
-                        alignment: WrapAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              color: Colors.black.toOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            child: Text(
-                              playerController.currentPosition.compareTo(
-                                        playerController.player.state.position,
-                                      ) >
-                                      0
-                                  ? '快进 ${playerController.currentPosition.inSeconds - playerController.player.state.position.inSeconds} 秒'
-                                  : '快退 ${playerController.player.state.position.inSeconds - playerController.currentPosition.inSeconds} 秒',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      )
+                    ? _SeekHUD(playerController: playerController)
                     : const SizedBox.shrink(key: ValueKey('emptySeek')),
               ),
             ),
@@ -170,73 +164,10 @@ class _PlayerItemBasePanelState extends State<PlayerItemBasePanel> {
                     : const SizedBox.shrink(key: ValueKey('emptySpeed')),
               ),
             ),
-            // 亮度条
+            // 亮度/音量 HUD（共用一个组件，切换时进度平滑联动）
             Positioned(
               top: playerController.isPortraitFullscreen ? 140 : 50,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: playerController.showBrightness
-                    ? Wrap(
-                        key: const ValueKey('brightness'),
-                        alignment: WrapAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              color: Colors.black.toOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            child: Row(
-                              children: <Widget>[
-                                const Icon(
-                                  Icons.brightness_7_rounded,
-                                  color: Colors.white,
-                                ),
-                                Text(
-                                  ' ${(playerController.brightness * 100).toInt()} %',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                    : const SizedBox.shrink(key: ValueKey('emptyBrightness')),
-              ),
-            ),
-            // 音量条
-            Positioned(
-              top: playerController.isPortraitFullscreen ? 140 : 50,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: playerController.showVolume
-                    ? Wrap(
-                        key: const ValueKey('volume'),
-                        alignment: WrapAlignment.center,
-                        children: <Widget>[
-                          Container(
-                            padding: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              color: Colors.black.toOpacity(0.5),
-                              borderRadius: BorderRadius.circular(8.0),
-                            ),
-                            child: Row(
-                              children: <Widget>[
-                                const Icon(
-                                  Icons.volume_down_rounded,
-                                  color: Colors.white,
-                                ),
-                                Text(
-                                  ' ${(playerController.volume).toInt()}%',
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                    : const SizedBox.shrink(key: ValueKey('emptyVolume')),
-              ),
+              child: _LevelSliderHUD(playerController: playerController),
             ),
           ],
         );
@@ -317,6 +248,457 @@ class _SeekGradientLayerState extends State<_SeekGradientLayer> {
         );
       },
     );
+  }
+}
+
+/// 自定义加载覆盖层：替代 media_kit 默认缓冲转圈。
+/// 居中显示自定义 loading 图片（GIF/动图，从配置读取）+ "正在加载"信息。
+class _VideoLoadingOverlay extends StatelessWidget {
+  const _VideoLoadingOverlay({
+    required this.playerController,
+    required this.duration,
+  });
+
+  final PlayerController playerController;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: _LoadingInfoCard(playerController: playerController),
+    );
+  }
+}
+
+/// 亮度 / 音量 HUD：共用一个组件，切换（亮度↔音量）时进度平滑联动
+class _LevelSliderHUD extends StatelessWidget {
+  const _LevelSliderHUD({required this.playerController});
+
+  final PlayerController playerController;
+
+  // 亮度用暖色、音量用冷色，作视觉区分
+  static const _brightnessColor = Color(0xFFF5A623);
+  static const _volumeColor = Color(0xFF4DB6FF);
+
+  @override
+  Widget build(BuildContext context) {
+    return Observer(
+      builder: (context) {
+        final showBrightness = playerController.showBrightness;
+        final showVolume = playerController.showVolume;
+        if (!showBrightness && !showVolume) {
+          return const SizedBox.shrink();
+        }
+
+        // 当前目标值（0-100）
+        final isBrightness = showBrightness;
+        final targetValue = isBrightness
+            ? (playerController.brightness * 100)
+            : playerController.volume;
+        final accent = isBrightness ? _brightnessColor : _volumeColor;
+
+        // 图标按等级切换（动画在 _LevelIcon 内处理）
+        final icon = isBrightness
+            ? Icons.brightness_7_rounded
+            : (targetValue <= 0
+                  ? Icons.volume_off_rounded
+                  : targetValue < 50
+                  ? Icons.volume_down_rounded
+                  : Icons.volume_up_rounded);
+
+        return IgnorePointer(
+          child: _FrostedGlass(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _LevelIcon(icon: icon, color: accent),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 110,
+                  height: 8,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Stack(
+                      children: [
+                        Container(color: Colors.white.toOpacity(0.15)),
+                        // 从当前宽度平滑过渡，不会从 0 弹起
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOutCubic,
+                          width: 110 * (targetValue.clamp(0, 100) / 100),
+                          decoration: BoxDecoration(
+                            color: accent,
+                            borderRadius: BorderRadius.circular(4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.toOpacity(0.5),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 38,
+                  child: Text(
+                    '${targetValue.round()}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 磨砂玻璃容器：模糊背景 + 深色半透明底 + 圆角边框
+class _FrostedGlass extends StatelessWidget {
+  const _FrostedGlass({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.toOpacity(0.60),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.toOpacity(0.22)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.toOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// 快进 / 快退 HUD（左右滑动时显示）
+class _SeekHUD extends StatelessWidget {
+  const _SeekHUD({required this.playerController});
+
+  final PlayerController playerController;
+
+  @override
+  Widget build(BuildContext context) {
+    return Observer(
+      builder: (context) {
+        final target = playerController.currentPosition;
+        final current = playerController.player.state.position;
+        final total = playerController.duration;
+        final isForward = target > current;
+        final diffSec = (target - current).inSeconds.abs().clamp(0, 999);
+        final totalSec = total.inSeconds > 0 ? total.inSeconds : 1;
+        final progress = (target.inMilliseconds / (totalSec * 1000)).clamp(
+          0.0,
+          1.0,
+        );
+
+        // 方向配色：快进青绿 / 快退橙红
+        final accent = isForward
+            ? const Color(0xFF2ED8A7)
+            : const Color(0xFFFF7A6B);
+        final icon = isForward
+            ? Icons.fast_forward_rounded
+            : Icons.fast_rewind_rounded;
+
+        return IgnorePointer(
+          child: _FrostedGlass(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Icon(
+                    icon,
+                    key: ValueKey(icon),
+                    color: accent,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isForward
+                          ? t.seekForward(s: diffSec)
+                          : t.seekBackward(s: diffSec),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // 目标时间 + 总时长
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _fmt(target),
+                          style: TextStyle(
+                            color: accent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          ' / ${_fmt(total)}',
+                          style: TextStyle(
+                            color: Colors.white.toOpacity(0.6),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 120,
+                      height: 3,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: Stack(
+                          children: [
+                            Container(color: Colors.white.toOpacity(0.15)),
+                            FractionallySizedBox(
+                              widthFactor: progress,
+                              child: Container(color: accent),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static String _fmt(Duration d) {
+    final h = d.inHours;
+    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return h > 0 ? '$h:$m:$s' : '$m:$s';
+  }
+}
+
+/// 带切换动画的图标（切换时缩放 + 淡入，模拟"点亮"）
+class _LevelIcon extends StatelessWidget {
+  const _LevelIcon({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(scale: animation, child: child),
+        );
+      },
+      child: Icon(icon, key: ValueKey(icon), color: color, size: 22),
+    );
+  }
+}
+
+/// 加载信息卡片：居中显示
+class _LoadingInfoCard extends StatelessWidget {
+  const _LoadingInfoCard({required this.playerController});
+
+  final PlayerController playerController;
+
+  /// 用户自定义 loading 图片（data:/file:/http/asset gif 均可）
+  String? get _customImage {
+    final v = appdata.implicitData['playerLoadingImage'];
+    if (v is String && v.isNotEmpty) return v;
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Observer(
+      builder: (context) {
+        // 真实缓冲状态：media_kit 的 buffering 流实时驱动 isBuffering，
+        // state.buffering 是实时快照；二者同源。loading 是历史遗留字段（恒 true）弃用。
+        final buffering =
+            playerController.isBuffering || playerController.playerBuffering;
+        final setName = playerController.currentSetName.trim();
+        // 简洁提示：第x集 · 正在加载（不带百分比）
+        final loadingText = setName.isNotEmpty
+            ? '$setName · ${t.loadingVideo}'
+            : t.loadingVideo;
+
+        // 加载中才显示覆盖层；不缓冲时完全不渲染（避免遮挡与性能损耗）
+        if (!buffering) return const SizedBox.shrink();
+        return Align(
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.black.toOpacity(0.45),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildLoadingImage(context),
+                const SizedBox(height: 10),
+                Text(
+                  loadingText,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 加载图片：优先自定义 GIF/动图，无配置时用转圈兜底
+  Widget _buildLoadingImage(BuildContext context) {
+    final custom = _customImage;
+    if (custom == null) {
+      return const SizedBox(
+        width: 48,
+        height: 48,
+        child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white70),
+      );
+    }
+
+    // asset 路径（如 assets/img/loading.gif）
+    if (custom.startsWith('assets/')) {
+      return Gif(
+        image: AssetImage(custom),
+        height: 64,
+        fps: 60,
+        autostart: Autostart.loop,
+      );
+    }
+
+    // data: base64
+    if (custom.startsWith('data:')) {
+      final raw = custom.split(',').last;
+      final bytes = base64Decode(raw);
+      final isGif = raw.startsWith('/9j') == false && _looksLikeGif(bytes);
+      if (isGif) {
+        return Gif(
+          image: MemoryImage(bytes),
+          height: 64,
+          fps: 60,
+          autostart: Autostart.loop,
+        );
+      }
+      return Image.memory(bytes, width: 64, height: 64, fit: BoxFit.contain);
+    }
+
+    // file: 或 http(s) URL
+    return _NetworkOrFileImage(path: custom, width: 64, height: 64);
+  }
+
+  static bool _looksLikeGif(Uint8List bytes) {
+    if (bytes.length < 6) return false;
+    return bytes[0] == 0x47 && bytes[1] == 0x49 && bytes[2] == 0x46;
+  }
+}
+
+/// 加载本地文件或网络图片（优先动图）
+class _NetworkOrFileImage extends StatelessWidget {
+  const _NetworkOrFileImage({
+    required this.path,
+    required this.width,
+    required this.height,
+  });
+
+  final String path;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = _resolvePath(path);
+    if (bytes != null) {
+      final isGif =
+          bytes.length >= 6 &&
+          bytes[0] == 0x47 &&
+          bytes[1] == 0x49 &&
+          bytes[2] == 0x46;
+      if (isGif) {
+        return Gif(
+          image: MemoryImage(bytes),
+          width: width,
+          height: height,
+          fps: 60,
+          autostart: Autostart.loop,
+        );
+      }
+      return Image.memory(
+        bytes,
+        width: width,
+        height: height,
+        fit: BoxFit.contain,
+      );
+    }
+
+    // 网络图片
+    return Image.network(
+      path,
+      width: width,
+      height: height,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stack) => const SizedBox(
+        width: 48,
+        height: 48,
+        child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white70),
+      ),
+    );
+  }
+
+  static Uint8List? _resolvePath(String path) {
+    if (path.startsWith('file://')) {
+      try {
+        final f = File(path.substring(7));
+        if (f.existsSync()) return f.readAsBytesSync();
+      } catch (_) {}
+    }
+    return null;
   }
 }
 

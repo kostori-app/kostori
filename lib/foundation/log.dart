@@ -58,6 +58,58 @@ class Log {
 
   static bool isMuted = false;
 
+  /// 是否对日志中的隐私项（token/密钥/密码等）打码。
+  /// release/profile 默认开启；debug 默认关闭，避免影响调试时查看真实内容。
+  /// 可通过设置「日志隐私保护」手动切换。
+  static bool get redactSensitive {
+    final v = appdata.implicitData['redactSensitiveLogs'];
+    if (v is bool) return v;
+    return !kDebugMode;
+  }
+
+  static set redactSensitive(bool v) {
+    appdata.implicitData['redactSensitiveLogs'] = v;
+    appdata.writeImplicitData();
+  }
+
+  /// 隐私敏感字段识别正则（key=value / key: value / "key":"value" / Bearer xxxx）
+  static final RegExp _sensitivePattern = RegExp(
+    r'(?:^|["\s,;])'
+    r'(token|password|passwd|secret|apikey|api[_ -]?key|access[_ -]?key'
+    r'|access[_ -]?key[_ -]?secret|authorization|bearer|auth|auth[_ -]?key'
+    r'|private[_ -]?key|session|session[_ -]?id|cookie|set[-_]cookie|x[-_]api[-_]key)'
+    r'["\s]*[:=]["\s]*([^\s,;&"\x27]+)',
+    caseSensitive: false,
+  );
+
+  /// 认证头 Bearer token：`Authorization: Bearer token`
+  static final RegExp _bearerTokenPattern = RegExp(
+    r'(bearer["\s]*[:=]?["\s]+)([^\s,;&"\x27]+)',
+    caseSensitive: false,
+  );
+
+  /// 将文本中的敏感字段值打码。默认掩码保留首尾少量字符以辅助定位。
+  static String redact(String text) {
+    if (text.isEmpty || !redactSensitive) return text;
+    text = text.replaceAllMapped(_bearerTokenPattern, (m) {
+      final prefix = m
+          .group(0)!
+          .substring(0, m.group(0)!.length - m.group(2)!.length);
+      return '$prefix${_maskValue(m.group(2)!)}';
+    });
+    return text.replaceAllMapped(_sensitivePattern, (m) {
+      // 取字段名到值之间（含字段名、冒号等），保留结构，仅掩码值
+      final valueStart = m.group(0)!.indexOf(m.group(2)!);
+      final prefix = m.group(0)!.substring(0, valueStart < 0 ? 0 : valueStart);
+      return '$prefix${_maskValue(m.group(2)!)}';
+    });
+  }
+
+  static String _maskValue(String val) {
+    if (val.length <= 4) return '***';
+    return '${val.substring(0, 2)}****${val.substring(val.length - 2)}';
+  }
+
   static void printWarning(String text) {
     debugPrint('\x1B[33m$text\x1B[0m');
   }
@@ -84,6 +136,11 @@ class Log {
       }
       var file = dir.joinFile("logs.txt");
       _file = file.openWrite();
+    }
+
+    if (redactSensitive) {
+      title = redact(title);
+      content = redact(content);
     }
 
     if (!ignoreLimitation && content.length > maxLogLength) {

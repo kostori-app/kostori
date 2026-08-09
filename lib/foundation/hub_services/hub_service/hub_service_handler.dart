@@ -34,6 +34,8 @@ extension HubServiceHandler on HubService {
     'invite_response',
     'unblock_invite',
     'set_allow_member_invite',
+    'set_peer_candidates',
+    'direct_sync_status',
   };
 
   Future<void> handleClientMessage(
@@ -90,16 +92,19 @@ extension HubServiceHandler on HubService {
           client?.send({'type': 'error', 'message': '单播需要指定 targetUserId 字段'});
           return;
         }
-        _unicast(
-          HubMessage(
-            messageType: HubMessageType.chat,
-            sender: client!.toDto(),
-            targetRoomIds: [roomId],
-            segments: _parseSegments(segments),
-          ),
-          roomId,
-          targetUserId,
+        final msg = HubMessage(
+          messageType: HubMessageType.chat,
+          sender: client!.toDto(),
+          targetRoomIds: [roomId],
+          segments: _parseSegments(segments),
         );
+        // 私聊 AI 陪聊机器人：无需在 _clients 注册，直接交由机器人处理
+        if (targetUserId == HubAiBot.userId && aiBotConfig.enabled) {
+          final room = _rooms[roomId];
+          if (room != null) maybeAiBotReply(msg, room, dmTargetUserId: fromId);
+          return;
+        }
+        _unicast(msg, roomId, targetUserId);
 
       case 'ping':
         client?.lastHeartbeat = DateTime.now();
@@ -195,6 +200,7 @@ extension HubServiceHandler on HubService {
           return;
         }
         _rooms[roomId]?.allowMemberInvite = data['value'] as bool? ?? false;
+        unawaited(_saveRooms());
         _broadcastSystem(HubSystemEvent.roomUpdated, {
           'room': _rooms[roomId]!.toJson(),
         });
@@ -207,6 +213,25 @@ extension HubServiceHandler on HubService {
           'event': 'invite_unblocked',
           'userId': targetId,
         });
+      case 'set_peer_candidates':
+        // 房主上报可直连地址（一起看 P2P）
+        if (client == null) return;
+        final candidates = data['candidates'];
+        client.peerCandidates = candidates is List
+            ? candidates.whereType<String>().toList()
+            : const [];
+        _broadcastSystem(HubSystemEvent.profileUpdated, {
+          'client': client.toJson(),
+        });
+      case 'direct_sync_status':
+        // 成员上报与房主直连建立/断开，用于服务端跳过重复广播
+        if (client == null) return;
+        final enabled = data['enabled'] as bool? ?? false;
+        _directSyncMembers[fromId] = enabled;
+        HubLog.info(
+          'HubService',
+          '📡 ${client.displayName} 直连同步：${enabled ? 'ON' : 'OFF'}',
+        );
     }
   }
 
@@ -305,6 +330,7 @@ extension HubServiceHandler on HubService {
       return;
     }
     room.welcomeMessage = data['welcomeMessage'] as String?;
+    unawaited(_saveRooms());
     _broadcastSystem(HubSystemEvent.roomUpdated, {'room': room.toJson()});
   }
 

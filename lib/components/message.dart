@@ -392,10 +392,7 @@ class ContentDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: Text(
-                    t.cancel,
-                    style: const TextStyle(fontSize: 14),
-                  ),
+                  child: Text(t.cancel, style: const TextStyle(fontSize: 14)),
                 ),
                 const Spacer(),
                 ...actions.separated(const SizedBox(width: 8)),
@@ -484,6 +481,10 @@ Future<void> showInputDialog({
   String? image,
   Uint8List? imageData,
 }) {
+  // 默认按钮文本 i18n（调用方未显式指定时使用）
+  confirmText = confirmText == "Confirm" ? t.confirm : confirmText;
+  cancelText = cancelText == "Cancel" ? t.cancel : cancelText;
+
   var controller = TextEditingController(text: initialValue);
   bool isLoading = false;
   String? error;
@@ -518,6 +519,10 @@ Future<void> showInputDialog({
               ],
             ),
             actions: [
+              TextButton(
+                onPressed: () => context.pop(),
+                child: Text(cancelText),
+              ),
               Button.filled(
                 isLoading: isLoading,
                 onPressed: () async {
@@ -541,7 +546,7 @@ Future<void> showInputDialog({
                     setState(() => error = result.toString());
                   }
                 },
-          child: Text(confirmText),
+                child: Text(confirmText),
               ),
             ],
           );
@@ -549,6 +554,92 @@ Future<void> showInputDialog({
       );
     },
   );
+}
+
+/// 验证码输入对话框：显示验证码图片 + 手动输入框。
+/// [onConfirm] 返回 null 表示通过（对话框关闭并返回输入值），
+/// 返回非 null 表示验证失败（显示错误信息并保留对话框）。
+/// 取消（内置取消按钮）返回 null。
+Future<String?> showCaptchaDialog({
+  required BuildContext context,
+  required String title,
+  required String image,
+  String? hintText,
+  FutureOr<Object?> Function(String)? onConfirm,
+}) {
+  final controller = TextEditingController();
+  String? inputError;
+
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return ContentDialog(
+            title: title,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: 90,
+                  child: image.startsWith('data:')
+                      ? Image.memory(
+                          _captchaDataBytes(image),
+                          fit: BoxFit.contain,
+                        )
+                      : Image.network(
+                          image,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, _, _) =>
+                              const Icon(Icons.broken_image_outlined),
+                        ),
+                ).paddingBottom(8),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    border: const OutlineInputBorder(),
+                    errorText: inputError,
+                  ),
+                ).paddingHorizontal(12),
+              ],
+            ),
+            actions: [
+              Button.filled(
+                onPressed: () async {
+                  final v = controller.text.trim();
+                  if (onConfirm == null) {
+                    Navigator.pop(dialogContext, v);
+                    return;
+                  }
+                  final futureOr = onConfirm(v);
+                  Object? result;
+                  if (futureOr is Future) {
+                    result = await futureOr;
+                  } else {
+                    result = futureOr;
+                  }
+                  if (!dialogContext.mounted) return;
+                  if (result == null) {
+                    Navigator.pop(dialogContext, v);
+                  } else {
+                    setState(() => inputError = result.toString());
+                  }
+                },
+                child: Text(t.confirm),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+Uint8List _captchaDataBytes(String dataUrl) {
+  final comma = dataUrl.indexOf(',');
+  return base64Decode(dataUrl.substring(comma + 1));
 }
 
 void showInfoDialog({
@@ -564,7 +655,10 @@ void showInfoDialog({
         title: title,
         content: Text(content).paddingHorizontal(16).paddingVertical(8),
         actions: [
-          Button.filled(onPressed: context.pop, child: Text(t[confirmText] ?? confirmText)),
+          Button.filled(
+            onPressed: context.pop,
+            child: Text(t[confirmText] ?? confirmText),
+          ),
         ],
       );
     },

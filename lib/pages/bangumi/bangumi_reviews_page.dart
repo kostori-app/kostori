@@ -105,11 +105,7 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                 firstChild: Container(),
                 secondChild: Row(
                   children: [
-                    CircleAvatar(
-                      backgroundImage: NetworkImage(
-                        reviewsItem.user.avatar.large,
-                      ),
-                    ),
+                    BangumiAvatar(url: reviewsItem.user.avatar.large),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -172,10 +168,8 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                               const SizedBox(height: 16),
                               Row(
                                 children: [
-                                  CircleAvatar(
-                                    backgroundImage: NetworkImage(
-                                      reviewsItem.user.avatar.large,
-                                    ),
+                                  BangumiAvatar(
+                                    url: reviewsItem.user.avatar.large,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -267,8 +261,8 @@ class _BangumiReviewsPageState extends ConsumerState<BangumiReviewsPage> {
                               if (reviewsInfoItem!.replies > 0)
                                 Row(
                                   children: [
-                                    const Text(
-                                      '吐槽',
+                                    Text(
+                                      t.bangumiCommentsTitle,
                                       style: TextStyle(
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,

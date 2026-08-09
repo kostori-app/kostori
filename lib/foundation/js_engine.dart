@@ -290,7 +290,17 @@ class JsEngine with _JSEngineApi, JsUiApi, Init {
       "headers": headers,
       "body": body,
       "error": error,
+      "url": _finalResponseUrl(response),
     };
+  }
+
+  /// 响应最终 URL（含重定向后的地址），供源脚本据此判断实际服务端域名
+  String? _finalResponseUrl(Response? response) {
+    if (response == null) return null;
+    if (response.redirects.isNotEmpty) {
+      return response.redirects.last.location.toString();
+    }
+    return response.requestOptions.uri.toString();
   }
 
   dynamic runCode(String js, [String? name]) {
@@ -419,6 +429,7 @@ mixin class _JSEngineApi {
     if (action == 'extract') {
       final url = data["url"] as String? ?? '';
       final waitMs = data["waitMs"] as int? ?? 8000;
+      final scan = data["scan"] as bool? ?? true;
       final script = data["script"] as String?;
       Map<String, String>? headers;
       if (data['headers'] != null) {
@@ -430,6 +441,7 @@ mixin class _JSEngineApi {
           headers: headers,
           script: script,
           waitMs: waitMs,
+          scan: scan,
         );
       } catch (e) {
         SourceLog.error("WebViewResolver", e.toString());

@@ -111,6 +111,13 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
           _hubClient.savedToken ?? '',
           name: _hubClient.savedName ?? '',
         );
+        // 记住当前服务器，方便下次直接切换回来
+        _hubClient.saveProfile(
+          name: Uri.tryParse(savedAddress)?.host ?? savedAddress,
+          address: savedAddress,
+          token: _hubClient.savedToken ?? '',
+        );
+        if (mounted) setState(() {});
       } catch (e) {
         if (mounted) {
           App.rootContext.showMessage(
@@ -142,10 +149,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
           _BuildSectionPadding(
             _SettingCard(
               children: [
-                _SettingPartTitle(
-                  title: t.apiKey,
-                  icon: Icons.key_outlined,
-                ),
+                _SettingPartTitle(title: t.apiKey, icon: Icons.key_outlined),
 
                 // ── 用户层 Key ──────────────────────
                 _ApiKeyTile(
@@ -245,10 +249,7 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
           _BuildSectionPadding(
             _SettingCard(
               children: [
-                _SettingPartTitle(
-                  title: t.hubServer,
-                  icon: Icons.hub_outlined,
-                ),
+                _SettingPartTitle(title: t.hubServer, icon: Icons.hub_outlined),
                 _SettingRow(
                   title: t.enableHub,
                   subtitle: _hubEnabled
@@ -329,13 +330,59 @@ class _ServiceSettingsState extends ConsumerState<ServiceSettings> {
                 _SettingRow(
                   title: t.connectToHub,
                   subtitle: hubClientEnabled
-                      ? "${t.connected}  ID: ${hubState.myId ?? '-'}"
-                      : t.notConnected,
-                  trailing: CustomSwitch(
-                    value: hubClientEnabled,
-                    onChanged: _toggleHubClient,
+                      ? '${t.connected}  ID: ${hubState.myId ?? '-'}'
+                      : (t.notConnected +
+                            (_hubClient.savedAddress?.isNotEmpty == true
+                                ? '  ·  ${_hubClient.savedAddress}'
+                                : '')),
+                  trailing: FilledButton.icon(
+                    icon: Icon(
+                      hubClientEnabled ? Icons.link_off : Icons.link,
+                      size: 16,
+                    ),
+                    label: Text(hubClientEnabled ? t.disconnect : t.connect),
+                    onPressed: () => _toggleHubClient(!hubClientEnabled),
                   ),
                 ),
+                if (_hubClient.getProfiles().isNotEmpty)
+                  _SettingRow(
+                    title: t.savedServers,
+                    subtitle: _hubClient.savedAddress ?? t.selectServer,
+                    trailing: DropdownButton<String>(
+                      underline: const SizedBox.shrink(),
+                      borderRadius: BorderRadius.circular(12),
+                      value:
+                          _hubClient.getProfiles().any(
+                            (p) => p['address'] == _hubClient.savedAddress,
+                          )
+                          ? _hubClient.savedAddress
+                          : null,
+                      hint: const Text('—'),
+                      items: [
+                        for (final p in _hubClient.getProfiles())
+                          DropdownMenuItem(
+                            value: p['address'] as String,
+                            child: Text(
+                              (p['name'] as String?)?.isNotEmpty == true
+                                  ? p['name'] as String
+                                  : p['address'] as String,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (addr) async {
+                        if (addr == null || addr == _hubClient.savedAddress) {
+                          return;
+                        }
+                        if (hubClientEnabled) {
+                          await _hubClient.disconnect();
+                        }
+                        _hubClient.activateProfile(addr);
+                        setState(() {});
+                        await _toggleHubClient(true);
+                      },
+                    ),
+                  ),
                 _SettingRow(
                   title: t.autoReconnect,
                   trailing: CustomSwitch(

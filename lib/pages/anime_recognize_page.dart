@@ -66,7 +66,7 @@ class _AnimeRecognizePageState extends State<AnimeRecognizePage> {
       } catch (_) {
         if (mounted) {
           setState(() {
-            _error = '图片读取失败，请重试';
+            _error = t.recognizeImageFailed;
             _recognizing = false;
           });
         }
@@ -115,7 +115,7 @@ class _AnimeRecognizePageState extends State<AnimeRecognizePage> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = '图片读取失败，请重试';
+          _error = t.recognizeImageFailed;
           _recognizing = false;
         });
       }
@@ -140,7 +140,7 @@ class _AnimeRecognizePageState extends State<AnimeRecognizePage> {
       if (res.success) {
         _results = res.data;
       } else {
-        _error = res.errorMessage ?? '识别失败';
+        _error = res.errorMessage ?? t.recognizeFailed;
       }
     });
   }
@@ -162,7 +162,7 @@ class _AnimeRecognizePageState extends State<AnimeRecognizePage> {
     final id = await AiConversationService().createSession(
       type: 'chat',
       provider: _defaultProvider(),
-      title: '新对话',
+      title: t.newChat,
       configKey: null,
     );
     await AiConversationService().updateSessionProfile(
@@ -174,12 +174,13 @@ class _AnimeRecognizePageState extends State<AnimeRecognizePage> {
 
   /// 识别结果入会话：生成一段描述文本发送给 AI，并进入 AI 对话页
   Future<void> _discussInAi(AnimeRecognizeResult r) async {
-    final desc =
-        '我上传了一张截图，识别结果为《${r.title}》'
-        '${r.episode != null ? '第${r.episode}集' : ''}'
-        '（${AnimeRecognizeResult.fmtTime(r.from)} → '
-        '${AnimeRecognizeResult.fmtTime(r.to)}，'
-        '相似度 ${r.similarityPercent}）。请介绍一下这部番剧。';
+    final desc = t.recognizePrompt(
+      title: r.title,
+      episode: r.episode != null ? t.recognizeEpisodeSuffix(n: r.episode!) : '',
+      from: AnimeRecognizeResult.fmtTime(r.from),
+      to: AnimeRecognizeResult.fmtTime(r.to),
+      similarity: r.similarityPercent,
+    );
     final sid = await _getOrCreateChatSession();
     unawaited(
       AiConversationService().sendMessage(sessionId: sid, userMessage: desc),

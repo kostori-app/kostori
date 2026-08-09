@@ -20,8 +20,10 @@ class PendingImage {
 // ── 上传 Mixin ─────────────────────────────────────────────────────────────────
 
 mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
-  static const _kBase64Limit = 512 * 1024; // 512 KB
-  static const _kSendLimit = 500 * 1024; // 500 KB
+  static const _kBase64Limit = 512 * 1024; // 512 KB 压缩目标
+  // 服务端 WS 单条消息 64KB 上限；base64 膨胀约 4/3，加上 JSON 包装，
+  // 二进制需压到 ~44KB 以下才能安全降级为 base64 发送
+  static const _kBase64FallbackBinary = 44 * 1024;
 
   bool _uploading = false;
 
@@ -192,8 +194,27 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
       return ImageSegment(url: clientUrl, alt: fileName);
     }
 
-    // 5. 超限报错
-    if (toSend.length > _kSendLimit) {
+    // 5. 无上传通道：GIF 无法安全压缩，直接报错
+    if (isGif && toSend.length > _kBase64FallbackBinary) {
+      App.rootContext.showMessage(
+        message:
+            '${t.imageTooLargeToSend}. '
+            '${t.pleaseConfigureServerUploadOrClientOss}',
+        level: LogLevel.warning,
+      );
+      return null;
+    }
+
+    // 6. 压缩到 WS 消息上限内（44KB 二进制 → ~59KB base64 + JSON < 64KB）
+    if (!isGif && toSend.length > _kBase64FallbackBinary) {
+      toSend = await hubCompressImage(toSend, maxDim: 480, quality: 55);
+      if (toSend.length > _kBase64FallbackBinary) {
+        toSend = await hubCompressImage(toSend, maxDim: 320, quality: 40);
+      }
+    }
+
+    // 7. 仍超限报错
+    if (toSend.length > _kBase64FallbackBinary) {
       final sizeMb = (toSend.length / 1024 / 1024).toStringAsFixed(1);
       App.rootContext.showMessage(
         message:
@@ -204,7 +225,7 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
       return null;
     }
 
-    // 6. 降级 base64
+    // 8. 降级 base64
     return ImageSegment(
       url: 'data:$mimeType;base64,${base64Encode(toSend)}',
       alt: fileName,
@@ -221,12 +242,10 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
     final savedAddress = client.savedAddress;
     if (savedAddress == null || savedAddress.isEmpty) return null;
 
-    final httpBase = savedAddress
-        .replaceFirst(
-          RegExp(r'^wss?://'),
-          '${savedAddress.startsWith('wss') ? 'https' : 'http'}://',
-        )
-        .replaceAll(RegExp(r'/hub/?$'), '');
+    // 把 ws:// → http://、wss:// → https://，无协议时补 http://；去掉尾部 /hub
+    final httpBase = HubImageUploader.httpUrlOf(
+      savedAddress,
+    ).replaceAll(RegExp(r'/hub/?$'), '');
 
     try {
       final resp = await AppDio().request(
@@ -246,6 +265,7 @@ mixin _HubChatUploadMixin on ConsumerState<HubChatPage> {
       return await HubImageUploader(
         config: config,
         serverBaseUrl: httpBase,
+        authToken: client.savedToken,
       ).upload(bytes, fileName);
     } catch (e) {
       Log.warning('HubUploader', '_tryServerUpload failed: $e');

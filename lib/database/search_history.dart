@@ -109,7 +109,6 @@ class SearchHistoryManager with ChangeNotifier {
     if (limit != null) q.limit(limit);
 
     return q.watch().map((rows) {
-      print('watchAll emitted: ${rows.length} items');
       return rows
           .map(
             (r) => SearchHistoryItem(

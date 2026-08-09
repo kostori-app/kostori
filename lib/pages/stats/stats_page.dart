@@ -160,7 +160,7 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                     ),
                     const Spacer(),
                     IconButton(
-                      tooltip: '年度总览',
+                      tooltip: t.statsYearlyOverview,
                       icon: const Icon(Icons.grid_view_rounded),
                       onPressed: () {
                         context.to(
@@ -174,7 +174,7 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                     MenuAnchor(
                       builder: (context, controller, child) {
                         return IconButton(
-                          tooltip: '时间范围统计',
+                          tooltip: t.statsRangeOverview,
                           icon: const Icon(Icons.timeline),
                           onPressed: () {
                             if (controller.isOpen) {
@@ -192,13 +192,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                               stats: controller.getEntriesForTimeRange(
                                 TimeRange.weekly,
                               ),
-                              title: '周统计',
+                              title: t.statsWeekly,
                               timeRange: TimeRange.weekly,
                             );
                           },
-                          child: const ListTile(
+                          child: ListTile(
                             leading: Icon(Icons.date_range, size: 20),
-                            title: Text('周统计'),
+                            title: Text(t.statsWeekly),
                           ),
                         ),
                         MenuItemButton(
@@ -207,13 +207,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                               stats: controller.getEntriesForTimeRange(
                                 TimeRange.monthly,
                               ),
-                              title: '月统计',
+                              title: t.statsMonthly,
                               timeRange: TimeRange.monthly,
                             );
                           },
-                          child: const ListTile(
+                          child: ListTile(
                             leading: Icon(Icons.calendar_month, size: 20),
-                            title: Text('月统计'),
+                            title: Text(t.statsMonthly),
                           ),
                         ),
                         MenuItemButton(
@@ -222,13 +222,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                               stats: controller.getEntriesForTimeRange(
                                 TimeRange.quarterly,
                               ),
-                              title: '季统计',
+                              title: t.statsQuarterly,
                               timeRange: TimeRange.quarterly,
                             );
                           },
-                          child: const ListTile(
+                          child: ListTile(
                             leading: Icon(Icons.event_note_rounded, size: 20),
-                            title: Text('季统计'),
+                            title: Text(t.statsQuarterly),
                           ),
                         ),
                         MenuItemButton(
@@ -237,13 +237,13 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                               stats: controller.getEntriesForTimeRange(
                                 TimeRange.halfYearly,
                               ),
-                              title: '半年统计',
+                              title: t.statsHalfYearly,
                               timeRange: TimeRange.halfYearly,
                             );
                           },
-                          child: const ListTile(
+                          child: ListTile(
                             leading: Icon(Icons.event, size: 20),
-                            title: Text('半年统计'),
+                            title: Text(t.statsHalfYearly),
                           ),
                         ),
                         MenuItemButton(
@@ -252,19 +252,19 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                               stats: controller.getEntriesForTimeRange(
                                 TimeRange.yearly,
                               ),
-                              title: '年统计',
+                              title: t.statsYearly,
                               timeRange: TimeRange.yearly,
                             );
                           },
-                          child: const ListTile(
+                          child: ListTile(
                             leading: Icon(Icons.calendar_today, size: 20),
-                            title: Text('年统计'),
+                            title: Text(t.statsYearly),
                           ),
                         ),
                       ],
                     ),
                     IconButton(
-                      tooltip: '来源清单',
+                      tooltip: t.statsSourceList,
                       icon: const Icon(Icons.list_alt),
                       onPressed: () async {
                         await controller.showAnimeSourlList().then((_) {
@@ -273,7 +273,7 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                       },
                     ),
                     IconButton(
-                      tooltip: '选择日期',
+                      tooltip: t.statsSelectDate,
                       icon: const Icon(Icons.edit_calendar_rounded),
                       onPressed: () async {
                         final pickedDate = await showDatePicker(
@@ -516,7 +516,7 @@ class _StatsCalendarPageState extends ConsumerState<StatsCalendarPage> {
                                       stats: controller.getEntriesForTimeRange(
                                         TimeRange.daily,
                                       ),
-                                      title: '天统计',
+                                      title: t.statsDaily,
                                       timeRange: TimeRange.daily,
                                     );
                                   },
@@ -615,7 +615,7 @@ class FullStatsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget widget = Scaffold(
-      appBar: Appbar(title: Text('当天的记录')),
+      appBar: Appbar(title: Text(t.statsDayRecords)),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         child: ListView.builder(
@@ -747,7 +747,7 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '$_year 年',
+                t.statsYearSuffix(year: _year),
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -776,7 +776,7 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
       await ImageSaver.saveOrShareImage(
         bytes: bytes,
         filename: filename,
-        desktopSuccessMessage: '已复制到剪贴板',
+        desktopSuccessMessage: t.statsCopiedToClipboard,
       );
     } catch (e) {
       ImageSaver.showResult(success: false, message: t.screenshotFailed);
@@ -786,19 +786,19 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
     }
   }
 
-  static const _monthNames = [
-    '一月',
-    '二月',
-    '三月',
-    '四月',
-    '五月',
-    '六月',
-    '七月',
-    '八月',
-    '九月',
-    '十月',
-    '十一月',
-    '十二月',
+  static List<String> get _monthNames => [
+    t.statsMonth1,
+    t.statsMonth2,
+    t.statsMonth3,
+    t.statsMonth4,
+    t.statsMonth5,
+    t.statsMonth6,
+    t.statsMonth7,
+    t.statsMonth8,
+    t.statsMonth9,
+    t.statsMonth10,
+    t.statsMonth11,
+    t.statsMonth12,
   ];
 
   final now = DateTime.now();
@@ -846,7 +846,7 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
       StatsOverviewScreen(
         stats: stats,
         selectedDay: DateTime(_year, month, 1),
-        title: '$_year年${_monthNames[month - 1]}',
+        title: t.statsYearMonthName(year: _year, month: _monthNames[month - 1]),
         timeRange: TimeRange.monthly,
       ),
     );
@@ -924,7 +924,7 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
               Expanded(
                 child: Center(
                   child: Text(
-                    isFuture ? '未来' : '暂无记录',
+                    isFuture ? t.statsFuture : t.statsNoRecordsOnDay,
                     style: TextStyle(
                       fontSize: 11,
                       color: scheme.onSurface.withValues(alpha: 0.3),
@@ -949,7 +949,7 @@ class _YearlyTilePageState extends ConsumerState<YearlyTilePage> {
               icon: const Icon(Icons.chevron_left),
               onPressed: () => _changeYear(-1),
             ),
-            Text('$_year 年'),
+            Text(t.statsYearSuffix(year: _year)),
             IconButton(
               icon: const Icon(Icons.chevron_right),
               onPressed: () => _changeYear(1),

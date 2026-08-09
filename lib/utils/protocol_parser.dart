@@ -13,6 +13,7 @@ enum KostoriRouteType {
   character('c', '角色'),
   person('d', '人物'),
   remote('r', '远程控制'),
+  hubRoom('h', '一起看房间'),
   unknown('?', '未知');
 
   final String code;
@@ -51,6 +52,47 @@ class RemoteControlProtocol {
   bool get isValid => token.isNotEmpty;
 }
 
+/// 一起看房间加入协议解析结果
+/// 负载格式: address|roomId|roomName|password|token
+class HubRoomJoinProtocol {
+  final String address;
+  final String roomId;
+  final String roomName;
+  final String? password;
+  final String? token;
+
+  const HubRoomJoinProtocol({
+    required this.address,
+    required this.roomId,
+    this.roomName = '',
+    this.password,
+    this.token,
+  });
+
+  static HubRoomJoinProtocol? fromPayload(String payload) {
+    final parts = payload.split('|');
+    if (parts.length < 2) return null;
+    final address = parts[0].trim();
+    final roomId = parts[1].trim();
+    if (address.isEmpty || roomId.isEmpty) return null;
+    return HubRoomJoinProtocol(
+      address: address,
+      roomId: roomId,
+      roomName: parts.length > 2 ? parts[2] : '',
+      password: parts.length > 3 && parts[3].isNotEmpty ? parts[3] : null,
+      token: parts.length > 4 && parts[4].isNotEmpty ? parts[4] : null,
+    );
+  }
+
+  static String encode({
+    required String address,
+    required String roomId,
+    String roomName = '',
+    String? password,
+    String? token,
+  }) => [address, roomId, roomName, password ?? '', token ?? ''].join('|');
+}
+
 class ParsedProtocol {
   final KostoriRouteType type;
 
@@ -65,6 +107,9 @@ class ParsedProtocol {
   /// 远程控制协议的额外信息（仅当 type == KostoriRouteType.remote 时有效）
   final RemoteControlProtocol? remoteInfo;
 
+  /// 一起看房间的加入信息（仅当 type == KostoriRouteType.hubRoom 时有效）
+  final HubRoomJoinProtocol? hubRoomInfo;
+
   const ParsedProtocol({
     required this.type,
     required this.payload,
@@ -72,11 +117,14 @@ class ParsedProtocol {
     required this.resolvedProtocol,
     this.wasBase64 = false,
     this.remoteInfo,
+    this.hubRoomInfo,
   });
 
   bool get isRoutable => type != KostoriRouteType.unknown;
 
   bool get isRemoteControl => type == KostoriRouteType.remote;
+
+  bool get isHubRoom => type == KostoriRouteType.hubRoom;
 
   @override
   String toString() =>
@@ -162,6 +210,9 @@ class ProtocolParser {
       if (direct.$1 == KostoriRouteType.remote) {
         return _parseRemotePayload(direct.$2, text, false);
       }
+      if (direct.$1 == KostoriRouteType.hubRoom) {
+        return _parseHubRoomPayload(direct.$2, text, false);
+      }
       return ParsedProtocol(
         type: direct.$1,
         payload: direct.$2,
@@ -181,6 +232,9 @@ class ProtocolParser {
           if (inner.$1 == KostoriRouteType.remote) {
             return _parseRemotePayload(inner.$2, text, true);
           }
+          if (inner.$1 == KostoriRouteType.hubRoom) {
+            return _parseHubRoomPayload(inner.$2, text, true);
+          }
           return ParsedProtocol(
             type: inner.$1,
             payload: inner.$2,
@@ -193,6 +247,24 @@ class ProtocolParser {
     }
 
     return null;
+  }
+
+  /// 解析一起看房间加入协议的有效载荷
+  static ParsedProtocol? _parseHubRoomPayload(
+    String payload,
+    String rawInput,
+    bool wasBase64,
+  ) {
+    final info = HubRoomJoinProtocol.fromPayload(payload);
+    if (info == null) return null;
+    return ParsedProtocol(
+      type: KostoriRouteType.hubRoom,
+      payload: payload,
+      rawInput: rawInput,
+      resolvedProtocol: wasBase64 ? payload : rawInput,
+      wasBase64: wasBase64,
+      hubRoomInfo: info,
+    );
   }
 
   /// 解析远程控制协议的有效载荷

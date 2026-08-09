@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:kostori/foundation/ai_service/ai_base.dart';
 import 'package:kostori/foundation/ai_service/ai_factory.dart';
 import 'package:kostori/foundation/ai_service/role_management.dart';
 import 'package:kostori/foundation/app.dart';
@@ -141,8 +142,40 @@ class TranslationService {
       return Res(result.data);
     } catch (e) {
       Log.warning('TranslationService', e.toString());
-      return Res.error(e.toString());
+      return Res.error(_aiTranslateErrorMessage(e));
     }
+  }
+
+  /// 将 AI 翻译的异常映射为清晰的 i18n 提示
+  String _aiTranslateErrorMessage(Object error) {
+    final raw = aiErrorMessageOf(error);
+    final lower = raw.toLowerCase();
+    if (lower.contains('location is not supported') ||
+        (lower.contains('permission_denied') && lower.contains('location'))) {
+      return t.translationErrorRegionNotSupported;
+    }
+    if (lower.contains('model must be one of') ||
+        lower.contains('not a supported model') ||
+        lower.contains('invalid model') ||
+        lower.contains('model not found') ||
+        lower.contains('unknown model')) {
+      return t.translationErrorModelNotSupported;
+    }
+    if (lower.contains('invalid api key') ||
+        lower.contains('api key not valid') ||
+        lower.contains('unauthorized') ||
+        lower.contains('authentication failed') ||
+        lower.contains('401') ||
+        lower.contains('403')) {
+      return t.translationErrorApiKeyInvalid;
+    }
+    if (lower.contains('quota') ||
+        lower.contains('rate limit') ||
+        lower.contains('429') ||
+        lower.contains('insufficient')) {
+      return t.translationErrorRateLimited;
+    }
+    return '${t.translationErrorRequestFailed}：$raw';
   }
 
   // ─── Google ────────────────────────────────
@@ -444,7 +477,8 @@ class TranslationController extends ChangeNotifier {
     } else {
       Log.error('TranslationController', '翻译失败: ${result.errorMessage}');
       _setState(() {
-        _rawTranslatedText = t.translationFailedPleaseTryAgainLater;
+        _rawTranslatedText =
+            result.errorMessage ?? t.translationFailedPleaseTryAgainLater;
         _translatedText = _rawTranslatedText;
         _isTranslating = false;
         _isTranslationComplete = true;

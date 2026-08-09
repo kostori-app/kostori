@@ -156,7 +156,7 @@ class GeminiAi extends AiBase {
       final json = response.data as Map<String, dynamic>;
       return Res(parseContent(json), subData: _parseUsage(json, config.model));
     } catch (e) {
-      return Res.error(e.toString());
+      return Res.error(aiErrorMessageOf(e));
     }
   }
 

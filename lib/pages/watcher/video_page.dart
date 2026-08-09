@@ -4,6 +4,7 @@ import 'package:extended_tabs/extended_tabs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/appdata.dart';
 import 'package:kostori/i18n/strings.g.dart';
@@ -215,18 +216,65 @@ class _VideoPageState extends State<VideoPage>
     );
   }
 
+  /// 当前观看的番剧（替代重复的 WatcherState.currentState!.anime）
+  AnimeDetails get _panelAnime => WatcherState.currentState!.anime;
+
+  /// 面板内统一的分区标题
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  /// 面板内统一的说明行（标签 + 值）
+  Widget _infoItem(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white60, fontSize: 14),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 秒数 → mm:ss / h:mm:ss
+  String _fmtDuration(Duration d) {
+    final h = d.inHours;
+    final m = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return h > 0 ? '$h:$m:$s' : '$m:$s';
+  }
+
   Widget _buildPanel(BuildContext context) {
     final isPortrait = playerController.isPortraitFullscreen;
 
+    // 面板尺寸：竖屏底部约 1/3 屏高，横屏右侧约 1/3 屏宽（限宽 420+160）
     final height = isPortrait
         ? MediaQuery.of(context).size.height / 3 + 80
         : MediaQuery.of(context).size.height;
 
     final width = isPortrait
         ? MediaQuery.of(context).size.width
-        : MediaQuery.of(context).size.width / 3 > 420
-        ? 420 + 160
-        : MediaQuery.of(context).size.width / 3 + 160;
+        : (MediaQuery.of(context).size.width / 3).clamp(0, 420) + 160;
 
     return Container(
       height: height.toDouble(),
@@ -303,7 +351,7 @@ class _VideoPageState extends State<VideoPage>
         children: [
           Expanded(
             child: Text(
-              WatcherState.currentState!.anime.title,
+              _panelAnime.title,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
@@ -323,18 +371,15 @@ class _VideoPageState extends State<VideoPage>
                   controller.isOpen ? controller.close() : controller.open();
                 },
                 child: Text(
-                  WatcherState.currentState!.anime.episode!.keys.elementAt(
-                    currentRoad,
-                  ),
+                  _panelAnime.episode!.keys.elementAt(currentRoad),
                   style: const TextStyle(fontSize: 13),
                 ),
               );
             },
             menuChildren: List<MenuItemButton>.generate(
-              WatcherState.currentState!.anime.episode!.keys.length,
+              _panelAnime.episode!.keys.length,
               (i) {
-                final title = WatcherState.currentState!.anime.episode!.keys
-                    .elementAt(i);
+                final title = _panelAnime.episode!.keys.elementAt(i);
                 final isCurrent = i == currentRoad;
                 return MenuItemButton(
                   onPressed: () {
@@ -366,7 +411,7 @@ class _VideoPageState extends State<VideoPage>
 
   Widget _buildPlaylistBody() {
     var cardList = <Widget>[];
-    var roadList = WatcherState.currentState!.anime.episode ?? {};
+    var roadList = _panelAnime.episode ?? {};
     var selectedRoad = roadList.values.elementAt(currentRoad);
     final watcher = WatcherState.currentState!;
 
@@ -469,7 +514,7 @@ class _VideoPageState extends State<VideoPage>
   }
 
   Widget _buildVideoInfoAndSettingsTab() {
-    final anime = WatcherState.currentState!.anime;
+    final anime = _panelAnime;
     return Stack(
       children: [
         SingleChildScrollView(
@@ -495,14 +540,7 @@ class _VideoPageState extends State<VideoPage>
               ],
               if (anime.description != null &&
                   anime.description!.isNotEmpty) ...[
-                Text(
-                  t.synopsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+                _sectionTitle(t.synopsis),
                 const SizedBox(height: 8),
                 Text(
                   anime.description!,
@@ -510,25 +548,18 @@ class _VideoPageState extends State<VideoPage>
                 ),
                 const SizedBox(height: 12),
               ],
-              _buildInfoItem(
+              _infoItem(
                 t.currentEpisode,
                 playerController.currentEpisoded.toString(),
               ),
-              _buildInfoItem(t.playbackRoute, playerController.currentSetName),
-              _buildInfoItem(
+              _infoItem(t.playbackRoute, playerController.currentSetName),
+              _infoItem(
                 t.progress,
-                '${playerController.currentPosition.inSeconds}${t.secondsUnit} / ${playerController.duration.inSeconds}${t.secondsUnit}',
+                '${_fmtDuration(playerController.currentPosition)} / ${_fmtDuration(playerController.duration)}',
               ),
               const Divider(color: Colors.white24, height: 32),
               // Playback speed
-              Text(
-                t.playbackSpeed,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              _sectionTitle(t.playbackSpeed),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -568,14 +599,7 @@ class _VideoPageState extends State<VideoPage>
               ),
               const SizedBox(height: 24),
               // Super resolution
-              Text(
-                t.superResolution,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              _sectionTitle(t.superResolution),
               const SizedBox(height: 8),
               SegmentedButton<int>(
                 segments: [
@@ -602,14 +626,7 @@ class _VideoPageState extends State<VideoPage>
               ),
               const SizedBox(height: 24),
               // Other settings
-              Text(
-                t.otherSettings,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              _sectionTitle(t.otherSettings),
               const SizedBox(height: 8),
               if (App.isAndroid)
                 _settingsTile(
@@ -743,30 +760,6 @@ class _VideoPageState extends State<VideoPage>
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white60, fontSize: 14),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
-          ),
-        ],
       ),
     );
   }

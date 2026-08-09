@@ -995,7 +995,12 @@ String buildSystemPrompt({
 
   // ③ 提示词注入（按 位置→排序号 分组插入）
   parts.addAll(
-    _injectionsAt(PromptInjectionPosition.afterPersonality, injections),
+    _injectionsAt(
+      PromptInjectionPosition.afterPersonality,
+      injections,
+      now: now,
+      modelName: modelName,
+    ),
   );
 
   // ④ 有序提示片段
@@ -1012,7 +1017,12 @@ String buildSystemPrompt({
     }
   }
   parts.addAll(
-    _injectionsAt(PromptInjectionPosition.afterSystemPrompt, injections),
+    _injectionsAt(
+      PromptInjectionPosition.afterSystemPrompt,
+      injections,
+      now: now,
+      modelName: modelName,
+    ),
   );
 
   // ⑤ knowledge 背景知识
@@ -1022,7 +1032,12 @@ String buildSystemPrompt({
     );
   }
   parts.addAll(
-    _injectionsAt(PromptInjectionPosition.afterKnowledge, injections),
+    _injectionsAt(
+      PromptInjectionPosition.afterKnowledge,
+      injections,
+      now: now,
+      modelName: modelName,
+    ),
   );
 
   // ⑥ 长期记忆（memory 启用时）
@@ -1034,7 +1049,14 @@ String buildSystemPrompt({
       parts.add('【长期记忆】\n${memory.join('\n')}');
     }
   }
-  parts.addAll(_injectionsAt(PromptInjectionPosition.afterMemory, injections));
+  parts.addAll(
+    _injectionsAt(
+      PromptInjectionPosition.afterMemory,
+      injections,
+      now: now,
+      modelName: modelName,
+    ),
+  );
 
   // ⑦ 世界书命中条目（按 priority 降序）
   final hits = worldBookHits ?? const <WorldBookEntry>[];
@@ -1053,7 +1075,14 @@ String buildSystemPrompt({
   parts.add(_envBlock(now));
 
   // ③（续）工具清单前的注入片段
-  parts.addAll(_injectionsAt(PromptInjectionPosition.beforeTools, injections));
+  parts.addAll(
+    _injectionsAt(
+      PromptInjectionPosition.beforeTools,
+      injections,
+      now: now,
+      modelName: modelName,
+    ),
+  );
 
   // ⑨ 本地工具 + MCP 工具清单
   final skills = (availableSkills ?? const <String>[])
@@ -1148,13 +1177,16 @@ List<String> _personalityInjection(AssistantProfile? profile) {
 /// ③ 取出指定注入位置的启用片段
 List<String> _injectionsAt(
   PromptInjectionPosition position,
-  List<PromptInjection>? injections,
-) {
+  List<PromptInjection>? injections, {
+  DateTime? now,
+  String? modelName,
+}) {
   if (injections == null) return const [];
   return [
     for (final inj in injections)
       if (inj.position == position && inj.content.trim().isNotEmpty)
-        '【提示词注入 · ${inj.name.trim()}】\n${inj.content.trim()}',
+        '【提示词注入 · ${inj.name.trim()}】\n'
+            '${replaceTemplateVars(inj.content.trim(), now: now, modelName: modelName)}',
   ];
 }
 

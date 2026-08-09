@@ -52,10 +52,7 @@ class CharacterCard extends StatelessWidget {
               padding: const EdgeInsets.all(12.0),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundImage: NetworkImage(avatarUrl),
-                  ),
+                  BangumiAvatar(url: avatarUrl, radius: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

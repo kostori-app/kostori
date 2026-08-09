@@ -208,14 +208,14 @@ class ScrollState extends InheritedWidget {
 class AppScrollBar extends StatefulWidget {
   const AppScrollBar({
     super.key,
-    required this.controller,
+    this.controller,
     required this.child,
     this.topPadding = 0,
     this.isNested = false,
     this.bottomPadding = 0,
   });
 
-  final ScrollController controller;
+  final ScrollController? controller;
   final Widget child;
   final double topPadding;
   final double bottomPadding;
@@ -303,15 +303,23 @@ class _AppScrollBarState extends State<AppScrollBar> {
   bool _onScrollNotification(ScrollNotification notification) {
     if (notification.metrics.axis != Axis.vertical) return false;
 
-    if (widget.isNested) {
-      final pos = Scrollable.of(notification.context!);
-      if (_outerPosition == null) {
+    final pos = Scrollable.of(notification.context!);
+    if (widget.controller != null) {
+      // 优先使用外部控制器的滚动位置（更可靠），其余滚动视为嵌套内层
+      if (pos.position == widget.controller!.position) {
         _outerPosition = pos.position;
-      } else if (_outerPosition != pos.position) {
+        _innerPosition = null;
+      } else if (widget.isNested) {
+        _innerPosition = pos.position;
+      }
+    } else if (widget.isNested) {
+      if (_outerPosition == null || _outerPosition == pos.position) {
+        _outerPosition = pos.position;
+      } else {
         _innerPosition = pos.position;
       }
     } else {
-      _outerPosition = Scrollable.of(notification.context!).position;
+      _outerPosition = pos.position;
     }
 
     double outerOffset = _outerPosition?.pixels ?? 0.0;
@@ -354,38 +362,62 @@ class _AppScrollBarState extends State<AppScrollBar> {
               Positioned.fill(child: widget.child),
               if (scrollExtent > 0)
                 Positioned(
-                  top: top + widget.topPadding,
+                  top: widget.topPadding,
                   right: 0,
-                  child: AnimatedOpacity(
-                    opacity: showScrollbar ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Listener(
-                        behavior: HitTestBehavior.translucent,
-                        onPointerDown: (event) {
-                          _dragGestureRecognizer.addPointer(event);
-                          _restartHideTimer();
-                        },
-                        child: SizedBox(
-                          width: _scrollbarHeight / 2,
-                          height: _scrollbarHeight,
-                          child: CustomPaint(
-                            painter: _ScrollIndicatorPainter(
-                              backgroundColor: context.colorScheme.surface,
-                              shadowColor: context.colorScheme.shadow,
+                  bottom: widget.bottomPadding,
+                  width: _scrollbarHeight,
+                  // 右侧整条轨道：点击跳转到对应位置
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTapUp: (details) {
+                      final target =
+                          minExtent +
+                          details.localPosition.dy / viewHeight * scrollExtent;
+                      (_outerPosition ?? _innerPosition)?.jumpTo(
+                        target.clamp(minExtent, maxExtent),
+                      );
+                      _restartHideTimer();
+                    },
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          top: top,
+                          right: 0,
+                          child: AnimatedOpacity(
+                            opacity: showScrollbar ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 300),
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: Listener(
+                                behavior: HitTestBehavior.translucent,
+                                onPointerDown: (event) {
+                                  _dragGestureRecognizer.addPointer(event);
+                                  _restartHideTimer();
+                                },
+                                child: SizedBox(
+                                  width: _scrollbarHeight / 2,
+                                  height: _scrollbarHeight,
+                                  child: CustomPaint(
+                                    painter: _ScrollIndicatorPainter(
+                                      backgroundColor:
+                                          context.colorScheme.surface,
+                                      shadowColor: context.colorScheme.shadow,
+                                    ),
+                                    child: Column(
+                                      children: const [
+                                        Spacer(),
+                                        Icon(Icons.arrow_drop_up, size: 18),
+                                        Icon(Icons.arrow_drop_down, size: 18),
+                                        Spacer(),
+                                      ],
+                                    ).paddingLeft(4),
+                                  ),
+                                ),
+                              ),
                             ),
-                            child: Column(
-                              children: const [
-                                Spacer(),
-                                Icon(Icons.arrow_drop_up, size: 18),
-                                Icon(Icons.arrow_drop_down, size: 18),
-                                Spacer(),
-                              ],
-                            ).paddingLeft(4),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),

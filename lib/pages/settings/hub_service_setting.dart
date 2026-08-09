@@ -56,7 +56,17 @@ class _ClientTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return ListTile(
       leading: avatarUrl != null && avatarUrl!.isNotEmpty
-          ? CircleAvatar(backgroundImage: NetworkImage(avatarUrl!))
+          ? CircleAvatar(
+              backgroundColor: cs.primaryContainer,
+              child: ClipOval(
+                child: AnimatedImage(
+                  image: CachedImageProvider(avatarUrl!, sourceKey: 'hub'),
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            )
           : CircleAvatar(
               backgroundColor: cs.primaryContainer,
               child: Text(
@@ -103,6 +113,13 @@ class _HubManagementPage extends ConsumerStatefulWidget {
 
 class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
   late final HubService _hub;
+  HubAiBotConfig _aiBotConfig = HubAiBotConfig.load();
+
+  bool get _webAdminEnabled =>
+      appdata.implicitData['hub_web_admin_enabled'] as bool? ?? false;
+
+  int get _webAdminPort =>
+      appdata.implicitData['hub_web_admin_port'] as int? ?? 9200;
 
   @override
   void initState() {
@@ -119,7 +136,697 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
     super.dispose();
   }
 
-  // ── 黑名单 ────────────────────────────────────────────────────────────────
+  void _showWebAdminSettingsPage(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const _WebAdminSettingsPage()));
+  }
+
+  // ── 订阅管理 ──────────────────────────────────────────────────────────────
+
+  List<Widget> _subscriptionSection() {
+    final subs = HubSubscriptionManager.instance.load();
+    final scheme = Theme.of(context).colorScheme;
+    return [
+      // ── 标题 + 数量 + 加号 ─────────────────────────
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 4),
+        child: Row(
+          children: [
+            const Icon(Icons.hub_outlined, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              t.subscriptionManagement,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '${subs.length}',
+              style: TextStyle(fontSize: 12, color: scheme.outline),
+            ),
+            const Spacer(),
+            IconButton.filledTonal(
+              icon: const Icon(Icons.add, size: 18),
+              tooltip: t.addSubscription,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _showAddSubscriptionMenu(context),
+            ),
+          ],
+        ),
+      ),
+      if (subs.isEmpty)
+        _EmptyHint(t.noSubscriptions)
+      else
+        for (final s in subs) _subscriptionCard(context, s),
+    ];
+  }
+
+  String _subscriptionTypeLabel(HubSubscription s) => switch (s.type) {
+    HubSubscriptionType.ws =>
+      s.wsDirection == HubWsDirection.forward ? t.wsForward : t.wsReverse,
+    HubSubscriptionType.webhook => t.webhookConnection,
+    HubSubscriptionType.http => t.httpServer,
+  };
+
+  IconData _subscriptionTypeIcon(HubSubscription s) => switch (s.type) {
+    HubSubscriptionType.ws => Icons.extension_outlined,
+    HubSubscriptionType.webhook => Icons.webhook,
+    HubSubscriptionType.http => Icons.dns_outlined,
+  };
+
+  Widget _subscriptionCard(BuildContext context, HubSubscription s) {
+    final scheme = Theme.of(context).colorScheme;
+    final status = HubSubscriptionService.instance.statusOf(s.id);
+    final statusLabel = switch (status) {
+      'running' => t.running,
+      'error' => t.error,
+      _ => t.stopped,
+    };
+    final statusColor = switch (status) {
+      'running' => Colors.green,
+      'error' => scheme.error,
+      _ => scheme.outline,
+    };
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      child: Material(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        child: GestureDetector(
+          onSecondaryTap: () => _showSubscriptionActions(context, s),
+          child: ListTile(
+            dense: true,
+            leading: Icon(_subscriptionTypeIcon(s), size: 20),
+            title: Text(
+              s.note.trim().isEmpty ? _subscriptionTypeLabel(s) : s.note.trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(
+              '${_subscriptionTypeLabel(s)} · ${s.summary}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.toOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: TextStyle(fontSize: 10, color: statusColor),
+                  ),
+                ),
+                const Icon(Icons.chevron_right, size: 18),
+              ],
+            ),
+            onTap: () => _showSubscriptionEditor(context, subscription: s),
+            onLongPress: () => _showSubscriptionActions(context, s),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSubscriptionActions(
+    BuildContext context,
+    HubSubscription s,
+  ) async {
+    final renderBox = context.findRenderObject() as RenderBox;
+    final offset = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+    final scheme = Theme.of(context).colorScheme;
+    showMenuX(
+      context,
+      Offset(offset.dx + size.width / 2, offset.dy + size.height),
+      [
+        MenuEntry(
+          icon: Icons.edit_outlined,
+          text: t.edit,
+          onClick: () => _showSubscriptionEditor(context, subscription: s),
+        ),
+        MenuEntry(
+          icon: Icons.delete_outline,
+          text: t.delete,
+          color: scheme.error,
+          onClick: () async {
+            HubSubscriptionManager.instance.delete(s.id);
+            await HubSubscriptionService.instance.stop(s.id);
+            if (mounted) setState(() {});
+          },
+        ),
+      ],
+    );
+  }
+
+  /// 加号 → 二级菜单（三种连接方式选项卡）
+  Future<void> _showAddSubscriptionMenu(BuildContext context) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: t.addSubscription,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.extension_outlined, size: 20),
+              title: Text('WS'),
+              subtitle: Text(
+                '${t.wsForward} / ${t.wsReverse}',
+                style: const TextStyle(fontSize: 11),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showWsDirectionChoice(context);
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.webhook, size: 20),
+              title: Text('Webhook'),
+              subtitle: Text(
+                t.webhookConnection,
+                style: const TextStyle(fontSize: 11),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showSubscriptionEditor(
+                  context,
+                  type: HubSubscriptionType.webhook,
+                );
+              },
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.dns_outlined, size: 20),
+              title: Text('HTTP'),
+              subtitle: Text(
+                t.httpServer,
+                style: const TextStyle(fontSize: 11),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showSubscriptionEditor(
+                  context,
+                  type: HubSubscriptionType.http,
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// WS → 正向 / 反向 选择
+  Future<void> _showWsDirectionChoice(BuildContext context) async {
+    final direction = await showDialog<HubWsDirection>(
+      context: context,
+      builder: (ctx) => ContentDialog(
+        title: 'WS',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.settings_input_antenna, size: 20),
+              title: Text(t.wsForward),
+              trailing: const Icon(Icons.arrow_forward, size: 16),
+              onTap: () => Navigator.pop(ctx, HubWsDirection.forward),
+            ),
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.settings_ethernet, size: 20),
+              title: Text(t.wsReverse),
+              trailing: const Icon(Icons.arrow_back, size: 16),
+              onTap: () => Navigator.pop(ctx, HubWsDirection.reverse),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (direction == null) return;
+    _showSubscriptionEditor(
+      context,
+      type: HubSubscriptionType.ws,
+      wsDirection: direction,
+    );
+  }
+
+  /// 订阅编辑/新增表单
+  Future<void> _showSubscriptionEditor(
+    BuildContext context, {
+    HubSubscriptionType? type,
+    HubWsDirection? wsDirection,
+    HubSubscription? subscription,
+  }) async {
+    final isEdit = subscription != null;
+    final noteCtrl = TextEditingController(text: subscription?.note ?? '');
+    final hostCtrl = TextEditingController(
+      text: subscription?.listenHost ?? '0.0.0.0',
+    );
+    final portCtrl = TextEditingController(
+      text: (subscription?.listenPort ?? 9100).toString(),
+    );
+    final urlCtrl = TextEditingController(text: subscription?.url ?? '');
+    final heartbeatCtrl = TextEditingController(
+      text: subscription?.heartbeatMs == null
+          ? ''
+          : subscription!.heartbeatMs.toString(),
+    );
+    final tokenCtrl = TextEditingController(text: subscription?.token ?? '');
+
+    final effectiveType = type ?? subscription?.type ?? HubSubscriptionType.ws;
+    final effectiveDirection =
+        wsDirection ?? subscription?.wsDirection ?? HubWsDirection.forward;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSS) => ContentDialog(
+          title: isEdit ? t.edit : t.addSubscription,
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 连接方式
+                  Text(
+                    '${t.connectionType}: ${_subscriptionTypeLabel(HubSubscription(id: '', type: effectiveType, wsDirection: effectiveDirection, createdAt: ''))}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: noteCtrl,
+                    decoration: InputDecoration(labelText: t.note),
+                  ),
+                  const SizedBox(height: 12),
+                  if (effectiveType == HubSubscriptionType.ws &&
+                      effectiveDirection == HubWsDirection.forward) ...[
+                    TextField(
+                      controller: hostCtrl,
+                      decoration: InputDecoration(labelText: t.listenAddress),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: portCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: t.listenPort),
+                    ),
+                  ] else if (effectiveType == HubSubscriptionType.http) ...[
+                    TextField(
+                      controller: hostCtrl,
+                      decoration: InputDecoration(labelText: t.listenAddress),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: portCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: t.listenPort),
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: urlCtrl,
+                      decoration: InputDecoration(labelText: t.targetUrl),
+                    ),
+                  ],
+                  if (effectiveType != HubSubscriptionType.http) ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: heartbeatCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: t.heartbeat),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: tokenCtrl,
+                    decoration: InputDecoration(labelText: t.token),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () async {
+                final sub = HubSubscription(
+                  id: subscription?.id ?? const Uuid().v4(),
+                  type: effectiveType,
+                  wsDirection: effectiveType == HubSubscriptionType.ws
+                      ? effectiveDirection
+                      : null,
+                  listenHost:
+                      (effectiveType == HubSubscriptionType.ws &&
+                              effectiveDirection == HubWsDirection.forward) ||
+                          effectiveType == HubSubscriptionType.http
+                      ? hostCtrl.text.trim()
+                      : null,
+                  listenPort:
+                      (effectiveType == HubSubscriptionType.ws &&
+                              effectiveDirection == HubWsDirection.forward) ||
+                          effectiveType == HubSubscriptionType.http
+                      ? int.tryParse(portCtrl.text.trim())
+                      : null,
+                  url:
+                      (effectiveType == HubSubscriptionType.ws &&
+                              effectiveDirection == HubWsDirection.reverse) ||
+                          effectiveType == HubSubscriptionType.webhook
+                      ? urlCtrl.text.trim()
+                      : null,
+                  heartbeatMs: int.tryParse(heartbeatCtrl.text.trim()),
+                  token: tokenCtrl.text.trim().isEmpty
+                      ? null
+                      : tokenCtrl.text.trim(),
+                  note: noteCtrl.text.trim(),
+                  createdAt:
+                      subscription?.createdAt ??
+                      DateTime.now().toIso8601String(),
+                );
+                if (isEdit) {
+                  HubSubscriptionManager.instance.update(sub);
+                } else {
+                  HubSubscriptionManager.instance.add(sub);
+                }
+                await HubSubscriptionService.instance.start(sub);
+                if (ctx.mounted) Navigator.pop(ctx);
+                if (mounted) setState(() {});
+              },
+              child: Text(t.apply),
+            ),
+          ],
+        ),
+      ),
+    );
+    noteCtrl.dispose();
+    hostCtrl.dispose();
+    portCtrl.dispose();
+    urlCtrl.dispose();
+    heartbeatCtrl.dispose();
+    tokenCtrl.dispose();
+  }
+
+  // ── 房间导入导出 ──────────────────────────────────────────────────────────
+
+  Future<void> _exportRooms() async {
+    try {
+      await saveFile(
+        data: utf8.encode(_hub.exportRoomsJson()),
+        filename: 'hub_rooms.json',
+      );
+      App.rootContext.showMessage(message: t.saved);
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: '${t.savedFailed}: $e',
+        level: LogLevel.warning,
+      );
+    }
+  }
+
+  Future<void> _importRooms() async {
+    final result = await FilePicker.pickFiles(type: FileType.any);
+    if (result == null || result.files.isEmpty) return;
+    try {
+      final bytes = await result.files.single.readAsBytes();
+      _hub.importRoomsJson(utf8.decode(bytes));
+      setState(() {});
+      App.rootContext.showMessage(message: t.saved);
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: '${t.savedFailed}: $e',
+        level: LogLevel.warning,
+      );
+    }
+  }
+
+  // ── AI 陪聊机器人配置 ─────────────────────────────────────────────────────
+
+  Future<void> _showAiBotConfigSheet(BuildContext context) async {
+    final cs = Theme.of(context).colorScheme;
+    var provider =
+        OpenAiProviderRegistry.allProviders.containsKey(_aiBotConfig.provider)
+        ? _aiBotConfig.provider
+        : 'deepseek';
+    var model = _aiBotConfig.model;
+    var models = await AiDatabase.instance.aiModelDao.getModelsByProvider(
+      provider,
+    );
+    final nameCtrl = TextEditingController(text: _aiBotConfig.name);
+    final promptCtrl = TextEditingController(text: _aiBotConfig.systemPrompt);
+    var minInterval = _aiBotConfig.minIntervalSec;
+    var replyDm = _aiBotConfig.replyDm;
+    var triggerMode = _aiBotConfig.triggerMode;
+    final triggerPatternCtrl = TextEditingController(
+      text: _aiBotConfig.triggerPattern,
+    );
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setSS) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.65,
+              child: Material(
+                color: cs.surface,
+                child: Column(
+                  children: [
+                    _SheetHeader(
+                      title: t.hubAiBotConfigTitle,
+                      icon: Icons.smart_toy_outlined,
+                    ),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        children: [
+                          TextField(
+                            controller: nameCtrl,
+                            decoration: InputDecoration(
+                              labelText: t.hubAiBotName,
+                              isDense: true,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // ── AI 服务商（关联 AI 设置）──
+                          InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: t.hubAiBotProvider,
+                              helperText: t.hubAiBotProviderHelper,
+                              isDense: true,
+                            ),
+                            child: DropdownButton<String>(
+                              value: provider,
+                              isExpanded: true,
+                              isDense: true,
+                              underline: const SizedBox.shrink(),
+                              items: [
+                                for (final e
+                                    in OpenAiProviderRegistry
+                                        .allProviders
+                                        .entries)
+                                  DropdownMenuItem(
+                                    value: e.key,
+                                    child: Text(e.value.name),
+                                  ),
+                              ],
+                              onChanged: (v) async {
+                                if (v == null || v == provider) return;
+                                setSS(() {
+                                  provider = v;
+                                  model = '';
+                                });
+                                final m = await AiDatabase.instance.aiModelDao
+                                    .getModelsByProvider(v);
+                                if (context.mounted) {
+                                  setSS(() => models = m);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // ── 模型（关联 AI 设置里该服务商配置的模型）──
+                          InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: t.hubAiBotModel,
+                              helperText: t.hubAiBotModelHint,
+                              isDense: true,
+                            ),
+                            child: DropdownButton<String>(
+                              value: models.any((m) => m.modelId == model)
+                                  ? model
+                                  : null,
+                              isExpanded: true,
+                              isDense: true,
+                              underline: const SizedBox.shrink(),
+                              hint: Text(t.hubAiBotModelHint),
+                              items: [
+                                DropdownMenuItem(
+                                  value: '',
+                                  child: Text(t.hubAiBotModelDefault),
+                                ),
+                                for (final m in models)
+                                  DropdownMenuItem(
+                                    value: m.modelId,
+                                    child: Text(
+                                      m.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                              ],
+                              onChanged: (v) => setSS(() => model = v ?? ''),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: promptCtrl,
+                            maxLines: 5,
+                            decoration: InputDecoration(
+                              labelText: t.hubAiBotSystemPrompt,
+                              alignLabelWithHint: true,
+                              isDense: true,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  t.hubAiBotTriggerMode,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              DropdownButton<String>(
+                                value: triggerMode,
+                                items: [
+                                  DropdownMenuItem(
+                                    value: 'mention',
+                                    child: Text(t.hubAiBotTriggerMention),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'prefix',
+                                    child: Text(t.hubAiBotTriggerPrefix),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'keyword',
+                                    child: Text(t.hubAiBotTriggerKeyword),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'all',
+                                    child: Text(t.hubAiBotTriggerAll),
+                                  ),
+                                ],
+                                onChanged: (v) =>
+                                    setSS(() => triggerMode = v ?? 'mention'),
+                              ),
+                            ],
+                          ),
+                          if (triggerMode == 'prefix' ||
+                              triggerMode == 'keyword') ...[
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: triggerPatternCtrl,
+                              decoration: InputDecoration(
+                                labelText: t.hubAiBotTriggerPattern,
+                                hintText: triggerMode == 'prefix'
+                                    ? './'
+                                    : t.hubAiBotKeywordHint,
+                                isDense: true,
+                              ),
+                            ),
+                          ],
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  t.hubAiBotMinInterval,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
+                              DropdownButton<int>(
+                                value: minInterval.clamp(1, 30),
+                                items: [
+                                  for (var s = 1; s <= 30; s++)
+                                    DropdownMenuItem(
+                                      value: s,
+                                      child: Text('$s s'),
+                                    ),
+                                ],
+                                onChanged: (v) =>
+                                    setSS(() => minInterval = v ?? minInterval),
+                              ),
+                            ],
+                          ),
+                          ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              t.hubAiBotReplyDm,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            trailing: CustomSwitch(
+                              value: replyDm,
+                              onChanged: (v) => setSS(() => replyDm = v),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            icon: const Icon(Icons.save_outlined, size: 18),
+                            label: Text(t.save),
+                            onPressed: () {
+                              setState(() {
+                                _aiBotConfig = _aiBotConfig.copyWith(
+                                  name: nameCtrl.text.trim().isEmpty
+                                      ? t.hubAiBotDefaultName
+                                      : nameCtrl.text.trim(),
+                                  provider: provider,
+                                  model: model,
+                                  systemPrompt: promptCtrl.text,
+                                  minIntervalSec: minInterval,
+                                  replyDm: replyDm,
+                                  triggerMode: triggerMode,
+                                  triggerPattern: triggerPatternCtrl.text,
+                                )..save();
+                              });
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    nameCtrl.dispose();
+    promptCtrl.dispose();
+    triggerPatternCtrl.dispose();
+  }
 
   void _showBlacklistSheet(BuildContext context) {
     showModalBottomSheet(
@@ -253,7 +960,7 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                   return _ClientTile(
                     name: client.displayName ?? client.userId,
                     avatarUrl: client.avatarUrl,
-                    trailing: Switch(
+                    trailing: CustomSwitch(
                       value: isAdmin,
                       onChanged: (val) async {
                         await _hub.setClientRoomAdmin(
@@ -292,9 +999,83 @@ class _HubManagementPageState extends ConsumerState<_HubManagementPage> {
                 ),
                 _SettingRow(
                   title: "${_hub.rooms.length} rooms",
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.file_download_outlined,
+                          size: 18,
+                        ),
+                        tooltip: t.importRooms,
+                        onPressed: _importRooms,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.file_upload_outlined, size: 18),
+                        tooltip: t.exportRooms,
+                        onPressed: _exportRooms,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        tooltip: t.view,
+                        onPressed: () => _showRoomsSheet(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _BuildSectionPadding(_SettingCard(children: _subscriptionSection())),
+          // ── AI 陪聊机器人 ─────────────────────────────────────────────
+          _BuildSectionPadding(
+            _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.hubAiBot,
+                  icon: Icons.smart_toy_outlined,
+                ),
+                _SettingRow(
+                  title: t.hubAiBotEnabled,
+                  subtitle: _aiBotConfig.enabled
+                      ? '${t.hubAiBotStatus} · ${_aiBotConfig.name}'
+                      : t.hubAiBotStatusDisabled,
+                  trailing: CustomSwitch(
+                    value: _aiBotConfig.enabled,
+                    onChanged: (v) {
+                      setState(
+                        () =>
+                            _aiBotConfig = _aiBotConfig.copyWith(enabled: v)
+                              ..save(),
+                      );
+                    },
+                  ),
+                ),
+                _SettingRow(
+                  title: t.hubAiBotConfigure,
+                  subtitle: t.hubAiBotConfigureDesc,
                   trailing: IconButton(
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    onPressed: () => _showRoomsSheet(context),
+                    icon: const Icon(Icons.settings_outlined, size: 18),
+                    tooltip: t.hubAiBotConfigure,
+                    onPressed: () => _showAiBotConfigSheet(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── Web 管理后台（二级页面：说明 + 开关 + 端口） ────────────────
+          _BuildSectionPadding(
+            _SettingCard(
+              children: [
+                _SettingPartTitle(title: t.webAdminDashboard, icon: Icons.web),
+                InkWell(
+                  onTap: () => _showWebAdminSettingsPage(context),
+                  child: _SettingRow(
+                    title: t.webAdminSettings,
+                    subtitle: _webAdminEnabled
+                        ? '${t.enabled} · http://localhost:$_webAdminPort'
+                        : t.disabled,
+                    trailing: const Icon(Icons.chevron_right, size: 18),
                   ),
                 ),
               ],
@@ -500,8 +1281,19 @@ class _OnlineClientTile extends StatelessWidget {
     return ListTile(
       leading: client.avatarUrl != null && client.avatarUrl!.isNotEmpty
           ? CircleAvatar(
-              backgroundImage: NetworkImage(client.avatarUrl!),
               radius: 16,
+              backgroundColor: cs.surfaceContainerHighest,
+              child: ClipOval(
+                child: AnimatedImage(
+                  image: CachedImageProvider(
+                    client.avatarUrl!,
+                    sourceKey: 'hub',
+                  ),
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                ),
+              ),
             )
           : CircleAvatar(
               radius: 16,
@@ -983,6 +1775,166 @@ class _HostInput extends StatelessWidget {
         ),
       ),
       onChanged: onChanged,
+    );
+  }
+}
+
+/// Web 管理后台设置二级页面：说明 + 开关 + 端口 + 打开
+class _WebAdminSettingsPage extends ConsumerStatefulWidget {
+  const _WebAdminSettingsPage();
+
+  @override
+  ConsumerState<_WebAdminSettingsPage> createState() =>
+      _WebAdminSettingsPageState();
+}
+
+class _WebAdminSettingsPageState extends ConsumerState<_WebAdminSettingsPage> {
+  late final TextEditingController _portCtrl;
+
+  bool get _enabled =>
+      appdata.implicitData['hub_web_admin_enabled'] as bool? ?? false;
+
+  int get _port => appdata.implicitData['hub_web_admin_port'] as int? ?? 9200;
+
+  HubService get _hub => ref.read(hubServiceProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _portCtrl = TextEditingController(text: '$_port');
+  }
+
+  @override
+  void dispose() {
+    _portCtrl.dispose();
+    super.dispose();
+  }
+
+  void _savePort() {
+    final port = int.tryParse(_portCtrl.text.trim());
+    if (port == null || port <= 0 || port > 65535) {
+      _portCtrl.text = '$_port';
+      return;
+    }
+    appdata.implicitData['hub_web_admin_port'] = port;
+    appdata.writeImplicitData();
+    if (mounted) setState(() {});
+    App.rootContext.showMessage(message: t.restartHubToApply);
+  }
+
+  void _open() {
+    launchUrl(
+      Uri.parse('http://localhost:$_port'),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text(t.webAdminDashboard)),
+      body: CustomScrollView(
+        slivers: [
+          _BuildSectionPadding(
+            _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.webAdminWhatIs,
+                  icon: Icons.info_outline,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    t.webAdminDescription,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: cs.onSurface.toOpacity(0.7),
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _BuildSectionPadding(
+            _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.webAdminSettings,
+                  icon: Icons.settings_outlined,
+                ),
+                _SwitchSetting(
+                  title: t.webAdminEnabled,
+                  settingKey: 'hub_web_admin_enabled',
+                  dataSource: SwitchDataSource.implicit,
+                  subtitle: _enabled ? 'http://localhost:$_port' : t.disabled,
+                  onChanged: () {
+                    // 持久化已由 _SwitchSetting 完成，这里处理服务启停
+                    if (appdata.implicitData['hub_web_admin_enabled'] == true) {
+                      App.rootContext.showMessage(message: t.restartHubToApply);
+                      _hub.startWebAdmin();
+                    } else {
+                      _hub.stopWebAdmin();
+                    }
+                    if (mounted) setState(() {});
+                  },
+                ),
+                if (_enabled) ...[
+                  _SettingRow(
+                    title: t.webAdminPort,
+                    trailing: SizedBox(
+                      width: 120,
+                      child: TextField(
+                        controller: _portCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          border: OutlineInputBorder(),
+                        ),
+                        onSubmitted: (_) => _savePort(),
+                      ),
+                    ),
+                  ),
+                  _SettingRow(
+                    title: t.webAdminUrl,
+                    subtitle: 'http://localhost:$_port',
+                    trailing: IconButton(
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      tooltip: t.view,
+                      onPressed: _open,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          _BuildSectionPadding(
+            _SettingCard(
+              children: [
+                _SettingPartTitle(
+                  title: t.webAdminFeatures,
+                  icon: Icons.web_asset_outlined,
+                ),
+                for (final (icon, text) in [
+                  (Icons.dashboard_outlined, t.webAdminFeatureOverview),
+                  (Icons.meeting_room_outlined, t.webAdminFeatureRooms),
+                  (Icons.people_outline, t.webAdminFeatureClients),
+                  (Icons.article_outlined, t.webAdminFeatureLogs),
+                  (Icons.tune, t.webAdminFeatureConfig),
+                  (Icons.smart_toy_outlined, t.webAdminFeatureAi),
+                  (Icons.webhook, t.webAdminFeatureWebhooks),
+                  (Icons.refresh, t.webAdminFeatureRestart),
+                ])
+                  _SettingRow(
+                    title: text,
+                    trailing: Icon(icon, size: 18, color: cs.primary),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

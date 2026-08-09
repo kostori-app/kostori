@@ -497,6 +497,26 @@ class StatsManager with ChangeNotifier {
   final _cachedStatsIds = <String, bool>{};
   bool _modifiedAfterLastCache = true;
 
+  /// 在途数据库操作计数；close/reinit 前等待归零，
+  /// 避免数据导入关库打断在途查询（"Channel was closed"）
+  int _busy = 0;
+
+  Future<void> _waitIdle() async {
+    while (_busy > 0) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+  }
+
+  Future<T> _guard<T>(Future<T> Function() op) {
+    _busy++;
+    try {
+      return Future.sync(op).whenComplete(() => _busy--);
+    } catch (_) {
+      _busy--;
+      rethrow;
+    }
+  }
+
   Future<void> init() async {
     if (isInitialized) return;
     _db = _StatsDb();
@@ -504,12 +524,14 @@ class StatsManager with ChangeNotifier {
   }
 
   Future<void> close() async {
+    await _waitIdle();
     await _db.close();
     _cache = null;
     isInitialized = false;
   }
 
   Future<void> reinit([Future<void> Function()? between]) async {
+    await _waitIdle();
     if (isInitialized) {
       await _db.close();
       isInitialized = false;
@@ -577,7 +599,7 @@ class StatsManager with ChangeNotifier {
 
   // ─── 写入 ──────────────────────────────────
 
-  Future<void> addStats(StatsData newItem) async {
+  Future<void> addStats(StatsData newItem) => _guard(() async {
     _modifiedAfterLastCache = true;
     final c = _toCompanion(newItem);
     await _db.customInsert(
@@ -605,7 +627,7 @@ class StatsManager with ChangeNotifier {
       updates: {_db.statsTable},
     );
     notifyListeners();
-  }
+  });
 
   Future<void> updateStats({
     required String id,
@@ -616,7 +638,7 @@ class StatsManager with ChangeNotifier {
     List<DailyEvent>? favorite,
     List<DailyEvent>? rating,
     List<DailyEvent>? comment,
-  }) async {
+  }) => _guard(() async {
     final companion = StatsTableCompanion(
       liked: liked != null ? Value(liked) : const Value.absent(),
       bangumiId: bangumiId != null ? Value(bangumiId) : const Value.absent(),
@@ -640,13 +662,13 @@ class StatsManager with ChangeNotifier {
       _db.statsTable,
     )..where((t) => t.id.equals(id) & t.type.equals(type))).write(companion);
     notifyListeners();
-  }
+  });
 
   Future<void> updateGroupLiked({
     required String id,
     required int type,
     required bool targetLiked,
-  }) async {
+  }) => _guard(() async {
     final current = await getStatsByIdAndType(id: id, type: type);
     if (current == null) return;
 
@@ -665,21 +687,21 @@ class StatsManager with ChangeNotifier {
             .write(const StatsTableCompanion(liked: Value(false)));
       }
     }
-  }
+  });
 
   // ─── 查询 ──────────────────────────────────
 
   Future<StatsDataImpl?> getStatsByIdAndType({
     required String id,
     required int type,
-  }) async {
+  }) => _guard(() async {
     final row = await (_db.select(
       _db.statsTable,
     )..where((t) => t.id.equals(id) & t.type.equals(type))).getSingleOrNull();
     return row != null ? StatsDataImpl.fromDrift(row) : null;
-  }
+  });
 
-  Future<List<StatsDataImpl>> getStatsAll() async {
+  Future<List<StatsDataImpl>> getStatsAll() => _guard(() async {
     final rows = await _db.select(_db.statsTable).get();
     final all = <StatsDataImpl>[];
     for (var i = 0; i < rows.length; i++) {
@@ -709,7 +731,7 @@ class StatsManager with ChangeNotifier {
               (selectorList.contains(s.type) && existingTypes.contains(s.type)),
         )
         .toList();
-  }
+  });
 
   Stream<List<StatsDataImpl>> watchAll() {
     return _db
@@ -718,26 +740,24 @@ class StatsManager with ChangeNotifier {
         .map((rows) => rows.map(StatsDataImpl.fromDrift).toList());
   }
 
-  Future<bool> getGroupLikedStatus({
-    required String id,
-    required int type,
-  }) async {
-    final item = await getStatsByIdAndType(id: id, type: type);
-    if (item == null) return false;
-    if (item.liked) return true;
-    if (item.bangumiId != null) {
-      final count =
-          await (_db.select(_db.statsTable)..where(
-                (t) =>
-                    t.bangumiId.equals(item.bangumiId!) &
-                    t.id.equals(id).not() &
-                    t.liked.equals(true),
-              ))
-              .get();
-      return count.isNotEmpty;
-    }
-    return false;
-  }
+  Future<bool> getGroupLikedStatus({required String id, required int type}) =>
+      _guard(() async {
+        final item = await getStatsByIdAndType(id: id, type: type);
+        if (item == null) return false;
+        if (item.liked) return true;
+        if (item.bangumiId != null) {
+          final count =
+              await (_db.select(_db.statsTable)..where(
+                    (t) =>
+                        t.bangumiId.equals(item.bangumiId!) &
+                        t.id.equals(id).not() &
+                        t.liked.equals(true),
+                  ))
+                  .get();
+          return count.isNotEmpty;
+        }
+        return false;
+      });
 
   Future<Map<DateTime, List<StatsDataImpl>>> getEventMap() async {
     final allStats = await getStatsAll();
@@ -864,17 +884,17 @@ class StatsManager with ChangeNotifier {
     return latestRating;
   }
 
-  Future<bool> isExistAsync(String id, AnimeType type) async {
+  Future<bool> isExistAsync(String id, AnimeType type) => _guard(() async {
     if (_modifiedAfterLastCache) await _cacheStatsIds();
     return _cachedStatsIds.containsKey("$id@${type.value}");
-  }
+  });
 
   bool isExist(String id, AnimeType type) {
     // 同步版：依赖缓存，需确保 _cacheStatsIds 已执行
     return _cachedStatsIds.containsKey("$id@${type.value}");
   }
 
-  Future<void> _cacheStatsIds() async {
+  Future<void> _cacheStatsIds() => _guard(() async {
     _modifiedAfterLastCache = false;
     _cachedStatsIds.clear();
     final rows = await (_db.selectOnly(
@@ -887,7 +907,7 @@ class StatsManager with ChangeNotifier {
         _cachedStatsIds["$id@$type"] = true;
       }
     }
-  }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════

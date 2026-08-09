@@ -274,6 +274,12 @@ class AnimeSource {
 
   bool isBangumi = false;
 
+  /// 搜索源分组。源脚本可在 data 中声明 `group`，否则按 isBangumi 推断。
+  String get searchGroup =>
+      (data['group'] as String?)?.trim().isNotEmpty == true
+      ? (data['group'] as String).trim()
+      : (isBangumi ? 'bangumi' : 'default');
+
   Future<void> saveData() async {
     if (_haveWaitingTask) return;
     while (_isSaving) {

@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'dart:io' as io;
-import 'dart:math' as math;
 import 'dart:math';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
@@ -294,13 +293,20 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
       final localPath = _getSampleInputPath();
       if (localPath == null) return;
 
+      // 本地已下载片段的时间轴从 0 开始，需减去预览下载起点偏移
+      final isLocal = localPath != widget.videoUrl;
+      final offset = isLocal ? _hlsOffset : Duration.zero;
+
       final (_, encodeArgs) = _buildEncodeArgs(
         outputDir: tempDir.path,
         timestamp: 0,
         exportUrl: localPath,
         exportHeaders: {},
         proxyUrl: null,
-        startMsOverride: sampleStartMs,
+        startMsOverride: (sampleStartMs - offset.inMilliseconds).clamp(
+          0,
+          isLocal ? _previewWindowMs : _videoDuration.inMilliseconds - 1000,
+        ),
         lengthMsOverride: (sampleSec * 1000).toInt(),
       );
 
@@ -345,7 +351,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
   }
 
   String _estimatedSize() {
-    if (_sampling) return '估算中…';
+    if (_sampling) return t.vceEstimating;
     final bytes = _estimatedBytes;
     if (bytes == null || _videoWidth == 0) return '--';
     if (bytes < 1024) return '${bytes.toInt()}B';
@@ -879,7 +885,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         final localM3u8 = await _HlsDownloader.download(
           url: exportUrl,
           headers: exportHeaders,
-          startMs: _startTime.inMilliseconds + _previewDownloadStartMs,
+          startMs: _startTime.inMilliseconds,
           endMs: _endTime.inMilliseconds,
           onProgress: (p, msg) {
             if (mounted && !_exportCancelled) {
@@ -1315,7 +1321,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               left: 8,
               bottom: 8,
               child: Tooltip(
-                message: '重新加载预览片段',
+                message: t.vceReloadPreview,
                 child: GestureDetector(
                   onTap: _initPreviewPlayer,
                   child: Container(
@@ -1327,13 +1333,13 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                       color: Colors.black45,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.refresh, color: Colors.white70, size: 13),
                         SizedBox(width: 4),
                         Text(
-                          '重载',
+                          t.vceReload,
                           style: TextStyle(color: Colors.white70, fontSize: 11),
                         ),
                       ],
@@ -1480,7 +1486,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     : _thumbnailPaths.isEmpty
                     ? Center(
                         child: Text(
-                          '视频时间轴缩略图',
+                          t.vceTimelineThumbnails,
                           style: const TextStyle(
                             color: Colors.white38,
                             fontSize: 10,
@@ -1542,14 +1548,14 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _nudgeBtn(
           icon: Icons.fast_rewind,
           size: iconSize,
-          tooltip: isStart ? '起点 −1s' : '终点 −1s',
+          tooltip: isStart ? '${t.vceStart} −1s' : '${t.vceEnd} −1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: -1000),
           minSize: btnMinSize,
         ),
         _nudgeBtn(
           icon: Icons.remove,
           size: iconSize,
-          tooltip: isStart ? '起点 −0.1s' : '终点 −0.1s',
+          tooltip: isStart ? '${t.vceStart} −0.1s' : '${t.vceEnd} −0.1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: -100),
           minSize: btnMinSize,
         ),
@@ -1570,14 +1576,14 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         _nudgeBtn(
           icon: Icons.add,
           size: iconSize,
-          tooltip: isStart ? '起点 +0.1s' : '终点 +0.1s',
+          tooltip: isStart ? '${t.vceStart} +0.1s' : '${t.vceEnd} +0.1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: 100),
           minSize: btnMinSize,
         ),
         _nudgeBtn(
           icon: Icons.fast_forward,
           size: iconSize,
-          tooltip: isStart ? '起点 +1s' : '终点 +1s',
+          tooltip: isStart ? '${t.vceStart} +1s' : '${t.vceEnd} +1s',
           onTap: () => _nudge(isStart: isStart, deltaMs: 1000),
           minSize: btnMinSize,
         ),
@@ -1593,20 +1599,20 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     showDialog(
       context: context,
       builder: (context) => ContentDialog(
-        title: isStart ? '修改起点' : '修改终点',
+        title: isStart ? t.vceModifyStart : t.vceModifyEnd,
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: '支持格式: 90, 01:30, 1.5...',
-            helperText: '输入纯数字视为秒数',
+          decoration: InputDecoration(
+            hintText: t.vceTimeFormatHint,
+            helperText: t.vcePureNumberIsSeconds,
           ),
           onSubmitted: (_) => _handleSubmitted(isStart, controller.text),
         ),
         actions: [
           TextButton(
             onPressed: () => _handleSubmitted(isStart, controller.text),
-            child: const Text('确定'),
+            child: Text(t.ok),
           ),
         ],
       ),
@@ -1620,7 +1626,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
         if (isStart) {
           _startTime = newDuration.clamp(Duration.zero, _endTime);
         } else {
-          _endTime = newDuration.clamp(_startTime, widget.duration);
+          final upper = _videoDuration > Duration.zero
+              ? _videoDuration
+              : widget.duration;
+          _endTime = newDuration.clamp(_startTime, upper);
         }
       });
     }
@@ -1684,10 +1693,10 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionTitle(Icons.settings_outlined, '导出设置'),
+              _sectionTitle(Icons.settings_outlined, t.vceExportSettings),
               const SizedBox(height: 10),
 
-              _label('格式'),
+              _label(t.format),
               const SizedBox(height: 6),
               LayoutBuilder(
                 builder: (context, c) {
@@ -1730,13 +1739,13 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               ),
               const SizedBox(height: 12),
 
-              _label('分辨率'),
+              _label(t.resolution),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
                 children: [
-                  _resChip(label: '原始', value: null),
+                  _resChip(label: t.vceOriginal, value: null),
                   _resChip(label: '240p', value: 240),
                   _resChip(label: '360p', value: 360),
                   _resChip(label: '480p', value: 480),
@@ -1747,23 +1756,23 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               const SizedBox(height: 12),
 
               if (_format == ExportFormat.mp4) ...[
-                _label('质量 (CRF)'),
+                _label(t.vceQualityCrf),
                 const SizedBox(height: 6),
                 SegmentedButton<ExportQuality>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: ExportQuality.high,
-                      label: Text('高质量'),
+                      label: Text(t.vceHighQuality),
                       icon: Icon(Icons.high_quality, size: 15),
                     ),
                     ButtonSegment(
                       value: ExportQuality.medium,
-                      label: Text('标准'),
+                      label: Text(t.vceStandard),
                       icon: Icon(Icons.hd_outlined, size: 15),
                     ),
                     ButtonSegment(
                       value: ExportQuality.low,
-                      label: Text('压缩'),
+                      label: Text(t.vceCompressed),
                       icon: Icon(Icons.compress, size: 15),
                     ),
                   ],
@@ -1782,8 +1791,8 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     Expanded(
                       child: _label(
                         _mp4BitrateKbps == null
-                            ? '固定码率（可选，覆盖 CRF）'
-                            : '固定码率  ${_mp4BitrateKbps}kbps',
+                            ? t.vceFixedBitrateOptional
+                            : t.vceFixedBitrateKbps(kbps: _mp4BitrateKbps ?? 0),
                       ),
                     ),
                     if (_mp4BitrateKbps != null)
@@ -1793,7 +1802,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                           padding: EdgeInsets.zero,
                           minimumSize: const Size(40, 28),
                         ),
-                        child: const Text('重置'),
+                        child: Text(t.reset),
                       ),
                   ],
                 ),
@@ -1828,7 +1837,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   children: [
                     const Icon(Icons.volume_up_outlined, size: 18),
                     const SizedBox(width: 8),
-                    const Expanded(child: Text('包含音频')),
+                    Expanded(child: Text(t.vceIncludeAudio)),
                     CustomSwitch(
                       value: _includeAudio,
                       onChanged: (v) => setState(() => _includeAudio = v),
@@ -1838,7 +1847,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               ],
 
               if (_format != ExportFormat.mp4) ...[
-                _label('帧率  $_animFps fps'),
+                _label(t.vceFrameRate(fps: _animFps)),
                 Slider(
                   min: 5,
                   max: 30,
@@ -1848,13 +1857,13 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   onChanged: (v) => setState(() => _animFps = v.round()),
                 ),
                 if (_format == ExportFormat.gif) ...[
-                  _label('调色板颜色数  $_gifColors  （越少体积越小）'),
+                  _label(t.vcePaletteColors(n: _gifColors)),
                   Slider(
                     min: 2,
                     max: 256,
                     divisions: 14,
                     value: _gifColors.toDouble(),
-                    label: '$_gifColors 色',
+                    label: t.vceColorCount(n: _gifColors),
                     onChanged: (v) => setState(() => _gifColors = v.round()),
                   ),
                   Wrap(
@@ -1875,7 +1884,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     children: [
                       const Icon(Icons.grain_outlined, size: 16),
                       const SizedBox(width: 8),
-                      const Expanded(child: Text('启用抖动（画质更好，体积稍大）')),
+                      Expanded(child: Text(t.vceEnableDithering)),
                       CustomSwitch(
                         value: _gifDither,
                         onChanged: (v) => setState(() => _gifDither = v),
@@ -1884,7 +1893,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                   ),
                 ],
                 if (_format == ExportFormat.webp) ...[
-                  _label('WebP 质量  $_webpQuality'),
+                  _label(t.vceWebpQuality(n: _webpQuality)),
                   Slider(
                     min: 10,
                     max: 100,
@@ -1918,12 +1927,28 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     return switch (_format) {
       ExportFormat.mp4 =>
         _mp4BitrateKbps != null
-            ? 'H.264 · ${_mp4BitrateKbps}kbps · ${_includeAudio ? "含音频" : "无音频"}'
-            : 'H.264 · CRF $_crf · ${_includeAudio ? "含音频" : "无音频"}',
-      ExportFormat.gif =>
-        'GIF · $_animFps fps · $_gifColors色 · ${_gifDither ? "抖动开" : "抖动关"} · 无音频',
-      ExportFormat.apng => 'APNG · $_animFps fps · 无音频 · 浏览器兼容好',
-      ExportFormat.webp => 'WebP · $_animFps fps · 质量$_webpQuality · 体积最小',
+            ? t.vceH264Summary(
+                bitrate: _mp4BitrateKbps ?? 0,
+                audio: _includeAudio ? t.vceWithAudio : t.vceWithoutAudio,
+              )
+            : t.vceH264CrfSummary(
+                crf: _crf,
+                audio: _includeAudio ? t.vceWithAudio : t.vceWithoutAudio,
+              ),
+      ExportFormat.gif => t.vceGifSummary(
+        fps: _animFps,
+        colors: _gifColors,
+        dither: _gifDither ? t.vceDitherOn : t.vceDitherOff,
+        audio: t.vceWithoutAudio,
+      ),
+      ExportFormat.apng => t.vceApngSummary(
+        fps: _animFps,
+        audio: t.vceWithoutAudio,
+      ),
+      ExportFormat.webp => t.vceWebpSummary(
+        fps: _animFps,
+        quality: _webpQuality,
+      ),
     };
   }
 
@@ -1951,7 +1976,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
             children: [
               Row(
                 children: [
-                  _sectionTitle(Icons.crop, '裁剪'),
+                  _sectionTitle(Icons.crop, t.vceCrop),
                   const Spacer(),
                   CustomSwitch(
                     value: _useCustomCrop,
@@ -1968,7 +1993,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
 
               if (_useCustomCrop) ...[
                 const SizedBox(height: 8),
-                _label('宽高比快速预设'),
+                _label(t.vceAspectPresets),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
@@ -1980,7 +2005,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     _aspectChip('9:16', 9, 16),
                     _aspectChip('4:5', 4, 5),
                     ActionChip(
-                      label: const Text('重置'),
+                      label: Text(t.reset),
                       avatar: const Icon(Icons.refresh, size: 14),
                       onPressed: _resetCrop,
                     ),
@@ -1994,7 +2019,11 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                     _showCropOverlay ? Icons.visibility_off : Icons.visibility,
                     size: 17,
                   ),
-                  label: Text(_showCropOverlay ? '隐藏裁剪框' : '显示裁剪框（可拖拽）'),
+                  label: Text(
+                    _showCropOverlay
+                        ? t.vceHideCropOverlay
+                        : t.vceShowCropOverlay,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (_videoWidth > 0) ...[
@@ -2022,7 +2051,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
               ] else ...[
                 const SizedBox(height: 4),
                 Text(
-                  '开启后可通过拖拽选择导出区域',
+                  t.vceCropDragHint,
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
@@ -2043,7 +2072,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
     final h = (_cropRect.height * _videoHeight).round();
     final pct =
         '${(_cropRect.width * 100).round()}×${(_cropRect.height * 100).round()}%';
-    return '$w×${h}px  起点($x, $y)  [$pct]';
+    return t.vceCropInfo(w: w, h: h, x: x, y: y, pct: pct);
   }
 
   Widget _aspectChip(String label, int w, int h) {
@@ -2145,7 +2174,7 @@ class _VideoClipEditorPageState extends State<VideoClipEditorPage> {
                         ),
                       )
                     : const Icon(Icons.file_download_outlined, size: 18),
-                label: Text(_isExporting ? '导出中…' : '导出'),
+                label: Text(_isExporting ? t.exporting : t.export),
               ),
             ],
           ),

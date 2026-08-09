@@ -53,6 +53,233 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
     super.dispose();
   }
 
+  // ── 已保存的服务器配置 ─────────────────────────────────────────────────────
+
+  Future<void> _saveCurrentProfile() async {
+    final host = _hostController.text.trim();
+    final port = _portController.text.trim();
+    final address = 'ws://$host:$port';
+    String? name;
+    await showInputDialog(
+      context: App.rootContext,
+      title: t.saveCurrentConfig,
+      hintText: t.serverName,
+      initialValue: host.isEmpty ? address : host,
+      onConfirm: (v) {
+        name = v;
+        return null;
+      },
+    );
+    if (name == null || !mounted) return;
+    _hubClient.saveProfile(
+      name: name!,
+      address: address,
+      token: _tokenController.text.trim(),
+    );
+    _saveAddress();
+    setState(() {});
+  }
+
+  Future<void> _connectProfile(Map<String, dynamic> p) async {
+    final address = p['address'] as String? ?? '';
+    if (address.isEmpty) return;
+    if (_hubClient.isConnected) await _hubClient.disconnect();
+    _hubClient.activateProfile(address);
+    _hostController.text = Uri.tryParse(address)?.host ?? address;
+    _portController.text = (Uri.tryParse(address)?.hasPort ?? false)
+        ? (Uri.tryParse(address)?.port ?? 9100).toString()
+        : '9100';
+    _tokenController.text = _hubClient.savedToken ?? '';
+    setState(() {});
+    try {
+      await _hubClient.connect(
+        address,
+        _hubClient.savedToken ?? '',
+        name: _hubClient.savedName ?? '',
+      );
+    } catch (e) {
+      App.rootContext.showMessage(
+        message: t.connectionFailed,
+        level: LogLevel.warning,
+      );
+    }
+  }
+
+  Widget _buildProfilesCard(BuildContext context) {
+    final profiles = _hubClient.getProfiles();
+    final cs = Theme.of(context).colorScheme;
+    return _BuildSectionPadding(
+      _SettingCard(
+        children: [
+          _SettingPartTitle(
+            title: t.savedServers,
+            icon: Icons.history_outlined,
+          ),
+          if (profiles.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Text(
+                t.noSavedServers,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: cs.onSurface.toOpacity(0.4),
+                ),
+              ),
+            )
+          else
+            ...profiles.map(
+              (p) => Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                child: Material(
+                  color: cs.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _connectProfile(p),
+                    onLongPress: () => _editProfileDialog(context, p),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            p['address'] == _hubClient.savedAddress
+                                ? Icons.radio_button_checked
+                                : Icons.circle_outlined,
+                            size: 18,
+                            color: p['address'] == _hubClient.savedAddress
+                                ? cs.primary
+                                : cs.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  (p['name'] as String?)?.isNotEmpty == true
+                                      ? p['name'] as String
+                                      : p['address'] as String,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  p['address'] as String? ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                    color: cs.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.link, size: 18),
+                            tooltip: t.connect,
+                            onPressed: () => _connectProfile(p),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            tooltip: t.delete,
+                            onPressed: () {
+                              _hubClient.deleteProfile(p['address'] as String);
+                              setState(() {});
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+              label: Text(t.saveCurrentConfig),
+              onPressed: _saveCurrentProfile,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 长按已保存服务器 → 编辑（名称/地址/token）
+  Future<void> _editProfileDialog(
+    BuildContext context,
+    Map<String, dynamic> profile,
+  ) async {
+    final uri = Uri.tryParse(profile['address'] as String? ?? '');
+    final nameCtrl = TextEditingController(text: profile['name'] ?? '');
+    final hostCtrl = TextEditingController(text: uri?.host ?? '');
+    final portCtrl = TextEditingController(
+      text: (uri?.hasPort ?? false) ? (uri?.port ?? 9100).toString() : '9100',
+    );
+    final tokenCtrl = TextEditingController(text: profile['token'] ?? '');
+
+    await showHubFormDialog(
+      title: t.edit,
+      confirmLabel: t.save,
+      fields: [
+        InputField(
+          controller: nameCtrl,
+          hint: t.serverName,
+          icon: Icons.badge_outlined,
+        ),
+        InputField(
+          controller: hostCtrl,
+          hint: t.host,
+          icon: Icons.dns_outlined,
+        ),
+        InputField(
+          controller: portCtrl,
+          hint: t.port,
+          icon: Icons.numbers_outlined,
+        ),
+        InputField(
+          controller: tokenCtrl,
+          hint: t.hubToken,
+          icon: Icons.key_outlined,
+        ),
+      ],
+      onConfirm: () async {
+        final oldAddress = profile['address'] as String? ?? '';
+        final address = 'ws://${hostCtrl.text.trim()}:${portCtrl.text.trim()}';
+        _hubClient.saveProfile(
+          name: nameCtrl.text.trim(),
+          address: address,
+          token: tokenCtrl.text.trim(),
+        );
+        if (oldAddress.isNotEmpty && oldAddress != address) {
+          _hubClient.deleteProfile(oldAddress);
+        }
+        if (_hubClient.savedAddress == oldAddress) {
+          _hubClient.saveToken(tokenCtrl.text.trim());
+          _tokenController.text = tokenCtrl.text.trim();
+        }
+        if (mounted) setState(() {});
+        return null;
+      },
+    );
+
+    nameCtrl.dispose();
+    hostCtrl.dispose();
+    portCtrl.dispose();
+    tokenCtrl.dispose();
+  }
+
   void _saveAddress() {
     final host = _hostController.text.trim();
     final port = _portController.text.trim();
@@ -97,8 +324,7 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
           final uri = Uri.tryParse(avatar);
           if (uri == null || !uri.hasScheme) {
             App.rootContext.showMessage(
-              message:
-                  t.pleaseEnterAValidUrl,
+              message: t.pleaseEnterAValidUrl,
               level: LogLevel.warning,
             );
             return null;
@@ -412,6 +638,9 @@ class _HubClientDetailPageState extends ConsumerState<_HubClientDetailPage> {
               ],
             ),
           ),
+
+          // ── 已保存的服务器配置 ──
+          _buildProfilesCard(context),
 
           // ── Token ──
           _BuildSectionPadding(

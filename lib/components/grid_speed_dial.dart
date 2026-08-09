@@ -599,10 +599,6 @@ class _GridSpeedDialState extends State<GridSpeedDial>
     final opening = !_open;
     if (opening && widget.onOpenBuilder != null) {
       // This part needs to be adapted if onOpenBuilder is used with the new structure.
-      // For now, assuming it's not used or will be adapted by the user.
-      // final newChildrens = await widget.onOpenBuilder!(context);
-      // widget.childrens.clear();
-      // widget.childrens.addAll(newChildrens);
     }
 
     if (widget.childrens.expand((e) => e).isNotEmpty) {

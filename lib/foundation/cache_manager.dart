@@ -48,30 +48,43 @@ class CacheManager {
     _limitSize = size * 1024 * 1024;
   }
 
+  /// 正在写入的 key 集合：同一 key 的并发写入只保留一个
+  final Set<String> _writingKeys = {};
+
   /// Write cache to disk.
   Future<void> writeCache(
     String key,
     List<int> data, [
     int duration = 7 * 24 * 60 * 60 * 1000,
   ]) async {
-    this.dir++;
-    this.dir %= 100;
-    var dir = this.dir;
-    var name = md5.convert(key.codeUnits).toString();
-    var file = File('$cachePath/$dir/$name');
-    await file.create(recursive: true);
-    await file.writeAsBytes(data);
-    var expires = DateTime.now().millisecondsSinceEpoch + duration;
-    _db.execute(
-      '''
-      INSERT OR REPLACE INTO cache (key, dir, name, expires) VALUES (?, ?, ?, ?)
-    ''',
-      [key, dir.toString(), name, expires],
-    );
-    if (_currentSize != null) {
-      _currentSize = _currentSize! + data.length;
+    // 同一 key 并发写去重：后续写入直接跳过（内容一致）
+    if (_writingKeys.contains(key)) return;
+    _writingKeys.add(key);
+    try {
+      this.dir++;
+      this.dir %= 100;
+      var dir = this.dir;
+      var name = md5.convert(key.codeUnits).toString();
+      var file = File('$cachePath/$dir/$name');
+      await file.create(recursive: true);
+      // 先写临时文件再改名，避免读到半截文件
+      var tmp = File('$cachePath/$dir/.$name.tmp');
+      await tmp.writeAsBytes(data, flush: true);
+      await tmp.rename(file.path);
+      var expires = DateTime.now().millisecondsSinceEpoch + duration;
+      _db.execute(
+        '''
+        INSERT OR REPLACE INTO cache (key, dir, name, expires) VALUES (?, ?, ?, ?)
+      ''',
+        [key, dir.toString(), name, expires],
+      );
+      if (_currentSize != null) {
+        _currentSize = _currentSize! + data.length;
+      }
+      checkCacheIfRequired();
+    } finally {
+      _writingKeys.remove(key);
     }
-    checkCacheIfRequired();
   }
 
   /// Find cache by key.

@@ -36,19 +36,21 @@ class LocalFavoriteImageProvider
     var file = File(FilePath.join(App.dataPath, 'favorite_cover', fileName));
     if (await file.exists()) {
       return await file.readAsBytes();
-    } else {
-      await file.create(recursive: true);
     }
+    // 只确保父目录存在，不预建空文件（避免下载失败留下 0 字节文件）
+    await file.parent.create(recursive: true);
     checkStop();
     await for (var progress in ImageDownloader.loadThumbnail(url, sourceKey)) {
       checkStop();
-      chunkEvents.add(ImageChunkEvent(
-        cumulativeBytesLoaded: progress.currentBytes,
-        expectedTotalBytes: progress.totalBytes,
-      ));
+      chunkEvents.add(
+        ImageChunkEvent(
+          cumulativeBytesLoaded: progress.currentBytes,
+          expectedTotalBytes: progress.totalBytes,
+        ),
+      );
       if (progress.imageBytes != null) {
         var data = progress.imageBytes!;
-        await file.writeAsBytes(data);
+        await file.writeAsBytes(data, flush: true);
         return data;
       }
     }
@@ -57,7 +59,8 @@ class LocalFavoriteImageProvider
 
   @override
   Future<LocalFavoriteImageProvider> obtainKey(
-      ImageConfiguration configuration) {
+    ImageConfiguration configuration,
+  ) {
     return SynchronousFuture(this);
   }
 

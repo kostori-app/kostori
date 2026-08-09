@@ -76,6 +76,7 @@ comments: 吐槽箱
 confirm: 確定
 continueText: 繼續
 copied: 已複製
+captchaHint: 請輸入驗證碼
 analyze: 分析
 analyzing: 分析中...
 analysisResult: 分析結果
@@ -140,6 +141,7 @@ fanyuan: 番源
 favoriteActions: 收藏夾操作
 favorite: 收藏
 favorites: 收藏夾
+animes: 部
 finished: 已完成
 folderName: 資料夾名稱
 folder: 資料夾
@@ -159,6 +161,8 @@ importAnimes: 匯入動漫
 importAppData: 匯入應用數據
 importFromFile: 從檔案匯入
 import: 匯入
+importAll: 全部匯入
+importSelected: 匯入所選
 importedAAnimes: 已匯入 ${a} 部動漫
 information: 資訊
 myRating: 我的評分
@@ -226,8 +230,12 @@ noLikedAnimeFound: 未找到喜歡的動漫
 noUpdates: 暫無更新
 ok: 確定
 onceTheOperationIsSuccessfulAppWillAutomaticallySyncDataWithTheServer: 一旦操作成功，應用將自動與伺服器同步數據。
+playerLoadingImage: 自訂載入圖
+inputImagePath: '輸入圖片路徑或 data: base64（支援 GIF/PNG/JPG/WebP 動圖）'
+loadingVideo: 正在載入影片
 openLog: 開啟日誌
 openAnime: 開啟動漫
+sourceNotInstalled: 番劇源「${source}」未安裝，請到源設定中新增後再開啟
 openHelp: 查看幫助
 openInBrowser: 在瀏覽器中開啟
 openLink: 開啟連結
@@ -297,6 +305,9 @@ storagePathForLocalAnimes: 本地動漫儲存路徑
 submit: 提交
 suggestions: 建議
 syncData: 同步數據
+lastSyncTime: 上次同步
+neverSynced: 從未同步
+configured: 已設定
 sync: 同步
 syncingData: 正在同步數據
 system: 系統
@@ -313,6 +324,11 @@ turnPageByVolumeKeys: 使用音量鍵翻頁
 unselected: 未選取
 updateAnimesInfo: 更新動漫資訊
 updateTime: 更新時間
+weekTotal: 本週總計
+todayTotal: 今日總計
+todayBroadcast: 今日播出
+broadcastDays: 播出天數
+generatedBy: 由 Kostori v${version} 生成
 update: 更新
 updatesAvailable: 有更新可用
 updating: 正在更新
@@ -328,6 +344,7 @@ viewMore: 查看更多
 view: 查看
 webDavAutoSync: WebDAV 自動同步
 default: 預設
+defaultValue: '預設：${v}'
 lastWatchTimeTime: 上次觀看時間 ${time}
 minAppVersionRequired: 需要最低應用版本 ${version}
 more: 更多
@@ -427,7 +444,13 @@ finishCropping: 完成裁剪
 sortImages: 圖片排序
 finishSorting: 完成排序
 noImages: 暫無圖片
+selectImages: 選擇圖片
+addImages: 新增圖片
+importedCountI: 已匯入 ${i} 張圖片
+exportImage: 複製/分享
+saveAndShare: 儲存並分享
 cropHeightCPx: 裁剪高度：${c} px
+firstImageFullHeight: 首張全高顯示
 enterHexColorCode: "輸入十六進位顏色代碼，例如 #FF000000"
 showImageBorders: 顯示圖片邊框
 outerBorderRadius: 外邊框圓角
@@ -468,6 +491,183 @@ overview: 總覽
 discussion: 討論
 logs: 日誌
 playerDetails: 播放器詳情
+watcherPlayingNext: 正在播放下一集
+watcherEpisodeLoadError: "載入劇集時出錯 ${error}"
+watcherNoMoreEpisodes: 沒有更多劇集可播放
+watcherRouteNotFound: 線路不存在
+watcherDuplicateEpisode: 已載入此集數
+vceEstimating: 估算中…
+vceReloadPreview: 重新載入預覽片段
+vceReload: 重載
+vceTimelineThumbnails: 影片時間軸縮圖
+vceStart: 起點
+vceEnd: 終點
+vceModifyStart: 修改起點
+vceModifyEnd: 修改終點
+vceTimeFormatHint: "支援格式: 90, 01:30, 1.5..."
+vcePureNumberIsSeconds: 輸入純數字視為秒數
+vceExportSettings: 匯出設定
+vceQualityCrf: 品質 (CRF)
+vceHighQuality: 高品質
+vceStandard: 標準
+vceCompressed: 壓縮
+vceOriginal: 原始
+vceFixedBitrateOptional: 固定碼率（選填，覆寫 CRF）
+vceFixedBitrateKbps: "固定碼率  ${kbps}kbps"
+vceIncludeAudio: 包含音訊
+vceFrameRate: "幀率  ${fps} fps"
+vcePaletteColors: "調色板顏色數  ${n}  （越少體積越小）"
+vceColorCount: "${n} 色"
+vceEnableDithering: 啟用抖動（畫質更好，體積稍大）
+vceWebpQuality: "WebP 品質  ${n}"
+vceWithAudio: 含音訊
+vceWithoutAudio: 無音訊
+vceDitherOn: 抖動開
+vceDitherOff: 抖動關
+vceH264Summary: "H.264 · ${bitrate}kbps · ${audio}"
+vceH264CrfSummary: "H.264 · CRF ${crf} · ${audio}"
+vceGifSummary: "GIF · ${fps} fps · ${colors}色 · ${dither} · ${audio}"
+vceApngSummary: "APNG · ${fps} fps · ${audio} · 瀏覽器相容好"
+vceWebpSummary: "WebP · ${fps} fps · 品質${quality} · 體積最小"
+vceCrop: 裁剪
+vceAspectPresets: 寬高比快速預設
+vceHideCropOverlay: 隱藏裁剪框
+vceShowCropOverlay: 顯示裁剪框（可拖拽）
+vceCropDragHint: 開啟後可透過拖拽選擇匯出區域
+vceCropInfo: "${w}×${h}px  起點(${x}, ${y})  [${pct}]"
+watcherDetailsLogs: 詳情 & 日誌
+watcherMiniWindow: 小窗模式
+rangePickerDragHint: 拖拽調整剪輯範圍
+hlsParsing: 解析播放清單…
+hlsDownloadingChunks: "下載分片 ${done}/${total}…"
+bangumiStartWatch: 開始觀看
+bangumiLastSeen: "上次看到: 第 ${episode} 話"
+bangumiMyRating: "我的評分: ${score}"
+animeWatching: 在看
+animeCompleted: 看過
+animeDropped: 拋棄
+animeWatchingCount: "${n} 在看"
+animeCompletedCount: "${n} 看過"
+animeDroppedCount: "${n} 拋棄"
+animeAirDate: "放送日期: ${date}"
+remoteSendFailed: "傳送失敗: ${error}"
+hubAiBotTriggerMention: "@ 提及"
+hubAiBotTriggerPrefix: 前綴
+hubAiBotTriggerKeyword: 關鍵字
+hubAiBotTriggerAll: 全部
+hubAiBotDefaultName: AI 助手
+addTag: 新增標籤
+searchMonthSuffix: "${month}月"
+searchYearMonth: "${year}年 ${month}月"
+searchUseCount: "${n} 次"
+addAddress: 新增位址
+noAddress: 尚無位址
+newChatTitle: "新對話 ${time}"
+auto: 自動
+lengthShort: 簡短
+lengthMedium: 適中
+deleteImagesCount: "刪除${n}張圖片"
+noSearchResults: 尚無搜尋結果
+itemsCount: "${n} 個條目"
+enableSkipBangumiSchedule: 啟用跳過 bangumi 日程
+recognizeImageFailed: 圖片讀取失敗，請重試
+recognizeFailed: 辨識失敗
+newChat: 新對話
+recognizeEpisodeSuffix: "第${n}集"
+recognizePrompt: "我上傳了一張截圖，辨識結果為《${title}》${episode}（${from} → ${to}，相似度 ${similarity}）。請介紹一下這部番劇。"
+aiStepsSuffix: " · ${n} 步"
+bangumiCommentsTitle: 吐槽
+aiExtMarkdown: Markdown 渲染
+aiExtMarkdownHint: 回覆氣泡是否啟用 Markdown 排版
+aiExtImageUnderstanding: 圖片理解
+aiExtImageUnderstandingHint: 是否允許向模型傳送圖片
+lanPlayerNotOpen: 播放器未開啟
+lanNoEpisodes: 無集數資訊
+lanBeingControlled: 設備正在被遠端控制
+lanDesktopConnected: 桌面端已連線並可控制此裝置
+lanDisconnect: 斷開
+lanSelfTest: 網路自檢
+lanCancelConnect: 取消連線
+lanIpHint: IP 位址
+lanPortHint: 連接埠
+lanManualConnect: 手動連線
+lanDeviceName: 設備名稱
+lanNameEmptyHint: 留空則使用預設名稱
+lanNameDisplayHint: 其他裝置發現此裝置時顯示的名稱
+lanPortRangeError: 連接埠必須在 1024-65535 之間
+summaryThisWeek: 本週
+summaryThisMonth: 本月
+summaryThisWeekTitle: 本週總結
+summaryThisMonthTitle: 本月總結
+soulProfileTitle: 靈魂側寫
+vtPlaybackComplete: 播放完畢
+vtReplay: 重播
+vtInputUrlHint: 輸入播放連結…
+vtLoad: 載入
+vtHeaders: 請求標頭 (Headers)
+vtNoHeaders: 尚無請求標頭，點擊「新增」建立
+vtApplyAndLoad: 套用並載入
+aiTagRational: 理性
+aiTagHumorous: 幽默
+aiTagSarcastic: 毒舌
+aiTagGentle: 溫柔
+aiTagRigorous: 嚴謹
+aiTagPassionate: 熱情
+aiTagCalm: 冷靜
+aiTagCool: 高冷
+aiTagEnergetic: 元氣
+aiTagChuuni: 中二
+aiTagCunning: 腹黑
+aiTagFriendly: 親切
+aiToneFormal: 正式
+aiToneConcise: 簡潔
+aiToneNatural: 自然
+aiPersonaGeneral: 通用助手
+aiPersonaGeneralDesc: 友好可靠，樂於以清晰、有條理的方式協助用戶解決各類問題。
+aiPersonaEngineer: 資深工程師
+aiPersonaEngineerDesc: 精通多種程式語言與主流框架，擅長程式碼審查、除錯與架構設計。
+aiPersonaButler: 生活管家
+aiPersonaButlerDesc: 貼心細緻的生活助理，熟悉日常事務安排、健康飲食與出行規劃。
+aiPersonaWriter: 寫作靈感
+aiPersonaWriterDesc: 富有想像力的文字創作者，擅長小說、散文、文案與創意腦暴。
+aiPersonaAdvisor: 知識顧問
+aiPersonaAdvisorDesc: 博學嚴謹，擅長講解概念、解惑答疑與深度研究。
+aiPersonaFriend: 貼心好友
+aiPersonaFriendDesc: 溫暖親切，像朋友一樣傾聽、陪伴與鼓勵。
+qrRecognizing: 正在辨識圖片中的 QR Code…
+qrScanHint: 將 QR Code 放入框內自動辨識
+networkRequestFailed: 網路請求失敗
+calNoAnimeToday: 這一天沒有番劇
+calRefreshStatus: 重新整理狀態
+calScreenshotSave: 截圖儲存
+calLoadingSchedule: 正在載入時間表資料...
+calDataNotUpdated: 資料還沒有更新 (´;ω;`)
+calScreenshotPreview: 截圖預覽
+calThisWeek: 本週
+calToday: 今天
+calLoadingImage: 正在載入圖片...
+calGeneratingScreenshot: 正在產生截圖...
+calDateDay: "${month}月${day}日"
+personTabVoice: 聲優資料
+personTabChat: 吐槽箱
+personTabRelation: 角色關聯
+personTabProfile: 角色資料
+personSubtitle: 人物
+lanUdpPortHint: UDP 廣播連接埠用於裝置探索，WebSocket 連接埠用於遠端控制連線
+lanMulticastTitle: 組播位址（多執行緒廣播）
+lanMulticastInvalid: 請輸入合法的組播位址（224.0.0.0 - 239.255.255.255）
+lanMulticastHint: 組播（多執行緒廣播）用於裝置探索；自訂位址可避開路由器/防火牆對預設組播位址的特殊過濾
+lanPinTitle: 連線 PIN 碼驗證
+lanPinLengthHint: 4-6 位數字
+lanPinInvalid: 請輸入 4-6 位數字 PIN
+lanPinEnableHint: 開啟後，其他裝置連線時需輸入此 PIN 碼
+lanSelfTestFailed: "自檢失敗: ${error}"
+lanSelfTestDetail: "裝置: ${platform}  UDP 連接埠: ${udpPort}  探索狀態: ${state}"
+lanPinStatus: "連線 PIN 驗證: ${status}"
+lanEnabled: 已開啟
+lanDisabled: 已關閉
+lanRetest: 重新自檢
+lanTroubleshoot: "排查要點: 兩端連接同一 Wi-Fi/路由器；路由器關閉「AP 隔離/用戶端隔離」；兩端均為最新程式碼。"
 status: 狀態
 audioOptionLowLatency: |-
   音訊選項：
@@ -724,6 +924,21 @@ koreanDub: 韓配
 selectedACharacter: 已選取 ${a} 個角色
 searchOptions: 搜尋選項
 searchSources: 搜尋源
+searchGroupAll: 全部
+searchGroupBangumi: 番組
+searchGroupDefault: 預設
+chooseSearchSource: 選擇搜尋源
+singleSourceSearch: 單源
+searchGroupBuiltIn: 內建分組
+searchGroupCustom: 我的分組
+manageGroups: 管理分組
+newGroup: 新增分組
+groupName: 分組名稱
+groupExists: 分組名稱已存在
+groupSources: 分組內源
+assignSources: 分配源
+deleteGroup: 刪除分組
+deleteGroupConfirm: 確定刪除該分組？
 translation: 翻譯
 translationService: 翻譯服務
 apiKeyCannotBeEmpty: API Key 不能為空
@@ -784,6 +999,31 @@ connectedAt: 連接於
 messageHistory: 訊息歷史
 hubClient: Hub 用戶端
 connectToHub: 連接到 Hub
+disconnect: 斷線
+savedServers: 已儲存的伺服器
+noSavedServers: 暫無已儲存的伺服器
+saveCurrentConfig: 保存當前配置
+serverName: 伺服器名稱
+selectServer: 選擇一個伺服器
+exportRooms: 匯出房間
+importRooms: 匯入房間
+connect: 連線
+watchTogether: 一起看
+watchTogetherDesc: 和朋友一起看番：建立或加入房間，邊看邊聊，分享截圖與字幕。
+selectRoomToStart: 選擇房間開始一起看
+syncToOwner: 同步到房主
+syncedToOwner: 已同步到房主進度
+ownerNotSharing: 房主未分享進度
+syncRequiresSameAnime: 目前未在觀看「${title}」，請先開啟該番劇再同步
+sharingAsOwner: 你是房主，正在分享播放進度
+episodeNEp: 第${n}集
+joinHubRoom: 加入一起看房間
+hubRoomInvite: 加入一起看房間
+hubRoomInviteWithRoom: 加入「${room}」一起看
+invalidHubRoomLink: 無效的一起看房間連結
+connectingToHub: 正在連接 Hub...
+joinedRoom: 已加入房間
+shareRoomQr: 分享房間二維碼
 connected: 已連接
 notConnected: 未連接
 hubAddress: Hub 地址
@@ -819,8 +1059,90 @@ joinedEvent: 加入了
 leftEvent: 離開了
 newRoom: 新房間
 portAndBindMode: 連接埠與綁定模式
+seekForward: 快進 ${s} 秒
+seekBackward: 快退 ${s} 秒
+notBroadcast: 尚未播出
+items: 項
+wsBotConnections: WS 機器人連線
+subscriptionManagement: 訂閱管理
+addSubscription: 新增訂閱
+noSubscriptions: 尚無訂閱，點擊右上角 + 新增
+connectionType: 連接方式
+wsForward: WS 正向（Hub 監聽）
+wsReverse: WS 反向（連接目標）
+webhookConnection: Webhook（URL 推播）
+httpServer: HTTP 伺服端（監聽）
+forward: 正向
+reverse: 反向
+listenAddress: 監聽位址
+listenPort: 監聽埠
+targetUrl: 目標 URL
+heartbeat: 心跳間隔（毫秒，選填）
+token: token（選填）
+note: 備註
+running: 執行中
+stopped: 未執行
+wsBotDescription: Hub 作為用戶端主動連線你機器人的 WebSocket 伺服器，即時推送房間訊息與系統事件。機器人側維護一個 WS 監聽端即可接收。
+wsBotUrl: 機器人 WebSocket 位址
+wsBotSecret: 握手密鑰（可選）
+wsBotMessageEvents: 訊息事件
+wsBotSystemEvents: 系統事件
+wsReverseTitle: 反向：機器人連線 Hub
+wsReverseInfo: '機器人也可作為 WebSocket 用戶端連線本 Hub：ws://${host}/hub，然後用 Hub API Key 鑑權（type: auth, token: <key>），實現完整雙向通訊。協定詳見 HUB_BOT_API.md。'
 hubManagement: Hub 管理
 chatRoom: 聊天室
+roomType: 房間類型
+webhooks: Webhook
+inboundWebhooks: 入站 Webhook
+outboundWebhooks: 出站 Webhook
+createWebhook: 建立 Webhook
+webhookName: Webhook 名稱
+webhookUrl: Webhook 位址
+webhookSecret: Webhook 密鑰（HMAC-SHA256）
+webhookUsageHint: '傳送 POST 請求 {"text": "..."} 即可向房間推播訊息：'
+webhookMessageEvents: 訊息事件
+webhookSystemEvents: 系統事件
+noWebhooks: 尚未設定 Webhook
+hubAiBot: AI 陪聊機器人
+hubAiBotEnabled: 啟用 AI 機器人
+hubAiBotStatus: 已啟用
+hubAiBotStatusDisabled: 已停用
+hubAiBotConfigure: 設定
+hubAiBotConfigureDesc: 名稱、服務商、模型與人設
+hubAiBotConfigTitle: AI 陪聊機器人設定
+hubAiBotName: 機器人名稱
+hubAiBotProvider: AI 服務商
+hubAiBotProviderHint: 例如 deepseek
+hubAiBotProviderHelper: AI 設定中的服務商源 key，需已設定可用 API Key
+hubAiBotModel: 模型（可選）
+hubAiBotModelHint: 留空使用服務商預設模型
+hubAiBotModelDefault: 使用服務商預設模型
+hubAiBotSystemPrompt: 人設 / 系統提示詞
+hubAiBotContextMessages: 上下文訊息數
+hubAiBotTriggerMode: 觸發方式
+hubAiBotTriggerPattern: 觸發前綴 / 關鍵字
+hubAiBotKeywordHint: 例如 #bot
+hubAiBotMinInterval: 最小回覆間隔（秒）
+hubAiBotReplyDm: 回覆私聊訊息
+webAdminSettings: Web 管理設定
+webAdminWhatIs: 什麼是 Web 管理？
+webAdminDescription: Web 管理提供基於瀏覽器的 Hub 管理面板。在任意裝置瀏覽器開啟位址，可查看伺服器狀態、管理房間與用戶端、瀏覽日誌、修改設定、控制 AI 機器人與 Webhook、重啟 Hub。使用現有的 Hub API Key 進行鑑權。
+webAdminFeatures: 可用功能
+webAdminFeatureOverview: 狀態總覽
+webAdminFeatureRooms: 房間管理與發送訊息
+webAdminFeatureClients: 線上用戶端
+webAdminFeatureLogs: 日誌
+webAdminFeatureConfig: 設定
+webAdminFeatureAi: AI 機器人
+webAdminFeatureWebhooks: Webhook
+webAdminFeatureRestart: 重啟 Hub
+webAdminDashboard: Web 管理後台
+webAdminEnabled: 啟用 Web 管理
+webAdminOnPort: 連接埠
+webAdminPort: Web 管理連接埠
+webAdminUrl: 在瀏覽器開啟
+restartHubToApply: 重啟 Hub 後生效
+watchingAnime: '正在看：${a}'
 openChatDialog: 開啟聊天對話框
 hubDetails: Hub 詳情
 connectionSettings: 連接設定
@@ -897,7 +1219,7 @@ bucketCannotBeEmpty: 儲存桶不能為空
 accessKeyIdCannotBeEmpty: Access Key ID 不能為空
 accessKeySecretCannotBeEmpty: Access Key Secret 不能為空
 cdnDomainMustBeAValidUrl: CDN 網域必須是有效的 URL
-maxSizeMustBe1to100Mb: 最大限制必須為 1–100 MB
+maxSizeMustBe1to100Mb: 單檔上傳大小上限須為 1–100 MB
 cleared: 已清空
 imageUpload: 圖片上傳
 clientImageUpload: 用戶端圖片上傳
@@ -906,7 +1228,7 @@ clientOss: 用戶端 OSS
 imagesStoredOnServerDisk: 圖片儲存在伺服器磁碟，透過 /hub/files/ 提供服務
 serverReceivesAndProxiesImageToOss: 伺服器接收圖片並代理上傳到 OSS。金鑰保留在伺服器上。
 clientUploadsDirectlyToOss: 用戶端直接上傳到 OSS。伺服器僅獲取最終 URL。
-maxSizeMb: 最大限制 (MB)
+maxSizeMb: 單檔上傳大小上限 (MB)
 storePath: 儲存路徑
 leaveEmptyForDefault: 留空則使用預設值
 notConfiguredWillUseServerOrBase64: 未配置 · 將使用伺服器或 Base64
@@ -994,6 +1316,8 @@ statsInfo: 統計資訊
 ratingDetails: 評分詳情
 sourceInfo: 源資訊
 playerInfo: 播放資訊
+logPrivacyProtection: 日誌隱私保護
+logPrivacyProtectionDesc: 對日誌中的 token、密鑰、密碼等敏感資訊打碼
 hideLabel: 隱藏
 showLabel: 顯示
 personaManagement: 角色管理
@@ -1096,6 +1420,11 @@ invalidCookies: 無效的 Cookies
 webviewIsNotAvailable: Webview 不可用
 sources: 資料源
 translationFailedPleaseTryAgainLater: 翻譯失敗，請稍後重試
+translationErrorRegionNotSupported: AI 翻譯來源不支援目前所在地區，請更換翻譯來源或改用其他地區的網路
+translationErrorModelNotSupported: 目前設定的模型不受該服務商支援，請到 AI 設定更換模型
+translationErrorApiKeyInvalid: API Key 無效或無權限，請檢查 AI 設定中的金鑰
+translationErrorRateLimited: 請求過於頻繁或額度不足，請稍後再試
+translationErrorRequestFailed: 翻譯請求失敗
 writeYourReview: 寫下你的評價
 draft: 草稿
 content: 內容
@@ -1153,6 +1482,7 @@ addressAlreadyExists: 地址已存在
 pleaseEnableAtLeastOneAddress: 請先啟用至少一個位址
 requestFailed: 請求失敗
 allCopiedSuccess: 全部複製成功
+notBoundToBangumi: 該動漫尚未綁定 Bangumi 條目
 bindBangumiIdSuccess: 綁定Bangumi ID成功
 applySuccess: 應用成功
 noChanges: 沒有更改
@@ -1206,6 +1536,9 @@ tagHint: 如 #EXT-X-CUE-OUT
 cueAdTag: CUE 廣告標記
 ultraShortSegment: 極短分片
 commonAdUrlPattern: 常見廣告 URL 特徵
+keywordMatch: 關鍵字比對
+keywordHint: 子字串，如 advert 或 adservice
+commonAdKeyword: 常見廣告關鍵字
 
 # Video page
 videoDetails: 影片詳情
@@ -1288,6 +1621,9 @@ lanSelectEpisode: 選擇集數
 lanNextEpisode: 下一集
 lanPreviousEpisode: 上一集
 lanToggleFullscreen: 切換全屏
+lanVolumeUp: 音量加
+lanVolumeDown: 音量減
+lanWaitingForEpisodeInfo: 等待被控制端發送劇集資訊...
 lanSyncStatus: 同步狀態
 lanSyncing: 同步中...
 lanLastSyncTime: 上次同步時間
@@ -1394,6 +1730,88 @@ stepThinking: 思考
 stepTool: 工具
 thinkingInProgress: 正在思考...
 statsCached: 快取
+statsNoRecords: 尚無活動記錄
+statsActivityOverview: 活動統計
+statsWatchDuration: 觀看時長
+statsClicks: 點擊次數
+statsRatings: 評級
+statsComments: 評論
+statsFavorites: 收藏
+statsActiveItems: 活躍條目
+statsActiveHeatmap: 活躍熱力圖
+statsWatchTrend: 觀看趨勢
+statsActiveItemsTop: "活躍條目 (前 ${shown}/${total}個)"
+statsWatchDistribution: 觀看時長分佈
+statsFrequentTags: 常看標籤
+statsTagCloud: 標籤詞雲
+statsUnknown: 未知
+statsCountTimes: "${n} 次"
+statsCountComments: "${n} 條"
+statsCountItems: "${n} 個"
+statsDateFull: "${year}年${month}月${day}日"
+statsDateRangeWeek: "${year}年${month}月${day}日 ~ ${endMonth}月${endDay}日"
+statsDateMonth: "${year}年${month}月"
+statsYearMonthName: "${year}年${month}"
+statsDateRangeHalf: "${year}年${startMonth}月 ~ ${endMonth}月"
+statsDateYear: "${year}年"
+statsDateDay: "${day}日"
+statsDateMonthOnly: "${month}月"
+statsWeekdayMon: 一
+statsWeekdayTue: 二
+statsWeekdayWed: 三
+statsWeekdayThu: 四
+statsWeekdayFri: 五
+statsWeekdaySat: 六
+statsWeekdaySun: 日
+statsYearlyOverview: 年度總覽
+statsRangeOverview: 時間範圍統計
+statsWeekly: 週統計
+statsMonthly: 月統計
+statsQuarterly: 季統計
+statsHalfYearly: 半年統計
+statsYearly: 年統計
+statsDaily: 日統計
+statsSourceList: 來源清單
+statsSelectDate: 選擇日期
+statsDayRecords: 當天的記錄
+statsYearSuffix: "${year} 年"
+statsCopiedToClipboard: 已複製到剪貼簿
+statsFuture: 未來
+statsNoRecordsOnDay: 暫無記錄
+statsMonth1: 一月
+statsMonth2: 二月
+statsMonth3: 三月
+statsMonth4: 四月
+statsMonth5: 五月
+statsMonth6: 六月
+statsMonth7: 七月
+statsMonth8: 八月
+statsMonth9: 九月
+statsMonth10: 十月
+statsMonth11: 十一月
+statsMonth12: 十二月
+statsRatedAt: "(評價時 ${duration})"
+statsCreatedComment: "${time} 建立了評論 ${duration}:"
+statsModifiedComment: "${time} 第${n}次修改了評論 ${duration}:"
+statsCreatedRating: "${time} 建立了評級 ${duration}:"
+statsModifiedRating: "${time} 第${n}次修改了評級 ${duration}:"
+statsClickAt: "[${source}] ${platform}點擊${value}次"
+statsDailyClicks: "本日點擊次數: ${total}"
+statsWatchAt: "[${source}] ${platform}觀看: ${duration}"
+statsDailyWatch: "本日觀看時長: ${duration}"
+statsRecords: 記錄
+statsLastClickAt: "當日最後點擊: \n${time}"
+statsLastWatchAt: "當日最後觀看: \n${time}"
+statsFavoritesTotal: "收藏: ${n}"
+statsCompletedCount: "完成: ${n}"
+statsCompletionRate: "完成率: ${n}"
+statsAverageScore: "平均分: ${n}"
+statsStdDev: "標準差: ${n}"
+statsRatingCount: "評分數: ${n}"
+statsDefault: 預設
+statsItemCountSuffix: "${n} 部"
+statsNoRatingItems: "暫無 ${score} 分的作品"
+statsScoreCount: "${score}分 (${count})"
 jumpToBottom: 回到底部
 modelDoesNotSupportVision: 目前模型不支援圖片理解
 myMessage: 我的訊息
@@ -1423,6 +1841,12 @@ providerKey: 服務商 Key
 providerKeyHint: 例如 my-provider
 providerKeyExists: 服務商 Key 已存在，請更換
 defaultModel: 預設模型
+mainSettings: 主設定
+modelSettings: 模型設定
+editModel: 編輯模型
+openModelSettings: 開啟設定
+setAsDefaultModel: 設為預設模型
+effectiveAddress: 生效地址
 supportsVision: 支援圖片理解
 supportsTools: 支援工具呼叫
 enableVision: 啟用圖片理解
@@ -1432,7 +1856,7 @@ disableTools: 停用工具呼叫
 enterProviderKeyToAddModel: 請先在上方填寫服務商 Key 再新增模型
 mcpServers: MCP 伺服器
 noMcpServers: 暫無 MCP 伺服器
-serverName: 伺服器名稱
+mcpServerName: 伺服器名稱
 transport: 傳輸方式
 stdio: stdio
 http: HTTP
@@ -1525,6 +1949,19 @@ modelType: 模型類型
 inputModality: 輸入模態
 outputModality: 輸出模態
 supportsReasoning: 支援推理
+capabilities: 能力
+modelTypeChat: 聊天
+modelTypeImage: 圖像
+modelTypeEmbedding: 嵌入
+modelTypeAudio: 音訊
+modelTypeRerank: 重排序
+modelTypeOther: 其他
+modalityText: 文字
+modalityImage: 圖片
+modalityAudio: 音訊
+modalityVideo: 影片
+capabilityTools: 工具
+capabilityReasoning: 推理
 apiFormat: 介面格式
 apiFormatOpenai: OpenAI（chat）
 apiFormatOpenaiResponses: OpenAI Responses

@@ -22,6 +22,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
   FavoritesController get favoritesController => widget.favoritesController;
 
+  FavoritesState get favState => ref.watch(favoritesControllerProvider);
+
   LocalFavoritesManager get manager => LocalFavoritesManager();
   Map<Anime, bool> selectedAnimes = {};
   Map<String, List<FavoriteItem>> searchResults = {};
@@ -42,7 +44,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     sortType = FavoriteSortType.fromString(sort);
     favPage = context.findAncestorStateOfType<_FavoritesPageState>()!;
 
-    _initFolders();
+    // folders/folder/index 已在 FavoritesController.build() 初始化，
+    // 这里无需再改 provider。
     _buildTabController();
     updateAnimes();
     manager.addListener(updateAnimes);
@@ -51,7 +54,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   @override
   void dispose() {
     manager.removeListener(updateAnimes);
-    favoritesController.tabController.dispose();
+    favoritesController.tabController?.dispose();
     scrollController.dispose();
     super.dispose();
   }
@@ -59,58 +62,27 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   @override
   bool get wantKeepAlive => true;
 
-  void _initFolders() {
-    favoritesController.folders = manager.folderNames.where((name) {
-      if (name == 'default') {
-        return manager
-            .getAllAnimes('default', FavoriteSortType.nameAsc)
-            .isNotEmpty;
-      }
-      return true;
-    }).toList();
-
-    final data = appdata.implicitData['favoriteFolder'];
-    if (data != null) {
-      favoritesController.index = favoritesController.folders.indexWhere(
-        (name) => name == data['name'],
-      );
-    }
-    if (favoritesController.index < 0 ||
-        favoritesController.index >= favoritesController.folders.length) {
-      favoritesController.index = 0;
-    }
-    if (favoritesController.folders.isNotEmpty) {
-      favoritesController.folder =
-          favoritesController.folders[favoritesController.index];
-    }
-  }
-
   void _buildTabController({int? initialIndex}) {
-    final idx = (initialIndex ?? favoritesController.index).clamp(
-      0,
-      (favoritesController.folders.length - 1).clamp(
-        0,
-        double.maxFinite.toInt(),
-      ),
-    );
+    final length = favState.folders.length;
+    final idx = (initialIndex ?? favState.index).clamp(0, length - 1);
     favoritesController.tabController = TabController(
-      length: favoritesController.folders.length,
+      length: length,
       vsync: this,
       initialIndex: idx,
     );
-    favoritesController.tabController.addListener(_onTabChanged);
+    favoritesController.tabController!.addListener(_onTabChanged);
   }
 
   void _onTabChanged() {
-    final idx = favoritesController.tabController.index;
-    if (idx >= favoritesController.folders.length) return;
-    final folderName = favoritesController.folders[idx];
+    final idx = favoritesController.tabController!.index;
+    if (idx >= favState.folders.length) return;
+    final folderName = favState.folders[idx];
     setState(() {
       if (multiSelectMode) {
         multiSelectMode = false;
         selectedAnimes.clear();
       }
-      favoritesController.folder = folderName;
+      favoritesController.setFolder(folderName);
       favPage.setFolder(false, folderName);
     });
   }
@@ -126,82 +98,83 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       }
       return true;
     }).toList();
+    // 过滤后为空（完全无收藏）时保留 default 作为可选中项，
+    // 与 FavoritesController.build() 兜底逻辑保持一致
+    final effectiveFolders = newFolders.isNotEmpty ? newFolders : ['default'];
 
     final result = <String, List<FavoriteItem>>{};
     isLoading = true;
-    for (final folder in newFolders) {
-      final count = manager.folderAnimes(folder);
-      if (count < _asyncDataFetchLimit) {
-        result[folder] = manager.getAllAnimes(folder, sortType);
-      } else {
-        result[folder] = await manager
-            .getFolderAnimesAsync(folder, sortType)
-            .minTime(const Duration(milliseconds: 200));
+    try {
+      for (final folder in effectiveFolders) {
+        final count = manager.folderAnimes(folder);
+        if (count < _asyncDataFetchLimit) {
+          result[folder] = manager.getAllAnimes(folder, sortType);
+        } else {
+          result[folder] = await manager
+              .getFolderAnimesAsync(folder, sortType)
+              .minTime(const Duration(milliseconds: 200));
+        }
       }
+    } finally {
+      isLoading = false;
     }
-    isLoading = false;
 
     if (!mounted) return;
 
-    int newIndex = newFolders.indexWhere(
-      (name) => name == favoritesController.folder,
+    int newIndex = effectiveFolders.indexWhere(
+      (name) => name == favState.folder,
     );
     if (newIndex < 0) {
       final data = appdata.implicitData['favoriteFolder'];
       if (data != null) {
-        newIndex = newFolders.indexWhere((name) => name == data['name']);
+        newIndex = effectiveFolders.indexWhere((name) => name == data['name']);
       }
     }
-    newIndex = newIndex.clamp(
-      0,
-      (newFolders.length - 1).clamp(0, double.maxFinite.toInt()),
-    );
+    newIndex = newIndex.clamp(0, effectiveFolders.length - 1);
 
-    if (favoritesController.tabController.length != newFolders.length) {
-      favoritesController.tabController.removeListener(_onTabChanged);
-      favoritesController.tabController.dispose();
-      favoritesController.folders = newFolders;
+    if (favoritesController.tabController?.length != effectiveFolders.length) {
+      favoritesController.tabController?.removeListener(_onTabChanged);
+      favoritesController.tabController?.dispose();
+      favoritesController.setFolders(effectiveFolders);
       _buildTabController(initialIndex: newIndex);
     } else {
-      favoritesController.folders = newFolders;
+      favoritesController.setFolders(effectiveFolders);
     }
 
-    final newFolder = newFolders.isEmpty ? '' : newFolders[newIndex];
-    favoritesController.index = newIndex;
+    final newFolder = effectiveFolders.isEmpty
+        ? ''
+        : effectiveFolders[newIndex];
+    favoritesController.setIndex(newIndex);
 
     setState(() {
-      favoritesController.animes
-        ..clear()
-        ..addAll(result);
-      favoritesController.tabs = _buildTabs();
-      favoritesController.folder = newFolder;
+      favoritesController.setAnimes(result);
+      favoritesController.setFolder(newFolder);
     });
 
     favPage.setFolder(false, newFolder.isEmpty ? null : newFolder);
-    favoritesController.isRefreshEnabled = false;
+    favoritesController.setIsRefreshEnabled(false);
   }
 
   void updateSearchAllResult() {
     setState(() {
       if (keyword.trim().isEmpty) {
-        searchResults = Map.from(favoritesController.animes);
+        searchResults = Map.from(favState.animes);
       } else {
         searchResults = {};
-        for (final entry in favoritesController.animes.entries) {
+        for (final entry in favState.animes.entries) {
           final filtered = entry.value
               .where((a) => _matchKeyword(keyword, a))
               .toList();
           if (filtered.isNotEmpty) searchResults[entry.key] = filtered;
         }
       }
-      favoritesController.tabs = _buildTabs();
     });
   }
 
   bool _matchKeyword(String keyword, FavoriteItem anime) {
     for (final k in keyword.split(' ')) {
       if (k.isEmpty) continue;
-      if (keyword == anime.type.sourceKey) return true;
+      if (k == anime.type.sourceKey) return true;
       if (_contains(k, anime.title)) continue;
       if (anime.subtitle != null && _contains(k, anime.subtitle!)) continue;
       if (anime.tags.any(
@@ -242,7 +215,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       dropped: Icons.heart_broken,
     };
 
-    return favoritesController.folders.map((name) {
+    return favState.folders.map((name) {
       final count = manager.folderAnimes(name);
       final displayCount = searchAllMode
           ? (searchResults[name]?.length ?? 0).toString()
@@ -285,15 +258,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   PreferredSizeWidget _buildTabBar() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
-      child: Observer(
-        builder: (_) => TabBar(
-          controller: favoritesController.tabController,
-          isScrollable: true,
-          tabs: favoritesController.tabs,
-          dividerHeight: 0,
-          tabAlignment: TabAlignment.start,
-          labelColor: context.colorScheme.primary,
-        ),
+      child: TabBar(
+        controller: favoritesController.tabController,
+        isScrollable: true,
+        tabs: _buildTabs(),
+        dividerHeight: 0,
+        tabAlignment: TabAlignment.start,
+        labelColor: context.colorScheme.primary,
       ),
     );
   }
@@ -361,13 +332,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }
 
   Widget _buildNormalAppbar(PreferredSizeWidget tab) {
-    return SliverAppbar(
-      key: PageStorageKey(
-        '${manager.folderAnimes(favoritesController.folder)}',
-      ),
-      style: context.width < changePoint
-          ? AppbarStyle.shadow
-          : AppbarStyle.blur,
+    return _buildAppbar(
+      key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
         message: t.folders,
         child: context.width <= _kTwoPanelChangeWidth
@@ -400,7 +366,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
         _buildSortMenu(),
         MenuButton(
           entries: [
-            if (favoritesController.folder != 'default')
+            if (favState.folder != 'default')
               MenuEntry(
                 icon: Icons.edit_outlined,
                 text: t.rename,
@@ -411,7 +377,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               text: t.export,
               onClick: _exportFolder,
             ),
-            if (favoritesController.folder != 'default')
+            if (favState.folder != 'default')
               MenuEntry(
                 icon: Icons.delete_outline,
                 text: t.deleteFolder,
@@ -421,18 +387,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           ],
         ),
       ],
-      bottom: tab,
+      tab: tab,
     );
   }
 
   Widget _buildMultiSelectAppbar(PreferredSizeWidget tab) {
-    return SliverAppbar(
-      key: PageStorageKey(
-        '${manager.folderAnimes(favoritesController.folder)}',
-      ),
-      style: context.width < changePoint
-          ? AppbarStyle.shadow
-          : AppbarStyle.blur,
+    return _buildAppbar(
+      key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
         message: t.cancel,
         child: IconButton(icon: const Icon(Icons.close), onPressed: _cancel),
@@ -472,18 +433,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           ],
         ),
       ],
-      bottom: tab,
+      tab: tab,
     );
   }
 
   Widget _buildSearchAppbar(PreferredSizeWidget tab) {
-    return SliverAppbar(
-      key: PageStorageKey(
-        '${manager.folderAnimes(favoritesController.folder)}',
-      ),
-      style: context.width < changePoint
-          ? AppbarStyle.shadow
-          : AppbarStyle.blur,
+    return _buildAppbar(
+      key: PageStorageKey('${manager.folderAnimes(favState.folder)}'),
       leading: Tooltip(
         message: t.cancel,
         child: IconButton(
@@ -502,6 +458,26 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           updateSearchAllResult();
         },
       ).paddingBottom(4).paddingRight(8),
+      tab: tab,
+    );
+  }
+
+  /// 三个 appbar 共用的 SliverAppbar 骨架
+  Widget _buildAppbar({
+    required Key key,
+    required Widget leading,
+    required Widget title,
+    List<Widget> actions = const [],
+    required PreferredSizeWidget tab,
+  }) {
+    return SliverAppbar(
+      key: key,
+      style: context.width < changePoint
+          ? AppbarStyle.shadow
+          : AppbarStyle.blur,
+      leading: leading,
+      title: title,
+      actions: actions,
       bottom: tab,
     );
   }
@@ -517,7 +493,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   void _exitSearchAllMode() {
     setState(() {
       searchAllMode = false;
-      favoritesController.isRefreshEnabled = true;
+      favoritesController.setIsRefreshEnabled(true);
     });
     updateAnimes();
   }
@@ -530,8 +506,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       onConfirm: (value) {
         final err = validateFolderName(value.toString());
         if (err != null) return err;
-        favoritesController.isRefreshEnabled = true;
-        manager.rename(favoritesController.folder, value.toString());
+        favoritesController.setIsRefreshEnabled(true);
+        manager.rename(favState.folder, value.toString());
         manager.initCounts();
         favPage.setFolder(false, value.toString());
         return null;
@@ -540,35 +516,32 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }
 
   void _exportFolder() {
-    final json = manager.folderToJson(favoritesController.folder);
-    saveFile(
-      data: utf8.encode(json),
-      filename: '${favoritesController.folder}.json',
-    );
+    final json = manager.folderToJson(favState.folder);
+    saveFile(data: utf8.encode(json), filename: '${favState.folder}.json');
   }
 
   void _deleteFolder() {
     showConfirmDialog(
       context: App.rootContext,
       title: t.delete,
-      content: t.deleteFolderF(f: favoritesController.folder),
+      content: t.deleteFolderF(f: favState.folder),
       btnColor: context.colorScheme.error,
       onConfirm: () {
-        favoritesController.isRefreshEnabled = true;
-        manager.deleteFolder(favoritesController.folder);
-        final oldIndex = favoritesController.index;
-        if (favoritesController.folders.isEmpty) {
-          favoritesController.index = 0;
-          favoritesController.folder = '';
+        favoritesController.setIsRefreshEnabled(true);
+        manager.deleteFolder(favState.folder);
+        final oldIndex = favState.index;
+        if (favState.folders.isEmpty) {
+          favoritesController.setIndex(0);
+          favoritesController.setFolder('');
           favPage.setFolder(false, null);
         } else {
-          favoritesController.index =
-              oldIndex >= favoritesController.folders.length
-              ? favoritesController.folders.length - 1
-              : oldIndex;
-          favoritesController.folder =
-              favoritesController.folders[favoritesController.index];
-          favPage.setFolder(false, favoritesController.folder);
+          favoritesController.setIndex(
+            oldIndex >= favState.folders.length
+                ? favState.folders.length - 1
+                : oldIndex,
+          );
+          favoritesController.setFolder(favState.folders[favState.index]);
+          favPage.setFolder(false, favState.folder);
         }
         setState(() {});
       },
@@ -576,7 +549,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }
 
   Future<void> _showFavoriteDialog() async {
-    favoritesController.isRefreshEnabled = true;
+    favoritesController.setIsRefreshEnabled(true);
     final changed = await _FavoriteDialog.show(
       context: context,
       selectedAnimes: selectedAnimes,
@@ -586,14 +559,13 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
     if (changed == true) {
       manager.initCounts();
-      favoritesController.isRefreshEnabled = true;
+      favoritesController.setIsRefreshEnabled(true);
       await updateAnimes();
       if (searchAllMode) updateSearchAllResult();
       if (mounted) {
         setState(() {
           multiSelectMode = false;
           selectedAnimes.clear();
-          favoritesController.tabs = _buildTabs();
         });
       }
     }
@@ -604,7 +576,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   void selectAll() {
     setState(() {
       selectedAnimes = {};
-      final list = _currentList(favoritesController.folder);
+      final list = _currentList(favState.folder);
       for (final anime in list) {
         selectedAnimes[anime] = true;
       }
@@ -613,7 +585,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
 
   void invertSelection() {
     setState(() {
-      final list = _currentList(favoritesController.folder);
+      final list = _currentList(favState.folder);
       for (final anime in list) {
         if (selectedAnimes.containsKey(anime)) {
           selectedAnimes.remove(anime);
@@ -634,9 +606,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     }
   }
 
-  List<FavoriteItem> _currentList(String name) => searchMode
-      ? (searchResults[name] ?? [])
-      : (favoritesController.animes[name] ?? []);
+  List<FavoriteItem> _currentList(String name) =>
+      searchMode ? (searchResults[name] ?? []) : (favState.animes[name] ?? []);
 
   void _checkExitSelectMode() {
     if (selectedAnimes.isEmpty) {
@@ -652,9 +623,9 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   }
 
   void _deleteAnimeWithId() {
-    favoritesController.isRefreshEnabled = true;
+    favoritesController.setIsRefreshEnabled(true);
     final toDelete = selectedAnimes.keys.map((e) => e as FavoriteItem).toList();
-    manager.batchDeleteAnimes(favoritesController.folder, toDelete);
+    manager.batchDeleteAnimes(favState.folder, toDelete);
     _cancel();
   }
 
@@ -672,15 +643,18 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
           heroID: heroID,
         ),
       );
+      // 使用 FavoriteItem 自己的 type（而非从 sourceKey 字符串 hash 派生），
+      // 避免源未安装时 sourceKey 变为 "Unknown:xxx" 导致 type 不一致。
+      final item = a is FavoriteItem ? a.type : AnimeType(a.sourceKey.hashCode);
       final stats = StatsManager();
-      if (!stats.isExist(a.id, AnimeType(a.sourceKey.hashCode))) {
+      if (!stats.isExist(a.id, item)) {
         try {
           stats.addStats(
             stats.createStatsData(
               id: a.id,
               title: a.title,
               cover: a.cover,
-              type: a.sourceKey.hashCode,
+              type: item.value,
             ),
           );
         } catch (e) {
@@ -689,7 +663,8 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
       }
     }
 
-    manager.updateRecentlyWatched(a.id, AnimeType(a.sourceKey.hashCode));
+    final item = a is FavoriteItem ? a.type : AnimeType(a.sourceKey.hashCode);
+    manager.updateRecentlyWatched(a.id, item);
   }
 
   void _onAnimeMultiTap(Anime a, int heroID, String name) {
@@ -743,10 +718,6 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    if (favoritesController.tabs.isEmpty) {
-      favoritesController.tabs = _buildTabs();
-    }
-
     final tab = _buildTabBar();
 
     Widget body = NestedScrollView(
@@ -768,24 +739,22 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
               ),
             )
           : TabBarView(
-              key: PageStorageKey('${widget.favoritesController.folders}'),
+              key: PageStorageKey('${favState.folders}'),
               controller: widget.favoritesController.tabController,
-              children: widget.favoritesController.folders.map((name) {
-                return Observer(
-                  builder: (context) => SliverGridAnimes(
-                    key: PageStorageKey('local_$name'),
-                    asSliver: false,
-                    animes: searchAllMode
-                        ? (searchResults[name] ?? [])
-                        : (favoritesController.animes[name] ?? []),
-                    selections: selectedAnimes,
-                    enableFavorite: false,
-                    onTap: multiSelectMode
-                        ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
-                        : _onAnimeTap,
-                    onLongPressed: (a, heroID) =>
-                        _onAnimeLongPress(a, heroID, name),
-                  ),
+              children: favState.folders.map((name) {
+                return SliverGridAnimes(
+                  key: PageStorageKey('local_$name'),
+                  asSliver: false,
+                  animes: searchAllMode
+                      ? (searchResults[name] ?? [])
+                      : (favState.animes[name] ?? []),
+                  selections: selectedAnimes,
+                  enableFavorite: false,
+                  onTap: multiSelectMode
+                      ? (a, heroID) => _onAnimeMultiTap(a, heroID, name)
+                      : _onAnimeTap,
+                  onLongPressed: (a, heroID) =>
+                      _onAnimeLongPress(a, heroID, name),
                 );
               }).toList(),
             ),
@@ -834,7 +803,7 @@ class _LocalFavoritesPageState extends ConsumerState<_LocalFavoritesPage>
     );
 
     return PopScope(
-      key: PageStorageKey('${favoritesController.folders}'),
+      key: PageStorageKey('${favState.folders}'),
       canPop: !multiSelectMode && !searchAllMode,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;

@@ -104,11 +104,20 @@ class RenderHorizontalPicPage extends ConsumerStatefulWidget {
 class _RenderHorizontalPicPageState
     extends ConsumerState<RenderHorizontalPicPage> {
   late List<File> imageList;
+  bool isReorderMode = false;
+
+  /// 解码后的图片缓存：避免每次 build 都重新解码（性能关键）
+  List<ui.Image>? _uiImages;
+
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     imageList = List.of(widget.images);
+    _ensureImages().then((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   Future<List<ui.Image>> _loadUiImages() async {
@@ -122,62 +131,79 @@ class _RenderHorizontalPicPageState
     return images;
   }
 
-  Future<void> _captureAndSaveLongImage(BuildContext context) async {
-    App.rootContext.showMessage(message: t.saving);
-    try {
-      final outerBorderColor = ref.read(outerBorderColorProvider);
-      final outerBorderWidth = ref.read(outerBorderWidthProvider);
-      final outerBorderRadius = ref.read(outerBorderRadiusProvider);
+  Future<List<ui.Image>> _ensureImages() async {
+    var images = _uiImages;
+    if (images == null) {
+      images = await _loadUiImages();
+      _uiImages = images;
+    }
+    return images;
+  }
 
-      final innerBorderColor = ref.read(innerBorderColorProvider);
-      final innerBorderWidth = ref.read(innerBorderWidthProvider);
-      final showInnerBorders = ref.read(showInnerBordersProvider);
-      final showOuterBorder = ref.read(showOuterBorderProvider);
-
-      final images = <ui.Image>[];
-
-      for (File file in imageList) {
-        final bytes = await file.readAsBytes();
-        final codec = await ui.instantiateImageCodec(bytes);
-        final frame = await codec.getNextFrame();
-        images.add(frame.image);
+  void _onReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (oldIndex < newIndex) newIndex--;
+      final item = imageList.removeAt(oldIndex);
+      imageList.insert(newIndex, item);
+      final images = _uiImages;
+      if (images != null) {
+        final img = images.removeAt(oldIndex);
+        images.insert(newIndex, img);
       }
+    });
+  }
 
-      if (images.isEmpty) return;
+  void _removeImage(int index) {
+    if (index < 0 || index >= imageList.length) return;
+    setState(() {
+      imageList.removeAt(index);
+      _uiImages?.removeAt(index);
+    });
+  }
 
-      // 计算 contentHeight（图片高度最小值）
-      final contentHeight = images
-          .map((img) => img.height)
-          .reduce((a, b) => a < b ? a : b)
-          .toDouble();
+  /// 渲染并导出横图为 PNG 字节
+  Future<Uint8List?> _renderHorizontalBytes() async {
+    final outerBorderColor = ref.read(outerBorderColorProvider);
+    final outerBorderWidth = ref.read(outerBorderWidthProvider);
+    final outerBorderRadius = ref.read(outerBorderRadiusProvider);
 
-      // 计算每张图片按contentHeight缩放后的宽度列表
-      final contentWidths = images
-          .map((img) => img.width * (contentHeight / img.height))
-          .toList();
+    final innerBorderColor = ref.read(innerBorderColorProvider);
+    final innerBorderWidth = ref.read(innerBorderWidthProvider);
+    final showInnerBorders = ref.read(showInnerBordersProvider);
+    final showOuterBorder = ref.read(showOuterBorderProvider);
 
-      // 计算总宽度（所有图片宽 + 内边框总和）
-      final totalInnerBorders = showInnerBorders
-          ? (images.length - 1) * innerBorderWidth
-          : 0.0;
+    final images = await _ensureImages();
+    if (images.isEmpty) return null;
 
-      final totalWidth =
-          contentWidths.fold(0.0, (a, b) => a + b) + totalInnerBorders;
+    // 计算 contentHeight（图片高度最小值）
+    final contentHeight = images
+        .map((img) => img.height)
+        .reduce((a, b) => a < b ? a : b)
+        .toDouble();
 
-      // 总宽高考虑外边框
-      final fullWidth = showOuterBorder
-          ? totalWidth + outerBorderWidth * 2
-          : totalWidth;
-      final fullHeight = showOuterBorder
-          ? contentHeight + outerBorderWidth * 2
-          : contentHeight;
+    // 计算每张图片按contentHeight缩放后的宽度列表
+    final contentWidths = images
+        .map((img) => img.width * (contentHeight / img.height))
+        .toList();
 
-      // 创建PictureRecorder和Canvas
-      final recorder = ui.PictureRecorder();
-      final canvas = Canvas(recorder);
+    // 计算总宽度（所有图片宽 + 内边框总和）
+    final totalInnerBorders = showInnerBorders
+        ? (images.length - 1) * innerBorderWidth
+        : 0.0;
 
-      // 用HorizontalImagePainter绘制
-      final painter = HorizontalImagePainter(
+    final totalWidth =
+        contentWidths.fold(0.0, (a, b) => a + b) + totalInnerBorders;
+
+    // 总宽高考虑外边框
+    final fullWidth = showOuterBorder
+        ? totalWidth + outerBorderWidth * 2
+        : totalWidth;
+    final fullHeight = showOuterBorder
+        ? contentHeight + outerBorderWidth * 2
+        : contentHeight;
+
+    return composePainterToPng(
+      painter: HorizontalImagePainter(
         images: images,
         showOuterBorder: showOuterBorder,
         outerBorderColor: outerBorderColor,
@@ -186,34 +212,24 @@ class _RenderHorizontalPicPageState
         showInnerBorders: showInnerBorders,
         innerBorderColor: innerBorderColor,
         innerBorderWidth: innerBorderWidth,
+      ),
+      size: Size(fullWidth, fullHeight),
+      dpr: MediaQuery.of(context).devicePixelRatio,
+    );
+  }
+
+  /// 复制到剪贴板（桌面）或分享（移动端），同时保存一份到 Kostori 文件夹
+  Future<void> _copyOrShareHorizontalImage() async {
+    try {
+      final bytes = await _renderHorizontalBytes();
+      if (bytes == null) return;
+      await ImageSaver.saveOrShareImage(
+        bytes: bytes,
+        filename: '拼图_${DateTime.now().millisecondsSinceEpoch}.png',
       );
-
-      painter.paint(canvas, Size(fullWidth, fullHeight));
-
-      // 结束绘制，生成图片
-      final picture = recorder.endRecording();
-      final image = await picture.toImage(
-        fullWidth.toInt(),
-        fullHeight.toInt(),
-      );
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-
-      if (byteData != null) {
-        final bytes = byteData.buffer.asUint8List();
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        await ImageSaver.saveImage(
-          bytes: bytes,
-          filename: '拼图_$timestamp.png',
-          ref: ref,
-        );
-        final notifier = ref.read(imagesProvider.notifier);
-        await notifier.loadImages();
-        App.rootContext.showMessage(message: t.saveSuccessful);
-      }
+      await ref.read(imagesProvider.notifier).loadImages();
     } catch (e) {
-      App.rootContext.showMessage(
-        message: t.saveFailedE(e: e),
-      );
+      App.rootContext.showMessage(message: t.saveFailedE(e: e));
     }
   }
 
@@ -244,131 +260,175 @@ class _RenderHorizontalPicPageState
     final showInnerBorders = ref.watch(showInnerBordersProvider);
     final innerBorderColor = ref.watch(innerBorderColorProvider);
     final innerBorderWidth = ref.watch(innerBorderWidthProvider);
-    return FutureBuilder<List<ui.Image>>(
-      future: _loadUiImages(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: PolygonRefreshIndicator());
-        }
-        if (snapshot.hasError ||
-            snapshot.data == null ||
-            snapshot.data!.isEmpty) {
-          return Center(child: Text(t.failedToLoadImagesOrNoImages));
-        }
 
-        final images = snapshot.data!;
-        if (images.isEmpty) return const SizedBox();
+    final images = _uiImages;
+    if (images == null) {
+      return const Center(child: PolygonRefreshIndicator());
+    }
+    if (images.isEmpty) {
+      return Center(child: Text(t.failedToLoadImagesOrNoImages));
+    }
 
-        final contentHeight = images
-            .map((img) => img.height)
-            .reduce((a, b) => a < b ? a : b)
-            .toDouble();
+    final contentHeight = images
+        .map((img) => img.height)
+        .reduce((a, b) => a < b ? a : b)
+        .toDouble();
 
-        final contentWidths = images
-            .map((img) => img.width * (contentHeight / img.height))
-            .toList();
+    final contentWidths = images
+        .map((img) => img.width * (contentHeight / img.height))
+        .toList();
 
-        final totalInnerBorders = showInnerBorders && images.length > 1
-            ? (images.length - 1) * innerBorderWidth
-            : 0.0;
+    final totalInnerBorders = showInnerBorders && images.length > 1
+        ? (images.length - 1) * innerBorderWidth
+        : 0.0;
 
-        final totalWidth =
-            contentWidths.fold(0.0, (sum, w) => sum + w) + totalInnerBorders;
+    final totalWidth =
+        contentWidths.fold(0.0, (sum, w) => sum + w) + totalInnerBorders;
 
-        final fullWidth = showOuterBorder
-            ? totalWidth + 2 * outerBorderWidth
-            : totalWidth;
-        final fullHeight = showOuterBorder
-            ? contentHeight + 2 * outerBorderWidth
-            : contentHeight;
+    final fullWidth = showOuterBorder
+        ? totalWidth + 2 * outerBorderWidth
+        : totalWidth;
+    final fullHeight = showOuterBorder
+        ? contentHeight + 2 * outerBorderWidth
+        : contentHeight;
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: totalWidth / 4),
-              child: FittedBox(
-                fit: BoxFit.contain,
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: fullWidth,
-                  height: fullHeight,
-                  child: CustomPaint(
-                    size: Size(fullWidth, fullHeight),
-                    painter: HorizontalImagePainter(
-                      images: images,
-                      showOuterBorder: showOuterBorder,
-                      outerBorderColor: outerBorderColor,
-                      outerBorderWidth: outerBorderWidth,
-                      outerBorderRadius: outerBorderRadius,
-                      showInnerBorders: showInnerBorders,
-                      innerBorderColor: innerBorderColor,
-                      innerBorderWidth: innerBorderWidth,
-                    ),
-                  ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: totalWidth / 4),
+          child: FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: fullWidth,
+              height: fullHeight,
+              child: CustomPaint(
+                size: Size(fullWidth, fullHeight),
+                painter: HorizontalImagePainter(
+                  images: images,
+                  showOuterBorder: showOuterBorder,
+                  outerBorderColor: outerBorderColor,
+                  outerBorderWidth: outerBorderWidth,
+                  outerBorderRadius: outerBorderRadius,
+                  showInnerBorders: showInnerBorders,
+                  innerBorderColor: innerBorderColor,
+                  innerBorderWidth: innerBorderWidth,
                 ),
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildBottomButtons() {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ClipRRect(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.black.toOpacity(0.35),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildReorderView() {
+    return ReorderableListView(
+      onReorderItem: _onReorder,
+      buildDefaultDragHandles: false,
+      scrollController: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      children: [
+        for (int i = 0; i < imageList.length; i++)
+          ReorderableDragStartListener(
+            key: ValueKey(imageList[i].path),
+            index: i,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Stack(
                 children: [
-                  ElevatedButton(
-                    onPressed: _showBorderSettings,
-                    child: Text(t.borderColor),
-                  ),
-                  const SizedBox(width: 20),
-                  ElevatedButton(
-                    onPressed: () => _captureAndSaveLongImage(context),
-                    child: Text(t.saveLongImage),
+                  Image.file(imageList[i], fit: BoxFit.fitWidth),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(i),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-        ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildBottomButtons() {
+    return _FrostedBottomBar(
+      children: [
+        if (isReorderMode)
+          _BottomIconAction(
+            icon: Icons.check,
+            tooltip: t.finishSorting,
+            onPressed: () => setState(() => isReorderMode = false),
+          )
+        else ...[
+          _BottomIconAction(
+            icon: Icons.color_lens,
+            tooltip: t.borderColor,
+            onPressed: _showBorderSettings,
+          ),
+          _BottomIconAction(
+            icon: Icons.sort,
+            tooltip: t.sortImages,
+            onPressed: () => setState(() => isReorderMode = true),
+          ),
+          _BottomIconAction(
+            icon: Icons.save_alt,
+            tooltip: t.saveAndShare,
+            onPressed: _copyOrShareHorizontalImage,
+          ),
+        ],
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: Appbar(
-        title: Text(t.stitchHorizontalImage),
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new),
-          onPressed: () => Navigator.maybePop(context),
+    return PopScope(
+      canPop: !isReorderMode,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && isReorderMode) {
+          setState(() => isReorderMode = false);
+        }
+      },
+      child: Scaffold(
+        appBar: Appbar(
+          title: Text(t.stitchHorizontalImage),
+          backgroundColor: Colors.transparent,
+          leading: _ModeAwareBackButton(
+            reorderMode: isReorderMode,
+            cropMode: false,
+            onExitMode: () => setState(() => isReorderMode = false),
+          ),
         ),
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(child: _buildMainCanvasPreview()),
-          _buildBottomButtons(),
-        ],
+        body: Stack(
+          children: [
+            if (isReorderMode)
+              Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: 650),
+                  child: _buildReorderView(),
+                ),
+              ),
+            if (!isReorderMode)
+              Positioned.fill(child: _buildMainCanvasPreview()),
+            _buildBottomButtons(),
+          ],
+        ),
       ),
     );
   }

@@ -39,8 +39,12 @@ abstract class BaseImageProvider<T extends BaseImageProvider<T>>
         _effectiveScreenWidth = _minAnimeImageWidth;
       }
     }
-    if (width! > _effectiveScreenWidth!) {
-      height = (height! * _effectiveScreenWidth! / width).round();
+    // 宽高缺失时返回原值，避免空指针崩溃
+    if (width == null || height == null || width <= 0 || height <= 0) {
+      return TargetImageSize(width: width ?? 0, height: height ?? 0);
+    }
+    if (width > _effectiveScreenWidth!) {
+      height = (height * _effectiveScreenWidth! / width).round();
       width = _effectiveScreenWidth!.round();
     }
     return TargetImageSize(width: width, height: height);

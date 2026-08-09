@@ -60,7 +60,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
   String formatHMSForRating({int? seconds}) {
     seconds ??= 0;
     if (seconds <= 0) return '';
-    return '(评价时 ${Utils.formatHMS(seconds)})';
+    return t.statsRatedAt(duration: Utils.formatHMS(seconds));
   }
 
   Widget buildAllEventsWidget(BuildContext context) {
@@ -138,8 +138,19 @@ class _StatItemWidgetState extends State<StatItemWidget> {
             case DailyEventType.comment:
               if (dailyList.length == 1 || dailyIndex == 0) {
                 final text = recordIndex == 0
-                    ? '${record.date!.hhmmss} 创建了评论 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                    : '${record.date!.hhmmss} 第${record.value - 1}次修改了评论 ${formatHMSForRating(seconds: record.watchDuration)}:';
+                    ? t.statsCreatedComment(
+                        time: record.date!.hhmmss,
+                        duration: formatHMSForRating(
+                          seconds: record.watchDuration,
+                        ),
+                      )
+                    : t.statsModifiedComment(
+                        time: record.date!.hhmmss,
+                        n: record.value - 1,
+                        duration: formatHMSForRating(
+                          seconds: record.watchDuration,
+                        ),
+                      );
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -173,8 +184,11 @@ class _StatItemWidgetState extends State<StatItemWidget> {
                   final rList = dailyList[i].platformEventRecords;
                   if (rList.isNotEmpty) sum += rList.last.value;
                 }
-                final text =
-                    '${record.date!.hhmmss} 第${sum + record.value - 1}次修改了评论 ${formatHMSForRating(seconds: record.watchDuration)}:';
+                final text = t.statsModifiedComment(
+                  time: record.date!.hhmmss,
+                  n: sum + record.value - 1,
+                  duration: formatHMSForRating(seconds: record.watchDuration),
+                );
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -207,8 +221,19 @@ class _StatItemWidgetState extends State<StatItemWidget> {
             case DailyEventType.rating:
               if (dailyList.length == 1 || dailyIndex == 0) {
                 final text = recordIndex == 0
-                    ? '${record.date!.hhmmss} 创建了评级 ${formatHMSForRating(seconds: record.watchDuration)}:'
-                    : '${record.date!.hhmmss} 第${record.value - 1}次修改了评级 ${formatHMSForRating(seconds: record.watchDuration)}:';
+                    ? t.statsCreatedRating(
+                        time: record.date!.hhmmss,
+                        duration: formatHMSForRating(
+                          seconds: record.watchDuration,
+                        ),
+                      )
+                    : t.statsModifiedRating(
+                        time: record.date!.hhmmss,
+                        n: record.value - 1,
+                        duration: formatHMSForRating(
+                          seconds: record.watchDuration,
+                        ),
+                      );
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -263,8 +288,11 @@ class _StatItemWidgetState extends State<StatItemWidget> {
                   final rList = dailyList[i].platformEventRecords;
                   if (rList.isNotEmpty) sum += rList.last.value;
                 }
-                final text =
-                    '${record.date!.hhmmss} 第${sum + record.value - 1}次修改了评级 ${formatHMSForRating(seconds: record.watchDuration)}:';
+                final text = t.statsModifiedRating(
+                  time: record.date!.hhmmss,
+                  n: sum + record.value - 1,
+                  duration: formatHMSForRating(seconds: record.watchDuration),
+                );
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -373,7 +401,11 @@ class _StatItemWidgetState extends State<StatItemWidget> {
         for (final record in clickEvent.platformEventRecords) {
           final sourceType = _getSourceType(stats.type);
           recordStrings.add(
-            '[$sourceType] ${record.platform?.value ?? '未知'}点击${record.value}次',
+            t.statsClickAt(
+              source: sourceType,
+              platform: record.platform?.value ?? t.statsUnknown,
+              value: record.value,
+            ),
           );
           totalClicks += record.value;
         }
@@ -386,7 +418,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
 
     final children = <Widget>[
       Text(
-        '本日点击次数: $totalClicks',
+        t.statsDailyClicks(total: totalClicks),
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
       ),
       const SizedBox(height: 4),
@@ -425,7 +457,11 @@ class _StatItemWidgetState extends State<StatItemWidget> {
         for (final record in watchEvent.platformEventRecords) {
           final sourceType = _getSourceType(stats.type);
           recordStrings.add(
-            '[$sourceType] ${record.platform?.value ?? '未知'}观看: ${Utils.formatHMS(record.value)}',
+            t.statsWatchAt(
+              source: sourceType,
+              platform: record.platform?.value ?? t.statsUnknown,
+              duration: Utils.formatHMS(record.value),
+            ),
           );
           totalSeconds += record.value;
         }
@@ -438,7 +474,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
 
     final children = [
       Text(
-        '本日观看时长: ${Utils.formatHMS(totalSeconds)}',
+        t.statsDailyWatch(duration: Utils.formatHMS(totalSeconds)),
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
       ),
       const SizedBox(height: 4),
@@ -486,7 +522,7 @@ class _StatItemWidgetState extends State<StatItemWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '记录',
+          t.statsRecords,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
@@ -662,7 +698,9 @@ class _StatItemWidgetState extends State<StatItemWidget> {
                         const Icon(Icons.event, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '当日最后点击: \n${latestGroupClickRecord?.date!.hhmmss}',
+                          t.statsLastClickAt(
+                            time: latestGroupClickRecord?.date!.hhmmss ?? '',
+                          ),
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],
@@ -686,7 +724,9 @@ class _StatItemWidgetState extends State<StatItemWidget> {
                         const Icon(Icons.access_time, size: 16),
                         const SizedBox(width: 4),
                         Text(
-                          '当日最后观看: \n${latestGroupWatchRecord?.date!.hhmmss}',
+                          t.statsLastWatchAt(
+                            time: latestGroupWatchRecord?.date!.hhmmss ?? '',
+                          ),
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],

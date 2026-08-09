@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/bbcode/bbcode_widget.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_comments_item.dart';
 import 'package:kostori/foundation/bangumi/reviews/reviews_info_item.dart';
 import 'package:kostori/utils/utils.dart';
@@ -28,11 +29,7 @@ class ReviewsCommentsCard extends StatelessWidget {
           if (reviewsCommentsItem.state == 0) ...[
             Row(
               children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    reviewsCommentsItem.user.avatar.large,
-                  ),
-                ),
+                BangumiAvatar(url: reviewsCommentsItem.user.avatar.large),
                 const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -88,11 +85,9 @@ class ReviewsCommentsCard extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [
-                    CircleAvatar(
+                    BangumiAvatar(
+                      url: reviewsCommentsItem.user.avatar.large,
                       radius: 20,
-                      backgroundImage: NetworkImage(
-                        reviewsCommentsItem.user.avatar.large,
-                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -202,11 +197,7 @@ class _ChildRepliesListState extends State<_ChildRepliesList> {
                     ),
                     Row(
                       children: [
-                        CircleAvatar(
-                          backgroundImage: NetworkImage(
-                            reply.user.avatar.large,
-                          ),
-                        ),
+                        BangumiAvatar(url: reply.user.avatar.large),
                         const SizedBox(width: 8),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

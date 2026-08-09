@@ -238,11 +238,15 @@ class _BalanceConfigFields extends StatefulWidget {
     required this.urlCtrl,
     required this.keyCtrl,
     required this.onQuery,
+    required this.baseUrl,
   });
 
   final TextEditingController urlCtrl;
   final TextEditingController keyCtrl;
   final Future<Res<String>> Function() onQuery;
+
+  /// 服务商基础地址（用于展示生效的完整查询地址）
+  final String baseUrl;
 
   @override
   State<_BalanceConfigFields> createState() => _BalanceConfigFieldsState();
@@ -283,6 +287,15 @@ class _BalanceConfigFieldsState extends State<_BalanceConfigFields> {
     }
   }
 
+  /// 生效的余额查询完整地址（baseUrl + 相对路径，或绝对 URL）
+  String _effectiveUrl() {
+    final base = widget.baseUrl;
+    final path = widget.urlCtrl.text.trim();
+    if (path.isEmpty) return base;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    return base.endsWith('/') ? '$base${path.substring(1)}' : '$base$path';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -318,6 +331,9 @@ class _BalanceConfigFieldsState extends State<_BalanceConfigFields> {
             hintText: t.balanceQueryUrlHint,
             prefixIcon: const Icon(Icons.link, size: 20),
             border: const OutlineInputBorder(),
+            helperText: widget.urlCtrl.text.trim().isNotEmpty
+                ? '${t.effectiveAddress}: ${_effectiveUrl()}'
+                : t.optionalField,
           ),
         ),
         const SizedBox(height: 12),
@@ -358,7 +374,14 @@ class _ApiKeyEditor extends StatefulWidget {
 
 class _ApiKeyEditorState extends State<_ApiKeyEditor> {
   late final _keyCtrl = TextEditingController(text: widget.row?.apiKey ?? '');
-  late final _urlCtrl = TextEditingController(text: widget.row?.baseUrl ?? '');
+  late final _urlCtrl = TextEditingController(
+    text:
+        widget.row?.baseUrl ??
+        ((OpenAiProviderRegistry.allProviders[widget.source]?.isCustom ?? false)
+            ? ''
+            : (OpenAiProviderRegistry.allProviders[widget.source]?.baseUrl ??
+                  '')),
+  );
   late final _balanceUrlCtrl = TextEditingController(
     text:
         widget.row?.balanceUrl ??
@@ -381,6 +404,17 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
       _apiFormat == 'openai_responses' ? 'openai' : _apiFormat;
 
   bool get _responses => _apiFormat == 'openai_responses';
+
+  /// 内置服务商的默认基础地址（用于展示）
+  String get _defaultBaseUrl =>
+      OpenAiProviderRegistry.allProviders[widget.source]?.baseUrl ?? '';
+
+  /// 当前生效的模型列表接口地址（不含自动附加的 ?key=）
+  String get _modelsEndpointDisplay {
+    final e = _modelsEndpoint;
+    final idx = e.indexOf('?key=');
+    return idx > 0 ? e.substring(0, idx) : e;
+  }
 
   // 当前选中的模型 ID
   String? _selectedModelId;
@@ -474,7 +508,11 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
     if (_modelsUrlCtrl.text.trim().isNotEmpty) {
       return _modelsUrlCtrl.text.trim();
     }
-    return _apiFormat == 'claude' ? '$base/v1/models' : '$base/models';
+    return switch (_apiFormat) {
+      'claude' => '$base/v1/models',
+      'gemini' => '$base/models?key=${_keyCtrl.text.trim()}',
+      _ => '$base/models',
+    };
   }
 
   Map<String, String> get _probeHeaders {
@@ -541,14 +579,14 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
         return;
       }
       final items = json['data'] ?? json['models'];
-      final ids = <String>{};
+      final ids = <String>[];
       if (items is List) {
         for (final item in items.whereType<Map>()) {
           var id = item['id']?.toString() ?? '';
           if (id.isEmpty) {
             id = (item['name']?.toString() ?? '').replaceFirst('models/', '');
           }
-          if (id.isNotEmpty) ids.add(id);
+          if (id.isNotEmpty && !ids.contains(id)) ids.add(id);
         }
       }
       if (ids.isEmpty) {
@@ -558,26 +596,47 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
         );
         return;
       }
-      final companions = [
-        for (final id in ids)
-          AiModelsCompanion.insert(
-            provider: widget.source,
-            modelId: id,
-            label: id,
-          ),
-      ];
-      await AiDatabase.instance.aiModelDao.upsertModels(companions);
-      await _loadModels();
-      App.rootContext.showMessage(
-        message: '${t.connectionOk} · ${ids.length}',
-        level: LogLevel.info,
-      );
+      await _showImportDialog(ids);
     } catch (e) {
       App.rootContext.showMessage(
         message: '$t.connectionFailed: $e',
         level: LogLevel.warning,
       );
     }
+  }
+
+  /// 拉取结果导入对话框：全部导入 / 可选导入
+  Future<void> _showImportDialog(List<String> ids) async {
+    final picked = await _showModelImportDialog(context, ids);
+    if (picked == null || picked.isEmpty) return;
+    await _importModels(picked);
+  }
+
+  /// 自动判定模型类型/模态/能力后批量导入
+  Future<void> _importModels(List<String> ids) async {
+    final companions = <AiModelsCompanion>[];
+    for (final id in ids) {
+      final s = _autoModelSettings(id, _apiFormat);
+      companions.add(
+        AiModelsCompanion.insert(
+          provider: widget.source,
+          modelId: id,
+          label: id,
+          modelType: Value(s.type),
+          inputModality: Value(s.input),
+          outputModality: Value(s.output),
+          supportsVision: Value(s.vision),
+          supportsTools: Value(s.tools),
+          supportsReasoning: Value(s.reasoning),
+        ),
+      );
+    }
+    await AiDatabase.instance.aiModelDao.upsertModels(companions);
+    await _loadModels();
+    App.rootContext.showMessage(
+      message: '${t.connectionOk} · ${ids.length}',
+      level: LogLevel.info,
+    );
   }
 
   Future<Res<String>> _queryBalanceNow() => queryBalanceByUrl(
@@ -625,237 +684,246 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.7,
         ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                child: ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(
-                    context,
-                  ).copyWith(scrollbars: false),
-                  child: SingleChildScrollView(
-                    child: _SettingCard(
-                      children: [
-                        _SettingPartTitle(
-                          title: t.apiConfiguration,
-                          icon: Icons.key_outlined,
+        child: DefaultTabController(
+          length: 2,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Column(
+                  children: [
+                    // ── TabBar：主设置 / 模型设置 ─────────────
+                    TabBar(
+                      tabAlignment: TabAlignment.start,
+                      isScrollable: true,
+                      tabs: [
+                        Tab(
+                          icon: const Icon(Icons.settings_outlined, size: 18),
+                          text: t.mainSettings,
                         ),
-
-                        // ── API Key ──────────────────────────────
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                          child: TextFormField(
-                            controller: _keyCtrl,
-                            obscureText: _obscure,
-                            decoration: InputDecoration(
-                              labelText: t.apiKey,
-                              prefixIcon: const Icon(Icons.key, size: 20),
-                              border: const OutlineInputBorder(),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscure
-                                      ? Icons.visibility_off
-                                      : Icons.visibility,
-                                ),
-                                onPressed: () =>
-                                    setState(() => _obscure = !_obscure),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // ── Base URL ─────────────────────────────
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                          child: TextFormField(
-                            controller: _urlCtrl,
-                            decoration: InputDecoration(
-                              labelText: t.baseUrl,
-                              helperText: t.optionalField,
-                              prefixIcon: const Icon(
-                                Icons.home_filled,
-                                size: 20,
-                              ),
-                              border: const OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-
-                        // ── 接口格式（Tab 选择 + OpenAI 端点子选项）──
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.apiFormat,
-                                style: Theme.of(context).textTheme.labelLarge,
-                              ),
-                              const SizedBox(height: 8),
-                              SegmentedButton<String>(
-                                segments: const [
-                                  ButtonSegment(
-                                    value: 'openai',
-                                    label: Text('OpenAI'),
-                                    icon: Icon(Icons.chat_outlined, size: 16),
-                                  ),
-                                  ButtonSegment(
-                                    value: 'gemini',
-                                    label: Text('Gemini'),
-                                    icon: Icon(
-                                      Icons.rocket_launch_outlined,
-                                      size: 16,
-                                    ),
-                                  ),
-                                  ButtonSegment(
-                                    value: 'claude',
-                                    label: Text('Claude'),
-                                    icon: Icon(
-                                      Icons.bubble_chart_outlined,
-                                      size: 16,
-                                    ),
-                                  ),
-                                ],
-                                selected: {_family},
-                                showSelectedIcon: false,
-                                onSelectionChanged: (s) {
-                                  setState(() {
-                                    _apiFormat = s.first == 'openai'
-                                        ? (_responses
-                                              ? 'openai_responses'
-                                              : 'openai')
-                                        : s.first;
-                                  });
-                                },
-                              ),
-                              if (_family == 'openai') ...[
-                                const SizedBox(height: 8),
-                                SegmentedButton<String>(
-                                  segments: [
-                                    ButtonSegment(
-                                      value: 'chat',
-                                      label: Text(t.endpointChatCompletions),
-                                      icon: const Icon(
-                                        Icons.chat_outlined,
-                                        size: 14,
-                                      ),
-                                    ),
-                                    ButtonSegment(
-                                      value: 'responses',
-                                      label: Text(t.endpointResponses),
-                                      icon: const Icon(
-                                        Icons.schema_outlined,
-                                        size: 14,
-                                      ),
-                                    ),
-                                  ],
-                                  selected: {_responses ? 'responses' : 'chat'},
-                                  showSelectedIcon: false,
-                                  onSelectionChanged: (s) {
-                                    setState(() {
-                                      _apiFormat = s.first == 'responses'
-                                          ? 'openai_responses'
-                                          : 'openai';
-                                    });
-                                  },
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-
-                        // ── 查询模型接口 + 拉取/测试 ─────────────
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _modelsUrlCtrl,
-                                  decoration: InputDecoration(
-                                    labelText: t.modelsUrl,
-                                    helperText: t.optionalField,
-                                    prefixIcon: const Icon(
-                                      Icons.dns_outlined,
-                                      size: 20,
-                                    ),
-                                    border: const OutlineInputBorder(),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton.filledTonal(
-                                icon: const Icon(Icons.cloud_download_outlined),
-                                tooltip: t.fetchModels,
-                                onPressed: _fetchModels,
-                              ),
-                              IconButton.filledTonal(
-                                icon: const Icon(Icons.wifi_tethering),
-                                tooltip: t.testConnection,
-                                onPressed: _testConnection,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // ── 启用开关（由是否填写 API Key 决定，无需手动开关）──
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                          child: Text(
-                            '${t.apiConfiguration} · '
-                            '${t.enabledByApiKey}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-
-                        const Divider(indent: 16, endIndent: 16),
-
-                        // ── 余额查询 ─────────────────────────────
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                          child: _BalanceConfigFields(
-                            urlCtrl: _balanceUrlCtrl,
-                            keyCtrl: _balanceKeyCtrl,
-                            onQuery: _queryBalanceNow,
-                          ),
-                        ),
-
-                        const Divider(indent: 16, endIndent: 16),
-
-                        // ── 模型选择 ─────────────────────────────
-                        _ModelListSection(
-                          sourceKey: widget.source,
-                          models: _models,
-                          selectedModelId: _selectedModelId,
-                          onSelected: (id) =>
-                              setState(() => _selectedModelId = id),
-                          onDelete: _deleteModel,
-                          onChanged: _loadModels,
+                        Tab(
+                          icon: const Icon(Icons.model_training, size: 18),
+                          text: t.modelSettings,
                         ),
                       ],
                     ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [_mainSettingsBody(), _modelSettingsBody()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── 保存按钮 ─────────────────────────────
+              Positioned(
+                right: 16,
+                bottom: 16,
+                child: FloatingActionButton.extended(
+                  onPressed: _save,
+                  label: Text(t.apply),
+                  icon: const Icon(Icons.check),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 主设置 Tab：API Key / Base URL / 接口格式 / 模型接口 / 余额
+  Widget _mainSettingsBody() {
+    final scheme = Theme.of(context).colorScheme;
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SettingPartTitle(
+              title: t.apiConfiguration,
+              icon: Icons.key_outlined,
+            ),
+
+            // ── API Key ──────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TextFormField(
+                controller: _keyCtrl,
+                obscureText: _obscure,
+                decoration: InputDecoration(
+                  labelText: t.apiKey,
+                  prefixIcon: const Icon(Icons.key, size: 20),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscure ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
               ),
             ),
 
-            // ── 保存按钮 ─────────────────────────────
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: FloatingActionButton.extended(
-                onPressed: _save,
-                label: Text(t.apply),
-                icon: const Icon(Icons.check),
+            // ── Base URL ─────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: TextFormField(
+                controller: _urlCtrl,
+                decoration: InputDecoration(
+                  labelText: t.baseUrl,
+                  helperText:
+                      _defaultBaseUrl.isNotEmpty && _urlCtrl.text.trim().isEmpty
+                      ? t.defaultValue(v: _defaultBaseUrl)
+                      : t.optionalField,
+                  prefixIcon: const Icon(Icons.home_filled, size: 20),
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+
+            // ── 接口格式（Tab 选择 + OpenAI 端点子选项）──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    t.apiFormat,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(
+                        value: 'openai',
+                        label: Text('OpenAI'),
+                        icon: Icon(Icons.chat_outlined, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: 'gemini',
+                        label: Text('Gemini'),
+                        icon: Icon(Icons.rocket_launch_outlined, size: 16),
+                      ),
+                      ButtonSegment(
+                        value: 'claude',
+                        label: Text('Claude'),
+                        icon: Icon(Icons.bubble_chart_outlined, size: 16),
+                      ),
+                    ],
+                    selected: {_family},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (s) {
+                      setState(() {
+                        _apiFormat = s.first == 'openai'
+                            ? (_responses ? 'openai_responses' : 'openai')
+                            : s.first;
+                      });
+                    },
+                  ),
+                  if (_family == 'openai') ...[
+                    const SizedBox(height: 8),
+                    SegmentedButton<String>(
+                      segments: [
+                        ButtonSegment(
+                          value: 'chat',
+                          label: Text(t.endpointChatCompletions),
+                          icon: const Icon(Icons.chat_outlined, size: 14),
+                        ),
+                        ButtonSegment(
+                          value: 'responses',
+                          label: Text(t.endpointResponses),
+                          icon: const Icon(Icons.schema_outlined, size: 14),
+                        ),
+                      ],
+                      selected: {_responses ? 'responses' : 'chat'},
+                      showSelectedIcon: false,
+                      onSelectionChanged: (s) {
+                        setState(() {
+                          _apiFormat = s.first == 'responses'
+                              ? 'openai_responses'
+                              : 'openai';
+                        });
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // ── 查询模型接口 + 拉取/测试 ─────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _modelsUrlCtrl,
+                      decoration: InputDecoration(
+                        labelText: t.modelsUrl,
+                        helperText:
+                            _modelsUrlCtrl.text.trim().isEmpty &&
+                                _modelsEndpointDisplay.isNotEmpty
+                            ? t.defaultValue(v: _modelsEndpointDisplay)
+                            : t.optionalField,
+                        prefixIcon: const Icon(Icons.dns_outlined, size: 20),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.cloud_download_outlined),
+                    tooltip: t.fetchModels,
+                    onPressed: _fetchModels,
+                  ),
+                  IconButton.filledTonal(
+                    icon: const Icon(Icons.wifi_tethering),
+                    tooltip: t.testConnection,
+                    onPressed: _testConnection,
+                  ),
+                ],
+              ),
+            ),
+
+            // ── 启用开关（由是否填写 API Key 决定，无需手动开关）──
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                '${t.apiConfiguration} · ${t.enabledByApiKey}',
+                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+              ),
+            ),
+
+            const Divider(indent: 16, endIndent: 16),
+
+            // ── 余额查询 ─────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: _BalanceConfigFields(
+                urlCtrl: _balanceUrlCtrl,
+                keyCtrl: _balanceKeyCtrl,
+                onQuery: _queryBalanceNow,
+                baseUrl: _defaultBaseUrl,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// 模型设置 Tab：模型卡片列表
+  Widget _modelSettingsBody() {
+    return _ModelListSection(
+      sourceKey: widget.source,
+      models: _models,
+      selectedModelId: _selectedModelId,
+      onSelected: (id) => setState(() => _selectedModelId = id),
+      onDelete: _deleteModel,
+      onChanged: _loadModels,
+      scrollable: true,
     );
   }
 }
@@ -864,7 +932,7 @@ class _ApiKeyEditorState extends State<_ApiKeyEditor> {
 // 模型列表区块（标题 + 添加 + Chip 列表）
 // ─────────────────────────────────────────────
 
-class _ModelListSection extends StatelessWidget {
+class _ModelListSection extends StatefulWidget {
   const _ModelListSection({
     required this.sourceKey,
     required this.models,
@@ -873,6 +941,7 @@ class _ModelListSection extends StatelessWidget {
     required this.onDelete,
     required this.onChanged,
     this.canAdd = true,
+    this.scrollable = false,
   });
 
   /// 模型归属的服务商 source key（内置如 `deepseek`，自定义如 `custom_xxx`）
@@ -892,370 +961,238 @@ class _ModelListSection extends StatelessWidget {
   /// 是否允许添加模型（自定义服务商未填 key 时禁用）
   final bool canAdd;
 
-  Future<void> _addModel(BuildContext context) async {
-    final ctrl = TextEditingController();
-    final labelCtrl = TextEditingController();
-    var supportsVision = true;
-    var supportsTools = true;
-    var supportsReasoning = false;
-    var modelType = 'chat';
-    final inputModality = <String>['text'];
-    final outputModality = <String>['text'];
-    const inputOptions = ['text', 'image', 'audio', 'video'];
-    const outputOptions = ['text', 'image', 'audio'];
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => ContentDialog(
-          title: t.addModel,
-          content: SizedBox(
-            width: 440,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: ctrl,
-                    decoration: InputDecoration(
-                      labelText: t.modelId,
-                      hintText: 'e.g. gpt-4o',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: labelCtrl,
-                    decoration: InputDecoration(
-                      labelText: t.displayName,
-                      hintText: 'e.g. GPT-4o',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: modelType,
-                    decoration: InputDecoration(
-                      labelText: t.modelType,
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'chat', child: Text('chat')),
-                      DropdownMenuItem(
-                        value: 'embedding',
-                        child: Text('embedding'),
-                      ),
-                      DropdownMenuItem(value: 'image', child: Text('image')),
-                      DropdownMenuItem(value: 'audio', child: Text('audio')),
-                      DropdownMenuItem(value: 'rerank', child: Text('rerank')),
-                      DropdownMenuItem(value: 'other', child: Text('other')),
-                    ],
-                    onChanged: (v) =>
-                        setDialogState(() => modelType = v ?? 'chat'),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    t.inputModality,
-                    style: Theme.of(ctx).textTheme.labelLarge,
-                  ),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final o in inputOptions)
-                        FilterChip(
-                          label: Text(o),
-                          selected: inputModality.contains(o),
-                          visualDensity: VisualDensity.compact,
-                          onSelected: (sel) => setDialogState(() {
-                            if (sel) {
-                              if (!inputModality.contains(o)) {
-                                inputModality.add(o);
-                              }
-                            } else {
-                              inputModality.remove(o);
-                            }
-                          }),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    t.outputModality,
-                    style: Theme.of(ctx).textTheme.labelLarge,
-                  ),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final o in outputOptions)
-                        FilterChip(
-                          label: Text(o),
-                          selected: outputModality.contains(o),
-                          visualDensity: VisualDensity.compact,
-                          onSelected: (sel) => setDialogState(() {
-                            if (sel) {
-                              if (!outputModality.contains(o)) {
-                                outputModality.add(o);
-                              }
-                            } else {
-                              outputModality.remove(o);
-                            }
-                          }),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildToggleRow(
-                    t.supportsVision,
-                    Icons.image_outlined,
-                    supportsVision,
-                    (v) => setDialogState(() => supportsVision = v),
-                  ),
-                  _buildToggleRow(
-                    t.supportsTools,
-                    Icons.build_outlined,
-                    supportsTools,
-                    (v) => setDialogState(() => supportsTools = v),
-                  ),
-                  _buildToggleRow(
-                    t.supportsReasoning,
-                    Icons.psychology_outlined,
-                    supportsReasoning,
-                    (v) => setDialogState(() => supportsReasoning = v),
-                  ),
-                ],
-              ),
+  /// 是否自带滚动（Tab 页使用懒列表，避免切换时一次构建全部卡片卡顿）
+  final bool scrollable;
+
+  @override
+  State<_ModelListSection> createState() => _ModelListSectionState();
+}
+
+class _ModelListSectionState extends State<_ModelListSection> {
+  /// 当前类型筛选（null = 全部）
+  String? _typeFilter;
+
+  /// 已折叠的基名分组
+  final Set<String> _collapsed = {};
+
+  /// 打开模型二级设置页（model 为 null 表示新增）
+  Future<void> _openEditor(BuildContext context, {AiModel? model}) async {
+    await showPopUpWidget(
+      context,
+      _ModelEditorPage(
+        sourceKey: widget.sourceKey,
+        model: model,
+        isDefault: model != null && widget.selectedModelId == model.modelId,
+        onSetDefault: (id) {
+          widget.onSelected(id);
+          App.rootContext.showMessage(message: t.saved);
+        },
+        onChanged: widget.onChanged,
+      ),
+    );
+    await widget.onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final rows = _buildRows(scheme);
+    if (widget.scrollable) {
+      return ListView.builder(
+        padding: const EdgeInsets.only(bottom: 88),
+        itemCount: rows.length,
+        itemBuilder: (context, i) => rows[i],
+      );
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
+  }
+
+  List<Widget> _buildRows(ColorScheme scheme) {
+    // ── 标题 + 添加按钮 ─────────────────────────
+    final header = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          const Icon(Icons.model_training, size: 20),
+          const SizedBox(width: 8),
+          Text(t.model, style: Theme.of(context).textTheme.titleSmall),
+          const Spacer(),
+          IconButton.filledTonal(
+            icon: const Icon(Icons.add, size: 18),
+            tooltip: t.addModel,
+            visualDensity: VisualDensity.compact,
+            onPressed: widget.canAdd ? () => _openEditor(context) : null,
+          ),
+        ],
+      ),
+    );
+
+    if (widget.models.isEmpty) {
+      return [
+        header,
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            widget.canAdd
+                ? t.noModelsAddOneAbove
+                : t.enterProviderKeyToAddModel,
+            style: TextStyle(
+              color: scheme.onSurface.withValues(alpha: 0.5),
+              fontSize: 13,
             ),
           ),
-          actions: [
-            FilledButton(
-              onPressed: () async {
-                if (ctrl.text.trim().isEmpty) return;
-                await AiDatabase.instance.aiModelDao.upsertModels([
-                  AiModelsCompanion.insert(
-                    provider: sourceKey,
-                    modelId: ctrl.text.trim(),
-                    label: labelCtrl.text.trim().isNotEmpty
-                        ? labelCtrl.text.trim()
-                        : ctrl.text.trim(),
-                    modelType: Value(modelType),
-                    inputModality: Value(inputModality.join(',')),
-                    outputModality: Value(outputModality.join(',')),
-                    supportsVision: Value(supportsVision),
-                    supportsTools: Value(supportsTools),
-                    supportsReasoning: Value(supportsReasoning),
-                  ),
-                ]);
-                Navigator.pop(ctx);
-                await onChanged();
-              },
-              child: Text(t.add),
+        ),
+      ];
+    }
+
+    // ── 类型筛选 chips ─────────────────────────
+    final types = <String>[];
+    for (final m in widget.models) {
+      final t = m.modelType.isEmpty ? 'chat' : m.modelType;
+      if (!types.contains(t)) types.add(t);
+    }
+    final filterRow = Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            ChoiceChip(
+              label: Text(t.all),
+              selected: _typeFilter == null,
+              visualDensity: VisualDensity.compact,
+              onSelected: (_) => setState(() => _typeFilter = null),
+            ),
+            const SizedBox(width: 6),
+            for (final type in types) ...[
+              ChoiceChip(
+                label: Text(_modelTypeLabel(type)),
+                selected: _typeFilter == type,
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => setState(
+                  () => _typeFilter = _typeFilter == type ? null : type,
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    // ── 按基名分组（同基名不同后缀折叠为一组）──
+    final filtered = _typeFilter == null
+        ? widget.models
+        : widget.models
+              .where(
+                (m) =>
+                    (m.modelType.isEmpty ? 'chat' : m.modelType) == _typeFilter,
+              )
+              .toList();
+    final groups = <String, List<AiModel>>{};
+    for (final m in filtered) {
+      groups.putIfAbsent(_baseModelName(m.modelId), () => []).add(m);
+    }
+    final bases = groups.keys.toList()..sort();
+
+    return [
+      header,
+      filterRow,
+      for (final base in bases) ...[
+        _groupHeader(base, groups[base]!),
+        if (!_collapsed.contains(base))
+          for (final m in groups[base]!) _modelCard(m),
+      ],
+    ];
+  }
+
+  Widget _groupHeader(String base, List<AiModel> group) {
+    final scheme = Theme.of(context).colorScheme;
+    final collapsed = _collapsed.contains(base);
+    return InkWell(
+      onTap: () => setState(() {
+        if (collapsed) {
+          _collapsed.remove(base);
+        } else {
+          _collapsed.add(base);
+        }
+      }),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+        child: Row(
+          children: [
+            Icon(
+              collapsed ? Icons.chevron_right : Icons.expand_more,
+              size: 18,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                base,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            Text(
+              '${group.length}',
+              style: TextStyle(fontSize: 11, color: scheme.outline),
             ),
           ],
         ),
       ),
     );
-    ctrl.dispose();
-    labelCtrl.dispose();
   }
 
-  Future<void> _toggleVision(AiModel model) async {
-    await AiDatabase.instance.aiModelDao.updateCapabilities(
-      sourceKey,
-      model.modelId,
-      supportsVision: !model.supportsVision,
-    );
-    await onChanged();
-  }
-
-  Future<void> _toggleTools(AiModel model) async {
-    await AiDatabase.instance.aiModelDao.updateCapabilities(
-      sourceKey,
-      model.modelId,
-      supportsTools: !model.supportsTools,
-    );
-    await onChanged();
-  }
-
-  Future<void> _toggleReasoning(AiModel model) async {
-    await AiDatabase.instance.aiModelDao.updateCapabilities(
-      sourceKey,
-      model.modelId,
-      supportsReasoning: !model.supportsReasoning,
-    );
-    await onChanged();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── 标题 + 添加按钮 ─────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Row(
-            children: [
-              const Icon(Icons.model_training, size: 20),
-              const SizedBox(width: 8),
-              Text(t.model, style: Theme.of(context).textTheme.titleSmall),
-              const Spacer(),
-              IconButton.filledTonal(
-                icon: const Icon(Icons.add, size: 18),
-                tooltip: t.addModel,
-                visualDensity: VisualDensity.compact,
-                onPressed: canAdd ? () => _addModel(context) : null,
-              ),
-            ],
-          ),
-        ),
-
-        // ── 模型列表 ────────────────────────────────
-        if (models.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              canAdd ? t.noModelsAddOneAbove : t.enterProviderKeyToAddModel,
-              style: TextStyle(
-                color: scheme.onSurface.withValues(alpha: 0.5),
-                fontSize: 13,
-              ),
-            ),
-          )
-        else
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: models.map((m) {
-                final isSelected = selectedModelId == m.modelId;
-                return _ModelChip(
-                  model: m,
-                  isSelected: isSelected,
-                  onSelect: () => onSelected(m.modelId),
-                  onDelete: () => onDelete(m),
-                  onToggleVision: () => _toggleVision(m),
-                  onToggleTools: () => _toggleTools(m),
-                  onToggleReasoning: () => _toggleReasoning(m),
-                );
-              }).toList(),
-            ),
-          ),
-      ],
+  Widget _modelCard(AiModel m) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: _ModelCard(
+        model: m,
+        isSelected: widget.selectedModelId == m.modelId,
+        onOpen: () => _openEditor(context, model: m),
+        onSetDefault: () => widget.onSelected(m.modelId),
+        onDelete: () => widget.onDelete(m),
+      ),
     );
   }
 }
 
+/// 提取模型基名：去掉尾部版本/日期/后缀（如 gpt-4o-2024-05-13 → gpt-4o）
+String _baseModelName(String id) => baseModelName(id);
+
 // ─────────────────────────────────────────────
-// 模型 Chip（选中 + 能力标记 + 长按/右键操作）
+// 模型卡片（单行样式：类型/输入模态/输出模态/能力 + 长按/右键操作）
 // ─────────────────────────────────────────────
 
-class _ModelChip extends StatelessWidget {
-  const _ModelChip({
+class _ModelCard extends StatelessWidget {
+  const _ModelCard({
     required this.model,
     required this.isSelected,
-    required this.onSelect,
+    required this.onOpen,
+    required this.onSetDefault,
     required this.onDelete,
-    required this.onToggleVision,
-    required this.onToggleTools,
-    required this.onToggleReasoning,
   });
 
   final AiModel model;
   final bool isSelected;
-  final VoidCallback onSelect;
+  final VoidCallback onOpen;
+  final VoidCallback onSetDefault;
   final VoidCallback onDelete;
-  final VoidCallback onToggleVision;
-  final VoidCallback onToggleTools;
-  final VoidCallback onToggleReasoning;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
+    return AiModelCard(
+      model: model,
+      isSelected: isSelected,
+      showDefaultBadge: true,
+      onTap: onOpen,
       onLongPress: () => _showActions(context),
       onSecondaryTap: () => _showActions(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? scheme.primaryContainer
-              : scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? scheme.primary : scheme.outlineVariant,
-            width: isSelected ? 1.5 : 0.8,
-          ),
-        ),
-        child: InkWell(
-          onTap: onSelect,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isSelected) ...[
-                  Icon(
-                    Icons.check_circle_rounded,
-                    size: 15,
-                    color: scheme.primary,
-                  ),
-                  const SizedBox(width: 5),
-                ],
-                if (model.modelType.isNotEmpty &&
-                    model.modelType != 'chat') ...[
-                  Text(
-                    model.modelType,
-                    style: TextStyle(fontSize: 10, color: scheme.outline),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  model.label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: isSelected
-                        ? scheme.onPrimaryContainer
-                        : scheme.onSurface,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.image_outlined,
-                  size: 12,
-                  color: model.supportsVision
-                      ? scheme.primary
-                      : scheme.outlineVariant,
-                ),
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.build_outlined,
-                  size: 12,
-                  color: model.supportsTools
-                      ? scheme.primary
-                      : scheme.outlineVariant,
-                ),
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.psychology_outlined,
-                  size: 12,
-                  color: model.supportsReasoning
-                      ? scheme.primary
-                      : scheme.outlineVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1269,28 +1206,16 @@ class _ModelChip extends StatelessWidget {
       Offset(offset.dx + size.width / 2, offset.dy + size.height),
       [
         MenuEntry(
-          icon: model.supportsVision
-              ? Icons.visibility_off_outlined
-              : Icons.image_outlined,
-          text: model.supportsVision ? t.disableVision : t.enableVision,
-          onClick: onToggleVision,
+          icon: Icons.tune_outlined,
+          text: t.openModelSettings,
+          onClick: onOpen,
         ),
-        MenuEntry(
-          icon: model.supportsTools
-              ? Icons.construction_outlined
-              : Icons.build_outlined,
-          text: model.supportsTools ? t.disableTools : t.enableTools,
-          onClick: onToggleTools,
-        ),
-        MenuEntry(
-          icon: model.supportsReasoning
-              ? Icons.psychology_alt_outlined
-              : Icons.psychology_outlined,
-          text: model.supportsReasoning
-              ? t.disableReasoning
-              : t.enableReasoning,
-          onClick: onToggleReasoning,
-        ),
+        if (!isSelected)
+          MenuEntry(
+            icon: Icons.star_outline,
+            text: t.setAsDefaultModel,
+            onClick: onSetDefault,
+          ),
         MenuEntry(
           icon: Icons.delete_outline,
           text: t.delete,
@@ -1300,6 +1225,470 @@ class _ModelChip extends StatelessWidget {
       ],
     );
   }
+}
+
+// ─────────────────────────────────────────────
+// 模型编辑页（单个模型的二级设置页，新增/编辑/删除/设默认）
+// ─────────────────────────────────────────────
+
+class _ModelEditorPage extends StatefulWidget {
+  const _ModelEditorPage({
+    required this.sourceKey,
+    required this.onChanged,
+    this.model,
+    this.isDefault = false,
+    this.onSetDefault,
+  });
+
+  final String sourceKey;
+  final AiModel? model;
+  final bool isDefault;
+  final ValueChanged<String>? onSetDefault;
+  final Future<void> Function() onChanged;
+
+  @override
+  State<_ModelEditorPage> createState() => _ModelEditorPageState();
+}
+
+class _ModelEditorPageState extends State<_ModelEditorPage> {
+  static const _inputOptions = ['text', 'image'];
+  static const _outputOptions = ['text', 'image'];
+  static const _modelTypes = ['chat', 'image', 'embedding'];
+  static const _capabilityOptions = ['tools', 'reasoning'];
+
+  late final TextEditingController _idCtrl;
+  late final TextEditingController _labelCtrl;
+  late String _modelType;
+  late List<String> _inputModality;
+  late List<String> _outputModality;
+  late bool _supportsTools;
+  late bool _supportsReasoning;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.model;
+    _idCtrl = TextEditingController(text: m?.modelId ?? '');
+    _labelCtrl = TextEditingController(text: m?.label ?? '');
+    _modelType = (m?.modelType.isNotEmpty == true) ? m!.modelType : 'chat';
+    _inputModality = _parseModality(m?.inputModality, const ['text']);
+    _outputModality = _parseModality(m?.outputModality, const ['text']);
+    _supportsTools = m?.supportsTools ?? true;
+    _supportsReasoning = m?.supportsReasoning ?? false;
+  }
+
+  List<String> _parseModality(String? raw, List<String> fallback) {
+    if (raw == null || raw.trim().isEmpty) return [...fallback];
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _idCtrl.dispose();
+    _labelCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final id = _idCtrl.text.trim();
+    if (id.isEmpty) return;
+    // 编辑时若修改了主键，先删除旧记录
+    if (widget.model != null && widget.model!.modelId != id) {
+      await AiDatabase.instance.aiModelDao.deleteModel(
+        widget.sourceKey,
+        widget.model!.modelId,
+      );
+    }
+    await AiDatabase.instance.aiModelDao.upsertModels([
+      AiModelsCompanion.insert(
+        provider: widget.sourceKey,
+        modelId: id,
+        label: _labelCtrl.text.trim().isNotEmpty ? _labelCtrl.text.trim() : id,
+        modelType: Value(_modelType),
+        inputModality: Value(_inputModality.join(',')),
+        outputModality: Value(_outputModality.join(',')),
+        supportsVision: Value(widget.model?.supportsVision ?? true),
+        supportsTools: Value(_supportsTools),
+        supportsReasoning: Value(_supportsReasoning),
+      ),
+    ]);
+    if (mounted) {
+      App.rootContext.showMessage(message: t.saved);
+      App.rootContext.pop(context);
+    }
+    await widget.onChanged();
+  }
+
+  Future<void> _delete() async {
+    if (widget.model == null) return;
+    await AiDatabase.instance.aiModelDao.deleteModel(
+      widget.sourceKey,
+      widget.model!.modelId,
+    );
+    if (mounted) App.rootContext.pop(context);
+    await widget.onChanged();
+  }
+
+  void _setDefault() {
+    final id = _idCtrl.text.trim();
+    if (id.isEmpty) return;
+    widget.onSetDefault?.call(id);
+    if (mounted) {
+      App.rootContext.showMessage(message: t.saved);
+      App.rootContext.pop(context);
+    }
+    widget.onChanged();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isEditing = widget.model != null;
+
+    return PopUpWidgetScaffold(
+      title: isEditing ? t.editModel : t.addModel,
+      tailing: [
+        if (isEditing)
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            color: scheme.error,
+            tooltip: t.delete,
+            onPressed: _delete,
+          ),
+      ],
+      body: SingleChildScrollView(
+        child: _SettingCard(
+          children: [
+            if (isEditing)
+              _SettingPartTitle(
+                title: widget.model?.label ?? '',
+                icon: Icons.model_training,
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: TextFormField(
+                controller: _idCtrl,
+                decoration: InputDecoration(
+                  labelText: t.modelId,
+                  hintText: 'e.g. gpt-4o',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: TextFormField(
+                controller: _labelCtrl,
+                decoration: InputDecoration(
+                  labelText: t.displayName,
+                  hintText: 'e.g. GPT-4o',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: _typePicker(
+                context,
+                title: t.modelType,
+                options: [
+                  ..._modelTypes,
+                  // 自动导入可能带来非固定选项的类型（如 audio），编辑时保留显示
+                  if (!_modelTypes.contains(_modelType)) _modelType,
+                ],
+                selected: _modelType,
+                onChanged: (v) => setState(() => _modelType = v),
+                labelOf: _modelTypeLabel,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: _modalityPicker(
+                context,
+                title: t.inputModality,
+                options: _inputOptions,
+                selected: _inputModality,
+                onChanged: (v) => setState(() => _inputModality = v),
+                labelOf: _modalityValueLabel,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: _modalityPicker(
+                context,
+                title: t.outputModality,
+                options: _outputOptions,
+                selected: _outputModality,
+                onChanged: (v) => setState(() => _outputModality = v),
+                labelOf: _modalityValueLabel,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: _modalityPicker(
+                context,
+                title: t.capabilities,
+                options: _capabilityOptions,
+                selected: [
+                  if (_supportsTools) 'tools',
+                  if (_supportsReasoning) 'reasoning',
+                ],
+                onChanged: (v) => setState(() {
+                  _supportsTools = v.contains('tools');
+                  _supportsReasoning = v.contains('reasoning');
+                }),
+                labelOf: _capabilityLabel,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _save,
+                      icon: const Icon(Icons.check),
+                      label: Text(t.apply),
+                    ),
+                  ),
+                  if (widget.model != null) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: widget.isDefault ? null : _setDefault,
+                        icon: const Icon(Icons.star_outline),
+                        label: Text(t.setAsDefaultModel),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _modalityPicker(
+    BuildContext context, {
+    required String title,
+    required List<String> options,
+    required List<String> selected,
+    required ValueChanged<List<String>> onChanged,
+    String Function(String)? labelOf,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final o in options)
+              FilterChip(
+                label: Text(labelOf?.call(o) ?? o),
+                selected: selected.contains(o),
+                visualDensity: VisualDensity.compact,
+                onSelected: (sel) {
+                  final next = [...selected];
+                  if (sel) {
+                    if (!next.contains(o)) next.add(o);
+                  } else {
+                    next.remove(o);
+                  }
+                  onChanged(next);
+                },
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// 单选类型选择器（与多选 picker 同风格，使用 ChoiceChip）
+  Widget _typePicker(
+    BuildContext context, {
+    required String title,
+    required List<String> options,
+    required String selected,
+    required ValueChanged<String> onChanged,
+    String Function(String)? labelOf,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final o in options)
+              ChoiceChip(
+                label: Text(labelOf?.call(o) ?? o),
+                selected: selected == o,
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) => onChanged(o),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── 模型选项标签（i18n）───────────────────────
+
+String _modelTypeLabel(String v) => modelTypeLabel(v);
+
+String _modalityValueLabel(String v) => modalityValueLabel(v);
+
+String _capabilityLabel(String v) => capabilityLabel(v);
+
+/// 拉取模型导入对话框：全部导入 / 可选导入。返回用户选择导入的模型 ID；取消返回 null。
+Future<List<String>?> _showModelImportDialog(
+  BuildContext context,
+  List<String> ids,
+) async {
+  var importAll = true;
+  final selected = <String>{};
+  return await showDialog<List<String>>(
+    context: context,
+    builder: (dialogCtx) => StatefulBuilder(
+      builder: (dialogCtx, setDialogState) => ContentDialog(
+        title: '${t.fetchModels} (${ids.length})',
+        content: SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(t.importAll),
+                value: importAll,
+                onChanged: (v) => setDialogState(() {
+                  importAll = v ?? true;
+                  if (importAll) selected.clear();
+                }),
+              ),
+              if (!importAll)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      for (final id in ids)
+                        CheckboxListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            id,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          value: selected.contains(id),
+                          onChanged: (v) => setDialogState(() {
+                            if (v == true) {
+                              selected.add(id);
+                            } else {
+                              selected.remove(id);
+                            }
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              dialogCtx,
+              importAll ? ids : ids.where(selected.contains).toList(),
+            ),
+            child: Text(importAll ? t.importAll : t.importSelected),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// 按模型 ID + 接口格式推断模型设置（类型/输入输出模态/能力）
+({
+  String type,
+  String input,
+  String output,
+  bool vision,
+  bool tools,
+  bool reasoning,
+})
+_autoModelSettings(String id, String apiFormat) {
+  final lower = id.toLowerCase();
+  if (lower.contains('embedding')) {
+    return (
+      type: 'embedding',
+      input: 'text',
+      output: 'text',
+      vision: false,
+      tools: false,
+      reasoning: false,
+    );
+  }
+  if (lower.contains('whisper') ||
+      lower.contains('audio') ||
+      lower.contains('tts') ||
+      lower.contains('speech')) {
+    return (
+      type: 'audio',
+      input: 'audio',
+      output: 'text',
+      vision: false,
+      tools: false,
+      reasoning: false,
+    );
+  }
+  if (lower.contains('dall') ||
+      lower.contains('image') ||
+      lower.contains('imagen') ||
+      lower.contains('midjourney') ||
+      lower.contains('flux') ||
+      lower.contains('sora') ||
+      lower.contains('video') ||
+      lower.contains('generate')) {
+    return (
+      type: 'image',
+      input: 'text',
+      output: 'image',
+      vision: false,
+      tools: false,
+      reasoning: false,
+    );
+  }
+  return (
+    type: 'chat',
+    input: 'text,image',
+    output: 'text',
+    vision: true,
+    tools: true,
+    reasoning: apiFormat == 'gemini',
+  );
 }
 
 // ─────────────────────────────────────────────
@@ -1511,24 +1900,28 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     'actionable',
   ];
 
-  static const _tagSuggestions = [
-    '理性',
-    '幽默',
-    '毒舌',
-    '温柔',
-    '严谨',
-    '热情',
-    '冷静',
-    '高冷',
-    '元气',
-    '中二',
-    '腹黑',
-    '亲切',
+  static List<String> get _tagSuggestions => [
+    t.aiTagRational,
+    t.aiTagHumorous,
+    t.aiTagSarcastic,
+    t.aiTagGentle,
+    t.aiTagRigorous,
+    t.aiTagPassionate,
+    t.aiTagCalm,
+    t.aiTagCool,
+    t.aiTagEnergetic,
+    t.aiTagChuuni,
+    t.aiTagCunning,
+    t.aiTagFriendly,
   ];
 
-  static const _knownExtensions = [
-    ('markdown', 'Markdown 渲染', '回复气泡是否启用 Markdown 排版'),
-    ('image_understanding', '图片理解', '是否允许向模型发送图片'),
+  static List<(String, String, String)> get _knownExtensions => [
+    ('markdown', t.aiExtMarkdown, t.aiExtMarkdownHint),
+    (
+      'image_understanding',
+      t.aiExtImageUnderstanding,
+      t.aiExtImageUnderstandingHint,
+    ),
   ];
 
   final _formKey = GlobalKey<FormState>();
@@ -1994,16 +2387,23 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
     );
   }
 
-  static const _personaSuggestions = [
-    ('通用助手', '友好可靠，乐于以清晰、有条理的方式帮助用户解决各类问题。'),
-    ('资深工程师', '精通多种编程语言与主流框架，擅长代码评审、调试与架构设计。'),
-    ('生活管家', '贴心细致的生活助理，熟悉日常事务安排、健康饮食与出行规划。'),
-    ('写作灵感', '富有想象力的文字创作者，擅长小说、散文、文案与创意脑暴。'),
-    ('知识顾问', '博学严谨，擅长讲解概念、答疑解惑与深度研究。'),
-    ('贴心好友', '温暖亲切，像朋友一样倾听、陪伴与鼓励。'),
+  static List<(String, String)> get _personaSuggestions => [
+    (t.aiPersonaGeneral, t.aiPersonaGeneralDesc),
+    (t.aiPersonaEngineer, t.aiPersonaEngineerDesc),
+    (t.aiPersonaButler, t.aiPersonaButlerDesc),
+    (t.aiPersonaWriter, t.aiPersonaWriterDesc),
+    (t.aiPersonaAdvisor, t.aiPersonaAdvisorDesc),
+    (t.aiPersonaFriend, t.aiPersonaFriendDesc),
   ];
 
-  static const _toneSuggestions = ['正式', '幽默', '温柔', '简洁', '自然', '毒舌'];
+  static List<String> get _toneSuggestions => [
+    t.aiToneFormal,
+    t.aiTagHumorous,
+    t.aiTagGentle,
+    t.aiToneConcise,
+    t.aiToneNatural,
+    t.aiTagSarcastic,
+  ];
 
   /// 点击选择式字段（readOnly，点击弹出 BottomSheet 选择）
   Widget _pickerField(
@@ -2218,20 +2618,20 @@ class _AssistantProfileEditorState extends State<_AssistantProfileEditor> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: SegmentedButton<ReplyLength>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: ReplyLength.short,
-                label: Text('简短'),
+                label: Text(t.lengthShort),
                 icon: Icon(Icons.short_text, size: 18),
               ),
               ButtonSegment(
                 value: ReplyLength.normal,
-                label: Text('适中'),
+                label: Text(t.lengthMedium),
                 icon: Icon(Icons.format_align_left, size: 18),
               ),
               ButtonSegment(
                 value: ReplyLength.detailed,
-                label: Text('详细'),
+                label: Text(t.detailed),
                 icon: Icon(Icons.notes, size: 18),
               ),
             ],
@@ -3171,14 +3571,14 @@ class _CustomProviderEditorState extends State<_CustomProviderEditor> {
         return;
       }
       final items = json['data'] ?? json['models'];
-      final ids = <String>{};
+      final ids = <String>[];
       if (items is List) {
         for (final item in items.whereType<Map>()) {
           var id = item['id']?.toString() ?? '';
           if (id.isEmpty) {
             id = (item['name']?.toString() ?? '').replaceFirst('models/', '');
           }
-          if (id.isNotEmpty) ids.add(id);
+          if (id.isNotEmpty && !ids.contains(id)) ids.add(id);
         }
       }
       if (ids.isEmpty) {
@@ -3189,21 +3589,36 @@ class _CustomProviderEditorState extends State<_CustomProviderEditor> {
         return;
       }
       final sourceKey = _sourceKey;
+      final picked = await _showModelImportDialog(context, ids);
+      if (picked == null || picked.isEmpty) return;
       final existing = await AiDatabase.instance.aiModelDao.getModel(
         sourceKey,
-        ids.first,
+        picked.first,
       );
-      final companions = [
-        for (final id in ids)
-          AiModelsCompanion.insert(provider: sourceKey, modelId: id, label: id),
-      ];
+      final companions = <AiModelsCompanion>[];
+      for (final id in picked) {
+        final s = _autoModelSettings(id, _apiFormat);
+        companions.add(
+          AiModelsCompanion.insert(
+            provider: sourceKey,
+            modelId: id,
+            label: id,
+            modelType: Value(s.type),
+            inputModality: Value(s.input),
+            outputModality: Value(s.output),
+            supportsVision: Value(s.vision),
+            supportsTools: Value(s.tools),
+            supportsReasoning: Value(s.reasoning),
+          ),
+        );
+      }
       await AiDatabase.instance.aiModelDao.upsertModels(companions);
-      if (existing == null && ids.isNotEmpty && _selectedModelId == null) {
-        _selectedModelId = ids.first;
+      if (existing == null && _selectedModelId == null) {
+        _selectedModelId = picked.first;
       }
       await _loadModels();
       App.rootContext.showMessage(
-        message: '${t.connectionOk} · ${ids.length}',
+        message: '${t.connectionOk} · ${picked.length}',
         level: LogLevel.info,
       );
     } catch (e) {
@@ -3458,6 +3873,7 @@ class _CustomProviderEditorState extends State<_CustomProviderEditor> {
                             urlCtrl: _balanceUrlCtrl,
                             keyCtrl: _balanceKeyCtrl,
                             onQuery: _queryBalanceNow,
+                            baseUrl: _urlCtrl.text.trim(),
                           ),
                         ),
                       ],
@@ -3663,7 +4079,7 @@ class _McpServerEditorState extends State<_McpServerEditor> {
                     children: [
                       _buildField(
                         Icons.badge_outlined,
-                        t.serverName,
+                        t.mcpServerName,
                         _nameCtrl,
                       ),
                       Padding(

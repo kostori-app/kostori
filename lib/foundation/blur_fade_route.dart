@@ -58,36 +58,35 @@ class BlurFadeRoute<T> extends PageRoute<T> {
       reverseCurve: Curves.easeIn,
     );
 
-    return AnimatedBuilder(
-      animation: fade,
-      builder: (context, _) {
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: SystemUiOverlayStyle.light,
-          child: Material(
-            type: MaterialType.transparency,
-            child: Stack(
-              children: [
-                SizedBox.expand(
-                  child: Opacity(
-                    opacity: fade.value,
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(
-                        sigmaX: 10.0 * fade.value,
-                        sigmaY: 10.0 * fade.value,
-                      ),
-                      child: Container(
-                        color: Colors.black.toOpacity(0.3 * fade.value),
-                      ),
-                    ),
+    // 内容用 FadeTransition（不重建内容），背景模糊单独用 AnimatedBuilder 驱动
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedBuilder(
+            animation: fade,
+            builder: (context, _) {
+              final v = fade.value;
+              return Opacity(
+                opacity: v,
+                child: BackdropFilter(
+                  filter: ui.ImageFilter.blur(
+                    sigmaX: 10.0 * v,
+                    sigmaY: 10.0 * v,
                   ),
+                  child: Container(color: Colors.black.toOpacity(0.3 * v)),
                 ),
-                // 内容淡入淡出
-                FadeTransition(opacity: fade, child: child),
-              ],
-            ),
+              );
+            },
           ),
-        );
-      },
+          // 内容淡入淡出（透明 Material 提供 Material 上下文）
+          FadeTransition(
+            opacity: fade,
+            child: Material(type: MaterialType.transparency, child: child),
+          ),
+        ],
+      ),
     );
   }
 }

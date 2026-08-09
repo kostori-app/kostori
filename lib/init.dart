@@ -31,6 +31,7 @@ import 'package:kostori/skills/builtins/recognize_anime_skill.dart';
 import 'package:kostori/skills/builtins/time_skill.dart';
 import 'package:kostori/skills/skill_registry.dart';
 import 'package:kostori/utils/app_links.dart';
+import 'package:kostori/utils/data_sync.dart';
 import 'package:kostori/utils/translations.dart';
 import 'package:rhttp/rhttp.dart';
 
@@ -86,6 +87,8 @@ Future<void> init() async {
   await OpenAiProviderRegistry.refreshKeyFormats().wait();
   ApiKeyManager().init();
   CacheManager().setLimitSize(appdata.settings['cacheSize']);
+  // 启动即初始化数据同步（启用时自动首次下载，并监听数据变化自动上传）
+  DataSync();
   _checkOldConfigs();
   if (App.isAndroid) {
     handleLinks();

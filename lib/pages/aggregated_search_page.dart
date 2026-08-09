@@ -6,6 +6,7 @@ import "package:kostori/foundation/app.dart";
 import "package:kostori/foundation/appdata.dart";
 import "package:kostori/i18n/strings.g.dart";
 import "package:kostori/pages/search_result_page.dart";
+import "package:kostori/utils/search_source_groups.dart";
 import "package:shimmer_animation/shimmer_animation.dart";
 
 class AggregatedSearchPage extends StatefulWidget {
@@ -14,19 +15,29 @@ class AggregatedSearchPage extends StatefulWidget {
     required this.keyword,
     this.keywords,
     this.bangumiPage = false,
+    this.sourceKeys,
+    this.group,
   });
 
   final String keyword;
   final List<String>? keywords;
   final bool bangumiPage;
 
+  /// 指定要搜索的源；为 null 时使用 [group] 分组内的启用源（或全部启用源）
+  final List<String>? sourceKeys;
+
+  /// 指定分组（'all' 表示全部）
+  final String? group;
+
   @override
   State<AggregatedSearchPage> createState() => _AggregatedSearchPageState();
 }
 
 class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
-  late final List<AnimeSource> sources;
+  late List<AnimeSource> sources;
   late final SearchBarController controller;
+
+  late String selectedGroup;
 
   var _keyword = "";
 
@@ -35,21 +46,31 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
   /// 记录每个 source 是否有结果
   final Map<String, bool> _sourceHasResult = {};
 
+  List<AnimeSource> _resolveSources([String? group]) {
+    if (widget.sourceKeys != null && group == null) {
+      return [
+        for (final k in widget.sourceKeys!)
+          if (AnimeSource.find(k) != null) AnimeSource.find(k)!,
+      ];
+    }
+    return enabledSearchSources(group ?? selectedGroup);
+  }
+
+  void _switchGroup(String group) {
+    if (group == selectedGroup) return;
+    setState(() {
+      selectedGroup = group;
+      saveSelectedSearchGroup(group);
+      sources = _resolveSources(group);
+      _sourceHasResult.clear();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
-    var all = AnimeSource.all()
-        .where((e) => e.searchPageData != null)
-        .map((e) => e.key)
-        .toList();
-    var settings = appdata.settings['searchSources'] as List;
-    var sources = <String>[];
-    for (var source in settings) {
-      if (all.contains(source)) {
-        sources.add(source);
-      }
-    }
-    this.sources = sources.map((e) => AnimeSource.find(e)!).toList();
+    selectedGroup = widget.group ?? selectedSearchGroup();
+    sources = _resolveSources();
     showOnlyNonEmpty = appdata.implicitData['showOnlyNonEmpty'] ?? false;
 
     _keyword = widget.keyword;
@@ -77,13 +98,38 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
           bangumiPage: widget.bangumiPage,
           keywords: widget.keywords,
         ),
+        // 搜索源分组筛选
+        if (widget.sourceKeys == null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final group in searchGroups())
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: OptionChip(
+                          text: searchGroupLabel(group),
+                          isSelected: selectedGroup == group,
+                          onTap: () => _switchGroup(group),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Wrap(
               spacing: 8,
               children: [
-                InkWell(
+                OptionChip(
+                  text: showOnlyNonEmpty ? t.result : t.all,
+                  isSelected: showOnlyNonEmpty,
                   onTap: () {
                     setState(() {
                       showOnlyNonEmpty = !showOnlyNonEmpty;
@@ -92,61 +138,51 @@ class _AggregatedSearchPageState extends State<AggregatedSearchPage> {
                       appdata.writeImplicitData();
                     });
                   },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: showOnlyNonEmpty
-                          ? context.colorScheme.secondaryContainer
-                          : context.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: showOnlyNonEmpty
-                          ? Border.all(
-                              color: context.colorScheme.secondaryContainer,
-                            )
-                          : Border.all(color: context.colorScheme.outline),
-                    ),
-
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.sort, size: 20),
-                        const SizedBox(width: 6),
-                        Text(showOnlyNonEmpty ? t.result : t.all),
-                      ],
-                    ),
-                  ),
                 ),
               ],
             ),
           ),
         ),
 
-        SliverList(
-          key: ValueKey(_keyword),
-          delegate: SliverChildBuilderDelegate((context, index) {
-            final source = sources[index];
-            final hasResult = _sourceHasResult[source.key] ?? true;
-            if (showOnlyNonEmpty && !hasResult) {
-              return const SizedBox.shrink();
-            }
-            return _SliverSearchResult(
-              key: ValueKey(source.key),
-              source: source,
-              keyword: _keyword,
-              onResultLoaded: (bool result) {
-                if (_sourceHasResult[source.key] != result) {
-                  setState(() {
-                    _sourceHasResult[source.key] = result;
-                  });
-                }
-              },
-            );
-          }, childCount: sources.length),
-        ),
+        if (sources.isEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Text(
+                  t.noSearchSources,
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.toOpacity(0.5),
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          SliverList(
+            key: ValueKey('$_keyword|$selectedGroup'),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              final source = sources[index];
+              final hasResult = _sourceHasResult[source.key] ?? true;
+              if (showOnlyNonEmpty && !hasResult) {
+                return const SizedBox.shrink();
+              }
+              return _SliverSearchResult(
+                key: ValueKey(source.key),
+                source: source,
+                keyword: _keyword,
+                onResultLoaded: (bool result) {
+                  if (_sourceHasResult[source.key] != result) {
+                    setState(() {
+                      _sourceHasResult[source.key] = result;
+                    });
+                  }
+                },
+              );
+            }, childCount: sources.length),
+          ),
       ],
     );
   }
@@ -180,7 +216,11 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
   List<Anime>? animes;
   String? error;
 
+  /// 请求序号：用于丢弃过期的在途请求结果
+  int _requestSeq = 0;
+
   Future<void> load() async {
+    final seq = ++_requestSeq;
     final data = widget.source.searchPageData!;
     var options = (data.searchOptions ?? [])
         .map((e) => e.defaultValue)
@@ -190,53 +230,44 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
       widget.onResultLoaded?.call(hasData);
     }
 
-    try {
-      if (data.loadPage != null) {
-        var res = await data.loadPage!(widget.keyword, 1, options);
-        if (!res.error) {
-          if (!mounted) return;
-          setState(() {
-            animes = res.data;
-            isLoading = false;
-          });
-          notify(animes != null && animes!.isNotEmpty);
-          return;
-        } else {
-          if (!mounted) return;
-          setState(() {
-            error = res.errorMessage ?? t.unknownError;
-            isLoading = false;
-          });
-          notify(false);
-          return;
-        }
-      } else if (data.loadNext != null) {
-        var res = await data.loadNext!(widget.keyword, null, options);
-        if (!res.error) {
-          if (!mounted) return;
-          setState(() {
-            animes = res.data;
-            isLoading = false;
-          });
-          notify(animes != null && animes!.isNotEmpty);
-          return;
-        } else {
-          if (!mounted) return;
-          setState(() {
-            error = res.errorMessage ?? t.unknownError;
-            isLoading = false;
-          });
-          notify(false);
-          return;
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
+    void applySuccess(List<Anime>? list) {
+      if (seq != _requestSeq || !mounted) return;
       setState(() {
-        error = e.toString();
+        animes = list;
+        isLoading = false;
+      });
+      notify(list != null && list.isNotEmpty);
+    }
+
+    void applyError(String message) {
+      if (seq != _requestSeq || !mounted) return;
+      setState(() {
+        error = message.startsWith('CloudflareException')
+            ? t.cloudflareVerificationRequired
+            : message;
         isLoading = false;
       });
       notify(false);
+    }
+
+    try {
+      if (data.loadPage != null) {
+        var res = await data.loadPage!(widget.keyword, 1, options);
+        if (res.error) {
+          applyError(res.errorMessage ?? t.unknownError);
+        } else {
+          applySuccess(res.data);
+        }
+      } else if (data.loadNext != null) {
+        var res = await data.loadNext!(widget.keyword, null, options);
+        if (res.error) {
+          applyError(res.errorMessage ?? t.unknownError);
+        } else {
+          applySuccess(res.data);
+        }
+      }
+    } catch (e) {
+      applyError(e.toString());
     }
   }
 
@@ -250,6 +281,7 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
   void didUpdateWidget(covariant _SliverSearchResult oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.keyword != widget.keyword) {
+      _requestSeq++; // 使在途旧请求作废
       isLoading = true;
       animes = null;
       error = null;
@@ -278,9 +310,6 @@ class _SliverSearchResultState extends State<_SliverSearchResult>
 
   @override
   Widget build(BuildContext context) {
-    if (error != null && error!.startsWith("CloudflareException")) {
-      error = t.cloudflareVerificationRequired;
-    }
     super.build(context);
     return InkWell(
       onTap: () {

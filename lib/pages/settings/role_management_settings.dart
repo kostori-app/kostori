@@ -178,7 +178,7 @@ class _PromptInjectionTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Switch(value: item.enabled, onChanged: onToggle),
+          CustomSwitch(value: item.enabled, onChanged: onToggle),
           const Icon(Icons.arrow_right, size: 20),
         ],
       ),
@@ -238,6 +238,77 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
     }
   }
 
+  /// 占位符提示（点击插入到内容输入框光标处，发送时由 replaceTemplateVars 替换）
+  Widget _templateVarHint() {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 2,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            t.templateVarHint,
+            style: TextStyle(fontSize: 11, color: scheme.outline),
+          ),
+          for (final v in templateVarEntries)
+            InkWell(
+              onTap: () {
+                final selection = _contentCtrl.selection;
+                final start = selection.isValid
+                    ? selection.start
+                    : _contentCtrl.text.length;
+                final end = selection.isValid
+                    ? selection.end
+                    : _contentCtrl.text.length;
+                _contentCtrl.text = _contentCtrl.text
+                    .replaceRange(start, end, v.token)
+                    .replaceAll('${v.token}${v.token}', v.token);
+                _contentCtrl.selection = TextSelection.collapsed(
+                  offset: start + v.token.length,
+                );
+              },
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  '${v.token} ${v.label}',
+                  style: TextStyle(fontSize: 11, color: scheme.primary),
+                ),
+              ),
+            ),
+          InkWell(
+            onTap: () {
+              const token = '@a';
+              final selection = _contentCtrl.selection;
+              final start = selection.isValid
+                  ? selection.start
+                  : _contentCtrl.text.length;
+              final end = selection.isValid
+                  ? selection.end
+                  : _contentCtrl.text.length;
+              _contentCtrl.text = _contentCtrl.text
+                  .replaceRange(start, end, token)
+                  .replaceAll('$token$token', token);
+              _contentCtrl.selection = TextSelection.collapsed(
+                offset: start + token.length,
+              );
+            },
+            borderRadius: BorderRadius.circular(4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Text(
+                '@a ${t.targetLanguage}',
+                style: TextStyle(fontSize: 11, color: scheme.primary),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -271,16 +342,12 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         child: TextFormField(
                           controller: _contentCtrl,
                           maxLines: 10,
                           decoration: InputDecoration(
                             labelText: t.injectionContent,
-                            prefixIcon: const Icon(
-                              Icons.notes_outlined,
-                              size: 20,
-                            ),
                             alignLabelWithHint: true,
                             border: const OutlineInputBorder(),
                           ),
@@ -289,6 +356,7 @@ class _PromptInjectionEditorState extends State<_PromptInjectionEditor> {
                               : null,
                         ),
                       ),
+                      _templateVarHint(),
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: DropdownButtonFormField<PromptInjectionPosition>(
@@ -527,7 +595,7 @@ class _WorldBookTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Switch(value: entry.enabled, onChanged: onToggle),
+          CustomSwitch(value: entry.enabled, onChanged: onToggle),
           const Icon(Icons.arrow_right, size: 20),
         ],
       ),

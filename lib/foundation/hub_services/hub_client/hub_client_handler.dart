@@ -46,6 +46,8 @@ extension HubClientHandler on HubClient {
           '✅ 鉴权成功  ID：${event.yourId}  在线：${event.clients.length}个',
         );
         onConnected?.call();
+        // Android：连接 Hub 时启动前台服务通知保活
+        HubKeepAlive.start();
 
       case HubEventRoomJoined():
         final prevRoomId = currentRoomId;

@@ -64,7 +64,7 @@ class _SummaryPageState extends ConsumerState<SummaryPage> {
         if (s.title != null) watchedTitles.add(s.title!);
       }
 
-      final rangeLabel = _range == _SummaryRange.week ? '本周' : '本月';
+      final rangeLabel = _range == _SummaryRange.week ? t.summaryThisWeek : t.summaryThisMonth;
       final prompt =
           '''
 Generate a $rangeLabel anime watch report based on the following data:
@@ -114,7 +114,7 @@ Generate a $rangeLabel anime watch report based on the following data:
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                _range == _SummaryRange.week ? '本周总结' : '本月总结',
+                _range == _SummaryRange.week ? t.summaryThisWeekTitle : t.summaryThisMonthTitle,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

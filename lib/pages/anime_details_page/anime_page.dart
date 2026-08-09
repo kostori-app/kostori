@@ -12,7 +12,6 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:gif/gif.dart';
-import 'package:kostori/components/animated.dart';
 import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/components/share_widget.dart';
@@ -35,9 +34,11 @@ import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/pages/aggregated_search_page.dart';
+import 'package:kostori/pages/anime_details_page/watch_together_page.dart';
 import 'package:kostori/pages/bangumi/bottom_info.dart';
 import 'package:kostori/pages/bangumi/info_controller.dart';
 import 'package:kostori/pages/favorites/favorites_page.dart';
+import 'package:kostori/pages/image_manipulation_page/image_manipulation_page.dart';
 import 'package:kostori/pages/watcher/player_controller.dart';
 import 'package:kostori/pages/watcher/watcher.dart';
 import 'package:kostori/pages/watcher/watcher_controller.dart';
@@ -89,6 +90,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   BangumiItem? get bangumiItem => bangumiBindInfo;
   late TabController tabController;
 
+  // 各 Tab 的滚动控制器，供 AppScrollBar 使用
+  final ScrollController infoScrollCtrl = ScrollController();
+  final ScrollController episodesScrollCtrl = ScrollController();
+  final ScrollController recommendScrollCtrl = ScrollController();
+
   void updateHistory() async {
     var newHistory = await HistoryManager().findAsync(
       widget.id,
@@ -111,57 +117,75 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   }
 
   Future<void> updateStatsClicks() async {
-    if (!await stats.isExistAsync(
-      widget.id,
-      AnimeType(widget.sourceKey.hashCode),
-    )) {
-      try {
-        await stats.addStats(
-          stats.createStatsData(
-            id: widget.id,
-            title: widget.title,
-            cover: widget.cover,
-            type: widget.sourceKey.hashCode,
-          ),
-        );
-      } catch (e) {
-        StatsLog.error('addStats', e.toString());
+    if (!mounted) return;
+    try {
+      if (!await stats.isExistAsync(
+        widget.id,
+        AnimeType(widget.sourceKey.hashCode),
+      )) {
+        try {
+          await stats.addStats(
+            stats.createStatsData(
+              id: widget.id,
+              title: widget.title,
+              cover: widget.cover,
+              type: widget.sourceKey.hashCode,
+            ),
+          );
+        } catch (e) {
+          StatsLog.error('addStats', e.toString());
+        }
       }
-    }
+      if (!mounted) return;
 
-    final (statsDataImpl, todayClick, platformRecord) = await stats
-        .getOrCreateTodayPlatformRecord(
-          id: widget.id,
-          type: widget.sourceKey.hashCode,
-          targetType: DailyEventType.click,
-        );
-    final now = DateTime.now();
-    platformRecord.value += 1;
-    platformRecord.date = now;
-    statsDataImpl.lastClickTime = now;
-    await stats.addStats(statsDataImpl);
+      final (statsDataImpl, todayClick, platformRecord) = await stats
+          .getOrCreateTodayPlatformRecord(
+            id: widget.id,
+            type: widget.sourceKey.hashCode,
+            targetType: DailyEventType.click,
+          );
+      if (!mounted) return;
+      final now = DateTime.now();
+      platformRecord.value += 1;
+      platformRecord.date = now;
+      statsDataImpl.lastClickTime = now;
+      await stats.addStats(statsDataImpl);
+    } catch (e) {
+      // 数据库可能已关闭（应用退出等），忽略该次统计
+      StatsLog.error('updateStatsClicks', e.toString());
+    }
   }
 
   Future<void> updateStats() async {
-    final s = await stats.getStatsByIdAndType(
-      id: widget.id,
-      type: widget.sourceKey.hashCode,
-    );
-    if (s == null) return;
-    final bundle = stats.getOrCreateTodayEvents(statsData: s);
-    final bangumiBundle = await stats.getOrCreateBangumiStats(statsDataImpl: s);
-    final TodayEventBundle targetStats = bangumiBundle ?? bundle;
+    if (!mounted) return;
+    try {
+      final s = await stats.getStatsByIdAndType(
+        id: widget.id,
+        type: widget.sourceKey.hashCode,
+      );
+      if (!mounted) return;
+      if (s == null) return;
+      final bundle = stats.getOrCreateTodayEvents(statsData: s);
+      final bangumiBundle = await stats.getOrCreateBangumiStats(
+        statsDataImpl: s,
+      );
+      if (!mounted) return;
+      final TodayEventBundle targetStats = bangumiBundle ?? bundle;
 
-    statsDataImpl = bundle.statsData;
-    todayComment = bundle.todayComment;
-    commentRecord = targetStats.commentRecord;
-    todayClick = bundle.todayClick;
-    clickRecord = bundle.clickRecord;
-    todayWatch = bundle.todayWatch;
-    watchRecord = bundle.watchRecord;
-    todayRating = bundle.todayRating;
-    ratingRecord = targetStats.ratingRecord;
-    ratingValue = ratingRecord?.rating ?? 0;
+      statsDataImpl = bundle.statsData;
+      todayComment = bundle.todayComment;
+      commentRecord = targetStats.commentRecord;
+      todayClick = bundle.todayClick;
+      clickRecord = bundle.clickRecord;
+      todayWatch = bundle.todayWatch;
+      watchRecord = bundle.watchRecord;
+      todayRating = bundle.todayRating;
+      ratingRecord = targetStats.ratingRecord;
+      ratingValue = ratingRecord?.rating ?? 0;
+    } catch (e) {
+      // 数据库可能已关闭（应用退出等），忽略该次刷新
+      StatsLog.error('updateStats', e.toString());
+    }
   }
 
   @override
@@ -184,7 +208,7 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
         .read(bangumiManagerProvider)
         .addListener(updateBangumiBind);
     StatsManager().addListener(updateStats);
-    tabController = TabController(length: 3, vsync: this);
+    tabController = TabController(length: 5, vsync: this);
     tabController.addListener(() {
       if (!tabController.indexIsChanging) {
         setState(() {});
@@ -240,6 +264,9 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
       DataSync().onDataChanged();
     });
     tabController.dispose();
+    infoScrollCtrl.dispose();
+    episodesScrollCtrl.dispose();
+    recommendScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -282,6 +309,11 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
 
   var isFirst = true;
 
+  /// 桌面端用 Clamping（不允许拖出过长空白），移动端保留弹性
+  ScrollPhysics get _tabPhysics => App.isDesktop
+      ? const ClampingScrollPhysics()
+      : const BouncingScrollPhysics();
+
   @override
   Widget buildContent(BuildContext context, AnimeDetails data) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -289,44 +321,48 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     final isDesktop = screenWidth > 800;
     final playerHeight = isDesktop ? screenWidth * 0.35 : screenWidth * 0.6;
 
-    Widget widget = NestedScrollView(
-      physics: const BouncingScrollPhysics(),
-      headerSliverBuilder: (context, innerBoxIsScrolled) {
-        return [
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _VideoPlayerDelegate(
-              playerHeight: playerHeight,
-              topPadding: topPadding,
-              watcher: Watcher(
-                playerController: playerController,
-                watcherController: watcherController,
+    // 固定布局：视频头 + TabBar 固定在上方，剩余空间交给 Tab 内容。
+    // 不再用 NestedScrollView（视频头固定不折叠），避免 Tab 内容重叠在
+    // SliverPersistentHeader 下方、以及"内容很少却还能滚动很远"的问题。
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: topPadding + playerHeight,
+          child: Column(
+            children: [
+              Container(
+                height: topPadding,
+                color: Theme.of(context).colorScheme.surface,
               ),
-            ),
-          ),
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SliverTabBarDelegate(
-              TabBar(
-                controller: tabController,
-                isScrollable: true,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                tabAlignment: TabAlignment.center,
-                tabs: [
-                  Tab(text: t.basicInfo),
-                  Tab(text: t.allEpisodes),
-                  Tab(text: t.relatedEntries),
-                ],
+              Expanded(
+                child: Watcher(
+                  playerController: playerController,
+                  watcherController: watcherController,
+                ),
               ),
-              Theme.of(context).colorScheme.surface,
-            ),
+            ],
           ),
-        ];
-      },
-      body: animeTab(),
+        ),
+        Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: TabBar(
+            controller: tabController,
+            isScrollable: true,
+            indicatorColor: Theme.of(context).colorScheme.primary,
+            tabAlignment: TabAlignment.center,
+            tabs: [
+              Tab(text: t.basicInfo),
+              Tab(text: t.allEpisodes),
+              Tab(text: t.relatedEntries),
+              Tab(text: t.imageOperations),
+              Tab(text: t.watchTogether),
+            ],
+          ),
+        ),
+        Expanded(child: animeTab()),
+      ],
     );
-
-    return widget;
   }
 
   @override
@@ -350,19 +386,40 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
   Widget animeTab() {
     return TabBarView(
       controller: tabController,
-      physics: const BouncingScrollPhysics(),
+      physics: _tabPhysics,
       children: [
-        CustomScrollView(
-          slivers: [
-            ...buildTitle(),
-            buildComment(),
-            buildDescription(),
-            buildInfo(),
-          ],
+        AppScrollBar(
+          controller: infoScrollCtrl,
+          child: CustomScrollView(
+            controller: infoScrollCtrl,
+            physics: _tabPhysics,
+            slivers: [
+              ...buildTitle(),
+              buildComment(),
+              buildDescription(),
+              buildInfo(),
+            ],
+          ),
         ),
         buildEpisodes(),
         buildRecommend(),
+        buildImageOps(),
+        buildWatchTogether(),
       ],
+    );
+  }
+
+  /// 图片操作 Tab：仅图片操作内容（嵌入模式，无返回按钮）
+  Widget buildImageOps() {
+    return ImageManipulationBody(embedded: true);
+  }
+
+  /// 一起看 Tab：嵌入 hub 房间模块（内嵌聊天 + 房主进度同步）
+  Widget buildWatchTogether() {
+    return WatchTogetherPage(
+      animeTitle: anime.title,
+      playerController: playerController,
+      watcherController: watcherController,
     );
   }
 
@@ -534,7 +591,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                     child: Row(
                                       children: [
                                         Text(
-                                          '${bangumiItem.collection?['doing']} 在看',
+                                          t.animeWatchingCount(
+                                            n:
+                                                bangumiItem
+                                                    .collection?['doing'] ??
+                                                0,
+                                          ),
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Theme.of(
@@ -544,7 +606,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                         ),
                                         const Text(' / '),
                                         Text(
-                                          '${bangumiItem.collection?['collect']} 看过',
+                                          t.animeCompletedCount(
+                                            n:
+                                                bangumiItem
+                                                    .collection?['collect'] ??
+                                                0,
+                                          ),
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: Theme.of(
@@ -554,7 +621,12 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
                                         ),
                                         const Text(' / '),
                                         Text(
-                                          '${bangumiItem.collection?['dropped']} 抛弃',
+                                          t.animeDroppedCount(
+                                            n:
+                                                bangumiItem
+                                                    .collection?['dropped'] ??
+                                                0,
+                                          ),
                                           style: const TextStyle(
                                             fontSize: 12,
                                             color: Colors.grey,
@@ -953,9 +1025,14 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (anime.episode == null) {
       return const SizedBox.shrink();
     }
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [_AnimeEpisodes(history: history)],
+    return AppScrollBar(
+      controller: episodesScrollCtrl,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        physics: _tabPhysics,
+        controller: episodesScrollCtrl,
+        children: [_AnimeEpisodes(history: history)],
+      ),
     );
   }
 
@@ -963,57 +1040,62 @@ class _AnimePageState extends LoadingState<AnimePage, AnimeDetails>
     if (anime.recommend == null || anime.recommend!.isEmpty) {
       return const SizedBox.shrink();
     }
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-          child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(
-              context,
-            ).copyWith(scrollbars: false),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: Container(
-                      width: 120,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.toOpacity(0.4),
-                        borderRadius: BorderRadius.circular(4),
+    return AppScrollBar(
+      controller: recommendScrollCtrl,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        physics: _tabPhysics,
+        controller: recommendScrollCtrl,
+        children: [
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(
+                context,
+              ).copyWith(scrollbars: false),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Container(
+                        width: 120,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.toOpacity(0.4),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const Divider(height: 1, indent: 16, endIndent: 16),
-                ListTile(title: Text(t.related)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(title: Text(t.related)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        final crossAxisCount = screenWidth < 800 ? 3 : 8;
+                        return SliverGridAnimes(
+                          animes: anime.recommend!,
+                          isRecommend: true,
+                          asSliver: false,
+                          shrinkWrap: true,
+                          crossAxisCount: crossAxisCount,
+                        );
+                      },
+                    ),
                   ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final screenWidth = MediaQuery.of(context).size.width;
-                      final crossAxisCount = screenWidth < 800 ? 3 : 8;
-                      return SliverGridAnimes(
-                        animes: anime.recommend!,
-                        isRecommend: true,
-                        asSliver: false,
-                        shrinkWrap: true,
-                        crossAxisCount: crossAxisCount,
-                      );
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1236,77 +1318,5 @@ class _AnimePageLoadingPlaceHolder extends StatelessWidget {
         child: child,
       ),
     );
-  }
-}
-
-class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverTabBarDelegate(this._tabBar, this._backgroundColor);
-
-  final TabBar _tabBar;
-  final Color _backgroundColor;
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(color: _backgroundColor, child: _tabBar);
-  }
-
-  @override
-  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return false;
-  }
-}
-
-class _VideoPlayerDelegate extends SliverPersistentHeaderDelegate {
-  _VideoPlayerDelegate({
-    required this.playerHeight,
-    required this.topPadding,
-    required this.watcher,
-  });
-
-  final double playerHeight;
-  final double topPadding;
-  final Widget watcher;
-
-  @override
-  double get minExtent => topPadding + playerHeight;
-
-  @override
-  double get maxExtent => minExtent;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return SizedBox(
-      height: topPadding + playerHeight,
-      child: Column(
-        children: [
-          Container(
-            height: topPadding,
-            color: Theme.of(context).colorScheme.surface,
-          ),
-          Expanded(child: watcher),
-        ],
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_VideoPlayerDelegate oldDelegate) {
-    return playerHeight != oldDelegate.playerHeight ||
-        topPadding != oldDelegate.topPadding ||
-        watcher != oldDelegate.watcher;
   }
 }

@@ -2,7 +2,12 @@ part of 'package:kostori/foundation/hub_services/services.dart';
 
 extension HubClientActions on HubClient {
   void _send(Map<String, dynamic> data) {
-    HubLog.info('send', '客户端发送: ${jsonEncode(data)}');
+    final logData = Map<String, dynamic>.from(data);
+    for (final key in ['password', 'token']) {
+      final v = logData[key];
+      if (v is String && v.isNotEmpty) logData[key] = '***';
+    }
+    HubLog.info('send', '客户端发送: ${jsonEncode(logData)}');
     _socket?.add(jsonEncode(data));
   }
 
@@ -68,12 +73,22 @@ extension HubClientActions on HubClient {
     String? password,
     String? announcement,
     int? maxParticipants,
+    HubRoomType roomType = HubRoomType.chat,
+    String? animeId,
+    String? animeTitle,
+    String? animeSourceKey,
+    String? animeCover,
   }) => _send({
     'messageType': 'create_room',
     'roomName': roomName,
     if (password != null) 'password': password,
     if (announcement != null) 'announcement': announcement,
     if (maxParticipants != null) 'maxParticipants': maxParticipants,
+    'roomType': roomType.name,
+    if (animeId != null) 'animeId': animeId,
+    if (animeTitle != null) 'animeTitle': animeTitle,
+    if (animeSourceKey != null) 'animeSourceKey': animeSourceKey,
+    if (animeCover != null) 'animeCover': animeCover,
   });
 
   void deleteRoom(String roomId) =>
@@ -114,6 +129,14 @@ extension HubClientActions on HubClient {
 
   void setAllowMemberInvite(bool value) =>
       _send({'messageType': 'set_allow_member_invite', 'value': value});
+
+  /// 上报本机可直连地址（一起看 P2P，房主调用）
+  void setPeerCandidates(List<String> candidates) =>
+      _send({'messageType': 'set_peer_candidates', 'candidates': candidates});
+
+  /// 上报与房主直连同步状态（成员调用，服务端据此跳过重复广播）
+  void setDirectSyncStatus(bool enabled) =>
+      _send({'messageType': 'direct_sync_status', 'enabled': enabled});
 
   // ── 用户 ──────────────────────────────────────────────────────────────────
 

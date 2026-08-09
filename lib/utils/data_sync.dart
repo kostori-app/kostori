@@ -20,6 +20,8 @@ import 'package:webdav_client/webdav_client.dart' hide File;
 
 class DataSync with ChangeNotifier {
   DataSync._() {
+    final t = appdata.implicitData['dataLastSyncTime'];
+    if (t is int) _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(t);
     if (isEnabled) {
       downloadData();
     }
@@ -27,7 +29,10 @@ class DataSync with ChangeNotifier {
     AnimeSourceManager().addListener(onDataChanged);
     if (App.isDesktop) {
       Future.delayed(const Duration(seconds: 1), () {
-        var controller = WindowFrame.of(App.rootContext);
+        // 无头模式没有 UI 上下文（rootContext 为 null），直接跳过窗口监听
+        final ctx = App.rootNavigatorKey.currentContext;
+        if (ctx == null) return;
+        var controller = WindowFrame.of(ctx);
         controller.addCloseListener(_handleWindowClose);
       });
     }
@@ -53,6 +58,19 @@ class DataSync with ChangeNotifier {
 
   String? _lastError;
 
+  DateTime? _lastSyncTime;
+
+  /// 上次成功同步的时间
+  DateTime? get lastSyncTime => _lastSyncTime;
+
+  void _recordSyncSuccess() {
+    final now = DateTime.now();
+    _lastSyncTime = now;
+    appdata.implicitData['dataLastSyncTime'] = now.millisecondsSinceEpoch;
+    appdata.writeImplicitData();
+    notifyListeners();
+  }
+
   String? get lastError => _lastError;
 
   bool get isEnabled {
@@ -61,11 +79,33 @@ class DataSync with ChangeNotifier {
     return autoSync && config is List && config.isNotEmpty;
   }
 
+  Timer? _uploadDebounce;
+  bool _dirty = false;
+
+  /// 数据变化时触发：节流合并短时间内的多次变化为一次上传，
+  /// 避免频繁上下行占用流量（例如频繁切换页面、逐集更新进度）。
   void onDataChanged() {
-    if (isEnabled) uploadData();
+    if (!isEnabled) return;
+    _dirty = true;
+    _uploadDebounce?.cancel();
+    _uploadDebounce = Timer(const Duration(seconds: 5), () {
+      _uploadDebounce = null;
+      if (!_dirty) return;
+      _dirty = false;
+      unawaited(uploadData());
+    });
   }
 
   bool _handleWindowClose() {
+    // 关闭前先刷出未触发防抖的待上传变化，避免丢失最后一次修改
+    if (_uploadDebounce != null) {
+      _uploadDebounce?.cancel();
+      _uploadDebounce = null;
+      if (_dirty) {
+        _dirty = false;
+        unawaited(uploadData());
+      }
+    }
     if (_isUploading) {
       _showWindowCloseDialog();
       return false;
@@ -157,6 +197,7 @@ class DataSync with ChangeNotifier {
     } finally {
       _isUploading = false;
       _progress = null;
+      if (_lastError == null) _recordSyncSuccess();
       notifyListeners();
     }
   }
@@ -225,6 +266,7 @@ class DataSync with ChangeNotifier {
     } finally {
       _isDownloading = false;
       _progress = null;
+      if (_lastError == null) _recordSyncSuccess();
       notifyListeners();
     }
   }

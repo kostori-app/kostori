@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kostori/components/components.dart';
+import 'package:kostori/foundation/anime_source/anime_source.dart';
 import 'package:kostori/foundation/app.dart';
+import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/pages/settings/settings_page.dart';
 import 'package:kostori/i18n/strings.g.dart';
 
@@ -52,13 +54,22 @@ Future<T?> showHubFormDialog<T>({
 
 // ── 创建房间对话框 ──────────────────────────────────────────────────────────────
 
-Future<HubCreateRoomResult?> showCreateRoomDialog() async {
+Future<HubCreateRoomResult?> showCreateRoomDialog({
+  String? initialName,
+  HubRoomType initialRoomType = HubRoomType.chat,
+  AnimeDetails? watchAnime,
+}) async {
   final notifier = _CreateRoomNotifier();
 
   final result = await showDialog<HubCreateRoomResult>(
     context: App.rootContext,
     barrierDismissible: true,
-    builder: (ctx) => _CreateRoomDialog(notifier: notifier),
+    builder: (ctx) => _CreateRoomDialog(
+      notifier: notifier,
+      initialName: initialName,
+      initialRoomType: initialRoomType,
+      watchAnime: watchAnime,
+    ),
   );
 
   return result;
@@ -69,12 +80,14 @@ class HubCreateRoomResult {
   final String? password;
   final String? announcement;
   final int? maxParticipants;
+  final HubRoomType roomType;
 
   const HubCreateRoomResult({
     required this.name,
     this.password,
     this.announcement,
     this.maxParticipants,
+    this.roomType = HubRoomType.chat,
   });
 }
 
@@ -103,8 +116,16 @@ class _CreateRoomNotifier extends ChangeNotifier {
 
 class _CreateRoomDialog extends StatefulWidget {
   final _CreateRoomNotifier notifier;
+  final String? initialName;
+  final HubRoomType initialRoomType;
+  final AnimeDetails? watchAnime;
 
-  const _CreateRoomDialog({required this.notifier});
+  const _CreateRoomDialog({
+    required this.notifier,
+    this.initialName,
+    this.initialRoomType = HubRoomType.chat,
+    this.watchAnime,
+  });
 
   @override
   State<_CreateRoomDialog> createState() => _CreateRoomDialogState();
@@ -115,13 +136,15 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _passwordCtrl;
   late final TextEditingController _announcementCtrl;
+  late HubRoomType _roomType;
   bool _obscurePassword = true;
 
   @override
   void initState() {
     super.initState();
     _n = widget.notifier;
-    _nameCtrl = TextEditingController();
+    _roomType = widget.initialRoomType;
+    _nameCtrl = TextEditingController(text: widget.initialName ?? '');
     _passwordCtrl = TextEditingController();
     _announcementCtrl = TextEditingController();
     _n.addListener(() {
@@ -148,6 +171,7 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
       password: pwd.isEmpty ? null : pwd,
       announcement: announcement.isEmpty ? null : announcement,
       maxParticipants: _n.hasLimit ? _n.maxParticipants.round() : null,
+      roomType: _roomType,
     );
     Navigator.of(context).pop(result);
   }
@@ -162,6 +186,58 @@ class _CreateRoomDialogState extends State<_CreateRoomDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── 房间类型 ────────────────────────────────────────────────
+          _FieldLabel(t.roomType),
+          const SizedBox(height: 6),
+          SegmentedButton<HubRoomType>(
+            segments: [
+              ButtonSegment<HubRoomType>(
+                value: HubRoomType.chat,
+                label: Text(t.chatRoom),
+                icon: const Icon(Icons.chat_bubble_outline, size: 15),
+              ),
+              ButtonSegment<HubRoomType>(
+                value: HubRoomType.watch,
+                label: Text(t.watchTogether),
+                icon: const Icon(Icons.play_circle_outline, size: 15),
+              ),
+            ],
+            selected: {_roomType},
+            onSelectionChanged: (s) => setState(() => _roomType = s.first),
+            style: const ButtonStyle(visualDensity: VisualDensity.compact),
+          ),
+          const SizedBox(height: 12),
+
+          // ── 一起看房间：显示当前番剧 ─────────────────────────────────
+          if (_roomType == HubRoomType.watch && widget.watchAnime != null) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.toOpacity(0.35),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.movie_outlined, size: 18, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      t.watchingAnime(a: widget.watchAnime!.title),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: cs.onPrimaryContainer,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // ── 房间名 ────────────────────────────────────────────────
           _FieldLabel(t.roomName),
           const SizedBox(height: 6),

@@ -5,12 +5,20 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:kostori/foundation/hub_services/services.dart';
 import 'package:kostori/foundation/log.dart';
+import 'package:kostori/foundation/main_isolate_runner.dart';
+import 'package:kostori/foundation/webview_resolver.dart';
 import 'package:kostori/init.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// 结构化输出，供外部脚本解析
 void cliPrint(Map<String, dynamic> data) {
   print('[CLI PRINT] ${jsonEncode(data)}');
+}
+
+/// 打印启动说明（始终可见，不受日志开关影响）
+void _startupLog(String message) {
+  // 前缀与 cliPrint 区分，供人眼阅读
+  print('[KOSTORI] $message');
 }
 
 /// 解析 `--key value` 或 `--key=value` 形式的参数
@@ -48,6 +56,9 @@ BindMode _bindArg(List<String> args, String key) {
 Future<void> runHeadlessMode(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  // 无头模式也注册主 isolate 通道（防御性：若源脚本触发 WebView 平台操作）
+  MainIsolateRunner.register();
+  WebViewResolver.registerMainIsolateHandler();
   if (args.contains('--ignore-disheadless-log')) {
     Log.isMuted = true;
   }
@@ -61,6 +72,18 @@ Future<void> runHeadlessMode(List<String> args) async {
   final noAuth = args.contains('--no-auth');
   final cert = _stringArg(args, '--cert');
   final key = _stringArg(args, '--key');
+
+  // 可选固定令牌：服务端可用 --api-key / --admin-key 指定稳定令牌
+  final apiKey = _stringArg(args, '--api-key');
+  final adminKey = _stringArg(args, '--admin-key');
+  if (apiKey != null && apiKey.isNotEmpty) {
+    await ApiKeyManager().setFixedKey(apiKey);
+    await ApiKeyManager().setUseFixed(true);
+  }
+  if (adminKey != null && adminKey.isNotEmpty) {
+    await ApiKeyManager().setAdminFixedKey(adminKey);
+    await ApiKeyManager().setUseAdminFixed(true);
+  }
 
   await init();
 
@@ -80,10 +103,37 @@ Future<void> runHeadlessMode(List<String> args) async {
     exit(1);
   }
 
+  _printStartupInfo(serviceName, noAuth, started);
+
   cliPrint({'status': 'ready', 'service': serviceName, ...started});
 
   // 保持进程存活，等待退出信号后优雅关闭
   await _waitForShutdown(started);
+}
+
+/// 打印启动说明与令牌获取方式（人眼可读，始终可见）
+void _printStartupInfo(
+  String serviceName,
+  bool noAuth,
+  Map<String, dynamic> started,
+) {
+  _startupLog('══════════════════════════════════════════════');
+  _startupLog('Kostori 无头服务已启动: $serviceName');
+  _startupLog('端口: ${started['port']}   绑定: ${started['bound']}');
+  if (started['https'] == true) _startupLog('HTTPS: 已启用');
+  if (noAuth) {
+    _startupLog('鉴权: 已关闭 (--no-auth)，无需令牌');
+  } else {
+    final userKey = started['userKey'] as String? ?? '';
+    final adminKey = started['adminKey'] as String? ?? '';
+    _startupLog('用户令牌: $userKey');
+    _startupLog('管理令牌: $adminKey');
+    _startupLog('调用方式: 请求头  X-Api-Key: <令牌>');
+    _startupLog('        或查询参数 ?api_key=<令牌>');
+    _startupLog('提示: 令牌为随机生成，重启会变化；如需稳定令牌，');
+    _startupLog('     启动时加 --api-key <值> / --admin-key <值> 指定。');
+  }
+  _startupLog('══════════════════════════════════════════════');
 }
 
 Future<void> _startHeadlessService(

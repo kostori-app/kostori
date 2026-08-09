@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kostori Hub 管理后台</title>
+<style>
+:root{
+  --bg:#0b0f1a;--bg2:#0f1526;--card:#151c30;--card2:#1a2340;--border:#24304f;
+  --text:#e8ecf6;--muted:#8b96b5;--acc:#5b8cff;--acc2:#8a5bff;--ok:#34d399;--warn:#fbbf24;--err:#f87171;
+  --c1:#5b8cff;--c2:#8a5bff;--c3:#34d399;
+  --radius:14px;--shadow:0 8px 24px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1000px 500px at 85% -10%,rgba(138,91,255,.14),transparent),
+    radial-gradient(900px 500px at -10% 0%,rgba(91,140,255,.12),transparent),
+    linear-gradient(180deg,var(--bg),var(--bg2));
+  color:var(--text);font:14px/1.55 system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+  min-height:100vh;padding:24px 20px 48px;
+}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:19px;font-weight:700;letter-spacing:.2px}
+h2{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.sub{color:var(--muted);font-size:12px}
+.mono{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12px}
+.card{background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.stat{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.stat b{display:block;font-size:24px;font-weight:700;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.stat span{color:var(--muted);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+tr:hover td{background:rgba(91,140,255,.04)}
+button{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff;border:none;border-radius:9px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:500;transition:opacity .15s,transform .05s}
+button:hover{opacity:.9}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text)}
+button.danger{background:linear-gradient(90deg,#ef4444,#dc2626)}
+input,select,textarea{background:#0d1322;border:1px solid var(--border);border-radius:9px;color:var(--text);padding:8px 11px;font-size:13px;width:100%;margin-bottom:8px;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,140,255,.18)}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1;min-width:150px}
+.field{flex:1;min-width:150px}
+.switchrow{display:flex;align-items:center;gap:8px;margin:4px 0}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:500}
+.badge.ok{background:rgba(52,211,153,.14);color:var(--ok)}
+.badge.warn{background:rgba(251,191,36,.14);color:var(--warn)}
+.badge.err{background:rgba(248,113,113,.14);color:var(--err)}
+.badge.bot{background:rgba(138,91,255,.16);color:#c4b5fd}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .dot{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;box-shadow:0 4px 14px rgba(91,140,255,.35)}
+.tabbar{position:sticky;top:0;z-index:50;display:flex;gap:8px;margin:-24px -20px 18px;padding:12px 20px;flex-wrap:wrap;background:rgba(11,15,26,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.tab{padding:8px 16px;border-radius:999px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:rgba(255,255,255,.02);font-size:13px;transition:all .15s}
+.tab:hover{color:var(--text);border-color:var(--acc)}
+.tab.active{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(91,140,255,.3)}
+.tabpane{display:none}
+.tabpane.active{display:block}
+.logs{max-height:420px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px}
+.logline{padding:4px 8px;border-bottom:1px solid var(--border);border-radius:6px}
+.logline.error{color:var(--err)}.logline.warning{color:var(--warn)}.logline.info{color:var(--muted)}
+.subcard{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.subcard .ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none;background:rgba(91,140,255,.12)}
+.subcard .info{flex:1;min-width:0}
+.subcard .info b{font-size:14px;display:block}
+.subcard .info span{color:var(--muted);font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.actions{display:flex;gap:8px;flex:none}
+/* ── 统计图表 ── */
+.stat-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.hchart{display:flex;align-items:flex-end;gap:3px;height:130px;margin-top:14px}
+.hbar{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--acc),var(--acc2));min-height:2px;position:relative;cursor:default;transition:opacity .15s}
+.hbar:hover{opacity:.85}
+.hbar .tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:3px 8px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:2}
+.hbar:hover .tip{opacity:1}
+.bars{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{width:132px;flex:none;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.bar-track{flex:1;height:10px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .8s cubic-bezier(.4,0,.2,1)}
+.bar-num{width:46px;flex:none;text-align:right;font-size:12px;font-weight:600}
+.donut-wrap{display:flex;align-items:center;gap:24px;margin-top:14px;flex-wrap:wrap}
+.donut{width:150px;height:150px;border-radius:50%;position:relative;flex:none}
+.donut::after{content:'';position:absolute;inset:22px;background:var(--card2);border-radius:50%}
+.donut .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1}
+.donut .center b{font-size:22px;background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.donut .center span{font-size:11px;color:var(--muted)}
+.legend{display:flex;flex-direction:column;gap:8px}
+.legend .li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.legend .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.areachart{width:100%;height:150px;margin-top:12px;display:block}
+.heatmap{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-top:14px}
+.hcell{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.04);position:relative;cursor:default}
+.hcell .tip{position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:3px 8px;border-radius:6px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;z-index:3}
+.hcell:hover .tip{opacity:1}
+.hm-labels{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.hm-labels span{font-size:11px;color:var(--muted)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal.show{display:flex}
+.modal-box{width:min(680px,100%);max-height:82vh;background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.modal-head b{font-size:15px}
+.modal-body{overflow:auto;padding:10px 16px;flex:1}
+.msg{padding:8px 0;border-bottom:1px solid var(--border)}
+.msg:last-child{border-bottom:none}
+.msg .mhead{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.msg .mhead b{color:var(--text)}
+.msg .mhead .who{color:var(--acc)}
+.msg .mtext{margin-top:3px;font-size:13px;white-space:pre-wrap;word-break:break-word}
+@media(max-width:760px){.charts-grid{grid-template-columns:1fr}.bar-label{width:92px}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,var(--card),var(--card2));border:1px solid var(--border);padding:11px 20px;border-radius:12px;font-size:13px;z-index:99;display:none;box-shadow:var(--shadow)}
+.login{max-width:420px;margin:12vh auto;text-align:center}
+.login h1{margin-bottom:6px}
+.login .card{text-align:left}
+.empty{color:var(--muted);font-size:13px;padding:8px 0}
+@media(max-width:640px){.header{flex-direction:column;align-items:flex-start;gap:10px}.row>*{min-width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="login" class="login card">
+  <h1>Kostori Hub 管理后台</h1>
+  <div class="sub" style="margin-bottom:16px">输入 Hub API Key（用户层只读，管理层可管理）</div>
+  <label>Bearer Token</label>
+  <input id="token" type="password" placeholder="输入 API Key">
+  <button id="loginBtn" style="width:100%;padding:10px">进入后台</button>
+</div>
+
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="logo">
+      <div class="dot">K</div>
+      <div>
+        <h1>Kostori Hub</h1>
+        <div class="sub" id="overviewSub">—</div>
+      </div>
+    </div>
+    <button class="ghost" onclick="logout()">退出登录</button>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab active" data-tab="overview" onclick="showTab('overview')">状态</div>
+    <div class="tab" data-tab="stats" onclick="showTab('stats')">统计</div>
+    <div class="tab" data-tab="rooms" onclick="showTab('rooms')">房间</div>
+    <div class="tab" data-tab="clients" onclick="showTab('clients')">客户端</div>
+    <div class="tab" data-tab="logs" onclick="showTab('logs')">日志</div>
+    <div class="tab" data-tab="config" onclick="showTab('config')">配置</div>
+    <div class="tab" data-tab="ai" onclick="showTab('ai')">AI 机器人</div>
+    <div class="tab" data-tab="subs" onclick="showTab('subs')">订阅</div>
+  </div>
+
+  <div id="pane-overview" class="tabpane active"><div class="grid" id="stats"></div></div>
+
+  <div id="pane-stats" class="tabpane">
+    <div style="text-align:right;margin-bottom:12px"><button class="ghost" onclick="loadStats()">⟳ 刷新统计</button></div>
+    <div class="card"><h2>概览</h2><div class="stat-wrap" id="statsCards"></div></div>
+    <div class="charts-grid">
+      <div class="card">
+        <h2>24 小时活跃度</h2>
+        <div class="hchart" id="hourlyChart"></div>
+        <div class="sub" style="margin-top:8px;text-align:center">近 24h 按小时消息量</div>
+      </div>
+      <div class="card">
+        <h2>消息构成</h2>
+        <div class="donut-wrap">
+          <div class="donut" id="donutChart"><div class="center"><b id="donutTotal">0</b><span>总消息</span></div></div>
+          <div class="legend" id="donutLegend"></div>
+        </div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="card"><h2>活跃成员 TOP</h2><div class="bars" id="topClientsBars"></div></div>
+      <div class="card"><h2>各房间消息</h2><div class="bars" id="roomBars"></div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="card">
+        <h2>近 7 日消息走势</h2>
+        <svg class="areachart" id="trendChart"></svg>
+        <div class="sub" style="margin-top:8px;text-align:center" id="trendLabels"></div>
+      </div>
+      <div class="card">
+        <h2>近 7 天活跃热力图</h2>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="hm-labels" id="heatmapLabels"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-rooms" class="tabpane">
+    <div style="text-align:right;margin-bottom:12px"><button class="ghost" onclick="loadRooms()">⟳ 刷新房间</button></div>
+    <div class="card">
+      <div class="row">
+        <div class="field"><label>消息内容</label><input id="roomMsgText" placeholder="要发送的消息"></div>
+        <div class="field"><label>目标房间</label><select id="roomMsgRoom"></select></div>
+        <div class="field"><label>发送身份</label><select id="roomMsgAsBot"><option value="true">以机器人</option><option value="false">以 Server</option></select></div>
+        <div style="flex:none;align-self:flex-end"><button onclick="sendRoomMessage()">发送</button></div>
+      </div>
+    </div>
+    <div id="roomsList"></div>
+  </div>
+
+  <div id="pane-clients" class="tabpane">
+    <div style="text-align:right;margin-bottom:12px"><button class="ghost" onclick="loadClients()">⟳ 刷新客户端</button></div>
+    <div class="card" id="clientsList"></div></div>
+
+  <div id="pane-logs" class="tabpane">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;flex:none">
+        <div style="flex:none;min-width:200px"><label>级别</label><select id="logLevel" onchange="loadLogs()"><option value="">全部</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option></select></div>
+        <div style="flex:none;align-self:flex-end"><button class="ghost" onclick="loadLogs()">刷新</button></div>
+      </div>
+      <div style="margin-top:12px" class="logs" id="logsBox"></div>
+    </div>
+  </div>
+
+  <div id="pane-config" class="tabpane">
+    <div class="card">
+      <h2>服务配置</h2>
+      <div class="row">
+        <div class="field"><label>Web 管理端口</label><input id="cfgPort" type="number"></div>
+        <div class="field"><label>绑定模式</label><select id="cfgBind"><option value="ipv4">IPv4</option><option value="ipv6">IPv6</option><option value="both">Both</option></select></div>
+        <div class="field"><label>Hub 端口（重启生效）</label><input id="cfgHubPort" type="number"></div>
+        <div class="field"><label>心跳间隔 ms</label><input id="cfgPing" type="number"></div>
+      </div>
+      <div class="switchrow"><input type="checkbox" id="cfgNoAuth" style="width:auto;margin:0"><label style="margin:0">免鉴权模式</label></div>
+      <div class="row" style="margin-top:10px;flex:none">
+        <button onclick="saveConfig()">保存配置</button>
+        <button class="danger" onclick="restartHub()">重启 Hub</button>
+      </div>
+      <div class="sub" style="margin-top:12px" id="cfgKeys"></div>
+    </div>
+  </div>
+
+  <div id="pane-ai" class="tabpane">
+    <div class="card">
+      <h2>AI 陪聊机器人</h2>
+      <div class="row">
+        <div class="field"><label>启用</label><select id="aiEnabled"><option value="true">是</option><option value="false">否</option></select></div>
+        <div class="field"><label>名称</label><input id="aiName"></div>
+        <div class="field"><label>服务商（来源 AI 设置）</label><input id="aiProvider" placeholder="deepseek"></div>
+        <div class="field"><label>模型（可选）</label><input id="aiModel"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>触发方式</label><select id="aiTrigger"><option value="mention">@ 提及</option><option value="prefix">前缀</option><option value="keyword">关键字</option><option value="all">全部</option></select></div>
+        <div class="field"><label>触发前缀/关键字</label><input id="aiPattern"></div>
+        <div class="field"><label>最小回复间隔(秒)</label><input id="aiInterval" type="number"></div>
+      </div>
+      <div class="switchrow"><input type="checkbox" id="aiReplyDm" style="width:auto;margin:0"><label style="margin:0">回复私聊</label></div>
+      <div class="row" style="margin-top:10px;flex:none"><button onclick="saveAiConfig()">保存 AI 配置</button></div>
+      <div class="sub" style="margin-top:12px" id="aiPromptPreview"></div>
+    </div>
+  </div>
+
+  <div id="pane-subs" class="tabpane">
+    <div class="card">
+      <h2>添加订阅</h2>
+      <div class="row">
+        <div class="field"><label>连接方式</label><select id="subType" onchange="subTypeChanged()">
+          <option value="ws">WS</option><option value="webhook">Webhook</option><option value="http">HTTP</option>
+        </select></div>
+        <div class="field" id="subWsDirWrap"><label>WS 方向</label><select id="subWsDir"><option value="forward">正向（Hub 监听）</option><option value="reverse">反向（连接目标）</option></select></div>
+        <div class="field"><label>备注</label><input id="subNote" placeholder="例如：机器人 A"></div>
+      </div>
+      <div class="row" id="subListenWrap">
+        <div class="field"><label>监听地址</label><input id="subHost" placeholder="0.0.0.0"></div>
+        <div class="field"><label>监听端口</label><input id="subPort" type="number" placeholder="9300"></div>
+      </div>
+      <div class="row" id="subUrlWrap" style="display:none">
+        <div class="field" style="flex:2"><label>目标 URL</label><input id="subUrl" placeholder="ws://host:port 或 https://..."></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>心跳间隔 ms（可选）</label><input id="subHeartbeat" type="number" placeholder="留空 = 不发送"></div>
+        <div class="field"><label>token（可选）</label><input id="subToken"></div>
+      </div>
+      <div class="row" style="margin-top:10px;flex:none"><button onclick="addSubscription()">添加订阅</button></div>
+    </div>
+    <div class="card" id="subsList"></div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="roomModal">
+  <div class="modal-box">
+    <div class="modal-head"><b id="roomModalTitle">房间消息</b><button class="ghost" onclick="closeRoomModal()">关闭</button></div>
+    <div class="modal-body" id="roomModalBody"></div>
+  </div>
+</div>
+
+<script>
+let token='';
+const KEY='hub_admin_token';
+const $=id=>document.getElementById(id);
+
+function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',2600);}
+function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+async function api(path,opts={}){
+  const headers={'Content-Type':'application/json','Authorization':'Bearer '+token};
+  const res=await fetch(path,{...opts,headers});
+  if(res.status===401){logout();throw new Error('未授权');}
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||data.message||res.status);
+  return data;
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('active',p.id==='pane-'+name));
+  if(name==='rooms') loadRooms();
+  if(name==='clients') loadClients();
+  if(name==='logs') loadLogs();
+  if(name==='config') loadConfig();
+  if(name==='ai') loadAi();
+  if(name==='subs') loadSubscriptions();
+  if(name==='stats') loadStats();
+}
+
+async function loadOverview(){
+  try{
+    const d=await api('/api/admin/overview');
+    $('overviewSub').textContent='v'+d.version+' · 运行 '+fmtDur(d.uptime)+' · 端口 '+d.port;
+    $('stats').innerHTML=[
+      ['客户端',d.clients],['房间',d.rooms],['直连成员',d.directSyncMembers],
+      ['黑名单',d.blacklist],['端口',d.port],['运行秒数',d.uptime]
+    ].map(([k,v])=>'<div class="stat"><b>'+v+'</b><span>'+k+'</span></div>').join('');
+  }catch(e){toast(String(e));}
+}
+function fmtDur(s){if(s<60)return s+'s';if(s<3600)return Math.floor(s/60)+'m';return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';}
+
+async function loadStats(){
+  try{
+    const d=await api('/api/admin/stats');
+    const s=d.summary;
+    $('statsCards').innerHTML=[
+      ['总消息',s.totalMessages],['今日',s.today],['近 1 小时',s.lastHour],
+      ['房间',s.rooms],['在线客户端',s.clients],['黑名单',s.blacklist],
+      ['直连成员',s.directSyncMembers],['运行时长',fmtDur(s.uptime)]
+    ].map(([k,v])=>'<div class="stat"><b>'+v+'</b><span>'+k+'</span></div>').join('');
+
+    // 24h 柱状图
+    const hourly=d.hourly||[];
+    const hmax=Math.max(1,...hourly);
+    $('hourlyChart').innerHTML=hourly.map((v,i)=>'<div class="hbar" style="height:'+Math.round(v/hmax*100)+'%"><span class="tip">'+i+' 时 · '+v+' 条</span></div>').join('');
+
+    // 消息构成环形图
+    const total=s.totalMessages||0,user=s.userMessages||0,bot=s.botMessages||0,sync=s.watchSyncMessages||0;
+    const p1=total?user/total*100:0,p2=total?bot/total*100:0;
+    $('donutTotal').textContent=total;
+    $('donutChart').style.background='conic-gradient(var(--c1) 0 '+p1+'%, var(--c2) '+p1+'% '+(p1+p2)+'%, var(--c3) '+(p1+p2)+'% 100%)';
+    $('donutLegend').innerHTML=[
+      ['用户消息',user,'var(--c1)'],['机器人消息',bot,'var(--c2)'],['一起看同步',sync,'var(--c3)']
+    ].map(([k,v,c])=>'<div class="li"><span class="sw" style="background:'+c+'"></span>'+k+' · '+v+'（'+(total?(v/total*100).toFixed(1):'0')+'%）</div>').join('');
+
+    // 活跃成员 TOP
+    const cmax=Math.max(1,...(d.topClients||[]).map(x=>x.count));
+    $('topClientsBars').innerHTML=(d.topClients||[]).map((c,i)=>'<div class="bar-row"><span class="bar-label">'+(i+1)+'. '+esc(c.name)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(c.count/cmax*100)+'%"></div></div><span class="bar-num">'+c.count+'</span></div>').join('')||'<div class="empty">暂无数据</div>';
+
+    // 各房间消息
+    const rmax=Math.max(1,...(d.rooms||[]).map(x=>x.count));
+    $('roomBars').innerHTML=(d.rooms||[]).map(r=>'<div class="bar-row"><span class="bar-label">'+esc(r.name)+(r.type==='watch'?' · 一起看':'')+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(r.count/rmax*100)+'%"></div></div><span class="bar-num">'+r.count+'</span></div>').join('')||'<div class="empty">暂无数据</div>';
+
+    // 近 7 日消息走势（SVG 面积图）
+    renderTrend(d.daily||[]);
+
+    // 近 7 天热力图
+    renderHeatmap(d.heatmap||[]);
+  }catch(e){toast(String(e));}
+}
+
+function renderTrend(daily){
+  const svg=$('trendChart');
+  const W=svg.clientWidth||620,H=150,pad=6;
+  const n=7,max=Math.max(1,...daily);
+  const x=i=>pad+(W-2*pad)*(n===1?0.5:i/(n-1));
+  const y=v=>H-pad-(H-2*pad)*(v/max);
+  const pts=daily.map((v,i)=>[x(i),y(v)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=line+' L'+x(n-1).toFixed(1)+' '+(H-pad)+' L'+x(0).toFixed(1)+' '+(H-pad)+' Z';
+  const last=pts[pts.length-1];
+  svg.innerHTML='<defs><linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0%" stop-color="var(--acc)" stop-opacity=".45"/>'+
+    '<stop offset="100%" stop-color="var(--acc)" stop-opacity="0"/></linearGradient></defs>'+
+    '<path d="'+area+'" fill="url(#trendGrad)"/>'+
+    '<path d="'+line+'" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'+
+    (last?'<circle cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="3.5" fill="var(--acc2)"/>':'');
+  const now=new Date();
+  $('trendLabels').textContent=Array.from({length:7},(_,i)=>{
+    const dt=new Date(now);dt.setDate(dt.getDate()-(6-i));
+    return (dt.getMonth()+1)+'-'+String(dt.getDate()).padStart(2,'0')+' · '+daily[i];
+  }).join('　');
+}
+
+function renderHeatmap(hm){
+  const max=Math.max(1,...hm.flat());
+  $('heatmap').innerHTML=hm.flatMap((row,d)=>row.map((v,h)=>{
+    const a=max?v/max:0;
+    return '<div class="hcell" style="background:rgba(91,140,255,'+(a*0.85+0.05).toFixed(2)+')"><span class="tip">'+(d+1)+' 天前 '+h+' 时 · '+v+' 条</span></div>';
+  })).join('');
+  $('heatmapLabels').innerHTML='<span>行=最近 7 天（上=最早）</span><span>列=24 小时</span>';
+}
+
+async function loadRooms(){
+  try{
+    const d=await api('/api/admin/rooms');
+    const box=$('roomsList');
+    // 目标房间下拉（方便发送消息）
+    const sel=$('roomMsgRoom');
+    if(sel) sel.innerHTML=d.items.map(r=>'<option value="'+esc(r.roomId)+'">'+esc(r.roomName)+(r.roomType==='watch'?' · 一起看':'')+' · '+esc(r.participantCount)+' 人</option>').join('');
+    if(!d.items.length){box.innerHTML='<div class="card"><div class="empty">暂无房间</div></div>';return;}
+    box.innerHTML=d.items.map(r=>'<div class="card">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'+
+        '<b>'+esc(r.roomName)+'</b>'+
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+          '<span class="badge '+(r.roomType==='watch'?'ok':'')+'">'+(r.roomType==='watch'?'一起看':'聊天')+'</span>'+
+          (r.isLocked?'<span class="badge warn">🔒 加密</span>':'')+
+          '<span class="badge">'+esc(r.participantCount)+' 人</span>'+
+          '<span class="badge">💬 '+esc(r.messageCount)+' 条</span>'+
+          '<button class="ghost" onclick="viewRoomMessages(\''+r.roomId+'\',\''+esc(r.roomName).replace(/'/g,'\\\'')+'\')">消息</button>'+
+          '<button class="danger" onclick="deleteRoom(\''+r.roomId+'\')">删除</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="sub mono" style="margin-top:6px">'+esc(r.roomId)+(r.animeTitle?' · '+esc(r.animeTitle):'')+'</div>'+
+      (r.announcements&&r.announcements.length?'<div class="sub" style="margin-top:4px">📌 '+esc(r.announcements[0])+'</div>':'')+
+      '<div style="margin-top:8px">'+(r.participants.map(p=>'<span class="badge bot">'+esc(p.name)+(p.isBot?' 🤖':'')+'</span>').join(' ')||'<span class="sub">无成员</span>')+'</div>'+
+    '</div>').join('');
+  }catch(e){toast(String(e));}
+}
+
+async function deleteRoom(id){
+  if(!confirm('确定删除房间 '+id+' ？'))return;
+  try{await api('/api/admin/rooms/'+id,{method:'DELETE'});toast('已删除');loadRooms();}catch(e){toast(String(e));}
+}
+
+async function viewRoomMessages(id,name){
+  try{
+    const d=await api('/api/admin/rooms/'+encodeURIComponent(id)+'/messages?limit=100');
+    $('roomModalTitle').textContent='房间消息 · '+name+'（'+d.count+'）';
+    $('roomModalBody').innerHTML=(d.messages||[]).slice().reverse().map(m=>
+      '<div class="msg"><div class="mhead"><span class="who">'+(m.isBot?'🤖 ':'')+esc(m.sender)+'</span><span>'+esc(m.time.slice(5,16).replace('T',' '))+'</span></div><div class="mtext">'+esc(m.text)+'</div></div>'
+    ).join('')||'<div class="empty">暂无消息</div>';
+    $('roomModal').classList.add('show');
+  }catch(e){toast(String(e));}
+}
+function closeRoomModal(){$('roomModal').classList.remove('show');}
+$('roomModal').addEventListener('click',e=>{if(e.target===$('roomModal'))closeRoomModal();});
+
+async function sendRoomMessage(){
+  const text=$('roomMsgText').value.trim(),room=$('roomMsgRoom').value.trim();
+  if(!text){toast('请输入消息');return;}
+  try{
+    const d=await api('/api/admin/rooms/'+(room||'none')+'/message',{method:'POST',body:JSON.stringify({text,asBot:$('roomMsgAsBot').value==='true'})});
+    if(d.sent){toast('已发送');$('roomMsgText').value='';}else toast('未发送');
+  }catch(e){toast(String(e));}
+}
+
+async function loadClients(){
+  try{
+    const d=await api('/api/admin/clients');
+    $('clientsList').innerHTML='<h2>在线客户端 ('+d.count+')</h2>'+
+      d.items.map(c=>{
+        const badges=[
+          '<span class="badge '+(c.onlineStatus==='online'?'ok':'warn')+'">'+esc(c.onlineStatus)+'</span>',
+          c.isBot?'<span class="badge bot">🤖 机器人</span>':'',
+          c.isGlobalAdmin?'<span class="badge ok">管理员</span>':'',
+          c.isMuted?'<span class="badge warn">已禁言</span>':'',
+          c.isBlacklisted?'<span class="badge err">已封禁</span>':'',
+        ].join(' ');
+        const avatar=c.avatarUrl
+          ?'<img src="'+esc(c.avatarUrl)+'" style="width:38px;height:38px;border-radius:10px;object-fit:cover;flex:none" onerror="this.style.display=\'none\'">'
+          :'<div class="ic">'+(c.isBot?'🤖':'👤')+'</div>';
+        const peerInfo=(c.peerCandidates&&c.peerCandidates.length)
+          ?'<span>📡 直连 '+c.peerCandidates.length+' 个地址</span>':'';
+        const bio=(c.biography&&c.biography.trim())
+          ?'<span style="color:var(--muted)">💬 '+esc(c.biography)+'</span>':'';
+        return '<div class="subcard">'+
+          avatar+
+          '<div class="info"><b>'+esc(c.name)+'</b>'+
+          '<span class="mono">'+esc(c.userId)+'</span>'+
+          '<span>📍 '+esc(c.currentRoomName)+'</span>'+
+          peerInfo+bio+
+          '</div>'+
+          badges+
+          '<div class="actions">'+
+            (c.isMuted
+              ?'<button class="ghost" onclick="clientAction(\''+c.userId+'\',\'unmute\')">取消禁言</button>'
+              :'<button class="ghost" onclick="muteClient(\''+c.userId+'\')">禁言</button>')+
+            '<button class="ghost" onclick="clientAction(\''+c.userId+'\',\'kick\')">踢出</button>'+
+            (c.isBlacklisted
+              ?'<button class="ghost" onclick="clientAction(\''+c.userId+'\',\'unban\')">解封</button>'
+              :'<button class="danger" onclick="clientAction(\''+c.userId+'\',\'ban\')">封禁</button>')+
+            (c.isGlobalAdmin
+              ?'<button class="ghost" onclick="clientAction(\''+c.userId+'\',\'admin:false\')">撤管理员</button>'
+              :'<button class="ghost" onclick="clientAction(\''+c.userId+'\',\'admin:true\')">设管理员</button>')+
+          '</div>'+
+        '</div>';
+      }).join('');
+  }catch(e){toast(String(e));}
+}
+
+async function muteClient(id){
+  const s=prompt('禁言时长（秒）','300');
+  if(!s)return;
+  const n=parseInt(s,10);
+  if(isNaN(n)||n<=0){toast('时长无效');return;}
+  await clientAction(id,'mute:'+n);
+}
+
+async function clientAction(id,action){
+  const enc=encodeURIComponent(id);
+  try{
+    if(action.startsWith('mute:')){
+      await api('/api/admin/clients/'+enc+'/mute',{method:'POST',body:JSON.stringify({seconds:+action.split(':')[1]})});
+    }else if(action==='unmute'){
+      await api('/api/admin/clients/'+enc+'/unmute',{method:'POST'});
+    }else if(action==='kick'){
+      if(!confirm('确定踢出该客户端？'))return;
+      await api('/api/admin/clients/'+enc+'/kick',{method:'POST'});
+    }else if(action==='ban'){
+      if(!confirm('确定封禁该客户端（服务器黑名单）？'))return;
+      await api('/api/admin/clients/'+enc+'/ban',{method:'POST'});
+    }else if(action==='unban'){
+      await api('/api/admin/clients/'+enc+'/unban',{method:'POST'});
+    }else if(action==='admin:true'){
+      if(!confirm('设为全局管理员？'))return;
+      await api('/api/admin/clients/'+enc+'/admin',{method:'POST',body:JSON.stringify({value:true})});
+    }else if(action==='admin:false'){
+      if(!confirm('取消全局管理员？'))return;
+      await api('/api/admin/clients/'+enc+'/admin',{method:'POST',body:JSON.stringify({value:false})});
+    }
+    toast('操作成功');loadClients();
+  }catch(e){toast(String(e));}
+}
+
+async function loadLogs(){
+  try{
+    const level=$('logLevel').value;
+    const d=await api('/api/admin/logs?limit=200'+(level?'&level='+level:''));
+    $('logsBox').innerHTML=d.logs.map(l=>'<div class="logline '+l.level+'"><b>'+esc(l.level)+'</b> '+esc(l.time.slice(11,19))+' ['+esc(l.title)+'] '+esc(l.content)+'</div>').join('')||'<div class="empty">暂无日志</div>';
+  }catch(e){toast(String(e));}
+}
+
+async function loadConfig(){
+  try{
+    const d=await api('/api/admin/config');
+    $('cfgPort').value=d.webAdminPort;$('cfgBind').value=d.webAdminBindMode;
+    $('cfgHubPort').value=d.hubPort;$('cfgPing').value=d.pingIntervalMs;
+    $('cfgNoAuth').checked=d.hubNoAuth;
+    $('cfgKeys').textContent='用户层 Key '+(d.apiKeyConfigured?'已配置':'未配置')+' · 管理层 Key '+(d.adminKeyConfigured?'已配置':'未配置');
+  }catch(e){toast(String(e));}
+}
+
+async function saveConfig(){
+  try{
+    await api('/api/admin/config',{method:'POST',body:JSON.stringify({
+      webAdminPort:+$('cfgPort').value,webAdminBindMode:$('cfgBind').value,
+      hubPort:+$('cfgHubPort').value,pingIntervalMs:+$('cfgPing').value,hubNoAuth:$('cfgNoAuth').checked,
+    })});
+    toast('已保存（部分设置重启后生效）');
+  }catch(e){toast(String(e));}
+}
+
+async function restartHub(){
+  if(!confirm('确定重启 Hub 服务？'))return;
+  try{await api('/api/admin/restart',{method:'POST'});toast('已触发重启');}catch(e){toast(String(e));}
+}
+
+async function loadAi(){
+  try{
+    const d=await api('/api/admin/ai');
+    $('aiEnabled').value=String(d.enabled);$('aiName').value=d.name;
+    $('aiProvider').value=d.provider;$('aiModel').value=d.model;
+    $('aiTrigger').value=d.triggerMode;$('aiPattern').value=d.triggerPattern;
+    $('aiInterval').value=d.minIntervalSec;$('aiReplyDm').checked=d.replyDm;
+    $('aiPromptPreview').textContent='人设预览：'+d.systemPromptPreview;
+  }catch(e){toast(String(e));}
+}
+
+async function saveAiConfig(){
+  try{
+    await api('/api/admin/ai',{method:'POST',body:JSON.stringify({
+      enabled:$('aiEnabled').value==='true',name:$('aiName').value,
+      provider:$('aiProvider').value,model:$('aiModel').value,
+      triggerMode:$('aiTrigger').value,triggerPattern:$('aiPattern').value,
+      minIntervalSec:+$('aiInterval').value,replyDm:$('aiReplyDm').checked,
+    })});
+    toast('AI 配置已保存');
+  }catch(e){toast(String(e));}
+}
+
+const SUB_ICONS={ws:'🔌',webhook:'🪝',http:'🌐'};
+const SUB_LABELS={ws:'WS',webhook:'Webhook',http:'HTTP'};
+
+function subTypeChanged(){
+  const t=$('subType').value;
+  const isWs=t==='ws',isFwd=t==='ws'&&$('subWsDir').value==='forward';
+  $('subWsDirWrap').style.display=isWs?'':'none';
+  $('subListenWrap').style.display=(isFwd||t==='http')?'':'none';
+  $('subUrlWrap').style.display=(isWs&&!isFwd)||t==='webhook'?'':'none';
+}
+
+async function loadSubscriptions(){
+  try{
+    const d=await api('/api/admin/subscriptions');
+    const box=$('subsList');
+    if(!d.items.length){box.innerHTML='<h2>订阅列表</h2><div class="empty">暂无订阅</div>';return;}
+    box.innerHTML='<h2>订阅列表 ('+d.count+')</h2>'+
+      d.items.map(s=>'<div class="subcard">'+
+        '<div class="ic">'+(SUB_ICONS[s.type]||'📄')+'</div>'+
+        '<div class="info"><b>'+esc(s.note||SUB_LABELS[s.type]||s.type)+'</b>'+
+        '<span>'+esc((SUB_LABELS[s.type]||s.type))+(s.wsDirection?' · '+esc(s.wsDirection==='forward'?'正向':'反向'):'')+' · '+esc(s.summary)+'</span></div>'+
+        '<span class="badge '+(s.status==='running'?'ok':s.status==='error'?'err':'warn')+'">'+(s.status==='running'?'运行中':s.status==='error'?'错误':'未运行')+'</span>'+
+        '<div class="actions"><button class="danger" onclick="deleteSubscription(\''+s.id+'\')">删除</button></div>'+
+      '</div>').join('');
+  }catch(e){toast(String(e));}
+}
+
+async function addSubscription(){
+  const t=$('subType').value;
+  const wsDir=$('subWsDir').value;
+  const isWsFwd=t==='ws'&&wsDir==='forward';
+  const body={type:t,note:$('subNote').value.trim(),heartbeatMs:+$('subHeartbeat').value||null,token:$('subToken').value.trim()||null};
+  if(t==='ws')body.wsDirection=wsDir;
+  if(isWsFwd||t==='http'){body.listenHost=$('subHost').value.trim();body.listenPort=+$('subPort').value||null;}
+  if((t==='ws'&&!isWsFwd)||t==='webhook')body.url=$('subUrl').value.trim();
+  try{
+    await api('/api/admin/subscriptions',{method:'POST',body:JSON.stringify(body)});
+    toast('已添加订阅');
+    ['subNote','subHost','subPort','subUrl','subHeartbeat','subToken'].forEach(id=>$(id).value='');
+    loadSubscriptions();
+  }catch(e){toast(String(e));}
+}
+
+async function deleteSubscription(id){
+  if(!confirm('确定删除该订阅？'))return;
+  try{await api('/api/admin/subscriptions/'+id,{method:'DELETE'});toast('已删除');loadSubscriptions();}catch(e){toast(String(e));}
+}
+
+function logout(){
+  token='';localStorage.removeItem(KEY);
+  $('app').style.display='none';$('login').style.display='block';$('token').value='';
+}
+
+$('loginBtn').onclick=()=>{
+  token=$('token').value.trim();
+  if(!token){toast('请输入 Key');return;}
+  localStorage.setItem(KEY,token);
+  $('login').style.display='none';$('app').style.display='block';
+  loadOverview();
+};
+
+(function(){
+  const saved=localStorage.getItem(KEY);
+  if(saved){token=saved;$('login').style.display='none';$('app').style.display='block';loadOverview();}
+  setInterval(()=>{
+    if(!token)return;
+    loadOverview();
+    const active=document.querySelector('.tab.active');
+    if(!active)return;
+    const t=active.dataset.tab;
+    if(t==='stats')loadStats();
+    if(t==='rooms')loadRooms();
+    if(t==='clients')loadClients();
+  },5000);
+})();
+</script>
+</body>
+</html>

@@ -25,6 +25,11 @@ class AiModelDao extends DatabaseAccessor<AiDatabase> with _$AiModelDaoMixin {
         .getSingleOrNull();
   }
 
+  // 获取某服务商下的所有模型（用于下拉选择）
+  Future<List<AiModel>> getModelsByProvider(String provider) {
+    return (select(aiModels)..where((t) => t.provider.equals(provider))).get();
+  }
+
   // 批量保存模型（重复则覆盖）
   Future<void> upsertModels(List<AiModelsCompanion> companions) async {
     await batch((batch) {

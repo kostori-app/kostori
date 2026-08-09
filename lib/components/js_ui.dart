@@ -3,6 +3,7 @@ import 'package:flutter_qjs/flutter_qjs.dart';
 import 'package:kostori/components/components.dart';
 import 'package:kostori/foundation/app.dart';
 import 'package:kostori/foundation/js_engine.dart';
+import 'package:kostori/i18n/strings.g.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
 mixin class JsUiApi {
@@ -41,6 +42,12 @@ mixin class JsUiApi {
         if (validator != null && validator is! JSInvokable) return;
         if (image != null && image is! String) return;
         return _showInputDialog(title, validator, image);
+      case 'showCaptchaDialog':
+        var title = message['title'];
+        var image = message['image'];
+        if (title is! String) return;
+        if (image is! String) return;
+        return _showCaptchaDialog(title, image);
       case 'showSelectDialog':
         var title = message['title'];
         var options = message['options'];
@@ -134,12 +141,28 @@ mixin class JsUiApi {
     JSInvokable? validator,
     String? image,
   ) async {
+    // 带图片（验证码场景）时走专用验证码对话框，支持 AI 识别
+    if (image != null) {
+      var func = validator == null ? null : JSAutoFreeFunction(validator);
+      return showCaptchaDialog(
+        context: App.rootContext,
+        title: title,
+        image: image,
+        hintText: t.captchaHint,
+        onConfirm: (v) {
+          if (func != null) {
+            var res = func.call([v]);
+            if (res != null) return res.toString();
+          }
+          return null;
+        },
+      );
+    }
     String? result;
     var func = validator == null ? null : JSAutoFreeFunction(validator);
     await showInputDialog(
       context: App.rootContext,
       title: title,
-      image: image,
       onConfirm: (v) {
         if (func != null) {
           var res = func.call([v]);
@@ -155,6 +178,15 @@ mixin class JsUiApi {
       },
     );
     return result;
+  }
+
+  Future<String?> _showCaptchaDialog(String title, String image) {
+    return showCaptchaDialog(
+      context: App.rootContext,
+      title: title,
+      image: image,
+      hintText: t.captchaHint,
+    );
   }
 
   Future<int?> _showSelectDialog(

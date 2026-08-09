@@ -201,12 +201,9 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
           padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
           child: Text(
             switch (_cfg.mode) {
-              HubUploadMode.serverLocal =>
-                t.imagesStoredOnServerDisk,
-              HubUploadMode.serverOss =>
-                t.serverReceivesAndProxiesImageToOss,
-              HubUploadMode.clientOss =>
-                t.clientUploadsDirectlyToOss,
+              HubUploadMode.serverLocal => t.imagesStoredOnServerDisk,
+              HubUploadMode.serverOss => t.serverReceivesAndProxiesImageToOss,
+              HubUploadMode.clientOss => t.clientUploadsDirectlyToOss,
             },
             style: TextStyle(
               fontSize: 11,
@@ -219,7 +216,7 @@ class _UploadConfigSettingState extends State<_UploadConfigSetting> {
         if (_cfg.mode != HubUploadMode.clientOss)
           _SettingRow(
             title: t.maxSizeMb,
-            subtitle: 'Default: 5',
+            subtitle: t.defaultValue(v: '5'),
             trailing: _NumberInput(
               controller: _maxSizeCtrl,
               enabled: true,
@@ -425,7 +422,6 @@ class _ClientUploadConfigSettingState
           firstChild: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 状态
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
                 child: Row(
@@ -465,18 +461,12 @@ class _ClientUploadConfigSettingState
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: Row(
                   children: [
-                    FilledButton.tonal(
-                      onPressed: _save,
-                      child: Text(t.save),
-                    ),
+                    FilledButton.tonal(onPressed: _save, child: Text(t.save)),
                     if (hasOss) ...[
                       const SizedBox(width: 10),
                       TextButton(
                         onPressed: _clear,
-                        child: Text(
-                          t.clear,
-                          style: TextStyle(color: cs.error),
-                        ),
+                        child: Text(t.clear, style: TextStyle(color: cs.error)),
                       ),
                     ],
                   ],

@@ -98,7 +98,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
   @override
   void initState() {
     super.initState();
-    final perRow = appdata.settings['bangumiCardPerRow'];
+    final perRow = appdata.implicitData['bangumiCardPerRow'];
     if (perRow != null && perRow.toString().isNotEmpty) {
       fixedCrossAxisCount = int.tryParse(perRow.toString());
     }
@@ -474,7 +474,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
       builder: (context) {
         return ContentDialog(
           displayButton: false,
-          title: '增加标签',
+          title: t.addTag,
           content: TextField(
             autofocus: true,
             decoration: InputDecoration(
@@ -792,7 +792,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
-                                  '$month月',
+                                  t.searchMonthSuffix(month: month),
                                   style: TextStyle(
                                     color: isSelected
                                         ? Theme.of(
@@ -826,7 +826,10 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                                 const Icon(Icons.arrow_back_ios, size: 14),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '$selYear年 $selMonth月',
+                                  t.searchYearMonth(
+                                    year: selYear,
+                                    month: selMonth,
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -839,23 +842,32 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                         const SizedBox(height: 8),
                         // 星期标题
                         Row(
-                          children: ['日', '一', '二', '三', '四', '五', '六']
-                              .map(
-                                (d) => Expanded(
-                                  child: Center(
-                                    child: Text(
-                                      d,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.outline,
+                          children:
+                              [
+                                    t.statsWeekdaySun,
+                                    t.statsWeekdayMon,
+                                    t.statsWeekdayTue,
+                                    t.statsWeekdayWed,
+                                    t.statsWeekdayThu,
+                                    t.statsWeekdayFri,
+                                    t.statsWeekdaySat,
+                                  ]
+                                  .map(
+                                    (d) => Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          d,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.outline,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
+                                  )
+                                  .toList(),
                         ),
                         const SizedBox(height: 4),
                         // 日历网格
@@ -1464,7 +1476,7 @@ class _BangumiSearchPageState extends ConsumerState<BangumiSearchPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${item.useCount} 次',
+                    t.searchUseCount(n: item.useCount),
                     style: ts.s12.copyWith(
                       color: context.colorScheme.onSurfaceVariant,
                     ),

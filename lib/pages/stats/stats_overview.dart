@@ -325,14 +325,49 @@ class _StatsOverviewState extends State<StatsOverview> {
     _ => Colors.blue,
   };
 
-  String _timeRangeTitle(TimeRange range) => switch (range) {
-    TimeRange.daily => '当天',
-    TimeRange.weekly => '当周',
-    TimeRange.monthly => '当月',
-    TimeRange.quarterly => '当季',
-    TimeRange.halfYearly => '半年',
-    TimeRange.yearly => '当年',
-  };
+  /// 展示具体的起止日期，避免分享出去时"当年/当月"表述不清
+  String _timeRangeTitle(TimeRange range) {
+    final s = selectedDate;
+    switch (range) {
+      case TimeRange.daily:
+        return t.statsDateFull(year: s.year, month: s.month, day: s.day);
+      case TimeRange.weekly:
+        final start = s.subtract(Duration(days: s.weekday - 1));
+        final end = start.add(const Duration(days: 6));
+        return t.statsDateRangeWeek(
+          year: start.year,
+          month: start.month,
+          day: start.day,
+          endMonth: end.month,
+          endDay: end.day,
+        );
+      case TimeRange.monthly:
+        return t.statsDateMonth(year: s.year, month: s.month);
+      case TimeRange.quarterly:
+        final q = (s.month - 1) ~/ 3;
+        final start = DateTime(s.year, q * 3 + 1, 1);
+        final end = DateTime(s.year, q * 3 + 4, 0);
+        return t.statsDateRangeHalf(
+          year: start.year,
+          startMonth: start.month,
+          endMonth: end.month,
+        );
+      case TimeRange.halfYearly:
+        final start = s.month <= 6
+            ? DateTime(s.year, 1, 1)
+            : DateTime(s.year, 7, 1);
+        final end = s.month <= 6
+            ? DateTime(s.year, 6, 30)
+            : DateTime(s.year, 12, 31);
+        return t.statsDateRangeHalf(
+          year: start.year,
+          startMonth: start.month,
+          endMonth: end.month,
+        );
+      case TimeRange.yearly:
+        return t.statsDateYear(year: s.year);
+    }
+  }
 
   Widget _section(BuildContext context, String title, Widget child) {
     return Material(
@@ -421,8 +456,6 @@ class _StatsOverviewState extends State<StatsOverview> {
         timeRange != TimeRange.daily &&
         heatmapData.isNotEmpty &&
         heatmapData.values.any((v) => v > 0);
-    final coverW = 100.0;
-    final coverH = coverW / 0.72;
 
     if (_deduplicatedStats.isEmpty) {
       return Center(
@@ -431,7 +464,10 @@ class _StatsOverviewState extends State<StatsOverview> {
           children: [
             const Icon(Icons.inbox, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
-            Text('暂无活动记录', style: Theme.of(context).textTheme.bodyLarge),
+            Text(
+              t.statsNoRecords,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
           ],
         ),
       );
@@ -456,43 +492,43 @@ class _StatsOverviewState extends State<StatsOverview> {
         // ── 统计数字瓦片 ────────────────────────
         _section(
           context,
-          '活动统计',
+          t.statsActivityOverview,
           _StatsTileGrid(
             tiles: [
               _StatsTile(
                 icon: Icons.play_circle_fill,
-                label: '观看时长',
+                label: t.statsWatchDuration,
                 value: Utils.formatHMS(totalWatchSeconds),
                 color: Colors.green,
               ),
               _StatsTile(
                 icon: Icons.touch_app,
-                label: '点击次数',
-                value: '$totalClicks 次',
+                label: t.statsClicks,
+                value: t.statsCountTimes(n: totalClicks),
                 color: Colors.blue,
               ),
               _StatsTile(
                 icon: Icons.star,
-                label: '评级',
-                value: '$totalRatings 次',
+                label: t.statsRatings,
+                value: t.statsCountTimes(n: totalRatings),
                 color: Colors.amber,
               ),
               _StatsTile(
                 icon: Icons.comment,
-                label: '评论',
-                value: '$totalComments 条',
+                label: t.statsComments,
+                value: t.statsCountComments(n: totalComments),
                 color: Colors.orange,
               ),
               _StatsTile(
                 icon: Icons.favorite,
-                label: '收藏',
-                value: '$totalFavorites 次',
+                label: t.statsFavorites,
+                value: t.statsCountTimes(n: totalFavorites),
                 color: Colors.redAccent,
               ),
               _StatsTile(
                 icon: Icons.local_fire_department,
-                label: '活跃条目',
-                value: '$totalActiveCount 个',
+                label: t.statsActiveItems,
+                value: t.statsCountItems(n: totalActiveCount),
                 color: Colors.deepOrange,
               ),
             ],
@@ -504,7 +540,7 @@ class _StatsOverviewState extends State<StatsOverview> {
         if (showHeatmap) ...[
           _section(
             context,
-            '活跃热力图',
+            t.statsActiveHeatmap,
             _ActivityHeatmap(
               data: heatmapData,
               timeRange: timeRange,
@@ -517,7 +553,7 @@ class _StatsOverviewState extends State<StatsOverview> {
         if (showHeatmap) ...[
           _section(
             context,
-            '观看趋势',
+            t.statsWatchTrend,
             _WatchTrendChart(
               data: heatmapData,
               timeRange: timeRange,
@@ -531,15 +567,11 @@ class _StatsOverviewState extends State<StatsOverview> {
         if (rankedItems.isNotEmpty) ...[
           _section(
             context,
-            totalActiveCount > 9
-                ? '活跃条目 (前${rankedItems.length}/$totalActiveCount个)'
-                : '活跃条目 ($totalActiveCount个)',
-            _CoverGrid(
-              items: rankedItems,
-              coverW: coverW,
-              coverH: coverH,
-              getRankColor: _getRankColor,
+            t.statsActiveItemsTop(
+              shown: rankedItems.length,
+              total: totalActiveCount,
             ),
+            _CoverGrid(items: rankedItems, getRankColor: _getRankColor),
           ),
           const SizedBox(height: 8),
         ],
@@ -552,7 +584,7 @@ class _StatsOverviewState extends State<StatsOverview> {
         )) ...[
           _section(
             context,
-            '观看时长分布',
+            t.statsWatchDistribution,
             _WatchBarChart(
               stats: _deduplicatedStats,
               getRecords: _getTimeRangeRecords,
@@ -565,7 +597,7 @@ class _StatsOverviewState extends State<StatsOverview> {
         if (_topFiveTagNames.isNotEmpty && _bangumiItems.length > 1) ...[
           _section(
             context,
-            '常看标签',
+            t.statsFrequentTags,
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -611,7 +643,7 @@ class _StatsOverviewState extends State<StatsOverview> {
         if (dataList.isNotEmpty && _bangumiItems.length > 1) ...[
           _section(
             context,
-            '标签词云',
+            t.statsTagCloud,
             SizedBox(
               height: 280,
               child: WordCloudWidget(wordCloudData: dataList),
@@ -649,68 +681,88 @@ class _StatsTileGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cols = constraints.maxWidth > 400 ? 3 : 2;
-        final tileW = (constraints.maxWidth - (cols - 1) * 8) / cols;
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        final cols = constraints.maxWidth > 500 ? 3 : 2;
+        return GridView.count(
+          crossAxisCount: cols,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.3,
           children: tiles.map((t) {
-            return SizedBox(
-              width: tileW,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: t.color.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: t.color.withValues(alpha: 0.2),
-                    width: 0.8,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: t.color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(t.icon, size: 17, color: t.color),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            t.value,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: t.color,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            t.label,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    t.color.withValues(alpha: 0.14),
+                    t.color.withValues(alpha: 0.04),
                   ],
                 ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: t.color.withValues(alpha: 0.25),
+                  width: 0.8,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [t.color, t.color.withValues(alpha: 0.7)],
+                      ),
+                      borderRadius: BorderRadius.circular(9),
+                      boxShadow: [
+                        BoxShadow(
+                          color: t.color.withValues(alpha: 0.35),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(t.icon, size: 18, color: cs.onPrimary),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          t.value,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: t.color,
+                            height: 1.1,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          t.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           }).toList(),
@@ -797,7 +849,15 @@ class _ActivityHeatmap extends StatelessWidget {
     ];
     final weeks = (paddedDays.length / 7).ceil();
 
-    final weekLabels = ['一', '二', '三', '四', '五', '六', '日'];
+    final weekLabels = [
+      t.statsWeekdayMon,
+      t.statsWeekdayTue,
+      t.statsWeekdayWed,
+      t.statsWeekdayThu,
+      t.statsWeekdayFri,
+      t.statsWeekdaySat,
+      t.statsWeekdaySun,
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -882,111 +942,114 @@ class _ActivityHeatmap extends StatelessWidget {
 // ─────────────────────────────────────────────
 
 class _CoverGrid extends StatelessWidget {
-  const _CoverGrid({
-    required this.items,
-    required this.coverW,
-    required this.coverH,
-    required this.getRankColor,
-  });
+  const _CoverGrid({required this.items, required this.getRankColor});
 
   final List<RankedStatsItem> items;
-  final double coverW;
-  final double coverH;
   final Color Function(int) getRankColor;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 12,
-      children: items.map((ranked) {
-        final stat = ranked.stat;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
+    // 根据可用宽度动态计算列数，让 9 个条目填满整行，不留右侧空隙
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cols = (constraints.maxWidth ~/ 118).clamp(3, 6);
+        final spacing = 8.0;
+        final coverW = (constraints.maxWidth - (cols - 1) * spacing) / cols;
+        final coverH = coverW / 0.72;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: 12,
+          children: items.map((ranked) {
+            final stat = ranked.stat;
+            return SizedBox(
               width: coverW,
-              height: coverH,
-              child: Stack(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: BangumiWidget.kostoriImage(
-                      context,
-                      stat.cover!,
-                      width: coverW,
-                      height: coverH,
-                    ),
-                  ),
-                  // 排名徽章
-                  Positioned(
-                    top: 4,
-                    left: 4,
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: getRankColor(ranked.rank),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${ranked.rank}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                  SizedBox(
+                    width: coverW,
+                    height: coverH,
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: BangumiWidget.kostoriImage(
+                            context,
+                            stat.cover!,
+                            width: coverW,
+                            height: coverH,
                           ),
                         ),
-                      ),
+                        // 排名徽章
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            width: 22,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              color: getRankColor(ranked.rank),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${ranked.rank}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // 活跃度分数
+                        Positioned(
+                          bottom: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.65),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              ranked.activityScore.toStringAsFixed(0),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  // 活跃度分数
-                  Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        ranked.activityScore.toStringAsFixed(0),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 4),
+                  Text(
+                    stat.title ?? t.statsUnknown,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: coverW,
-              child: Text(
-                stat.title ?? '未知',
-                style: Theme.of(context).textTheme.bodySmall,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 }
@@ -1123,12 +1186,12 @@ class _WatchTrendChart extends StatelessWidget {
         case TimeRange.weekly:
           return '${d.month}/${d.day}';
         case TimeRange.monthly:
-          return '${d.day}日';
+          return t.statsDateDay(day: d.day);
         case TimeRange.quarterly:
         case TimeRange.halfYearly:
           return '${d.month}/${d.day}';
         case TimeRange.yearly:
-          return '${d.month}月';
+          return t.statsDateMonthOnly(month: d.month);
         default:
           return '${d.month}/${d.day}';
       }

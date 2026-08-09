@@ -28,7 +28,8 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
       ? scrollControllerLatest
       : scrollControllerTrending;
 
-  final InfoController infoController = InfoController();
+  InfoController get infoController =>
+      ref.read(infoControllerProvider.notifier);
   late TabController infoTabController;
 
   bool topicsLatestIsLoading = false;
@@ -76,11 +77,9 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
 
   Future<void> resetBangumiTrend() async {
     if (infoTabController.index == 0) {
-      infoController.topicsLatestList.clear();
       setState(() => topicsLatestQueryTimeout = false);
       await loadMoreTopicsLatest();
     } else {
-      infoController.topicsTrendingList.clear();
       setState(() => topicsTrendingQueryTimeout = false);
       await loadMoreTopicsTrending();
     }
@@ -99,8 +98,6 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
   @override
   void initState() {
     super.initState();
-    infoController.topicsLatestList.clear();
-    infoController.topicsTrendingList.clear();
     infoTabController = TabController(length: 2, vsync: this);
     infoTabController.addListener(() {
       setState(() {});
@@ -123,8 +120,6 @@ class _BangumiSubjectTabPageState extends ConsumerState<BangumiSubjectTabPage>
 
   @override
   void dispose() {
-    infoController.topicsLatestList.clear();
-    infoController.topicsTrendingList.clear();
     infoTabController.dispose();
     scrollControllerLatest.dispose();
     scrollControllerTrending.dispose();

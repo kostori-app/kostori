@@ -5,7 +5,8 @@ part of 'anime_page.dart';
 Map<String, String> commentDrafts = {};
 
 abstract mixin class _AnimePageActions {
-  final InfoController infoController = InfoController();
+  InfoController get infoController =>
+      providerContainer.read(infoControllerProvider.notifier);
 
   final WatcherController watcherController = WatcherController();
 
@@ -98,7 +99,6 @@ abstract mixin class _AnimePageActions {
       type: anime.animeType,
       isFavorite: isFavorite,
       onFavorite: (local) {
-        isFavorite = isFavorite;
         isAddToLocalFav = local ?? isAddToLocalFav;
         update();
       },
@@ -119,7 +119,11 @@ abstract mixin class _AnimePageActions {
   }
 
   Future<void> bangumiBottomInfo(BuildContext context) async {
-    var bangumiId = history!.bangumiId;
+    final bangumiId = history?.bangumiId;
+    if (bangumiId == null) {
+      App.rootContext.showMessage(message: t.notBoundToBangumi);
+      return;
+    }
     showModalBottomSheet(
       isScrollControlled: true,
       enableDrag: false,
@@ -154,12 +158,9 @@ abstract mixin class _AnimePageActions {
                       filterQuality: FilterQuality.medium,
                     )
                   else
-                    CircleAvatar(
+                    BangumiAvatar(
+                      url: appdata.implicitData['nameAvatar'] ?? '',
                       radius: 18,
-                      backgroundImage: NetworkImage(
-                        appdata.implicitData['nameAvatar'],
-                      ),
-                      backgroundColor: Colors.transparent,
                     ),
                   Spacer(),
                   IconButton(
@@ -173,12 +174,10 @@ abstract mixin class _AnimePageActions {
             ),
             // 下面是 BottomInfo 内容
             Expanded(
-              child: bangumiId == null
-                  ? Center(child: PolygonRefreshIndicator(size: 100))
-                  : BottomInfo(
-                      bangumiId: bangumiId,
-                      infoController: infoController,
-                    ),
+              child: BottomInfo(
+                bangumiId: bangumiId,
+                infoController: infoController,
+              ),
             ),
           ],
         );
@@ -227,7 +226,7 @@ abstract mixin class _AnimePageActions {
 
   Widget _buildResultsList(List<BangumiItem> items, Function(String) onSearch) {
     if (items.isEmpty) {
-      return Center(child: Text('暂无搜索结果'));
+      return Center(child: Text(t.noSearchResults));
     }
 
     return ListView.builder(
@@ -294,7 +293,7 @@ abstract mixin class _AnimePageActions {
                                 ),
                               ),
                               Text(item.name, style: TextStyle(fontSize: 14.0)),
-                              Text('放送日期: ${item.airDate}'),
+                              Text(t.animeAirDate(date: item.airDate)),
                               const SizedBox(height: 10),
                               Text(
                                 item.summary,
@@ -417,23 +416,26 @@ abstract mixin class _AnimePageActions {
   }
 
   void shareImage() {
+    final bangumiId = history?.bangumiId;
     showPopUpWidget(
       App.rootContext,
       StatefulBuilder(
         builder: (context, setState) {
-          if (history!.bangumiId == null) {
+          if (bangumiId == null) {
             return ShareWidget(anime: anime);
           }
 
-          return ShareWidget(id: history!.bangumiId as int);
+          return ShareWidget(id: bangumiId);
         },
       ),
     );
   }
 
   void onTapTag(String tag, String namespace) {
-    var target = animeSource.handleClickTagEvent?.call(namespace, tag);
-    var context = App.mainNavigatorKey!.currentContext!;
+    final source = AnimeSource.find(anime.sourceKey);
+    final context = App.mainNavigatorKey?.currentContext;
+    if (source == null || context == null) return;
+    final target = source.handleClickTagEvent?.call(namespace, tag);
     target?.jump(context);
   }
 
@@ -486,7 +488,16 @@ class _RatingDialogState extends State<RatingDialog> {
       id: _statsDataImpl.id,
       type: _statsDataImpl.type,
     );
-    if (s == null) return;
+    if (s == null) {
+      // 未找到统计数据，提示后关闭弹窗，避免后续对未初始化 stats 的操作
+      if (!mounted) return;
+      App.rootContext.showMessage(
+        message: t.applyFailed,
+        level: LogLevel.error,
+      );
+      Navigator.pop(context);
+      return;
+    }
     stats = StatsManager().getOrCreateTodayEvents(statsData: s);
 
     final bangumiBundle = await manager.getOrCreateBangumiStats(
@@ -515,9 +526,9 @@ class _RatingDialogState extends State<RatingDialog> {
       final targetStats = bangumiStats ?? stats;
       final idKey = targetStats.statsData.id;
       _showingDraft = !_showingDraft;
-      _commentController.text = (_showingDraft
-          ? commentDrafts[idKey]
-          : (targetStats.commentRecord.comment ?? ''))!;
+      _commentController.text = _showingDraft
+          ? (commentDrafts[idKey] ?? '')
+          : (targetStats.commentRecord.comment ?? '');
     });
   }
 

@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:kostori/components/bangumi_widget.dart';
 import 'package:kostori/foundation/bangumi/comment/comment_item.dart';
 import 'package:kostori/utils/utils.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class CommentsCard extends StatelessWidget {
-  CommentsCard({
-    super.key,
-    required this.commentItem,
-  }) {
+  CommentsCard({super.key, required this.commentItem}) {
     isBone = false;
   }
 
-  CommentsCard.bone({
-    super.key,
-  }) {
+  CommentsCard.bone({super.key}) {
     isBone = true;
     commentItem = null;
   }
@@ -61,9 +57,7 @@ class CommentsCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  backgroundImage: NetworkImage(commentItem!.user.avatar.large),
-                ),
+                BangumiAvatar(url: commentItem!.user.avatar.large),
                 const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -76,9 +70,8 @@ class CommentsCard extends StatelessWidget {
                 RatingBarIndicator(
                   itemCount: 5,
                   rating: commentItem!.comment.rate.toDouble() / 2,
-                  itemBuilder: (context, index) => const Icon(
-                    Icons.star_rounded,
-                  ),
+                  itemBuilder: (context, index) =>
+                      const Icon(Icons.star_rounded),
                   itemSize: 20.0,
                 ),
               ],

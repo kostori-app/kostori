@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kostori/database/bangumi.dart';
 import 'package:kostori/database/history.dart';
 import 'package:kostori/foundation/bangumi/bangumi_item.dart';
@@ -12,26 +13,153 @@ import 'package:kostori/foundation/bangumi/staff/staff_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_info_item.dart';
 import 'package:kostori/foundation/bangumi/topics/topics_item.dart';
 import 'package:kostori/foundation/log.dart';
-import 'package:kostori/init.dart';
 import 'package:kostori/network/bangumi.dart';
 import 'package:kostori/i18n/strings.g.dart';
 import 'package:kostori/utils/utils.dart';
-import 'package:mobx/mobx.dart';
 
-part 'info_controller.g.dart';
+/// Bangumi 详情页状态（不可变数据）
+class InfoState {
+  final BangumiItem? bangumiItem;
+  final int bangumiId;
+  final int episode;
+  final EpisodeInfo episodeInfo;
+  final List<History> bangumiHistory;
+  final bool isLoading;
+  final List<EpisodeInfo> allEpisodes;
+  final List<CommentItem> commentsList;
+  final List<TopicsItem> topicsList;
+  final List<TopicsInfoItem> topicsLatestList;
+  final List<TopicsInfoItem> topicsTrendingList;
+  final List<ReviewsItem> reviewsList;
+  final List<CharacterItem> characterList;
+  final List<StaffFullItem> staffList;
+  final List<EpisodeCommentItem> episodeCommentsList;
+  final List<BangumiSRI> bangumiSRI;
+  final Map<bool, EpisodeInfo?> currentWeekEp;
 
-class InfoController = _InfoController with _$InfoController;
+  InfoState({
+    this.bangumiItem,
+    this.bangumiId = 0,
+    this.episode = 0,
+    EpisodeInfo? episodeInfo,
+    this.bangumiHistory = const [],
+    this.isLoading = true,
+    this.allEpisodes = const [],
+    this.commentsList = const [],
+    this.topicsList = const [],
+    this.topicsLatestList = const [],
+    this.topicsTrendingList = const [],
+    this.reviewsList = const [],
+    this.characterList = const [],
+    this.staffList = const [],
+    this.episodeCommentsList = const [],
+    this.bangumiSRI = const [],
+    this.currentWeekEp = const {},
+  }) : episodeInfo = episodeInfo ?? EpisodeInfo.fromTemplate();
 
-abstract class _InfoController with Store {
-  late BangumiItem bangumiItem;
-  late int bangumiId;
-  late int episode;
+  InfoState copyWith({
+    BangumiItem? bangumiItem,
+    int? bangumiId,
+    int? episode,
+    EpisodeInfo? episodeInfo,
+    List<History>? bangumiHistory,
+    bool? isLoading,
+    List<EpisodeInfo>? allEpisodes,
+    List<CommentItem>? commentsList,
+    List<TopicsItem>? topicsList,
+    List<TopicsInfoItem>? topicsLatestList,
+    List<TopicsInfoItem>? topicsTrendingList,
+    List<ReviewsItem>? reviewsList,
+    List<CharacterItem>? characterList,
+    List<StaffFullItem>? staffList,
+    List<EpisodeCommentItem>? episodeCommentsList,
+    List<BangumiSRI>? bangumiSRI,
+    Map<bool, EpisodeInfo?>? currentWeekEp,
+  }) => InfoState(
+    bangumiItem: bangumiItem ?? this.bangumiItem,
+    bangumiId: bangumiId ?? this.bangumiId,
+    episode: episode ?? this.episode,
+    episodeInfo: episodeInfo ?? this.episodeInfo,
+    bangumiHistory: bangumiHistory ?? this.bangumiHistory,
+    isLoading: isLoading ?? this.isLoading,
+    allEpisodes: allEpisodes ?? this.allEpisodes,
+    commentsList: commentsList ?? this.commentsList,
+    topicsList: topicsList ?? this.topicsList,
+    topicsLatestList: topicsLatestList ?? this.topicsLatestList,
+    topicsTrendingList: topicsTrendingList ?? this.topicsTrendingList,
+    reviewsList: reviewsList ?? this.reviewsList,
+    characterList: characterList ?? this.characterList,
+    staffList: staffList ?? this.staffList,
+    episodeCommentsList: episodeCommentsList ?? this.episodeCommentsList,
+    bangumiSRI: bangumiSRI ?? this.bangumiSRI,
+    currentWeekEp: currentWeekEp ?? this.currentWeekEp,
+  );
+}
 
-  BangumiManager get manager => providerContainer.read(bangumiManagerProvider);
+/// Bangumi 详情页控制器（Riverpod Notifier）
+class InfoController extends Notifier<InfoState> {
+  @override
+  InfoState build() => InfoState();
 
-  EpisodeInfo episodeInfo = EpisodeInfo.fromTemplate();
+  BangumiManager get manager => ref.read(bangumiManagerProvider);
 
-  final List<String> tabs = <String>[
+  void reset(BangumiItem item) {
+    state = InfoState(bangumiItem: item, bangumiId: item.id);
+  }
+
+  // ── 兼容旧访问的 getter/setter 转发（消费者通过 ref.read(notifier) 获取实例） ──
+
+  List<History> get bangumiHistory => state.bangumiHistory;
+
+  set bangumiHistory(List<History> value) =>
+      state = state.copyWith(bangumiHistory: value);
+
+  List<EpisodeInfo> get allEpisodes => state.allEpisodes;
+
+  List<CommentItem> get commentsList => state.commentsList;
+
+  List<TopicsItem> get topicsList => state.topicsList;
+
+  List<TopicsInfoItem> get topicsLatestList => state.topicsLatestList;
+
+  List<TopicsInfoItem> get topicsTrendingList => state.topicsTrendingList;
+
+  List<ReviewsItem> get reviewsList => state.reviewsList;
+
+  List<CharacterItem> get characterList => state.characterList;
+
+  List<StaffFullItem> get staffList => state.staffList;
+
+  List<EpisodeCommentItem> get episodeCommentsList => state.episodeCommentsList;
+
+  List<BangumiSRI> get bangumiSRI => state.bangumiSRI;
+
+  set bangumiSRI(List<BangumiSRI> value) =>
+      state = state.copyWith(bangumiSRI: value);
+
+  BangumiItem get bangumiItem => state.bangumiItem!;
+
+  /// 可空版本：未初始化时返回 null（外部回退 widget 传入）
+  BangumiItem? get bangumiItemOrNull => state.bangumiItem;
+
+  set bangumiItem(BangumiItem value) =>
+      state = state.copyWith(bangumiItem: value, bangumiId: value.id);
+
+  int get bangumiId => state.bangumiId;
+
+  set bangumiId(int value) => state = state.copyWith(bangumiId: value);
+
+  int get episode => state.episode;
+
+  set episode(int value) => state = state.copyWith(episode: value);
+
+  EpisodeInfo get episodeInfo => state.episodeInfo;
+
+  bool get isLoading => state.isLoading;
+
+  Map<bool, EpisodeInfo?> get currentWeekEp => state.currentWeekEp;
+
+  List<String> get tabs => <String>[
     t.overview,
     t.comments,
     t.topics,
@@ -40,70 +168,58 @@ abstract class _InfoController with Store {
     t.staffList,
   ];
 
-  List<History> bangumiHistory = [];
+  /// 清空详情页各列表（进入/离开页面时调用）
+  void clearBangumiLists() {
+    state = state.copyWith(
+      bangumiHistory: const [],
+      allEpisodes: const [],
+      commentsList: const [],
+      topicsList: const [],
+      topicsLatestList: const [],
+      topicsTrendingList: const [],
+      reviewsList: const [],
+      characterList: const [],
+      staffList: const [],
+      episodeCommentsList: const [],
+      bangumiSRI: const [],
+    );
+  }
 
-  bool showLineChart = false;
+  void setBangumiHistory(List<History> value) {
+    state = state.copyWith(bangumiHistory: value);
+  }
 
-  @observable
-  ObservableList<EpisodeInfo> allEpisodes = ObservableList();
+  void setBangumiItem(BangumiItem value) {
+    state = state.copyWith(bangumiItem: value, bangumiId: value.id);
+  }
 
-  @observable
-  bool isLoading = false;
-
-  @observable
-  var commentsList = ObservableList<CommentItem>();
-
-  @observable
-  var topicsList = ObservableList<TopicsItem>();
-
-  @observable
-  var topicsLatestList = ObservableList<TopicsInfoItem>();
-
-  @observable
-  var topicsTrendingList = ObservableList<TopicsInfoItem>();
-
-  @observable
-  var reviewsList = ObservableList<ReviewsItem>();
-
-  @observable
-  var characterList = ObservableList<CharacterItem>();
-
-  @observable
-  var staffList = ObservableList<StaffFullItem>();
-
-  @observable
-  var episodeCommentsList = ObservableList<EpisodeCommentItem>();
-
-  @observable
-  var bangumiSRI = ObservableList<BangumiSRI>();
-
-  @observable
-  Map<bool, EpisodeInfo?> currentWeekEp = {false: null};
-
-  @action
   void setCurrentWeekEp(Map<bool, EpisodeInfo?> value) {
-    currentWeekEp = value;
+    state = state.copyWith(currentWeekEp: value);
+  }
+
+  void setIsLoading(bool value) {
+    state = state.copyWith(isLoading: value);
   }
 
   Future<void> queryBangumiInfoByID(int id, {bool defaultToDb = false}) async {
-    isLoading = true;
+    state = state.copyWith(isLoading: true);
     try {
       if (defaultToDb) {
         BangumiItem? bangumiBind = await Bangumi.instance.bindFind(id);
         if (bangumiBind != null) {
-          bangumiItem = bangumiBind;
+          state = state.copyWith(bangumiItem: bangumiBind, isLoading: false);
         } else {
-          bangumiItem = (await Bangumi.instance.getBangumiInfoByID(id))!;
+          final item = (await Bangumi.instance.getBangumiInfoByID(id))!;
+          state = state.copyWith(bangumiItem: item, isLoading: false);
         }
       } else {
-        bangumiItem = (await Bangumi.instance.getBangumiInfoByID(id))!;
+        final item = (await Bangumi.instance.getBangumiInfoByID(id))!;
+        state = state.copyWith(bangumiItem: item, isLoading: false);
       }
-      bangumiSRI.clear();
-      await Bangumi.instance.getBangumiSRIByID(id).then((v) {
-        bangumiSRI.addAll(v);
-      });
-      isLoading = false;
+      final sri = await Bangumi.instance.getBangumiSRIByID(id);
+      state = state.copyWith(bangumiSRI: List<BangumiSRI>.of(sri));
     } catch (e) {
+      state = state.copyWith(isLoading: false);
       Log.error('queryBangumiInfoByID', e.toString());
     }
   }
@@ -123,16 +239,15 @@ abstract class _InfoController with Store {
                 )
           : await Bangumi.instance.getBangumiEpisodeAllByID(id);
 
-      allEpisodes
-        ..clear()
-        ..addAll(result);
+      state = state.copyWith(allEpisodes: List<EpisodeInfo>.of(result));
 
       // 加载完直接计算
-      if (allEpisodes.isNotEmpty) {
-        currentWeekEp = await BangumiUtils.findCurrentWeekEpisode(
-          allEpisodes,
+      if (result.isNotEmpty) {
+        final week = await BangumiUtils.findCurrentWeekEpisode(
+          result,
           bangumiItem,
         );
+        state = state.copyWith(currentWeekEp: week);
       }
     } catch (e) {
       Log.error('queryBangumiEpisodeByID', e.toString());
@@ -140,65 +255,69 @@ abstract class _InfoController with Store {
   }
 
   Future<void> queryBangumiCommentsByID(int id, {int offset = 0}) async {
-    if (offset == 0) {
-      commentsList.clear();
-    }
-    await Bangumi.instance.getBangumiCommentsByID(id, offset: offset).then((
-      value,
-    ) {
-      commentsList.addAll(value.commentList);
-    });
+    final value = await Bangumi.instance.getBangumiCommentsByID(
+      id,
+      offset: offset,
+    );
+    final existing = state.commentsList;
+    state = state.copyWith(
+      commentsList: offset == 0
+          ? List<CommentItem>.of(value.commentList)
+          : [...existing, ...value.commentList],
+    );
   }
 
   Future<void> queryBangumiTopicsByID(int id, {int offset = 0}) async {
-    if (offset == 0) {
-      topicsList.clear();
-    }
-    await Bangumi.instance.getTopicsByID(id, offset: offset).then((value) {
-      topicsList.addAll(value.topicsList);
-    });
+    final value = await Bangumi.instance.getTopicsByID(id, offset: offset);
+    final existing = state.topicsList;
+    state = state.copyWith(
+      topicsList: offset == 0
+          ? List<TopicsItem>.of(value.topicsList)
+          : [...existing, ...value.topicsList],
+    );
   }
 
   Future<void> queryBangumiTopicsLatestByID({int offset = 0}) async {
-    if (offset == 0) {
-      topicsLatestList.clear();
-    }
-    await Bangumi.instance.getTopicsLatestByID(offset: offset).then((value) {
-      final existingIds = topicsLatestList.map((e) => e.id).toSet();
-      final newItems = value
-          .where((item) => !existingIds.contains(item.id))
-          .toList();
-      topicsLatestList.addAll(newItems);
-    });
+    final value = await Bangumi.instance.getTopicsLatestByID(offset: offset);
+    final existing = state.topicsLatestList;
+    final existingIds = existing.map((e) => e.id).toSet();
+    final newItems = value
+        .where((item) => !existingIds.contains(item.id))
+        .toList();
+    state = state.copyWith(
+      topicsLatestList: offset == 0
+          ? List<TopicsInfoItem>.of(value)
+          : [...existing, ...newItems],
+    );
   }
 
   Future<void> queryBangumiTopicsTrendingByID({int offset = 0}) async {
-    if (offset == 0) {
-      topicsTrendingList.clear();
-    }
-    await Bangumi.instance.getTopicsTrendingByID(offset: offset).then((value) {
-      final existingIds = topicsTrendingList.map((e) => e.id).toSet();
-      final newItems = value
-          .where((item) => !existingIds.contains(item.id))
-          .toList();
-      topicsTrendingList.addAll(newItems);
-    });
+    final value = await Bangumi.instance.getTopicsTrendingByID(offset: offset);
+    final existing = state.topicsTrendingList;
+    final existingIds = existing.map((e) => e.id).toSet();
+    final newItems = value
+        .where((item) => !existingIds.contains(item.id))
+        .toList();
+    state = state.copyWith(
+      topicsTrendingList: offset == 0
+          ? List<TopicsInfoItem>.of(value)
+          : [...existing, ...newItems],
+    );
   }
 
   Future<void> queryBangumiReviewsByID(int id, {int offset = 0}) async {
-    if (offset == 0) {
-      reviewsList.clear();
-    }
-    await Bangumi.instance.getReviewsByID(id, offset: offset).then((value) {
-      reviewsList.addAll(value.reviewsList);
-    });
+    final value = await Bangumi.instance.getReviewsByID(id, offset: offset);
+    final existing = state.reviewsList;
+    state = state.copyWith(
+      reviewsList: offset == 0
+          ? List<ReviewsItem>.of(value.reviewsList)
+          : [...existing, ...value.reviewsList],
+    );
   }
 
   Future<void> queryBangumiCharactersByID(int id) async {
-    characterList.clear();
-    await Bangumi.instance.getCharatersByID(id).then((value) {
-      characterList.addAll(value.characterList);
-    });
+    final value = await Bangumi.instance.getCharatersByID(id);
+    final list = List<CharacterItem>.of(value.characterList);
     Map<String, int> relationValue = {
       '主角': 1,
       '配角': 2,
@@ -207,20 +326,19 @@ abstract class _InfoController with Store {
       '未知': 5,
     };
     try {
-      characterList.sort(
+      list.sort(
         (a, b) =>
             relationValue[a.relation]!.compareTo(relationValue[b.relation]!),
       );
     } catch (e, s) {
       Log.error('queryBangumiCharactersByID', '$e\n$s');
     }
+    state = state.copyWith(characterList: list);
   }
 
   Future<void> queryBangumiStaffsByID(int id) async {
-    staffList.clear();
-    await Bangumi.instance.getBangumiStaffByID(id).then((value) {
-      staffList.addAll(value.data);
-    });
+    final value = await Bangumi.instance.getBangumiStaffByID(id);
+    state = state.copyWith(staffList: List<StaffFullItem>.of(value.data));
   }
 
   Future<void> queryBangumiEpisodeCommentsByID(
@@ -228,27 +346,32 @@ abstract class _InfoController with Store {
     int episode, {
     int offset = 0,
   }) async {
-    if (offset == 0) {
-      episodeCommentsList.clear();
-    }
-
-    episodeInfo = await Bangumi.instance.getBangumiEpisodeByID(id, episode);
-    await Bangumi.instance.getEpisodeCommentsByEpisodeID(episodeInfo.id).then((
-      value,
-    ) {
-      episodeCommentsList.addAll(value.commentList);
-    });
+    final info = await Bangumi.instance.getBangumiEpisodeByID(id, episode);
+    final value = await Bangumi.instance.getEpisodeCommentsByEpisodeID(info.id);
+    final existing = state.episodeCommentsList;
+    state = state.copyWith(
+      episodeInfo: info,
+      episodeCommentsList: offset == 0
+          ? List<EpisodeCommentItem>.of(value.commentList)
+          : [...existing, ...value.commentList],
+    );
   }
 
   Future<void> queryBangumiEpisodeCommentsByEpID(
     int id, {
     int offset = 0,
   }) async {
-    if (offset == 0) {
-      episodeCommentsList.clear();
-    }
-    await Bangumi.instance.getEpisodeCommentsByEpisodeID(id).then((value) {
-      episodeCommentsList.addAll(value.commentList);
-    });
+    final value = await Bangumi.instance.getEpisodeCommentsByEpisodeID(id);
+    final existing = state.episodeCommentsList;
+    state = state.copyWith(
+      episodeCommentsList: offset == 0
+          ? List<EpisodeCommentItem>.of(value.commentList)
+          : [...existing, ...value.commentList],
+    );
   }
 }
+
+/// Bangumi 详情页控制器提供者
+final infoControllerProvider = NotifierProvider<InfoController, InfoState>(
+  InfoController.new,
+);

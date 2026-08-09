@@ -9,7 +9,26 @@ import 'package:kostori/network/app_dio.dart';
 import 'package:kostori/utils/image.dart';
 
 abstract class ImageDownloader {
+  /// 对同一图片的并发请求去重：多个 provider 同时加载同一 URL 时只发起一次下载。
   static Stream<ImageDownloadProgress> loadThumbnail(
+    String url,
+    String? sourceKey, [
+    String? aid,
+  ]) {
+    final cacheKey = "$url@$sourceKey${aid != null ? '@$aid' : ''}";
+    final existing = _loadingImages[cacheKey];
+    if (existing != null) return existing.stream;
+    final wrapper = _StreamWrapper<ImageDownloadProgress>(
+      _loadThumbnail(url, sourceKey, aid),
+      (w) {
+        _loadingImages.remove(cacheKey);
+      },
+    );
+    _loadingImages[cacheKey] = wrapper;
+    return wrapper.stream;
+  }
+
+  static Stream<ImageDownloadProgress> _loadThumbnail(
     String url,
     String? sourceKey, [
     String? aid,
@@ -52,7 +71,8 @@ abstract class ImageDownloader {
       }
     }
 
-    var dio = AppDio(
+    // 图片请求用静默 dio：失败不打 error 日志（域名屏蔽/防火墙/抖动是常见可恢复场景）
+    var dio = AppDio.quiet(
       BaseOptions(
         headers: Map<String, dynamic>.from(configs['headers']),
         method: configs['method'] ?? 'GET',
@@ -60,24 +80,37 @@ abstract class ImageDownloader {
       ),
     );
 
-    var req = await dio.request<ResponseBody>(
-      configs['url'] ?? url,
-      data: configs['data'],
-    );
+    Response<ResponseBody> req;
+    try {
+      req = await dio.request<ResponseBody>(
+        configs['url'] ?? url,
+        data: configs['data'],
+      );
+    } catch (e) {
+      // 网络失败（域名不可达/防火墙/连接重置等）属于可恢复错误，
+      // yield 失败标记，由上层显示占位；避免每次滚动重建重复请求刷屏
+      yield ImageDownloadProgress(currentBytes: 0, totalBytes: null, error: e);
+      return;
+    }
     var stream = req.data?.stream ?? (throw "Error: Empty response body.");
     int? expectedBytes = req.data!.contentLength;
     if (expectedBytes == -1) {
       expectedBytes = null;
     }
     var buffer = <int>[];
-    await for (var data in stream) {
-      buffer.addAll(data);
-      if (expectedBytes != null) {
-        yield ImageDownloadProgress(
-          currentBytes: buffer.length,
-          totalBytes: expectedBytes,
-        );
+    try {
+      await for (var data in stream) {
+        buffer.addAll(data);
+        if (expectedBytes != null) {
+          yield ImageDownloadProgress(
+            currentBytes: buffer.length,
+            totalBytes: expectedBytes,
+          );
+        }
       }
+    } catch (e) {
+      // 下载中途断开，静默结束
+      return;
     }
 
     if (configs['onResponse'] is JSInvokable) {
@@ -179,7 +212,7 @@ abstract class ImageDownloader {
           };
         }
 
-        var dio = AppDio(
+        var dio = AppDio.quiet(
           BaseOptions(
             headers: configs['headers'],
             method: configs['method'] ?? 'GET',
@@ -260,13 +293,16 @@ class _StreamWrapper<T> {
 
   bool isClosed = false;
 
+  /// 当没有剩余订阅者时设为 true，停止底层下载（省带宽）
+  bool _cancelled = false;
+
   _StreamWrapper(this._stream, this.onClosed) {
     _listen();
   }
 
   void _listen() async {
     await for (var data in _stream) {
-      if (isClosed) {
+      if (isClosed || _cancelled) {
         break;
       }
       for (var controller in controllers) {
@@ -293,6 +329,10 @@ class _StreamWrapper<T> {
     controllers.add(controller);
     controller.onCancel = () {
       controllers.remove(controller);
+      // 所有订阅者都取消时，终止底层下载
+      if (controllers.isEmpty) {
+        _cancelled = true;
+      }
     };
     return controller.stream;
   }
@@ -303,6 +343,7 @@ class _StreamWrapper<T> {
     }
     controllers.clear();
     isClosed = true;
+    _cancelled = true;
   }
 }
 
@@ -313,9 +354,13 @@ class ImageDownloadProgress {
 
   final Uint8List? imageBytes;
 
+  /// 网络失败标记：非 null 表示加载失败（便于上层显示占位而非误导性报错）
+  final Object? error;
+
   const ImageDownloadProgress({
     required this.currentBytes,
     required this.totalBytes,
     this.imageBytes,
+    this.error,
   });
 }

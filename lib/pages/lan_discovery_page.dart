@@ -23,7 +23,7 @@ class _LanPlayerControlHandler implements LanPlayerControlHandler {
     dynamic value,
   ) async {
     final watcher = _getWatcher();
-    if (watcher == null) return {'error': '播放器未打开'};
+    if (watcher == null) return {'error': t.lanPlayerNotOpen};
 
     final controller = watcher.playerController;
     switch (action) {
@@ -85,10 +85,10 @@ class _LanPlayerControlHandler implements LanPlayerControlHandler {
     bool autoPlay,
   ) async {
     final watcher = _getWatcher();
-    if (watcher == null) return {'error': '播放器未打开'};
+    if (watcher == null) return {'error': t.lanPlayerNotOpen};
     final controller = watcher.watcherController;
     final episodes = controller.anime?.episode;
-    if (episodes == null) return {'error': '无集数信息'};
+    if (episodes == null) return {'error': t.lanNoEpisodes};
     int roadIndex = 0;
     int episodeIndex = episode - 1;
     if (episodeIndex >= 0) {
@@ -664,14 +664,14 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '设备正在被远程控制',
+                          t.lanBeingControlled,
                           style: ts.copyWith(
                             color: cs.onPrimaryContainer,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         Text(
-                          '桌面端已连接并可控制此设备',
+                          t.lanDesktopConnected,
                           style: ts.copyWith(
                             color: cs.onPrimaryContainer.withAlpha(180),
                           ),
@@ -692,7 +692,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                       children: [
                         const Icon(Icons.stop_screen_share_outlined, size: 16),
                         const SizedBox(width: 4),
-                        Text('断开', style: ts.s12),
+                        Text(t.lanDisconnect, style: ts.s12),
                       ],
                     ),
                   ),
@@ -740,7 +740,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                 IconButton(
                   onPressed: _runSelfCheck,
                   icon: const Icon(Icons.wifi_find),
-                  tooltip: '网络自检',
+                  tooltip: t.lanSelfTest,
                 ),
               ],
               if (isConnected)
@@ -750,7 +750,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                     Icons.link_off,
                     color: isConnected ? cs.error : null,
                   ),
-                  tooltip: '取消连接',
+                  tooltip: t.lanCancelConnect,
                 ),
             ],
           ),
@@ -765,7 +765,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                     controller: _ipController,
                     enabled: !state.isConnecting,
                     decoration: InputDecoration(
-                      hintText: 'IP 地址',
+                      hintText: t.lanIpHint,
                       isDense: true,
                       prefixIcon: const Icon(Icons.dns_outlined, size: 18),
                       border: OutlineInputBorder(
@@ -787,7 +787,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                     controller: _portController,
                     enabled: !state.isConnecting,
                     decoration: InputDecoration(
-                      hintText: '端口',
+                      hintText: t.lanPortHint,
                       isDense: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -816,7 +816,7 @@ class _DeviceDiscoveryTabState extends ConsumerState<_DeviceDiscoveryTab> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.link),
-                  tooltip: '手动连接',
+                  tooltip: t.lanManualConnect,
                 ),
               ],
             ),
@@ -1200,13 +1200,13 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('设备名称', style: ts.s14),
+              Text(t.lanDeviceName, style: ts.s14),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _deviceNameController,
                 maxLength: 30,
                 decoration: InputDecoration(
-                  hintText: '留空则使用默认名称',
+                  hintText: t.lanNameEmptyHint,
                   prefixIcon: const Icon(Icons.devices_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1216,7 +1216,7 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                '其他设备发现此设备时显示的名称',
+                t.lanNameDisplayHint,
                 style: ts.s12.copyWith(color: cs.outline),
               ),
               const SizedBox(height: 16),
@@ -1242,18 +1242,18 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
                     return t.invalidUrlConfig;
                   }
                   if (port < 1024 || port > 65535) {
-                    return '端口号必须在 1024-65535 之间';
+                    return t.lanPortRangeError;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 8),
               Text(
-                'UDP 广播端口用于设备发现，WebSocket 端口用于远程控制连接',
+                t.lanUdpPortHint,
                 style: ts.s12.copyWith(color: cs.outline),
               ),
               const SizedBox(height: 16),
-              Text('组播地址（多线程广播）', style: ts.s14),
+              Text(t.lanMulticastTitle, style: ts.s14),
               const SizedBox(height: 8),
               TextFormField(
                 controller: _multicastController,
@@ -1269,14 +1269,14 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
                     return t.thisFieldCannotBeEmpty;
                   }
                   if (!_isValidMulticastAddress(value.trim())) {
-                    return '请输入合法的组播地址（224.0.0.0 - 239.255.255.255）';
+                    return t.lanMulticastInvalid;
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 8),
               Text(
-                '组播（多线程广播）用于设备发现；自定义地址可避开路由器/防火墙对默认组播地址的特殊过滤',
+                t.lanMulticastHint,
                 style: ts.s12.copyWith(color: cs.outline),
               ),
               const SizedBox(height: 16),
@@ -1306,7 +1306,7 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Text('连接 PIN 码验证', style: ts.s14),
+                  Text(t.lanPinTitle, style: ts.s14),
                   const Spacer(),
                   CustomSwitch(
                     value: _pinEnabled,
@@ -1322,7 +1322,7 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
                   maxLength: 6,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: '4-6 位数字',
+                    hintText: t.lanPinLengthHint,
                     prefixIcon: const Icon(Icons.password_outlined),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -1331,14 +1331,14 @@ class _PortSettingsSheetState extends ConsumerState<_PortSettingsSheet> {
                   ),
                   validator: (value) {
                     if (!RegExp(r'^\d{4,6}$').hasMatch(value?.trim() ?? '')) {
-                      return '请输入 4-6 位数字 PIN';
+                      return t.lanPinInvalid;
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '开启后，其他设备连接时需输入此 PIN 码',
+                  t.lanPinEnableHint,
                   style: ts.s12.copyWith(color: cs.outline),
                 ),
               ],
@@ -1404,21 +1404,21 @@ class _SelfCheckSheetState extends ConsumerState<_SelfCheckSheet> {
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: _error != null
-              ? Center(child: Text('自检失败: $_error', style: ts.bodyMedium))
+              ? Center(child: Text(t.lanSelfTestFailed(error: _error ?? ''), style: ts.bodyMedium))
               : _result == null
               ? const Center(child: CircularProgressIndicator())
               : ListView(
                   controller: scrollController,
                   children: [
-                    Text('网络自检', style: ts.titleMedium),
+                    Text(t.lanSelfTest, style: ts.titleMedium),
                     const SizedBox(height: 4),
                     Text(
-                      '设备: ${_result!['platform']}  UDP端口: ${_result!['udpPort']}  发现状态: ${_result!['state']}',
+                      t.lanSelfTestDetail(platform: _result!['platform'], udpPort: _result!['udpPort'], state: _result!['state']),
                       style: ts.bodySmall?.copyWith(color: cs.outline),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '连接PIN验证: ${LanControlService.instance.pinEnabled ? '已开启' : '已关闭'}',
+                      t.lanPinStatus(status: LanControlService.instance.pinEnabled ? t.lanEnabled : t.lanDisabled),
                       style: ts.bodySmall?.copyWith(color: cs.outline),
                     ),
                     const SizedBox(height: 12),
@@ -1434,12 +1434,12 @@ class _SelfCheckSheetState extends ConsumerState<_SelfCheckSheet> {
                       child: OutlinedButton.icon(
                         onPressed: _running ? null : _run,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('重新自检'),
+                        label: Text(t.lanRetest),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '排查要点: 两端连接同一 Wi-Fi/路由器；路由器关闭"AP隔离/客户端隔离"；两端均为最新代码。',
+                      t.lanTroubleshoot,
                       style: ts.bodySmall?.copyWith(color: cs.outline),
                     ),
                   ],

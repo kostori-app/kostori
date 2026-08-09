@@ -5,7 +5,7 @@ part of 'package:kostori/foundation/hub_services/services.dart';
 class HubClientInfo {
   final String userId;
   String? displayName;
-  final WebSocket connection;
+  final WebSocket? connection;
   final DateTime connectedAt;
   String? avatarUrl;
   String? biography;
@@ -14,6 +14,12 @@ class HubClientInfo {
   DateTime? mutedUntil;
   String currentRoomId;
   final bool isBot;
+
+  /// 该客户端连接时使用的鉴权 token（用于按 token 逐人加密广播）
+  String? authToken;
+
+  /// 该客户端可直连的候选地址（一起看 P2P：房主上报自己的直连 WS 地址）
+  List<String> peerCandidates = const [];
 
   bool get isMuted => mutedUntil != null && mutedUntil!.isAfter(DateTime.now());
   DateTime lastHeartbeat = DateTime.now();
@@ -42,19 +48,24 @@ class HubClientInfo {
     connectedAt: connectedAt,
     currentRoomId: currentRoomId,
     isBot: isBot,
+    peerCandidates: peerCandidates,
   );
 
   Map<String, dynamic> toJson() => toDto().toJson();
 
   void send(Map<String, dynamic> data) {
+    if (connection == null) return; // 机器人无连接
     try {
       HubLog.info('send', '服务端发送: ${jsonEncode(data)}');
-      connection.add(jsonEncode(data));
+      connection!.add(jsonEncode(data));
     } catch (_) {}
   }
 }
 
 // ── HubRoom（服务端专用）─────────────────────────────
+
+/// 房间类型：chat 普通聊天房，watch 一起看房间
+enum HubRoomType { chat, watch }
 
 class HubRoom {
   final String roomId;
@@ -75,6 +86,15 @@ class HubRoom {
   int? maxParticipants;
   bool allowMemberInvite;
 
+  /// 房间类型（chat / watch）
+  HubRoomType roomType;
+
+  /// 一起看房间的番剧信息（普通聊天房为空）
+  String? animeId;
+  String? animeTitle;
+  String? animeSourceKey;
+  String? animeCover;
+
   HubRoom({
     String? roomId,
     required this.roomName,
@@ -84,6 +104,11 @@ class HubRoom {
     this.maxParticipants,
     this.allowMemberInvite = false,
     this.welcomeMessage,
+    this.roomType = HubRoomType.chat,
+    this.animeId,
+    this.animeTitle,
+    this.animeSourceKey,
+    this.animeCover,
   }) : roomId = roomId ?? const Uuid().v4(),
        createdAt = DateTime.now(),
        announcements = announcements ?? [];
@@ -170,6 +195,11 @@ class HubRoom {
     bannedUserIds: bannedUserIds.toList(),
     pinnedMessages: List.from(pinnedMessages),
     welcomeMessage: welcomeMessage,
+    roomType: roomType,
+    animeId: animeId,
+    animeTitle: animeTitle,
+    animeSourceKey: animeSourceKey,
+    animeCover: animeCover,
   );
 
   Map<String, dynamic> toJson() => toDto().toJson();

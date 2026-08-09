@@ -403,7 +403,7 @@ function setInterval(callback, delay) {
  * );
  */
 const WebViewVideo = {
-    fetchVideoUrl: (url, headers, script, waitMs) => {
+    fetchVideoUrl: (url, headers, script, waitMs, scan) => {
         return sendMessage({
             method: 'webview',
             action: 'extract',
@@ -411,6 +411,7 @@ const WebViewVideo = {
             headers: headers ?? {},
             script: script ?? '',
             waitMs: waitMs ?? 8000,
+            scan: scan ?? true,
         });
     }
 };
@@ -1429,6 +1430,33 @@ let UI = {
             title: title,
             image: image,
             validator: validator
+        })
+    },
+
+    /**
+     * Show a captcha dialog with the captcha image and a manual input field.
+     * The user reads the captcha and enters the code manually.
+     *
+     * Typical captcha flow inside a source script:
+     *   1. Detect that the response is a captcha page/JSON.
+     *   2. Get the captcha image URL (or data URL) and any captcha token.
+     *   3. const code = await UI.showCaptchaDialog('验证码', captchaImageUrl);
+     *   4. If code == null the user canceled -> throw/abort.
+     *   5. Submit the code (plus token) to verify via Network, then retry the
+     *      original request; you may also pass a validator to showInputDialog
+     *      so the answer is re-verified inside the dialog before it closes.
+     *
+     * @param title {string}
+     * @param image {string} - Captcha image URL or data URL.
+     * @returns {Promise<string | null>} - The captcha code entered by the user, or null if canceled.
+     * @since 1.2.8
+     */
+    showCaptchaDialog: (title, image) => {
+        return sendMessage({
+            method: 'UI',
+            function: 'showCaptchaDialog',
+            title: title,
+            image: image,
         })
     },
 

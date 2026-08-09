@@ -33,13 +33,14 @@ class _BangumiSettingsState extends State<BangumiSettings> {
                     title: t.bangumiCardPerRow,
                     settingsIndex: "bangumiCardPerRow",
                     options: [0, 2, 3],
+                    dataSource: SwitchDataSource.implicit,
                   ),
                   _SwitchSetting(
                     title: t.calendarFetchEpisodes,
                     settingKey: "calendarFetchEpisodes",
                   ),
                   _SwitchSetting(
-                    title: '启用跳过bangumi日程',
+                    title: t.enableSkipBangumiSchedule,
                     settingKey: "enableSkipUpdate",
                   ),
                 ],

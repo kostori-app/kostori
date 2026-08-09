@@ -283,8 +283,8 @@ class _CompletedOverlay extends ConsumerWidget {
               size: 48,
             ),
             const SizedBox(height: 8),
-            const Text(
-              '播放完毕',
+            Text(
+              t.vtPlaybackComplete,
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             const SizedBox(height: 12),
@@ -292,7 +292,7 @@ class _CompletedOverlay extends ConsumerWidget {
               onPressed: () =>
                   ref.read(videoTestProvider.notifier).seek(Duration.zero),
               icon: const Icon(Icons.replay),
-              label: const Text('重播'),
+              label: Text(t.vtReplay),
             ),
           ],
         ),
@@ -470,7 +470,7 @@ class _PlaybackRow extends ConsumerWidget {
                 isScrollControlled: true,
                 useSafeArea: true,
                 builder: (_) => Sheet(
-                  title: '详情 & 日志',
+                  title: t.watcherDetailsLogs,
                   icon: Icons.info_outline_rounded,
                   initialSize: 0.65,
                   builder: (_, sc) => VideoInfoSheet.fromPlayer(
@@ -482,7 +482,7 @@ class _PlaybackRow extends ConsumerWidget {
               );
             },
             icon: const Icon(Icons.info_outline_rounded),
-            tooltip: '详情 & 日志',
+            tooltip: t.watcherDetailsLogs,
           ),
           const SizedBox(width: 4),
           PopupMenuButton<double>(
@@ -586,7 +586,7 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
               controller: _urlCtrl,
               style: const TextStyle(fontSize: 13),
               decoration: InputDecoration(
-                hintText: '输入播放链接…',
+                hintText: t.vtInputUrlHint,
                 hintStyle: const TextStyle(fontSize: 13),
                 prefixIcon: const Icon(Icons.link_rounded, size: 18),
                 suffixIcon: _urlCtrl.text.isNotEmpty
@@ -638,7 +638,7 @@ class _UrlRowState extends ConsumerState<_UrlRow> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('加载'),
+            child: Text(t.vtLoad),
           ),
         ],
       ),
@@ -748,7 +748,7 @@ class _HeaderSheetState extends State<_HeaderSheet> {
                 Icon(Icons.tune_rounded, color: cs.primary),
                 const SizedBox(width: 10),
                 Text(
-                  '请求头 (Headers)',
+                  t.vtHeaders,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -757,7 +757,7 @@ class _HeaderSheetState extends State<_HeaderSheet> {
                 TextButton.icon(
                   onPressed: _addRow,
                   icon: const Icon(Icons.add, size: 16),
-                  label: const Text('添加'),
+                  label: Text(t.add),
                 ),
               ],
             ),
@@ -795,9 +795,9 @@ class _HeaderSheetState extends State<_HeaderSheet> {
               maxHeight: MediaQuery.of(context).size.height * 0.45,
             ),
             child: _rows.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('暂无请求头，点击"添加"新增', textAlign: TextAlign.center),
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(t.vtNoHeaders, textAlign: TextAlign.center),
                   )
                 : ListView.separated(
                     shrinkWrap: true,
@@ -828,13 +828,13 @@ class _HeaderSheetState extends State<_HeaderSheet> {
                       _rows.clear();
                     });
                   },
-                  child: const Text('清空'),
+                  child: Text(t.clear),
                 ),
                 const Spacer(),
                 FilledButton.icon(
                   onPressed: _apply,
                   icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text('应用并加载'),
+                  label: Text(t.vtApplyAndLoad),
                 ),
               ],
             ),
@@ -892,7 +892,7 @@ class _HeaderRowTile extends StatelessWidget {
           iconSize: 20,
           color: cs.error,
           visualDensity: VisualDensity.compact,
-          tooltip: '删除',
+          tooltip: t.delete,
         ),
       ],
     );

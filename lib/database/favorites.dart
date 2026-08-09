@@ -210,6 +210,10 @@ class LocalFavoritesManager with ChangeNotifier {
 
   var _hashedIds = <int, int>{};
 
+  /// 缓存的分组名列表（按 folder_order 排序）。
+  /// 增删改分组时调用 [_invalidateFolderCache] 失效，避免每次访问都查库。
+  List<String>? _folderNamesCache;
+
   int get totalAnimes {
     return _hashedIds.length;
   }
@@ -220,6 +224,7 @@ class LocalFavoritesManager with ChangeNotifier {
 
   Future<void> init() async {
     counts = {};
+    _folderNamesCache = null;
     final dbPath = path.join(App.dataPath, 'local_favorite.db');
     _db = sqlite3.open(dbPath);
     _db.execute("""
@@ -261,6 +266,13 @@ class LocalFavoritesManager with ChangeNotifier {
       _hashedIds = value;
       notifyListeners();
     });
+  }
+
+  /// 单条新增后的增量更新：只更新目标分组的计数与 hash 索引，
+  /// 避免每次 add 都全量重扫。
+  void _incrementHashedId(String id, int type) {
+    var hash = id.hashCode ^ type;
+    _hashedIds[hash] = (_hashedIds[hash] ?? 0) + 1;
   }
 
   void refreshHashedIds() {
@@ -349,30 +361,32 @@ class LocalFavoritesManager with ChangeNotifier {
     }
   }
 
+  /// 分组列表变更后调用，使缓存失效
+  void _invalidateFolderCache() {
+    _folderNamesCache = null;
+  }
+
   List<String> _getFolderNamesWithDB() {
+    final cached = _folderNamesCache;
+    if (cached != null) return cached;
     final folders = _getTablesWithDB();
     folders.remove('folder_sync');
     folders.remove('folder_order');
-    var folderToOrder = <String, int>{};
-    for (var folder in folders) {
-      var res = _db.select(
-        """
-        select * from folder_order
-        where folder_name == ?;
-      """,
-        [folder],
-      );
-      if (res.isNotEmpty) {
-        folderToOrder[folder] = res.first["order_value"];
-      } else {
-        folderToOrder[folder] = 0;
+    // 一次查询拿全部排序，避免逐文件夹查询 folder_order
+    final orderMap = <String, int>{};
+    try {
+      final orderRows = _db.select('select * from folder_order;');
+      for (final row in orderRows) {
+        orderMap[row["folder_name"] as String] =
+            row["order_value"] as int? ?? 0;
       }
+    } catch (_) {}
+    for (final folder in folders) {
+      orderMap[folder] = orderMap[folder] ?? 0;
     }
-    folders.sort((a, b) {
-      return folderToOrder[a]! - folderToOrder[b]!;
-    });
-
-    return folders;
+    folders.sort((a, b) => orderMap[a]! - orderMap[b]!);
+    _folderNamesCache = List.unmodifiable(folders);
+    return _folderNamesCache!;
   }
 
   void updateOrder(List<String> folders) {
@@ -385,6 +399,7 @@ class LocalFavoritesManager with ChangeNotifier {
         [folders[i], i],
       );
     }
+    _invalidateFolderCache();
     notifyListeners();
   }
 
@@ -465,10 +480,10 @@ class LocalFavoritesManager with ChangeNotifier {
     _db.execute(
       """
       update "$folder"
-      set tags = '$tag,' || tags
+      set tags = ? || ',' || tags
       where id == ?
     """,
-      [id],
+      [tag, id],
     );
     notifyListeners();
   }
@@ -533,6 +548,7 @@ class LocalFavoritesManager with ChangeNotifier {
         primary key (id, type)
       );
     """);
+    _invalidateFolderCache();
     notifyListeners();
     counts[name] = 0;
     return name;
@@ -633,7 +649,9 @@ class LocalFavoritesManager with ChangeNotifier {
       action: FavoriteAction.add,
     );
 
-    initCounts();
+    // 增量更新计数与 hash 索引（避免全量重扫）
+    counts[folder] = (counts[folder] ?? 0) + 1;
+    _incrementHashedId(anime.id, anime.type.value);
     notifyListeners();
     return true;
   }
@@ -929,6 +947,7 @@ class LocalFavoritesManager with ChangeNotifier {
       [name],
     );
     counts.remove(name);
+    _invalidateFolderCache();
     refreshHashedIds();
     notifyListeners();
   }
@@ -1005,6 +1024,7 @@ class LocalFavoritesManager with ChangeNotifier {
     """,
       [after, before],
     );
+    _invalidateFolderCache();
     counts[after] = counts[before] ?? 0;
     counts.remove(before);
     notifyListeners();
@@ -1017,9 +1037,9 @@ class LocalFavoritesManager with ChangeNotifier {
     var res = _db.select(
       """
       SELECT * FROM "$folder" 
-      WHERE name LIKE ? OR author LIKE ? OR tags LIKE;
-    """,
-      [keyword, keyword, keyword, keyword],
+      WHERE name LIKE ? OR author LIKE ? OR tags LIKE ?
+      """,
+      [keyword, keyword, keyword],
     );
     var animes = res.map((e) => FavoriteItem.fromRow(e)).toList();
     bool test(FavoriteItem anime, String keyword) {
